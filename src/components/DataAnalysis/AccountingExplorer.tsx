@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import DrillDownTable from '@/components/DataAnalysis/DrillDownTable';
 import TransactionSampling from '@/components/DataAnalysis/TransactionSampling';
 import VersionSelector from '@/components/DataAnalysis/VersionSelector';
+import VersionHistory from '@/components/DataAnalysis/VersionHistory';  // Added import
 import { 
   BarChart4, 
   LayoutPanelLeft, 
