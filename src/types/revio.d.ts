@@ -37,3 +37,34 @@ export interface ClientStatus {
     risk: RiskLevel;
   }[];
 }
+
+// New types for client overview
+export interface Client {
+  id: string;
+  name: string;
+  orgNumber: string;
+  phase: AuditPhase;
+  progress: number; // 0-100
+  department?: string;
+  contactPerson?: string;
+  riskAreas: {
+    name: string;
+    risk: RiskLevel;
+  }[];
+  documents: {
+    type: 'shareholder_report' | 'tax_return' | 'annual_report';
+    status: 'pending' | 'submitted' | 'accepted';
+    dueDate: string;
+  }[];
+}
+
+export interface Announcement {
+  id: string;
+  clientId: string;
+  clientName: string;
+  title: string;
+  description: string;
+  date: string;
+  type: 'board_change' | 'capital_change' | 'address_change' | 'other';
+  isRead: boolean;
+}
