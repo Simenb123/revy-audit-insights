@@ -31,7 +31,7 @@ const RevyAssistant = () => {
     
     const newMessages = [
       ...messages,
-      { id: Date.now().toString(), type: 'user', text: message }
+      { id: Date.now().toString(), type: 'user' as const, text: message }
     ];
     setMessages(newMessages);
     setMessage('');
@@ -48,7 +48,7 @@ const RevyAssistant = () => {
       const randomResponse = responses[Math.floor(Math.random() * responses.length)];
       setMessages([
         ...newMessages,
-        { id: Date.now().toString(), type: 'revy', text: randomResponse }
+        { id: Date.now().toString(), type: 'revy' as const, text: randomResponse }
       ]);
     }, 1000);
   };
