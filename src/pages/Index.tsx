@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { ArrowUpRight, BarChart2, FileUp, FolderOpen, Search } from 'lucide-react';
@@ -7,9 +7,23 @@ import AppLayout from '@/components/Layout/AppLayout';
 import DashboardGrid from '@/components/Dashboard/DashboardGrid';
 import FileUploader from '@/components/DataUpload/FileUploader';
 import DrillDownTable from '@/components/DataAnalysis/DrillDownTable';
+import { useRevyContext } from '@/components/RevyContext/RevyContextProvider';
+import { RevyContext } from '@/types/revio';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
+  const { setContext } = useRevyContext();
+  
+  // Update RevyContext when tab changes
+  useEffect(() => {
+    const contextMap: Record<string, RevyContext> = {
+      'dashboard': 'dashboard',
+      'upload': 'general',
+      'drilldown': 'drill-down'
+    };
+    
+    setContext(contextMap[activeTab] || 'general');
+  }, [activeTab, setContext]);
   
   return (
     <AppLayout>

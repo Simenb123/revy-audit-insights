@@ -6,27 +6,30 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
+import { RevyContextProvider } from "./components/RevyContext/RevyContextProvider";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/analyser" element={<Index />} />
-          <Route path="/dokumenter" element={<Index />} />
-          <Route path="/prosjekter" element={<Index />} />
-          <Route path="/klienter" element={<Index />} />
-          <Route path="/innstillinger" element={<Index />} />
-          <Route path="/hjelp" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
+      <RevyContextProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/analyser" element={<Index />} />
+            <Route path="/dokumenter" element={<Index />} />
+            <Route path="/prosjekter" element={<Index />} />
+            <Route path="/klienter" element={<Index />} />
+            <Route path="/innstillinger" element={<Index />} />
+            <Route path="/hjelp" element={<Index />} />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </RevyContextProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );

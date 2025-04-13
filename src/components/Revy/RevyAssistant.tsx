@@ -1,23 +1,20 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MinusCircle, SendIcon, X } from 'lucide-react';
 import RevyAvatar from './RevyAvatar';
 import { useToast } from '@/hooks/use-toast';
-
-interface Message {
-  id: string;
-  type: 'user' | 'revy';
-  text: string;
-}
+import { useRevyContext } from '../RevyContext/RevyContextProvider';
+import { generateResponse, getContextualTip } from '@/services/revyService';
+import { RevyMessage } from '@/types/revio';
 
 const RevyAssistant = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [message, setMessage] = useState('');
-  const [messages, setMessages] = useState<Message[]>([
+  const [messages, setMessages] = useState<RevyMessage[]>([
     {
       id: '1',
       type: 'revy',
@@ -25,32 +22,60 @@ const RevyAssistant = () => {
     }
   ]);
   const { toast } = useToast();
+  const { currentContext } = useRevyContext();
+  
+  // Provide contextual tips when the context changes
+  useEffect(() => {
+    if (isOpen) {
+      const tip = getContextualTip(currentContext);
+      const newMessage: RevyMessage = {
+        id: Date.now().toString(),
+        type: 'revy',
+        text: `Jeg ser at du er i ${contextToNorwegian(currentContext)}-visningen. ${tip}`
+      };
+      
+      setMessages(prev => [...prev, newMessage]);
+    }
+  }, [currentContext, isOpen]);
+  
+  const contextToNorwegian = (context: string): string => {
+    const mapping: Record<string, string> = {
+      'dashboard': 'dashbord',
+      'drill-down': 'drill-down',
+      'risk-assessment': 'risikovurdering',
+      'documentation': 'dokumentasjons',
+      'mapping': 'mapping',
+      'client-overview': 'klientoversikt',
+      'general': 'generell'
+    };
+    
+    return mapping[context] || context;
+  };
 
   const handleSendMessage = () => {
     if (!message.trim()) return;
     
-    const newMessages = [
-      ...messages,
-      { id: Date.now().toString(), type: 'user' as const, text: message }
-    ];
+    const userMessage: RevyMessage = { 
+      id: Date.now().toString(), 
+      type: 'user', 
+      text: message 
+    };
+    
+    const newMessages = [...messages, userMessage];
     setMessages(newMessages);
     setMessage('');
     
-    // Simulate response
+    // Generate contextual response
     setTimeout(() => {
-      const responses = [
-        'Jeg ser at du arbeider med regnskapsanalyse. Er det noe spesifikt du leter etter?',
-        'Vil du at jeg skal forklare hvordan du kan bruke drill-down funksjonen for å analysere saldolinjer?',
-        'Jeg kan hjelpe deg med å identifisere risikoområder i regnskapet basert på dataene du har lastet opp.',
-        'Du kan dra og slippe kontoer for å tilpasse analysen din. Trenger du hjelp med dette?',
-        'Tips: Klikk på en regnskapslinje for å se detaljene bak tallene!'
-      ];
-      const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-      setMessages([
-        ...newMessages,
-        { id: Date.now().toString(), type: 'revy' as const, text: randomResponse }
-      ]);
-    }, 1000);
+      const responseText = generateResponse(userMessage.text, currentContext);
+      const revyResponse: RevyMessage = {
+        id: Date.now().toString(),
+        type: 'revy',
+        text: responseText
+      };
+      
+      setMessages(prev => [...prev, revyResponse]);
+    }, 800);
   };
   
   const toggleMinimize = () => {
@@ -61,6 +86,18 @@ const RevyAssistant = () => {
     setIsOpen(!isOpen);
     if (!isOpen) {
       setIsMinimized(false);
+      
+      // Show a contextual tip when opening
+      if (messages.length <= 1) {
+        const tip = getContextualTip(currentContext);
+        const welcomeMessage: RevyMessage = {
+          id: Date.now().toString(),
+          type: 'revy',
+          text: tip
+        };
+        
+        setMessages(prev => [...prev, welcomeMessage]);
+      }
     }
   };
   
@@ -123,7 +160,7 @@ const RevyAssistant = () => {
                     {msg.type === 'revy' && (
                       <div className="flex items-end gap-2">
                         <RevyAvatar size="xs" />
-                        <div className="chat-bubble-revy max-w-[85%]">
+                        <div className="bg-white border border-gray-200 p-3 rounded-2xl rounded-bl-none max-w-[85%] shadow-sm">
                           {msg.text}
                         </div>
                       </div>

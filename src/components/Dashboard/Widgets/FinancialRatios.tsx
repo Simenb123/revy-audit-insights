@@ -69,9 +69,7 @@ const FinancialRatios = ({ className }: FinancialRatiosProps) => {
                 className={cn(
                   "h-2",
                   ratio.value >= ratio.target ? "bg-muted" : 
-                  ratio.value >= ratio.target * 0.8 ? "bg-muted" : "bg-muted",
-                  ratio.value >= ratio.target ? "text-revio-500" : 
-                  ratio.value >= ratio.target * 0.8 ? "text-yellow-500" : "text-red-500"
+                  ratio.value >= ratio.target * 0.8 ? "bg-muted" : "bg-muted"
                 )}
               />
               <div className="flex justify-between text-xs text-muted-foreground">
