@@ -12,15 +12,20 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import DrillDownTable from '@/components/DataAnalysis/DrillDownTable';
 import TransactionSampling from '@/components/DataAnalysis/TransactionSampling';
 import VersionSelector from '@/components/DataAnalysis/VersionSelector';
-import VersionHistory from '@/components/DataAnalysis/VersionHistory';  // Added import
+import VersionHistory from '@/components/DataAnalysis/VersionHistory';
 import { 
   BarChart4, 
   LayoutPanelLeft, 
   ListFilter, 
   History,
-  ScanLine
+  ScanLine,
+  Home,
+  ArrowLeft
 } from 'lucide-react';
 import { DocumentVersion } from '@/types/revio';
+import MaterialityBanner from './MaterialityBanner';
+import { Button } from '@/components/ui/button';
+import { Link } from 'react-router-dom';
 
 const AccountingExplorer = () => {
   const [selectedVersion, setSelectedVersion] = useState<DocumentVersion>('final');
@@ -35,6 +40,14 @@ const AccountingExplorer = () => {
     <div className="container mx-auto py-6">
       <div className="flex justify-between items-center mb-6">
         <div>
+          <div className="flex items-center gap-2 mb-2">
+            <Button variant="ghost" size="sm" asChild className="gap-1">
+              <Link to="/">
+                <ArrowLeft size={16} />
+                <span>Tilbake til dashboard</span>
+              </Link>
+            </Button>
+          </div>
           <h1 className="text-3xl font-bold">Regnskapsanalyse</h1>
           <p className="text-muted-foreground mt-1">
             Utforsk regnskapstall, transaksjoner og utfør analyser
@@ -46,6 +59,8 @@ const AccountingExplorer = () => {
           onVersionChange={handleVersionChange}
         />
       </div>
+      
+      <MaterialityBanner />
       
       <Tabs defaultValue="drilldown" className="mb-8">
         <TabsList className="grid grid-cols-4 w-[600px]">
