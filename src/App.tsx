@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import ClientsOverview from "./pages/ClientsOverview";
 import NotFound from "./pages/NotFound";
 import { RevyContextProvider } from "./components/RevyContext/RevyContextProvider";
+import AccountingExplorer from "./components/DataAnalysis/AccountingExplorer";
 
 const queryClient = new QueryClient();
 
@@ -21,7 +22,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<ClientsOverview />} />
             <Route path="/dashboard" element={<Index />} />
-            <Route path="/analyser" element={<Index />} />
+            <Route path="/analyser" element={<AccountingExplorer />} />
             <Route path="/dokumenter" element={<Index />} />
             <Route path="/prosjekter" element={<Index />} />
             <Route path="/klienter" element={<ClientsOverview />} />

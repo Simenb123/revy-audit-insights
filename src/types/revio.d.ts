@@ -68,3 +68,73 @@ export interface Announcement {
   type: 'board_change' | 'capital_change' | 'address_change' | 'other';
   isRead: boolean;
 }
+
+// New types for accounting data
+export interface AccountGroup {
+  id: string;
+  name: string;
+  balance: number;
+  prevBalance: number;
+  accounts: Account[];
+}
+
+export interface Account {
+  id: string;
+  accountId: string;
+  name: string;
+  groupId: string;
+  balance: number;
+  prevBalance: number;
+}
+
+export interface Transaction {
+  id: string;
+  accountId: string;
+  date: string;
+  description: string;
+  amount: number;
+  voucher: string;
+  isSelected?: boolean;
+  isTested?: boolean;
+}
+
+export interface AccountingVersion {
+  id: string;
+  name: DocumentVersion | string;
+  date: string;
+  description: string;
+  isActive: boolean;
+}
+
+export interface VersionChange {
+  id: string;
+  versionId: string;
+  accountId: string;
+  accountName: string;
+  previousAmount: number;
+  newAmount: number;
+  changeDate: string;
+  changedBy: string;
+}
+
+// Transaction sampling types
+export interface SamplingParams {
+  amountMin?: number;
+  amountMax?: number;
+  dateFrom?: string;
+  dateTo?: string;
+  sampleSize: number;
+  sampleType: 'random' | 'stratified' | 'systematic';
+  accountId?: string;
+}
+
+export interface SamplingResult {
+  transactions: Transaction[];
+  summary: {
+    totalCount: number;
+    sampledCount: number;
+    totalAmount: number;
+    sampledAmount: number;
+    coverage: number; // Percentage of total amount covered by sample
+  };
+}
