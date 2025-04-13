@@ -1,13 +1,93 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+
+import React, { useState } from 'react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { ArrowUpRight, BarChart2, FileUp, FolderOpen, Search } from 'lucide-react';
+import AppLayout from '@/components/Layout/AppLayout';
+import DashboardGrid from '@/components/Dashboard/DashboardGrid';
+import FileUploader from '@/components/DataUpload/FileUploader';
+import DrillDownTable from '@/components/DataAnalysis/DrillDownTable';
 
 const Index = () => {
+  const [activeTab, setActiveTab] = useState('dashboard');
+  
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-gray-600">Start building your amazing project here!</p>
+    <AppLayout>
+      <div className="max-w-7xl mx-auto">
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h1 className="text-3xl font-bold">Velkommen til Revio</h1>
+            <p className="text-muted-foreground mt-1">
+              Din revisjonshjelper for effektiv analyse og dokumentasjon
+            </p>
+          </div>
+          
+          <div className="flex gap-3">
+            <Button variant="outline" className="gap-2">
+              <Search size={16} />
+              <span>Søk</span>
+            </Button>
+            <Button variant="outline" className="gap-2">
+              <FolderOpen size={16} />
+              <span>Prosjekter</span>
+            </Button>
+            <Button className="gap-2 bg-revio-500 hover:bg-revio-600">
+              <ArrowUpRight size={16} />
+              <span>Ny revisjon</span>
+            </Button>
+          </div>
+        </div>
+        
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
+          <TabsList className="grid grid-cols-3 w-[400px]">
+            <TabsTrigger value="dashboard" className="flex items-center gap-2">
+              <BarChart2 size={16} />
+              <span>Dashboard</span>
+            </TabsTrigger>
+            <TabsTrigger value="upload" className="flex items-center gap-2">
+              <FileUp size={16} />
+              <span>Last opp</span>
+            </TabsTrigger>
+            <TabsTrigger value="drilldown" className="flex items-center gap-2">
+              <Search size={16} />
+              <span>Drill-down</span>
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="dashboard" className="mt-6">
+            <DashboardGrid />
+          </TabsContent>
+          
+          <TabsContent value="upload" className="mt-6">
+            <div className="grid grid-cols-1 gap-6">
+              <FileUploader />
+              
+              <div className="bg-revio-50 border border-revio-100 rounded-lg p-6 flex items-center gap-4">
+                <div className="bg-white p-4 rounded-full">
+                  <img 
+                    src="/lovable-uploads/f813b1e2-df71-4a18-b810-b8b775bf7c90.png" 
+                    alt="Revy" 
+                    className="w-16 h-16 object-contain"
+                  />
+                </div>
+                <div>
+                  <h3 className="text-lg font-medium text-revio-900">Revy tips</h3>
+                  <p className="text-revio-800">
+                    Etter at du har lastet opp filen, kan jeg hjelpe deg med å 
+                    mappe kontoene til riktige regnskapslinjer. Klikk på chat-ikonet 
+                    nederst til høyre for assistanse.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="drilldown" className="mt-6">
+            <DrillDownTable />
+          </TabsContent>
+        </Tabs>
       </div>
-    </div>
+    </AppLayout>
   );
 };
 
