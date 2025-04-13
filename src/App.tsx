@@ -22,8 +22,8 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<AppLayout><ClientsOverview /></AppLayout>} />
-            <Route path="/dashboard" element={<AppLayout><Index /></AppLayout>} />
+            <Route path="/" element={<AppLayout><Index /></AppLayout>} />
+            <Route path="/dashboard" element={<Navigate to="/" replace />} />
             <Route path="/analyser" element={<AppLayout><AccountingExplorer /></AppLayout>} />
             <Route path="/analyser/transaksjoner" element={<AppLayout><TransactionSampling /></AppLayout>} />
             <Route path="/dokumenter" element={<AppLayout><Index /></AppLayout>} />
@@ -31,7 +31,6 @@ const App = () => (
             <Route path="/klienter" element={<AppLayout><ClientsOverview /></AppLayout>} />
             <Route path="/innstillinger" element={<AppLayout><Index /></AppLayout>} />
             <Route path="/hjelp" element={<AppLayout><Index /></AppLayout>} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

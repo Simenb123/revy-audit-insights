@@ -9,8 +9,21 @@ import {
   Home,
   Users,
   Settings,
-  HelpCircle
+  HelpCircle,
+  ChevronsLeft
 } from 'lucide-react';
+import {
+  Sidebar as ShadcnSidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarTrigger
+} from "@/components/ui/sidebar";
 
 type NavItem = {
   label: string;
@@ -62,45 +75,59 @@ const bottomNavItems: NavItem[] = [
 const Sidebar = () => {
   const location = useLocation();
   
-  const NavLink = ({ item }: { item: NavItem }) => {
-    const isActive = location.pathname === item.href;
-    
-    return (
-      <Link
-        to={item.href}
-        className={cn(
-          "flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-primary-foreground",
-          isActive 
-            ? "bg-sidebar-accent text-primary-foreground" 
-            : "text-sidebar-foreground/80 hover:bg-sidebar-accent/50"
-        )}
-      >
-        {item.icon}
-        <span>{item.label}</span>
-      </Link>
-    );
-  };
-  
   return (
-    <div className="h-full flex flex-col bg-sidebar py-4 w-56">
-      <div className="px-3 py-2">
-        <h2 className="mb-2 px-4 text-lg font-semibold text-sidebar-foreground">
-          Navigasjon
-        </h2>
-        <div className="space-y-1">
-          {mainNavItems.map((item) => (
-            <NavLink key={item.href} item={item} />
-          ))}
+    <ShadcnSidebar 
+      className="border-r border-border" 
+      collapsible="icon"
+    >
+      <SidebarHeader className="py-4">
+        <div className="flex items-center justify-between px-4">
+          <h2 className="text-lg font-semibold text-sidebar-foreground">Navigasjon</h2>
+          <SidebarTrigger />
         </div>
-      </div>
-      <div className="mt-auto px-3 py-2">
-        <div className="space-y-1">
-          {bottomNavItems.map((item) => (
-            <NavLink key={item.href} item={item} />
-          ))}
-        </div>
-      </div>
-    </div>
+      </SidebarHeader>
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {mainNavItems.map((item) => (
+                <SidebarMenuItem key={item.href}>
+                  <SidebarMenuButton
+                    isActive={location.pathname === item.href}
+                    tooltip={item.label}
+                  >
+                    <Link to={item.href} className="flex items-center w-full gap-3">
+                      {item.icon}
+                      <span>{item.label}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        
+        <SidebarGroup className="mt-auto">
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {bottomNavItems.map((item) => (
+                <SidebarMenuItem key={item.href}>
+                  <SidebarMenuButton
+                    isActive={location.pathname === item.href}
+                    tooltip={item.label}
+                  >
+                    <Link to={item.href} className="flex items-center w-full gap-3">
+                      {item.icon}
+                      <span>{item.label}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+    </ShadcnSidebar>
   );
 };
 

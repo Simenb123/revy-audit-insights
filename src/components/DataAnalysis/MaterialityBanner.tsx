@@ -46,7 +46,7 @@ const MaterialityBanner = ({ thresholds = {
         <Tooltip>
           <TooltipTrigger asChild>
             <div className="flex items-center gap-1.5">
-              <span className="font-medium">AR:</span>
+              <span className="font-medium">AV:</span>
               <Badge variant="outline" className="font-mono">
                 {formatCurrency(thresholds.workingMateriality)}
               </Badge>
