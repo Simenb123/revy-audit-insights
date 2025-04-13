@@ -10,6 +10,7 @@ import NotFound from "./pages/NotFound";
 import { RevyContextProvider } from "./components/RevyContext/RevyContextProvider";
 import AccountingExplorer from "./components/DataAnalysis/AccountingExplorer";
 import AppLayout from "./components/Layout/AppLayout";
+import TransactionSampling from "./components/DataAnalysis/TransactionSampling";
 
 const queryClient = new QueryClient();
 
@@ -21,14 +22,15 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<ClientsOverview />} />
-            <Route path="/dashboard" element={<Index />} />
-            <Route path="/analyser" element={<AccountingExplorer />} />
-            <Route path="/dokumenter" element={<Index />} />
-            <Route path="/prosjekter" element={<Index />} />
-            <Route path="/klienter" element={<ClientsOverview />} />
-            <Route path="/innstillinger" element={<Index />} />
-            <Route path="/hjelp" element={<Index />} />
+            <Route path="/" element={<AppLayout><ClientsOverview /></AppLayout>} />
+            <Route path="/dashboard" element={<AppLayout><Index /></AppLayout>} />
+            <Route path="/analyser" element={<AppLayout><AccountingExplorer /></AppLayout>} />
+            <Route path="/analyser/transaksjoner" element={<AppLayout><TransactionSampling /></AppLayout>} />
+            <Route path="/dokumenter" element={<AppLayout><Index /></AppLayout>} />
+            <Route path="/prosjekter" element={<AppLayout><Index /></AppLayout>} />
+            <Route path="/klienter" element={<AppLayout><ClientsOverview /></AppLayout>} />
+            <Route path="/innstillinger" element={<AppLayout><Index /></AppLayout>} />
+            <Route path="/hjelp" element={<AppLayout><Index /></AppLayout>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -145,6 +145,7 @@ const TransactionSampling = () => {
   const [viewMode, setViewMode] = useState<'table' | 'chart'>('table');
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
   const [selectedAccountGroup, setSelectedAccountGroup] = useState<AccountGroup | null>(null);
+  const [selectedAccounts, setSelectedAccounts] = useState<Account[]>([]);
   const [suggestedSampleSize, setSuggestedSampleSize] = useState<number | null>(null);
   const [transactionDistribution, setTransactionDistribution] = useState<any[]>([]);
   const { toast } = useToast();
@@ -160,9 +161,15 @@ const TransactionSampling = () => {
     }
   });
   
+  // Calculate the total balance of selected accounts
+  const totalSelectedBalance = selectedAccounts.reduce((sum, account) => sum + account.balance, 0);
+  
   // Filter transactions based on selected account or account group
   const getFilteredTransactions = () => {
-    if (selectedAccount) {
+    if (selectedAccounts.length > 0) {
+      const accountIds = selectedAccounts.map(a => a.accountId);
+      return allMockTransactions.filter(t => accountIds.includes(t.accountId));
+    } else if (selectedAccount) {
       return allMockTransactions.filter(t => t.accountId === selectedAccount.accountId);
     } else if (selectedAccountGroup) {
       const accountIds = selectedAccountGroup.accounts.map(a => a.accountId);
@@ -173,9 +180,27 @@ const TransactionSampling = () => {
   
   // Calculate suggested sample size based on risk level and account balance relative to materiality
   useEffect(() => {
-    if (selectedAccountGroup) {
-      const riskLevel = accountGroupRiskLevels[selectedAccountGroup.id] || 'medium';
-      const balance = Math.abs(selectedAccountGroup.balance);
+    if (selectedAccountGroup || selectedAccounts.length > 0) {
+      // Determine risk level
+      let riskLevel = 'medium';
+      if (selectedAccountGroup) {
+        riskLevel = accountGroupRiskLevels[selectedAccountGroup.id] || 'medium';
+      } else if (selectedAccounts.length > 0) {
+        // If multiple accounts are selected, use the highest risk level among their groups
+        const groupIds = new Set(selectedAccounts.map(a => a.groupId));
+        const riskLevels = Array.from(groupIds).map(id => accountGroupRiskLevels[id] || 'medium');
+        if (riskLevels.includes('high')) riskLevel = 'high';
+        else if (riskLevels.includes('medium')) riskLevel = 'medium';
+        else riskLevel = 'low';
+      }
+      
+      // Get the balance to check against
+      const balance = selectedAccounts.length > 0 
+        ? Math.abs(totalSelectedBalance) 
+        : selectedAccountGroup 
+          ? Math.abs(selectedAccountGroup.balance)
+          : 0;
+      
       const materiality = materialityThresholds.materiality;
       
       // Base sample size based on risk level
@@ -204,7 +229,7 @@ const TransactionSampling = () => {
       setSuggestedSampleSize(cappedSuggestion);
       setSampleSize(cappedSuggestion.toString());
     }
-  }, [selectedAccountGroup, selectedAccount]);
+  }, [selectedAccountGroup, selectedAccount, selectedAccounts, totalSelectedBalance]);
   
   // Calculate transaction distribution data for chart
   useEffect(() => {
@@ -237,7 +262,7 @@ const TransactionSampling = () => {
     }));
     
     setTransactionDistribution(distribution);
-  }, [selectedAccount, selectedAccountGroup]);
+  }, [selectedAccount, selectedAccountGroup, selectedAccounts]);
   
   const handleSelectTransaction = (transactionId: string) => {
     setSelectedTransactions(prev => {
@@ -254,6 +279,14 @@ const TransactionSampling = () => {
       setSelectedTransactions([]);
     } else {
       setSelectedTransactions(samplingResults.transactions.map(t => t.id));
+    }
+  };
+  
+  const handleMultiSelect = (accounts: Account[]) => {
+    setSelectedAccounts(accounts);
+    // If accounts are selected, clear single selection
+    if (accounts.length > 0) {
+      setSelectedAccount(null);
     }
   };
   
@@ -348,6 +381,10 @@ const TransactionSampling = () => {
   
   const handleAccountSelect = (account: Account | null) => {
     setSelectedAccount(account);
+    // Clear multi-select when selecting a single account
+    if (account) {
+      setSelectedAccounts([]);
+    }
     setSamplingResults({
       transactions: [],
       summary: {
@@ -362,23 +399,44 @@ const TransactionSampling = () => {
   
   const handleAccountGroupSelect = (group: AccountGroup | null) => {
     setSelectedAccountGroup(group);
+    // If group is deselected, also clear account selection
     if (!group) {
       setSelectedAccount(null);
+      setSelectedAccounts([]);
     }
   };
   
   const getRiskBadge = () => {
-    if (!selectedAccountGroup) return null;
+    if (selectedAccounts.length > 0) {
+      // Determine risk level for multiple accounts
+      const groupIds = new Set(selectedAccounts.map(a => a.groupId));
+      const riskLevels = Array.from(groupIds).map(id => accountGroupRiskLevels[id] || 'medium');
+      let risk = 'medium';
+      if (riskLevels.includes('high')) risk = 'high';
+      else if (riskLevels.includes('medium')) risk = 'medium';
+      else risk = 'low';
+      
+      const variant = risk === 'high' ? 'destructive' : risk === 'medium' ? 'default' : 'outline';
+      const label = risk === 'high' ? 'Høy' : risk === 'medium' ? 'Middels' : 'Lav';
+      
+      return (
+        <Badge variant={variant} className="ml-2">
+          {label} risiko
+        </Badge>
+      );
+    } else if (selectedAccountGroup) {
+      const risk = accountGroupRiskLevels[selectedAccountGroup.id] || 'medium';
+      const variant = risk === 'high' ? 'destructive' : risk === 'medium' ? 'default' : 'outline';
+      const label = risk === 'high' ? 'Høy' : risk === 'medium' ? 'Middels' : 'Lav';
+      
+      return (
+        <Badge variant={variant} className="ml-2">
+          {label} risiko
+        </Badge>
+      );
+    }
     
-    const risk = accountGroupRiskLevels[selectedAccountGroup.id] || 'medium';
-    const variant = risk === 'high' ? 'destructive' : risk === 'medium' ? 'default' : 'outline';
-    const label = risk === 'high' ? 'Høy' : risk === 'medium' ? 'Middels' : 'Lav';
-    
-    return (
-      <Badge variant={variant} className="ml-2">
-        {label} risiko
-      </Badge>
-    );
+    return null;
   };
   
   return (
@@ -387,8 +445,11 @@ const TransactionSampling = () => {
         <AccountSelectionSidebar 
           onAccountSelect={handleAccountSelect}
           onAccountGroupSelect={handleAccountGroupSelect}
+          onMultiSelect={handleMultiSelect}
           selectedAccount={selectedAccount}
           selectedAccountGroup={selectedAccountGroup}
+          selectedAccounts={selectedAccounts}
+          side="right"
         />
         
         <div className="flex-1 pl-4">
@@ -404,16 +465,18 @@ const TransactionSampling = () => {
                       {getRiskBadge()}
                     </CardTitle>
                     <CardDescription>
-                      {selectedAccount 
-                        ? `Utvalg for konto ${selectedAccount.accountId} - ${selectedAccount.name}`
-                        : selectedAccountGroup 
-                          ? `Utvalg for ${selectedAccountGroup.name}`
-                          : 'Velg konto eller regnskapslinje fra sidebaren for å starte'
+                      {selectedAccounts.length > 0
+                        ? `Utvalg for ${selectedAccounts.length} konto${selectedAccounts.length > 1 ? 'er' : ''} (totalbeløp: ${formatCurrency(totalSelectedBalance)})`
+                        : selectedAccount 
+                          ? `Utvalg for konto ${selectedAccount.accountId} - ${selectedAccount.name}`
+                          : selectedAccountGroup 
+                            ? `Utvalg for ${selectedAccountGroup.name}`
+                            : 'Velg konto eller regnskapslinje fra sidebaren for å starte'
                       }
                     </CardDescription>
                   </div>
                   
-                  {selectedAccountGroup && (
+                  {(selectedAccountGroup || selectedAccounts.length > 0) && (
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
@@ -423,11 +486,16 @@ const TransactionSampling = () => {
                             className="gap-2"
                           >
                             <BarChart size={14} />
-                            <span>Totalbeløp: {formatCurrency(selectedAccountGroup.balance)}</span>
+                            <span>
+                              Totalbeløp: {formatCurrency(selectedAccounts.length > 0 
+                                ? totalSelectedBalance 
+                                : selectedAccountGroup?.balance || 0
+                              )}
+                            </span>
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p>Totalbeløp for valgt regnskapsgruppe</p>
+                          <p>Totalbeløp for valgt{selectedAccounts.length > 1 ? 'e' : ''} {selectedAccounts.length > 0 ? 'kontoer' : 'regnskapsgruppe'}</p>
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
@@ -469,7 +537,7 @@ const TransactionSampling = () => {
                         onChange={(e) => setSampleSize(e.target.value)}
                         type="number"
                         min="1"
-                        disabled={!selectedAccountGroup && !selectedAccount}
+                        disabled={!selectedAccountGroup && !selectedAccount && selectedAccounts.length === 0}
                       />
                     </div>
                     
@@ -478,7 +546,7 @@ const TransactionSampling = () => {
                       <Select 
                         value={sampleType} 
                         onValueChange={setSampleType}
-                        disabled={!selectedAccountGroup && !selectedAccount}
+                        disabled={!selectedAccountGroup && !selectedAccount && selectedAccounts.length === 0}
                       >
                         <SelectTrigger id="sampleType">
                           <SelectValue placeholder="Velg metode" />
@@ -502,7 +570,7 @@ const TransactionSampling = () => {
                         type="number"
                         min="0"
                         placeholder="Valgfritt"
-                        disabled={!selectedAccountGroup && !selectedAccount}
+                        disabled={!selectedAccountGroup && !selectedAccount && selectedAccounts.length === 0}
                       />
                     </div>
                     
@@ -515,7 +583,7 @@ const TransactionSampling = () => {
                         type="number"
                         min="0"
                         placeholder="Valgfritt"
-                        disabled={!selectedAccountGroup && !selectedAccount}
+                        disabled={!selectedAccountGroup && !selectedAccount && selectedAccounts.length === 0}
                       />
                     </div>
                   </div>
@@ -525,7 +593,7 @@ const TransactionSampling = () => {
                       onClick={handleRunSampling} 
                       size="lg" 
                       className="w-full gap-2"
-                      disabled={!selectedAccountGroup && !selectedAccount}
+                      disabled={!selectedAccountGroup && !selectedAccount && selectedAccounts.length === 0}
                     >
                       <ListFilter size={16} />
                       <span>Kjør utvalg</span>
@@ -533,7 +601,7 @@ const TransactionSampling = () => {
                   </div>
                 </div>
                 
-                {(selectedAccountGroup || selectedAccount) && transactionDistribution.length > 0 && samplingResults.transactions.length === 0 && (
+                {(selectedAccountGroup || selectedAccount || selectedAccounts.length > 0) && transactionDistribution.length > 0 && samplingResults.transactions.length === 0 && (
                   <Card className="bg-muted/30 mb-6">
                     <CardContent className="pt-6">
                       <h3 className="font-medium mb-3">Fordeling av transaksjoner etter størrelse</h3>
@@ -665,7 +733,7 @@ const TransactionSampling = () => {
                     ? `${selectedTransactions.length} transaksjoner valgt`
                     : samplingResults.transactions.length > 0 
                       ? "Velg transaksjoner for å generere oppsummering" 
-                      : selectedAccountGroup || selectedAccount
+                      : (selectedAccountGroup || selectedAccount || selectedAccounts.length > 0)
                         ? "Kjør utvalg for å se resultater"
                         : "Velg konto eller regnskapslinje fra sidebaren"
                   }

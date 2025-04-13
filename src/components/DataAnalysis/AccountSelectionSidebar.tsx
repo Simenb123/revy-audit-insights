@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Sidebar, 
   SidebarContent, 
@@ -10,8 +10,8 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem
+  SidebarMenuSubItem,
+  SidebarMenuSubButton
 } from "@/components/ui/sidebar";
 import { Search, ChevronRight, ChevronDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -75,25 +75,39 @@ const mockAccountGroups: AccountGroup[] = [
 interface AccountSelectionSidebarProps {
   onAccountSelect: (account: Account | null) => void;
   onAccountGroupSelect: (group: AccountGroup | null) => void;
+  onMultiSelect?: (accounts: Account[]) => void;
   selectedAccount?: Account | null;
   selectedAccountGroup?: AccountGroup | null;
+  selectedAccounts?: Account[];
+  side?: 'left' | 'right';
 }
 
 const AccountSelectionSidebar = ({ 
   onAccountSelect, 
   onAccountGroupSelect,
+  onMultiSelect,
   selectedAccount,
-  selectedAccountGroup
+  selectedAccountGroup,
+  selectedAccounts = [],
+  side = 'left'
 }: AccountSelectionSidebarProps) => {
   const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [accountGroups] = useState<AccountGroup[]>(mockAccountGroups);
+  const [isMouseDown, setIsMouseDown] = useState(false);
+  const [multiSelectAccounts, setMultiSelectAccounts] = useState<Account[]>(selectedAccounts || []);
+  
+  // Update multiSelectAccounts when selectedAccounts prop changes
+  useEffect(() => {
+    setMultiSelectAccounts(selectedAccounts);
+  }, [selectedAccounts]);
   
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('nb-NO', { style: 'currency', currency: 'NOK' }).format(amount);
   };
   
-  const toggleGroup = (groupId: string) => {
+  const toggleGroup = (groupId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
     setExpandedGroups(prev => 
       prev.includes(groupId) 
         ? prev.filter(id => id !== groupId)
@@ -111,17 +125,59 @@ const AccountSelectionSidebar = ({
     }
   };
   
-  const handleAccountClick = (account: Account) => {
-    onAccountSelect(account);
-    
-    // Find and set the parent group
-    const parentGroup = accountGroups.find(group => 
-      group.accounts.some(acc => acc.id === account.id)
-    );
-    
-    if (parentGroup) {
-      onAccountGroupSelect(parentGroup);
+  const handleAccountClick = (account: Account, e: React.MouseEvent) => {
+    // If multi-select is enabled (if onMultiSelect is provided)
+    if (onMultiSelect && e.ctrlKey) {
+      handleMultiSelect(account);
+    } else {
+      onAccountSelect(account);
+      
+      // Find and set the parent group
+      const parentGroup = accountGroups.find(group => 
+        group.accounts.some(acc => acc.id === account.id)
+      );
+      
+      if (parentGroup) {
+        onAccountGroupSelect(parentGroup);
+      }
     }
+  };
+  
+  const handleMouseDown = () => {
+    setIsMouseDown(true);
+  };
+  
+  const handleMouseUp = () => {
+    setIsMouseDown(false);
+  };
+  
+  const handleMultiSelect = (account: Account) => {
+    const isSelected = multiSelectAccounts.some(a => a.id === account.id);
+    
+    let newSelectedAccounts: Account[];
+    if (isSelected) {
+      // Remove account if already selected
+      newSelectedAccounts = multiSelectAccounts.filter(a => a.id !== account.id);
+    } else {
+      // Add account if not already selected
+      newSelectedAccounts = [...multiSelectAccounts, account];
+    }
+    
+    setMultiSelectAccounts(newSelectedAccounts);
+    
+    if (onMultiSelect) {
+      onMultiSelect(newSelectedAccounts);
+    }
+  };
+  
+  const handleAccountMouseOver = (account: Account) => {
+    if (isMouseDown && onMultiSelect) {
+      handleMultiSelect(account);
+    }
+  };
+  
+  const isAccountSelected = (accountId: string) => {
+    return multiSelectAccounts.some(a => a.id === accountId) || (selectedAccount?.id === accountId);
   };
   
   const filteredGroups = accountGroups.filter(group => {
@@ -138,8 +194,17 @@ const AccountSelectionSidebar = ({
     );
   });
 
+  useEffect(() => {
+    // Add event listeners to handle mouse up outside component
+    document.addEventListener('mouseup', handleMouseUp);
+    
+    return () => {
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, []);
+
   return (
-    <Sidebar collapsible="icon" side="left" className="border-r">
+    <Sidebar collapsible="icon" side={side} className="border-r">
       <SidebarContent>
         <SidebarGroup>
           <div className="flex items-center px-2 py-2">
@@ -172,10 +237,7 @@ const AccountSelectionSidebar = ({
                         <Badge variant="outline" className="font-mono text-xs">
                           {formatCurrency(group.balance)}
                         </Badge>
-                        <div onClick={(e) => {
-                          e.stopPropagation();
-                          toggleGroup(group.id);
-                        }}>
+                        <div onClick={(e) => toggleGroup(group.id, e)}>
                           {expandedGroups.includes(group.id) ? (
                             <ChevronDown size={16} />
                           ) : (
@@ -194,11 +256,12 @@ const AccountSelectionSidebar = ({
                             account.accountId.includes(searchQuery)
                           )
                           .map((account) => (
-                            <SidebarMenuSubItem key={account.id}>
+                            <SidebarMenuSubItem key={account.id} onMouseDown={handleMouseDown}>
                               <SidebarMenuSubButton 
-                                onClick={() => handleAccountClick(account)}
-                                isActive={selectedAccount?.id === account.id}
-                                className="justify-between"
+                                onClick={(e: React.MouseEvent) => handleAccountClick(account, e)}
+                                onMouseOver={() => handleAccountMouseOver(account)}
+                                isActive={isAccountSelected(account.id)}
+                                className={`justify-between ${isAccountSelected(account.id) ? 'bg-primary-50 text-primary-600' : ''}`}
                               >
                                 <div className="flex items-center gap-2">
                                   <span className="text-xs font-mono text-muted-foreground">{account.accountId}</span>
