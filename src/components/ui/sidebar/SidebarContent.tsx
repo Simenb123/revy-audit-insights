@@ -8,12 +8,12 @@ export const SidebarContent = React.forwardRef<
   React.ComponentProps<"div">
 >(({ className, ...props }, ref) => {
   return (
-    <ScrollArea className="h-full">
+    <ScrollArea className="flex-1">
       <div
         ref={ref}
         data-sidebar="content"
         className={cn(
-          "flex min-h-0 flex-1 flex-col gap-2 p-2 group-data-[collapsible=icon]:overflow-hidden",
+          "flex flex-col gap-2 p-2 group-data-[collapsible=icon]:overflow-hidden",
           className
         )}
         {...props}

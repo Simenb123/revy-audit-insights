@@ -10,15 +10,13 @@ import {
   Users,
   Settings,
   HelpCircle,
-  ChevronsLeft
+  PanelLeft
 } from 'lucide-react';
 import {
   Sidebar as ShadcnSidebar,
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -80,12 +78,11 @@ const Sidebar = () => {
       className="border-r border-border" 
       collapsible="icon"
     >
-      <SidebarHeader className="py-4">
-        <div className="flex items-center justify-between px-4">
-          <h2 className="text-lg font-semibold text-sidebar-foreground">Navigasjon</h2>
-          <SidebarTrigger />
-        </div>
-      </SidebarHeader>
+      <div className="py-4 px-4 flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-white">Navigasjon</h2>
+        <SidebarTrigger className="h-8 w-8 text-white" />
+      </div>
+      
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupContent>
@@ -95,6 +92,7 @@ const Sidebar = () => {
                   <SidebarMenuButton
                     isActive={location.pathname === item.href}
                     tooltip={item.label}
+                    className="h-10"
                   >
                     <Link to={item.href} className="flex items-center w-full gap-3">
                       {item.icon}
@@ -115,6 +113,7 @@ const Sidebar = () => {
                   <SidebarMenuButton
                     isActive={location.pathname === item.href}
                     tooltip={item.label}
+                    className="h-10"
                   >
                     <Link to={item.href} className="flex items-center w-full gap-3">
                       {item.icon}

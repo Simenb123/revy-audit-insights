@@ -14,7 +14,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
     <SidebarProvider defaultOpen={true}>
       <div className="flex flex-col h-screen">
         <AppHeader />
-        <div className="flex flex-1 overflow-hidden w-full">
+        <div className="flex flex-1 w-full overflow-hidden">
           <Sidebar />
           <main className="flex-1 overflow-auto bg-gray-50">
             {children}

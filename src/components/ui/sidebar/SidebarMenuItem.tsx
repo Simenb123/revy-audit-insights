@@ -9,7 +9,7 @@ export const SidebarMenuItem = React.forwardRef<
   <li
     ref={ref}
     data-sidebar="menu-item"
-    className={cn("group/menu-item relative truncate", className)}
+    className={cn("group/menu-item relative", className)}
     {...props}
   />
 ))

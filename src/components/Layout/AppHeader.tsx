@@ -6,8 +6,10 @@ import Logo from './Logo';
 
 const AppHeader = () => {
   return (
-    <header className="w-full bg-revio-500 px-4 py-2 flex items-center justify-between">
-      <Logo />
+    <header className="w-full bg-revio-500 px-4 py-2 flex items-center justify-between border-b border-revio-600">
+      <div className="flex-1">
+        {/* Logo is rendered in Sidebar now */}
+      </div>
       
       <div className="flex items-center space-x-2">
         <Button variant="ghost" size="icon" className="text-white hover:bg-revio-600">
