@@ -98,7 +98,7 @@ const Sidebar = () => {
                   >
                     <Link to={item.href} className="flex items-center w-full gap-3">
                       {item.icon}
-                      <span>{item.label}</span>
+                      <span className="truncate">{item.label}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -118,7 +118,7 @@ const Sidebar = () => {
                   >
                     <Link to={item.href} className="flex items-center w-full gap-3">
                       {item.icon}
-                      <span>{item.label}</span>
+                      <span className="truncate">{item.label}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

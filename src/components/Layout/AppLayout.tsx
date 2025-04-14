@@ -11,18 +11,18 @@ interface AppLayoutProps {
 
 const AppLayout = ({ children }: AppLayoutProps) => {
   return (
-    <div className="flex flex-col h-screen">
-      <AppHeader />
-      <SidebarProvider defaultOpen={true}>
+    <SidebarProvider defaultOpen={true}>
+      <div className="flex flex-col h-screen">
+        <AppHeader />
         <div className="flex flex-1 overflow-hidden w-full">
           <Sidebar />
-          <main className="flex-1 overflow-auto p-6 bg-gray-50">
+          <main className="flex-1 overflow-auto bg-gray-50">
             {children}
           </main>
           <RevyAssistant />
         </div>
-      </SidebarProvider>
-    </div>
+      </div>
+    </SidebarProvider>
   );
 };
 
