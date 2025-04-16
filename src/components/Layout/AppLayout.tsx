@@ -22,9 +22,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
           
           {/* Main content with proper overflow handling */}
           <main className="flex-1 w-full overflow-auto">
-            <div className="w-full h-full">
-              {children}
-            </div>
+            {children}
           </main>
           
           <RevyAssistant />
