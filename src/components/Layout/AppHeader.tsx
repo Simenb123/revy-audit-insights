@@ -3,14 +3,15 @@ import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Bell, HelpCircle, Settings, User } from "lucide-react";
 import { useSidebar } from '@/components/ui/sidebar';
+import Logo from './Logo';
 
 const AppHeader = () => {
   const { state, toggleSidebar } = useSidebar();
   
   return (
-    <header className="w-full bg-revio-500 px-4 py-3 flex items-center justify-between border-b border-revio-600 z-10">
-      <div className="flex items-center">
-        {/* Empty space where the logo would go in a separate component */}
+    <header className="sticky top-0 w-full bg-revio-500 h-14 flex items-center justify-between px-4 border-b border-revio-600 z-20">
+      <div className="flex items-center gap-4">
+        <Logo />
       </div>
       
       <div className="flex items-center space-x-2">

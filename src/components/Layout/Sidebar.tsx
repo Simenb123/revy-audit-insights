@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
@@ -14,7 +13,6 @@ import {
   Sidebar as ShadcnSidebar,
   SidebarContent,
   SidebarGroup,
-  SidebarGroupLabel,
   SidebarGroupContent,
   SidebarMenu,
   SidebarMenuButton,
@@ -74,15 +72,15 @@ const Sidebar = () => {
   
   return (
     <ShadcnSidebar 
-      className="border-r border-border h-full"
+      className="border-r border-border h-full bg-white"
       collapsible="icon"
     >
-      <div className="p-4 flex items-center justify-between bg-revio-500">
-        <h2 className="text-lg font-semibold text-white">Navigasjon</h2>
-        <SidebarTrigger className="h-8 w-8 text-white hover:bg-revio-600 rounded-md" />
+      <div className="p-2 flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-revio-900 px-2">Navigasjon</h2>
+        <SidebarTrigger className="h-8 w-8 text-revio-900 hover:bg-revio-100 rounded-md" />
       </div>
       
-      <SidebarContent className="pt-2">
+      <SidebarContent>
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -94,8 +92,8 @@ const Sidebar = () => {
                     className="h-10"
                   >
                     <Link to={item.href} className="flex items-center w-full gap-3">
-                      <span className="text-white">{item.icon}</span>
-                      <span className="text-white truncate">{item.label}</span>
+                      <span className="text-revio-900">{item.icon}</span>
+                      <span className="text-revio-900 truncate">{item.label}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -105,7 +103,6 @@ const Sidebar = () => {
         </SidebarGroup>
         
         <SidebarGroup className="mt-auto">
-          <SidebarGroupLabel className="text-white/70">System</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {bottomNavItems.map((item) => (
@@ -116,8 +113,8 @@ const Sidebar = () => {
                     className="h-10"
                   >
                     <Link to={item.href} className="flex items-center w-full gap-3">
-                      <span className="text-white">{item.icon}</span>
-                      <span className="text-white truncate">{item.label}</span>
+                      <span className="text-revio-900">{item.icon}</span>
+                      <span className="text-revio-900 truncate">{item.label}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
