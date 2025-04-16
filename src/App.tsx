@@ -19,24 +19,26 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <RevyContextProvider>
-        <SidebarProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<AppLayout><Index /></AppLayout>} />
-              <Route path="/dashboard" element={<Navigate to="/" replace />} />
-              <Route path="/analyser" element={<AppLayout><AccountingExplorer /></AppLayout>} />
-              <Route path="/analyser/transaksjoner" element={<AppLayout><TransactionSampling /></AppLayout>} />
-              <Route path="/dokumenter" element={<AppLayout><Index /></AppLayout>} />
-              <Route path="/prosjekter" element={<AppLayout><Index /></AppLayout>} />
-              <Route path="/klienter" element={<AppLayout><ClientsOverview /></AppLayout>} />
-              <Route path="/innstillinger" element={<AppLayout><Index /></AppLayout>} />
-              <Route path="/hjelp" element={<AppLayout><Index /></AppLayout>} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </SidebarProvider>
+        <BrowserRouter>
+          <SidebarProvider>
+            <div className="flex flex-col w-full h-screen">
+              <Toaster />
+              <Sonner />
+              <Routes>
+                <Route path="/" element={<AppLayout><Index /></AppLayout>} />
+                <Route path="/dashboard" element={<Navigate to="/" replace />} />
+                <Route path="/analyser" element={<AppLayout><AccountingExplorer /></AppLayout>} />
+                <Route path="/analyser/transaksjoner" element={<AppLayout><TransactionSampling /></AppLayout>} />
+                <Route path="/dokumenter" element={<AppLayout><Index /></AppLayout>} />
+                <Route path="/prosjekter" element={<AppLayout><Index /></AppLayout>} />
+                <Route path="/klienter" element={<AppLayout><ClientsOverview /></AppLayout>} />
+                <Route path="/innstillinger" element={<AppLayout><Index /></AppLayout>} />
+                <Route path="/hjelp" element={<AppLayout><Index /></AppLayout>} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </div>
+          </SidebarProvider>
+        </BrowserRouter>
       </RevyContextProvider>
     </TooltipProvider>
   </QueryClientProvider>

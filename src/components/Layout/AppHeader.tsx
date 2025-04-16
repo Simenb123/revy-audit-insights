@@ -41,11 +41,10 @@ const AppHeader = () => {
         <Logo />
       </div>
 
-      <div className="hidden md:flex items-center justify-center relative">
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-20 animate-pulse" />
-        <h1 className="text-2xl font-semibold text-white tracking-wide relative px-6 py-1 rounded-lg">
+      <div className="hidden md:flex items-center justify-center">
+        <h1 className="text-2xl font-bold text-white relative px-8 py-2">
           {pageTitle}
-          <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-16 h-0.5 bg-white/30 rounded-full" />
+          <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-20 h-0.5 bg-white rounded-full opacity-60" />
         </h1>
       </div>
       

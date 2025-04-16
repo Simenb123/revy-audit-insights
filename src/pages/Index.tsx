@@ -25,16 +25,16 @@ const Index = () => {
   }, [activeTab, setContext]);
   
   return (
-    <div className="max-w-7xl mx-auto px-6 py-8">
-      <div className="flex justify-between items-center mb-8">
+    <div className="w-full px-4 py-6 md:px-6 lg:px-8">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-4xl font-bold">Velkommen til Revio</h1>
+          <h1 className="text-3xl md:text-4xl font-bold">Velkommen til Revio</h1>
           <p className="text-muted-foreground mt-1">
             Din revisjonshjelper for effektiv analyse og dokumentasjon
           </p>
         </div>
         
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           <Button variant="outline" className="gap-2">
             <Search size={16} />
             <span>Søk</span>
@@ -50,8 +50,8 @@ const Index = () => {
         </div>
       </div>
       
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
-        <TabsList className="grid grid-cols-3 w-[400px]">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full mb-6">
+        <TabsList className="grid grid-cols-3 w-full max-w-md">
           <TabsTrigger value="dashboard" className="flex items-center gap-2">
             <BarChart2 size={16} />
             <span>Dashboard</span>
@@ -66,11 +66,11 @@ const Index = () => {
           </TabsTrigger>
         </TabsList>
         
-        <TabsContent value="dashboard" className="mt-6">
+        <TabsContent value="dashboard" className="mt-6 w-full">
           <DashboardGrid />
         </TabsContent>
         
-        <TabsContent value="upload" className="mt-6">
+        <TabsContent value="upload" className="mt-6 w-full">
           <div className="grid grid-cols-1 gap-6">
             <FileUploader />
             
@@ -94,7 +94,7 @@ const Index = () => {
           </div>
         </TabsContent>
         
-        <TabsContent value="drilldown" className="mt-6">
+        <TabsContent value="drilldown" className="mt-6 w-full">
           <DrillDownTable />
         </TabsContent>
       </Tabs>
