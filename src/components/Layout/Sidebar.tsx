@@ -10,14 +10,14 @@ import {
   Settings,
   HelpCircle,
   ChevronLeft,
-  ChevronRight,
-  Menu
+  ChevronRight
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useToggle } from '@/hooks/use-toggle';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { useSidebar } from '@/components/ui/sidebar';
 
 type NavItem = {
   label: string;
@@ -68,12 +68,9 @@ const bottomNavItems: NavItem[] = [
 
 const Sidebar = () => {
   const location = useLocation();
-  const [isCollapsed, toggleCollapsed] = useToggle(false);
+  const { state, toggleSidebar } = useSidebar();
+  const isCollapsed = state === "collapsed";
   
-  const handleToggle = () => {
-    toggleCollapsed();
-  };
-
   const NavItem = ({ item, isActive }: { item: NavItem; isActive: boolean }) => {
     return (
       <Tooltip>
@@ -107,7 +104,7 @@ const Sidebar = () => {
         <Button
           variant="ghost"
           size="icon"
-          onClick={handleToggle}
+          onClick={toggleSidebar}
           className={cn(
             "h-8 w-8 text-revio-900 hover:bg-revio-100 rounded-md",
             isCollapsed && "mx-auto"
