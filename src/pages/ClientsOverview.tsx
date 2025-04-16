@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useRevyContext } from '@/components/RevyContext/RevyContextProvider';
 import ClientStatsGrid from '@/components/Clients/ClientStats/ClientStatsGrid';
@@ -6,6 +7,7 @@ import AnnouncementsList from '@/components/Clients/Announcements/AnnouncementsL
 import ClientFilters from '@/components/Clients/ClientFilters/ClientFilters';
 import { useClientFilter } from '@/hooks/use-client-filter';
 import { mockClients, mockAnnouncements } from '@/data/mockClients';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 
 const ClientsOverview = () => {
   const { setContext } = useRevyContext();
