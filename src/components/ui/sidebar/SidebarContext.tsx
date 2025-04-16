@@ -1,3 +1,4 @@
+
 import * as React from "react"
 import { TooltipProvider } from "@/components/ui/tooltip"
 
@@ -81,7 +82,7 @@ export const SidebarProvider = React.forwardRef<
         : setOpen((open) => !open)
     }, [isMobile, setOpen, setOpenMobile])
 
-    // Adds a keyboard shortcut to toggle the sidebar.
+    // Add keyboard shortcut
     React.useEffect(() => {
       const handleKeyDown = (event: KeyboardEvent) => {
         if (

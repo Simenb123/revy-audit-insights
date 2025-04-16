@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
@@ -80,12 +81,13 @@ const Sidebar = () => {
       collapsible="icon"
     >
       <div className="p-2 flex items-center justify-between border-b">
-        <h2 className="text-lg font-semibold text-revio-900 px-2">Navigasjon</h2>
+        <h2 className={`text-lg font-semibold text-revio-900 px-2 ${state === 'collapsed' ? 'hidden' : 'block'}`}>Navigasjon</h2>
         <Button
           variant="ghost"
           size="icon"
           onClick={toggleSidebar}
           className="h-8 w-8 text-revio-900 hover:bg-revio-100 rounded-md"
+          aria-label={state === 'collapsed' ? 'Utvid sidemeny' : 'Skjul sidemeny'}
         >
           {state === 'collapsed' ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
         </Button>
