@@ -14,12 +14,14 @@ const AppLayout = ({ children }: AppLayoutProps) => {
   return (
     <TooltipProvider delayDuration={0}>
       <SidebarProvider>
-        <div className="flex flex-col h-screen w-full overflow-hidden">
+        <div className="flex flex-col min-h-screen w-full overflow-hidden bg-background">
           <AppHeader />
           <div className="flex flex-1 overflow-hidden">
             <Sidebar />
-            <main className="flex-1 overflow-auto">
-              {children}
+            <main className="flex-1 overflow-auto relative">
+              <div className="container mx-auto px-4 py-8 max-w-7xl min-w-0">
+                {children}
+              </div>
             </main>
             <RevyAssistant />
           </div>
