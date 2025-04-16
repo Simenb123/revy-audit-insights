@@ -26,7 +26,7 @@ const ClientsOverview = () => {
   }, [setContext]);
   
   return (
-    <div className="w-full px-4 py-6 md:px-6 lg:px-8">
+    <div className="container mx-auto h-full w-full p-4 md:p-6 lg:p-8 overflow-y-auto">
       <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-bold">Mine klienter</h1>
@@ -46,7 +46,7 @@ const ClientsOverview = () => {
       
       <ClientStatsGrid clients={mockClients} announcements={mockAnnouncements} />
       
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mt-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mt-6 pb-20">
         <div className="col-span-1 lg:col-span-3">
           <Card>
             <CardHeader>
