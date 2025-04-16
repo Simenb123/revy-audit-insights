@@ -35,7 +35,7 @@
 
     --radius: 0.5rem;
 
-    /* Updated sidebar colors to match design */
+    /* Updated sidebar colors to match teal design */
     --sidebar-background: 173 49% 39%;
     --sidebar-foreground: 0 0% 100%;
     --sidebar-primary: 174 57% 80%;
@@ -44,6 +44,13 @@
     --sidebar-accent-foreground: 0 0% 100%;
     --sidebar-border: 173 49% 35%;
     --sidebar-ring: 174 57% 80%;
+    
+    /* Revio specific colors */
+    --revio-100: 174 57% 95%;
+    --revio-500: 173 49% 39%;
+    --revio-600: 173 49% 35%;
+    --revio-700: 173 49% 30%;
+    --revio-900: 173 49% 15%;
   }
 
   .dark {

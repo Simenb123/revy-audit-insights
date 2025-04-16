@@ -13,7 +13,7 @@ export const SidebarContent = React.forwardRef<
         ref={ref}
         data-sidebar="content"
         className={cn(
-          "flex flex-col gap-2 p-2 group-data-[collapsible=icon]:overflow-hidden",
+          "flex flex-col gap-2 p-2 overflow-hidden",
           className
         )}
         {...props}

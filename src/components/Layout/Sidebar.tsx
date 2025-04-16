@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { cn } from '@/lib/utils';
 import { 
   BarChart2, 
   FileText, 
@@ -10,12 +9,12 @@ import {
   Users,
   Settings,
   HelpCircle,
-  PanelLeft
 } from 'lucide-react';
 import {
   Sidebar as ShadcnSidebar,
   SidebarContent,
   SidebarGroup,
+  SidebarGroupLabel,
   SidebarGroupContent,
   SidebarMenu,
   SidebarMenuButton,
@@ -75,15 +74,15 @@ const Sidebar = () => {
   
   return (
     <ShadcnSidebar 
-      className="border-r border-border" 
+      className="border-r border-border h-full"
       collapsible="icon"
     >
-      <div className="py-4 px-4 flex items-center justify-between">
+      <div className="p-4 flex items-center justify-between bg-revio-500">
         <h2 className="text-lg font-semibold text-white">Navigasjon</h2>
-        <SidebarTrigger className="h-8 w-8 text-white" />
+        <SidebarTrigger className="h-8 w-8 text-white hover:bg-revio-600 rounded-md" />
       </div>
       
-      <SidebarContent>
+      <SidebarContent className="pt-2">
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -95,8 +94,8 @@ const Sidebar = () => {
                     className="h-10"
                   >
                     <Link to={item.href} className="flex items-center w-full gap-3">
-                      {item.icon}
-                      <span className="truncate">{item.label}</span>
+                      <span className="text-white">{item.icon}</span>
+                      <span className="text-white truncate">{item.label}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -106,6 +105,7 @@ const Sidebar = () => {
         </SidebarGroup>
         
         <SidebarGroup className="mt-auto">
+          <SidebarGroupLabel className="text-white/70">System</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {bottomNavItems.map((item) => (
@@ -116,8 +116,8 @@ const Sidebar = () => {
                     className="h-10"
                   >
                     <Link to={item.href} className="flex items-center w-full gap-3">
-                      {item.icon}
-                      <span className="truncate">{item.label}</span>
+                      <span className="text-white">{item.icon}</span>
+                      <span className="text-white truncate">{item.label}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
