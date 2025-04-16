@@ -4,10 +4,26 @@ import { Button } from "@/components/ui/button";
 import { Bell, HelpCircle, Settings, User, Menu } from "lucide-react";
 import Logo from './Logo';
 import { useSidebar } from '@/components/ui/sidebar';
+import { useLocation } from 'react-router-dom';
 
 const AppHeader = () => {
   const { toggleSidebar } = useSidebar();
+  const location = useLocation();
   
+  // Map routes to display names
+  const getPageTitle = (pathname: string) => {
+    const routes: Record<string, string> = {
+      '/': 'Dashboard',
+      '/analyser': 'Analyser',
+      '/dokumenter': 'Dokumenter',
+      '/prosjekter': 'Prosjekter',
+      '/klienter': 'Klienter',
+      '/innstillinger': 'Innstillinger',
+      '/hjelp': 'Hjelp'
+    };
+    return routes[pathname] || 'Dashboard';
+  };
+
   return (
     <header className="sticky top-0 w-full bg-revio-500 h-14 flex items-center justify-between px-4 border-b border-revio-600 z-20">
       <div className="flex items-center gap-4">
@@ -21,6 +37,12 @@ const AppHeader = () => {
           <span className="sr-only">Toggle sidebar</span>
         </Button>
         <Logo />
+      </div>
+
+      <div className="hidden md:block">
+        <h1 className="text-xl font-semibold text-white">
+          {getPageTitle(location.pathname)}
+        </h1>
       </div>
       
       <div className="flex items-center space-x-2">

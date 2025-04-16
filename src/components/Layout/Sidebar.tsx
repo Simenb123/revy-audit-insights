@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
@@ -14,7 +13,6 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { useToggle } from '@/hooks/use-toggle';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useSidebar } from '@/components/ui/sidebar';
@@ -95,7 +93,7 @@ const Sidebar = () => {
   return (
     <div 
       className={cn(
-        "sticky top-14 h-[calc(100vh-3.5rem)] border-r border-border bg-white transition-all duration-300",
+        "h-[calc(100vh-3.5rem)] border-r border-border bg-white transition-all duration-300",
         isCollapsed ? "w-[64px]" : "w-[240px]"
       )}
     >
