@@ -11,18 +11,13 @@ import {
   HelpCircle,
   ChevronLeft,
   ChevronRight,
+  Menu
 } from 'lucide-react';
-import {
-  Sidebar as ShadcnSidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  useSidebar,
-} from "@/components/ui/sidebar";
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import { useToggle } from '@/hooks/use-toggle';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 type NavItem = {
   label: string;
@@ -73,70 +68,80 @@ const bottomNavItems: NavItem[] = [
 
 const Sidebar = () => {
   const location = useLocation();
-  const { state, toggleSidebar } = useSidebar();
+  const [isCollapsed, toggleCollapsed] = useToggle(false);
   
+  const handleToggle = () => {
+    toggleCollapsed();
+  };
+
+  const NavItem = ({ item, isActive }: { item: NavItem; isActive: boolean }) => {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Link 
+            to={item.href} 
+            className={cn(
+              "flex h-10 items-center gap-3 rounded-md px-3 py-2 text-sm transition-all hover:bg-revio-100",
+              isActive && "bg-revio-100 font-medium",
+              isCollapsed && "justify-center px-2"
+            )}
+          >
+            <span className="text-revio-900">{item.icon}</span>
+            {!isCollapsed && <span className="text-revio-900 truncate">{item.label}</span>}
+          </Link>
+        </TooltipTrigger>
+        {isCollapsed && <TooltipContent side="right">{item.label}</TooltipContent>}
+      </Tooltip>
+    );
+  };
+
   return (
-    <ShadcnSidebar 
-      className="border-r border-border h-full bg-white"
-      collapsible="icon"
+    <div 
+      className={cn(
+        "sticky top-14 h-[calc(100vh-3.5rem)] border-r border-border bg-white transition-all duration-300",
+        isCollapsed ? "w-[64px]" : "w-[240px]"
+      )}
     >
       <div className="p-2 flex items-center justify-between border-b">
-        <h2 className={`text-lg font-semibold text-revio-900 px-2 ${state === 'collapsed' ? 'hidden' : 'block'}`}>Navigasjon</h2>
+        {!isCollapsed && <h2 className="text-lg font-semibold text-revio-900 px-2">Navigasjon</h2>}
         <Button
           variant="ghost"
           size="icon"
-          onClick={toggleSidebar}
-          className="h-8 w-8 text-revio-900 hover:bg-revio-100 rounded-md"
-          aria-label={state === 'collapsed' ? 'Utvid sidemeny' : 'Skjul sidemeny'}
+          onClick={handleToggle}
+          className={cn(
+            "h-8 w-8 text-revio-900 hover:bg-revio-100 rounded-md",
+            isCollapsed && "mx-auto"
+          )}
+          aria-label={isCollapsed ? "Utvid sidemeny" : "Skjul sidemeny"}
         >
-          {state === 'collapsed' ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
+          {isCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
         </Button>
       </div>
       
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {mainNavItems.map((item) => (
-                <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton
-                    isActive={location.pathname === item.href}
-                    tooltip={item.label}
-                    className="h-10"
-                  >
-                    <Link to={item.href} className="flex items-center w-full gap-3">
-                      <span className="text-revio-900">{item.icon}</span>
-                      <span className="text-revio-900 truncate">{item.label}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-        
-        <SidebarGroup className="mt-auto">
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {bottomNavItems.map((item) => (
-                <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton
-                    isActive={location.pathname === item.href}
-                    tooltip={item.label}
-                    className="h-10"
-                  >
-                    <Link to={item.href} className="flex items-center w-full gap-3">
-                      <span className="text-revio-900">{item.icon}</span>
-                      <span className="text-revio-900 truncate">{item.label}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
-    </ShadcnSidebar>
+      <ScrollArea className="h-full pb-10">
+        <div className="flex flex-col h-full justify-between p-2">
+          <div className="space-y-1">
+            {mainNavItems.map((item) => (
+              <NavItem 
+                key={item.href} 
+                item={item} 
+                isActive={location.pathname === item.href} 
+              />
+            ))}
+          </div>
+          
+          <div className="space-y-1 pt-2 border-t">
+            {bottomNavItems.map((item) => (
+              <NavItem 
+                key={item.href} 
+                item={item} 
+                isActive={location.pathname === item.href} 
+              />
+            ))}
+          </div>
+        </div>
+      </ScrollArea>
+    </div>
   );
 };
 

@@ -3,7 +3,7 @@ import React, { ReactNode } from 'react';
 import AppHeader from './AppHeader';
 import Sidebar from './Sidebar';
 import RevyAssistant from '../Revy/RevyAssistant';
-import { SidebarProvider } from "@/components/ui/sidebar";
+import { TooltipProvider } from '@/components/ui/tooltip';
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -11,7 +11,7 @@ interface AppLayoutProps {
 
 const AppLayout = ({ children }: AppLayoutProps) => {
   return (
-    <SidebarProvider defaultOpen={true}>
+    <TooltipProvider delayDuration={0}>
       <div className="flex flex-col h-screen w-full overflow-hidden">
         <AppHeader />
         <div className="flex flex-1 overflow-hidden">
@@ -22,7 +22,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
           <RevyAssistant />
         </div>
       </div>
-    </SidebarProvider>
+    </TooltipProvider>
   );
 };
 
