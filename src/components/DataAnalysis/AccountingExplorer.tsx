@@ -37,7 +37,7 @@ const AccountingExplorer = () => {
   };
   
   return (
-    <div className="w-full h-full max-w-[2000px] mx-auto px-4 py-6 md:px-6 lg:px-8">
+    <div className="container mx-auto py-6">
       <div className="flex justify-between items-center mb-6">
         <div>
           <div className="flex items-center gap-2 mb-2">
@@ -63,7 +63,7 @@ const AccountingExplorer = () => {
       <MaterialityBanner />
       
       <Tabs defaultValue="drilldown" className="mb-8">
-        <TabsList className="grid grid-cols-4 w-full max-w-[600px]">
+        <TabsList className="grid grid-cols-4 w-[600px]">
           <TabsTrigger value="drilldown" className="flex items-center gap-2">
             <BarChart4 size={16} />
             <span>Drill-down</span>

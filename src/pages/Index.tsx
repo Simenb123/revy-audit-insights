@@ -25,7 +25,7 @@ const Index = () => {
   }, [activeTab, setContext]);
   
   return (
-    <div className="container mx-auto h-full w-full p-4 md:p-6 lg:p-8 overflow-y-auto">
+    <div className="w-full px-4 py-6 md:px-6 lg:px-8">
       <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-8">
         <div>
           <h1 className="text-3xl md:text-4xl font-bold">Velkommen til Revio</h1>

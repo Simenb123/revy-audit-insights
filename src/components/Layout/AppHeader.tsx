@@ -15,7 +15,6 @@ const AppHeader = () => {
     const routes: Record<string, string> = {
       '/': 'Dashboard',
       '/analyser': 'Analyser',
-      '/analyser/transaksjoner': 'Transaksjonsutvalg',
       '/dokumenter': 'Dokumenter',
       '/prosjekter': 'Prosjekter',
       '/klienter': 'Klienter',
@@ -42,10 +41,10 @@ const AppHeader = () => {
         <Logo />
       </div>
 
-      <div className="flex items-center justify-center">
+      <div className="hidden md:flex items-center justify-center">
         <h1 className="text-2xl font-bold text-white relative px-8 py-2">
           {pageTitle}
-          <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-white to-transparent rounded-full opacity-60" />
+          <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-20 h-0.5 bg-white rounded-full opacity-60" />
         </h1>
       </div>
       

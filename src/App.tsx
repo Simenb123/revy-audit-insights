@@ -20,7 +20,7 @@ const App = () => (
     <TooltipProvider>
       <RevyContextProvider>
         <BrowserRouter>
-          <SidebarProvider defaultOpen={true}>
+          <SidebarProvider>
             <div className="flex flex-col w-full h-screen">
               <Toaster />
               <Sonner />
