@@ -37,7 +37,7 @@ const AccountingExplorer = () => {
   };
   
   return (
-    <div className="container mx-auto py-6">
+    <div className="w-full px-4 py-6 md:px-6 lg:px-8">
       <div className="flex justify-between items-center mb-6">
         <div>
           <div className="flex items-center gap-2 mb-2">
