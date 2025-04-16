@@ -12,21 +12,22 @@ interface AppLayoutProps {
 const AppLayout = ({ children }: AppLayoutProps) => {
   return (
     <TooltipProvider delayDuration={0}>
-      <div className="flex flex-col h-screen w-full bg-background">
+      <div className="flex h-screen w-full overflow-hidden bg-background">
         {/* Fixed header */}
         <AppHeader />
         
-        {/* Flexible content area */}
-        <div className="flex flex-1 overflow-hidden">
+        {/* Main layout with sidebar and content */}
+        <div className="flex w-full h-[calc(100vh-3.5rem)] overflow-hidden">
           <Sidebar />
           
-          {/* Main content with proper overflow handling */}
-          <main className="flex-1 w-full overflow-auto">
-            <div className="w-full h-full">
+          {/* Main content area that will properly expand and scroll */}
+          <main className="flex-1 overflow-auto w-full relative">
+            <div className="w-full min-h-full">
               {children}
             </div>
           </main>
           
+          {/* Revy assistant fixed at bottom right */}
           <RevyAssistant />
         </div>
       </div>

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useRevyContext } from '@/components/RevyContext/RevyContextProvider';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -163,7 +164,7 @@ const ClientsOverview = () => {
   const departments = Array.from(new Set(mockClients.map(client => client.department))).filter(Boolean) as string[];
   
   return (
-    <div className="max-w-7xl mx-auto px-6 py-6">
+    <div className="w-full h-full max-w-[2000px] mx-auto px-6 py-6">
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-3xl font-bold">Mine klienter</h1>
@@ -183,8 +184,8 @@ const ClientsOverview = () => {
       
       <ClientStatsGrid clients={mockClients} announcements={mockAnnouncements} />
       
-      <div className="grid grid-cols-4 gap-6">
-        <div className="col-span-3">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div className="col-span-1 lg:col-span-3">
           <Card>
             <CardHeader>
               <CardTitle>Klientliste</CardTitle>
