@@ -12,11 +12,11 @@ interface AppLayoutProps {
 const AppLayout = ({ children }: AppLayoutProps) => {
   return (
     <SidebarProvider defaultOpen={true}>
-      <div className="flex flex-col h-screen w-full">
+      <div className="flex flex-col h-screen w-full overflow-hidden">
         <AppHeader />
         <div className="flex flex-1 overflow-hidden">
           <Sidebar />
-          <main className="flex-1 overflow-auto p-6 transition-all duration-300">
+          <main className="flex-1 overflow-auto">
             {children}
           </main>
           <RevyAssistant />
