@@ -21,8 +21,10 @@ const AppLayout = ({ children }: AppLayoutProps) => {
           <Sidebar />
           
           {/* Main content area that will properly expand and scroll */}
-          <main className="flex-1 overflow-y-auto">
-            {children}
+          <main className="flex-1 overflow-y-auto relative">
+            <div className="h-full w-full">
+              {children}
+            </div>
           </main>
           
           {/* Revy assistant fixed at bottom right */}
