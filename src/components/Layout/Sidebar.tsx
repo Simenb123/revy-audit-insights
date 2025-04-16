@@ -8,6 +8,8 @@ import {
   Users,
   Settings,
   HelpCircle,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import {
   Sidebar as ShadcnSidebar,
@@ -17,8 +19,9 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarTrigger
+  useSidebar,
 } from "@/components/ui/sidebar";
+import { Button } from '@/components/ui/button';
 
 type NavItem = {
   label: string;
@@ -69,15 +72,23 @@ const bottomNavItems: NavItem[] = [
 
 const Sidebar = () => {
   const location = useLocation();
+  const { state, toggleSidebar } = useSidebar();
   
   return (
     <ShadcnSidebar 
       className="border-r border-border h-full bg-white"
       collapsible="icon"
     >
-      <div className="p-2 flex items-center justify-between">
+      <div className="p-2 flex items-center justify-between border-b">
         <h2 className="text-lg font-semibold text-revio-900 px-2">Navigasjon</h2>
-        <SidebarTrigger className="h-8 w-8 text-revio-900 hover:bg-revio-100 rounded-md" />
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={toggleSidebar}
+          className="h-8 w-8 text-revio-900 hover:bg-revio-100 rounded-md"
+        >
+          {state === 'collapsed' ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
+        </Button>
       </div>
       
       <SidebarContent>
