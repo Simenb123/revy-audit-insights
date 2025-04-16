@@ -24,6 +24,8 @@ const AppHeader = () => {
     return routes[pathname] || 'Dashboard';
   };
 
+  const pageTitle = getPageTitle(location.pathname);
+
   return (
     <header className="sticky top-0 w-full bg-revio-500 h-14 flex items-center justify-between px-4 border-b border-revio-600 z-20">
       <div className="flex items-center gap-4">
@@ -42,7 +44,7 @@ const AppHeader = () => {
       <div className="hidden md:flex items-center justify-center relative">
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-20 animate-pulse" />
         <h1 className="text-2xl font-semibold text-white tracking-wide relative px-6 py-1 rounded-lg">
-          {getPageTitle(location.pathname)}
+          {pageTitle}
           <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-16 h-0.5 bg-white/30 rounded-full" />
         </h1>
       </div>
