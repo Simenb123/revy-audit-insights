@@ -1,4 +1,3 @@
-
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -9,18 +8,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Client, AuditPhase } from "@/types/revio";
+import { Client } from "@/types/revio";
+import { phaseLabels } from "@/utils/clientHelpers";
 
 interface ClientsTableProps {
   clients: Client[];
 }
-
-const phaseLabels: Record<AuditPhase, string> = {
-  'engagement': 'Oppdragsvurdering',
-  'planning': 'Planlegging',
-  'execution': 'Utførelse',
-  'conclusion': 'Avslutning'
-};
 
 const ClientsTable = ({ clients }: ClientsTableProps) => {
   return (
