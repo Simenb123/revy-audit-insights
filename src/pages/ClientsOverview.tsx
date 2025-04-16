@@ -26,42 +26,40 @@ const ClientsOverview = () => {
   }, [setContext]);
   
   return (
-    <div className="w-full h-full">
-      <div className="container mx-auto px-4 py-6 max-w-[2000px]">
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h1 className="text-3xl font-bold">Mine klienter</h1>
-            <p className="text-muted-foreground mt-1">
-              Oversikt over klienter og revisjonsstatus
-            </p>
-          </div>
-          
-          <ClientFilters 
-            searchTerm={searchTerm}
-            onSearchChange={setSearchTerm}
-            departmentFilter={departmentFilter}
-            onDepartmentChange={setDepartmentFilter}
-            departments={departments}
-          />
+    <div className="w-full px-4 py-6 md:px-6 lg:px-8">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-8">
+        <div>
+          <h1 className="text-3xl font-bold">Mine klienter</h1>
+          <p className="text-muted-foreground mt-1">
+            Oversikt over klienter og revisjonsstatus
+          </p>
         </div>
         
-        <ClientStatsGrid clients={mockClients} announcements={mockAnnouncements} />
+        <ClientFilters 
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          departmentFilter={departmentFilter}
+          onDepartmentChange={setDepartmentFilter}
+          departments={departments}
+        />
+      </div>
+      
+      <ClientStatsGrid clients={mockClients} announcements={mockAnnouncements} />
+      
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mt-6">
+        <div className="col-span-1 lg:col-span-3">
+          <Card>
+            <CardHeader>
+              <CardTitle>Klientliste</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ClientsTable clients={filteredClients} />
+            </CardContent>
+          </Card>
+        </div>
         
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mt-6">
-          <div className="col-span-1 lg:col-span-3">
-            <Card>
-              <CardHeader>
-                <CardTitle>Klientliste</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ClientsTable clients={filteredClients} />
-              </CardContent>
-            </Card>
-          </div>
-          
-          <div className="col-span-1">
-            <AnnouncementsList announcements={mockAnnouncements} />
-          </div>
+        <div className="col-span-1">
+          <AnnouncementsList announcements={mockAnnouncements} />
         </div>
       </div>
     </div>
