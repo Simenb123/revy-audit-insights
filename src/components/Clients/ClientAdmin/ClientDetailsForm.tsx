@@ -48,7 +48,7 @@ const ClientDetailsForm = ({ form }: ClientDetailsFormProps) => {
 
       <FormFieldWrapper form={form} name="phase" label="Revisjonsfase" required>
         <Select
-          onValueChange={form.getValues().phase}
+          onValueChange={(value) => form.setValue('phase', value)}
           defaultValue={form.getValues().phase}
         >
           <SelectTrigger>
