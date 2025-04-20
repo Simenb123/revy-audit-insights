@@ -1,7 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import { useRevyContext } from '@/components/RevyContext/RevyContextProvider';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Client, Announcement, RiskArea, ClientDocument } from '@/types/revio';
+import { Client, Announcement } from '@/types/revio';
 import ClientStatsGrid from '@/components/Clients/ClientStats/ClientStatsGrid';
 import ClientsTable from '@/components/Clients/ClientsTable/ClientsTable';
 import AnnouncementsList from '@/components/Clients/Announcements/AnnouncementsList';
@@ -57,7 +58,7 @@ const ClientsOverview = () => {
       // Transform data to match our Client type
       return clientsData.map(client => {
         // Find risk areas for this client
-        const clientRiskAreas: RiskArea[] = (riskAreasData || [])
+        const clientRiskAreas = (riskAreasData || [])
           .filter(area => area.client_id === client.id)
           .map(area => ({
             name: area.name,
@@ -65,7 +66,7 @@ const ClientsOverview = () => {
           }));
 
         // Find documents for this client
-        const clientDocuments: ClientDocument[] = (documentsData || [])
+        const clientDocuments = (documentsData || [])
           .filter(doc => doc.client_id === client.id)
           .map(doc => ({
             type: doc.type,
@@ -86,7 +87,6 @@ const ClientsOverview = () => {
           });
         }
 
-        // Map the Supabase client to our Client type
         return {
           id: client.id,
           name: client.name,
@@ -120,12 +120,6 @@ const ClientsOverview = () => {
   React.useEffect(() => {
     setContext('client-overview');
   }, [setContext]);
-
-  // Fetch announcements in the future if needed
-  useEffect(() => {
-    // Placeholder for fetching announcements
-    // You might want to implement this similarly to how clients are fetched
-  }, []);
 
   // Filter clients based on search term and department
   const filteredClients = clients.filter(client => {
