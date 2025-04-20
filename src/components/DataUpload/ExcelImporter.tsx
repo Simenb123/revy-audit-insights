@@ -9,7 +9,11 @@ import { Progress } from "@/components/ui/progress";
 import { AlertCircle, FileSpreadsheet, Check, Users, Info } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-const ExcelImporter = () => {
+interface ExcelImporterProps {
+  onImportSuccess?: (data: { filename: string, importedCount: number }) => void;
+}
+
+const ExcelImporter = ({ onImportSuccess }: ExcelImporterProps) => {
   const [isImporting, setIsImporting] = useState(false);
   const [progress, setProgress] = useState(0);
   const [totalRows, setTotalRows] = useState(0);
@@ -18,6 +22,7 @@ const ExcelImporter = () => {
   const [successCount, setSuccessCount] = useState(0);
   const [hasError, setHasError] = useState(false);
   const [errorDetails, setErrorDetails] = useState<string>('');
+  const [fileName, setFileName] = useState<string>('');
   const { toast } = useToast();
 
   const processOrgNumber = async (orgNumber: string) => {
@@ -82,6 +87,7 @@ const ExcelImporter = () => {
       setImportComplete(false);
       setHasError(false);
       setErrorDetails('');
+      setFileName(file.name);
 
       const reader = new FileReader();
       reader.onload = async (e) => {
@@ -107,6 +113,14 @@ const ExcelImporter = () => {
 
           setSuccessCount(successful);
           setImportComplete(true);
+
+          // Notify parent component of successful import
+          if (onImportSuccess) {
+            onImportSuccess({
+              filename: file.name,
+              importedCount: successful
+            });
+          }
 
           toast({
             title: "Import fullført",
@@ -193,7 +207,7 @@ const ExcelImporter = () => {
               </div>
               <h3 className="text-lg font-medium text-green-800">Import fullført</h3>
               <p className="text-center text-green-700 mt-2">
-                {successCount} av {totalRows} klienter ble importert til databasen
+                {successCount} av {totalRows} klienter ble importert til databasen fra filen {fileName}
               </p>
               {successCount > 0 && (
                 <div className="mt-4 p-3 bg-blue-50 border border-blue-100 rounded flex items-start gap-2 text-sm">

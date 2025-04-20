@@ -1,12 +1,27 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import ExcelImporter from '@/components/DataUpload/ExcelImporter';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, Users, FileSpreadsheet } from 'lucide-react';
+import { ChevronLeft, Users, FileSpreadsheet, ArrowRight } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const DataImport = () => {
+  const [recentUpload, setRecentUpload] = useState<{
+    filename: string;
+    timestamp: string;
+    importedCount: number;
+  } | null>(null);
+
+  const handleImportSuccess = (data: { filename: string, importedCount: number }) => {
+    setRecentUpload({
+      filename: data.filename,
+      timestamp: new Date().toLocaleString(),
+      importedCount: data.importedCount
+    });
+  };
+
   return (
     <div className="container mx-auto py-8">
       <div className="flex items-center mb-6">
@@ -28,32 +43,65 @@ const DataImport = () => {
         <p className="mt-2">Etter importering vil du finne klientene dine i <Link to="/klienter" className="text-blue-600 hover:underline font-medium">klientoversikten</Link>.</p>
       </div>
       
-      <ExcelImporter />
+      {recentUpload ? (
+        <div className="mb-6">
+          <Alert className="bg-green-50 border-green-200">
+            <FileSpreadsheet className="h-5 w-5 text-green-600" />
+            <AlertTitle className="text-green-800">Importering fullført</AlertTitle>
+            <AlertDescription className="text-green-700">
+              <p className="mb-2">
+                Filen <span className="font-medium">{recentUpload.filename}</span> ble importert {recentUpload.timestamp}. 
+                <span className="font-medium"> {recentUpload.importedCount} klienter</span> ble lagt til.
+              </p>
+              <div className="mt-4">
+                <Button asChild className="gap-2">
+                  <Link to="/klienter">
+                    <Users size={16} />
+                    <span>Gå til klientoversikt</span>
+                    <ArrowRight size={16} />
+                  </Link>
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="ml-3"
+                  onClick={() => setRecentUpload(null)}
+                >
+                  Importer en ny fil
+                </Button>
+              </div>
+            </AlertDescription>
+          </Alert>
+        </div>
+      ) : (
+        <ExcelImporter onImportSuccess={handleImportSuccess} />
+      )}
 
-      <div className="mt-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>Navigasjonsguide</CardTitle>
-            <CardDescription>Slik navigerer du til importerte klienter</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ol className="list-decimal pl-5 space-y-2">
-              <li>Last opp Excel-filen med organisasjonsnumre</li>
-              <li>Vent til importen er fullført</li>
-              <li>Klikk på "Gå til klientoversikt" knappen, eller</li>
-              <li>Naviger til klientoversikten fra hovedmenyen</li>
-            </ol>
-          </CardContent>
-          <CardFooter>
-            <Button asChild variant="outline" className="gap-2 w-full">
-              <Link to="/klienter">
-                <Users size={16} />
-                <span>Gå til klientoversikt</span>
-              </Link>
-            </Button>
-          </CardFooter>
-        </Card>
-      </div>
+      {!recentUpload && (
+        <div className="mt-8">
+          <Card>
+            <CardHeader>
+              <CardTitle>Navigasjonsguide</CardTitle>
+              <CardDescription>Slik navigerer du til importerte klienter</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ol className="list-decimal pl-5 space-y-2">
+                <li>Last opp Excel-filen med organisasjonsnumre</li>
+                <li>Vent til importen er fullført</li>
+                <li>Klikk på "Gå til klientoversikt" knappen, eller</li>
+                <li>Naviger til klientoversikten fra hovedmenyen</li>
+              </ol>
+            </CardContent>
+            <CardFooter>
+              <Button asChild variant="outline" className="gap-2 w-full">
+                <Link to="/klienter">
+                  <Users size={16} />
+                  <span>Gå til klientoversikt</span>
+                </Link>
+              </Button>
+            </CardFooter>
+          </Card>
+        </div>
+      )}
     </div>
   );
 };
