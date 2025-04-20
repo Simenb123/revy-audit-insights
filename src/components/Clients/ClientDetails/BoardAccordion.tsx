@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
@@ -19,7 +18,6 @@ const roleLabels: Record<string, string> = {
 const BoardAccordion: React.FC<BoardAccordionProps> = ({ roles }) => {
   if (!roles || roles.length === 0) return null;
 
-  // Sort in requested order
   const grouped = {
     CEO: [] as ClientRole[],
     CHAIR: [] as ClientRole[],
@@ -32,17 +30,16 @@ const BoardAccordion: React.FC<BoardAccordionProps> = ({ roles }) => {
     }
   }
 
-  // Helper for datoer (fra- til- pågående)
   const rolePeriod = (from?: string, to?: string) => {
     if (!from && !to) return null;
     if (from && !to) return (
-      <span className="text-xs text-muted-foreground ml-3">({`fra: ${formatDate(from)} – pågående`})</span>
+      <span className="text-xs text-muted-foreground ml-3">(fra: {formatDate(from)} – pågående)</span>
     );
     if (from && to) return (
-      <span className="text-xs text-muted-foreground ml-3">({`fra: ${formatDate(from)} til: ${formatDate(to)}`})</span>
+      <span className="text-xs text-muted-foreground ml-3">(fra: {formatDate(from)} til: {formatDate(to)})</span>
     );
     if (!from && to) return (
-      <span className="text-xs text-muted-foreground ml-3">({`til: ${formatDate(to)}`})</span>
+      <span className="text-xs text-muted-foreground ml-3">(til: {formatDate(to)})</span>
     );
     return null;
   };

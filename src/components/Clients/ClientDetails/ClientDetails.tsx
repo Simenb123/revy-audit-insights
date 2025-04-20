@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Client, ClientRole } from "@/types/revio";
@@ -6,14 +5,12 @@ import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import BoardAccordion from "./BoardAccordion";
 import { formatDate } from "@/lib/formatters";
-// Extra: Globe icon for homepage
-import { Globe } from "lucide-react";
+import { Globe, Mail, Phone } from "lucide-react";
 
 interface ClientDetailsProps {
   client: Client | null;
 }
 
-// Helper to formater tallet som NOK
 const formatCurrency = (value?: number) => {
   if (value == null) return null;
   return new Intl.NumberFormat("nb-NO", {
@@ -23,17 +20,16 @@ const formatCurrency = (value?: number) => {
   }).format(value);
 };
 
-// Helper for phone formatting (adds space if 8 digits, Norway style)
 const formatPhone = (phone?: string | null): string => {
   if (!phone) return "—";
   if (phone.length === 8) return `${phone.slice(0, 3)} ${phone.slice(3, 5)} ${phone.slice(5)}`;
   return phone;
 };
 
+const isEmpty = (s?: string | null) => !(s && typeof s === "string" && s.trim().length > 0);
+
 const ClientDetails: React.FC<ClientDetailsProps> = ({ client }) => {
   if (!client) return null;
-
-  const isEmpty = (s?: string | null) => !(s && s.trim().length > 0);
 
   const statusVariant =
     client.status === "ACTIVE"
@@ -62,13 +58,12 @@ const ClientDetails: React.FC<ClientDetailsProps> = ({ client }) => {
                 ? "Aktiv"
                 : client.status === "INACTIVE"
                   ? "Inaktiv"
-                  : client.status}
+                  : client.status || "—"}
             </Badge>
           )}
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {/* 1. Adresse & kommune */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div>
             <h3 className="font-medium mb-2">Adresse & kommune</h3>
@@ -104,20 +99,23 @@ const ClientDetails: React.FC<ClientDetailsProps> = ({ client }) => {
             </div>
           </div>
 
-          {/* 2. Kontakt og roller */}
           <div>
             <h3 className="font-medium mb-2">Kontaktinfo</h3>
             <div className="space-y-2 text-sm">
               {!isEmpty(client.email) && (
-                <div className="flex justify-between">
+                <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">E-post:</span>
-                  <a href={`mailto:${client.email}`} className="text-blue-600 hover:underline">{client.email}</a>
+                  <a href={`mailto:${client.email}`} className="text-blue-600 hover:underline flex items-center gap-1">
+                    <Mail size={16} className="inline" /> {client.email}
+                  </a>
                 </div>
               )}
               {!isEmpty(client.phone) && (
-                <div className="flex justify-between">
+                <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">Telefon:</span>
-                  <a href={`tel:${client.phone}`} className="text-blue-600 hover:underline">{formatPhone(client.phone)}</a>
+                  <a href={`tel:${client.phone}`} className="text-blue-600 hover:underline flex items-center gap-1">
+                    <Phone size={15} className="inline" /> {formatPhone(client.phone)}
+                  </a>
                 </div>
               )}
               {!isEmpty(client.homepage) && (
@@ -129,13 +127,12 @@ const ClientDetails: React.FC<ClientDetailsProps> = ({ client }) => {
                     rel="noopener noreferrer"
                     className="text-blue-600 hover:underline truncate max-w-[140px] flex items-center gap-1"
                   >
-                    <Globe size={16} className="inline mr-1" />
+                    <Globe size={16} className="inline" />
                     <span className="truncate">{client.homepage}</span>
                   </a>
                 </div>
               )}
             </div>
-            {/* Roller (kun for oversikt, detaljert i accordion) */}
             <div className="space-y-2 text-sm mt-4">
               {!isEmpty(client.ceo) && (
                 <div className="flex justify-between">
@@ -152,7 +149,6 @@ const ClientDetails: React.FC<ClientDetailsProps> = ({ client }) => {
             </div>
           </div>
 
-          {/* 3. Kapital & status */}
           <div>
             <h3 className="font-medium mb-2">Kapital & status</h3>
             <div className="space-y-2 text-sm">
@@ -168,7 +164,7 @@ const ClientDetails: React.FC<ClientDetailsProps> = ({ client }) => {
                   <span>{formatCurrency(client.shareCapital)}</span>
                 </div>
               )}
-              {isEmpty(client.equityCapital?.toString()) && isEmpty(client.shareCapital?.toString()) && (
+              {isEmpty((client.equityCapital ?? "").toString()) && isEmpty((client.shareCapital ?? "").toString()) && (
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Kapital:</span>
                   <span>—</span>
@@ -193,7 +189,6 @@ const ClientDetails: React.FC<ClientDetailsProps> = ({ client }) => {
                   </Badge>
                 </div>
               )}
-              {/* Registreringsdato */}
               {client.registrationDate && (
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Registreringsdato:</span>

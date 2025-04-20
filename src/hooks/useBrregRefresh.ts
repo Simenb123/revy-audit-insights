@@ -1,7 +1,6 @@
-
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Client } from "@/types/revio";
 import { formatUpdateData, isDifferent } from "./formatBrregData";
@@ -78,7 +77,6 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
           const basis = data.basis;
           const roles = data.roles;
 
-          // Use helpers for formatting and comparison
           const updateData = formatUpdateData(basis, roles, client);
 
           if (!isDifferent(updateData, client)) continue;
@@ -123,19 +121,19 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
         toast({
           title: "Oppdatering fullført",
           description: `Klientdata oppdatert i databasen (${successCount} oppdatert).`,
-          variant: "default",
+          variant: "success" as any,
         });
       } else if (successCount === 0 && !anyUpdate) {
         toast({
           title: "Ingen endringer",
           description: "Alle klientdata var allerede oppdatert.",
-          variant: "default",
+          variant: "warning" as any,
         });
       } else if (successCount > 0) {
         toast({
           title: "Oppdatering fullført",
           description: `${successCount} klient(er) oppdatert.`,
-          variant: "default",
+          variant: "success" as any,
         });
       } else {
         toast({
