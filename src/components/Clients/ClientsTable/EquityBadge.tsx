@@ -20,7 +20,8 @@ const format = (n?: number | null) =>
 const EquityBadge: React.FC<EquityBadgeProps> = ({ equityCapital, shareCapital }) => {
   const [showInfo, setShowInfo] = useState(false);
 
-  if (!equityCapital || equityCapital <= 0) return null;
+  // Show the badge only if at least one of equityCapital or shareCapital has a value
+  if ((!equityCapital || equityCapital <= 0) && (!shareCapital || shareCapital <= 0)) return null;
 
   return (
     <span
@@ -36,7 +37,7 @@ const EquityBadge: React.FC<EquityBadgeProps> = ({ equityCapital, shareCapital }
         <Bitcoin size={14} className="inline" /> 
       </Badge>
       {showInfo && (
-        <div className="absolute z-20 left-1/2 transform -translate-x-1/2 mt-2 bg-white text-sm border rounded shadow p-2 min-w-[120px] dark:bg-gray-900 dark:text-white">
+        <div className="absolute z-20 left-1/2 transform -translate-x-1/2 mt-2 bg-white text-sm border rounded shadow p-2 min-w-[180px] dark:bg-gray-900 dark:text-white">
           <div>
             <span className="font-medium">Egenkapital:</span> <span>{format(equityCapital)}</span>
           </div>

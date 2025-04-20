@@ -28,13 +28,23 @@ export function formatUpdateData(basis: any, roles: any, client: Client) {
   const homepage = fixValue(basis.homepage);
   const phone = fixValue(basis.telefon);
 
-  const equityCapital =
-    typeof basis.kapital?.equityCapital === "number" ? basis.kapital.equityCapital : null;
-  const shareCapital =
-    typeof basis.kapital?.shareCapital === "number" ? basis.kapital.shareCapital : null;
+  // Properly extract capital values
+  let equityCapital = null;
+  if (basis.kapital && typeof basis.kapital.equityCapital === "number" && !isNaN(basis.kapital.equityCapital)) {
+    equityCapital = basis.kapital.equityCapital;
+  }
+  
+  let shareCapital = null;
+  if (basis.kapital && typeof basis.kapital.shareCapital === "number" && !isNaN(basis.kapital.shareCapital)) {
+    shareCapital = basis.kapital.shareCapital;
+  }
 
   const municipalityCode = fixValue(basis.kommune?.kommunenummer);
   const municipalityName = fixValue(basis.kommune?.navn);
+
+  // Extract CEO and Chair from roles
+  const ceoName = roles?.ceo?.name ? fixValue(roles.ceo.name) : null;
+  const chairName = roles?.chair?.name ? fixValue(roles.chair.name) : null;
 
   return {
     name: fixValue(basis.navn) || client.name,
@@ -57,8 +67,8 @@ export function formatUpdateData(basis: any, roles: any, client: Client) {
       : client.registrationDate || null,
     email: email || client.email || null,
     phone: phone || client.phone || null,
-    ceo: fixValue(roles?.ceo?.name) || client.ceo || null,
-    chair: fixValue(roles?.chair?.name) || client.chair || null,
+    ceo: ceoName || client.ceo || null,
+    chair: chairName || client.chair || null,
     equity_capital: equityCapital,
     share_capital: shareCapital,
   };
@@ -66,11 +76,12 @@ export function formatUpdateData(basis: any, roles: any, client: Client) {
 
 export function isDifferent(updateData: Record<string, any>, client: Client) {
   return Object.keys(updateData).some((key) => {
-    const currentVal = client[
-      key
-        .replace(/_([a-z])/g, (_, c) => c.toUpperCase())
-        .replace("address_line", "address")
-    ];
+    const clientKey = key
+      .replace(/_([a-z])/g, (_, c) => c.toUpperCase())
+      .replace("address_line", "address");
+    
+    const currentVal = client[clientKey as keyof Client];
+    
     if (
       (updateData[key] == null && (currentVal == null || currentVal === "")) ||
       updateData[key] === currentVal
@@ -80,4 +91,3 @@ export function isDifferent(updateData: Record<string, any>, client: Client) {
     return true;
   });
 }
-

@@ -157,6 +157,7 @@ serve(async (req) => {
       if (rolesResponse.ok) {
         rolesData = await rolesResponse.json();
         console.log("Roles data received:", JSON.stringify(rolesData).substring(0, 200) + "...");
+        console.log("Total roles count:", rolesData.roller ? rolesData.roller.length : 0);
       } else {
         console.log(`Roles API returned error status: ${rolesResponse.status}`);
       }
@@ -166,6 +167,7 @@ serve(async (req) => {
     
     // Process roles for enhanced list
     const processedRoles = processRolesV2(rolesData.roller || []);
+    console.log("Processed roles:", JSON.stringify(processedRoles).substring(0, 200) + "...");
     
     // Extract address info (full address array, postnummer, poststed, kommune)
     const forretningsadresse = baseData.forretningsadresse || {};
@@ -190,22 +192,35 @@ serve(async (req) => {
       homepage = homepage.adresseUrl;
     }
 
-    // Try to extract capital fields (aksjekapital, aksjekapitalNOK, innskuddskapital)
+    // Extract capital fields from various possible locations
     let equityCapital = null;
+    let shareCapital = null;
+
     if (baseData.kapital) {
-      if (baseData.kapital.aksjekapitalNOK) {
-        equityCapital = baseData.kapital.aksjekapitalNOK;
-      } else if (baseData.kapital.aksjekapital) {
-        equityCapital = baseData.kapital.aksjekapital;
+      // First check for aksjekapital (share capital)
+      if (baseData.kapital.aksjekapital) {
+        shareCapital = parseFloat(baseData.kapital.aksjekapital);
+      } else if (baseData.kapital.aksjekapitalNOK) {
+        shareCapital = parseFloat(baseData.kapital.aksjekapitalNOK);
+      }
+      
+      // Then check for innskuddskapital (equity capital)
+      if (baseData.kapital.innskuddskapital) {
+        equityCapital = parseFloat(baseData.kapital.innskuddskapital);
       }
     }
 
-    let shareCapital = null;
-    if (baseData.kapital) {
-      if (baseData.kapital.innskuddskapital) {
-        shareCapital = baseData.kapital.innskuddskapital;
-      }
+    // If we have found no equity capital but we have share capital, use that
+    if (equityCapital === null && shareCapital !== null) {
+      equityCapital = shareCapital;
     }
+
+    // Log capital information to help debug
+    console.log("Capital information:", { 
+      rawKapital: baseData.kapital,
+      extractedEquityCapital: equityCapital,
+      extractedShareCapital: shareCapital
+    });
 
     // Build enhanced data object, taking from BRREG mapping table
     const enhancedData = {
@@ -264,32 +279,59 @@ function processRolesV2(roller) {
     chair: null,
     boardMembers: []
   };
-  if (!roller || !Array.isArray(roller)) return result;
+  
+  if (!roller || !Array.isArray(roller) || roller.length === 0) {
+    console.log("No roles found or invalid roles data");
+    return result;
+  }
 
-  roller.forEach(role => {
+  console.log(`Processing ${roller.length} roles`);
+  
+  roller.forEach((role, index) => {
     try {
-      const personName = role.person?.navn;
-      if (!personName) return;
+      // Extract the person's name
+      let personName = null;
+      if (role.person?.navn) {
+        personName = role.person.navn;
+      } else if (role.person?.navn?.fornavn && role.person?.navn?.etternavn) {
+        personName = `${role.person.navn.fornavn} ${role.person.navn.etternavn}`;
+      }
+      
+      if (!personName) {
+        console.log(`Role ${index} has no person name`);
+        return;
+      }
+      
       const fromDate = role.fraTraadtTiltredtDato || null;
       const toDate = role.tilTraadtFraTredtDato || null;
       const roleType = role.type?.kode || "";
       const description = role.rolleBeskrivelse || "";
+      
+      console.log(`Processing role: ${personName}, type: ${roleType}, desc: ${description}`);
+      
+      // CEO - look for 'DAGL' role type
       if (roleType === "DAGL") {
-        // CEO
+        console.log(`Found CEO: ${personName}`);
         result.ceo = {
           name: personName,
           fromDate,
           toDate,
           roleType: "CEO"
         };
-      } else if (roleType === "STYR" && description === "Styrets leder") {
+      } 
+      // Board chair - look for 'STYR' role type with description 'Styrets leder'
+      else if (roleType === "STYR" && (description === "Styrets leder" || description.includes("leder"))) {
+        console.log(`Found Chair: ${personName}`);
         result.chair = {
           name: personName,
           fromDate,
           toDate,
           roleType: "CHAIR"
         };
-      } else if (roleType === "STYR") {
+      } 
+      // Board member - look for 'STYR' role type
+      else if (roleType === "STYR") {
+        console.log(`Found Board Member: ${personName}`);
         result.boardMembers.push({
           name: personName,
           fromDate,
@@ -297,7 +339,10 @@ function processRolesV2(roller) {
           roleType: "MEMBER",
           description
         });
-      } else if (roleType === "SIGNER") {
+      } 
+      // Signatory - look for 'SIGNER' role type
+      else if (roleType === "SIGNER") {
+        console.log(`Found Signatory: ${personName}`);
         result.boardMembers.push({
           name: personName,
           fromDate,
@@ -306,46 +351,11 @@ function processRolesV2(roller) {
           description: "Signaturberettiget"
         });
       }
-    } catch (e) {}
+    } catch (e) {
+      console.error(`Error processing role ${index}:`, e);
+    }
   });
-  return result;
-}
-
-/**
- * Extract capital information from the Brønnøysund data
- */
-function extractCapital(data) {
-  const result = {
-    shareCapital: null,
-    equityCapital: null
-  };
   
-  if (!data) return result;
-  
-  try {
-    // Extract share capital if available
-    if (data.aksjekapital) {
-      result.shareCapital = {
-        amount: data.aksjekapital,
-        currency: 'NOK'
-      };
-    } else if (data.andelsinnskudd) {
-      result.shareCapital = {
-        amount: data.andelsinnskudd,
-        currency: 'NOK'
-      };
-    }
-    
-    // Extract equity capital if available
-    if (data.egenkapital) {
-      result.equityCapital = {
-        amount: data.egenkapital,
-        currency: 'NOK'
-      };
-    }
-  } catch (e) {
-    console.error("Error extracting capital information:", e);
-  }
-  
+  console.log(`Processed roles: CEO: ${result.ceo ? 'Found' : 'Not found'}, Chair: ${result.chair ? 'Found' : 'Not found'}, Board Members: ${result.boardMembers.length}`);
   return result;
 }

@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
@@ -42,6 +43,7 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
         }
 
         try {
+          console.log(`Fetching data for ${client.name} (${client.orgNumber})`);
           const response = await fetch(`https://fxelhfwaoizqyecikscu.functions.supabase.co/brreg`, {
             method: "POST",
             headers: {
@@ -69,6 +71,8 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
           }
 
           const data = await response.json();
+          console.log(`Received data for ${client.name}:`, data);
+          
           if (!data.basis || !data.basis.organisasjonsnummer) {
             failedClients.push(client.name);
             continue;
@@ -77,11 +81,18 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
           const basis = data.basis;
           const roles = data.roles;
 
+          console.log(`Roles for ${client.name}:`, roles);
+          
           const updateData = formatUpdateData(basis, roles, client);
+          console.log(`Update data for ${client.name}:`, updateData);
 
-          if (!isDifferent(updateData, client)) continue;
+          if (!isDifferent(updateData, client)) {
+            console.log(`No changes for ${client.name}`);
+            continue;
+          }
 
           anyUpdate = true;
+          console.log(`Updating ${client.name} in database`);
 
           const { error: updateError, data: updatedData } = await supabase
             .from("clients")
@@ -90,11 +101,13 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
             .select();
 
           if (updateError) {
+            console.error(`Error updating ${client.name}:`, updateError);
             failedClients.push(client.name);
             continue;
           }
 
           if (roles && (roles.ceo || roles.chair || (roles.boardMembers && roles.boardMembers.length > 0))) {
+            console.log(`Updating roles for ${client.name}`);
             await updateClientRoles(client.id, roles, client.name);
           }
 
@@ -102,7 +115,8 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
           if (updatedData && updatedData.length > 0) {
             updatedClientsData[client.id] = updateData;
           }
-        } catch {
+        } catch (error) {
+          console.error(`Error processing ${client.name}:`, error);
           failedClients.push(client.name);
         }
       }
@@ -143,6 +157,7 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
         });
       }
     } catch (error) {
+      console.error("General error during refresh:", error);
       toast({
         title: "Feil ved oppdatering",
         description: "Kunne ikke hente oppdatert data fra Brønnøysund. Vennligst prøv igjen senere.",

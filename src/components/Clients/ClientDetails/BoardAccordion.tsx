@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +25,7 @@ const BoardAccordion: React.FC<BoardAccordionProps> = ({ roles }) => {
     MEMBER: [] as ClientRole[],
     SIGNATORY: [] as ClientRole[]
   };
+  
   for (const role of roles) {
     if (role.roleType in grouped) {
       grouped[role.roleType as keyof typeof grouped].push(role);
@@ -46,8 +48,8 @@ const BoardAccordion: React.FC<BoardAccordionProps> = ({ roles }) => {
 
   const renderRole = (role: ClientRole, type: string) => (
     <div
-      className="flex flex-col md:flex-row md:justify-between md:items-center p-2 bg-muted rounded"
-      key={role.id}
+      className="flex flex-col md:flex-row md:justify-between md:items-center p-2 bg-muted rounded mb-2"
+      key={role.id || `${type}-${role.name}`}
     >
       <div>
         <span className="font-medium">
@@ -64,11 +66,20 @@ const BoardAccordion: React.FC<BoardAccordionProps> = ({ roles }) => {
   return (
     <Accordion type="single" collapsible>
       <AccordionItem value="board">
-        <AccordionTrigger>Styresammensetning</AccordionTrigger>
+        <AccordionTrigger>
+          Styresammensetning
+          <Badge variant="secondary" className="ml-2 text-xs">
+            {roles.length}
+          </Badge>
+        </AccordionTrigger>
         <AccordionContent>
           <div className="space-y-2">
             {Object.entries(grouped).map(([type, rs]) =>
-              rs.map((role) => renderRole(role, type))
+              rs.length > 0 && (
+                <div key={type} className="mb-2">
+                  {rs.map((role) => renderRole(role, type))}
+                </div>
+              )
             )}
           </div>
         </AccordionContent>
