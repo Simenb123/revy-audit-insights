@@ -11,13 +11,30 @@ import {
 import { Button } from "@/components/ui/button";
 import { Upload, FileType, Check, X, AlertCircle } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
+import { processExcelFile } from '@/utils/excelProcessor';
+import DebugLog from './DebugLog';
+import ImportStatus from './ImportStatus';
 
 const FileUploader = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [progress, setProgress] = useState(0);
+  const [totalRows, setTotalRows] = useState(0);
+  const [processedRows, setProcessedRows] = useState(0);
+  const [importComplete, setImportComplete] = useState(false);
+  const [successCount, setSuccessCount] = useState(0);
+  const [fileName, setFileName] = useState<string>('');
+  const [debug, setDebug] = useState<{ message: string; timestamp: string; }[]>([]);
   const { toast } = useToast();
+  
+  const addLog = (message: string) => {
+    setDebug(prev => [...prev, {
+      message,
+      timestamp: new Date().toLocaleTimeString()
+    }]);
+  };
   
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -44,7 +61,7 @@ const FileUploader = () => {
     }
   };
   
-  const handleFiles = (files: FileList) => {
+  const handleFiles = async (files: FileList) => {
     const file = files[0];
     
     // Check if the file is an Excel or CSV file
@@ -60,23 +77,63 @@ const FileUploader = () => {
     
     setError(null);
     setIsUploading(true);
+    setProgress(0);
+    setProcessedRows(0);
+    setSuccessCount(0);
+    setImportComplete(false);
+    setDebug([]);
+    setFileName(file.name);
     
-    // Simulate upload process
-    setTimeout(() => {
+    addLog('Starting import...');
+    addLog(`File: ${file.name} (${file.size} bytes)`);
+    
+    try {
+      const result = await processExcelFile(
+        file,
+        addLog,
+        {
+          onProgress: (processed: number, total: number) => {
+            setProcessedRows(processed);
+            setTotalRows(total);
+            setProgress((processed / total) * 100);
+          },
+          onSuccess: (successful: number, total: number) => {
+            setSuccessCount(successful);
+            setImportComplete(true);
+            setIsUploading(false);
+            setUploadSuccess(true);
+            addLog(`Import complete. ${successful} of ${total} clients imported successfully.`);
+            
+            toast({
+              title: "Import fullført",
+              description: `${successful} av ${total} klienter ble importert.`,
+              variant: successful > 0 ? "default" : "destructive"
+            });
+          }
+        }
+      );
+    } catch (error) {
+      console.error('Error processing file:', error);
+      setError((error as Error).message || 'Ukjent feil ved prosessering av filen');
       setIsUploading(false);
-      setUploadSuccess(true);
+      addLog(`Fatal error: ${(error as Error).message}`);
       
       toast({
-        title: "Opplasting vellykket",
-        description: `Filen "${file.name}" er lastet opp.`,
-        variant: "default"
+        title: "Importfeil",
+        description: "Det oppstod en feil under importen av filen.",
+        variant: "destructive"
       });
-      
-      // Reset success state after a few seconds
-      setTimeout(() => {
-        setUploadSuccess(false);
-      }, 3000);
-    }, 2000);
+    }
+  };
+  
+  const resetUploader = () => {
+    setError(null);
+    setUploadSuccess(false);
+    setImportComplete(false);
+    setProgress(0);
+    setProcessedRows(0);
+    setSuccessCount(0);
+    setDebug([]);
   };
   
   return (
@@ -88,44 +145,38 @@ const FileUploader = () => {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div 
-          className={`
-            border-2 border-dashed rounded-lg p-8 
-            transition-colors duration-200 ease-in-out
-            flex flex-col items-center justify-center
-            ${isDragging ? 'border-revio-500 bg-revio-50' : 'border-gray-300 hover:border-revio-300'}
-            ${isUploading ? 'bg-gray-50 pointer-events-none' : ''}
-            ${uploadSuccess ? 'bg-green-50 border-green-300' : ''}
-            ${error ? 'bg-red-50 border-red-300' : ''}
-          `}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-        >
-          <input 
-            type="file" 
-            id="file-upload" 
-            className="hidden" 
-            onChange={handleFileInput}
-            accept=".xlsx,.xls,.csv"
+        {isUploading || uploadSuccess || error ? (
+          <ImportStatus
+            isImporting={isUploading}
+            hasError={!!error}
+            errorDetails={error || ''}
+            progress={progress}
+            processedRows={processedRows}
+            totalRows={totalRows}
+            successCount={successCount}
+            fileName={fileName}
+            debug={debug}
           />
-          
-          {isUploading ? (
-            <div className="text-center">
-              <div className="w-12 h-12 border-4 border-t-revio-500 border-gray-200 rounded-full animate-spin mx-auto mb-4"></div>
-              <p className="text-sm text-gray-600">Laster opp fil...</p>
-            </div>
-          ) : uploadSuccess ? (
-            <div className="text-center">
-              <Check size={48} className="text-green-500 mx-auto mb-4" />
-              <p className="text-sm text-gray-600">Filen er lastet opp!</p>
-            </div>
-          ) : error ? (
-            <div className="text-center">
-              <AlertCircle size={48} className="text-red-500 mx-auto mb-4" />
-              <p className="text-sm text-red-600">{error}</p>
-            </div>
-          ) : (
+        ) : (
+          <div 
+            className={`
+              border-2 border-dashed rounded-lg p-8 
+              transition-colors duration-200 ease-in-out
+              flex flex-col items-center justify-center
+              ${isDragging ? 'border-revio-500 bg-revio-50' : 'border-gray-300 hover:border-revio-300'}
+            `}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
+            <input 
+              type="file" 
+              id="file-upload" 
+              className="hidden" 
+              onChange={handleFileInput}
+              accept=".xlsx,.xls,.csv"
+            />
+            
             <label htmlFor="file-upload" className="cursor-pointer text-center">
               <Upload size={48} className="text-revio-500 mx-auto mb-4" />
               <p className="text-sm text-gray-600 mb-2">
@@ -135,8 +186,8 @@ const FileUploader = () => {
                 Støtter Excel (.xlsx, .xls) og CSV-filer
               </p>
             </label>
-          )}
-        </div>
+          </div>
+        )}
       </CardContent>
       <CardFooter className="flex justify-between border-t p-4">
         <div className="flex items-center">
@@ -147,14 +198,11 @@ const FileUploader = () => {
         {(error || uploadSuccess) && (
           <Button 
             variant="outline"
-            onClick={() => {
-              setError(null);
-              setUploadSuccess(false);
-            }}
+            onClick={resetUploader}
             size="sm"
           >
             <X size={16} className="mr-1" />
-            Lukk
+            Ny opplasting
           </Button>
         )}
       </CardFooter>
