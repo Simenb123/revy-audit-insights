@@ -93,6 +93,7 @@ const mockBrregResults: BrregSearchResult[] = [
       kode: 'AS',
       beskrivelse: 'Aksjeselskap'
     },
+    registreringsdatoEnhetsregisteret: '2015-06-20T00:00:00.000Z',
     registrertIForetaksregisteret: true,
     registrertIStiftelsesregisteret: false,
     registrertIFrivillighetsregisteret: false

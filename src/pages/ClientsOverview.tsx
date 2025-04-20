@@ -13,6 +13,7 @@ const mockClients: Client[] = [
   {
     id: '1',
     name: 'Nordheim AS',
+    companyName: 'Nordheim Konsern',
     orgNumber: '912345678',
     phase: 'planning',
     progress: 65,
@@ -32,6 +33,7 @@ const mockClients: Client[] = [
   {
     id: '2',
     name: 'Sørland Byggverk AS',
+    companyName: 'Sørland Gruppe',
     orgNumber: '921234567',
     phase: 'execution',
     progress: 40,
@@ -51,6 +53,7 @@ const mockClients: Client[] = [
   {
     id: '3',
     name: 'Vesthavet Fiskeri AS',
+    companyName: 'Vesthavet Gruppe',
     orgNumber: '934567890',
     phase: 'engagement',
     progress: 20,
@@ -70,6 +73,7 @@ const mockClients: Client[] = [
   {
     id: '4',
     name: 'Østland Elektronikk AS',
+    companyName: 'Østland Konsern',
     orgNumber: '945678901',
     phase: 'conclusion',
     progress: 90,
