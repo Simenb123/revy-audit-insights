@@ -47,6 +47,41 @@ export type Database = {
           },
         ]
       }
+      client_roles: {
+        Row: {
+          client_id: string | null
+          from_date: string | null
+          id: string
+          name: string | null
+          role_type: string | null
+          to_date: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          from_date?: string | null
+          id?: string
+          name?: string | null
+          role_type?: string | null
+          to_date?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          from_date?: string | null
+          id?: string
+          name?: string | null
+          role_type?: string | null
+          to_date?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_roles_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           address: string | null
@@ -59,16 +94,26 @@ export type Database = {
           created_at: string
           department: string | null
           email: string | null
+          equity_capital: number | null
+          homepage: string | null
           id: string
           industry: string | null
+          municipality_code: string | null
+          municipality_name: string | null
+          nace_code: string | null
+          nace_description: string | null
           name: string
           notes: string | null
+          org_form_code: string | null
+          org_form_description: string | null
           org_number: string
           phase: Database["public"]["Enums"]["audit_phase"]
           phone: string | null
           postal_code: string | null
           progress: number
           registration_date: string | null
+          share_capital: number | null
+          status: string | null
           updated_at: string
           user_id: string
         }
@@ -83,16 +128,26 @@ export type Database = {
           created_at?: string
           department?: string | null
           email?: string | null
+          equity_capital?: number | null
+          homepage?: string | null
           id?: string
           industry?: string | null
+          municipality_code?: string | null
+          municipality_name?: string | null
+          nace_code?: string | null
+          nace_description?: string | null
           name: string
           notes?: string | null
+          org_form_code?: string | null
+          org_form_description?: string | null
           org_number: string
           phase?: Database["public"]["Enums"]["audit_phase"]
           phone?: string | null
           postal_code?: string | null
           progress?: number
           registration_date?: string | null
+          share_capital?: number | null
+          status?: string | null
           updated_at?: string
           user_id: string
         }
@@ -107,16 +162,26 @@ export type Database = {
           created_at?: string
           department?: string | null
           email?: string | null
+          equity_capital?: number | null
+          homepage?: string | null
           id?: string
           industry?: string | null
+          municipality_code?: string | null
+          municipality_name?: string | null
+          nace_code?: string | null
+          nace_description?: string | null
           name?: string
           notes?: string | null
+          org_form_code?: string | null
+          org_form_description?: string | null
           org_number?: string
           phase?: Database["public"]["Enums"]["audit_phase"]
           phone?: string | null
           postal_code?: string | null
           progress?: number
           registration_date?: string | null
+          share_capital?: number | null
+          status?: string | null
           updated_at?: string
           user_id?: string
         }

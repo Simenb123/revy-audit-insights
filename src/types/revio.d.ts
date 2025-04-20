@@ -12,6 +12,17 @@ export interface ClientDocument {
   dueDate: string;
 }
 
+export type RoleType = 'CEO' | 'CHAIR' | 'MEMBER' | 'SIGNATORY';
+
+export interface ClientRole {
+  id: string;
+  clientId: string;
+  roleType: RoleType;
+  name: string;
+  fromDate?: string;
+  toDate?: string;
+}
+
 export interface Client {
   id: string;
   name: string;
@@ -34,6 +45,19 @@ export interface Client {
   notes?: string;
   riskAreas: RiskArea[];
   documents: ClientDocument[];
+  
+  // Enhanced Brønnøysund data
+  orgFormCode?: string;
+  orgFormDescription?: string;
+  homepage?: string;
+  status?: string;
+  naceCode?: string;
+  naceDescription?: string;
+  municipalityCode?: string;
+  municipalityName?: string;
+  equityCapital?: number;
+  shareCapital?: number;
+  roles?: ClientRole[];
 }
 
 export interface BrregSearchResult {

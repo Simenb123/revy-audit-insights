@@ -2,11 +2,12 @@
 import React, { useState } from 'react';
 import { useRevyContext } from '@/components/RevyContext/RevyContextProvider';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Announcement } from '@/types/revio';
+import { Announcement, Client } from '@/types/revio';
 import ClientStatsGrid from '@/components/Clients/ClientStats/ClientStatsGrid';
 import ClientsTable from '@/components/Clients/ClientsTable/ClientsTable';
 import AnnouncementsList from '@/components/Clients/Announcements/AnnouncementsList';
 import ClientsHeader from '@/components/Clients/ClientsHeader/ClientsHeader';
+import ClientDetails from '@/components/Clients/ClientDetails/ClientDetails';
 import { useClientData } from '@/components/Clients/ClientFetcher/useClientData';
 import { useClientFilters } from '@/components/Clients/ClientFilters/useClientFilters';
 import { useBrregRefresh } from '@/hooks/useBrregRefresh';
@@ -14,12 +15,13 @@ import { useBrregRefresh } from '@/hooks/useBrregRefresh';
 const ClientsOverview = () => {
   const { setContext } = useRevyContext();
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   
   // Fetch client data
   const { data: clients = [], isLoading, error } = useClientData();
   
   // Handle BRREG API refresh
-  const { handleRefreshBrregData, isRefreshing, hasApiError } = useBrregRefresh({ clients });
+  const { handleRefreshBrregData, isRefreshing, hasApiError, refreshProgress } = useBrregRefresh({ clients });
   
   // Filter clients based on search and department
   const { 
@@ -30,6 +32,16 @@ const ClientsOverview = () => {
     departments, 
     filteredClients 
   } = useClientFilters(clients);
+
+  // Get the selected client
+  const selectedClient = selectedClientId 
+    ? clients.find(client => client.id === selectedClientId) 
+    : clients.length > 0 ? clients[0] : null;
+
+  // Handle row selection
+  const handleRowSelect = (client: Client) => {
+    setSelectedClientId(client.id);
+  };
 
   // Set context for Revy assistant
   React.useEffect(() => {
@@ -57,7 +69,14 @@ const ClientsOverview = () => {
         onRefresh={handleRefreshBrregData}
         isRefreshing={isRefreshing}
         hasApiError={hasApiError}
+        refreshProgress={refreshProgress}
       />
+      
+      {/* Client Details - shown when a client is selected */}
+      {selectedClient && (
+        <ClientDetails client={selectedClient} />
+      )}
+      
       <div className="w-full">
         <ClientStatsGrid clients={clients} announcements={announcements} />
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mt-6">
@@ -67,7 +86,11 @@ const ClientsOverview = () => {
                 <CardTitle>Klientliste</CardTitle>
               </CardHeader>
               <CardContent>
-                <ClientsTable clients={filteredClients} />
+                <ClientsTable 
+                  clients={filteredClients} 
+                  onRowSelect={handleRowSelect}
+                  selectedClientId={selectedClientId}
+                />
               </CardContent>
             </Card>
           </div>

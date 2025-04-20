@@ -2,7 +2,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
-import { Client } from '@/types/revio';
+import { Client, ClientRole } from '@/types/revio';
 
 export function useClientData() {
   return useQuery<Client[]>({
@@ -41,6 +41,15 @@ export function useClientData() {
         console.error("Error fetching client documents:", documentsError);
       }
 
+      // Then get roles for all clients
+      const { data: rolesData, error: rolesError } = await supabase
+        .from('client_roles')
+        .select('*');
+
+      if (rolesError) {
+        console.error("Error fetching client roles:", rolesError);
+      }
+
       // Transform data to match our Client type
       return clientsData.map(client => {
         // Find risk areas for this client
@@ -58,6 +67,18 @@ export function useClientData() {
             type: doc.type,
             status: doc.status,
             dueDate: doc.due_date
+          }));
+
+        // Find roles for this client
+        const clientRoles = (rolesData || [])
+          .filter(role => role.client_id === client.id)
+          .map(role => ({
+            id: role.id,
+            clientId: role.client_id,
+            roleType: role.role_type as any,
+            name: role.name,
+            fromDate: role.from_date,
+            toDate: role.to_date
           }));
 
         // If no risk areas or documents found, provide defaults
@@ -93,8 +114,20 @@ export function useClientData() {
           phone: client.phone || '',
           bankAccount: client.bank_account || '',
           notes: client.notes || '',
+          // Enhanced Brønnøysund data
+          orgFormCode: client.org_form_code || '',
+          orgFormDescription: client.org_form_description || '',
+          homepage: client.homepage || '',
+          status: client.status || '',
+          naceCode: client.nace_code || '',
+          naceDescription: client.nace_description || '',
+          municipalityCode: client.municipality_code || '',
+          municipalityName: client.municipality_name || '',
+          equityCapital: client.equity_capital != null ? Number(client.equity_capital) : undefined,
+          shareCapital: client.share_capital != null ? Number(client.share_capital) : undefined,
           riskAreas: clientRiskAreas,
-          documents: clientDocuments
+          documents: clientDocuments,
+          roles: clientRoles
         } as Client;
       });
     }

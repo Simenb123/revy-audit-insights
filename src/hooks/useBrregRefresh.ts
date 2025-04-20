@@ -3,19 +3,22 @@ import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { Client, ClientRole } from "@/types/revio";
 
 interface UseBrregRefreshOptions {
-  clients: any[];
+  clients: Client[];
 }
 
 export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [hasApiError, setHasApiError] = useState(false);
+  const [refreshProgress, setRefreshProgress] = useState(0);
   const queryClient = useQueryClient();
 
   const handleRefreshBrregData = async () => {
     setIsRefreshing(true);
     setHasApiError(false);
+    setRefreshProgress(0);
 
     let successCount = 0;
     let failedClients: string[] = [];
@@ -30,7 +33,12 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
       // Prepare authorization header if we have a session
       const authHeader = session ? `Bearer ${session.access_token}` : undefined;
       
-      for (const client of clients) {
+      // Process each client
+      for (let i = 0; i < clients.length; i++) {
+        const client = clients[i];
+        // Update progress
+        setRefreshProgress(Math.round(((i) / clients.length) * 100));
+        
         if (!client.orgNumber) {
           failedClients.push(client.name);
           console.error(`Missing organization number for client: ${client.name}`);
@@ -48,6 +56,20 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
             body: JSON.stringify({ query: client.orgNumber }),
           });
 
+          // Check for various error conditions
+          if (response.status === 404) {
+            console.error(`No data found in BRREG for ${client.name} (${client.orgNumber})`);
+            failedClients.push(client.name);
+            continue;
+          }
+          
+          if (response.status === 429) {
+            console.error(`Rate limit exceeded for BRREG API when fetching ${client.name} (${client.orgNumber})`);
+            failedClients.push(client.name);
+            // We could implement a retry mechanism with exponential backoff here
+            continue;
+          }
+          
           // Check for API authentication errors (special handling)
           if (response.status === 502) {
             const errorData = await response.json();
@@ -68,80 +90,48 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
           const data = await response.json();
           console.log(`Received BRREG data for ${client.name}:`, data);
 
-          if (!data._embedded?.enheter || data._embedded.enheter.length === 0) {
-            console.error(`No data found in BRREG for ${client.name} (${client.orgNumber})`);
+          if (!data.basis || !data.basis.organisasjonsnummer) {
+            console.error(`Invalid data format from BRREG for ${client.name} (${client.orgNumber})`);
             failedClients.push(client.name);
             continue;
           }
 
-          const brregData = data._embedded.enheter[0];
-          console.log(`Processing BRREG data for ${client.name}:`, brregData);
-
-          // Extract CEO and Chair from roles if available
-          let ceo = client.ceo || "";
-          let chair = client.chair || "";
-
-          if (brregData.roller && Array.isArray(brregData.roller)) {
-            // Find CEO (daglig leder)
-            const dagligLeder = brregData.roller.find((r: any) => 
-              r.type?.kode === 'DAGL' && r.person?.navn
-            );
-            
-            // Find Chairman (styreleder)
-            const styreleder = brregData.roller.find((r: any) => 
-              r.type?.kode === 'STYR' && r.person?.navn && r.rolleBeskrivelse === 'Styrets leder'
-            );
-
-            if (dagligLeder?.person?.navn) {
-              ceo = dagligLeder.person.navn;
-              console.log(`Found CEO for ${client.name}: ${ceo}`);
-            }
-
-            if (styreleder?.person?.navn) {
-              chair = styreleder.person.navn;
-              console.log(`Found Chair for ${client.name}: ${chair}`);
-            }
-          } else {
-            console.log(`No roles data found for ${client.name}`);
-          }
-
-          // Prepare industry data
-          const industry = brregData.naeringskode1?.beskrivelse || client.industry || "";
-
-          // Get address details
-          const address = brregData.forretningsadresse?.adresse?.[0] || client.address || "";
-          const postalCode = brregData.forretningsadresse?.postnummer || client.postalCode || "";
-          const city = brregData.forretningsadresse?.poststed || client.city || "";
+          // Extract data from the enhanced response
+          const basisData = data.basis;
+          const rolesData = data.roles;
           
-          // Get registration date
-          const registrationDate = brregData.registreringsdatoEnhetsregisteret ? 
-            new Date(brregData.registreringsdatoEnhetsregisteret).toISOString().split('T')[0] : 
-            client.registrationDate || "";
+          console.log(`Processing BRREG data for ${client.name}:`, { basis: basisData, roles: rolesData });
 
-          // Get contact information if available
-          const email = brregData.epost || client.email || "";
-          const phone = brregData.telefon || client.phone || "";
-          
-          // Get company name
-          const companyName = brregData.navn || client.companyName || "";
-
-          // Update client data in database
+          // Prepare client update data
           const updateData = {
-            name: brregData.navn || client.name,
-            company_name: companyName,
-            industry: industry,
-            ceo: ceo,
-            chair: chair,
-            address: address,
-            postal_code: postalCode,
-            city: city,
-            registration_date: registrationDate,
-            email: email,
-            phone: phone
+            name: basisData.navn || client.name,
+            company_name: basisData.navn || client.companyName,
+            org_form_code: basisData.organisasjonsform?.kode || null,
+            org_form_description: basisData.organisasjonsform?.beskrivelse || null,
+            homepage: basisData.hjemmeside || null,
+            status: basisData.status || null,
+            nace_code: basisData.naeringskode1?.kode || null,
+            nace_description: basisData.naeringskode1?.beskrivelse || null,
+            industry: basisData.naeringskode1?.beskrivelse || client.industry || null,
+            municipality_code: basisData.kommune?.kode || null,
+            municipality_name: basisData.kommune?.navn || null,
+            address: basisData.forretningsadresse?.adresse?.[0] || client.address || null,
+            postal_code: basisData.forretningsadresse?.postnummer || client.postalCode || null,
+            city: basisData.forretningsadresse?.poststed || client.city || null,
+            registration_date: basisData.registreringsdatoEnhetsregisteret ? 
+              new Date(basisData.registreringsdatoEnhetsregisteret).toISOString().split('T')[0] : 
+              client.registrationDate || null,
+            email: basisData.epost || client.email || null,
+            phone: basisData.telefon || client.phone || null,
+            ceo: rolesData.ceo?.name || client.ceo || null,
+            chair: rolesData.chair?.name || client.chair || null,
+            equity_capital: basisData.kapital?.equityCapital?.amount || null,
+            share_capital: basisData.kapital?.shareCapital?.amount || null
           };
 
           console.log(`Updating client ${client.name} with data:`, updateData);
 
+          // Update client data in database
           const { error: updateError, data: updatedData } = await supabase
             .from('clients')
             .update(updateData)
@@ -151,13 +141,84 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
           if (updateError) {
             console.error(`Database update error for ${client.name}: ${updateError.message}`);
             failedClients.push(client.name);
-          } else {
-            console.log(`Successfully updated ${client.name} in database. Response:`, updatedData);
-            successCount++;
-            // Store update confirmation data for validation
-            if (updatedData && updatedData.length > 0) {
-              updatedClientsData[client.id] = updateData;
+            continue;
+          }
+          
+          console.log(`Successfully updated ${client.name} in database. Response:`, updatedData);
+          
+          // Process roles data
+          if (rolesData && (rolesData.ceo || rolesData.chair || (rolesData.boardMembers && rolesData.boardMembers.length > 0))) {
+            try {
+              // First, delete existing roles for this client
+              const { error: deleteError } = await supabase
+                .from('client_roles')
+                .delete()
+                .eq('client_id', client.id);
+                
+              if (deleteError) {
+                console.error(`Error deleting existing roles for ${client.name}: ${deleteError.message}`);
+              }
+              
+              // Prepare roles for insertion
+              const rolesToInsert = [];
+              
+              // Add CEO if present
+              if (rolesData.ceo) {
+                rolesToInsert.push({
+                  client_id: client.id,
+                  role_type: 'CEO',
+                  name: rolesData.ceo.name,
+                  from_date: rolesData.ceo.fromDate || null,
+                  to_date: rolesData.ceo.toDate || null
+                });
+              }
+              
+              // Add Chair if present
+              if (rolesData.chair) {
+                rolesToInsert.push({
+                  client_id: client.id,
+                  role_type: 'CHAIR',
+                  name: rolesData.chair.name,
+                  from_date: rolesData.chair.fromDate || null,
+                  to_date: rolesData.chair.toDate || null
+                });
+              }
+              
+              // Add board members
+              if (rolesData.boardMembers && rolesData.boardMembers.length > 0) {
+                for (const member of rolesData.boardMembers) {
+                  rolesToInsert.push({
+                    client_id: client.id,
+                    role_type: member.roleType || 'MEMBER',
+                    name: member.name,
+                    from_date: member.fromDate || null,
+                    to_date: member.toDate || null
+                  });
+                }
+              }
+              
+              // Insert roles if we have any
+              if (rolesToInsert.length > 0) {
+                const { error: insertError, data: insertedRoles } = await supabase
+                  .from('client_roles')
+                  .insert(rolesToInsert)
+                  .select();
+                  
+                if (insertError) {
+                  console.error(`Error inserting roles for ${client.name}: ${insertError.message}`);
+                } else {
+                  console.log(`Successfully inserted ${insertedRoles.length} roles for ${client.name}`);
+                }
+              }
+            } catch (rolesError) {
+              console.error(`Error processing roles for ${client.name}:`, rolesError);
             }
+          }
+          
+          successCount++;
+          // Store update confirmation data for validation
+          if (updatedData && updatedData.length > 0) {
+            updatedClientsData[client.id] = updateData;
           }
         } catch (clientError) {
           console.error(`Error processing client ${client.name}: `, clientError);
@@ -165,56 +226,14 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
         }
       }
 
+      // Final progress update
+      setRefreshProgress(100);
+
       if (apiAuthError) {
         setHasApiError(true);
       }
 
-      // Validate database updates by fetching the latest data
-      if (successCount > 0) {
-        try {
-          console.log("Validating database updates...");
-          const clientIds = Object.keys(updatedClientsData);
-          const { data: latestClientData, error: fetchError } = await supabase
-            .from('clients')
-            .select('id, name, company_name, industry, ceo, chair, address, postal_code, city, registration_date, email, phone')
-            .in('id', clientIds);
-            
-          if (fetchError) {
-            console.error("Error validating database updates:", fetchError);
-          } else if (latestClientData) {
-            console.log("Latest client data from database:", latestClientData);
-            // Check if updates were actually applied
-            let allUpdatesConfirmed = true;
-            for (const client of latestClientData) {
-              const expectedData = updatedClientsData[client.id];
-              if (!expectedData) continue;
-              
-              // Validate key fields
-              const fieldsToCheck = ['name', 'company_name', 'industry', 'ceo', 'chair', 'address', 'postal_code', 'city', 'registration_date', 'email', 'phone'];
-              for (const field of fieldsToCheck) {
-                const dbField = field.includes('_') ? field : field; // Handle case differences
-                if (expectedData[field] && client[dbField] !== expectedData[field]) {
-                  console.warn(`Update discrepancy for client ${client.name}, field ${field}:`, {
-                    expected: expectedData[field],
-                    actual: client[dbField]
-                  });
-                  allUpdatesConfirmed = false;
-                }
-              }
-            }
-            
-            if (!allUpdatesConfirmed) {
-              console.warn("Some updates may not have been fully applied to the database");
-            } else {
-              console.log("All database updates confirmed successful");
-            }
-          }
-        } catch (validationError) {
-          console.error("Error during update validation:", validationError);
-        }
-      }
-      
-      // Refresh client data
+      // Refresh client data in React Query
       await queryClient.invalidateQueries({ queryKey: ['clients'] });
 
       // Show appropriate toast messages
@@ -251,8 +270,9 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
       });
     } finally {
       setIsRefreshing(false);
+      setRefreshProgress(0);
     }
   };
 
-  return { handleRefreshBrregData, isRefreshing, hasApiError };
+  return { handleRefreshBrregData, isRefreshing, hasApiError, refreshProgress };
 }

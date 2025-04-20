@@ -1,6 +1,4 @@
 
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import {
   Table,
   TableBody,
@@ -9,86 +7,74 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Client, AuditPhase } from "@/types/revio";
+import { Badge } from "@/components/ui/badge";
+import { Client } from "@/types/revio";
 
 interface ClientsTableProps {
   clients: Client[];
+  onRowSelect?: (client: Client) => void;
+  selectedClientId?: string | null;
 }
 
-const phaseLabels: Record<AuditPhase, string> = {
-  'engagement': 'Oppdragsvurdering',
-  'planning': 'Planlegging',
-  'execution': 'Utførelse',
-  'conclusion': 'Avslutning'
-};
+const ClientsTable = ({ clients, onRowSelect, selectedClientId }: ClientsTableProps) => {
+  const statusMap = {
+    engagement: { label: "Oppdrag", variant: "outline" },
+    planning: { label: "Planlegging", variant: "secondary" },
+    execution: { label: "Gjennomføring", variant: "default" },
+    conclusion: { label: "Avslutning", variant: "success" },
+  };
 
-const ClientsTable = ({ clients }: ClientsTableProps) => {
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Klient</TableHead>
-          <TableHead>Org. nr.</TableHead>
-          <TableHead>Fase</TableHead>
-          <TableHead>Fremdrift</TableHead>
-          <TableHead>Skjemastatus</TableHead>
-          <TableHead>Risiko</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {clients.map(client => (
-          <TableRow key={client.id} className="cursor-pointer hover:bg-muted/80">
-            <TableCell className="font-medium">{client.name}</TableCell>
-            <TableCell>{client.orgNumber}</TableCell>
-            <TableCell>
-              <Badge variant={client.phase === 'conclusion' ? 'success' : 
-                                    client.phase === 'execution' ? 'warning' : 
-                                    'outline'}>
-                {phaseLabels[client.phase]}
-              </Badge>
-            </TableCell>
-            <TableCell>
-              <div className="w-full max-w-24">
-                <div className="flex justify-between text-xs mb-1">
-                  <span>{client.progress}%</span>
-                </div>
-                <Progress value={client.progress} className="h-2" />
-              </div>
-            </TableCell>
-            <TableCell>
-              <div className="flex space-x-1">
-                {client.documents.map((doc, idx) => {
-                  let color;
-                  switch(doc.status) {
-                    case 'accepted': color = 'bg-green-500'; break;
-                    case 'submitted': color = 'bg-yellow-500'; break;
-                    case 'pending': color = 'bg-gray-300'; break;
-                  }
-                  return (
-                    <div key={idx} className={`w-3 h-3 rounded-full ${color}`} title={
-                      doc.type === 'shareholder_report' ? 'Aksjonærregisteroppgave' :
-                      doc.type === 'tax_return' ? 'Skattemelding' : 'Årsregnskap'
-                    }></div>
-                  );
-                })}
-              </div>
-            </TableCell>
-            <TableCell>
-              {client.riskAreas.some(area => area.risk === 'high') && (
-                <Badge variant="destructive">Høy risiko</Badge>
-              )}
-              {!client.riskAreas.some(area => area.risk === 'high') && 
-               client.riskAreas.some(area => area.risk === 'medium') && (
-                <Badge variant="warning">Medium risiko</Badge>
-              )}
-              {client.riskAreas.every(area => area.risk === 'low') && (
-                <Badge variant="outline">Lav risiko</Badge>
-              )}
-            </TableCell>
+    <div className="rounded-md border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Klient</TableHead>
+            <TableHead>Fase</TableHead>
+            <TableHead>Progresjon</TableHead>
+            <TableHead>Org.nummer</TableHead>
+            <TableHead>Avdeling</TableHead>
           </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+        </TableHeader>
+        <TableBody>
+          {clients.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={5} className="text-center text-muted-foreground h-32">
+                Ingen klienter funnet
+              </TableCell>
+            </TableRow>
+          ) : (
+            clients.map((client) => (
+              <TableRow 
+                key={client.id} 
+                onClick={() => onRowSelect?.(client)}
+                className={`cursor-pointer hover:bg-muted/50 ${selectedClientId === client.id ? 'bg-muted' : ''}`}
+              >
+                <TableCell className="font-medium">{client.name}</TableCell>
+                <TableCell>
+                  <Badge
+                    variant={statusMap[client.phase].variant as any}
+                  >
+                    {statusMap[client.phase].label}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <div className="w-full bg-gray-200 rounded-full h-2.5">
+                    <div
+                      className="bg-blue-600 h-2.5 rounded-full"
+                      style={{ width: `${client.progress}%` }}
+                    ></div>
+                  </div>
+                  <span className="text-xs text-gray-500">{client.progress}%</span>
+                </TableCell>
+                <TableCell>{client.orgNumber}</TableCell>
+                <TableCell>{client.department}</TableCell>
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
+    </div>
   );
 };
 
