@@ -1,18 +1,21 @@
 
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import * as XLSX from 'xlsx';
 import { Progress } from "@/components/ui/progress";
-import { AlertCircle, FileSpreadsheet, Check } from 'lucide-react';
+import { AlertCircle, FileSpreadsheet, Check, Users } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const ExcelImporter = () => {
   const [isImporting, setIsImporting] = useState(false);
   const [progress, setProgress] = useState(0);
   const [totalRows, setTotalRows] = useState(0);
   const [processedRows, setProcessedRows] = useState(0);
+  const [importComplete, setImportComplete] = useState(false);
+  const [successCount, setSuccessCount] = useState(0);
   const { toast } = useToast();
 
   const processOrgNumber = async (orgNumber: string) => {
@@ -73,6 +76,8 @@ const ExcelImporter = () => {
       setIsImporting(true);
       setProgress(0);
       setProcessedRows(0);
+      setSuccessCount(0);
+      setImportComplete(false);
 
       const reader = new FileReader();
       reader.onload = async (e) => {
@@ -94,6 +99,9 @@ const ExcelImporter = () => {
           setProcessedRows(i + 1);
           setProgress(((i + 1) / rows.length) * 100);
         }
+
+        setSuccessCount(successful);
+        setImportComplete(true);
 
         toast({
           title: "Import fullført",
@@ -125,7 +133,7 @@ const ExcelImporter = () => {
       </CardHeader>
       <CardContent>
         <div className="space-y-6">
-          {!isImporting ? (
+          {!isImporting && !importComplete ? (
             <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-lg">
               <FileSpreadsheet className="w-12 h-12 text-gray-400 mb-4" />
               <label htmlFor="file-upload" className="cursor-pointer">
@@ -143,16 +151,44 @@ const ExcelImporter = () => {
                 Støtter .xlsx og .xls filer
               </p>
             </div>
-          ) : (
+          ) : isImporting ? (
             <div className="space-y-4">
               <Progress value={progress} />
               <p className="text-sm text-center">
                 Behandler {processedRows} av {totalRows} klienter...
               </p>
             </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center p-6 border-2 border-green-100 bg-green-50 rounded-lg">
+              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                <Check className="w-6 h-6 text-green-600" />
+              </div>
+              <h3 className="text-lg font-medium text-green-800">Import fullført</h3>
+              <p className="text-center text-green-700 mt-2">
+                {successCount} av {totalRows} klienter ble importert til databasen
+              </p>
+            </div>
           )}
         </div>
       </CardContent>
+      {importComplete && (
+        <CardFooter className="flex justify-center gap-4">
+          <Button variant="outline" onClick={() => {
+            setImportComplete(false);
+            setProgress(0);
+            setProcessedRows(0);
+            setSuccessCount(0);
+          }}>
+            Ny import
+          </Button>
+          <Button asChild className="gap-2">
+            <Link to="/klienter">
+              <Users size={16} />
+              <span>Gå til klientoversikt</span>
+            </Link>
+          </Button>
+        </CardFooter>
+      )}
     </Card>
   );
 };
