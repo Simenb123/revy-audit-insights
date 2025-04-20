@@ -17,6 +17,13 @@ const ExcelImporter = () => {
 
   const processOrgNumber = async (orgNumber: string) => {
     try {
+      // Get current user
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session || !session.user) {
+        console.error('No authenticated user found');
+        return null;
+      }
+      
       const { data: response } = await supabase.functions.invoke('brreg', {
         body: { query: orgNumber }
       });
@@ -37,7 +44,8 @@ const ExcelImporter = () => {
           phase: 'engagement',
           progress: 0,
           industry: company.naeringskode1?.beskrivelse || null,
-          registration_date: company.registreringsdatoEnhetsregisteret?.split('T')[0] || null
+          registration_date: company.registreringsdatoEnhetsregisteret?.split('T')[0] || null,
+          user_id: session.user.id
         })
         .select()
         .single();
