@@ -1,14 +1,15 @@
-
 import React, { useState, useEffect } from 'react';
 import { useRevyContext } from '@/components/RevyContext/RevyContextProvider';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { RefreshCw } from "lucide-react";
 import { Client, Announcement, RiskArea, ClientDocument } from '@/types/revio';
 import ClientStatsGrid from '@/components/Clients/ClientStats/ClientStatsGrid';
 import ClientsTable from '@/components/Clients/ClientsTable/ClientsTable';
 import AnnouncementsList from '@/components/Clients/Announcements/AnnouncementsList';
 import ClientFilters from '@/components/Clients/ClientFilters/ClientFilters';
 import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from '@/components/ui/use-toast';
 
 const ClientsOverview = () => {
@@ -16,6 +17,9 @@ const ClientsOverview = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState('all');
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+
+  const queryClient = useQueryClient();
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Fetch clients from Supabase
   const { data: clients = [], isLoading, error } = useQuery<Client[]>({
@@ -113,6 +117,65 @@ const ClientsOverview = () => {
       });
     }
   });
+
+  const handleRefreshBrregData = async () => {
+    setIsRefreshing(true);
+    try {
+      for (const client of clients) {
+        const response = await fetch(`https://fxelhfwaoizqyecikscu.functions.supabase.co/brreg`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ query: client.orgNumber }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch BRREG data for ${client.name}`);
+        }
+
+        const data = await response.json();
+        const brregData = data._embedded.enheter[0];
+
+        if (brregData) {
+          // Update client with new BRREG data
+          const { error: updateError } = await supabase
+            .from('clients')
+            .update({
+              name: brregData.navn,
+              industry: brregData.naeringskode1?.beskrivelse || client.industry,
+              ceo: brregData.roller?.find((r: any) => r.type.kode === 'DAGL')?.person?.navn || client.ceo,
+              chair: brregData.roller?.find((r: any) => r.type.kode === 'STYR')?.person?.navn || client.chair,
+            })
+            .eq('id', client.id);
+
+          if (updateError) {
+            toast({
+              title: "Feil ved oppdatering",
+              description: `Kunne ikke oppdatere ${client.name}: ${updateError.message}`,
+              variant: "destructive"
+            });
+          }
+        }
+      }
+      
+      // Refresh the clients data
+      await queryClient.invalidateQueries({ queryKey: ['clients'] });
+      
+      toast({
+        title: "Oppdatering fullført",
+        description: "Alle klienter er oppdatert med nyeste data fra Brønnøysund",
+      });
+    } catch (error) {
+      toast({
+        title: "Feil ved oppdatering",
+        description: "Kunne ikke hente oppdatert data fra Brønnøysund",
+        variant: "destructive"
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
   
   // Set context for Revy assistant
   React.useEffect(() => {
@@ -154,13 +217,25 @@ const ClientsOverview = () => {
           </p>
         </div>
         
-        <ClientFilters 
-          searchTerm={searchTerm}
-          onSearchChange={setSearchTerm}
-          departmentFilter={departmentFilter}
-          onDepartmentChange={setDepartmentFilter}
-          departments={departments}
-        />
+        <div className="flex gap-4 items-center">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={handleRefreshBrregData}
+            disabled={isRefreshing}
+          >
+            <RefreshCw className={isRefreshing ? "animate-spin" : ""} />
+            Oppdater fra Brønnøysund
+          </Button>
+          
+          <ClientFilters 
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+            departmentFilter={departmentFilter}
+            onDepartmentChange={setDepartmentFilter}
+            departments={departments}
+          />
+        </div>
       </div>
       
       <div className="w-full">
