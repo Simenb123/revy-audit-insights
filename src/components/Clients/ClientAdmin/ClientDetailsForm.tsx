@@ -69,7 +69,6 @@ const ClientDetailsForm = ({ form }: ClientDetailsFormProps) => {
           type="number"
           min="0"
           max="100"
-          onChange={(e) => form.setValue('progress', parseInt(e.target.value))}
         />
       </FormFieldWrapper>
     </div>
