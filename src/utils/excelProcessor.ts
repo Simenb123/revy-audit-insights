@@ -23,6 +23,20 @@ export const processOrgNumber = async (orgNumber: string, addLog: AddLogFunction
     addLog(`Fetching data for org number: ${orgNumber}`);
     addLog(`Using auth: User ID: ${session.user.id.substring(0, 8)}... with role: ${session.user.role}`);
     
+    // First check if client with this org number already exists for the current user
+    const { data: existingClients } = await supabase
+      .from('clients')
+      .select('id, name, org_number')
+      .eq('org_number', orgNumber)
+      .eq('user_id', session.user.id);
+    
+    if (existingClients && existingClients.length > 0) {
+      const existingClient = existingClients[0];
+      const msg = `Client "${existingClient.name}" with org number ${orgNumber} already exists (ID: ${existingClient.id})`;
+      addLog(msg);
+      return null;
+    }
+    
     const { data: response, error: invokeError } = await supabase.functions.invoke('brreg', {
       body: { query: orgNumber }
     });

@@ -34,6 +34,14 @@ const ImportStatus = ({
   fileName,
   debug
 }: ImportStatusProps) => {
+  // Count how many log entries mention "already exists"
+  const duplicateCount = Array.isArray(debug) 
+    ? debug.filter(log => {
+        const message = typeof log === 'string' ? log : log.message;
+        return message.includes('already exists');
+      }).length 
+    : 0;
+    
   if (isImporting) {
     return (
       <div className="space-y-4">
@@ -68,6 +76,11 @@ const ImportStatus = ({
       <h3 className="text-lg font-medium text-green-800">Import fullført</h3>
       <p className="text-center text-green-700 mt-2">
         {successCount} av {totalRows} klienter ble importert til databasen fra filen {fileName}
+        {duplicateCount > 0 && (
+          <span className="block mt-1 text-amber-600">
+            {duplicateCount} klienter ble hoppet over fordi de allerede eksisterer i systemet.
+          </span>
+        )}
       </p>
       {successCount > 0 && (
         <div className="mt-4 p-3 bg-blue-50 border border-blue-100 rounded flex items-start gap-2 text-sm">
