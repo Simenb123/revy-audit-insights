@@ -44,13 +44,14 @@ function App() {
                   <Sonner />
                   <Routes>
                     <Route path="/auth" element={<Auth />} />
-                    <Route path="/" element={<ProtectedRoute><AppLayout><Index /></AppLayout></ProtectedRoute>} />
-                    <Route path="/dashboard" element={<Navigate to="/" replace />} />
+                    {/* Redirect root "/" to "/klienter" as new start page */}
+                    <Route path="/" element={<Navigate to="/klienter" replace />} />
+                    <Route path="/klienter" element={<ProtectedRoute><AppLayout><ClientsOverview /></AppLayout></ProtectedRoute>} />
+                    <Route path="/dashboard" element={<Navigate to="/klienter" replace />} />
                     <Route path="/analyser" element={<ProtectedRoute><AppLayout><AccountingExplorer /></AppLayout></ProtectedRoute>} />
                     <Route path="/analyser/transaksjoner" element={<ProtectedRoute><AppLayout><TransactionSampling /></AppLayout></ProtectedRoute>} />
                     <Route path="/dokumenter" element={<ProtectedRoute><AppLayout><Index /></AppLayout></ProtectedRoute>} />
                     <Route path="/prosjekter" element={<ProtectedRoute><AppLayout><Index /></AppLayout></ProtectedRoute>} />
-                    <Route path="/klienter" element={<ProtectedRoute><AppLayout><ClientsOverview /></AppLayout></ProtectedRoute>} />
                     <Route path="/klienter/administrasjon" element={<ProtectedRoute><AppLayout><ClientAdmin /></AppLayout></ProtectedRoute>} />
                     <Route path="/innstillinger" element={<ProtectedRoute><AppLayout><Index /></AppLayout></ProtectedRoute>} />
                     <Route path="/hjelp" element={<ProtectedRoute><AppLayout><Index /></AppLayout></ProtectedRoute>} />
@@ -68,3 +69,4 @@ function App() {
 }
 
 export default App;
+
