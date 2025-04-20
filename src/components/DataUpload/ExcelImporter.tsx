@@ -23,6 +23,7 @@ const ExcelImporter = ({ onImportSuccess }: ExcelImporterProps) => {
   const [hasError, setHasError] = useState(false);
   const [errorDetails, setErrorDetails] = useState<string>('');
   const [fileName, setFileName] = useState<string>('');
+  const [debug, setDebug] = useState<string[]>([]);
   const { toast } = useToast();
 
   const processOrgNumber = async (orgNumber: string) => {
@@ -30,20 +31,37 @@ const ExcelImporter = ({ onImportSuccess }: ExcelImporterProps) => {
       // Get current user
       const { data: { session } } = await supabase.auth.getSession();
       if (!session || !session.user) {
-        console.error('No authenticated user found');
+        const errorMsg = 'No authenticated user found';
+        console.error(errorMsg);
+        setDebug(prev => [...prev, errorMsg]);
         return null;
       }
       
-      const { data: response } = await supabase.functions.invoke('brreg', {
+      setDebug(prev => [...prev, `Fetching data for org number: ${orgNumber}`]);
+      
+      const { data: response, error: invokeError } = await supabase.functions.invoke('brreg', {
         body: { query: orgNumber }
       });
+      
+      if (invokeError) {
+        const errorMsg = `Error calling brreg function: ${invokeError.message}`;
+        console.error(errorMsg);
+        setDebug(prev => [...prev, errorMsg]);
+        return null;
+      }
 
       if (!response || !response._embedded?.enheter?.[0]) {
-        console.warn(`No data found for org number: ${orgNumber}`);
+        const errorMsg = `No data found for org number: ${orgNumber}`;
+        console.warn(errorMsg);
+        setDebug(prev => [...prev, errorMsg]);
         return null;
       }
 
       const company = response._embedded.enheter[0];
+      setDebug(prev => [...prev, `Found company: ${company.navn} with org number: ${company.organisasjonsnummer}`]);
+      
+      // Inserting client data
+      setDebug(prev => [...prev, `Attempting to insert client with org number: ${orgNumber}`]);
       
       const { data: client, error } = await supabase
         .from('clients')
@@ -62,15 +80,23 @@ const ExcelImporter = ({ onImportSuccess }: ExcelImporterProps) => {
 
       if (error) {
         if (error.code === '23505') { // Unique constraint violation
-          console.log(`Client with org number ${orgNumber} already exists`);
+          const errorMsg = `Client with org number ${orgNumber} already exists`;
+          console.log(errorMsg);
+          setDebug(prev => [...prev, errorMsg]);
           return null;
         }
+        const errorMsg = `Error inserting client: ${error.message} (${error.code})`;
+        console.error(errorMsg);
+        setDebug(prev => [...prev, errorMsg]);
         throw error;
       }
 
+      setDebug(prev => [...prev, `Successfully inserted client with ID: ${client.id}`]);
       return client;
     } catch (error) {
-      console.error(`Error processing org number ${orgNumber}:`, error);
+      const errorMsg = `Error processing org number ${orgNumber}: ${(error as Error).message}`;
+      console.error(errorMsg);
+      setDebug(prev => [...prev, errorMsg]);
       return null;
     }
   };
@@ -88,6 +114,19 @@ const ExcelImporter = ({ onImportSuccess }: ExcelImporterProps) => {
       setHasError(false);
       setErrorDetails('');
       setFileName(file.name);
+      setDebug(['Starting import...']);
+
+      // Check authentication first
+      const { data: { session }, error: authError } = await supabase.auth.getSession();
+      if (authError) {
+        throw new Error(`Auth error: ${authError.message}`);
+      }
+      
+      if (!session || !session.user) {
+        throw new Error('User is not authenticated. Please log in before importing.');
+      }
+
+      setDebug(prev => [...prev, `Authenticated as user: ${session.user.id}`]);
 
       const reader = new FileReader();
       reader.onload = async (e) => {
@@ -95,15 +134,21 @@ const ExcelImporter = ({ onImportSuccess }: ExcelImporterProps) => {
           const data = new Uint8Array(e.target?.result as ArrayBuffer);
           const workbook = XLSX.read(data, { type: 'array' });
           const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+          
+          setDebug(prev => [...prev, `Excel file read successfully. Sheet name: ${workbook.SheetNames[0]}`]);
+          
           const rows: string[] = XLSX.utils.sheet_to_json(firstSheet, { header: 'A' })
             .map(row => (row as any).A?.toString().trim())
             .filter(Boolean);
 
+          setDebug(prev => [...prev, `Found ${rows.length} rows in the Excel file.`]);
           setTotalRows(rows.length);
 
           let successful = 0;
           for (let i = 0; i < rows.length; i++) {
             const orgNumber = rows[i];
+            setDebug(prev => [...prev, `Processing row ${i+1}: org number ${orgNumber}`]);
+            
             const result = await processOrgNumber(orgNumber);
             if (result) successful++;
             
@@ -113,6 +158,7 @@ const ExcelImporter = ({ onImportSuccess }: ExcelImporterProps) => {
 
           setSuccessCount(successful);
           setImportComplete(true);
+          setDebug(prev => [...prev, `Import complete. ${successful} of ${rows.length} clients imported successfully.`]);
 
           // Notify parent component of successful import
           if (onImportSuccess) {
@@ -131,6 +177,8 @@ const ExcelImporter = ({ onImportSuccess }: ExcelImporterProps) => {
           console.error('Error processing file:', error);
           setHasError(true);
           setErrorDetails((error as Error).message || 'Ukjent feil ved prosessering av filen');
+          setDebug(prev => [...prev, `Fatal error: ${(error as Error).message}`]);
+          
           toast({
             title: "Importfeil",
             description: "Det oppstod en feil under importen av filen.",
@@ -146,6 +194,8 @@ const ExcelImporter = ({ onImportSuccess }: ExcelImporterProps) => {
       console.error('Import error:', error);
       setHasError(true);
       setErrorDetails((error as Error).message || 'Ukjent feil');
+      setDebug(prev => [...prev, `Error starting import: ${(error as Error).message}`]);
+      
       toast({
         title: "Importfeil",
         description: "Det oppstod en feil under importen. Sjekk konsollen for detaljer.",
@@ -196,9 +246,14 @@ const ExcelImporter = ({ onImportSuccess }: ExcelImporterProps) => {
                 <AlertCircle className="w-6 h-6 text-red-600" />
               </div>
               <h3 className="text-lg font-medium text-red-800">Import feilet</h3>
-              <p className="text-center text-red-700 mt-2">
+              <p className="text-center text-red-700 mt-2 mb-4">
                 {errorDetails || 'Det oppstod en feil under importen.'}
               </p>
+              <div className="w-full bg-red-50 border border-red-200 rounded-md p-3 max-h-48 overflow-y-auto text-xs font-mono text-red-800">
+                {debug.map((log, i) => (
+                  <div key={i} className="pb-1">{log}</div>
+                ))}
+              </div>
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center p-6 border-2 border-green-100 bg-green-50 rounded-lg">
@@ -217,6 +272,13 @@ const ExcelImporter = ({ onImportSuccess }: ExcelImporterProps) => {
                   </div>
                 </div>
               )}
+              {debug.length > 0 && (
+                <div className="w-full bg-gray-50 border border-gray-200 rounded-md p-3 mt-4 max-h-48 overflow-y-auto text-xs font-mono">
+                  {debug.map((log, i) => (
+                    <div key={i} className="pb-1">{log}</div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -230,6 +292,7 @@ const ExcelImporter = ({ onImportSuccess }: ExcelImporterProps) => {
             setProcessedRows(0);
             setSuccessCount(0);
             setErrorDetails('');
+            setDebug([]);
           }}>
             Ny import
           </Button>

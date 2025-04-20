@@ -1,11 +1,12 @@
 
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import ExcelImporter from '@/components/DataUpload/ExcelImporter';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, Users, FileSpreadsheet, ArrowRight } from 'lucide-react';
+import { ChevronLeft, Users, FileSpreadsheet, ArrowRight, AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { supabase } from "@/integrations/supabase/client";
 
 const DataImport = () => {
   const [recentUpload, setRecentUpload] = useState<{
@@ -13,6 +14,22 @@ const DataImport = () => {
     timestamp: string;
     importedCount: number;
   } | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error) {
+        console.error("Auth error:", error);
+      }
+      setIsAuthenticated(!!session);
+      setAuthChecked(true);
+    };
+    
+    checkAuth();
+  }, []);
 
   const handleImportSuccess = (data: { filename: string, importedCount: number }) => {
     setRecentUpload({
@@ -21,6 +38,21 @@ const DataImport = () => {
       importedCount: data.importedCount
     });
   };
+
+  if (authChecked && !isAuthenticated) {
+    return (
+      <div className="container mx-auto py-8">
+        <Alert variant="destructive" className="mb-6">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Autentisering påkrevd</AlertTitle>
+          <AlertDescription>
+            Du må være logget inn for å importere klienter. Vennligst logg inn først.
+          </AlertDescription>
+        </Alert>
+        <Button onClick={() => navigate('/auth')}>Gå til innlogging</Button>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto py-8">
