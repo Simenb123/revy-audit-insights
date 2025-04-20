@@ -37,6 +37,7 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
         }
 
         try {
+          console.log(`Fetching BRREG data for ${client.name} (${client.orgNumber})`);
           const response = await fetch(`https://fxelhfwaoizqyecikscu.functions.supabase.co/brreg`, {
             method: 'POST',
             headers: { 
@@ -46,6 +47,7 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
             body: JSON.stringify({ query: client.orgNumber }),
           });
 
+          // Check for API authentication errors (special handling)
           if (response.status === 502) {
             const errorData = await response.json();
             if (errorData?.error === 'Authentication error with Brønnøysund API') {
@@ -72,6 +74,7 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
 
           const brregData = data._embedded.enheter[0];
 
+          // Update client data in database
           const { error: updateError } = await supabase
             .from('clients')
             .update({
@@ -98,8 +101,10 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
         setHasApiError(true);
       }
 
+      // Refresh client data
       await queryClient.invalidateQueries({ queryKey: ['clients'] });
 
+      // Show appropriate toast messages
       if (apiAuthError) {
         toast({
           title: "API-tilgangsfeil",

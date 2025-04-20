@@ -2,6 +2,12 @@
 import { Button } from "@/components/ui/button";
 import ClientFilters from "@/components/Clients/ClientFilters/ClientFilters";
 import { RefreshCw, AlertTriangle } from "lucide-react";
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface ClientsHeaderProps {
   title: string;
@@ -34,24 +40,35 @@ const ClientsHeader = ({
       <p className="text-muted-foreground mt-1">{subtitle}</p>
     </div>
     <div className="flex gap-4 items-center">
-      <Button 
-        variant={hasApiError ? "destructive" : "outline"}
-        size="sm"
-        onClick={onRefresh}
-        disabled={isRefreshing}
-        className="gap-2"
-      >
-        {hasApiError ? (
-          <AlertTriangle className="mr-1" size={16} />
-        ) : (
-          <RefreshCw className={isRefreshing ? "animate-spin mr-1" : "mr-1"} size={16} />
-        )}
-        {isRefreshing 
-          ? "Oppdaterer..." 
-          : hasApiError 
-            ? "API-tilgangsfeil" 
-            : "Oppdater fra Brønnøysund"}
-      </Button>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button 
+              variant={hasApiError ? "destructive" : "outline"}
+              size="sm"
+              onClick={onRefresh}
+              disabled={isRefreshing}
+              className="gap-2"
+            >
+              {hasApiError ? (
+                <AlertTriangle className="mr-1" size={16} />
+              ) : (
+                <RefreshCw className={isRefreshing ? "animate-spin mr-1" : "mr-1"} size={16} />
+              )}
+              {isRefreshing 
+                ? "Oppdaterer..." 
+                : hasApiError 
+                  ? "API-tilgangsfeil" 
+                  : "Oppdater fra Brønnøysund"}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            {hasApiError 
+              ? "Det er problemer med tilkobling til Brønnøysundregistrenes API. Sjekk at du har riktig API-nøkkel konfigurert." 
+              : "Hent oppdatert informasjon om klienter fra Brønnøysundregistrene"}
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
       <ClientFilters 
         searchTerm={searchTerm}
         onSearchChange={onSearchChange}

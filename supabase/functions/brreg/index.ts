@@ -52,7 +52,10 @@ serve(async (req) => {
     
     // Add the authorization header if it exists
     if (authHeader) {
+      console.log("Using authorization header for BRREG API request");
       fetchOptions.headers = { 'Authorization': authHeader };
+    } else {
+      console.log("No authorization header provided for BRREG API request");
     }
     
     try {
@@ -65,7 +68,7 @@ serve(async (req) => {
           JSON.stringify({ 
             error: 'Authentication error with Brønnøysund API',
             status: baseResponse.status,
-            message: 'The Brønnøysund API requires authentication or the request was forbidden.'
+            message: 'The Brønnøysund API requires authentication or the request was forbidden. Please check that valid API credentials are configured.'
           }),
           { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
