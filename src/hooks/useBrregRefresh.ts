@@ -23,9 +23,9 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
     let failedClients: string[] = [];
     let apiAuthError = false;
     let updatedClientsData: Record<string, any> = {};
+    let anyUpdate = false;
 
     try {
-      // Get the current session for authentication
       const { data: sessionData } = await supabase.auth.getSession();
       const session = sessionData?.session;
       const authHeader = session ? `Bearer ${session.access_token}` : undefined;
@@ -50,19 +50,16 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
           });
 
           if (response.status === 404) {
-            console.error(`No data found in BRREG for ${client.name} (${client.orgNumber})`);
             failedClients.push(client.name);
             continue;
           }
           if (response.status === 429) {
-            console.error(`Rate limit exceeded for BRREG API when fetching ${client.name} (${client.orgNumber})`);
             failedClients.push(client.name);
             continue;
           }
           if (response.status === 502) {
             const errorData = await response.json();
             if (errorData?.error === "Authentication error with Brønnøysund API") {
-              console.error(`Authentication error with Brønnøysund API: ${errorData.message}`);
               apiAuthError = true;
               failedClients.push(client.name);
               continue;
@@ -82,11 +79,9 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
           const basis = data.basis;
           const roles = data.roles;
 
-          // Always use NULL for empty/missing values!
           const fixValue = (val: string | undefined | null) =>
             val && String(val).trim().length > 0 ? val : null;
 
-          // Address lines logic
           const addressLines = Array.isArray(basis.addressLines) ? basis.addressLines : [];
           const addressLine = addressLines.length > 0 ? addressLines.join(", ") : null;
           const email = fixValue(basis.email);
@@ -103,7 +98,6 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
           const postalCode = fixValue(basis.postalCode);
           const city = fixValue(basis.city);
 
-          // Prepare all fields including the new columns
           const updateData: Record<string, any> = {
             name: fixValue(basis.navn) || client.name,
             company_name: fixValue(basis.navn) || client.companyName,
@@ -117,7 +111,7 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
             municipality_code: municipalityCode,
             municipality_name: municipalityName,
             address: addressLine,
-            address_line: addressLine, // new field for full raw address
+            address_line: addressLine,
             postal_code: postalCode,
             city,
             registration_date: basis.registreringsdatoEnhetsregisteret
@@ -131,6 +125,25 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
             share_capital: shareCapital,
           };
 
+          const isDifferent = Object.keys(updateData).some((key) => {
+            const currentVal = client[
+              key
+                .replace(/_([a-z])/g, (_, c) => c.toUpperCase())
+                .replace("address_line", "address")
+            ];
+            if (
+              (updateData[key] == null && (currentVal == null || currentVal === "")) ||
+              updateData[key] === currentVal
+            ) {
+              return false;
+            }
+            return true;
+          });
+
+          if (!isDifferent) continue;
+
+          anyUpdate = true;
+
           const { error: updateError, data: updatedData } = await supabase
             .from("clients")
             .update(updateData)
@@ -142,7 +155,6 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
             continue;
           }
 
-          // Roles update logic unchanged
           if (roles && (roles.ceo || roles.chair || (roles.boardMembers && roles.boardMembers.length > 0))) {
             try {
               await supabase.from("client_roles").delete().eq("client_id", client.id);
@@ -203,17 +215,23 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
           description: "Kunne ikke koble til Brønnøysundregisteret. Sjekk at du har riktig API-nøkkel konfigurert.",
           variant: "destructive",
         });
-      } else if (failedClients.length === 0 && successCount > 0) {
+      } else if (successCount > 0 && anyUpdate) {
         toast({
           title: "Oppdatering fullført",
-          description: `Alle ${successCount} klienter er oppdatert med nyeste data fra Brønnøysund og lagret i databasen`,
-          variant: "default",
+          description: `Klientdata oppdatert i databasen (${successCount} oppdatert).`,
+          variant: "success",
+        });
+      } else if (successCount === 0 && !anyUpdate) {
+        toast({
+          title: "Ingen endringer",
+          description: "Alle klientdata var allerede oppdatert.",
+          variant: "warning",
         });
       } else if (successCount > 0) {
         toast({
-          title: "Delvis oppdatering fullført",
-          description: `${successCount} klienter oppdatert og lagret i databasen. ${failedClients.length} klienter kunne ikke oppdateres.`,
-          variant: "default",
+          title: "Oppdatering fullført",
+          description: `${successCount} klient(er) oppdatert.`,
+          variant: "success",
         });
       } else {
         toast({

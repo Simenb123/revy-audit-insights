@@ -9,9 +9,17 @@ interface BoardAccordionProps {
   roles: ClientRole[];
 }
 
+const roleLabels: Record<string, string> = {
+  CEO: "Daglig leder",
+  CHAIR: "Styreleder",
+  SIGNATORY: "Signaturberettiget",
+  MEMBER: "Styremedlem"
+};
+
 const BoardAccordion: React.FC<BoardAccordionProps> = ({ roles }) => {
   if (!roles || roles.length === 0) return null;
-  // Sort: CEO, Chair, MEM, SIGNATORY
+
+  // Sort in requested order
   const grouped = {
     CEO: [] as ClientRole[],
     CHAIR: [] as ClientRole[],
@@ -23,28 +31,48 @@ const BoardAccordion: React.FC<BoardAccordionProps> = ({ roles }) => {
       grouped[role.roleType as keyof typeof grouped].push(role);
     }
   }
+
+  // Helper for datoer (fra- til- pågående)
+  const rolePeriod = (from?: string, to?: string) => {
+    if (!from && !to) return null;
+    if (from && !to) return (
+      <span className="text-xs text-muted-foreground ml-3">({`fra: ${formatDate(from)} – pågående`})</span>
+    );
+    if (from && to) return (
+      <span className="text-xs text-muted-foreground ml-3">({`fra: ${formatDate(from)} til: ${formatDate(to)}`})</span>
+    );
+    if (!from && to) return (
+      <span className="text-xs text-muted-foreground ml-3">({`til: ${formatDate(to)}`})</span>
+    );
+    return null;
+  };
+
+  const renderRole = (role: ClientRole, type: string) => (
+    <div
+      className="flex flex-col md:flex-row md:justify-between md:items-center p-2 bg-muted rounded"
+      key={role.id}
+    >
+      <div>
+        <span className="font-medium">
+          {role.name && role.name.trim().length > 0 ? role.name : "—"}
+        </span>
+        <span className="ml-2 text-xs text-muted-foreground">
+          {roleLabels[type] || type}
+        </span>
+        {rolePeriod(role.fromDate, role.toDate)}
+      </div>
+    </div>
+  );
+
   return (
     <Accordion type="single" collapsible>
       <AccordionItem value="board">
         <AccordionTrigger>Styresammensetning</AccordionTrigger>
         <AccordionContent>
           <div className="space-y-2">
-            {Object.entries(grouped).map(([type, rs]) => (
-              rs.map(role => (
-                <div className="flex flex-col md:flex-row md:justify-between md:items-center p-2 bg-muted rounded" key={role.id}>
-                  <div>
-                    <span className="font-medium">{role.name}</span>
-                    <span className="ml-2 text-xs text-muted-foreground">
-                      {type === "CEO" ? "Daglig leder" : type === "CHAIR" ? "Styreleder" : type === "SIGNATORY" ? "Signaturberettiget" : "Styremedlem"}
-                    </span>
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    {role.fromDate && `Fra: ${formatDate(role.fromDate)}`}
-                    {role.toDate && ` til: ${formatDate(role.toDate)}`}
-                  </div>
-                </div>
-              ))
-            ))}
+            {Object.entries(grouped).map(([type, rs]) =>
+              rs.map((role) => renderRole(role, type))
+            )}
           </div>
         </AccordionContent>
       </AccordionItem>
