@@ -22,6 +22,13 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
     let apiAuthError = false;
 
     try {
+      // Get the current session for authentication
+      const { data: sessionData } = await supabase.auth.getSession();
+      const session = sessionData?.session;
+      
+      // Prepare authorization header if we have a session
+      const authHeader = session ? `Bearer ${session.access_token}` : undefined;
+      
       for (const client of clients) {
         if (!client.orgNumber) {
           failedClients.push(client.name);
@@ -32,7 +39,10 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
         try {
           const response = await fetch(`https://fxelhfwaoizqyecikscu.functions.supabase.co/brreg`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+              'Content-Type': 'application/json',
+              ...(authHeader ? { 'Authorization': authHeader } : {})
+            },
             body: JSON.stringify({ query: client.orgNumber }),
           });
 
@@ -93,7 +103,7 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
       if (apiAuthError) {
         toast({
           title: "API-tilgangsfeil",
-          description: "Kunne ikke koble til Brønnøysundregisteret. Tjenesten krever autentisering.",
+          description: "Kunne ikke koble til Brønnøysundregisteret. Sjekk at du har riktig API-nøkkel konfigurert.",
           variant: "destructive"
         });
       } else if (failedClients.length === 0) {
@@ -110,7 +120,7 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
       } else {
         toast({
           title: "Feil ved oppdatering",
-          description: "Kunne ikke oppdatere noen klienter. Sjekk at org.nr er korrekt.",
+          description: "Kunne ikke oppdatere noen klienter. Sjekk at org.nr er korrekt og at API-tilgangen er konfigurert.",
           variant: "destructive"
         });
       }

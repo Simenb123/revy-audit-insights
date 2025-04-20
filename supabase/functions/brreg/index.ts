@@ -25,6 +25,9 @@ serve(async (req) => {
       );
     }
 
+    // Get the authorization header from the request
+    const authHeader = req.headers.get('authorization');
+    
     // Check if the query looks like an organization number (9 digits)
     const isOrgNumber = /^\d{9}$/.test(query);
     
@@ -45,8 +48,15 @@ serve(async (req) => {
 
     // First get the basic company information
     let baseResponse;
+    const fetchOptions = {};
+    
+    // Add the authorization header if it exists
+    if (authHeader) {
+      fetchOptions.headers = { 'Authorization': authHeader };
+    }
+    
     try {
-      baseResponse = await fetch(baseUrl);
+      baseResponse = await fetch(baseUrl, fetchOptions);
       console.log(`BRREG API response status: ${baseResponse.status}`);
       
       // If we get a 401 or 403, return a specific error to inform the client
@@ -95,7 +105,7 @@ serve(async (req) => {
       
       let rolesData = { roller: [] };
       try {
-        const rolesResponse = await fetch(rolesUrl);
+        const rolesResponse = await fetch(rolesUrl, fetchOptions);
         if (rolesResponse.ok) {
           rolesData = await rolesResponse.json();
         } else {
@@ -139,7 +149,7 @@ serve(async (req) => {
             const orgNr = enhet.organisasjonsnummer;
             const rolesUrl = `${BRREG_ROLES_API}/enhet/${orgNr}`;
             try {
-              const rolesResponse = await fetch(rolesUrl);
+              const rolesResponse = await fetch(rolesUrl, fetchOptions);
               if (rolesResponse.ok) {
                 const rolesData = await rolesResponse.json();
                 return {
