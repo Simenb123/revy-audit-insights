@@ -1,0 +1,59 @@
+
+import { Client } from '@/types/revio';
+
+export const mockClients: Client[] = [
+  {
+    id: '1',
+    name: 'Nordheim AS',
+    companyName: 'Nordheim Konsern',
+    orgNumber: '912345678',
+    phase: 'planning',
+    progress: 65,
+    department: 'Oslo',
+    contactPerson: 'Mats Hansen',
+    chair: 'Ola Nordmann',
+    ceo: 'Erik Hansen',
+    industry: 'Eiendom',
+    registrationDate: '2010-05-10',
+    address: 'Storgata 1',
+    postalCode: '0123',
+    city: 'Oslo',
+    riskAreas: [
+      { name: 'Inntekter', risk: 'medium' },
+      { name: 'Kostnader', risk: 'low' },
+      { name: 'Anleggsmidler', risk: 'high' }
+    ],
+    documents: [
+      { type: 'shareholder_report', status: 'submitted', dueDate: '2025-05-15' },
+      { type: 'tax_return', status: 'pending', dueDate: '2025-06-30' },
+      { type: 'annual_report', status: 'pending', dueDate: '2025-07-31' }
+    ]
+  },
+  {
+    id: '2',
+    name: 'Sørland Byggverk AS',
+    companyName: 'Sørland Gruppe',
+    orgNumber: '921234567',
+    phase: 'execution',
+    progress: 40,
+    department: 'Kristiansand',
+    contactPerson: 'Julie Nilsen',
+    chair: 'Per Andersen',
+    ceo: 'Lisa Olsen',
+    industry: 'Bygg og anlegg',
+    registrationDate: '2015-03-15',
+    address: 'Havnegata 5',
+    postalCode: '4630',
+    city: 'Kristiansand',
+    riskAreas: [
+      { name: 'Inntekter', risk: 'low' },
+      { name: 'Kostnader', risk: 'medium' },
+      { name: 'Anleggsmidler', risk: 'low' }
+    ],
+    documents: [
+      { type: 'shareholder_report', status: 'accepted', dueDate: '2025-05-15' },
+      { type: 'tax_return', status: 'submitted', dueDate: '2025-06-30' },
+      { type: 'annual_report', status: 'pending', dueDate: '2025-07-31' }
+    ]
+  }
+];
