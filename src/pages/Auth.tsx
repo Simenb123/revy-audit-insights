@@ -1,19 +1,24 @@
 
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/components/Auth/AuthProvider';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Info } from 'lucide-react';
 
 const Auth = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { session } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
+  const [showErrorDialog, setShowErrorDialog] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -21,6 +26,16 @@ const Auth = () => {
     lastName: '',
     workplaceCompanyName: ''
   });
+
+  // Check for error parameters in URL
+  useEffect(() => {
+    const errorCode = searchParams.get('error_code');
+    const errorDescription = searchParams.get('error_description');
+    
+    if (errorCode === 'otp_expired' || (errorDescription && errorDescription.includes('invalid'))) {
+      setShowErrorDialog(true);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (session) {
@@ -50,8 +65,11 @@ const Auth = () => {
 
         toast({
           title: "Registrering vellykket",
-          description: "Sjekk e-posten din for bekreftelseslink.",
+          description: "Sjekk e-posten din for bekreftelseslink. Du kan også logge inn direkte.",
         });
+        
+        // Auto-switch to login view after signup
+        setIsSignUp(false);
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email: formData.email,
@@ -73,6 +91,21 @@ const Auth = () => {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background">
+      {/* Error dialog for invalid/expired email link */}
+      <Dialog open={showErrorDialog} onOpenChange={setShowErrorDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Lenken er ugyldig eller har utløpt</DialogTitle>
+            <DialogDescription>
+              E-postbekreftelseslenken har utløpt eller er ugyldig. Du kan fortsatt logge inn med dine opplysninger.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end mt-4">
+            <Button onClick={() => setShowErrorDialog(false)}>Lukk</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <Card className="w-[400px]">
         <CardHeader>
           <CardTitle>{isSignUp ? 'Registrer ny bruker' : 'Logg inn'}</CardTitle>
@@ -141,6 +174,16 @@ const Auth = () => {
                   />
                 </div>
               </>
+            )}
+
+            {!isSignUp && (
+              <Alert variant="outline" className="mt-4">
+                <Info className="h-4 w-4" />
+                <AlertTitle>Tips</AlertTitle>
+                <AlertDescription>
+                  Du kan logge inn selv om du ikke har bekreftet e-posten din.
+                </AlertDescription>
+              </Alert>
             )}
 
             <div className="space-y-4">
