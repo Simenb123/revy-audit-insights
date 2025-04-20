@@ -9,6 +9,119 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      client_documents: {
+        Row: {
+          client_id: string
+          created_at: string
+          due_date: string
+          id: string
+          status: Database["public"]["Enums"]["document_status"]
+          type: Database["public"]["Enums"]["document_type"]
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          due_date: string
+          id?: string
+          status?: Database["public"]["Enums"]["document_status"]
+          type: Database["public"]["Enums"]["document_type"]
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          due_date?: string
+          id?: string
+          status?: Database["public"]["Enums"]["document_status"]
+          type?: Database["public"]["Enums"]["document_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_documents_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clients: {
+        Row: {
+          address: string | null
+          bank_account: string | null
+          ceo: string | null
+          chair: string | null
+          city: string | null
+          company_name: string
+          contact_person: string | null
+          created_at: string
+          department: string | null
+          email: string | null
+          id: string
+          industry: string | null
+          name: string
+          notes: string | null
+          org_number: string
+          phase: Database["public"]["Enums"]["audit_phase"]
+          phone: string | null
+          postal_code: string | null
+          progress: number
+          registration_date: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address?: string | null
+          bank_account?: string | null
+          ceo?: string | null
+          chair?: string | null
+          city?: string | null
+          company_name: string
+          contact_person?: string | null
+          created_at?: string
+          department?: string | null
+          email?: string | null
+          id?: string
+          industry?: string | null
+          name: string
+          notes?: string | null
+          org_number: string
+          phase?: Database["public"]["Enums"]["audit_phase"]
+          phone?: string | null
+          postal_code?: string | null
+          progress?: number
+          registration_date?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string | null
+          bank_account?: string | null
+          ceo?: string | null
+          chair?: string | null
+          city?: string | null
+          company_name?: string
+          contact_person?: string | null
+          created_at?: string
+          department?: string | null
+          email?: string | null
+          id?: string
+          industry?: string | null
+          name?: string
+          notes?: string | null
+          org_number?: string
+          phase?: Database["public"]["Enums"]["audit_phase"]
+          phone?: string | null
+          postal_code?: string | null
+          progress?: number
+          registration_date?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -39,6 +152,41 @@ export type Database = {
         }
         Relationships: []
       }
+      risk_areas: {
+        Row: {
+          client_id: string
+          created_at: string
+          id: string
+          name: string
+          risk: Database["public"]["Enums"]["risk_level"]
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          id?: string
+          name: string
+          risk?: Database["public"]["Enums"]["risk_level"]
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+          risk?: Database["public"]["Enums"]["risk_level"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "risk_areas_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -47,7 +195,10 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      audit_phase: "engagement" | "planning" | "execution" | "conclusion"
+      document_status: "pending" | "submitted" | "accepted" | "rejected"
+      document_type: "shareholder_report" | "tax_return" | "annual_report"
+      risk_level: "low" | "medium" | "high"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -162,6 +313,11 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      audit_phase: ["engagement", "planning", "execution", "conclusion"],
+      document_status: ["pending", "submitted", "accepted", "rejected"],
+      document_type: ["shareholder_report", "tax_return", "annual_report"],
+      risk_level: ["low", "medium", "high"],
+    },
   },
 } as const
