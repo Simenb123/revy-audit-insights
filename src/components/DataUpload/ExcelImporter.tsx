@@ -39,6 +39,9 @@ const ExcelImporter = ({ onImportSuccess }: ExcelImporterProps) => {
       
       setDebug(prev => [...prev, `Fetching data for org number: ${orgNumber}`]);
       
+      // Log detailed authentication information
+      setDebug(prev => [...prev, `Using auth: User ID: ${session.user.id.substring(0, 8)}... with role: ${session.user.role}`]);
+      
       const { data: response, error: invokeError } = await supabase.functions.invoke('brreg', {
         body: { query: orgNumber }
       });
@@ -50,8 +53,17 @@ const ExcelImporter = ({ onImportSuccess }: ExcelImporterProps) => {
         return null;
       }
 
-      if (!response || !response._embedded?.enheter?.[0]) {
-        const errorMsg = `No data found for org number: ${orgNumber}`;
+      if (!response) {
+        const errorMsg = `No response from brreg function for org number: ${orgNumber}`;
+        console.error(errorMsg);
+        setDebug(prev => [...prev, errorMsg]);
+        return null;
+      }
+
+      setDebug(prev => [...prev, `Brreg response received: ${JSON.stringify(response).substring(0, 150)}...`]);
+
+      if (!response._embedded?.enheter?.[0]) {
+        const errorMsg = `No company data found for org number: ${orgNumber}`;
         console.warn(errorMsg);
         setDebug(prev => [...prev, errorMsg]);
         return null;
@@ -60,21 +72,26 @@ const ExcelImporter = ({ onImportSuccess }: ExcelImporterProps) => {
       const company = response._embedded.enheter[0];
       setDebug(prev => [...prev, `Found company: ${company.navn} with org number: ${company.organisasjonsnummer}`]);
       
-      // Inserting client data
-      setDebug(prev => [...prev, `Attempting to insert client with org number: ${orgNumber}`]);
+      // Inserting client data with detailed logging
+      setDebug(prev => [...prev, `Attempting to insert client with org number: ${orgNumber} for user ID: ${session.user.id.substring(0, 8)}...`]);
+      
+      // Log the data being inserted for debugging
+      const clientData = {
+        name: company.navn,
+        company_name: company.navn,
+        org_number: company.organisasjonsnummer,
+        phase: 'engagement',
+        progress: 0,
+        industry: company.naeringskode1?.beskrivelse || null,
+        registration_date: company.registreringsdatoEnhetsregisteret?.split('T')[0] || null,
+        user_id: session.user.id
+      };
+      
+      setDebug(prev => [...prev, `Client data to insert: ${JSON.stringify(clientData)}`]);
       
       const { data: client, error } = await supabase
         .from('clients')
-        .insert({
-          name: company.navn,
-          company_name: company.navn,
-          org_number: company.organisasjonsnummer,
-          phase: 'engagement',
-          progress: 0,
-          industry: company.naeringskode1?.beskrivelse || null,
-          registration_date: company.registreringsdatoEnhetsregisteret?.split('T')[0] || null,
-          user_id: session.user.id
-        })
+        .insert(clientData)
         .select()
         .single();
 
@@ -85,7 +102,7 @@ const ExcelImporter = ({ onImportSuccess }: ExcelImporterProps) => {
           setDebug(prev => [...prev, errorMsg]);
           return null;
         }
-        const errorMsg = `Error inserting client: ${error.message} (${error.code})`;
+        const errorMsg = `Error inserting client: ${error.message} (${error.code}) - Details: ${JSON.stringify(error.details || {})}`;
         console.error(errorMsg);
         setDebug(prev => [...prev, errorMsg]);
         throw error;
@@ -114,19 +131,23 @@ const ExcelImporter = ({ onImportSuccess }: ExcelImporterProps) => {
       setHasError(false);
       setErrorDetails('');
       setFileName(file.name);
-      setDebug(['Starting import...']);
+      setDebug(['Starting import...', `File: ${file.name} (${file.size} bytes)`]);
 
-      // Check authentication first
+      // Check authentication first with detailed logging
       const { data: { session }, error: authError } = await supabase.auth.getSession();
       if (authError) {
-        throw new Error(`Auth error: ${authError.message}`);
+        const errorMsg = `Auth error: ${authError.message} (${authError.name})`;
+        setDebug(prev => [...prev, errorMsg]);
+        throw new Error(errorMsg);
       }
       
       if (!session || !session.user) {
-        throw new Error('User is not authenticated. Please log in before importing.');
+        const errorMsg = 'User is not authenticated. Please log in before importing.';
+        setDebug(prev => [...prev, errorMsg]);
+        throw new Error(errorMsg);
       }
 
-      setDebug(prev => [...prev, `Authenticated as user: ${session.user.id}`]);
+      setDebug(prev => [...prev, `Authenticated as user: ${session.user.id.substring(0, 8)}... (${session.user.email})`]);
 
       const reader = new FileReader();
       reader.onload = async (e) => {
@@ -137,11 +158,20 @@ const ExcelImporter = ({ onImportSuccess }: ExcelImporterProps) => {
           
           setDebug(prev => [...prev, `Excel file read successfully. Sheet name: ${workbook.SheetNames[0]}`]);
           
-          const rows: string[] = XLSX.utils.sheet_to_json(firstSheet, { header: 'A' })
-            .map(row => (row as any).A?.toString().trim())
+          // Extract rows with detailed logging
+          const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 'A' });
+          setDebug(prev => [...prev, `Raw data rows: ${jsonData.length}`]);
+          
+          const rows: string[] = jsonData
+            .map(row => {
+              const value = (row as any).A?.toString().trim();
+              return value;
+            })
             .filter(Boolean);
 
-          setDebug(prev => [...prev, `Found ${rows.length} rows in the Excel file.`]);
+          setDebug(prev => [...prev, `Filtered rows: ${rows.length}`]);
+          setDebug(prev => [...prev, `First 5 org numbers: ${rows.slice(0, 5).join(', ')}`]);
+          
           setTotalRows(rows.length);
 
           let successful = 0;
@@ -150,7 +180,10 @@ const ExcelImporter = ({ onImportSuccess }: ExcelImporterProps) => {
             setDebug(prev => [...prev, `Processing row ${i+1}: org number ${orgNumber}`]);
             
             const result = await processOrgNumber(orgNumber);
-            if (result) successful++;
+            if (result) {
+              successful++;
+              setDebug(prev => [...prev, `Successfully added client: ${result.name} (${result.id})`]);
+            }
             
             setProcessedRows(i + 1);
             setProgress(((i + 1) / rows.length) * 100);
@@ -178,6 +211,7 @@ const ExcelImporter = ({ onImportSuccess }: ExcelImporterProps) => {
           setHasError(true);
           setErrorDetails((error as Error).message || 'Ukjent feil ved prosessering av filen');
           setDebug(prev => [...prev, `Fatal error: ${(error as Error).message}`]);
+          setDebug(prev => [...prev, `Stack trace: ${(error as Error).stack}`]);
           
           toast({
             title: "Importfeil",
@@ -187,6 +221,13 @@ const ExcelImporter = ({ onImportSuccess }: ExcelImporterProps) => {
         } finally {
           setIsImporting(false);
         }
+      };
+
+      reader.onerror = (error) => {
+        setDebug(prev => [...prev, `FileReader error: ${reader.error?.message || 'Unknown error'}`]);
+        setHasError(true);
+        setErrorDetails('Feil ved lesing av fil');
+        setIsImporting(false);
       };
 
       reader.readAsArrayBuffer(file);
@@ -272,13 +313,11 @@ const ExcelImporter = ({ onImportSuccess }: ExcelImporterProps) => {
                   </div>
                 </div>
               )}
-              {debug.length > 0 && (
-                <div className="w-full bg-gray-50 border border-gray-200 rounded-md p-3 mt-4 max-h-48 overflow-y-auto text-xs font-mono">
-                  {debug.map((log, i) => (
-                    <div key={i} className="pb-1">{log}</div>
-                  ))}
-                </div>
-              )}
+              <div className="w-full bg-gray-50 border border-gray-200 rounded-md p-3 mt-4 max-h-48 overflow-y-auto text-xs font-mono">
+                {debug.map((log, i) => (
+                  <div key={i} className="pb-1">{log}</div>
+                ))}
+              </div>
             </div>
           )}
         </div>

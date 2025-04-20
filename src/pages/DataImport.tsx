@@ -16,6 +16,7 @@ const DataImport = () => {
   } | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authDetails, setAuthDetails] = useState<string>('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -23,7 +24,15 @@ const DataImport = () => {
       const { data: { session }, error } = await supabase.auth.getSession();
       if (error) {
         console.error("Auth error:", error);
+        setAuthDetails(`Authentication error: ${error.message}`);
+      } else if (session && session.user) {
+        setAuthDetails(`Authenticated as: ${session.user.email} (${session.user.id.substring(0, 8)}...)`);
+        console.log("Auth session:", session);
+      } else {
+        setAuthDetails('No active session found');
+        console.log("No active session");
       }
+      
       setIsAuthenticated(!!session);
       setAuthChecked(true);
     };
@@ -47,6 +56,9 @@ const DataImport = () => {
           <AlertTitle>Autentisering påkrevd</AlertTitle>
           <AlertDescription>
             Du må være logget inn for å importere klienter. Vennligst logg inn først.
+            <div className="mt-2 text-xs font-mono bg-red-50 p-2 rounded">
+              {authDetails}
+            </div>
           </AlertDescription>
         </Alert>
         <Button onClick={() => navigate('/auth')}>Gå til innlogging</Button>
@@ -73,6 +85,9 @@ const DataImport = () => {
         </h3>
         <p>Her kan du importere klienter fra en Excel-fil. Filen må ha organisasjonsnumre i kolonne A.</p>
         <p className="mt-2">Etter importering vil du finne klientene dine i <Link to="/klienter" className="text-blue-600 hover:underline font-medium">klientoversikten</Link>.</p>
+        <div className="mt-3 text-xs font-mono bg-blue-100 bg-opacity-50 p-2 rounded">
+          Autentiseringsstatus: {authDetails}
+        </div>
       </div>
       
       {recentUpload ? (
