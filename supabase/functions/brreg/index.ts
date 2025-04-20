@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const BRREG_API_BASE = "https://data.brreg.no/enhetsregisteret/api/enheter";
+const BRREG_ROLES_API = "https://data.brreg.no/enhetsregisteret/api/roller";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -26,26 +27,26 @@ serve(async (req) => {
     // Check if the query looks like an organization number (9 digits)
     const isOrgNumber = /^\d{9}$/.test(query);
     
-    let url;
+    let baseUrl;
     if (isOrgNumber) {
       // If it's an org number, use the direct endpoint
-      url = `${BRREG_API_BASE}/${query}`;
-      console.log("Searching by org number:", url);
+      baseUrl = `${BRREG_API_BASE}/${query}`;
+      console.log("Searching by org number:", baseUrl);
     } else {
       // Otherwise search by name
       const searchParams = new URLSearchParams({
         navn: query,
         size: '10',
       });
-      url = `${BRREG_API_BASE}?${searchParams.toString()}`;
-      console.log("Searching by name:", url);
+      baseUrl = `${BRREG_API_BASE}?${searchParams.toString()}`;
+      console.log("Searching by name:", baseUrl);
     }
 
-    const response = await fetch(url);
+    // First get the basic company information
+    const baseResponse = await fetch(baseUrl);
     
-    // If searching by org number directly, wrap the response in the expected format
     if (isOrgNumber) {
-      if (response.status === 404) {
+      if (baseResponse.status === 404) {
         return new Response(
           JSON.stringify({ 
             _embedded: { 
@@ -60,13 +61,29 @@ serve(async (req) => {
         );
       }
       
-      const data = await response.json();
+      const baseData = await baseResponse.json();
       
-      // Format the single entity response to match the search response format
+      // Then get the roles information for this organization
+      const rolesUrl = `${BRREG_ROLES_API}/enhet/${query}`;
+      console.log("Fetching roles:", rolesUrl);
+      const rolesResponse = await fetch(rolesUrl);
+      const rolesData = await rolesResponse.json();
+      
+      // Combine the data
+      const enhancedData = {
+        ...baseData,
+        roller: rolesData.roller || [],
+        naeringskode1: baseData.naeringskode1 || {},
+        organisasjonsform: baseData.organisasjonsform || {},
+        forretningsadresse: baseData.forretningsadresse || {},
+        institusjonellSektorkode: baseData.institusjonellSektorkode || {},
+      };
+      
+      // Format the response to match the search response format
       return new Response(
         JSON.stringify({
           _embedded: {
-            enheter: [data]
+            enheter: [enhancedData]
           },
           page: {
             totalElements: 1,
@@ -76,8 +93,32 @@ serve(async (req) => {
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     } else {
-      // For name searches, return the response as-is
-      const data = await response.json();
+      // For name searches, return the response as-is but with enhanced data
+      const data = await baseResponse.json();
+      
+      // For each company in the search results, fetch additional data
+      if (data._embedded?.enheter) {
+        const enhancedEnheter = await Promise.all(
+          data._embedded.enheter.map(async (enhet: any) => {
+            const orgNr = enhet.organisasjonsnummer;
+            const rolesUrl = `${BRREG_ROLES_API}/enhet/${orgNr}`;
+            try {
+              const rolesResponse = await fetch(rolesUrl);
+              const rolesData = await rolesResponse.json();
+              return {
+                ...enhet,
+                roller: rolesData.roller || [],
+              };
+            } catch (error) {
+              console.error(`Error fetching roles for ${orgNr}:`, error);
+              return enhet;
+            }
+          })
+        );
+        
+        data._embedded.enheter = enhancedEnheter;
+      }
+      
       return new Response(
         JSON.stringify(data),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
