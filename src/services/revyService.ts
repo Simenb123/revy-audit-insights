@@ -39,6 +39,12 @@ const contextualTips: Record<RevyContext, string[]> = {
     'Legg merke til varslene som indikerer kritiske datoer eller manglende dokumentasjon.',
     'Bruk filterfunksjonen for å sortere klienter etter bransje eller revisjonsfase.'
   ],
+  'client-admin': [
+    'Her kan du administrere klientene dine.',
+    'Legg til nye klienter manuelt eller søk i Brønnøysundregisteret.',
+    'Rediger eksisterende klient-informasjon ved å klikke på rediger-ikonet.',
+    'Sørg for at all informasjon er oppdatert for korrekt rapportering.'
+  ],
   'general': [
     'Jeg er Revy, din revisjonsassistent! Spør meg om hjelp når som helst.',
     'Trenger du hjelp med noe spesifikt? Jeg kan veilede deg gjennom revisjonsprosessen.',

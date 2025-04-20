@@ -88,10 +88,26 @@ const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, submitLa
   });
 
   const handleSubmit = (data: FormData) => {
-    // Legg til de obligatoriske feltene som ikke er med i skjemaet
+    // Ensuring all required fields are included and not optional in the fullClient object
     const fullClient: Client = {
-      ...data,
       id: data.id || Math.random().toString(36).substring(2, 9),
+      name: data.name, // This is required and now explicitly assigned
+      orgNumber: data.orgNumber, // This is required and now explicitly assigned
+      phase: data.phase, // This is required and now explicitly assigned
+      progress: data.progress, // This is required and now explicitly assigned
+      department: data.department,
+      contactPerson: data.contactPerson,
+      chair: data.chair,
+      ceo: data.ceo,
+      industry: data.industry,
+      registrationDate: data.registrationDate,
+      address: data.address,
+      postalCode: data.postalCode,
+      city: data.city,
+      email: data.email || undefined,
+      phone: data.phone,
+      bankAccount: data.bankAccount,
+      notes: data.notes,
       riskAreas: initialData?.riskAreas || [],
       documents: initialData?.documents || [],
     };
