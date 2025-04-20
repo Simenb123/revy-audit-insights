@@ -12,6 +12,7 @@ import AccountingExplorer from "./components/DataAnalysis/AccountingExplorer";
 import AppLayout from "./components/Layout/AppLayout";
 import TransactionSampling from "./components/DataAnalysis/TransactionSampling";
 import { SidebarProvider } from '@/components/ui/sidebar';
+import ClientAdmin from "./pages/ClientAdmin";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +33,7 @@ const App = () => (
                 <Route path="/dokumenter" element={<AppLayout><Index /></AppLayout>} />
                 <Route path="/prosjekter" element={<AppLayout><Index /></AppLayout>} />
                 <Route path="/klienter" element={<AppLayout><ClientsOverview /></AppLayout>} />
+                <Route path="/klienter/administrasjon" element={<AppLayout><ClientAdmin /></AppLayout>} />
                 <Route path="/innstillinger" element={<AppLayout><Index /></AppLayout>} />
                 <Route path="/hjelp" element={<AppLayout><Index /></AppLayout>} />
                 <Route path="*" element={<NotFound />} />

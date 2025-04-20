@@ -9,6 +9,7 @@ export type RevyContext =
   | 'documentation' 
   | 'mapping' 
   | 'client-overview'
+  | 'client-admin'
   | 'general';
 
 // Message structure for Revy chat
@@ -38,7 +39,7 @@ export interface ClientStatus {
   }[];
 }
 
-// New types for client overview
+// Utvidet Client interface
 export interface Client {
   id: string;
   name: string;
@@ -47,6 +48,18 @@ export interface Client {
   progress: number; // 0-100
   department?: string;
   contactPerson?: string;
+  chair?: string; // Styreleder
+  ceo?: string; // Daglig leder
+  industry?: string; // Bransje
+  registrationDate?: string; // Stiftelsesdato
+  lastUpdated?: string; // Sist oppdatert
+  address?: string;
+  postalCode?: string;
+  city?: string;
+  email?: string;
+  phone?: string;
+  bankAccount?: string;
+  notes?: string;
   riskAreas: {
     name: string;
     risk: RiskLevel;
@@ -138,3 +151,62 @@ export interface SamplingResult {
     coverage: number; // Percentage of total amount covered by sample
   };
 }
+
+// API interface for Brønnøysundregisteret
+export interface BrregSearchResult {
+  organisasjonsnummer: string;
+  navn: string;
+  organisasjonsform: {
+    kode: string;
+    beskrivelse: string;
+  };
+  registreringsdatoEnhetsregisteret?: string;
+  hjemmeside?: string;
+  registrertIForetaksregisteret?: boolean;
+  registrertIStiftelsesregisteret?: boolean;
+  registrertIFrivillighetsregisteret?: boolean;
+}
+
+export interface BrregDetailedInfo {
+  organisasjonsnummer: string;
+  navn: string;
+  organisasjonsform: {
+    kode: string;
+    beskrivelse: string;
+  };
+  postadresse?: {
+    adresse: string[];
+    postnummer: string;
+    poststed: string;
+    land: string;
+  };
+  stiftelsesdato?: string;
+  registreringsdatoEnhetsregisteret?: string;
+  naeringskode1?: {
+    kode: string;
+    beskrivelse: string;
+  };
+  antallAnsatte?: number;
+  forretningsadresse?: {
+    adresse: string[];
+    postnummer: string;
+    poststed: string;
+    land: string;
+  };
+  styre?: {
+    rolle: string;
+    navn: string;
+  }[];
+  dagligLeder?: {
+    navn: string;
+  };
+}
+
+export interface BrregAnnouncement {
+  id: string;
+  kunngjoringsdato: string;
+  kunngjoringstype: string;
+  organisasjonsnummer: string;
+  beskrivelse: string;
+}
+
