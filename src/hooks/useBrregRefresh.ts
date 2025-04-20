@@ -78,16 +78,18 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
           console.log(`Processing BRREG data for ${client.name}:`, brregData);
 
           // Extract CEO and Chair from roles if available
-          let ceo = client.ceo;
-          let chair = client.chair;
+          let ceo = client.ceo || "";
+          let chair = client.chair || "";
 
           if (brregData.roller && Array.isArray(brregData.roller)) {
+            // Find CEO (daglig leder)
             const dagligLeder = brregData.roller.find((r: any) => 
               r.type?.kode === 'DAGL' && r.person?.navn
             );
             
+            // Find Chairman (styreleder)
             const styreleder = brregData.roller.find((r: any) => 
-              r.type?.kode === 'STYR' && r.person?.navn
+              r.type?.kode === 'STYR' && r.person?.navn && r.rolleBeskrivelse === 'Styrets leder'
             );
 
             if (dagligLeder?.person?.navn) {
@@ -104,25 +106,38 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
           }
 
           // Prepare industry data
-          const industry = brregData.naeringskode1?.beskrivelse || client.industry;
+          const industry = brregData.naeringskode1?.beskrivelse || client.industry || "";
 
           // Get address details
-          const address = brregData.forretningsadresse?.adresse?.[0] || client.address;
-          const postalCode = brregData.forretningsadresse?.postnummer || client.postalCode;
-          const city = brregData.forretningsadresse?.poststed || client.city;
+          const address = brregData.forretningsadresse?.adresse?.[0] || client.address || "";
+          const postalCode = brregData.forretningsadresse?.postnummer || client.postalCode || "";
+          const city = brregData.forretningsadresse?.poststed || client.city || "";
+          
+          // Get registration date
+          const registrationDate = brregData.registreringsdatoEnhetsregisteret ? 
+            new Date(brregData.registreringsdatoEnhetsregisteret).toISOString().split('T')[0] : 
+            client.registrationDate || "";
+
+          // Get contact information if available
+          const email = brregData.epost || client.email || "";
+          const phone = brregData.telefon || client.phone || "";
+          
+          // Get company name
+          const companyName = brregData.navn || client.companyName || "";
 
           // Update client data in database
           const updateData = {
             name: brregData.navn || client.name,
+            company_name: companyName,
             industry: industry,
             ceo: ceo,
             chair: chair,
             address: address,
             postal_code: postalCode,
             city: city,
-            registration_date: brregData.registreringsdatoEnhetsregisteret ? 
-              new Date(brregData.registreringsdatoEnhetsregisteret).toISOString().split('T')[0] : 
-              client.registrationDate
+            registration_date: registrationDate,
+            email: email,
+            phone: phone
           };
 
           console.log(`Updating client ${client.name} with data:`, updateData);
@@ -161,7 +176,7 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
           const clientIds = Object.keys(updatedClientsData);
           const { data: latestClientData, error: fetchError } = await supabase
             .from('clients')
-            .select('id, name, industry, ceo, chair, address, postal_code, city, registration_date')
+            .select('id, name, company_name, industry, ceo, chair, address, postal_code, city, registration_date, email, phone')
             .in('id', clientIds);
             
           if (fetchError) {
@@ -175,12 +190,13 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
               if (!expectedData) continue;
               
               // Validate key fields
-              const fieldsToCheck = ['name', 'industry', 'ceo', 'chair', 'address'];
+              const fieldsToCheck = ['name', 'company_name', 'industry', 'ceo', 'chair', 'address', 'postal_code', 'city', 'registration_date', 'email', 'phone'];
               for (const field of fieldsToCheck) {
-                if (expectedData[field] && client[field] !== expectedData[field]) {
+                const dbField = field.includes('_') ? field : field; // Handle case differences
+                if (expectedData[field] && client[dbField] !== expectedData[field]) {
                   console.warn(`Update discrepancy for client ${client.name}, field ${field}:`, {
                     expected: expectedData[field],
-                    actual: client[field]
+                    actual: client[dbField]
                   });
                   allUpdatesConfirmed = false;
                 }

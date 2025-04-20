@@ -131,6 +131,9 @@ serve(async (req) => {
         organisasjonsform: baseData.organisasjonsform || {},
         forretningsadresse: baseData.forretningsadresse || {},
         institusjonellSektorkode: baseData.institusjonellSektorkode || {},
+        epost: baseData.epost || null,
+        telefon: baseData.telefon || null,
+        hjemmeside: baseData.hjemmeside || null,
       };
       
       // Format the response to match the search response format

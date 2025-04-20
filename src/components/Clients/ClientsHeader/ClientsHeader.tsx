@@ -58,7 +58,7 @@ const ClientsHeader = ({
                 <RefreshCw className="mr-1" size={16} />
               )}
               {isRefreshing 
-                ? "Oppdaterer og lagrer..." 
+                ? "Oppdaterer fra Brønnøysund..." 
                 : hasApiError 
                   ? "API-tilgangsfeil" 
                   : "Oppdater fra Brønnøysund"}
