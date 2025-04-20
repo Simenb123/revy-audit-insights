@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const BRREG_API_BASE = "https://data.brreg.no/enhetsregisteret/api/enheter";
@@ -165,10 +164,50 @@ serve(async (req) => {
       console.error("Error fetching roles:", rolesError);
     }
     
-    // Process roles to extract CEO, Chair, and board members
-    const processedRoles = processRoles(rolesData.roller || []);
+    // Process roles for enhanced list
+    const processedRoles = processRolesV2(rolesData.roller || []);
     
-    // Combine the data into one comprehensive object
+    // Extract address info (full address array, postnummer, poststed, kommune)
+    const forretningsadresse = baseData.forretningsadresse || {};
+    const email = (baseData.hjemmeside && typeof baseData.hjemmeside === 'object')
+        ? baseData.hjemmeside.adresseEpost
+        : baseData.epost;
+
+    // Map municipality name/code (some are on forretningsadresse, fallback to kommune directly)
+    let municipalityCode = forretningsadresse.kommunenummer || (forretningsadresse.kommune && forretningsadresse.kommune.kommunenummer) || baseData.kommune?.kommunenummer || null;
+    let municipalityName = forretningsadresse.kommune || baseData.kommune?.kommune || null;
+    if (typeof municipalityName === "object" && "navn" in municipalityName) {
+      municipalityName = municipalityName.navn;
+    } else if (typeof municipalityName === "string") {
+      // keep as is
+    } else {
+      municipalityName = null;
+    }
+
+    // Extract homepage from hjemmmeside field directly (may be string or object)
+    let homepage = baseData.hjemmeside;
+    if (homepage && typeof homepage === "object" && homepage.adresseUrl) {
+      homepage = homepage.adresseUrl;
+    }
+
+    // Try to extract capital fields (aksjekapital, aksjekapitalNOK, innskuddskapital)
+    let equityCapital = null;
+    if (baseData.kapital) {
+      if (baseData.kapital.aksjekapitalNOK) {
+        equityCapital = baseData.kapital.aksjekapitalNOK;
+      } else if (baseData.kapital.aksjekapital) {
+        equityCapital = baseData.kapital.aksjekapital;
+      }
+    }
+
+    let shareCapital = null;
+    if (baseData.kapital) {
+      if (baseData.kapital.innskuddskapital) {
+        shareCapital = baseData.kapital.innskuddskapital;
+      }
+    }
+
+    // Build enhanced data object, taking from BRREG mapping table
     const enhancedData = {
       basis: {
         organisasjonsnummer: baseData.organisasjonsnummer,
@@ -176,19 +215,28 @@ serve(async (req) => {
         organisasjonsform: baseData.organisasjonsform || {},
         status: baseData.status || "ACTIVE",
         registreringsdatoEnhetsregisteret: baseData.registreringsdatoEnhetsregisteret,
-        hjemmeside: baseData.hjemmeside,
         naeringskode1: baseData.naeringskode1 || {},
         postadresse: baseData.postadresse || {},
-        forretningsadresse: baseData.forretningsadresse || {},
+        forretningsadresse: forretningsadresse,
+        addressLines: Array.isArray(forretningsadresse.adresse) ? forretningsadresse.adresse : (forretningsadresse.adresse ? [forretningsadresse.adresse] : []),
+        postalCode: forretningsadresse.postnummer || null,
+        city: forretningsadresse.poststed || null,
+        kommune: {
+          kommunenummer: municipalityCode,
+          navn: municipalityName
+        },
         institusjonellSektorkode: baseData.institusjonellSektorkode || {},
-        epost: baseData.epost,
-        telefon: baseData.telefon,
-        kapital: extractCapital(baseData),
-        kommune: baseData.kommune || {}
+        telefon: baseData.telefonnummer || baseData.telefon || null,
+        email: email || null,
+        homepage: homepage || null,
+        kapital: {
+          equityCapital: equityCapital,
+          shareCapital: shareCapital
+        }
       },
       roles: processedRoles
     };
-    
+
     console.log("Returning enhanced data object");
     return new Response(
       JSON.stringify(enhancedData),
@@ -210,89 +258,63 @@ serve(async (req) => {
 /**
  * Process roles from Brønnøysund API to extract CEO, Chair and board members
  */
-function processRoles(roller: any[]) {
+function processRolesV2(roller) {
   const result = {
     ceo: null,
     chair: null,
     boardMembers: []
   };
-  
-  if (!roller || !Array.isArray(roller)) {
-    console.log("No roles data available or data is not an array");
-    return result;
-  }
-  
-  console.log(`Processing ${roller.length} roles`);
-  
+  if (!roller || !Array.isArray(roller)) return result;
+
   roller.forEach(role => {
     try {
-      // Extract person name if available
       const personName = role.person?.navn;
-      
-      if (!personName) {
-        // Skip roles without a person name
-        return;
-      }
-      
-      // Extract from and to dates if available
+      if (!personName) return;
       const fromDate = role.fraTraadtTiltredtDato || null;
       const toDate = role.tilTraadtFraTredtDato || null;
-      
-      // Process based on role type
-      if (role.type?.kode === 'DAGL' && role.person?.navn) {
-        // CEO (Daglig leder)
+      const roleType = role.type?.kode || "";
+      const description = role.rolleBeskrivelse || "";
+      if (roleType === "DAGL") {
+        // CEO
         result.ceo = {
           name: personName,
           fromDate,
           toDate,
-          roleType: 'CEO'
+          roleType: "CEO"
         };
-        console.log(`Found CEO: ${personName}`);
-      } 
-      else if (role.type?.kode === 'STYR' && role.rolleBeskrivelse === 'Styrets leder' && role.person?.navn) {
-        // Chair (Styreleder)
+      } else if (roleType === "STYR" && description === "Styrets leder") {
         result.chair = {
           name: personName,
           fromDate,
           toDate,
-          roleType: 'CHAIR'
+          roleType: "CHAIR"
         };
-        console.log(`Found Chair: ${personName}`);
-      }
-      else if (role.type?.kode === 'STYR' && role.person?.navn) {
-        // Board member (Styremedlem)
+      } else if (roleType === "STYR") {
         result.boardMembers.push({
           name: personName,
           fromDate,
           toDate,
-          roleType: 'MEMBER',
-          description: role.rolleBeskrivelse || 'Styremedlem'
+          roleType: "MEMBER",
+          description
         });
-        console.log(`Found board member: ${personName}`);
-      }
-      else if (role.type?.kode === 'SIGNER' && role.person?.navn) {
-        // Signatory (Signaturberettiget)
+      } else if (roleType === "SIGNER") {
         result.boardMembers.push({
           name: personName,
           fromDate,
           toDate,
-          roleType: 'SIGNATORY',
-          description: 'Signaturberettiget'
+          roleType: "SIGNATORY",
+          description: "Signaturberettiget"
         });
-        console.log(`Found signatory: ${personName}`);
       }
-    } catch (e) {
-      console.error(`Error processing role: ${JSON.stringify(role).substring(0, 100)}...`, e);
-    }
+    } catch (e) {}
   });
-  
   return result;
 }
 
 /**
  * Extract capital information from the Brønnøysund data
  */
-function extractCapital(data: any) {
+function extractCapital(data) {
   const result = {
     shareCapital: null,
     equityCapital: null

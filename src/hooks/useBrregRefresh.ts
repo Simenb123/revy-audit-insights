@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/components/ui/use-toast";
@@ -33,20 +32,16 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
       // Prepare authorization header if we have a session
       const authHeader = session ? `Bearer ${session.access_token}` : undefined;
       
-      // Process each client
       for (let i = 0; i < clients.length; i++) {
         const client = clients[i];
-        // Update progress
         setRefreshProgress(Math.round(((i) / clients.length) * 100));
-        
+
         if (!client.orgNumber) {
           failedClients.push(client.name);
-          console.error(`Missing organization number for client: ${client.name}`);
           continue;
         }
 
         try {
-          console.log(`Fetching BRREG data for ${client.name} (${client.orgNumber})`);
           const response = await fetch(`https://fxelhfwaoizqyecikscu.functions.supabase.co/brreg`, {
             method: 'POST',
             headers: { 
@@ -56,7 +51,6 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
             body: JSON.stringify({ query: client.orgNumber }),
           });
 
-          // Check for various error conditions
           if (response.status === 404) {
             console.error(`No data found in BRREG for ${client.name} (${client.orgNumber})`);
             failedClients.push(client.name);
@@ -82,56 +76,61 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
           }
 
           if (!response.ok) {
-            console.error(`Failed to fetch BRREG data for ${client.name} (${client.orgNumber}): ${response.status} ${response.statusText}`);
             failedClients.push(client.name);
             continue;
           }
 
           const data = await response.json();
-          console.log(`Received BRREG data for ${client.name}:`, data);
 
           if (!data.basis || !data.basis.organisasjonsnummer) {
-            console.error(`Invalid data format from BRREG for ${client.name} (${client.orgNumber})`);
             failedClients.push(client.name);
             continue;
           }
 
-          // Extract data from the enhanced response
-          const basisData = data.basis;
-          const rolesData = data.roles;
-          
-          console.log(`Processing BRREG data for ${client.name}:`, { basis: basisData, roles: rolesData });
+          const basis = data.basis;
+          const roles = data.roles;
 
-          // Prepare client update data
+          // New: Map all enhanced fields per mapping
+          const addressLines = basis.addressLines || [];
+          const addressLine = addressLines.length > 0 ? addressLines.join(', ') : "";
+          const email = basis.email || "";
+          const homepage = basis.homepage || "";
+          const phone = basis.telefon || "";
+          // Equity/share
+          const equityCapital = basis.kapital?.equityCapital ?? null;
+          const shareCapital = basis.kapital?.shareCapital ?? null;
+          const municipalityCode = basis.kommune?.kommunenummer || null;
+          const municipalityName = basis.kommune?.navn || null;
+          const postalCode = basis.postalCode || "";
+          const city = basis.city || "";
+
+          // Save all mapped fields to DB and update roles below
           const updateData = {
-            name: basisData.navn || client.name,
-            company_name: basisData.navn || client.companyName,
-            org_form_code: basisData.organisasjonsform?.kode || null,
-            org_form_description: basisData.organisasjonsform?.beskrivelse || null,
-            homepage: basisData.hjemmeside || null,
-            status: basisData.status || null,
-            nace_code: basisData.naeringskode1?.kode || null,
-            nace_description: basisData.naeringskode1?.beskrivelse || null,
-            industry: basisData.naeringskode1?.beskrivelse || client.industry || null,
-            municipality_code: basisData.kommune?.kode || null,
-            municipality_name: basisData.kommune?.navn || null,
-            address: basisData.forretningsadresse?.adresse?.[0] || client.address || null,
-            postal_code: basisData.forretningsadresse?.postnummer || client.postalCode || null,
-            city: basisData.forretningsadresse?.poststed || client.city || null,
-            registration_date: basisData.registreringsdatoEnhetsregisteret ? 
-              new Date(basisData.registreringsdatoEnhetsregisteret).toISOString().split('T')[0] : 
-              client.registrationDate || null,
-            email: basisData.epost || client.email || null,
-            phone: basisData.telefon || client.phone || null,
-            ceo: rolesData.ceo?.name || client.ceo || null,
-            chair: rolesData.chair?.name || client.chair || null,
-            equity_capital: basisData.kapital?.equityCapital?.amount || null,
-            share_capital: basisData.kapital?.shareCapital?.amount || null
+            name: basis.navn || client.name,
+            company_name: basis.navn || client.companyName,
+            org_form_code: basis.organisasjonsform?.kode || null,
+            org_form_description: basis.organisasjonsform?.beskrivelse || null,
+            homepage: homepage || null,
+            status: basis.status || null,
+            nace_code: basis.naeringskode1?.kode || null,
+            nace_description: basis.naeringskode1?.beskrivelse || null,
+            industry: basis.naeringskode1?.beskrivelse || client.industry || null,
+            municipality_code: municipalityCode,
+            municipality_name: municipalityName,
+            address: addressLine,
+            postal_code: postalCode,
+            city: city,
+            registration_date: basis.registreringsdatoEnhetsregisteret
+              ? new Date(basis.registreringsdatoEnhetsregisteret).toISOString().split('T')[0]
+              : client.registrationDate || null,
+            email: email || client.email || null,
+            phone: phone || client.phone || null,
+            ceo: roles.ceo?.name || client.ceo || null,
+            chair: roles.chair?.name || client.chair || null,
+            equity_capital: equityCapital || null,
+            share_capital: shareCapital || null
           };
 
-          console.log(`Updating client ${client.name} with data:`, updateData);
-
-          // Update client data in database
           const { error: updateError, data: updatedData } = await supabase
             .from('clients')
             .update(updateData)
@@ -139,104 +138,68 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
             .select();
 
           if (updateError) {
-            console.error(`Database update error for ${client.name}: ${updateError.message}`);
             failedClients.push(client.name);
             continue;
           }
-          
-          console.log(`Successfully updated ${client.name} in database. Response:`, updatedData);
-          
-          // Process roles data
-          if (rolesData && (rolesData.ceo || rolesData.chair || (rolesData.boardMembers && rolesData.boardMembers.length > 0))) {
+
+          // Delete + insert roles: CEO + chair + boardmembers
+          if (roles && (roles.ceo || roles.chair || (roles.boardMembers && roles.boardMembers.length > 0))) {
             try {
-              // First, delete existing roles for this client
-              const { error: deleteError } = await supabase
-                .from('client_roles')
-                .delete()
-                .eq('client_id', client.id);
-                
-              if (deleteError) {
-                console.error(`Error deleting existing roles for ${client.name}: ${deleteError.message}`);
-              }
-              
-              // Prepare roles for insertion
+              // Delete all existing
+              await supabase.from('client_roles').delete().eq('client_id', client.id);
+              // All new roles list
               const rolesToInsert = [];
-              
-              // Add CEO if present
-              if (rolesData.ceo) {
+              if (roles.ceo) {
                 rolesToInsert.push({
                   client_id: client.id,
-                  role_type: 'CEO',
-                  name: rolesData.ceo.name,
-                  from_date: rolesData.ceo.fromDate || null,
-                  to_date: rolesData.ceo.toDate || null
+                  role_type: "CEO",
+                  name: roles.ceo.name,
+                  from_date: roles.ceo.fromDate || null,
+                  to_date: roles.ceo.toDate || null,
                 });
               }
-              
-              // Add Chair if present
-              if (rolesData.chair) {
+              if (roles.chair) {
                 rolesToInsert.push({
                   client_id: client.id,
-                  role_type: 'CHAIR',
-                  name: rolesData.chair.name,
-                  from_date: rolesData.chair.fromDate || null,
-                  to_date: rolesData.chair.toDate || null
+                  role_type: "CHAIR",
+                  name: roles.chair.name,
+                  from_date: roles.chair.fromDate || null,
+                  to_date: roles.chair.toDate || null,
                 });
               }
-              
-              // Add board members
-              if (rolesData.boardMembers && rolesData.boardMembers.length > 0) {
-                for (const member of rolesData.boardMembers) {
+              if (roles.boardMembers) {
+                for (const member of roles.boardMembers) {
                   rolesToInsert.push({
                     client_id: client.id,
-                    role_type: member.roleType || 'MEMBER',
+                    role_type: member.roleType || "MEMBER",
                     name: member.name,
                     from_date: member.fromDate || null,
                     to_date: member.toDate || null
                   });
                 }
               }
-              
-              // Insert roles if we have any
               if (rolesToInsert.length > 0) {
-                const { error: insertError, data: insertedRoles } = await supabase
-                  .from('client_roles')
-                  .insert(rolesToInsert)
-                  .select();
-                  
-                if (insertError) {
-                  console.error(`Error inserting roles for ${client.name}: ${insertError.message}`);
-                } else {
-                  console.log(`Successfully inserted ${insertedRoles.length} roles for ${client.name}`);
-                }
+                await supabase.from('client_roles').insert(rolesToInsert);
               }
             } catch (rolesError) {
               console.error(`Error processing roles for ${client.name}:`, rolesError);
             }
           }
-          
+
           successCount++;
-          // Store update confirmation data for validation
           if (updatedData && updatedData.length > 0) {
             updatedClientsData[client.id] = updateData;
           }
         } catch (clientError) {
-          console.error(`Error processing client ${client.name}: `, clientError);
           failedClients.push(client.name);
         }
       }
 
-      // Final progress update
       setRefreshProgress(100);
-
-      if (apiAuthError) {
-        setHasApiError(true);
-      }
-
-      // Refresh client data in React Query
+      if (apiAuthError) setHasApiError(true);
       await queryClient.invalidateQueries({ queryKey: ['clients'] });
 
-      // Show appropriate toast messages
+      // Show green toast if all OK, or partial/destructive if not
       if (apiAuthError) {
         toast({
           title: "API-tilgangsfeil",
@@ -247,6 +210,7 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
         toast({
           title: "Oppdatering fullført",
           description: `Alle ${successCount} klienter er oppdatert med nyeste data fra Brønnøysund og lagret i databasen`,
+          variant: "success"
         });
       } else if (successCount > 0) {
         toast({
@@ -262,7 +226,6 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
         });
       }
     } catch (error) {
-      console.error("General error during BRREG update:", error);
       toast({
         title: "Feil ved oppdatering",
         description: "Kunne ikke hente oppdatert data fra Brønnøysund. Vennligst prøv igjen senere.",
