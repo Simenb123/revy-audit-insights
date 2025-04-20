@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useRevyContext } from '@/components/RevyContext/RevyContextProvider';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, AlertTriangle } from "lucide-react";
 import { Client, Announcement, RiskArea, ClientDocument } from '@/types/revio';
 import ClientStatsGrid from '@/components/Clients/ClientStats/ClientStatsGrid';
 import ClientsTable from '@/components/Clients/ClientsTable/ClientsTable';
@@ -20,6 +20,7 @@ const ClientsOverview = () => {
 
   const queryClient = useQueryClient();
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [hasApiError, setHasApiError] = useState(false);
 
   // Fetch clients from Supabase
   const { data: clients = [], isLoading, error } = useQuery<Client[]>({
@@ -120,10 +121,12 @@ const ClientsOverview = () => {
 
   const handleRefreshBrregData = async () => {
     setIsRefreshing(true);
+    setHasApiError(false);
     
     // Keep track of successful and failed updates
     let successCount = 0;
     let failedClients: string[] = [];
+    let apiAuthError = false;
     
     try {
       for (const client of clients) {
@@ -141,6 +144,17 @@ const ClientsOverview = () => {
             },
             body: JSON.stringify({ query: client.orgNumber }),
           });
+
+          // Check for API authentication issues (502 with specific error)
+          if (response.status === 502) {
+            const errorData = await response.json();
+            if (errorData?.error === 'Authentication error with Brønnøysund API') {
+              console.error(`Authentication error with Brønnøysund API: ${errorData.message}`);
+              apiAuthError = true;
+              failedClients.push(client.name);
+              continue;
+            }
+          }
 
           if (!response.ok) {
             console.error(`Failed to fetch BRREG data for ${client.name} (${client.orgNumber}): ${response.status} ${response.statusText}`);
@@ -182,11 +196,22 @@ const ClientsOverview = () => {
         }
       }
       
+      // Set API error flag if we had authentication issues
+      if (apiAuthError) {
+        setHasApiError(true);
+      }
+      
       // Refresh the clients data
       await queryClient.invalidateQueries({ queryKey: ['clients'] });
       
       // Show summary toast based on results
-      if (failedClients.length === 0) {
+      if (apiAuthError) {
+        toast({
+          title: "API-tilgangsfeil",
+          description: "Kunne ikke koble til Brønnøysundregisteret. Tjenesten krever autentisering.",
+          variant: "destructive"
+        });
+      } else if (failedClients.length === 0) {
         toast({
           title: "Oppdatering fullført",
           description: `Alle ${successCount} klienter er oppdatert med nyeste data fra Brønnøysund`,
@@ -258,13 +283,22 @@ const ClientsOverview = () => {
         
         <div className="flex gap-4 items-center">
           <Button 
-            variant="outline" 
+            variant={hasApiError ? "destructive" : "outline"}
             size="sm"
             onClick={handleRefreshBrregData}
             disabled={isRefreshing}
+            className="gap-2"
           >
-            <RefreshCw className={isRefreshing ? "animate-spin mr-2" : "mr-2"} size={16} />
-            {isRefreshing ? "Oppdaterer..." : "Oppdater fra Brønnøysund"}
+            {hasApiError ? (
+              <AlertTriangle className="mr-1" size={16} />
+            ) : (
+              <RefreshCw className={isRefreshing ? "animate-spin mr-1" : "mr-1"} size={16} />
+            )}
+            {isRefreshing 
+              ? "Oppdaterer..." 
+              : hasApiError 
+                ? "API-tilgangsfeil" 
+                : "Oppdater fra Brønnøysund"}
           </Button>
           
           <ClientFilters 

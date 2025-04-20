@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const BRREG_API_BASE = "https://data.brreg.no/enhetsregisteret/api/enheter";
@@ -43,7 +44,32 @@ serve(async (req) => {
     }
 
     // First get the basic company information
-    const baseResponse = await fetch(baseUrl);
+    let baseResponse;
+    try {
+      baseResponse = await fetch(baseUrl);
+      console.log(`BRREG API response status: ${baseResponse.status}`);
+      
+      // If we get a 401 or 403, return a specific error to inform the client
+      if (baseResponse.status === 401 || baseResponse.status === 403) {
+        return new Response(
+          JSON.stringify({ 
+            error: 'Authentication error with Brønnøysund API',
+            status: baseResponse.status,
+            message: 'The Brønnøysund API requires authentication or the request was forbidden.'
+          }),
+          { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    } catch (fetchError) {
+      console.error("Error fetching from BRREG API:", fetchError);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Error connecting to Brønnøysund API',
+          details: fetchError.message 
+        }),
+        { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
     
     if (isOrgNumber) {
       if (baseResponse.status === 404) {
@@ -66,8 +92,18 @@ serve(async (req) => {
       // Then get the roles information for this organization
       const rolesUrl = `${BRREG_ROLES_API}/enhet/${query}`;
       console.log("Fetching roles:", rolesUrl);
-      const rolesResponse = await fetch(rolesUrl);
-      const rolesData = await rolesResponse.json();
+      
+      let rolesData = { roller: [] };
+      try {
+        const rolesResponse = await fetch(rolesUrl);
+        if (rolesResponse.ok) {
+          rolesData = await rolesResponse.json();
+        } else {
+          console.log(`Roles API returned status: ${rolesResponse.status}`);
+        }
+      } catch (rolesError) {
+        console.error("Error fetching roles:", rolesError);
+      }
       
       // Combine the data
       const enhancedData = {
@@ -104,11 +140,16 @@ serve(async (req) => {
             const rolesUrl = `${BRREG_ROLES_API}/enhet/${orgNr}`;
             try {
               const rolesResponse = await fetch(rolesUrl);
-              const rolesData = await rolesResponse.json();
-              return {
-                ...enhet,
-                roller: rolesData.roller || [],
-              };
+              if (rolesResponse.ok) {
+                const rolesData = await rolesResponse.json();
+                return {
+                  ...enhet,
+                  roller: rolesData.roller || [],
+                };
+              } else {
+                console.log(`Roles API returned status: ${rolesResponse.status} for ${orgNr}`);
+                return enhet;
+              }
             } catch (error) {
               console.error(`Error fetching roles for ${orgNr}:`, error);
               return enhet;
