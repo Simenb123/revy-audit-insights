@@ -120,24 +120,45 @@ const ClientsOverview = () => {
 
   const handleRefreshBrregData = async () => {
     setIsRefreshing(true);
+    
+    // Keep track of successful and failed updates
+    let successCount = 0;
+    let failedClients: string[] = [];
+    
     try {
       for (const client of clients) {
-        const response = await fetch(`https://fxelhfwaoizqyecikscu.functions.supabase.co/brreg`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ query: client.orgNumber }),
-        });
-
-        if (!response.ok) {
-          throw new Error(`Failed to fetch BRREG data for ${client.name}`);
+        if (!client.orgNumber) {
+          failedClients.push(client.name);
+          console.error(`Missing organization number for client: ${client.name}`);
+          continue;
         }
+        
+        try {
+          const response = await fetch(`https://fxelhfwaoizqyecikscu.functions.supabase.co/brreg`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ query: client.orgNumber }),
+          });
 
-        const data = await response.json();
-        const brregData = data._embedded.enheter[0];
+          if (!response.ok) {
+            console.error(`Failed to fetch BRREG data for ${client.name} (${client.orgNumber}): ${response.status} ${response.statusText}`);
+            failedClients.push(client.name);
+            continue;
+          }
 
-        if (brregData) {
+          const data = await response.json();
+          
+          // Check if we got any results
+          if (!data._embedded?.enheter || data._embedded.enheter.length === 0) {
+            console.error(`No data found in BRREG for ${client.name} (${client.orgNumber})`);
+            failedClients.push(client.name);
+            continue;
+          }
+          
+          const brregData = data._embedded.enheter[0];
+
           // Update client with new BRREG data
           const { error: updateError } = await supabase
             .from('clients')
@@ -150,26 +171,44 @@ const ClientsOverview = () => {
             .eq('id', client.id);
 
           if (updateError) {
-            toast({
-              title: "Feil ved oppdatering",
-              description: `Kunne ikke oppdatere ${client.name}: ${updateError.message}`,
-              variant: "destructive"
-            });
+            console.error(`Database update error for ${client.name}: ${updateError.message}`);
+            failedClients.push(client.name);
+          } else {
+            successCount++;
           }
+        } catch (clientError) {
+          console.error(`Error processing client ${client.name}: ${clientError}`);
+          failedClients.push(client.name);
         }
       }
       
       // Refresh the clients data
       await queryClient.invalidateQueries({ queryKey: ['clients'] });
       
-      toast({
-        title: "Oppdatering fullført",
-        description: "Alle klienter er oppdatert med nyeste data fra Brønnøysund",
-      });
+      // Show summary toast based on results
+      if (failedClients.length === 0) {
+        toast({
+          title: "Oppdatering fullført",
+          description: `Alle ${successCount} klienter er oppdatert med nyeste data fra Brønnøysund`,
+        });
+      } else if (successCount > 0) {
+        toast({
+          title: "Delvis oppdatering fullført",
+          description: `${successCount} klienter oppdatert. ${failedClients.length} klienter kunne ikke oppdateres.`,
+          variant: "default"
+        });
+      } else {
+        toast({
+          title: "Feil ved oppdatering",
+          description: "Kunne ikke oppdatere noen klienter. Sjekk at org.nr er korrekt.",
+          variant: "destructive"
+        });
+      }
     } catch (error) {
+      console.error("General error during BRREG update:", error);
       toast({
         title: "Feil ved oppdatering",
-        description: "Kunne ikke hente oppdatert data fra Brønnøysund",
+        description: "Kunne ikke hente oppdatert data fra Brønnøysund. Vennligst prøv igjen senere.",
         variant: "destructive"
       });
     } finally {
@@ -224,8 +263,8 @@ const ClientsOverview = () => {
             onClick={handleRefreshBrregData}
             disabled={isRefreshing}
           >
-            <RefreshCw className={isRefreshing ? "animate-spin" : ""} />
-            Oppdater fra Brønnøysund
+            <RefreshCw className={isRefreshing ? "animate-spin mr-2" : "mr-2"} size={16} />
+            {isRefreshing ? "Oppdaterer..." : "Oppdater fra Brønnøysund"}
           </Button>
           
           <ClientFilters 
