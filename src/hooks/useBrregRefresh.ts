@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/components/ui/use-toast";
@@ -219,19 +220,19 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
         toast({
           title: "Oppdatering fullført",
           description: `Klientdata oppdatert i databasen (${successCount} oppdatert).`,
-          variant: "success",
+          variant: "default",
         });
       } else if (successCount === 0 && !anyUpdate) {
         toast({
           title: "Ingen endringer",
           description: "Alle klientdata var allerede oppdatert.",
-          variant: "warning",
+          variant: "default",
         });
       } else if (successCount > 0) {
         toast({
           title: "Oppdatering fullført",
           description: `${successCount} klient(er) oppdatert.`,
-          variant: "success",
+          variant: "default",
         });
       } else {
         toast({
