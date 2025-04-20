@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const BRREG_API_BASE = "https://data.brreg.no/enhetsregisteret/api/enheter";
@@ -158,6 +159,11 @@ serve(async (req) => {
         rolesData = await rolesResponse.json();
         console.log("Roles data received:", JSON.stringify(rolesData).substring(0, 200) + "...");
         console.log("Total roles count:", rolesData.roller ? rolesData.roller.length : 0);
+        
+        // Special debugging for the specific org number mentioned in the user's request
+        if (query === '922666997') {
+          console.log("Detailed roles for requested org:", JSON.stringify(rolesData.roller, null, 2));
+        }
       } else {
         console.log(`Roles API returned error status: ${rolesResponse.status}`);
       }
@@ -287,7 +293,57 @@ function processRolesV2(roller) {
 
   console.log(`Processing ${roller.length} roles`);
   
-  roller.forEach((role, index) => {
+  // First, let's look for the CEO role
+  const ceoRole = roller.find(role => 
+    (role.type?.kode === "DAGL") || 
+    (role.rolleBeskrivelse && /daglig leder/i.test(role.rolleBeskrivelse))
+  );
+  
+  if (ceoRole) {
+    let personName = null;
+    if (ceoRole.person?.navn) {
+      personName = ceoRole.person.navn;
+    } else if (ceoRole.person?.navn?.fornavn && ceoRole.person?.navn?.etternavn) {
+      personName = `${ceoRole.person.navn.fornavn} ${ceoRole.person.navn.etternavn}`;
+    }
+    
+    if (personName) {
+      console.log(`Found CEO: ${personName}`);
+      result.ceo = {
+        name: personName,
+        fromDate: ceoRole.fraTraadtTiltredtDato || null,
+        toDate: ceoRole.tilTraadtFraTredtDato || null,
+        roleType: "CEO"
+      };
+    }
+  }
+  
+  // Then, look for the Chair role
+  const chairRole = roller.find(role => 
+    (role.type?.kode === "STYR" && role.rolleBeskrivelse && /styrets leder/i.test(role.rolleBeskrivelse))
+  );
+  
+  if (chairRole) {
+    let personName = null;
+    if (chairRole.person?.navn) {
+      personName = chairRole.person.navn;
+    } else if (chairRole.person?.navn?.fornavn && chairRole.person?.navn?.etternavn) {
+      personName = `${chairRole.person.navn.fornavn} ${chairRole.person.navn.etternavn}`;
+    }
+    
+    if (personName) {
+      console.log(`Found Chair: ${personName}`);
+      result.chair = {
+        name: personName,
+        fromDate: chairRole.fraTraadtTiltredtDato || null,
+        toDate: chairRole.tilTraadtFraTredtDato || null,
+        roleType: "CHAIR"
+      };
+    }
+  }
+  
+  // Process all board members and signatories
+  roller.forEach((role) => {
     try {
       // Extract the person's name
       let personName = null;
@@ -298,7 +354,6 @@ function processRolesV2(roller) {
       }
       
       if (!personName) {
-        console.log(`Role ${index} has no person name`);
         return;
       }
       
@@ -307,30 +362,14 @@ function processRolesV2(roller) {
       const roleType = role.type?.kode || "";
       const description = role.rolleBeskrivelse || "";
       
-      console.log(`Processing role: ${personName}, type: ${roleType}, desc: ${description}`);
+      // Skip already processed CEO and Chair roles to avoid duplicates
+      if ((result.ceo && result.ceo.name === personName && roleType === "DAGL") ||
+          (result.chair && result.chair.name === personName && roleType === "STYR" && /styrets leder/i.test(description))) {
+        return;
+      }
       
-      // CEO - look for 'DAGL' role type
-      if (roleType === "DAGL") {
-        console.log(`Found CEO: ${personName}`);
-        result.ceo = {
-          name: personName,
-          fromDate,
-          toDate,
-          roleType: "CEO"
-        };
-      } 
-      // Board chair - look for 'STYR' role type with description 'Styrets leder'
-      else if (roleType === "STYR" && (description === "Styrets leder" || description.includes("leder"))) {
-        console.log(`Found Chair: ${personName}`);
-        result.chair = {
-          name: personName,
-          fromDate,
-          toDate,
-          roleType: "CHAIR"
-        };
-      } 
       // Board member - look for 'STYR' role type
-      else if (roleType === "STYR") {
+      if (roleType === "STYR") {
         console.log(`Found Board Member: ${personName}`);
         result.boardMembers.push({
           name: personName,
@@ -352,7 +391,7 @@ function processRolesV2(roller) {
         });
       }
     } catch (e) {
-      console.error(`Error processing role ${index}:`, e);
+      console.error(`Error processing role:`, e);
     }
   });
   

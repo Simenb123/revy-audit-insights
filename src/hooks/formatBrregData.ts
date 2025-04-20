@@ -46,6 +46,8 @@ export function formatUpdateData(basis: any, roles: any, client: Client) {
   const ceoName = roles?.ceo?.name ? fixValue(roles.ceo.name) : null;
   const chairName = roles?.chair?.name ? fixValue(roles.chair.name) : null;
 
+  console.log("Processed CEO and Chair from roles:", { ceoName, chairName });
+
   return {
     name: fixValue(basis.navn) || client.name,
     company_name: fixValue(basis.navn) || client.companyName,
