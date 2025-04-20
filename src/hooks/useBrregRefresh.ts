@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/components/ui/use-toast";
@@ -207,10 +208,11 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
           variant: "destructive"
         });
       } else if (failedClients.length === 0 && successCount > 0) {
+        // Change variant "success" to "default" because only 'default' and 'destructive' are allowed
         toast({
           title: "Oppdatering fullført",
           description: `Alle ${successCount} klienter er oppdatert med nyeste data fra Brønnøysund og lagret i databasen`,
-          variant: "success"
+          variant: "default"
         });
       } else if (successCount > 0) {
         toast({
@@ -239,3 +241,4 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
 
   return { handleRefreshBrregData, isRefreshing, hasApiError, refreshProgress };
 }
+
