@@ -1,9 +1,8 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./components/Auth/AuthProvider";
 import { useAuth } from "./components/Auth/AuthProvider";
 import Index from "./pages/Index";
@@ -16,6 +15,7 @@ import AppLayout from "./components/Layout/AppLayout";
 import TransactionSampling from "./components/DataAnalysis/TransactionSampling";
 import { SidebarProvider } from '@/components/ui/sidebar';
 import ClientAdmin from "./pages/ClientAdmin";
+import DataImport from "./pages/DataImport";
 
 const queryClient = new QueryClient();
 
@@ -30,37 +30,40 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <AuthProvider>
-        <RevyContextProvider>
-          <BrowserRouter>
-            <SidebarProvider>
-              <div className="flex flex-col w-full h-screen">
-                <Toaster />
-                <Sonner />
-                <Routes>
-                  <Route path="/auth" element={<Auth />} />
-                  <Route path="/" element={<ProtectedRoute><AppLayout><Index /></AppLayout></ProtectedRoute>} />
-                  <Route path="/dashboard" element={<Navigate to="/" replace />} />
-                  <Route path="/analyser" element={<ProtectedRoute><AppLayout><AccountingExplorer /></AppLayout></ProtectedRoute>} />
-                  <Route path="/analyser/transaksjoner" element={<ProtectedRoute><AppLayout><TransactionSampling /></AppLayout></ProtectedRoute>} />
-                  <Route path="/dokumenter" element={<ProtectedRoute><AppLayout><Index /></AppLayout></ProtectedRoute>} />
-                  <Route path="/prosjekter" element={<ProtectedRoute><AppLayout><Index /></AppLayout></ProtectedRoute>} />
-                  <Route path="/klienter" element={<ProtectedRoute><AppLayout><ClientsOverview /></AppLayout></ProtectedRoute>} />
-                  <Route path="/klienter/administrasjon" element={<ProtectedRoute><AppLayout><ClientAdmin /></AppLayout></ProtectedRoute>} />
-                  <Route path="/innstillinger" element={<ProtectedRoute><AppLayout><Index /></AppLayout></ProtectedRoute>} />
-                  <Route path="/hjelp" element={<ProtectedRoute><AppLayout><Index /></AppLayout></ProtectedRoute>} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </div>
-            </SidebarProvider>
-          </BrowserRouter>
-        </RevyContextProvider>
-      </AuthProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <AuthProvider>
+          <RevyContextProvider>
+            <BrowserRouter>
+              <SidebarProvider>
+                <div className="flex flex-col w-full h-screen">
+                  <Toaster />
+                  <Sonner />
+                  <Routes>
+                    <Route path="/auth" element={<Auth />} />
+                    <Route path="/" element={<ProtectedRoute><AppLayout><Index /></AppLayout></ProtectedRoute>} />
+                    <Route path="/dashboard" element={<Navigate to="/" replace />} />
+                    <Route path="/analyser" element={<ProtectedRoute><AppLayout><AccountingExplorer /></AppLayout></ProtectedRoute>} />
+                    <Route path="/analyser/transaksjoner" element={<ProtectedRoute><AppLayout><TransactionSampling /></AppLayout></ProtectedRoute>} />
+                    <Route path="/dokumenter" element={<ProtectedRoute><AppLayout><Index /></AppLayout></ProtectedRoute>} />
+                    <Route path="/prosjekter" element={<ProtectedRoute><AppLayout><Index /></AppLayout></ProtectedRoute>} />
+                    <Route path="/klienter" element={<ProtectedRoute><AppLayout><ClientsOverview /></AppLayout></ProtectedRoute>} />
+                    <Route path="/klienter/administrasjon" element={<ProtectedRoute><AppLayout><ClientAdmin /></AppLayout></ProtectedRoute>} />
+                    <Route path="/innstillinger" element={<ProtectedRoute><AppLayout><Index /></AppLayout></ProtectedRoute>} />
+                    <Route path="/hjelp" element={<ProtectedRoute><AppLayout><Index /></AppLayout></ProtectedRoute>} />
+                    <Route path="/data-import" element={<DataImport />} />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </div>
+              </SidebarProvider>
+            </BrowserRouter>
+          </RevyContextProvider>
+        </AuthProvider>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+}
 
 export default App;
