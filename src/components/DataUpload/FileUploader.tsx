@@ -8,12 +8,11 @@ import {
   CardHeader, 
   CardTitle 
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Upload, FileType, Check, X, AlertCircle } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { processExcelFile } from '@/utils/excelProcessor';
-import DebugLog from './DebugLog';
 import ImportStatus from './ImportStatus';
+import UploadZone from './UploadZone';
+import FileInfo from './FileInfo';
 
 const FileUploader = () => {
   const [isDragging, setIsDragging] = useState(false);
@@ -23,7 +22,6 @@ const FileUploader = () => {
   const [progress, setProgress] = useState(0);
   const [totalRows, setTotalRows] = useState(0);
   const [processedRows, setProcessedRows] = useState(0);
-  const [importComplete, setImportComplete] = useState(false);
   const [successCount, setSuccessCount] = useState(0);
   const [fileName, setFileName] = useState<string>('');
   const [debug, setDebug] = useState<{ message: string; timestamp: string; }[]>([]);
@@ -64,7 +62,6 @@ const FileUploader = () => {
   const handleFiles = async (files: FileList) => {
     const file = files[0];
     
-    // Check if the file is an Excel or CSV file
     if (!file.name.match(/\.(xlsx|xls|csv)$/)) {
       setError('Filtypen støttes ikke. Vennligst last opp Excel eller CSV.');
       toast({
@@ -80,7 +77,6 @@ const FileUploader = () => {
     setProgress(0);
     setProcessedRows(0);
     setSuccessCount(0);
-    setImportComplete(false);
     setDebug([]);
     setFileName(file.name);
     
@@ -88,7 +84,7 @@ const FileUploader = () => {
     addLog(`File: ${file.name} (${file.size} bytes)`);
     
     try {
-      const result = await processExcelFile(
+      await processExcelFile(
         file,
         addLog,
         {
@@ -99,7 +95,6 @@ const FileUploader = () => {
           },
           onSuccess: (successful: number, total: number) => {
             setSuccessCount(successful);
-            setImportComplete(true);
             setIsUploading(false);
             setUploadSuccess(true);
             addLog(`Import complete. ${successful} of ${total} clients imported successfully.`);
@@ -129,7 +124,6 @@ const FileUploader = () => {
   const resetUploader = () => {
     setError(null);
     setUploadSuccess(false);
-    setImportComplete(false);
     setProgress(0);
     setProcessedRows(0);
     setSuccessCount(0);
@@ -158,53 +152,20 @@ const FileUploader = () => {
             debug={debug}
           />
         ) : (
-          <div 
-            className={`
-              border-2 border-dashed rounded-lg p-8 
-              transition-colors duration-200 ease-in-out
-              flex flex-col items-center justify-center
-              ${isDragging ? 'border-revio-500 bg-revio-50' : 'border-gray-300 hover:border-revio-300'}
-            `}
+          <UploadZone
+            isDragging={isDragging}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
-          >
-            <input 
-              type="file" 
-              id="file-upload" 
-              className="hidden" 
-              onChange={handleFileInput}
-              accept=".xlsx,.xls,.csv"
-            />
-            
-            <label htmlFor="file-upload" className="cursor-pointer text-center">
-              <Upload size={48} className="text-revio-500 mx-auto mb-4" />
-              <p className="text-sm text-gray-600 mb-2">
-                Dra og slipp filen her, eller klikk for å velge
-              </p>
-              <p className="text-xs text-gray-500">
-                Støtter Excel (.xlsx, .xls) og CSV-filer
-              </p>
-            </label>
-          </div>
+            onFileSelect={handleFileInput}
+          />
         )}
       </CardContent>
-      <CardFooter className="flex justify-between border-t p-4">
-        <div className="flex items-center">
-          <FileType size={20} className="text-revio-500 mr-2" />
-          <span className="text-sm">Støttede formater: Excel, CSV</span>
-        </div>
-        
-        {(error || uploadSuccess) && (
-          <Button 
-            variant="outline"
-            onClick={resetUploader}
-            size="sm"
-          >
-            <X size={16} className="mr-1" />
-            Ny opplasting
-          </Button>
-        )}
+      <CardFooter>
+        <FileInfo 
+          showReset={error || uploadSuccess}
+          onReset={resetUploader}
+        />
       </CardFooter>
     </Card>
   );
