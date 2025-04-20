@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/components/ui/use-toast";
@@ -29,13 +28,11 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
       // Get the current session for authentication
       const { data: sessionData } = await supabase.auth.getSession();
       const session = sessionData?.session;
-      
-      // Prepare authorization header if we have a session
       const authHeader = session ? `Bearer ${session.access_token}` : undefined;
-      
+
       for (let i = 0; i < clients.length; i++) {
         const client = clients[i];
-        setRefreshProgress(Math.round(((i) / clients.length) * 100));
+        setRefreshProgress(Math.round((i / clients.length) * 100));
 
         if (!client.orgNumber) {
           failedClients.push(client.name);
@@ -44,10 +41,10 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
 
         try {
           const response = await fetch(`https://fxelhfwaoizqyecikscu.functions.supabase.co/brreg`, {
-            method: 'POST',
-            headers: { 
-              'Content-Type': 'application/json',
-              ...(authHeader ? { 'Authorization': authHeader } : {})
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...(authHeader ? { Authorization: authHeader } : {}),
             },
             body: JSON.stringify({ query: client.orgNumber }),
           });
@@ -57,32 +54,26 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
             failedClients.push(client.name);
             continue;
           }
-          
           if (response.status === 429) {
             console.error(`Rate limit exceeded for BRREG API when fetching ${client.name} (${client.orgNumber})`);
             failedClients.push(client.name);
-            // We could implement a retry mechanism with exponential backoff here
             continue;
           }
-          
-          // Check for API authentication errors (special handling)
           if (response.status === 502) {
             const errorData = await response.json();
-            if (errorData?.error === 'Authentication error with Brønnøysund API') {
+            if (errorData?.error === "Authentication error with Brønnøysund API") {
               console.error(`Authentication error with Brønnøysund API: ${errorData.message}`);
               apiAuthError = true;
               failedClients.push(client.name);
               continue;
             }
           }
-
           if (!response.ok) {
             failedClients.push(client.name);
             continue;
           }
 
           const data = await response.json();
-
           if (!data.basis || !data.basis.organisasjonsnummer) {
             failedClients.push(client.name);
             continue;
@@ -91,51 +82,59 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
           const basis = data.basis;
           const roles = data.roles;
 
-          // New: Map all enhanced fields per mapping
-          const addressLines = basis.addressLines || [];
-          const addressLine = addressLines.length > 0 ? addressLines.join(', ') : "";
-          const email = basis.email || "";
-          const homepage = basis.homepage || "";
-          const phone = basis.telefon || "";
-          // Equity/share
-          const equityCapital = basis.kapital?.equityCapital ?? null;
-          const shareCapital = basis.kapital?.shareCapital ?? null;
-          const municipalityCode = basis.kommune?.kommunenummer || null;
-          const municipalityName = basis.kommune?.navn || null;
-          const postalCode = basis.postalCode || "";
-          const city = basis.city || "";
+          // Always use NULL for empty/missing values!
+          const fixValue = (val: string | undefined | null) =>
+            val && String(val).trim().length > 0 ? val : null;
 
-          // Save all mapped fields to DB and update roles below
-          const updateData = {
-            name: basis.navn || client.name,
-            company_name: basis.navn || client.companyName,
-            org_form_code: basis.organisasjonsform?.kode || null,
-            org_form_description: basis.organisasjonsform?.beskrivelse || null,
-            homepage: homepage || null,
-            status: basis.status || null,
-            nace_code: basis.naeringskode1?.kode || null,
-            nace_description: basis.naeringskode1?.beskrivelse || null,
-            industry: basis.naeringskode1?.beskrivelse || client.industry || null,
+          // Address lines logic
+          const addressLines = Array.isArray(basis.addressLines) ? basis.addressLines : [];
+          const addressLine = addressLines.length > 0 ? addressLines.join(", ") : null;
+          const email = fixValue(basis.email);
+          const homepage = fixValue(basis.homepage);
+          const phone = fixValue(basis.telefon);
+
+          const equityCapital =
+            typeof basis.kapital?.equityCapital === "number" ? basis.kapital.equityCapital : null;
+          const shareCapital =
+            typeof basis.kapital?.shareCapital === "number" ? basis.kapital.shareCapital : null;
+
+          const municipalityCode = fixValue(basis.kommune?.kommunenummer);
+          const municipalityName = fixValue(basis.kommune?.navn);
+          const postalCode = fixValue(basis.postalCode);
+          const city = fixValue(basis.city);
+
+          // Prepare all fields including the new columns
+          const updateData: Record<string, any> = {
+            name: fixValue(basis.navn) || client.name,
+            company_name: fixValue(basis.navn) || client.companyName,
+            org_form_code: fixValue(basis.organisasjonsform?.kode),
+            org_form_description: fixValue(basis.organisasjonsform?.beskrivelse),
+            homepage,
+            status: fixValue(basis.status),
+            nace_code: fixValue(basis.naeringskode1?.kode),
+            nace_description: fixValue(basis.naeringskode1?.beskrivelse),
+            industry: fixValue(basis.naeringskode1?.beskrivelse) || client.industry || null,
             municipality_code: municipalityCode,
             municipality_name: municipalityName,
             address: addressLine,
+            address_line: addressLine, // new field for full raw address
             postal_code: postalCode,
-            city: city,
+            city,
             registration_date: basis.registreringsdatoEnhetsregisteret
-              ? new Date(basis.registreringsdatoEnhetsregisteret).toISOString().split('T')[0]
+              ? new Date(basis.registreringsdatoEnhetsregisteret).toISOString().split("T")[0]
               : client.registrationDate || null,
             email: email || client.email || null,
             phone: phone || client.phone || null,
-            ceo: roles.ceo?.name || client.ceo || null,
-            chair: roles.chair?.name || client.chair || null,
-            equity_capital: equityCapital || null,
-            share_capital: shareCapital || null
+            ceo: fixValue(roles?.ceo?.name) || client.ceo || null,
+            chair: fixValue(roles?.chair?.name) || client.chair || null,
+            equity_capital: equityCapital,
+            share_capital: shareCapital,
           };
 
           const { error: updateError, data: updatedData } = await supabase
-            .from('clients')
+            .from("clients")
             .update(updateData)
-            .eq('id', client.id)
+            .eq("id", client.id)
             .select();
 
           if (updateError) {
@@ -143,12 +142,10 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
             continue;
           }
 
-          // Delete + insert roles: CEO + chair + boardmembers
+          // Roles update logic unchanged
           if (roles && (roles.ceo || roles.chair || (roles.boardMembers && roles.boardMembers.length > 0))) {
             try {
-              // Delete all existing
-              await supabase.from('client_roles').delete().eq('client_id', client.id);
-              // All new roles list
+              await supabase.from("client_roles").delete().eq("client_id", client.id);
               const rolesToInsert = [];
               if (roles.ceo) {
                 rolesToInsert.push({
@@ -175,12 +172,12 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
                     role_type: member.roleType || "MEMBER",
                     name: member.name,
                     from_date: member.fromDate || null,
-                    to_date: member.toDate || null
+                    to_date: member.toDate || null,
                   });
                 }
               }
               if (rolesToInsert.length > 0) {
-                await supabase.from('client_roles').insert(rolesToInsert);
+                await supabase.from("client_roles").insert(rolesToInsert);
               }
             } catch (rolesError) {
               console.error(`Error processing roles for ${client.name}:`, rolesError);
@@ -198,40 +195,38 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
 
       setRefreshProgress(100);
       if (apiAuthError) setHasApiError(true);
-      await queryClient.invalidateQueries({ queryKey: ['clients'] });
+      await queryClient.invalidateQueries({ queryKey: ["clients"] });
 
-      // Show green toast if all OK, or partial/destructive if not
       if (apiAuthError) {
         toast({
           title: "API-tilgangsfeil",
           description: "Kunne ikke koble til Brønnøysundregisteret. Sjekk at du har riktig API-nøkkel konfigurert.",
-          variant: "destructive"
+          variant: "destructive",
         });
       } else if (failedClients.length === 0 && successCount > 0) {
-        // Change variant "success" to "default" because only 'default' and 'destructive' are allowed
         toast({
           title: "Oppdatering fullført",
           description: `Alle ${successCount} klienter er oppdatert med nyeste data fra Brønnøysund og lagret i databasen`,
-          variant: "default"
+          variant: "default",
         });
       } else if (successCount > 0) {
         toast({
           title: "Delvis oppdatering fullført",
           description: `${successCount} klienter oppdatert og lagret i databasen. ${failedClients.length} klienter kunne ikke oppdateres.`,
-          variant: "default"
+          variant: "default",
         });
       } else {
         toast({
           title: "Feil ved oppdatering",
           description: "Kunne ikke oppdatere noen klienter. Sjekk at org.nr er korrekt og at API-tilgangen er konfigurert.",
-          variant: "destructive"
+          variant: "destructive",
         });
       }
     } catch (error) {
       toast({
         title: "Feil ved oppdatering",
         description: "Kunne ikke hente oppdatert data fra Brønnøysund. Vennligst prøv igjen senere.",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setIsRefreshing(false);
@@ -241,4 +236,3 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
 
   return { handleRefreshBrregData, isRefreshing, hasApiError, refreshProgress };
 }
-
