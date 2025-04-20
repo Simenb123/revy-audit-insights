@@ -67,12 +67,31 @@ const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, submitLa
   });
 
   const handleSubmit = (data: FormData) => {
+    // Ensure all required properties are provided with default values if empty
     const fullClient: Client = {
-      ...data,
       id: data.id || Math.random().toString(36).substring(2, 9),
+      name: data.name, // This is required by the schema
+      companyName: data.companyName, // This is required by the schema
+      orgNumber: data.orgNumber, // This is required by the schema
+      phase: data.phase, // This is required by the schema
+      progress: data.progress, // This is required by the schema
+      department: data.department || '',
+      contactPerson: data.contactPerson || '',
+      chair: data.chair || '',
+      ceo: data.ceo || '',
+      industry: data.industry || '',
+      registrationDate: data.registrationDate || '',
+      address: data.address || '',
+      postalCode: data.postalCode || '',
+      city: data.city || '',
+      email: data.email || '',
+      phone: data.phone || '',
+      bankAccount: data.bankAccount || '',
+      notes: data.notes || '',
       riskAreas: initialData?.riskAreas || [],
       documents: initialData?.documents || [],
     };
+    
     onSubmit(fullClient);
   };
 
