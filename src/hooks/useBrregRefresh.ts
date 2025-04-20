@@ -20,6 +20,7 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
     let successCount = 0;
     let failedClients: string[] = [];
     let apiAuthError = false;
+    let updatedClientsData: Record<string, any> = {};
 
     try {
       // Get the current session for authentication
@@ -126,17 +127,22 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
 
           console.log(`Updating client ${client.name} with data:`, updateData);
 
-          const { error: updateError } = await supabase
+          const { error: updateError, data: updatedData } = await supabase
             .from('clients')
             .update(updateData)
-            .eq('id', client.id);
+            .eq('id', client.id)
+            .select();
 
           if (updateError) {
             console.error(`Database update error for ${client.name}: ${updateError.message}`);
             failedClients.push(client.name);
           } else {
-            console.log(`Successfully updated ${client.name} in database`);
+            console.log(`Successfully updated ${client.name} in database. Response:`, updatedData);
             successCount++;
+            // Store update confirmation data for validation
+            if (updatedData && updatedData.length > 0) {
+              updatedClientsData[client.id] = updateData;
+            }
           }
         } catch (clientError) {
           console.error(`Error processing client ${client.name}: `, clientError);
@@ -148,6 +154,50 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
         setHasApiError(true);
       }
 
+      // Validate database updates by fetching the latest data
+      if (successCount > 0) {
+        try {
+          console.log("Validating database updates...");
+          const clientIds = Object.keys(updatedClientsData);
+          const { data: latestClientData, error: fetchError } = await supabase
+            .from('clients')
+            .select('id, name, industry, ceo, chair, address, postal_code, city, registration_date')
+            .in('id', clientIds);
+            
+          if (fetchError) {
+            console.error("Error validating database updates:", fetchError);
+          } else if (latestClientData) {
+            console.log("Latest client data from database:", latestClientData);
+            // Check if updates were actually applied
+            let allUpdatesConfirmed = true;
+            for (const client of latestClientData) {
+              const expectedData = updatedClientsData[client.id];
+              if (!expectedData) continue;
+              
+              // Validate key fields
+              const fieldsToCheck = ['name', 'industry', 'ceo', 'chair', 'address'];
+              for (const field of fieldsToCheck) {
+                if (expectedData[field] && client[field] !== expectedData[field]) {
+                  console.warn(`Update discrepancy for client ${client.name}, field ${field}:`, {
+                    expected: expectedData[field],
+                    actual: client[field]
+                  });
+                  allUpdatesConfirmed = false;
+                }
+              }
+            }
+            
+            if (!allUpdatesConfirmed) {
+              console.warn("Some updates may not have been fully applied to the database");
+            } else {
+              console.log("All database updates confirmed successful");
+            }
+          }
+        } catch (validationError) {
+          console.error("Error during update validation:", validationError);
+        }
+      }
+      
       // Refresh client data
       await queryClient.invalidateQueries({ queryKey: ['clients'] });
 
@@ -158,15 +208,15 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
           description: "Kunne ikke koble til Brønnøysundregisteret. Sjekk at du har riktig API-nøkkel konfigurert.",
           variant: "destructive"
         });
-      } else if (failedClients.length === 0) {
+      } else if (failedClients.length === 0 && successCount > 0) {
         toast({
           title: "Oppdatering fullført",
-          description: `Alle ${successCount} klienter er oppdatert med nyeste data fra Brønnøysund`,
+          description: `Alle ${successCount} klienter er oppdatert med nyeste data fra Brønnøysund og lagret i databasen`,
         });
       } else if (successCount > 0) {
         toast({
           title: "Delvis oppdatering fullført",
-          description: `${successCount} klienter oppdatert. ${failedClients.length} klienter kunne ikke oppdateres.`,
+          description: `${successCount} klienter oppdatert og lagret i databasen. ${failedClients.length} klienter kunne ikke oppdateres.`,
           variant: "default"
         });
       } else {

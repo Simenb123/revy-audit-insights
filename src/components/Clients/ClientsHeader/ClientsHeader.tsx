@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import ClientFilters from "@/components/Clients/ClientFilters/ClientFilters";
-import { RefreshCw, AlertTriangle } from "lucide-react";
+import { RefreshCw, AlertTriangle, CheckCircle } from "lucide-react";
 import { 
   Tooltip,
   TooltipContent,
@@ -52,11 +52,13 @@ const ClientsHeader = ({
             >
               {hasApiError ? (
                 <AlertTriangle className="mr-1" size={16} />
+              ) : isRefreshing ? (
+                <RefreshCw className="animate-spin mr-1" size={16} />
               ) : (
-                <RefreshCw className={isRefreshing ? "animate-spin mr-1" : "mr-1"} size={16} />
+                <RefreshCw className="mr-1" size={16} />
               )}
               {isRefreshing 
-                ? "Oppdaterer..." 
+                ? "Oppdaterer og lagrer..." 
                 : hasApiError 
                   ? "API-tilgangsfeil" 
                   : "Oppdater fra Brønnøysund"}
@@ -65,7 +67,7 @@ const ClientsHeader = ({
           <TooltipContent>
             {hasApiError 
               ? "Det er problemer med tilkobling til Brønnøysundregistrenes API. Sjekk at du har riktig API-nøkkel konfigurert." 
-              : "Hent oppdatert informasjon om klienter fra Brønnøysundregistrene"}
+              : "Hent oppdatert informasjon om klienter fra Brønnøysundregistrene og lagre i databasen"}
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
