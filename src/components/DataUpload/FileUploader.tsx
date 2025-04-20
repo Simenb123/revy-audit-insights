@@ -163,7 +163,7 @@ const FileUploader = () => {
       </CardContent>
       <CardFooter>
         <FileInfo 
-          showReset={error || uploadSuccess}
+          showReset={error !== null || uploadSuccess}
           onReset={resetUploader}
         />
       </CardFooter>
