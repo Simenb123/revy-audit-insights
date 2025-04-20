@@ -27,6 +27,7 @@ serve(async (req) => {
 
     // Get the authorization header from the request
     const authHeader = req.headers.get('authorization');
+    console.log("Auth header present:", !!authHeader);
     
     // Check if the query looks like an organization number (9 digits)
     const isOrgNumber = /^\d{9}$/.test(query);
@@ -50,7 +51,7 @@ serve(async (req) => {
     let baseResponse;
     const fetchOptions = {};
     
-    // Add the authorization header if it exists
+    // Add the authorization header if it exists (passing it through from the client)
     if (authHeader) {
       console.log("Using authorization header for BRREG API request");
       fetchOptions.headers = { 'Authorization': authHeader };
@@ -101,6 +102,7 @@ serve(async (req) => {
       }
       
       const baseData = await baseResponse.json();
+      console.log("Base data received:", JSON.stringify(baseData).substring(0, 200) + "...");
       
       // Then get the roles information for this organization
       const rolesUrl = `${BRREG_ROLES_API}/enhet/${query}`;
@@ -109,10 +111,13 @@ serve(async (req) => {
       let rolesData = { roller: [] };
       try {
         const rolesResponse = await fetch(rolesUrl, fetchOptions);
+        console.log(`Roles API response status: ${rolesResponse.status}`);
+        
         if (rolesResponse.ok) {
           rolesData = await rolesResponse.json();
+          console.log("Roles data received:", JSON.stringify(rolesData).substring(0, 200) + "...");
         } else {
-          console.log(`Roles API returned status: ${rolesResponse.status}`);
+          console.log(`Roles API returned error status: ${rolesResponse.status}`);
         }
       } catch (rolesError) {
         console.error("Error fetching roles:", rolesError);
@@ -129,24 +134,30 @@ serve(async (req) => {
       };
       
       // Format the response to match the search response format
+      const response = {
+        _embedded: {
+          enheter: [enhancedData]
+        },
+        page: {
+          totalElements: 1,
+          totalPages: 1
+        }
+      };
+      
+      console.log("Returning enhanced data for org number");
       return new Response(
-        JSON.stringify({
-          _embedded: {
-            enheter: [enhancedData]
-          },
-          page: {
-            totalElements: 1,
-            totalPages: 1
-          }
-        }),
+        JSON.stringify(response),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     } else {
       // For name searches, return the response as-is but with enhanced data
       const data = await baseResponse.json();
+      console.log("Search data received:", JSON.stringify(data).substring(0, 200) + "...");
       
       // For each company in the search results, fetch additional data
       if (data._embedded?.enheter) {
+        console.log(`Enhancing ${data._embedded.enheter.length} search results with roles data`);
+        
         const enhancedEnheter = await Promise.all(
           data._embedded.enheter.map(async (enhet: any) => {
             const orgNr = enhet.organisasjonsnummer;
@@ -173,6 +184,7 @@ serve(async (req) => {
         data._embedded.enheter = enhancedEnheter;
       }
       
+      console.log("Returning enhanced search results");
       return new Response(
         JSON.stringify(data),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

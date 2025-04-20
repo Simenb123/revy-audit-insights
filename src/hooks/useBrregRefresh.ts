@@ -65,6 +65,7 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
           }
 
           const data = await response.json();
+          console.log(`Received BRREG data for ${client.name}:`, data);
 
           if (!data._embedded?.enheter || data._embedded.enheter.length === 0) {
             console.error(`No data found in BRREG for ${client.name} (${client.orgNumber})`);
@@ -73,26 +74,72 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
           }
 
           const brregData = data._embedded.enheter[0];
+          console.log(`Processing BRREG data for ${client.name}:`, brregData);
+
+          // Extract CEO and Chair from roles if available
+          let ceo = client.ceo;
+          let chair = client.chair;
+
+          if (brregData.roller && Array.isArray(brregData.roller)) {
+            const dagligLeder = brregData.roller.find((r: any) => 
+              r.type?.kode === 'DAGL' && r.person?.navn
+            );
+            
+            const styreleder = brregData.roller.find((r: any) => 
+              r.type?.kode === 'STYR' && r.person?.navn
+            );
+
+            if (dagligLeder?.person?.navn) {
+              ceo = dagligLeder.person.navn;
+              console.log(`Found CEO for ${client.name}: ${ceo}`);
+            }
+
+            if (styreleder?.person?.navn) {
+              chair = styreleder.person.navn;
+              console.log(`Found Chair for ${client.name}: ${chair}`);
+            }
+          } else {
+            console.log(`No roles data found for ${client.name}`);
+          }
+
+          // Prepare industry data
+          const industry = brregData.naeringskode1?.beskrivelse || client.industry;
+
+          // Get address details
+          const address = brregData.forretningsadresse?.adresse?.[0] || client.address;
+          const postalCode = brregData.forretningsadresse?.postnummer || client.postalCode;
+          const city = brregData.forretningsadresse?.poststed || client.city;
 
           // Update client data in database
+          const updateData = {
+            name: brregData.navn || client.name,
+            industry: industry,
+            ceo: ceo,
+            chair: chair,
+            address: address,
+            postal_code: postalCode,
+            city: city,
+            registration_date: brregData.registreringsdatoEnhetsregisteret ? 
+              new Date(brregData.registreringsdatoEnhetsregisteret).toISOString().split('T')[0] : 
+              client.registrationDate
+          };
+
+          console.log(`Updating client ${client.name} with data:`, updateData);
+
           const { error: updateError } = await supabase
             .from('clients')
-            .update({
-              name: brregData.navn,
-              industry: brregData.naeringskode1?.beskrivelse || client.industry,
-              ceo: brregData.roller?.find((r: any) => r.type.kode === 'DAGL')?.person?.navn || client.ceo,
-              chair: brregData.roller?.find((r: any) => r.type.kode === 'STYR')?.person?.navn || client.chair,
-            })
+            .update(updateData)
             .eq('id', client.id);
 
           if (updateError) {
             console.error(`Database update error for ${client.name}: ${updateError.message}`);
             failedClients.push(client.name);
           } else {
+            console.log(`Successfully updated ${client.name} in database`);
             successCount++;
           }
         } catch (clientError) {
-          console.error(`Error processing client ${client.name}: ${clientError}`);
+          console.error(`Error processing client ${client.name}: `, clientError);
           failedClients.push(client.name);
         }
       }
