@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -33,6 +34,7 @@ interface ClientFormProps {
 const clientSchema = z.object({
   id: z.string().optional(),
   name: z.string().min(2, { message: 'Selskapsnavn må ha minst 2 tegn' }),
+  companyName: z.string().min(2, { message: 'Firmanavn må ha minst 2 tegn' }),
   orgNumber: z.string().regex(/^\d{9}$/, { message: 'Organisasjonsnummer må være 9 siffer' }),
   phase: z.enum(['engagement', 'planning', 'execution', 'conclusion']),
   progress: z.number().min(0).max(100),
@@ -67,6 +69,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, submitLa
     defaultValues: {
       id: initialData?.id || Math.random().toString(36).substring(2, 9),
       name: initialData?.name || '',
+      companyName: initialData?.companyName || '',
       orgNumber: initialData?.orgNumber || '',
       phase: initialData?.phase || 'engagement',
       progress: initialData?.progress || 0,
@@ -90,10 +93,11 @@ const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, submitLa
     // Ensuring all required fields are included and not optional in the fullClient object
     const fullClient: Client = {
       id: data.id || Math.random().toString(36).substring(2, 9),
-      name: data.name, // This is required and now explicitly assigned
-      orgNumber: data.orgNumber, // This is required and now explicitly assigned
-      phase: data.phase, // This is required and now explicitly assigned
-      progress: data.progress, // This is required and now explicitly assigned
+      name: data.name,
+      companyName: data.companyName,
+      orgNumber: data.orgNumber,
+      phase: data.phase,
+      progress: data.progress,
       department: data.department,
       contactPerson: data.contactPerson,
       chair: data.chair,
@@ -119,6 +123,20 @@ const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, submitLa
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-6">
+            <FormField
+              control={form.control}
+              name="companyName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Firmanavn *</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Firmanavn" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
             <FormField
               control={form.control}
               name="name"

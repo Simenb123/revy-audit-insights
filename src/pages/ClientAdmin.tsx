@@ -18,6 +18,7 @@ const mockClients: Client[] = [
   {
     id: '1',
     name: 'Nordheim AS',
+    companyName: 'Nordheim Konsern',
     orgNumber: '912345678',
     phase: 'planning',
     progress: 65,
@@ -44,6 +45,7 @@ const mockClients: Client[] = [
   {
     id: '2',
     name: 'Sørland Byggverk AS',
+    companyName: 'Sørland Gruppe',
     orgNumber: '921234567',
     phase: 'execution',
     progress: 40,
@@ -137,6 +139,7 @@ const ClientAdmin = () => {
     const newClient: Client = {
       id: Math.random().toString(36).substring(2, 9),
       name: result.navn,
+      companyName: result.navn,
       orgNumber: result.organisasjonsnummer,
       phase: 'engagement',
       progress: 0,

@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 import { Client } from '@/types/revio';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,11 +30,11 @@ const ClientList: React.FC<ClientListProps> = ({ clients, onEdit, onDelete }) =>
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Navn</TableHead>
+              <TableHead>Firmanavn</TableHead>
+              <TableHead>Selskapsnavn</TableHead>
               <TableHead>Org.nr</TableHead>
               <TableHead>Kontaktperson</TableHead>
               <TableHead>Daglig leder</TableHead>
-              <TableHead>Styreleder</TableHead>
               <TableHead className="text-right">Handlinger</TableHead>
             </TableRow>
           </TableHeader>
@@ -47,11 +48,11 @@ const ClientList: React.FC<ClientListProps> = ({ clients, onEdit, onDelete }) =>
             ) : (
               clients.map((client) => (
                 <TableRow key={client.id}>
-                  <TableCell className="font-medium">{client.name}</TableCell>
+                  <TableCell className="font-medium">{client.companyName}</TableCell>
+                  <TableCell>{client.name}</TableCell>
                   <TableCell>{client.orgNumber}</TableCell>
                   <TableCell>{client.contactPerson || '-'}</TableCell>
                   <TableCell>{client.ceo || '-'}</TableCell>
-                  <TableCell>{client.chair || '-'}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
                       <Button variant="outline" size="icon" onClick={() => onEdit(client)}>
@@ -61,7 +62,7 @@ const ClientList: React.FC<ClientListProps> = ({ clients, onEdit, onDelete }) =>
                         variant="destructive" 
                         size="icon"
                         onClick={() => {
-                          if (confirm(`Er du sikker på at du vil slette ${client.name}?`)) {
+                          if (confirm(`Er du sikker på at du vil slette ${client.companyName}?`)) {
                             onDelete(client.id);
                           }
                         }}
