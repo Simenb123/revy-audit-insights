@@ -6,7 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import * as XLSX from 'xlsx';
 import { Progress } from "@/components/ui/progress";
-import { AlertCircle, FileSpreadsheet, Check, Users } from 'lucide-react';
+import { AlertCircle, FileSpreadsheet, Check, Users, Info } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const ExcelImporter = () => {
@@ -16,6 +16,8 @@ const ExcelImporter = () => {
   const [processedRows, setProcessedRows] = useState(0);
   const [importComplete, setImportComplete] = useState(false);
   const [successCount, setSuccessCount] = useState(0);
+  const [hasError, setHasError] = useState(false);
+  const [errorDetails, setErrorDetails] = useState<string>('');
   const { toast } = useToast();
 
   const processOrgNumber = async (orgNumber: string) => {
@@ -78,47 +80,63 @@ const ExcelImporter = () => {
       setProcessedRows(0);
       setSuccessCount(0);
       setImportComplete(false);
+      setHasError(false);
+      setErrorDetails('');
 
       const reader = new FileReader();
       reader.onload = async (e) => {
-        const data = new Uint8Array(e.target?.result as ArrayBuffer);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-        const rows: string[] = XLSX.utils.sheet_to_json(firstSheet, { header: 'A' })
-          .map(row => (row as any).A?.toString().trim())
-          .filter(Boolean);
+        try {
+          const data = new Uint8Array(e.target?.result as ArrayBuffer);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+          const rows: string[] = XLSX.utils.sheet_to_json(firstSheet, { header: 'A' })
+            .map(row => (row as any).A?.toString().trim())
+            .filter(Boolean);
 
-        setTotalRows(rows.length);
+          setTotalRows(rows.length);
 
-        let successful = 0;
-        for (let i = 0; i < rows.length; i++) {
-          const orgNumber = rows[i];
-          const result = await processOrgNumber(orgNumber);
-          if (result) successful++;
-          
-          setProcessedRows(i + 1);
-          setProgress(((i + 1) / rows.length) * 100);
+          let successful = 0;
+          for (let i = 0; i < rows.length; i++) {
+            const orgNumber = rows[i];
+            const result = await processOrgNumber(orgNumber);
+            if (result) successful++;
+            
+            setProcessedRows(i + 1);
+            setProgress(((i + 1) / rows.length) * 100);
+          }
+
+          setSuccessCount(successful);
+          setImportComplete(true);
+
+          toast({
+            title: "Import fullført",
+            description: `${successful} av ${rows.length} klienter ble importert.`,
+            variant: successful > 0 ? "default" : "destructive"
+          });
+        } catch (error) {
+          console.error('Error processing file:', error);
+          setHasError(true);
+          setErrorDetails((error as Error).message || 'Ukjent feil ved prosessering av filen');
+          toast({
+            title: "Importfeil",
+            description: "Det oppstod en feil under importen av filen.",
+            variant: "destructive"
+          });
+        } finally {
+          setIsImporting(false);
         }
-
-        setSuccessCount(successful);
-        setImportComplete(true);
-
-        toast({
-          title: "Import fullført",
-          description: `${successful} av ${rows.length} klienter ble importert.`,
-          variant: successful > 0 ? "default" : "destructive"
-        });
       };
 
       reader.readAsArrayBuffer(file);
     } catch (error) {
       console.error('Import error:', error);
+      setHasError(true);
+      setErrorDetails((error as Error).message || 'Ukjent feil');
       toast({
         title: "Importfeil",
         description: "Det oppstod en feil under importen. Sjekk konsollen for detaljer.",
         variant: "destructive"
       });
-    } finally {
       setIsImporting(false);
     }
   };
@@ -133,7 +151,7 @@ const ExcelImporter = () => {
       </CardHeader>
       <CardContent>
         <div className="space-y-6">
-          {!isImporting && !importComplete ? (
+          {!isImporting && !importComplete && !hasError ? (
             <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-lg">
               <FileSpreadsheet className="w-12 h-12 text-gray-400 mb-4" />
               <label htmlFor="file-upload" className="cursor-pointer">
@@ -158,6 +176,16 @@ const ExcelImporter = () => {
                 Behandler {processedRows} av {totalRows} klienter...
               </p>
             </div>
+          ) : hasError ? (
+            <div className="flex flex-col items-center justify-center p-6 border-2 border-red-100 bg-red-50 rounded-lg">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                <AlertCircle className="w-6 h-6 text-red-600" />
+              </div>
+              <h3 className="text-lg font-medium text-red-800">Import feilet</h3>
+              <p className="text-center text-red-700 mt-2">
+                {errorDetails || 'Det oppstod en feil under importen.'}
+              </p>
+            </div>
           ) : (
             <div className="flex flex-col items-center justify-center p-6 border-2 border-green-100 bg-green-50 rounded-lg">
               <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-4">
@@ -167,26 +195,38 @@ const ExcelImporter = () => {
               <p className="text-center text-green-700 mt-2">
                 {successCount} av {totalRows} klienter ble importert til databasen
               </p>
+              {successCount > 0 && (
+                <div className="mt-4 p-3 bg-blue-50 border border-blue-100 rounded flex items-start gap-2 text-sm">
+                  <Info size={18} className="text-blue-500 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-blue-700">Du kan nå se dine importerte klienter i klientoversikten.</p>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
       </CardContent>
-      {importComplete && (
+      {(importComplete || hasError) && (
         <CardFooter className="flex justify-center gap-4">
           <Button variant="outline" onClick={() => {
             setImportComplete(false);
+            setHasError(false);
             setProgress(0);
             setProcessedRows(0);
             setSuccessCount(0);
+            setErrorDetails('');
           }}>
             Ny import
           </Button>
-          <Button asChild className="gap-2">
-            <Link to="/klienter">
-              <Users size={16} />
-              <span>Gå til klientoversikt</span>
-            </Link>
-          </Button>
+          {successCount > 0 && (
+            <Button asChild className="gap-2">
+              <Link to="/klienter">
+                <Users size={16} />
+                <span>Gå til klientoversikt</span>
+              </Link>
+            </Button>
+          )}
         </CardFooter>
       )}
     </Card>

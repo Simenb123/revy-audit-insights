@@ -54,7 +54,7 @@ function App() {
                     <Route path="/klienter/administrasjon" element={<ProtectedRoute><AppLayout><ClientAdmin /></AppLayout></ProtectedRoute>} />
                     <Route path="/innstillinger" element={<ProtectedRoute><AppLayout><Index /></AppLayout></ProtectedRoute>} />
                     <Route path="/hjelp" element={<ProtectedRoute><AppLayout><Index /></AppLayout></ProtectedRoute>} />
-                    <Route path="/data-import" element={<ProtectedRoute><DataImport /></ProtectedRoute>} />
+                    <Route path="/data-import" element={<ProtectedRoute><AppLayout><DataImport /></AppLayout></ProtectedRoute>} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </div>
