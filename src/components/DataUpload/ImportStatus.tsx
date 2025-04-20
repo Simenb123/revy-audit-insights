@@ -6,6 +6,11 @@ import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import DebugLog from './DebugLog';
 
+interface LogEntry {
+  message: string;
+  timestamp: string;
+}
+
 interface ImportStatusProps {
   isImporting: boolean;
   hasError: boolean;
@@ -15,7 +20,7 @@ interface ImportStatusProps {
   totalRows: number;
   successCount: number;
   fileName: string;
-  debug: string[];
+  debug: string[] | LogEntry[];
 }
 
 const ImportStatus = ({

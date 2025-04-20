@@ -8,6 +8,11 @@ import { Link } from 'react-router-dom';
 import ImportStatus from './ImportStatus';
 import { processExcelFile } from '@/utils/excelProcessor';
 
+interface LogEntry {
+  message: string;
+  timestamp: string;
+}
+
 interface ExcelImporterProps {
   onImportSuccess?: (data: { filename: string, importedCount: number }) => void;
 }
@@ -22,8 +27,15 @@ const ExcelImporter = ({ onImportSuccess }: ExcelImporterProps) => {
   const [hasError, setHasError] = useState(false);
   const [errorDetails, setErrorDetails] = useState<string>('');
   const [fileName, setFileName] = useState<string>('');
-  const [debug, setDebug] = useState<string[]>([]);
+  const [debug, setDebug] = useState<LogEntry[]>([]);
   const { toast } = useToast();
+
+  const addLog = (message: string) => {
+    setDebug(prev => [...prev, {
+      message,
+      timestamp: new Date().toLocaleTimeString()
+    }]);
+  };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -38,11 +50,14 @@ const ExcelImporter = ({ onImportSuccess }: ExcelImporterProps) => {
       setHasError(false);
       setErrorDetails('');
       setFileName(file.name);
-      setDebug(['Starting import...', `File: ${file.name} (${file.size} bytes)`]);
+      setDebug([]);
+      
+      addLog('Starting import...');
+      addLog(`File: ${file.name} (${file.size} bytes)`);
 
       const result = await processExcelFile(
         file,
-        setDebug,
+        addLog,
         {
           onProgress: (processed: number, total: number) => {
             setProcessedRows(processed);
@@ -52,7 +67,7 @@ const ExcelImporter = ({ onImportSuccess }: ExcelImporterProps) => {
           onSuccess: (successful: number, total: number) => {
             setSuccessCount(successful);
             setImportComplete(true);
-            setDebug(prev => [...prev, `Import complete. ${successful} of ${total} clients imported successfully.`]);
+            addLog(`Import complete. ${successful} of ${total} clients imported successfully.`);
             
             if (onImportSuccess) {
               onImportSuccess({
@@ -73,8 +88,8 @@ const ExcelImporter = ({ onImportSuccess }: ExcelImporterProps) => {
       console.error('Error processing file:', error);
       setHasError(true);
       setErrorDetails((error as Error).message || 'Ukjent feil ved prosessering av filen');
-      setDebug(prev => [...prev, `Fatal error: ${(error as Error).message}`]);
-      setDebug(prev => [...prev, `Stack trace: ${(error as Error).stack}`]);
+      addLog(`Fatal error: ${(error as Error).message}`);
+      addLog(`Stack trace: ${(error as Error).stack}`);
       
       toast({
         title: "Importfeil",

@@ -9,18 +9,23 @@ interface LogEntry {
 }
 
 interface DebugLogProps {
-  logs: string[];
+  logs: string[] | LogEntry[];
   className?: string;
 }
 
 const DebugLog = ({ logs, className = '' }: DebugLogProps) => {
   const [filter, setFilter] = useState('');
 
-  // Convert string logs to LogEntry objects with timestamps
-  const logsWithTimestamps: LogEntry[] = logs.map(log => ({
-    message: log,
-    timestamp: new Date().toLocaleTimeString()
-  }));
+  // Convert string logs to LogEntry objects with timestamps if needed
+  const logsWithTimestamps: LogEntry[] = logs.map(log => {
+    if (typeof log === 'string') {
+      return {
+        message: log,
+        timestamp: new Date().toLocaleTimeString()
+      };
+    }
+    return log;
+  });
 
   const filteredLogs = logsWithTimestamps.filter(log =>
     log.message.toLowerCase().includes(filter.toLowerCase())
