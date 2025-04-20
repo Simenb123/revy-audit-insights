@@ -8,6 +8,7 @@ import * as XLSX from 'xlsx';
 import { Progress } from "@/components/ui/progress";
 import { AlertCircle, FileSpreadsheet, Check, Users, Info } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { AuditPhase } from '@/types/revio';
 
 interface ExcelImporterProps {
   onImportSuccess?: (data: { filename: string, importedCount: number }) => void;
@@ -80,7 +81,7 @@ const ExcelImporter = ({ onImportSuccess }: ExcelImporterProps) => {
         name: company.navn,
         company_name: company.navn,
         org_number: company.organisasjonsnummer,
-        phase: 'engagement',
+        phase: 'engagement' as AuditPhase, // Fix: Explicitly cast to AuditPhase
         progress: 0,
         industry: company.naeringskode1?.beskrivelse || null,
         registration_date: company.registreringsdatoEnhetsregisteret?.split('T')[0] || null,
