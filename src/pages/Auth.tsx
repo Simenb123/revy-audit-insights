@@ -1,77 +1,70 @@
-import { useState } from 'react';
+
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/components/Auth/AuthProvider';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 const Auth = () => {
-  const [loading, setLoading] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [updateProfile, setUpdateProfile] = useState(false);
-  const { toast } = useToast();
   const navigate = useNavigate();
+  const { session } = useAuth();
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+    firstName: '',
+    lastName: '',
+    workplaceCompanyName: ''
+  });
 
-  const handleAuth = async (action: 'login' | 'signup' | 'update') => {
+  useEffect(() => {
+    if (session) {
+      navigate('/');
+    }
+  }, [session, navigate]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
     try {
-      setLoading(true);
-      
-      if (action === 'signup') {
+      if (isSignUp) {
         const { error } = await supabase.auth.signUp({
-          email,
-          password,
+          email: formData.email,
+          password: formData.password,
           options: {
             data: {
-              first_name: firstName,
-              last_name: lastName
+              first_name: formData.firstName,
+              last_name: formData.lastName,
+              workplace_company_name: formData.workplaceCompanyName
             }
           }
         });
+
         if (error) throw error;
+
         toast({
           title: "Registrering vellykket",
-          description: "Din konto er nå opprettet. Du kan nå logge inn.",
+          description: "Sjekk e-posten din for bekreftelseslink.",
         });
-      } else if (action === 'login') {
-        const { error } = await supabase.auth.signInWithPassword({ 
-          email, 
-          password 
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({
+          email: formData.email,
+          password: formData.password,
         });
+
         if (error) throw error;
-        toast({
-          title: "Innlogget",
-          description: "Du er nå logget inn.",
-        });
-        navigate('/');
-      } else if (action === 'update') {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          const { error } = await supabase.auth.updateUser({
-            data: { 
-              first_name: firstName, 
-              last_name: lastName 
-            }
-          });
-          
-          if (error) throw error;
-          
-          toast({
-            title: "Profil oppdatert",
-            description: "Din profil er nå oppdatert med fornavn og etternavn.",
-          });
-          setUpdateProfile(false);
-        }
       }
     } catch (error: any) {
       toast({
         title: "Feil",
         description: error.message,
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setLoading(false);
@@ -79,114 +72,94 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl text-center">Velkommen til Revio</CardTitle>
-          <CardDescription className="text-center">
-            {updateProfile 
-              ? "Oppdater din profil" 
-              : "Logg inn eller registrer deg for å fortsette"}
+    <div className="flex items-center justify-center min-h-screen bg-background">
+      <Card className="w-[400px]">
+        <CardHeader>
+          <CardTitle>{isSignUp ? 'Registrer ny bruker' : 'Logg inn'}</CardTitle>
+          <CardDescription>
+            {isSignUp 
+              ? 'Opprett en ny brukerkonto' 
+              : 'Logg inn på din brukerkonto'}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {!updateProfile ? (
-            <Tabs defaultValue="login" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="login">Logg inn</TabsTrigger>
-                <TabsTrigger value="register">Registrer</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="login">
-                <div className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium" htmlFor="email">E-post</label>
+              <Input
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium" htmlFor="password">Passord</label>
+              <Input
+                id="password"
+                type="password"
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                required
+              />
+            </div>
+
+            {isSignUp && (
+              <>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium" htmlFor="firstName">Fornavn</label>
                   <Input
-                    type="email"
-                    placeholder="E-post"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    id="firstName"
+                    type="text"
+                    value={formData.firstName}
+                    onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                    required
                   />
-                  <Input
-                    type="password"
-                    placeholder="Passord"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
-                  <Button 
-                    className="w-full" 
-                    onClick={() => handleAuth('login')}
-                    disabled={loading}
-                  >
-                    {loading ? 'Logger inn...' : 'Logg inn'}
-                  </Button>
                 </div>
-              </TabsContent>
-              
-              <TabsContent value="register">
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <Input
-                      placeholder="Fornavn"
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
-                    />
-                    <Input
-                      placeholder="Etternavn"
-                      value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
-                    />
-                  </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium" htmlFor="lastName">Etternavn</label>
                   <Input
-                    type="email"
-                    placeholder="E-post"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    id="lastName"
+                    type="text"
+                    value={formData.lastName}
+                    onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                    required
                   />
-                  <Input
-                    type="password"
-                    placeholder="Passord"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
-                  <Button 
-                    className="w-full" 
-                    onClick={() => handleAuth('signup')}
-                    disabled={loading}
-                  >
-                    {loading ? 'Registrerer...' : 'Registrer'}
-                  </Button>
                 </div>
-              </TabsContent>
-            </Tabs>
-          ) : (
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium" htmlFor="workplaceCompanyName">Firmanavn</label>
+                  <Input
+                    id="workplaceCompanyName"
+                    type="text"
+                    value={formData.workplaceCompanyName}
+                    onChange={(e) => setFormData({ ...formData, workplaceCompanyName: e.target.value })}
+                    required
+                  />
+                </div>
+              </>
+            )}
+
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <Input
-                  placeholder="Fornavn"
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                />
-                <Input
-                  placeholder="Etternavn"
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                />
-              </div>
-              <Button 
-                className="w-full" 
-                onClick={() => handleAuth('update')}
-                disabled={loading}
-              >
-                {loading ? 'Oppdaterer...' : 'Oppdater profil'}
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? 'Vennligst vent...' : (isSignUp ? 'Registrer' : 'Logg inn')}
               </Button>
-              <Button 
-                variant="outline"
-                className="w-full mt-2" 
-                onClick={() => setUpdateProfile(false)}
+
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full"
+                onClick={() => setIsSignUp(!isSignUp)}
               >
-                Avbryt
+                {isSignUp 
+                  ? 'Har du allerede en konto? Logg inn' 
+                  : 'Ny bruker? Registrer deg'}
               </Button>
             </div>
-          )}
+          </form>
         </CardContent>
       </Card>
     </div>
