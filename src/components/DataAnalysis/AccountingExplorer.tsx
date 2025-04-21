@@ -72,61 +72,63 @@ const AccountingExplorer = () => {
       
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
         <div className="xl:col-span-3">
-          <TabsContent value="overview" className="mt-0">
-            <Card>
-              <CardHeader>
-                <CardTitle>Regnskapsoversikt</CardTitle>
-                <CardDescription>
-                  {selectedVersion.name} ({selectedVersion.date})
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <DrillDownTable />
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="ledger" className="mt-0">
-            <Card>
-              <CardHeader>
-                <CardTitle>Hovedbok</CardTitle>
-                <CardDescription>
-                  {selectedVersion.name} ({selectedVersion.date})
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p>Innhold for hovedbok kommer her...</p>
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="balances" className="mt-0">
-            <Card>
-              <CardHeader>
-                <CardTitle>Saldobalanse</CardTitle>
-                <CardDescription>
-                  {selectedVersion.name} ({selectedVersion.date})
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p>Innhold for saldobalanse kommer her...</p>
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="journal" className="mt-0">
-            <Card>
-              <CardHeader>
-                <CardTitle>Bilagsjournal</CardTitle>
-                <CardDescription>
-                  {selectedVersion.name} ({selectedVersion.date})
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p>Innhold for bilagsjournal kommer her...</p>
-              </CardContent>
-            </Card>
-          </TabsContent>
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsContent value="overview" className="mt-0">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Regnskapsoversikt</CardTitle>
+                  <CardDescription>
+                    {selectedVersion.name} ({selectedVersion.date})
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <DrillDownTable />
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="ledger" className="mt-0">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Hovedbok</CardTitle>
+                  <CardDescription>
+                    {selectedVersion.name} ({selectedVersion.date})
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p>Innhold for hovedbok kommer her...</p>
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="balances" className="mt-0">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Saldobalanse</CardTitle>
+                  <CardDescription>
+                    {selectedVersion.name} ({selectedVersion.date})
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p>Innhold for saldobalanse kommer her...</p>
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="journal" className="mt-0">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Bilagsjournal</CardTitle>
+                  <CardDescription>
+                    {selectedVersion.name} ({selectedVersion.date})
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p>Innhold for bilagsjournal kommer her...</p>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
         </div>
         
         <div className="xl:col-span-1">
