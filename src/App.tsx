@@ -17,6 +17,7 @@ import TransactionSampling from "./components/DataAnalysis/TransactionSampling";
 import { SidebarProvider } from '@/components/ui/sidebar';
 import ClientAdmin from "./pages/ClientAdmin";
 import DataImport from "./pages/DataImport";
+import ClientDetail from "./pages/ClientDetail";
 
 const queryClient = new QueryClient();
 
@@ -46,16 +47,17 @@ function App() {
                     <Route path="/auth" element={<Auth />} />
                     {/* Redirect root "/" to "/klienter" as new start page */}
                     <Route path="/" element={<Navigate to="/klienter" replace />} />
-                    <Route path="/klienter" element={<ProtectedRoute><AppLayout><ClientsOverview /></AppLayout></ProtectedRoute>} />
+                    <Route path="/klienter" element={<ProtectedRoute><ClientsOverview /></ProtectedRoute>} />
+                    <Route path="/klienter/:orgNumber" element={<ProtectedRoute><ClientDetail /></ProtectedRoute>} />
                     <Route path="/dashboard" element={<Navigate to="/klienter" replace />} />
-                    <Route path="/analyser" element={<ProtectedRoute><AppLayout><AccountingExplorer /></AppLayout></ProtectedRoute>} />
-                    <Route path="/analyser/transaksjoner" element={<ProtectedRoute><AppLayout><TransactionSampling /></AppLayout></ProtectedRoute>} />
+                    <Route path="/analyser" element={<ProtectedRoute><AccountingExplorer /></ProtectedRoute>} />
+                    <Route path="/analyser/transaksjoner" element={<ProtectedRoute><TransactionSampling /></ProtectedRoute>} />
                     <Route path="/dokumenter" element={<ProtectedRoute><AppLayout><Index /></AppLayout></ProtectedRoute>} />
                     <Route path="/prosjekter" element={<ProtectedRoute><AppLayout><Index /></AppLayout></ProtectedRoute>} />
-                    <Route path="/klienter/administrasjon" element={<ProtectedRoute><AppLayout><ClientAdmin /></AppLayout></ProtectedRoute>} />
+                    <Route path="/klienter/administrasjon" element={<ProtectedRoute><ClientAdmin /></ProtectedRoute>} />
                     <Route path="/innstillinger" element={<ProtectedRoute><AppLayout><Index /></AppLayout></ProtectedRoute>} />
                     <Route path="/hjelp" element={<ProtectedRoute><AppLayout><Index /></AppLayout></ProtectedRoute>} />
-                    <Route path="/data-import" element={<ProtectedRoute><AppLayout><DataImport /></AppLayout></ProtectedRoute>} />
+                    <Route path="/data-import" element={<ProtectedRoute><DataImport /></ProtectedRoute>} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </div>
@@ -69,4 +71,3 @@ function App() {
 }
 
 export default App;
-
