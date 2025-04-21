@@ -1,23 +1,18 @@
+
 import React from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useLocation } from 'react-router-dom';
 import { useClientDetails } from '@/hooks/useClientDetails';
 import AppLayout from "@/components/Layout/AppLayout";
 import ClientHeader from '@/components/Clients/ClientDetails/ClientHeader';
+import ClientBreadcrumb from '@/components/Clients/ClientDetails/ClientBreadcrumb';
 import KeyFigures from '@/components/Clients/ClientDetails/ClientDashboard/KeyFigures';
 import FinancialChart from '@/components/Clients/ClientDetails/ClientDashboard/FinancialChart';
 import Overview from '@/components/Clients/ClientDetails/ClientDashboard/Overview';
 
 const ClientDetail = () => {
   const { orgNumber } = useParams<{ orgNumber: string }>();
-  const navigate = useNavigate();
+  const location = useLocation();
   const { data: client, isLoading, error } = useClientDetails(orgNumber || '');
-
-  // Mock data - replace with real data when available
-  const mockFinancialData = [
-    { year: 2021, revenue: 1250000, result: 350000 },
-    { year: 2022, revenue: 1500000, result: 450000 },
-    { year: 2023, revenue: 1800000, result: 520000 },
-  ];
 
   if (isLoading) {
     return (
@@ -44,34 +39,41 @@ const ClientDetail = () => {
 
   return (
     <AppLayout>
-      <div className="container mx-auto px-4 py-8">
-        <ClientHeader client={client} />
+      <div className="min-h-screen">
+        {client && <ClientBreadcrumb client={client} />}
+        
+        <div className="container mx-auto px-4 py-8">
+          <ClientHeader client={client} />
 
-        <div className="lg:grid lg:grid-cols-3 lg:gap-6">
-          {/* Left column - 2/3 width */}
-          <div className="col-span-2 space-y-6">
-            <KeyFigures 
-              liquidityRatio={1.5} 
-              equityRatio={35} 
-              profitMargin={12.5} 
-            />
-            <FinancialChart financialData={mockFinancialData} />
-          </div>
+          <div className="lg:grid lg:grid-cols-3 lg:gap-6">
+            {/* Left column - 2/3 width */}
+            <div className="col-span-2 space-y-6">
+              <KeyFigures 
+                liquidityRatio={1.5} 
+                equityRatio={35} 
+                profitMargin={12.5} 
+              />
+              <FinancialChart financialData={[
+                { year: 2021, revenue: 1250000, result: 350000 },
+                { year: 2022, revenue: 1500000, result: 450000 },
+                { year: 2023, revenue: 1800000, result: 520000 },
+              ]} />
+            </div>
 
-          {/* Right column - 1/3 width */}
-          <div className="mt-6 lg:mt-0">
-            <Overview
-              documentCount={client.documents?.length || 0}
-              nextAuditDeadline="31.05.2025"
-              lastAccountingFile={{
-                name: "regnskap_2023.xlsx",
-                importDate: "15.03.2025"
-              }}
-              onUploadClick={() => {
-                // TODO: Implement upload functionality
-                console.log('Upload clicked');
-              }}
-            />
+            {/* Right column - 1/3 width */}
+            <div className="mt-6 lg:mt-0">
+              <Overview
+                documentCount={client.documents?.length || 0}
+                nextAuditDeadline="31.05.2025"
+                lastAccountingFile={{
+                  name: "regnskap_2023.xlsx",
+                  importDate: "15.03.2025"
+                }}
+                onUploadClick={() => {
+                  console.log('Upload clicked');
+                }}
+              />
+            </div>
           </div>
         </div>
       </div>

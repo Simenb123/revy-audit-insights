@@ -46,7 +46,7 @@ const App = () => {
                     <Route path="/auth" element={<Auth />} />
                     <Route path="/" element={<Navigate to="/klienter" replace />} />
                     <Route path="/klienter" element={<ProtectedRoute><ClientsOverview /></ProtectedRoute>} />
-                    <Route path="/klienter/:orgNumber" element={<ProtectedRoute><ClientDetail /></ProtectedRoute>} />
+                    <Route path="/klienter/:orgNumber/*" element={<ProtectedRoute><ClientDetail /></ProtectedRoute>} />
                     <Route path="/dashboard" element={<Navigate to="/klienter" replace />} />
                     <Route path="/analyser" element={<ProtectedRoute><AccountingExplorer /></ProtectedRoute>} />
                     <Route path="/analyser/transaksjoner" element={<ProtectedRoute><TransactionSampling /></ProtectedRoute>} />

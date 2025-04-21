@@ -1,12 +1,11 @@
-
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
+  Users,
+  Home,
   BarChart2, 
   FileText, 
   FolderOpen, 
-  Home,
-  Users,
   Settings,
   HelpCircle,
   ChevronLeft,
@@ -26,6 +25,11 @@ type NavItem = {
 
 const mainNavItems: NavItem[] = [
   {
+    label: 'Klienter',
+    href: '/klienter',
+    icon: <Users size={20} />,
+  },
+  {
     label: 'Dashboard',
     href: '/',
     icon: <Home size={20} />,
@@ -44,11 +48,6 @@ const mainNavItems: NavItem[] = [
     label: 'Prosjekter',
     href: '/prosjekter',
     icon: <FolderOpen size={20} />,
-  },
-  {
-    label: 'Klienter',
-    href: '/klienter',
-    icon: <Users size={20} />,
   },
 ];
 
