@@ -321,8 +321,8 @@ function processRolesStrict(roller) {
     if (personName) {
       result.ceo = {
         name: personName,
-        fromDate: ceoRole.fraTraadtTiltredtDato || ceoRole.fra ?? null,
-        toDate: ceoRole.tilTraadtFraTredtDato || ceoRole.til ?? null,
+        fromDate: (ceoRole.fraTraadtTiltredtDato || ceoRole.fra) ?? null,
+        toDate: (ceoRole.tilTraadtFraTredtDato || ceoRole.til) ?? null,
         roleType: "CEO"
       };
     }
@@ -339,8 +339,8 @@ function processRolesStrict(roller) {
     if (personName) {
       result.chair = {
         name: personName,
-        fromDate: chairRole.fraTraadtTiltredtDato || chairRole.fra ?? null,
-        toDate: chairRole.tilTraadtFraTredtDato || chairRole.til ?? null,
+        fromDate: (chairRole.fraTraadtTiltredtDato || chairRole.fra) ?? null,
+        toDate: (chairRole.tilTraadtFraTredtDato || chairRole.til) ?? null,
         roleType: "CHAIR"
       };
     }
@@ -358,8 +358,8 @@ function processRolesStrict(roller) {
       if (personName) {
         result.boardMembers.push({
           name: personName,
-          fromDate: r.fraTraadtTiltredtDato || r.fra ?? null,
-          toDate: r.tilTraadtFraTredtDato || r.til ?? null,
+          fromDate: (r.fraTraadtTiltredtDato || r.fra) ?? null,
+          toDate: (r.tilTraadtFraTredtDato || r.til) ?? null,
           roleType: "MEMBER",
           description: r.rolleBeskrivelse || ""
         });
