@@ -1,766 +1,312 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle,
-  CardFooter 
-} from "@/components/ui/card";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
-import { useToast } from "@/hooks/use-toast";
-import { 
-  Download, 
-  ListFilter, 
-  BarChart4, 
-  FileCheck, 
-  PlusCircle,
-  Info,
-  AlertTriangle,
-  ChevronDown,
-  BarChart
-} from 'lucide-react';
-import { Badge } from "@/components/ui/badge";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
-import { 
-  BarChart as ReBarChart, 
-  ResponsiveContainer, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip as ReTooltip
-} from 'recharts';
-import { Transaction, SamplingResult, Account, AccountGroup } from '@/types/revio';
-import { SidebarProvider } from "@/components/ui/sidebar";
-import AccountSelectionSidebar from "./AccountSelectionSidebar";
-import MaterialityBanner from "./MaterialityBanner";
 
-// Mock data for transactions (will be filtered based on selected account)
-const allMockTransactions: Transaction[] = [
-  // Income transactions (3000)
-  { id: '1001', account: '3000', date: '2024-01-15', description: 'Faktura #12345', amount: 45000, voucher: 'FB-2024-0123' },
-  { id: '1002', account: '3000', date: '2024-01-22', description: 'Faktura #12346', amount: 68000, voucher: 'FB-2024-0145' },
-  { id: '1003', account: '3000', date: '2024-02-05', description: 'Faktura #12350', amount: 52000, voucher: 'FB-2024-0189' },
-  { id: '1004', account: '3000', date: '2024-02-18', description: 'Faktura #12356', amount: 78000, voucher: 'FB-2024-0213' },
-  { id: '1005', account: '3000', date: '2024-03-10', description: 'Faktura #12370', amount: 61000, voucher: 'FB-2024-0267' },
-  { id: '1006', account: '3000', date: '2024-03-25', description: 'Faktura #12385', amount: 54000, voucher: 'FB-2024-0301' },
-  { id: '1007', account: '3000', date: '2024-01-18', description: 'Faktura #12347', amount: 112000, voucher: 'FB-2024-0152' },
-  { id: '1008', account: '3000', date: '2024-02-12', description: 'Faktura #12358', amount: 95000, voucher: 'FB-2024-0198' },
-  { id: '1009', account: '3000', date: '2024-03-05', description: 'Faktura #12368', amount: 135000, voucher: 'FB-2024-0254' },
-  { id: '1010', account: '3000', date: '2024-03-18', description: 'Faktura #12380', amount: 28000, voucher: 'FB-2024-0288' },
-  
-  // Income transactions (3100)
-  { id: '2001', account: '3100', date: '2024-01-20', description: 'Faktura #12348', amount: 32000, voucher: 'FB-2024-0130' },
-  { id: '2002', account: '3100', date: '2024-02-15', description: 'Faktura #12360', amount: 45000, voucher: 'FB-2024-0200' },
-  { id: '2003', account: '3100', date: '2024-03-05', description: 'Faktura #12375', amount: 38000, voucher: 'FB-2024-0255' },
-  
-  // Expense transactions (4300)
-  { id: '3001', account: '4300', date: '2024-01-10', description: 'Varekjøp', amount: -150000, voucher: 'LB-2024-0050' },
-  { id: '3002', account: '4300', date: '2024-02-05', description: 'Varekjøp', amount: -185000, voucher: 'LB-2024-0120' },
-  { id: '3003', account: '4300', date: '2024-03-15', description: 'Varekjøp', amount: -210000, voucher: 'LB-2024-0230' },
-  
-  // Expense transactions (5000)
-  { id: '4001', account: '5000', date: '2024-01-15', description: 'Lønn januar', amount: -405000, voucher: 'LB-2024-0070' },
-  { id: '4002', account: '5000', date: '2024-02-15', description: 'Lønn februar', amount: -405000, voucher: 'LB-2024-0150' },
-  { id: '4003', account: '5000', date: '2024-03-15', description: 'Lønn mars', amount: -405000, voucher: 'LB-2024-0250' },
-  
-  // Expense transactions (6300)
-  { id: '5001', account: '6300', date: '2024-01-05', description: 'Husleie Q1', amount: -285000, voucher: 'LB-2024-0020' },
-  { id: '5002', account: '6300', date: '2024-04-05', description: 'Husleie Q2', amount: -285000, voucher: 'LB-2024-0320' },
-  
-  // Asset transactions (1500)
-  { id: '6001', account: '1500', date: '2024-01-31', description: 'Kundeposter', amount: 520000, voucher: 'FB-2024-0180' },
-  { id: '6002', account: '1500', date: '2024-02-28', description: 'Kundeposter', amount: 635000, voucher: 'FB-2024-0250' },
-  { id: '6003', account: '1500', date: '2024-03-31', description: 'Kundeposter', amount: 695000, voucher: 'FB-2024-0350' },
-  
-  // Asset transactions (1920)
-  { id: '7001', account: '1920', date: '2024-01-15', description: 'Innbetaling kundefordringer', amount: 485000, voucher: 'BB-2024-0015' },
-  { id: '7002', account: '1920', date: '2024-02-15', description: 'Innbetaling kundefordringer', amount: 520000, voucher: 'BB-2024-0025' },
-  { id: '7003', account: '1920', date: '2024-03-15', description: 'Innbetaling kundefordringer', amount: 635000, voucher: 'BB-2024-0035' },
-  { id: '7004', account: '1920', date: '2024-01-20', description: 'Betaling leverandører', amount: -320000, voucher: 'BB-2024-0018' },
-  { id: '7005', account: '1920', date: '2024-02-20', description: 'Betaling leverandører', amount: -380000, voucher: 'BB-2024-0028' },
-  { id: '7006', account: '1920', date: '2024-03-20', description: 'Betaling leverandører', amount: -410000, voucher: 'BB-2024-0038' },
-  
-  // Liability transactions (2400)
-  { id: '8001', account: '2400', date: '2024-01-10', description: 'Leverandørfaktura', amount: -320000, voucher: 'LB-2024-0040' },
-  { id: '8002', account: '2400', date: '2024-02-10', description: 'Leverandørfaktura', amount: -380000, voucher: 'LB-2024-0130' },
-  { id: '8003', account: '2400', date: '2024-03-10', description: 'Leverandørfaktura', amount: -410000, voucher: 'LB-2024-0210' },
+import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
+import { Slider } from '@/components/ui/slider';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Switch } from '@/components/ui/switch';
+import { Check } from 'lucide-react';
+import { Account, Transaction, SamplingResult } from '@/types/revio';
+import { formatCurrency } from '@/lib/formatters';
+
+// Mock transactions data
+const mockTransactions: Transaction[] = [
+  {
+    id: '1',
+    date: '2024-01-15',
+    description: 'Salg av konsulenttjenester',
+    amount: 24500,
+    account: '3100',
+    voucher: '1001'
+  },
+  // ... more mock transactions would go here
 ];
 
-const materialityThresholds = {
-  materiality: 2000000,
-  workingMateriality: 1500000,
-  clearlyTrivial: 150000
-};
+interface TransactionSamplingProps {
+  selectedAccount: Account | null;
+}
 
-// Risk levels for account groups
-const accountGroupRiskLevels: Record<string, 'low' | 'medium' | 'high'> = {
-  income: 'medium',
-  expenses: 'high',
-  assets: 'medium',
-  liabilities: 'low'
-};
-
-const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat('nb-NO', { style: 'currency', currency: 'NOK' }).format(amount);
-};
-
-const TransactionSampling = () => {
-  const [selectedTransactions, setSelectedTransactions] = useState<string[]>([]);
-  const [sampleSize, setSampleSize] = useState("5");
-  const [sampleType, setSampleType] = useState("random");
-  const [minAmount, setMinAmount] = useState("");
-  const [maxAmount, setMaxAmount] = useState("");
-  const [viewMode, setViewMode] = useState<'table' | 'chart'>('table');
-  const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
-  const [selectedAccountGroup, setSelectedAccountGroup] = useState<AccountGroup | null>(null);
-  const [selectedAccounts, setSelectedAccounts] = useState<Account[]>([]);
-  const [suggestedSampleSize, setSuggestedSampleSize] = useState<number | null>(null);
-  const [transactionDistribution, setTransactionDistribution] = useState<any[]>([]);
-  const { toast } = useToast();
+const TransactionSampling = ({ selectedAccount }: TransactionSamplingProps) => {
+  const [samplingMethod, setSamplingMethod] = useState<'random' | 'stratified' | 'monetary'>('random');
+  const [sampleSize, setSampleSize] = useState<number>(5);
+  const [coverageTarget, setCoverageTarget] = useState<number>(30);
+  const [threshold, setThreshold] = useState<number>(10000);
+  const [samplingResult, setSamplingResult] = useState<SamplingResult | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   
-  const [samplingResults, setSamplingResults] = useState<SamplingResult>({
-    transactions: [],
-    summary: {
-      totalCount: 0,
-      sampledCount: 0,
-      totalAmount: 0,
-      sampledAmount: 0,
-      coverage: 0
-    }
-  });
-  
-  // Calculate the total balance of selected accounts
-  const totalSelectedBalance = selectedAccounts.reduce((sum, account) => sum + account.balance, 0);
-  
-  // Filter transactions based on selected account or account group
-  const getFilteredTransactions = () => {
-    if (selectedAccounts.length > 0) {
-      const accountNumbers = selectedAccounts.map(a => a.number);
-      return allMockTransactions.filter(t => accountNumbers.includes(t.account));
-    } else if (selectedAccount) {
-      return allMockTransactions.filter(t => t.account === selectedAccount.number);
-    } else if (selectedAccountGroup) {
-      const accountNumbers = selectedAccountGroup.accounts.map(a => a.number);
-      return allMockTransactions.filter(t => accountNumbers.includes(t.account));
-    }
-    return allMockTransactions;
-  };
-  
-  // Calculate suggested sample size based on risk level and account balance relative to materiality
-  useEffect(() => {
-    if (selectedAccountGroup || selectedAccounts.length > 0) {
-      // Determine risk level
-      let riskLevel = 'medium';
-      if (selectedAccountGroup) {
-        riskLevel = accountGroupRiskLevels[selectedAccountGroup.id] || 'medium';
-      } else if (selectedAccounts.length > 0) {
-        // If multiple accounts are selected, use the highest risk level among their groups
-        const groupIds = new Set(selectedAccounts.map(a => a.groupId));
-        const riskLevels = Array.from(groupIds).map(id => accountGroupRiskLevels[id] || 'medium');
-        if (riskLevels.includes('high')) riskLevel = 'high';
-        else if (riskLevels.includes('medium')) riskLevel = 'medium';
-        else riskLevel = 'low';
-      }
-      
-      // Get the balance to check against
-      const balance = selectedAccounts.length > 0 
-        ? Math.abs(totalSelectedBalance) 
-        : selectedAccountGroup 
-          ? Math.abs(selectedAccountGroup.balance)
-          : 0;
-      
-      const materiality = materialityThresholds.materiality;
-      
-      // Base sample size based on risk level
-      let baseSize = 5; // Default
-      if (riskLevel === 'high') baseSize = 15;
-      else if (riskLevel === 'medium') baseSize = 10;
-      else if (riskLevel === 'low') baseSize = 5;
-      
-      // Adjustment based on account size relative to materiality
-      let sizeAdjustment = 0;
-      if (balance > materiality) {
-        sizeAdjustment = Math.min(10, Math.floor(balance / materiality) * 5);
-      } else if (balance > materialityThresholds.workingMateriality) {
-        sizeAdjustment = 5;
-      }
-      
-      const suggested = baseSize + sizeAdjustment;
-      
-      // Ensure reasonable minimum and maximum
-      const filteredTransactions = getFilteredTransactions();
-      const cappedSuggestion = Math.min(
-        Math.max(5, suggested), 
-        Math.min(30, filteredTransactions.length)
-      );
-      
-      setSuggestedSampleSize(cappedSuggestion);
-      setSampleSize(cappedSuggestion.toString());
-    }
-  }, [selectedAccountGroup, selectedAccount, selectedAccounts, totalSelectedBalance]);
-  
-  // Calculate transaction distribution data for chart
-  useEffect(() => {
-    const transactions = getFilteredTransactions();
+  // Apply sampling
+  const applySampling = () => {
+    setIsLoading(true);
     
-    // Count transactions by amount ranges
-    const ranges = {
-      "0-25k": 0,
-      "25k-50k": 0,
-      "50k-100k": 0,
-      "100k-250k": 0,
-      "250k-500k": 0,
-      "500k+": 0
-    };
-    
-    transactions.forEach(t => {
-      const amount = Math.abs(t.amount);
-      if (amount < 25000) ranges["0-25k"]++;
-      else if (amount < 50000) ranges["25k-50k"]++;
-      else if (amount < 100000) ranges["50k-100k"]++;
-      else if (amount < 250000) ranges["100k-250k"]++;
-      else if (amount < 500000) ranges["250k-500k"]++;
-      else ranges["500k+"]++;
-    });
-    
-    // Convert to array format for chart
-    const distribution = Object.entries(ranges).map(([range, count]) => ({
-      range,
-      count
-    }));
-    
-    setTransactionDistribution(distribution);
-  }, [selectedAccount, selectedAccountGroup, selectedAccounts]);
-  
-  const handleSelectTransaction = (transactionId: string) => {
-    setSelectedTransactions(prev => {
-      if (prev.includes(transactionId)) {
-        return prev.filter(id => id !== transactionId);
-      } else {
-        return [...prev, transactionId];
-      }
-    });
-  };
-  
-  const handleSelectAll = () => {
-    if (selectedTransactions.length === samplingResults.transactions.length) {
-      setSelectedTransactions([]);
-    } else {
-      setSelectedTransactions(samplingResults.transactions.map(t => t.id));
-    }
-  };
-  
-  const handleMultiSelect = (accounts: Account[]) => {
-    setSelectedAccounts(accounts);
-    // If accounts are selected, clear single selection
-    if (accounts.length > 0) {
-      setSelectedAccount(null);
-    }
-  };
-  
-  const handleRunSampling = () => {
-    // Get filtered transactions based on current selection
-    let filteredTransactions = getFilteredTransactions();
-    
-    // Apply additional amount filters if provided
-    if (minAmount) {
-      filteredTransactions = filteredTransactions.filter(t => Math.abs(t.amount) >= Number(minAmount));
-    }
-    
-    if (maxAmount) {
-      filteredTransactions = filteredTransactions.filter(t => Math.abs(t.amount) <= Number(maxAmount));
-    }
-    
-    if (filteredTransactions.length === 0) {
-      toast({
-        title: "Ingen transaksjoner funnet",
-        description: "Det finnes ingen transaksjoner som matcher utvalgskriteriene.",
-        variant: "destructive"
+    // Simulate API call delay
+    setTimeout(() => {
+      // In a real app, this would call an API that performs the sampling
+      const sampledTransactions = mockTransactions.slice(0, sampleSize);
+      
+      // Calculate summary statistics
+      const totalAmount = mockTransactions.reduce((sum, t) => sum + t.amount, 0);
+      const sampledAmount = sampledTransactions.reduce((sum, t) => sum + t.amount, 0);
+      
+      setSamplingResult({
+        transactions: sampledTransactions,
+        summary: {
+          totalCount: mockTransactions.length,
+          sampledCount: sampledTransactions.length,
+          totalAmount,
+          sampledAmount,
+          coverage: (sampledAmount / totalAmount) * 100
+        }
       });
-      return;
-    }
-    
-    // Select the sample based on sample type
-    let sampledTransactions: Transaction[] = [];
-    const size = Math.min(Number(sampleSize), filteredTransactions.length);
-    
-    if (sampleType === 'random') {
-      // Random sampling
-      const shuffled = [...filteredTransactions].sort(() => 0.5 - Math.random());
-      sampledTransactions = shuffled.slice(0, size);
-    } else if (sampleType === 'stratified') {
-      // Simple stratification by amount (in a real app, this would be more sophisticated)
-      // Sort by amount and take evenly distributed items
-      const sorted = [...filteredTransactions].sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount));
-      const step = Math.max(1, Math.floor(sorted.length / size));
       
-      for (let i = 0; i < size; i++) {
-        const index = Math.min(i * step, sorted.length - 1);
-        sampledTransactions.push(sorted[index]);
-      }
-    } else {
-      // Systematic sampling - take every Nth item
-      const step = Math.max(1, Math.floor(filteredTransactions.length / size));
-      for (let i = 0; i < size; i++) {
-        const index = Math.min(i * step, filteredTransactions.length - 1);
-        sampledTransactions.push(filteredTransactions[index]);
-      }
-    }
-    
-    // Calculate summary statistics
-    const sampledAmount = sampledTransactions.reduce((sum, t) => sum + Math.abs(t.amount), 0);
-    const totalAmount = filteredTransactions.reduce((sum, t) => sum + Math.abs(t.amount), 0);
-    
-    setSamplingResults({
-      transactions: sampledTransactions,
-      summary: {
-        totalCount: filteredTransactions.length,
-        sampledCount: sampledTransactions.length,
-        totalAmount,
-        sampledAmount,
-        coverage: totalAmount > 0 ? (sampledAmount / totalAmount) * 100 : 0
-      }
-    });
-    
-    // Clear any previously selected transactions
-    setSelectedTransactions([]);
-    
-    toast({
-      title: "Utvalg generert",
-      description: `${sampledTransactions.length} transaksjoner er valgt med ${sampleType === 'random' ? 'tilfeldig' : sampleType === 'stratified' ? 'stratifisert' : 'systematisk'} utvalgsmetode.`,
-    });
+      setIsLoading(false);
+    }, 800);
   };
   
-  const handleGenerateSummary = () => {
-    if (selectedTransactions.length === 0) {
-      toast({
-        title: "Ingen transaksjoner valgt",
-        description: "Velg minst én transaksjon for å generere oppsummering.",
-        variant: "destructive"
-      });
-      return;
-    }
+  // Reset sampling
+  const resetSampling = () => {
+    setSamplingResult(null);
+  };
+  
+  // Mark transaction as tested
+  const markAsTested = (transactionId: string) => {
+    if (!samplingResult) return;
     
-    toast({
-      title: "Oppsummering generert",
-      description: `Oppsummering generert for ${selectedTransactions.length} transaksjoner.`,
-    });
-  };
-  
-  const handleAccountSelect = (account: Account | null) => {
-    setSelectedAccount(account);
-    // Clear multi-select when selecting a single account
-    if (account) {
-      setSelectedAccounts([]);
-    }
-    setSamplingResults({
-      transactions: [],
-      summary: {
-        totalCount: 0,
-        sampledCount: 0,
-        totalAmount: 0,
-        sampledAmount: 0,
-        coverage: 0
-      }
-    });
-  };
-  
-  const handleAccountGroupSelect = (group: AccountGroup | null) => {
-    setSelectedAccountGroup(group);
-    // If group is deselected, also clear account selection
-    if (!group) {
-      setSelectedAccount(null);
-      setSelectedAccounts([]);
-    }
-  };
-  
-  const getRiskBadge = () => {
-    if (selectedAccounts.length > 0) {
-      // Determine risk level for multiple accounts
-      const groupIds = new Set(selectedAccounts.map(a => a.groupId));
-      const riskLevels = Array.from(groupIds).map(id => accountGroupRiskLevels[id] || 'medium');
-      let risk = 'medium';
-      if (riskLevels.includes('high')) risk = 'high';
-      else if (riskLevels.includes('medium')) risk = 'medium';
-      else risk = 'low';
-      
-      const variant = risk === 'high' ? 'destructive' : risk === 'medium' ? 'default' : 'outline';
-      const label = risk === 'high' ? 'Høy' : risk === 'medium' ? 'Middels' : 'Lav';
-      
-      return (
-        <Badge variant={variant} className="ml-2">
-          {label} risiko
-        </Badge>
-      );
-    } else if (selectedAccountGroup) {
-      const risk = accountGroupRiskLevels[selectedAccountGroup.id] || 'medium';
-      const variant = risk === 'high' ? 'destructive' : risk === 'medium' ? 'default' : 'outline';
-      const label = risk === 'high' ? 'Høy' : risk === 'medium' ? 'Middels' : 'Lav';
-      
-      return (
-        <Badge variant={variant} className="ml-2">
-          {label} risiko
-        </Badge>
-      );
-    }
+    const updatedTransactions = samplingResult.transactions.map(t => 
+      t.id === transactionId ? { ...t, isTested: !t.isTested } : t
+    );
     
-    return null;
+    setSamplingResult({
+      ...samplingResult,
+      transactions: updatedTransactions
+    });
   };
   
   return (
-    <SidebarProvider>
-      <div className="flex min-h-[calc(100vh-12rem)]">
-        <AccountSelectionSidebar 
-          onAccountSelect={handleAccountSelect}
-          onAccountGroupSelect={handleAccountGroupSelect}
-          onMultiSelect={handleMultiSelect}
-          selectedAccount={selectedAccount}
-          selectedAccountGroup={selectedAccountGroup}
-          selectedAccounts={selectedAccounts}
-          side="right"
-        />
-        
-        <div className="flex-1 pl-4">
-          <MaterialityBanner thresholds={materialityThresholds} />
-          
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div>
-                    <CardTitle className="flex items-center">
-                      Transaksjonsutvalg
-                      {getRiskBadge()}
-                    </CardTitle>
-                    <CardDescription>
-                      {selectedAccounts.length > 0
-                        ? `Utvalg for ${selectedAccounts.length} konto${selectedAccounts.length > 1 ? 'er' : ''} (totalbeløp: ${formatCurrency(totalSelectedBalance)})`
-                        : selectedAccount 
-                          ? `Utvalg for konto ${selectedAccount.accountId} - ${selectedAccount.name}`
-                          : selectedAccountGroup 
-                            ? `Utvalg for ${selectedAccountGroup.name}`
-                            : 'Velg konto eller regnskapslinje fra sidebaren for å starte'
-                      }
-                    </CardDescription>
-                  </div>
-                  
-                  {(selectedAccountGroup || selectedAccounts.length > 0) && (
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="gap-2"
-                          >
-                            <BarChart size={14} />
-                            <span>
-                              Totalbeløp: {formatCurrency(selectedAccounts.length > 0 
-                                ? totalSelectedBalance 
-                                : selectedAccountGroup?.balance || 0
-                              )}
-                            </span>
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Totalbeløp for valgt{selectedAccounts.length > 1 ? 'e' : ''} {selectedAccounts.length > 0 ? 'kontoer' : 'regnskapsgruppe'}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <Label htmlFor="sampleSize">Antall transaksjoner</Label>
-                        {suggestedSampleSize && (
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <Button variant="ghost" size="sm" className="h-6 gap-1 text-xs">
-                                <Info size={12} />
-                                <span>Anbefalt: {suggestedSampleSize}</span>
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-80 text-sm">
-                              <div className="space-y-2">
-                                <h4 className="font-medium">Anbefalt utvalgsstørrelse</h4>
-                                <p className="text-muted-foreground text-xs">
-                                  Anbefalingen er basert på en kombinasjon av risikofaktorer og beløpsstørrelse vurdert mot vesentlighetsgrensen.
-                                </p>
-                                <div className="flex items-center gap-2 mt-2">
-                                  <AlertTriangle size={14} className="text-amber-500" />
-                                  <span className="text-xs">Revisor bør vurdere om utvalget er tilstrekkelig.</span>
-                                </div>
-                              </div>
-                            </PopoverContent>
-                          </Popover>
-                        )}
+    <div className="mt-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            Transaksjonsutvalg
+            {selectedAccount && (
+              <span className="ml-2 text-base font-normal text-muted-foreground">
+                - {selectedAccount.name}
+              </span>
+            )}
+          </CardTitle>
+          <CardDescription>
+            Velg metode og parametre for å generere et utvalg av transaksjoner for revisjon
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {selectedAccount ? (
+            <>
+              {!samplingResult ? (
+                <div className="space-y-6">
+                  <Tabs value={samplingMethod} onValueChange={(value) => setSamplingMethod(value as 'random' | 'stratified' | 'monetary')}>
+                    <TabsList className="grid grid-cols-3 w-full max-w-md mb-6">
+                      <TabsTrigger value="random">Tilfeldig</TabsTrigger>
+                      <TabsTrigger value="stratified">Stratifisert</TabsTrigger>
+                      <TabsTrigger value="monetary">Monetær</TabsTrigger>
+                    </TabsList>
+                    
+                    <TabsContent value="random">
+                      <div className="space-y-4">
+                        <div>
+                          <Label>Antall transaksjoner</Label>
+                          <div className="flex items-center gap-4 mt-2">
+                            <Slider
+                              value={[sampleSize]}
+                              min={1}
+                              max={20}
+                              step={1}
+                              onValueChange={(value) => setSampleSize(value[0])}
+                              className="flex-1"
+                            />
+                            <div className="w-16">
+                              <Input
+                                type="number"
+                                value={sampleSize}
+                                onChange={(e) => setSampleSize(parseInt(e.target.value) || 1)}
+                                min={1}
+                                max={20}
+                              />
+                            </div>
+                          </div>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            Velger {sampleSize} transaksjoner tilfeldig fra kontoen.
+                          </p>
+                        </div>
                       </div>
-                      <Input 
-                        id="sampleSize" 
-                        value={sampleSize} 
-                        onChange={(e) => setSampleSize(e.target.value)}
-                        type="number"
-                        min="1"
-                        disabled={!selectedAccountGroup && !selectedAccount && selectedAccounts.length === 0}
-                      />
-                    </div>
+                    </TabsContent>
                     
-                    <div className="space-y-2">
-                      <Label htmlFor="sampleType">Utvalgsmetode</Label>
-                      <Select 
-                        value={sampleType} 
-                        onValueChange={setSampleType}
-                        disabled={!selectedAccountGroup && !selectedAccount && selectedAccounts.length === 0}
-                      >
-                        <SelectTrigger id="sampleType">
-                          <SelectValue placeholder="Velg metode" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="random">Tilfeldig utvalg</SelectItem>
-                          <SelectItem value="stratified">Stratifisert utvalg</SelectItem>
-                          <SelectItem value="systematic">Systematisk utvalg</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="minAmount">Minimumsbeløp</Label>
-                      <Input 
-                        id="minAmount" 
-                        value={minAmount} 
-                        onChange={(e) => setMinAmount(e.target.value)}
-                        type="number"
-                        min="0"
-                        placeholder="Valgfritt"
-                        disabled={!selectedAccountGroup && !selectedAccount && selectedAccounts.length === 0}
-                      />
-                    </div>
+                    <TabsContent value="stratified">
+                      <div className="space-y-4">
+                        <div>
+                          <Label>Dekning (% av totalbeløp)</Label>
+                          <div className="flex items-center gap-4 mt-2">
+                            <Slider
+                              value={[coverageTarget]}
+                              min={5}
+                              max={100}
+                              step={5}
+                              onValueChange={(value) => setCoverageTarget(value[0])}
+                              className="flex-1"
+                            />
+                            <div className="w-16">
+                              <Input
+                                type="number"
+                                value={coverageTarget}
+                                onChange={(e) => setCoverageTarget(parseInt(e.target.value) || 5)}
+                                min={5}
+                                max={100}
+                              />
+                            </div>
+                          </div>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            Velger transaksjoner for å dekke minst {coverageTarget}% av totalbeløpet, fordelt på alle størrelsesintervaller.
+                          </p>
+                        </div>
+                      </div>
+                    </TabsContent>
                     
-                    <div className="space-y-2">
-                      <Label htmlFor="maxAmount">Maksimumsbeløp</Label>
-                      <Input 
-                        id="maxAmount" 
-                        value={maxAmount} 
-                        onChange={(e) => setMaxAmount(e.target.value)}
-                        type="number"
-                        min="0"
-                        placeholder="Valgfritt"
-                        disabled={!selectedAccountGroup && !selectedAccount && selectedAccounts.length === 0}
-                      />
-                    </div>
-                  </div>
+                    <TabsContent value="monetary">
+                      <div className="space-y-4">
+                        <div>
+                          <Label>Beløpsgrense (NOK)</Label>
+                          <div className="flex items-center gap-4 mt-2">
+                            <Slider
+                              value={[threshold]}
+                              min={1000}
+                              max={50000}
+                              step={1000}
+                              onValueChange={(value) => setThreshold(value[0])}
+                              className="flex-1"
+                            />
+                            <div className="w-24">
+                              <Input
+                                type="number"
+                                value={threshold}
+                                onChange={(e) => setThreshold(parseInt(e.target.value) || 1000)}
+                                min={1000}
+                                step={1000}
+                              />
+                            </div>
+                          </div>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            Velger alle transaksjoner over {formatCurrency(threshold)} pluss et utvalg under grensen.
+                          </p>
+                        </div>
+                      </div>
+                    </TabsContent>
+                  </Tabs>
                   
-                  <div className="flex items-end">
-                    <Button 
-                      onClick={handleRunSampling} 
-                      size="lg" 
-                      className="w-full gap-2"
-                      disabled={!selectedAccountGroup && !selectedAccount && selectedAccounts.length === 0}
-                    >
-                      <ListFilter size={16} />
-                      <span>Kjør utvalg</span>
+                  <div className="flex gap-4 pt-4">
+                    <Button onClick={applySampling} disabled={isLoading}>
+                      {isLoading ? 'Genererer utvalg...' : 'Generer utvalg'}
+                    </Button>
+                    <Button variant="outline" onClick={resetSampling}>
+                      Tilbakestill
                     </Button>
                   </div>
                 </div>
-                
-                {(selectedAccountGroup || selectedAccount || selectedAccounts.length > 0) && transactionDistribution.length > 0 && samplingResults.transactions.length === 0 && (
-                  <Card className="bg-muted/30 mb-6">
-                    <CardContent className="pt-6">
-                      <h3 className="font-medium mb-3">Fordeling av transaksjoner etter størrelse</h3>
-                      <ResponsiveContainer width="100%" height={200}>
-                        <ReBarChart data={transactionDistribution} margin={{ top: 5, right: 30, left: 20, bottom: 25 }}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="range" />
-                          <YAxis />
-                          <ReTooltip formatter={(value) => [`${value} transaksjoner`, 'Antall']} />
-                          <Bar dataKey="count" name="Antall transaksjoner" fill="#2A9D8F" />
-                        </ReBarChart>
-                      </ResponsiveContainer>
-                    </CardContent>
-                  </Card>
-                )}
-                
-                {samplingResults.transactions.length > 0 && (
+              ) : (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-4 gap-4 mb-6">
+                    <div className="p-4 bg-muted/40 rounded-lg text-center">
+                      <div className="text-sm text-muted-foreground">Totalt</div>
+                      <div className="text-2xl font-semibold">{samplingResult.summary.totalCount}</div>
+                      <div className="text-sm">transaksjoner</div>
+                    </div>
+                    <div className="p-4 bg-muted/40 rounded-lg text-center">
+                      <div className="text-sm text-muted-foreground">Utvalg</div>
+                      <div className="text-2xl font-semibold">{samplingResult.summary.sampledCount}</div>
+                      <div className="text-sm">transaksjoner</div>
+                    </div>
+                    <div className="p-4 bg-muted/40 rounded-lg text-center">
+                      <div className="text-sm text-muted-foreground">Totalbeløp</div>
+                      <div className="text-2xl font-semibold">{formatCurrency(samplingResult.summary.totalAmount)}</div>
+                    </div>
+                    <div className="p-4 bg-primary/10 rounded-lg text-center">
+                      <div className="text-sm text-primary">Dekningsgrad</div>
+                      <div className="text-2xl font-semibold">{samplingResult.summary.coverage.toFixed(1)}%</div>
+                      <div className="text-sm">{formatCurrency(samplingResult.summary.sampledAmount)}</div>
+                    </div>
+                  </div>
+                  
                   <div>
                     <div className="flex justify-between items-center mb-4">
-                      <div className="flex items-center gap-6">
-                        <div>
-                          <span className="text-sm text-muted-foreground">Antall transaksjoner:</span>
-                          <div className="text-lg font-semibold">
-                            {samplingResults.summary.sampledCount} av {samplingResults.summary.totalCount}
-                          </div>
-                        </div>
-                        <div>
-                          <span className="text-sm text-muted-foreground">Total beløp:</span>
-                          <div className="text-lg font-semibold">
-                            {formatCurrency(samplingResults.summary.sampledAmount)}
-                            <span className="text-sm text-muted-foreground ml-2">
-                              ({samplingResults.summary.coverage.toFixed(1)}% dekning)
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      
+                      <h3 className="text-lg font-medium">Transaksjoner for testing</h3>
                       <div className="flex items-center gap-2">
-                        <Button
-                          variant={viewMode === 'table' ? 'default' : 'outline'}
-                          size="sm"
-                          onClick={() => setViewMode('table')}
-                          className="gap-1"
-                        >
-                          <ListFilter size={14} />
-                          <span>Tabell</span>
-                        </Button>
-                        <Button
-                          variant={viewMode === 'chart' ? 'default' : 'outline'}
-                          size="sm"
-                          onClick={() => setViewMode('chart')}
-                          className="gap-1"
-                        >
-                          <BarChart4 size={14} />
-                          <span>Graf</span>
-                        </Button>
+                        <Badge variant="outline" className="ml-2">
+                          {samplingMethod === 'random' ? 'Tilfeldig' : 
+                           samplingMethod === 'stratified' ? 'Stratifisert' : 'Monetær'} utvalg
+                        </Badge>
+                        <Badge variant="secondary">
+                          {samplingResult.transactions.filter(t => t.isTested).length}/{samplingResult.transactions.length} testet
+                        </Badge>
                       </div>
                     </div>
                     
-                    {viewMode === 'table' ? (
-                      <div className="border rounded-md">
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead className="w-[50px]">
-                                <Checkbox 
-                                  checked={selectedTransactions.length === samplingResults.transactions.length && samplingResults.transactions.length > 0} 
-                                  onCheckedChange={handleSelectAll}
-                                  aria-label="Velg alle"
-                                />
-                              </TableHead>
-                              <TableHead>Dato</TableHead>
-                              <TableHead>Konto</TableHead>
-                              <TableHead>Bilagsnr.</TableHead>
-                              <TableHead>Beskrivelse</TableHead>
-                              <TableHead className="text-right">Beløp</TableHead>
-                              <TableHead>Status</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {samplingResults.transactions.map((transaction) => (
-                              <TableRow key={transaction.id}>
-                                <TableCell>
-                                  <Checkbox 
-                                    checked={selectedTransactions.includes(transaction.id)} 
-                                    onCheckedChange={() => handleSelectTransaction(transaction.id)}
-                                    aria-label={`Velg transaksjon ${transaction.id}`}
+                    <div className="border rounded-md">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Dato</TableHead>
+                            <TableHead>Beskrivelse</TableHead>
+                            <TableHead>Bilag</TableHead>
+                            <TableHead className="text-right">Beløp</TableHead>
+                            <TableHead className="text-center w-[100px]">Testet</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {samplingResult.transactions.map((transaction) => (
+                            <TableRow key={transaction.id}>
+                              <TableCell>{transaction.date}</TableCell>
+                              <TableCell>{transaction.description}</TableCell>
+                              <TableCell>{transaction.voucher}</TableCell>
+                              <TableCell className="text-right">{formatCurrency(transaction.amount)}</TableCell>
+                              <TableCell className="text-center">
+                                <div className="flex justify-center">
+                                  <Switch
+                                    checked={!!transaction.isTested}
+                                    onCheckedChange={() => markAsTested(transaction.id)}
                                   />
-                                </TableCell>
-                                <TableCell>{transaction.date}</TableCell>
-                                <TableCell className="font-mono text-xs">{transaction.account}</TableCell>
-                                <TableCell>{transaction.voucher}</TableCell>
-                                <TableCell>{transaction.description}</TableCell>
-                                <TableCell className="text-right font-mono">
-                                  {formatCurrency(transaction.amount)}
-                                </TableCell>
-                                <TableCell>
-                                  <Badge variant={transaction.isTested ? "success" : "outline"}>
-                                    {transaction.isTested ? "Testet" : "Ikke testet"}
-                                  </Badge>
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </div>
-                    ) : (
-                      <Card className="bg-muted/30">
-                        <CardContent className="pt-6">
-                          <h3 className="font-medium mb-3">Fordeling av transaksjoner etter størrelse</h3>
-                          <ResponsiveContainer width="100%" height={250}>
-                            <ReBarChart data={transactionDistribution} margin={{ top: 5, right: 30, left: 20, bottom: 25 }}>
-                              <CartesianGrid strokeDasharray="3 3" />
-                              <XAxis dataKey="range" />
-                              <YAxis />
-                              <ReTooltip formatter={(value) => [`${value} transaksjoner`, 'Antall']} />
-                              <Bar dataKey="count" name="Antall transaksjoner" fill="#2A9D8F" />
-                            </ReBarChart>
-                          </ResponsiveContainer>
-                        </CardContent>
-                      </Card>
-                    )}
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
                   </div>
-                )}
-              </CardContent>
-              <CardFooter className="flex justify-between">
-                <div className="text-sm text-muted-foreground">
-                  {selectedTransactions.length > 0 
-                    ? `${selectedTransactions.length} transaksjoner valgt`
-                    : samplingResults.transactions.length > 0 
-                      ? "Velg transaksjoner for å generere oppsummering" 
-                      : (selectedAccountGroup || selectedAccount || selectedAccounts.length > 0)
-                        ? "Kjør utvalg for å se resultater"
-                        : "Velg konto eller regnskapslinje fra sidebaren"
-                  }
+                  
+                  <div className="flex gap-4 pt-4">
+                    <Button onClick={applySampling}>
+                      Oppdater utvalg
+                    </Button>
+                    <Button variant="outline" onClick={resetSampling}>
+                      Tilbakestill
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex gap-2">
-                  <Button 
-                    variant="outline" 
-                    className="gap-2"
-                    disabled={samplingResults.transactions.length === 0}
-                  >
-                    <Download size={16} />
-                    <span>Eksporter</span>
-                  </Button>
-                  <Button 
-                    className="gap-2"
-                    disabled={selectedTransactions.length === 0}
-                    onClick={handleGenerateSummary}
-                  >
-                    <FileCheck size={16} />
-                    <span>Generer oppsummering</span>
-                  </Button>
-                </div>
-              </CardFooter>
-            </Card>
-          </div>
-        </div>
-      </div>
-    </SidebarProvider>
+              )}
+            </>
+          ) : (
+            <div className="py-8 text-center">
+              <p className="text-muted-foreground">
+                Velg en konto fra listen til venstre for å generere et transaksjonsutvalg
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 

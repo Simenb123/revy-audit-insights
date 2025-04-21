@@ -2,7 +2,7 @@
 import { RevyContext, RevyMessage } from '@/types/revio';
 
 // Context-aware tips for Revy assistant
-const contextualTips: Record<RevyContext, string[]> = {
+const contextualTips: Record<string, string[]> = {
   'dashboard': [
     'Velkommen til dashbordet! Her ser du en oversikt over nøkkeltall for klienten.',
     'Klikk på en regnskapslinje i oversikten for å se detaljene.',
@@ -55,8 +55,8 @@ const contextualTips: Record<RevyContext, string[]> = {
 
 // Get contextual tips based on current context
 export const getContextualTip = (context: RevyContext): string => {
-  const tips = contextualTips[context];
-  return tips[Math.floor(Math.random() * tips.length)];
+  const tips = contextualTips[context as string];
+  return tips ? tips[Math.floor(Math.random() * tips.length)] : contextualTips['general'][0];
 };
 
 // Generate a response based on user message and context

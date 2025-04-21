@@ -1,3 +1,4 @@
+
 export type AuditPhase = 'engagement' | 'planning' | 'execution' | 'conclusion';
 
 export interface RiskArea {
@@ -135,7 +136,5 @@ export interface RevyMessage {
   sender: 'user' | 'revy';
 }
 
-export interface RevyContext {
-  context: string;
-  setContext: (context: string) => void;
-}
+export type RevyContext = 'dashboard' | 'drill-down' | 'risk-assessment' | 'documentation' | 'mapping' | 'client-overview' | 'client-admin' | 'general';
+

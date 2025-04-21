@@ -17,8 +17,9 @@ const RevyAssistant = () => {
   const [messages, setMessages] = useState<RevyMessage[]>([
     {
       id: '1',
-      type: 'revy',
-      text: 'Hei! Jeg er Revy, din revisjonsassistent. Hvordan kan jeg hjelpe deg i dag?'
+      content: 'Hei! Jeg er Revy, din revisjonsassistent. Hvordan kan jeg hjelpe deg i dag?',
+      timestamp: new Date().toISOString(),
+      sender: 'revy'
     }
   ]);
   const { toast } = useToast();
@@ -30,8 +31,9 @@ const RevyAssistant = () => {
       const tip = getContextualTip(currentContext);
       const newMessage: RevyMessage = {
         id: Date.now().toString(),
-        type: 'revy',
-        text: `Jeg ser at du er i ${contextToNorwegian(currentContext)}-visningen. ${tip}`
+        content: `Jeg ser at du er i ${contextToNorwegian(currentContext)}-visningen. ${tip}`,
+        timestamp: new Date().toISOString(),
+        sender: 'revy'
       };
       
       setMessages(prev => [...prev, newMessage]);
@@ -46,6 +48,7 @@ const RevyAssistant = () => {
       'documentation': 'dokumentasjons',
       'mapping': 'mapping',
       'client-overview': 'klientoversikt',
+      'client-admin': 'klientadmin',
       'general': 'generell'
     };
     
@@ -57,8 +60,9 @@ const RevyAssistant = () => {
     
     const userMessage: RevyMessage = { 
       id: Date.now().toString(), 
-      type: 'user', 
-      text: message 
+      content: message,
+      timestamp: new Date().toISOString(),
+      sender: 'user'
     };
     
     const newMessages = [...messages, userMessage];
@@ -67,11 +71,12 @@ const RevyAssistant = () => {
     
     // Generate contextual response
     setTimeout(() => {
-      const responseText = generateResponse(userMessage.text, currentContext);
+      const responseText = generateResponse(userMessage.content, currentContext);
       const revyResponse: RevyMessage = {
         id: Date.now().toString(),
-        type: 'revy',
-        text: responseText
+        content: responseText,
+        timestamp: new Date().toISOString(),
+        sender: 'revy'
       };
       
       setMessages(prev => [...prev, revyResponse]);
@@ -92,8 +97,9 @@ const RevyAssistant = () => {
         const tip = getContextualTip(currentContext);
         const welcomeMessage: RevyMessage = {
           id: Date.now().toString(),
-          type: 'revy',
-          text: tip
+          content: tip,
+          timestamp: new Date().toISOString(),
+          sender: 'revy'
         };
         
         setMessages(prev => [...prev, welcomeMessage]);
@@ -155,20 +161,20 @@ const RevyAssistant = () => {
                 {messages.map((msg) => (
                   <div 
                     key={msg.id} 
-                    className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}
+                    className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
                   >
-                    {msg.type === 'revy' && (
+                    {msg.sender === 'revy' && (
                       <div className="flex items-end gap-2">
                         <RevyAvatar size="xs" />
                         <div className="bg-white border border-gray-200 p-3 rounded-2xl rounded-bl-none max-w-[85%] shadow-sm">
-                          {msg.text}
+                          {msg.content}
                         </div>
                       </div>
                     )}
                     
-                    {msg.type === 'user' && (
+                    {msg.sender === 'user' && (
                       <div className="bg-blue-100 text-blue-900 p-3 rounded-2xl rounded-br-none max-w-[85%]">
-                        {msg.text}
+                        {msg.content}
                       </div>
                     )}
                   </div>

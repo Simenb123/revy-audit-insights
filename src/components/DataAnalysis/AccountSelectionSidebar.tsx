@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,21 +12,9 @@ import {
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Search, Plus, Briefcase, BarChart, CreditCard, Building2 } from 'lucide-react';
+import { Search, Plus, Briefcase, BarChart, CreditCard, Building2, X } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import { Account, AccountGroup } from '@/types/revio';
-import { 
-  SidebarContent, 
-  SidebarHeader, 
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubItem,
-  SidebarFooter,
-  SidebarGroup,
-  SidebarGroupLabel,
-  SidebarInput,
-} from "@/components/ui/sidebar";
 
 // Mock account data
 const incomeAccounts: Account[] = [
@@ -161,19 +150,29 @@ const AccountSelectionSidebar = ({
   
   return (
     <>
-      <SidebarContent side={side} className="w-80 border-r p-0">
-        <SidebarHeader className="border-b p-4">
+      <div className={`w-80 border-r p-0 ${side === 'right' ? 'border-l border-r-0' : ''}`} data-side={side}>
+        <div className="border-b p-4">
           <h2 className="text-lg font-medium">Kontoplan</h2>
           <p className="text-sm text-muted-foreground">Velg konto for utvalg</p>
-          <SidebarInput 
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Søk konto..."
-            className="mt-2"
-            leadingIcon={<Search className="h-4 w-4 text-muted-foreground" />}
-            clearButton
-            onClear={() => setSearchTerm('')}
-          />
+          <div className="relative mt-2">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Søk konto..."
+              className="pl-9 pr-9"
+            />
+            {searchTerm && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6"
+                onClick={() => setSearchTerm('')}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
           <Button 
             variant="outline" 
             className="w-full mt-2 gap-2 justify-start"
@@ -187,19 +186,19 @@ const AccountSelectionSidebar = ({
               </Badge>
             )}
           </Button>
-        </SidebarHeader>
+        </div>
         
         <ScrollArea className="h-[calc(100vh-13.5rem)]">
-          <SidebarMenu>
+          <div>
             {searchTerm ? (
               <div className="py-2">
                 <div className="px-4 py-2 text-sm text-muted-foreground">
                   Søkeresultater ({filteredAccounts.length})
                 </div>
                 {filteredAccounts.map(account => (
-                  <SidebarMenuItem
+                  <li
                     key={account.id}
-                    isActive={selectedAccount?.id === account.id}
+                    className={`px-4 py-2 hover:bg-muted cursor-pointer ${selectedAccount?.id === account.id ? 'bg-muted' : ''}`}
                     onClick={() => handleSelectAccount(account)}
                   >
                     <div className="flex justify-between w-full items-center">
@@ -211,7 +210,7 @@ const AccountSelectionSidebar = ({
                         {formatBalance(account.balance)}
                       </span>
                     </div>
-                  </SidebarMenuItem>
+                  </li>
                 ))}
                 {filteredAccounts.length === 0 && (
                   <div className="px-4 py-8 text-center text-sm text-muted-foreground">
@@ -221,23 +220,25 @@ const AccountSelectionSidebar = ({
               </div>
             ) : (
               <>
-                <SidebarGroup>
-                  <SidebarMenuItem 
-                    icon={<BarChart size={16} />}
-                    isActive={selectedAccountGroup?.id === 'income'}
+                <div>
+                  <li 
+                    className={`px-4 py-2 hover:bg-muted cursor-pointer ${selectedAccountGroup?.id === 'income' ? 'bg-muted' : ''}`}
                     onClick={() => handleSelectGroup(accountGroups[0])}
                   >
-                    <div className="flex justify-between w-full">
-                      <span>Inntekter</span>
-                      <span className="text-green-600">{formatBalance(accountGroups[0].balance)}</span>
+                    <div className="flex items-center gap-2">
+                      <BarChart size={16} />
+                      <div className="flex justify-between w-full">
+                        <span>Inntekter</span>
+                        <span className="text-green-600">{formatBalance(accountGroups[0].balance)}</span>
+                      </div>
                     </div>
-                  </SidebarMenuItem>
+                  </li>
                   
-                  <SidebarMenuSub>
+                  <div className="pl-6">
                     {incomeAccounts.map(account => (
-                      <SidebarMenuSubItem
+                      <li
                         key={account.id}
-                        isActive={selectedAccount?.id === account.id}
+                        className={`px-4 py-1 hover:bg-muted cursor-pointer ${selectedAccount?.id === account.id ? 'bg-muted' : ''}`}
                         onClick={() => handleSelectAccount(account)}
                       >
                         <div className="flex justify-between w-full">
@@ -246,28 +247,30 @@ const AccountSelectionSidebar = ({
                           </div>
                           <span className="text-green-600">{formatBalance(account.balance)}</span>
                         </div>
-                      </SidebarMenuSubItem>
+                      </li>
                     ))}
-                  </SidebarMenuSub>
-                </SidebarGroup>
+                  </div>
+                </div>
                 
-                <SidebarGroup>
-                  <SidebarMenuItem 
-                    icon={<Briefcase size={16} />}
-                    isActive={selectedAccountGroup?.id === 'expenses'}
+                <div>
+                  <li 
+                    className={`px-4 py-2 hover:bg-muted cursor-pointer ${selectedAccountGroup?.id === 'expenses' ? 'bg-muted' : ''}`}
                     onClick={() => handleSelectGroup(accountGroups[1])}
                   >
-                    <div className="flex justify-between w-full">
-                      <span>Kostnader</span>
-                      <span className="text-red-600">{formatBalance(accountGroups[1].balance)}</span>
+                    <div className="flex items-center gap-2">
+                      <Briefcase size={16} />
+                      <div className="flex justify-between w-full">
+                        <span>Kostnader</span>
+                        <span className="text-red-600">{formatBalance(accountGroups[1].balance)}</span>
+                      </div>
                     </div>
-                  </SidebarMenuItem>
+                  </li>
                   
-                  <SidebarMenuSub>
+                  <div className="pl-6">
                     {expenseAccounts.map(account => (
-                      <SidebarMenuSubItem
+                      <li
                         key={account.id}
-                        isActive={selectedAccount?.id === account.id}
+                        className={`px-4 py-1 hover:bg-muted cursor-pointer ${selectedAccount?.id === account.id ? 'bg-muted' : ''}`}
                         onClick={() => handleSelectAccount(account)}
                       >
                         <div className="flex justify-between w-full">
@@ -276,28 +279,30 @@ const AccountSelectionSidebar = ({
                           </div>
                           <span className="text-red-600">{formatBalance(account.balance)}</span>
                         </div>
-                      </SidebarMenuSubItem>
+                      </li>
                     ))}
-                  </SidebarMenuSub>
-                </SidebarGroup>
+                  </div>
+                </div>
                 
-                <SidebarGroup>
-                  <SidebarMenuItem 
-                    icon={<CreditCard size={16} />}
-                    isActive={selectedAccountGroup?.id === 'assets'}
+                <div>
+                  <li 
+                    className={`px-4 py-2 hover:bg-muted cursor-pointer ${selectedAccountGroup?.id === 'assets' ? 'bg-muted' : ''}`}
                     onClick={() => handleSelectGroup(accountGroups[2])}
                   >
-                    <div className="flex justify-between w-full">
-                      <span>Eiendeler</span>
-                      <span className="text-green-600">{formatBalance(accountGroups[2].balance)}</span>
+                    <div className="flex items-center gap-2">
+                      <CreditCard size={16} />
+                      <div className="flex justify-between w-full">
+                        <span>Eiendeler</span>
+                        <span className="text-green-600">{formatBalance(accountGroups[2].balance)}</span>
+                      </div>
                     </div>
-                  </SidebarMenuItem>
+                  </li>
                   
-                  <SidebarMenuSub>
+                  <div className="pl-6">
                     {assetAccounts.map(account => (
-                      <SidebarMenuSubItem
+                      <li
                         key={account.id}
-                        isActive={selectedAccount?.id === account.id}
+                        className={`px-4 py-1 hover:bg-muted cursor-pointer ${selectedAccount?.id === account.id ? 'bg-muted' : ''}`}
                         onClick={() => handleSelectAccount(account)}
                       >
                         <div className="flex justify-between w-full">
@@ -306,28 +311,30 @@ const AccountSelectionSidebar = ({
                           </div>
                           <span className="text-green-600">{formatBalance(account.balance)}</span>
                         </div>
-                      </SidebarMenuSubItem>
+                      </li>
                     ))}
-                  </SidebarMenuSub>
-                </SidebarGroup>
+                  </div>
+                </div>
                 
-                <SidebarGroup>
-                  <SidebarMenuItem 
-                    icon={<Building2 size={16} />}
-                    isActive={selectedAccountGroup?.id === 'liabilities'}
+                <div>
+                  <li 
+                    className={`px-4 py-2 hover:bg-muted cursor-pointer ${selectedAccountGroup?.id === 'liabilities' ? 'bg-muted' : ''}`}
                     onClick={() => handleSelectGroup(accountGroups[3])}
                   >
-                    <div className="flex justify-between w-full">
-                      <span>Gjeld</span>
-                      <span className="text-red-600">{formatBalance(accountGroups[3].balance)}</span>
+                    <div className="flex items-center gap-2">
+                      <Building2 size={16} />
+                      <div className="flex justify-between w-full">
+                        <span>Gjeld</span>
+                        <span className="text-red-600">{formatBalance(accountGroups[3].balance)}</span>
+                      </div>
                     </div>
-                  </SidebarMenuItem>
+                  </li>
                   
-                  <SidebarMenuSub>
+                  <div className="pl-6">
                     {liabilityAccounts.map(account => (
-                      <SidebarMenuSubItem
+                      <li
                         key={account.id}
-                        isActive={selectedAccount?.id === account.id}
+                        className={`px-4 py-1 hover:bg-muted cursor-pointer ${selectedAccount?.id === account.id ? 'bg-muted' : ''}`}
                         onClick={() => handleSelectAccount(account)}
                       >
                         <div className="flex justify-between w-full">
@@ -336,16 +343,16 @@ const AccountSelectionSidebar = ({
                           </div>
                           <span className="text-red-600">{formatBalance(account.balance)}</span>
                         </div>
-                      </SidebarMenuSubItem>
+                      </li>
                     ))}
-                  </SidebarMenuSub>
-                </SidebarGroup>
+                  </div>
+                </div>
               </>
             )}
-          </SidebarMenu>
+          </div>
         </ScrollArea>
         
-        <SidebarFooter className="border-t p-4">
+        <div className="border-t p-4">
           <div className="text-xs text-muted-foreground">
             {selectedAccount ? (
               <div>
@@ -378,8 +385,8 @@ const AccountSelectionSidebar = ({
               <div>Velg en konto eller kontogruppe for å se detaljer</div>
             )}
           </div>
-        </SidebarFooter>
-      </SidebarContent>
+        </div>
+      </div>
       
       {/* Multi-select dialog */}
       <Dialog open={isMultiSelectDialogOpen} onOpenChange={setIsMultiSelectDialogOpen}>

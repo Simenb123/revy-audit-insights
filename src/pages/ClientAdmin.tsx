@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useRevyContext } from '@/components/RevyContext/RevyContextProvider';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Client, BrregSearchResult } from '@/types/revio';
+import { Client, BrregSearchResult, RevyContext } from '@/types/revio';
 import { useToast } from '@/hooks/use-toast';
 import ClientForm from '@/components/Clients/ClientAdmin/ClientForm';
 import ClientList from '@/components/Clients/ClientAdmin/ClientList';
@@ -19,7 +19,7 @@ const ClientAdmin = () => {
   const [selectedClient, setSelectedClient] = useState<Partial<Client> | null>(null);
 
   React.useEffect(() => {
-    setContext('client-admin');
+    setContext('client-admin' as RevyContext);
   }, [setContext]);
 
   const handleSelectFromBrreg = (result: BrregSearchResult) => {
