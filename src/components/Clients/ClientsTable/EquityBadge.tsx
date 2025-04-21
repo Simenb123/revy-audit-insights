@@ -35,6 +35,11 @@ const EquityBadge: React.FC<EquityBadgeProps> = ({ equityCapital, shareCapital }
     >
       <Badge variant="secondary" className="cursor-help flex gap-1 items-center p-1 px-2" title="Vis kapital">
         <Bitcoin size={14} className="inline" /> 
+        {equityCapital > 0 && shareCapital > 0 
+          ? "NOK" 
+          : equityCapital > 0 
+            ? format(equityCapital).replace("kr", "").trim() 
+            : format(shareCapital).replace("kr", "").trim()}
       </Badge>
       {showInfo && (
         <div className="absolute z-20 left-1/2 transform -translate-x-1/2 mt-2 bg-white text-sm border rounded shadow p-2 min-w-[180px] dark:bg-gray-900 dark:text-white">

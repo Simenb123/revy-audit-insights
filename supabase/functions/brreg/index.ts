@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const BRREG_API_BASE = "https://data.brreg.no/enhetsregisteret/api/enheter";
@@ -203,6 +202,11 @@ serve(async (req) => {
     // Ekstra logging for feilsøk
     if (query === "922666997") {
       console.log("[DEBUG] Rå roller-payload:", JSON.stringify(roller, null, 2));
+      if (baseData.kapital) {
+        console.log('KAPITAL', JSON.stringify(baseData.kapital, null, 2));
+      } else {
+        console.log('KAPITAL: NOT FOUND in response');
+      }
     }
 
     // — Mapping: CEO, chair, boardMembers —
@@ -240,34 +244,28 @@ serve(async (req) => {
     }
 
     // Extract capital fields from various possible locations
-    let equityCapital = null;
-    let shareCapital = null;
+    let equityCapital = 0;
+    let shareCapital = 0;
 
     if (baseData.kapital) {
       // First check for aksjekapital (share capital)
       if (baseData.kapital.aksjekapital) {
-        shareCapital = parseFloat(baseData.kapital.aksjekapital);
+        shareCapital = parseFloat(baseData.kapital.aksjekapital) || 0;
       } else if (baseData.kapital.aksjekapitalNOK) {
-        shareCapital = parseFloat(baseData.kapital.aksjekapitalNOK);
+        shareCapital = parseFloat(baseData.kapital.aksjekapitalNOK) || 0;
       }
       
       // Then check for innskuddskapital (equity capital)
       if (baseData.kapital.innskuddskapital) {
-        equityCapital = parseFloat(baseData.kapital.innskuddskapital);
+        equityCapital = parseFloat(baseData.kapital.innskuddskapital) || 0;
+      } else if (shareCapital > 0) {
+        // If we have share capital but no equity capital, use share capital for equity
+        equityCapital = shareCapital;
       }
     }
 
-    // If we have found no equity capital but we have share capital, use that
-    if (equityCapital === null && shareCapital !== null) {
-      equityCapital = shareCapital;
-    }
-
-    // Log capital information to help debug
-    console.log("Capital information:", { 
-      rawKapital: baseData.kapital,
-      extractedEquityCapital: equityCapital,
-      extractedShareCapital: shareCapital
-    });
+    // Log capital information for debugging
+    console.log(`[BRREG] Saved capital: equity=${equityCapital}, share=${shareCapital}`);
 
     // Build enhanced data object, taking from BRREG mapping table
     const enhancedData = {
@@ -337,7 +335,7 @@ function processRolesStrict(roller) {
   );
   if (ceoRole && ceoRole.person) {
     let personName = ceoRole.person.navn
-      ?? (ceoRole.person?.fornavn && ceoRole.person?.etternavn ? `${ceoRole.person.fornavn} ${ceoRole.person.etternavn}` : null);
+      ?? ((ceoRole.person?.fornavn && ceoRole.person?.etternavn) ? `${ceoRole.person.fornavn} ${ceoRole.person.etternavn}` : null);
     if (personName) {
       result.ceo = {
         name: personName,
@@ -355,7 +353,7 @@ function processRolesStrict(roller) {
   );
   if (chairRole && chairRole.person) {
     let personName = chairRole.person.navn
-      ?? (chairRole.person?.fornavn && chairRole.person?.etternavn ? `${chairRole.person.fornavn} ${chairRole.person.etternavn}` : null);
+      ?? ((chairRole.person?.fornavn && chairRole.person?.etternavn) ? `${chairRole.person.fornavn} ${chairRole.person.etternavn}` : null);
     if (personName) {
       result.chair = {
         name: personName,
@@ -374,7 +372,7 @@ function processRolesStrict(roller) {
     let isStyr = (r.type === 'STYR' || r.type?.kode === 'STYR');
     if (!isChair && isStyr && r.person) {
       let personName = r.person.navn
-        ?? (r.person?.fornavn && r.person?.etternavn ? `${r.person.fornavn} ${r.person.etternavn}` : null);
+        ?? ((r.person?.fornavn && r.person?.etternavn) ? `${r.person.fornavn} ${r.person.etternavn}` : null);
       if (personName) {
         result.boardMembers.push({
           name: personName,

@@ -29,12 +29,12 @@ export function formatUpdateData(basis: any, roles: any, client: Client) {
   const phone = fixValue(basis.telefon);
 
   // Properly extract capital values
-  let equityCapital = null;
+  let equityCapital = 0;
   if (basis.kapital && typeof basis.kapital.equityCapital === "number" && !isNaN(basis.kapital.equityCapital)) {
     equityCapital = basis.kapital.equityCapital;
   }
   
-  let shareCapital = null;
+  let shareCapital = 0;
   if (basis.kapital && typeof basis.kapital.shareCapital === "number" && !isNaN(basis.kapital.shareCapital)) {
     shareCapital = basis.kapital.shareCapital;
   }

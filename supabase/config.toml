@@ -8,10 +8,6 @@ schemas = ["public", "storage", "graphql_public"]
 
 [db]
 port = 54322
-shadow_port = 54320
-
-[realtime]
-enabled = true
 
 [studio]
 enabled = true
@@ -29,8 +25,12 @@ enabled = true
 enabled = true
 site_url = "http://localhost:3000"
 
-[analytics]
+[realtime]
 enabled = true
 
 [functions.brreg]
-verify_jwt = true
+verify_jwt = false
+
+[functions.syncKunngjoring]
+verify_jwt = false
+schedule = "*/30 * * * *"  # Run every 30 minutes
