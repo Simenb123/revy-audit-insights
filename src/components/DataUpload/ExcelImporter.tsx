@@ -7,6 +7,7 @@ import { FileSpreadsheet, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import ImportStatus from './ImportStatus';
 import { processExcelFile } from '@/utils/excelProcessor';
+import { supabase } from '@/integrations/supabase/client';
 
 interface LogEntry {
   message: string;
@@ -37,6 +38,32 @@ const ExcelImporter = ({ onImportSuccess }: ExcelImporterProps) => {
     }]);
   };
 
+  const saveClientToDatabase = async (client: any) => {
+    try {
+      const { data, error } = await supabase
+        .from('clients')
+        .insert([{
+          name: client.name || 'Ukjent klient',
+          company_name: client.companyName || client.name || 'Ukjent klient',
+          org_number: client.orgNumber,
+          phase: 'engagement',
+          progress: 0,
+          user_id: (await supabase.auth.getUser()).data.user?.id
+        }]);
+
+      if (error) {
+        addLog(`Error inserting client to database: ${error.message}`);
+        return false;
+      }
+      
+      addLog(`Client ${client.name || client.orgNumber} added to database successfully`);
+      return true;
+    } catch (err) {
+      addLog(`Exception when saving to database: ${(err as Error).message}`);
+      return false;
+    }
+  };
+
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -64,22 +91,29 @@ const ExcelImporter = ({ onImportSuccess }: ExcelImporterProps) => {
             setTotalRows(total);
             setProgress((processed / total) * 100);
           },
-          onSuccess: (successful: number, total: number) => {
-            setSuccessCount(successful);
+          onSuccess: async (successful: number, total: number, clients: any[]) => {
+            // Save clients to the database
+            let savedCount = 0;
+            for (const client of clients) {
+              const saved = await saveClientToDatabase(client);
+              if (saved) savedCount++;
+            }
+            
+            setSuccessCount(savedCount);
             setImportComplete(true);
-            addLog(`Import complete. ${successful} of ${total} clients imported successfully.`);
+            addLog(`Import complete. ${savedCount} of ${total} clients imported successfully.`);
             
             if (onImportSuccess) {
               onImportSuccess({
                 filename: file.name,
-                importedCount: successful
+                importedCount: savedCount
               });
             }
 
             toast({
               title: "Import fullført",
-              description: `${successful} av ${total} klienter ble importert.`,
-              variant: successful > 0 ? "default" : "destructive"
+              description: `${savedCount} av ${total} klienter ble importert.`,
+              variant: savedCount > 0 ? "default" : "destructive"
             });
           }
         }
