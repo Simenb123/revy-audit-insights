@@ -28,8 +28,8 @@ const mockTransactions: Transaction[] = [
   // ... more mock transactions would go here
 ];
 
-interface TransactionSamplingProps {
-  selectedAccount: Account | null;
+export interface TransactionSamplingProps {
+  selectedAccount?: Account | null;
 }
 
 const TransactionSampling = ({ selectedAccount }: TransactionSamplingProps) => {

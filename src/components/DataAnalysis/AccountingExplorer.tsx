@@ -45,7 +45,7 @@ const AccountingExplorer = () => {
         <VersionSelector 
           versions={documentVersions}
           selectedVersion={selectedVersion}
-          onVersionChange={handleVersionChange}
+          onSelectVersion={handleVersionChange}
         />
         
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-[400px]">

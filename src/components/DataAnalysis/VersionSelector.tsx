@@ -7,21 +7,28 @@ import { Clock, FileText, HelpCircle } from 'lucide-react';
 import { DocumentVersion } from '@/types/revio';
 import { format } from 'date-fns';
 
-interface VersionSelectorProps {
+export interface VersionSelectorProps {
   versions: DocumentVersion[];
   selectedVersion: DocumentVersion;
   onSelectVersion?: (version: DocumentVersion) => void;
+  onVersionChange?: (version: DocumentVersion) => void;
 }
 
 const VersionSelector: React.FC<VersionSelectorProps> = ({ 
   versions,
   selectedVersion,
-  onSelectVersion
+  onSelectVersion,
+  onVersionChange
 }) => {
   const handleSelectVersion = (versionId: string) => {
     const version = versions.find(v => v.id === versionId);
-    if (version && onSelectVersion) {
-      onSelectVersion(version);
+    if (version) {
+      if (onSelectVersion) {
+        onSelectVersion(version);
+      }
+      if (onVersionChange) {
+        onVersionChange(version);
+      }
     }
   };
   
