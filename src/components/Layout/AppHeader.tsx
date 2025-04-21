@@ -4,9 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Bell, HelpCircle, Settings, User, Menu, LogOut } from "lucide-react";
 import Logo from './Logo';
 import { useSidebar } from '@/components/ui/sidebar';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useClientDetails } from '@/hooks/useClientDetails';
+import ClientBreadcrumb from '../Clients/ClientDetails/ClientBreadcrumb';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,6 +20,8 @@ const AppHeader = () => {
   const { toggleSidebar } = useSidebar();
   const location = useLocation();
   const { toast } = useToast();
+  const { orgNumber } = useParams<{ orgNumber: string }>();
+  const { data: client } = useClientDetails(orgNumber || '');
   
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
@@ -50,53 +54,62 @@ const AppHeader = () => {
   };
 
   const pageTitle = getPageTitle(location.pathname);
+  const isClientPage = location.pathname.startsWith('/klienter/');
 
   return (
-    <header className="sticky top-0 w-full bg-revio-500 h-14 flex items-center justify-between px-4 border-b border-revio-600 z-20">
-      <div className="flex items-center gap-4">
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className="md:hidden text-white hover:bg-revio-600 rounded-md" 
-          onClick={toggleSidebar}
-        >
-          <Menu size={20} />
-          <span className="sr-only">Toggle sidebar</span>
-        </Button>
-        <Logo />
-      </div>
+    <header className="sticky top-0 w-full bg-revio-500 flex flex-col z-20">
+      <div className="h-14 flex items-center justify-between px-4 border-b border-revio-600">
+        <div className="flex items-center gap-4">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="md:hidden text-white hover:bg-revio-600 rounded-md" 
+            onClick={toggleSidebar}
+          >
+            <Menu size={20} />
+            <span className="sr-only">Toggle sidebar</span>
+          </Button>
+          <Logo />
+        </div>
 
-      <div className="hidden md:flex items-center justify-center">
-        <h1 className="text-2xl font-bold text-white relative px-8 py-2">
-          {pageTitle}
-          <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-20 h-0.5 bg-white rounded-full opacity-60" />
-        </h1>
+        <div className="hidden md:flex items-center justify-center">
+          <h1 className="text-2xl font-bold text-white relative px-8 py-2">
+            {pageTitle}
+            <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-20 h-0.5 bg-white rounded-full opacity-60" />
+          </h1>
+        </div>
+        
+        <div className="flex items-center space-x-2">
+          <Button variant="ghost" size="icon" className="text-white hover:bg-revio-600 rounded-md">
+            <Bell size={20} />
+          </Button>
+          <Button variant="ghost" size="icon" className="text-white hover:bg-revio-600 rounded-md">
+            <HelpCircle size={20} />
+          </Button>
+          <Button variant="ghost" size="icon" className="text-white hover:bg-revio-600 rounded-md">
+            <Settings size={20} />
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="text-white hover:bg-revio-600 rounded-md">
+                <User size={20} />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={handleLogout}>
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Logg ut</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
       
-      <div className="flex items-center space-x-2">
-        <Button variant="ghost" size="icon" className="text-white hover:bg-revio-600 rounded-md">
-          <Bell size={20} />
-        </Button>
-        <Button variant="ghost" size="icon" className="text-white hover:bg-revio-600 rounded-md">
-          <HelpCircle size={20} />
-        </Button>
-        <Button variant="ghost" size="icon" className="text-white hover:bg-revio-600 rounded-md">
-          <Settings size={20} />
-        </Button>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="text-white hover:bg-revio-600 rounded-md">
-              <User size={20} />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={handleLogout}>
-              <LogOut className="mr-2 h-4 w-4" />
-              <span>Logg ut</span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+      {isClientPage && client && (
+        <div className="h-10 flex items-center px-4 bg-white border-b">
+          <ClientBreadcrumb client={client} />
+        </div>
+      )}
     </header>
   );
 };
