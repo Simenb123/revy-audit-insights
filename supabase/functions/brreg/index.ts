@@ -144,14 +144,14 @@ serve(async (req) => {
     const baseData = await baseResponse.json();
 
     /** --- REGNSKAP HENTING OG MAPPING --- */
-    let equityCapital: number | null = null;
-    let shareCapital: number | null = null;
+    let equityCapital = null;
+    let shareCapital = null;
 
     try {
       // 1. Prøv åpent regnskap-endepunkt
       let regnskapUrl = `https://data.brreg.no/enhetsregisteret/api/enheter/${query}/regnskap`;
       let regnskapRes = await fetch(regnskapUrl, fetchOptions);
-      let regnskapData: any = null;
+      let regnskapData = null;
 
       if (regnskapRes.status === 404 && !!authHeader) {
         // 2. Fallback til autorisert endepunkt
@@ -287,10 +287,7 @@ serve(async (req) => {
       homepage = homepage.adresseUrl;
     }
 
-    // Extract capital fields from various possible locations
-    let equityCapital: number | null = null;
-    let shareCapital: number | null = null;
-
+    // Extract capital fields from kapital object directly
     if (baseData.kapital) {
       // Aksjekapital → shareCapital
       if (
