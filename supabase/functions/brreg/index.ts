@@ -1,8 +1,8 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const BRREG_API_BASE = "https://data.brreg.no/enhetsregisteret/api/enheter";
-const BRREG_ROLES_API = "https://data.brreg.no/enhetsregisteret/api/roller";
+const BRREG_ROLES_OPEN = "https://data.brreg.no/enhetsregisteret/api/enheter";
+const BRREG_ROLES_AUTH = "https://data.brreg.no/enhetsregisteret/autorisert-api/enheter";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -146,34 +146,55 @@ serve(async (req) => {
     const baseData = await baseResponse.json();
     console.log("Base data received:", JSON.stringify(baseData).substring(0, 200) + "...");
     
-    // Then get the roles information for this organization
-    const rolesUrl = `${BRREG_ROLES_API}/enhet/${query}`;
-    console.log("Fetching roles:", rolesUrl);
-    
+    // --------- ROLLER: Først mot åpent endepunkt ---------
     let rolesData = { roller: [] };
+    let roller = [];
+    let roleEndpointTried = "";
+    let roleResponseStatus = 0;
+
+    // 1: Åpent endepunkt
+    const openRolesUrl = `${BRREG_ROLES_OPEN}/${query}/roller`;
     try {
-      const rolesResponse = await fetch(rolesUrl, fetchOptions);
-      console.log(`Roles API response status: ${rolesResponse.status}`);
-      
-      if (rolesResponse.ok) {
-        rolesData = await rolesResponse.json();
-        console.log("Roles data received:", JSON.stringify(rolesData).substring(0, 200) + "...");
-        console.log("Total roles count:", rolesData.roller ? rolesData.roller.length : 0);
-        
-        // Special debugging for the specific org number mentioned in the user's request
-        if (query === '922666997') {
-          console.log("Detailed roles for requested org:", JSON.stringify(rolesData.roller, null, 2));
+      const rolesOpenResp = await fetch(openRolesUrl, fetchOptions);
+      roleEndpointTried = "open";
+      roleResponseStatus = rolesOpenResp.status;
+      if (rolesOpenResp.ok) {
+        const openData = await rolesOpenResp.json();
+        rolesData = openData;
+        roller = openData.roller || [];
+        console.log(`[BRREG] Roller (open api) hentet for ${query}: #roller=${roller.length}`);
+      } else if (rolesOpenResp.status === 404) {
+        // 2: Fallback til autorisert dersom 404 og evt. Auth header finnes
+        const authRolesUrl = `${BRREG_ROLES_AUTH}/${query}/roller`;
+        const rolesAuthResp = await fetch(authRolesUrl, fetchOptions);
+        roleEndpointTried = "auth";
+        roleResponseStatus = rolesAuthResp.status;
+        if (rolesAuthResp.ok) {
+          const authData = await rolesAuthResp.json();
+          rolesData = authData;
+          roller = authData.roller || [];
+          console.log(`[BRREG] Roller (autorisert api) hentet for ${query}: #roller=${roller.length}`);
+        } else {
+          console.log(`[BRREG] Roller (autorisert) 404 for ${query}`);
+          rolesData = { roller: [] };
         }
       } else {
-        console.log(`Roles API returned error status: ${rolesResponse.status}`);
+        console.log(`[BRREG] Roller-kall feilet for ${query}: status=${rolesOpenResp.status}`);
+        rolesData = { roller: [] };
       }
-    } catch (rolesError) {
-      console.error("Error fetching roles:", rolesError);
+    } catch (err) {
+      console.error(`[BRREG] Roller-kall exception:`, err);
+      rolesData = { roller: [] };
     }
-    
-    // Process roles for enhanced list
-    const processedRoles = processRolesV2(rolesData.roller || []);
-    console.log("Processed roles:", JSON.stringify(processedRoles).substring(0, 200) + "...");
+
+    // Ekstra logging for feilsøk
+    if (query === "922666997") {
+      console.log("[DEBUG] Rå roller-payload:", JSON.stringify(roller, null, 2));
+    }
+
+    // — Mapping: CEO, chair, boardMembers —
+    const processedRoles = processRolesStrict(roller);
+    console.log("[BRREG] Processed roles:", JSON.stringify(processedRoles));
     
     // Extract address info (full address array, postnummer, poststed, kommune)
     const forretningsadresse = baseData.forretningsadresse || {};
@@ -277,124 +298,73 @@ serve(async (req) => {
 });
 
 /**
- * Process roles from Brønnøysund API to extract CEO, Chair and board members
+ * Strikt og eksplisitt mapping til CEO, Chair, BoardMembers basert kun på ønsket spesifikasjon.
  */
-function processRolesV2(roller) {
+function processRolesStrict(roller) {
   const result = {
     ceo: null,
     chair: null,
     boardMembers: []
   };
-  
   if (!roller || !Array.isArray(roller) || roller.length === 0) {
-    console.log("No roles found or invalid roles data");
     return result;
   }
 
-  console.log(`Processing ${roller.length} roles`);
-  
-  // First, let's look for the CEO role
-  const ceoRole = roller.find(role => 
-    (role.type?.kode === "DAGL") || 
-    (role.rolleBeskrivelse && /daglig leder/i.test(role.rolleBeskrivelse))
+  // CEO: type="DAGL" eller rollebeskrivelse ~ "daglig leder"
+  const ceoRole = roller.find(r =>
+    (r.type === 'DAGL' || r.type?.kode === 'DAGL') ||
+    (r.rolleBeskrivelse && /daglig leder/i.test(r.rolleBeskrivelse))
   );
-  
-  if (ceoRole) {
-    let personName = null;
-    if (ceoRole.person?.navn) {
-      personName = ceoRole.person.navn;
-    } else if (ceoRole.person?.navn?.fornavn && ceoRole.person?.navn?.etternavn) {
-      personName = `${ceoRole.person.navn.fornavn} ${ceoRole.person.navn.etternavn}`;
-    }
-    
+  if (ceoRole && ceoRole.person) {
+    let personName = ceoRole.person.navn
+      ?? (ceoRole.person?.fornavn && ceoRole.person?.etternavn ? `${ceoRole.person.fornavn} ${ceoRole.person.etternavn}` : null);
     if (personName) {
-      console.log(`Found CEO: ${personName}`);
       result.ceo = {
         name: personName,
-        fromDate: ceoRole.fraTraadtTiltredtDato || null,
-        toDate: ceoRole.tilTraadtFraTredtDato || null,
+        fromDate: ceoRole.fraTraadtTiltredtDato || ceoRole.fra ?? null,
+        toDate: ceoRole.tilTraadtFraTredtDato || ceoRole.til ?? null,
         roleType: "CEO"
       };
     }
   }
-  
-  // Then, look for the Chair role
-  const chairRole = roller.find(role => 
-    (role.type?.kode === "STYR" && role.rolleBeskrivelse && /styrets leder/i.test(role.rolleBeskrivelse))
+
+  // Chair: type="STYR" og rollebeskrivelse ~ "styrets leder"
+  const chairRole = roller.find(r =>
+    (r.type === 'STYR' || r.type?.kode === 'STYR') &&
+    r.rolleBeskrivelse && /styrets leder/i.test(r.rolleBeskrivelse)
   );
-  
-  if (chairRole) {
-    let personName = null;
-    if (chairRole.person?.navn) {
-      personName = chairRole.person.navn;
-    } else if (chairRole.person?.navn?.fornavn && chairRole.person?.navn?.etternavn) {
-      personName = `${chairRole.person.navn.fornavn} ${chairRole.person.navn.etternavn}`;
-    }
-    
+  if (chairRole && chairRole.person) {
+    let personName = chairRole.person.navn
+      ?? (chairRole.person?.fornavn && chairRole.person?.etternavn ? `${chairRole.person.fornavn} ${chairRole.person.etternavn}` : null);
     if (personName) {
-      console.log(`Found Chair: ${personName}`);
       result.chair = {
         name: personName,
-        fromDate: chairRole.fraTraadtTiltredtDato || null,
-        toDate: chairRole.tilTraadtFraTredtDato || null,
+        fromDate: chairRole.fraTraadtTiltredtDato || chairRole.fra ?? null,
+        toDate: chairRole.tilTraadtFraTredtDato || chairRole.til ?? null,
         roleType: "CHAIR"
       };
     }
   }
-  
-  // Process all board members and signatories
-  roller.forEach((role) => {
-    try {
-      // Extract the person's name
-      let personName = null;
-      if (role.person?.navn) {
-        personName = role.person.navn;
-      } else if (role.person?.navn?.fornavn && role.person?.navn?.etternavn) {
-        personName = `${role.person.navn.fornavn} ${role.person.navn.etternavn}`;
-      }
-      
-      if (!personName) {
-        return;
-      }
-      
-      const fromDate = role.fraTraadtTiltredtDato || null;
-      const toDate = role.tilTraadtFraTredtDato || null;
-      const roleType = role.type?.kode || "";
-      const description = role.rolleBeskrivelse || "";
-      
-      // Skip already processed CEO and Chair roles to avoid duplicates
-      if ((result.ceo && result.ceo.name === personName && roleType === "DAGL") ||
-          (result.chair && result.chair.name === personName && roleType === "STYR" && /styrets leder/i.test(description))) {
-        return;
-      }
-      
-      // Board member - look for 'STYR' role type
-      if (roleType === "STYR") {
-        console.log(`Found Board Member: ${personName}`);
+
+  // Alle øvrige STYR-roller (ikke chair) → boardMembers (roleType=MEMBER)
+  roller.forEach(r => {
+    let isChair = (r.type === 'STYR' || r.type?.kode === 'STYR')
+      && r.rolleBeskrivelse
+      && /styrets leder/i.test(r.rolleBeskrivelse);
+    let isStyr = (r.type === 'STYR' || r.type?.kode === 'STYR');
+    if (!isChair && isStyr && r.person) {
+      let personName = r.person.navn
+        ?? (r.person?.fornavn && r.person?.etternavn ? `${r.person.fornavn} ${r.person.etternavn}` : null);
+      if (personName) {
         result.boardMembers.push({
           name: personName,
-          fromDate,
-          toDate,
+          fromDate: r.fraTraadtTiltredtDato || r.fra ?? null,
+          toDate: r.tilTraadtFraTredtDato || r.til ?? null,
           roleType: "MEMBER",
-          description
-        });
-      } 
-      // Signatory - look for 'SIGNER' role type
-      else if (roleType === "SIGNER") {
-        console.log(`Found Signatory: ${personName}`);
-        result.boardMembers.push({
-          name: personName,
-          fromDate,
-          toDate,
-          roleType: "SIGNATORY",
-          description: "Signaturberettiget"
+          description: r.rolleBeskrivelse || ""
         });
       }
-    } catch (e) {
-      console.error(`Error processing role:`, e);
     }
   });
-  
-  console.log(`Processed roles: CEO: ${result.ceo ? 'Found' : 'Not found'}, Chair: ${result.chair ? 'Found' : 'Not found'}, Board Members: ${result.boardMembers.length}`);
   return result;
 }
