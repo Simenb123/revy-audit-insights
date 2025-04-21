@@ -26,7 +26,7 @@ export interface Announcement {
   type: string;
   title: string;
   url: string;
-  date: string; // ISO YYYY-MM-DD
+  date: string; // ISO-sträng ala "2024-12-31"
   isRead: boolean;
 }
 

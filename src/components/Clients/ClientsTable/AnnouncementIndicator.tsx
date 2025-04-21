@@ -22,8 +22,7 @@ const AnnouncementIndicator: React.FC<AnnouncementIndicatorProps> = ({ client })
   useEffect(() => {
     const fetchAnnouncements = async () => {
       try {
-        // In a real implementation, we would fetch from Supabase here
-        // For now, we'll assume no announcements until the table is created
+        // I en ekte implementasjon hentes fra Supabase
         setRecentAnnouncements([]);
         setLoading(false);
       } catch (error) {
@@ -40,12 +39,10 @@ const AnnouncementIndicator: React.FC<AnnouncementIndicatorProps> = ({ client })
   if (loading || recentAnnouncements.length === 0) return null;
 
   const oneWeekAgo = subDays(new Date(), 7);
-  
-  // Check if there are any announcements from the last 7 days
+  // Sjekk om det finnes kunngjøringer siste uke
   const hasRecentAnnouncement = recentAnnouncements.some(
-    announcement => new Date(announcement.announcement_date) >= oneWeekAgo
+    announcement => new Date(announcement.date) >= oneWeekAgo
   );
-
   if (!hasRecentAnnouncement) return null;
 
   return (
@@ -59,10 +56,10 @@ const AnnouncementIndicator: React.FC<AnnouncementIndicatorProps> = ({ client })
             <h4 className="font-medium">Nye kunngjøringer</h4>
             <ul className="space-y-2 text-sm">
               {recentAnnouncements.slice(0, 3).map(announcement => (
-                <li key={announcement.announcement_id} className="border-b pb-1 last:border-0">
+                <li key={announcement.id} className="border-b pb-1 last:border-0">
                   <div className="font-medium">{announcement.title}</div>
                   <div className="text-xs text-gray-500">
-                    {format(new Date(announcement.announcement_date), 'dd. MMM yyyy', { locale: nb })}
+                    {format(new Date(announcement.date), 'dd. MMM yyyy', { locale: nb })}
                   </div>
                 </li>
               ))}

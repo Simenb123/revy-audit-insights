@@ -11,17 +11,11 @@ interface AnnouncementsListProps {
 }
 
 const AnnouncementsList = ({ announcements }: AnnouncementsListProps) => {
-  // Process announcements to add UI-specific properties
-  const processedAnnouncements = announcements.map(announcement => {
-    const date = format(new Date(announcement.announcement_date), 'dd. MMM yyyy', { locale: nb });
-    return {
-      ...announcement,
-      isRead: announcement.isRead ?? false, // Default to unread if not specified
-      date,
-      clientName: announcement.clientName || "Klient", // Default client name if not provided
-      description: announcement.description || announcement.type // Default to type if description not provided
-    };
-  });
+  // Formatér annonsenes dato for visning
+  const processedAnnouncements = announcements.map(announcement => ({
+    ...announcement,
+    displayDate: format(new Date(announcement.date), 'dd. MMM yyyy', { locale: nb }),
+  }));
 
   return (
     <Card>
@@ -40,11 +34,18 @@ const AnnouncementsList = ({ announcements }: AnnouncementsListProps) => {
               className={`py-3 px-6 border-b last:border-b-0 ${!announcement.isRead ? 'bg-muted/50' : ''}`}
             >
               <div className="text-sm font-medium flex justify-between">
-                <span>{announcement.clientName}</span>
-                <span className="text-xs text-muted-foreground">{announcement.date}</span>
+                <span>{announcement.title}</span>
+                <span className="text-xs text-muted-foreground">{announcement.displayDate}</span>
               </div>
-              <div className="text-sm mt-1">{announcement.title}</div>
-              <div className="text-xs text-muted-foreground mt-1">{announcement.description}</div>
+              <div className="text-xs text-muted-foreground mt-1">{announcement.type}</div>
+              <a
+                href={announcement.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block text-xs text-blue-600 hover:underline mt-1"
+              >
+                Se detaljer
+              </a>
             </div>
           ))}
         </div>
