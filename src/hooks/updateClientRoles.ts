@@ -6,7 +6,14 @@ export async function updateClientRoles(clientId: string, roles: any, clientName
     console.log(`Updating roles for client ${clientName} (${clientId})`, roles);
     
     // First delete existing roles
-    await supabase.from("client_roles").delete().eq("client_id", clientId);
+    const { error: deleteError } = await supabase
+      .from("client_roles")
+      .delete()
+      .eq("client_id", clientId);
+    
+    if (deleteError) {
+      console.error(`Error deleting existing roles for ${clientName}:`, deleteError);
+    }
     
     const rolesToInsert = [];
     
@@ -56,6 +63,8 @@ export async function updateClientRoles(clientId: string, roles: any, clientName
       const { error } = await supabase.from("client_roles").insert(rolesToInsert);
       if (error) {
         console.error(`Error inserting roles for ${clientName}:`, error);
+      } else {
+        console.log(`Successfully inserted ${rolesToInsert.length} roles for ${clientName}`);
       }
     } else {
       console.log(`No roles to insert for client ${clientName}`);

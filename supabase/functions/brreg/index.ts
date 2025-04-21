@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const BRREG_API_BASE = "https://data.brreg.no/enhetsregisteret/api/enheter";
@@ -154,28 +155,40 @@ serve(async (req) => {
 
     // 1: Åpent endepunkt
     const openRolesUrl = `${BRREG_ROLES_OPEN}/${query}/roller`;
+    console.log("ROLES URL (open API):", openRolesUrl);
+    
     try {
       const rolesOpenResp = await fetch(openRolesUrl, fetchOptions);
       roleEndpointTried = "open";
       roleResponseStatus = rolesOpenResp.status;
+      
+      console.log(`[BRREG] Roller (open API) status: ${rolesOpenResp.status}`);
+      
       if (rolesOpenResp.ok) {
         const openData = await rolesOpenResp.json();
         rolesData = openData;
         roller = openData.roller || [];
         console.log(`[BRREG] Roller (open api) hentet for ${query}: #roller=${roller.length}`);
       } else if (rolesOpenResp.status === 404) {
+        console.log(`[BRREG] Roller (open API) 404 for ${query}, trying authorized endpoint...`);
+        
         // 2: Fallback til autorisert dersom 404 og evt. Auth header finnes
         const authRolesUrl = `${BRREG_ROLES_AUTH}/${query}/roller`;
+        console.log("ROLES URL (authorized API):", authRolesUrl);
+        
         const rolesAuthResp = await fetch(authRolesUrl, fetchOptions);
         roleEndpointTried = "auth";
         roleResponseStatus = rolesAuthResp.status;
+        
+        console.log(`[BRREG] Roller (auth API) status: ${rolesAuthResp.status}`);
+        
         if (rolesAuthResp.ok) {
           const authData = await rolesAuthResp.json();
           rolesData = authData;
           roller = authData.roller || [];
           console.log(`[BRREG] Roller (autorisert api) hentet for ${query}: #roller=${roller.length}`);
         } else {
-          console.log(`[BRREG] Roller (autorisert) 404 for ${query}`);
+          console.log(`[BRREG] Roller (autorisert) ${rolesAuthResp.status} for ${query}`);
           rolesData = { roller: [] };
         }
       } else {
@@ -195,6 +208,13 @@ serve(async (req) => {
     // — Mapping: CEO, chair, boardMembers —
     const processedRoles = processRolesStrict(roller);
     console.log("[BRREG] Processed roles:", JSON.stringify(processedRoles));
+    
+    // Log the found roles for better debugging
+    if (processedRoles.ceo || processedRoles.chair || processedRoles.boardMembers.length > 0) {
+      console.log(`[BRREG] Saved CEO: ${processedRoles.ceo?.name || 'None'}, Chair: ${processedRoles.chair?.name || 'None'}, boardRoles: ${processedRoles.boardMembers.length}`);
+    } else {
+      console.log(`[BRREG] No roles found for ${query}`);
+    }
     
     // Extract address info (full address array, postnummer, poststed, kommune)
     const forretningsadresse = baseData.forretningsadresse || {};
