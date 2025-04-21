@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Client } from "@/types/revio";
-import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import EquityBadge from "./EquityBadge";
 
 interface ClientsTableProps {
@@ -18,6 +18,8 @@ interface ClientsTableProps {
 }
 
 const ClientsTable = ({ clients, onRowSelect, selectedClientId }: ClientsTableProps) => {
+  const navigate = useNavigate();
+  
   const statusMap = {
     engagement: { label: "Oppdrag", variant: "outline" },
     planning: { label: "Planlegging", variant: "secondary" },
@@ -31,6 +33,11 @@ const ClientsTable = ({ clients, onRowSelect, selectedClientId }: ClientsTablePr
       : client.municipalityCode?.trim()?.length
         ? client.municipalityCode
         : "—";
+
+  const handleRowClick = (client: Client) => {
+    onRowSelect?.(client);
+    navigate(`/klienter/${client.orgNumber}`);
+  };
 
   return (
     <div className="rounded-md border overflow-x-auto">
@@ -57,7 +64,7 @@ const ClientsTable = ({ clients, onRowSelect, selectedClientId }: ClientsTablePr
             clients.map((client) => (
               <TableRow
                 key={client.id}
-                onClick={() => onRowSelect?.(client)}
+                onClick={() => handleRowClick(client)}
                 className={`cursor-pointer hover:bg-muted/50 ${selectedClientId === client.id ? "bg-muted" : ""}`}
               >
                 <TableCell className="font-medium">

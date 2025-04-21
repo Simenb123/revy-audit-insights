@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -32,7 +31,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
-function App() {
+const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -45,7 +44,6 @@ function App() {
                   <Sonner />
                   <Routes>
                     <Route path="/auth" element={<Auth />} />
-                    {/* Redirect root "/" to "/klienter" as new start page */}
                     <Route path="/" element={<Navigate to="/klienter" replace />} />
                     <Route path="/klienter" element={<ProtectedRoute><ClientsOverview /></ProtectedRoute>} />
                     <Route path="/klienter/:orgNumber" element={<ProtectedRoute><ClientDetail /></ProtectedRoute>} />
@@ -68,6 +66,6 @@ function App() {
       </TooltipProvider>
     </QueryClientProvider>
   );
-}
+};
 
 export default App;
