@@ -8,7 +8,6 @@ interface ClientStatsGridProps {
 }
 
 const ClientStatsGrid = ({ clients, announcements }: ClientStatsGridProps) => {
-  // Ny: Tell uleste
   const unreadCount = announcements.filter(a => !a.isRead).length;
 
   return (
