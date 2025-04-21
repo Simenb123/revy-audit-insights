@@ -57,14 +57,15 @@ export const processOrgNumber = async (orgNumber: string, addLog: AddLogFunction
 
     addLog(`Brreg response received: ${JSON.stringify(response).substring(0, 150)}...`);
 
-    if (!response._embedded?.enheter?.[0]) {
+    // Fix: Check for the company data in response.basis instead of response._embedded?.enheter?.[0]
+    if (!response.basis || !response.basis.organisasjonsnummer) {
       const errorMsg = `No company data found for org number: ${orgNumber}`;
       console.warn(errorMsg);
       addLog(errorMsg);
       return null;
     }
 
-    const company = response._embedded.enheter[0];
+    const company = response.basis;
     addLog(`Found company: ${company.navn} with org number: ${company.organisasjonsnummer}`);
     
     addLog(`Attempting to insert client with org number: ${orgNumber} for user ID: ${session.user.id.substring(0, 8)}...`);
