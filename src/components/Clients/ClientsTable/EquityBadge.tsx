@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Bitcoin } from "lucide-react";
@@ -10,17 +9,13 @@ interface EquityBadgeProps {
 
 const format = (n?: number | null) =>
   n != null && n > 0
-    ? new Intl.NumberFormat("nb-NO", {
-        style: "currency",
-        currency: "NOK",
-        maximumFractionDigits: 0,
-      }).format(n)
+    ? n.toLocaleString("nb-NO")
     : "—";
 
 const EquityBadge: React.FC<EquityBadgeProps> = ({ equityCapital, shareCapital }) => {
   const [showInfo, setShowInfo] = useState(false);
 
-  // Vis kun dersom minst én verdi finnes og > 0
+  // Vis badge kun dersom minst én verdi finnes og > 0
   if ((!equityCapital && !shareCapital) || ((equityCapital ?? 0) <= 0 && (shareCapital ?? 0) <= 0)) return null;
 
   return (
@@ -38,9 +33,9 @@ const EquityBadge: React.FC<EquityBadgeProps> = ({ equityCapital, shareCapital }
         {equityCapital && equityCapital > 0 && shareCapital && shareCapital > 0
           ? "NOK"
           : equityCapital && equityCapital > 0
-            ? format(equityCapital).replace("kr", "").trim()
+            ? format(equityCapital)
             : shareCapital && shareCapital > 0
-              ? format(shareCapital).replace("kr", "").trim()
+              ? format(shareCapital)
               : null}
       </Badge>
       {showInfo && (

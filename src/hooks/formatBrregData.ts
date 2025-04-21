@@ -1,4 +1,3 @@
-
 import { Client } from "@/types/revio";
 
 export interface BrregBasis {
@@ -21,7 +20,7 @@ export function fixValue(val: string | undefined | null): string | null {
   return val && String(val).trim().length > 0 ? val : null;
 }
 
-export function formatUpdateData(basis: any, roles: any, client: Client) {
+export function formatUpdateData(basis: any, roles: any, client: any) {
   const addressLines = Array.isArray(basis.addressLines) ? basis.addressLines : [];
   const addressLine = addressLines.length > 0 ? addressLines.join(", ") : null;
   const email = fixValue(basis.email);
@@ -29,15 +28,8 @@ export function formatUpdateData(basis: any, roles: any, client: Client) {
   const phone = fixValue(basis.telefon);
 
   // Properly extract capital values
-  let equityCapital = 0;
-  if (basis.kapital && typeof basis.kapital.equityCapital === "number" && !isNaN(basis.kapital.equityCapital)) {
-    equityCapital = basis.kapital.equityCapital;
-  }
-  
-  let shareCapital = 0;
-  if (basis.kapital && typeof basis.kapital.shareCapital === "number" && !isNaN(basis.kapital.shareCapital)) {
-    shareCapital = basis.kapital.shareCapital;
-  }
+  let equityCapital = basis.kapital?.equityCapital ?? null;
+  let shareCapital = basis.kapital?.shareCapital ?? null;
 
   const municipalityCode = fixValue(basis.kommune?.kommunenummer);
   const municipalityName = fixValue(basis.kommune?.navn);

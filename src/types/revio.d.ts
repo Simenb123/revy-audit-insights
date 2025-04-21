@@ -59,8 +59,8 @@ export interface Client {
   naceDescription: string;
   municipalityCode: string;
   municipalityName: string;
-  equityCapital: number | null;
-  shareCapital: number | null;
+  equityCapital?: number | null;
+  shareCapital?: number | null;
   // Relationships
   riskAreas: RiskArea[];
   documents: ClientDocument[];

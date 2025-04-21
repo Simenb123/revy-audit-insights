@@ -93,8 +93,6 @@ serve(async (req) => {
     
     // Fetch the basic organization information
     const baseUrl = `${BRREG_API_BASE}/${query}`;
-    console.log("Fetching basic info:", baseUrl);
-    
     const baseResponse = await fetch(baseUrl, fetchOptions);
     
     // Handle various error responses
@@ -144,8 +142,54 @@ serve(async (req) => {
     }
     
     const baseData = await baseResponse.json();
-    console.log("Base data received:", JSON.stringify(baseData).substring(0, 200) + "...");
-    
+
+    /** --- REGNSKAP HENTING OG MAPPING --- */
+    let equityCapital: number | null = null;
+    let shareCapital: number | null = null;
+
+    try {
+      // 1. Prøv åpent regnskap-endepunkt
+      let regnskapUrl = `https://data.brreg.no/enhetsregisteret/api/enheter/${query}/regnskap`;
+      let regnskapRes = await fetch(regnskapUrl, fetchOptions);
+      let regnskapData: any = null;
+
+      if (regnskapRes.status === 404 && !!authHeader) {
+        // 2. Fallback til autorisert endepunkt
+        regnskapUrl = `https://data.brreg.no/enhetsregisteret/autorisert-api/enheter/${query}/regnskap`;
+        regnskapRes = await fetch(regnskapUrl, fetchOptions);
+      }
+
+      if (regnskapRes.ok) {
+        regnskapData = await regnskapRes.json();
+        // Litt forskjellig struktur – bruk alltid første år (siste regnskap)
+        const latest = Array.isArray(regnskapData?.regnskap) && regnskapData.regnskap.length > 0
+          ? regnskapData.regnskap[0] : null;
+        if (latest) {
+          // Aksjekapital
+          if (!isNaN(Number(latest.aksjekapital))) {
+            shareCapital = Number(latest.aksjekapital);
+          } else if (!isNaN(Number(latest.aksjekapitalNOK))) {
+            shareCapital = Number(latest.aksjekapitalNOK);
+          }
+          // Egenkapital
+          if (!isNaN(Number(latest.innskuddskapital))) {
+            equityCapital = Number(latest.innskuddskapital);
+          } else if (!isNaN(Number(latest.egenkapital))) {
+            equityCapital = Number(latest.egenkapital);
+          }
+          // Fallback
+          if ((equityCapital == null || isNaN(equityCapital)) && (shareCapital != null && !isNaN(shareCapital))) {
+            equityCapital = shareCapital;
+          }
+          // Sjekk for ugyldige verdier
+          if (equityCapital != null && isNaN(equityCapital)) equityCapital = null;
+          if (shareCapital != null && isNaN(shareCapital)) shareCapital = null;
+        }
+      }
+    } catch (e) {
+      console.error(`[brreg] error while fetching regnskap:`, e);
+    }
+
     // --------- ROLLER: Først mot åpent endepunkt ---------
     let rolesData = { roller: [] };
     let roller = [];
