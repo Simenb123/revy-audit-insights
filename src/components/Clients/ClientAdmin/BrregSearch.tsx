@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { BrregSearchResult, Client } from '@/types/revio';
+import { BrregSearchResult } from '@/types/revio';
 
 interface BrregSearchProps {
   onSelectClient: (result: BrregSearchResult) => void;

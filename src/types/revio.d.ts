@@ -1,3 +1,4 @@
+
 export type AuditPhase = 'engagement' | 'planning' | 'execution' | 'conclusion';
 
 export interface RiskArea {
@@ -20,7 +21,6 @@ export interface ClientRole {
   toDate: string | null;
 }
 
-// Add announcement type
 export interface Announcement {
   id: string;
   announcement_id: string;
@@ -33,9 +33,12 @@ export interface Announcement {
   details_url: string;
   kid: string;
   created_at: string;
+  isRead?: boolean;
+  clientName?: string;
+  date?: string;
+  description?: string;
 }
 
-// Update Client interface to include announcements
 export interface Client {
   id: string;
   name: string;
@@ -74,16 +77,65 @@ export interface Client {
   announcements?: Announcement[];
 }
 
-export interface Announcement {
-    id: string;
-    announcement_id: string;
-    client_id: string;
-    org_number: string;
-    announcement_date: string;
-    title: string;
-    type: string;
-    normalized_type: string;
-    details_url: string;
-    kid: string;
-    created_at: string;
+// Add BrregSearchResult interface
+export interface BrregSearchResult {
+  organisasjonsnummer: string;
+  navn: string;
+  organisasjonsform: {
+    kode: string;
+    beskrivelse: string;
+  };
+  registreringsdatoEnhetsregisteret: string;
+  hjemmeside?: string;
+  registrertIForetaksregisteret?: boolean;
+  registrertIStiftelsesregisteret?: boolean;
+  registrertIFrivillighetsregisteret?: boolean;
+}
+
+// Add missing types for Data Analysis components
+export interface Account {
+  id: string;
+  name: string;
+  number: string;
+  balance: number;
+  type: string;
+}
+
+export interface AccountGroup {
+  id: string;
+  name: string;
+  accounts: Account[];
+}
+
+export interface DocumentVersion {
+  id: string;
+  name: string;
+  date: string;
+  status: string;
+}
+
+export interface Transaction {
+  id: string;
+  date: string;
+  description: string;
+  amount: number;
+  account: string;
+}
+
+export interface SamplingResult {
+  id: string;
+  name: string;
+  transactions: Transaction[];
+}
+
+export interface RevyMessage {
+  id: string;
+  content: string;
+  timestamp: string;
+  sender: 'user' | 'revy';
+}
+
+export interface RevyContext {
+  context: string;
+  setContext: (context: string) => void;
 }

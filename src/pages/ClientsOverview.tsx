@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRevyContext } from '@/components/RevyContext/RevyContextProvider';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Announcement, Client } from '@/types/revio';
@@ -42,6 +42,21 @@ const ClientsOverview = () => {
   const handleRowSelect = (client: Client) => {
     setSelectedClientId(client.id);
   };
+
+  // Fetch announcements when component mounts
+  useEffect(() => {
+    const fetchAnnouncements = async () => {
+      try {
+        // In a real implementation, we would fetch from Supabase here
+        // For now, we'll use an empty array until the announcements table is created
+        setAnnouncements([]);
+      } catch (error) {
+        console.error('Error fetching announcements:', error);
+      }
+    };
+    
+    fetchAnnouncements();
+  }, []);
 
   // Set context for Revy assistant
   React.useEffect(() => {

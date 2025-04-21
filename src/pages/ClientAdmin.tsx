@@ -16,14 +16,14 @@ const ClientAdmin = () => {
   const [clients, setClients] = useState<Client[]>(mockClients);
   const [activeTab, setActiveTab] = useState('list');
   const [isSearching, setIsSearching] = useState(false);
-  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [selectedClient, setSelectedClient] = useState<Partial<Client> | null>(null);
 
   React.useEffect(() => {
     setContext('client-admin');
   }, [setContext]);
 
   const handleSelectFromBrreg = (result: BrregSearchResult) => {
-    const newClient: Client = {
+    const newClient: Partial<Client> = {
       id: Math.random().toString(36).substring(2, 9),
       name: result.navn,
       companyName: result.navn,
@@ -33,7 +33,28 @@ const ClientAdmin = () => {
       registrationDate: result.registreringsdatoEnhetsregisteret?.substring(0, 10),
       industry: result.organisasjonsform.beskrivelse,
       riskAreas: [],
-      documents: []
+      documents: [],
+      // Adding required fields with default values
+      orgFormCode: result.organisasjonsform.kode,
+      orgFormDescription: result.organisasjonsform.beskrivelse,
+      homepage: result.hjemmeside || '',
+      status: 'ACTIVE',
+      naceCode: '',
+      naceDescription: '',
+      municipalityCode: '',
+      municipalityName: '',
+      department: '',
+      contactPerson: '',
+      chair: '',
+      ceo: '',
+      address: '',
+      postalCode: '',
+      city: '',
+      email: '',
+      phone: '',
+      bankAccount: '',
+      notes: '',
+      roles: []
     };
 
     setSelectedClient(newClient);

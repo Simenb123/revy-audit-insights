@@ -9,6 +9,12 @@ interface ClientStatsGridProps {
 }
 
 const ClientStatsGrid = ({ clients, announcements }: ClientStatsGridProps) => {
+  // Process announcements to add UI-specific properties
+  const processedAnnouncements = announcements.map(announcement => ({
+    ...announcement,
+    isRead: false // Default all to unread for now
+  }));
+
   return (
     <div className="grid grid-cols-3 gap-6 mb-8">
       <ClientStatsCard
@@ -36,10 +42,10 @@ const ClientStatsGrid = ({ clients, announcements }: ClientStatsGridProps) => {
       <ClientStatsCard
         title="Nye kunngjøringer"
         description="Fra Brønnøysundregistrene"
-        value={announcements.filter(a => !a.isRead).length}
+        value={processedAnnouncements.filter(a => !a.isRead).length}
         footer={
           <div className="flex justify-between">
-            <span>Uleste: {announcements.filter(a => !a.isRead).length}</span>
+            <span>Uleste: {processedAnnouncements.filter(a => !a.isRead).length}</span>
             <Button variant="ghost" size="sm" className="p-0 h-auto text-revio-500 hover:text-revio-600 hover:bg-transparent">
               <span>Se alle</span>
             </Button>

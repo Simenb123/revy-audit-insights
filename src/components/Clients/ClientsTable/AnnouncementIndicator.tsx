@@ -1,66 +1,73 @@
 
-import React from 'react';
-import { Badge } from '@/components/ui/badge';
-import { AlertCircle } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import React, { useEffect, useState } from 'react';
+import { Bell } from 'lucide-react';
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { Client, Announcement } from '@/types/revio';
+import { format, subDays } from 'date-fns';
+import { nb } from 'date-fns/locale';
 
 interface AnnouncementIndicatorProps {
-  clientId: string;
-  orgNumber: string;
+  client: Client;
 }
 
-const AnnouncementIndicator: React.FC<AnnouncementIndicatorProps> = ({ clientId, orgNumber }) => {
-  // Get announcements from the last 7 days
-  const { data: recentAnnouncements, isLoading } = useQuery({
-    queryKey: ['recent-announcements', clientId],
-    queryFn: async () => {
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-      
-      const { data, error } = await supabase
-        .from('announcements')
-        .select('*')
-        .eq('client_id', clientId)
-        .gte('announcement_date', sevenDaysAgo.toISOString())
-        .order('announcement_date', { ascending: false });
-        
-      if (error) {
-        console.error('Error fetching recent announcements:', error);
-        return [];
-      }
-      
-      return data || [];
-    },
-    enabled: !!clientId
-  });
+const AnnouncementIndicator: React.FC<AnnouncementIndicatorProps> = ({ client }) => {
+  const [recentAnnouncements, setRecentAnnouncements] = useState<Announcement[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  if (isLoading || !recentAnnouncements || recentAnnouncements.length === 0) {
-    return null;
-  }
+  useEffect(() => {
+    const fetchAnnouncements = async () => {
+      try {
+        // In a real implementation, we would fetch from Supabase here
+        // For now, we'll assume no announcements until the table is created
+        setRecentAnnouncements([]);
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching announcements:', error);
+        setLoading(false);
+      }
+    };
+
+    if (client?.id) {
+      fetchAnnouncements();
+    }
+  }, [client]);
+
+  if (loading || recentAnnouncements.length === 0) return null;
+
+  const oneWeekAgo = subDays(new Date(), 7);
+  
+  // Check if there are any announcements from the last 7 days
+  const hasRecentAnnouncement = recentAnnouncements.some(
+    announcement => new Date(announcement.announcement_date) >= oneWeekAgo
+  );
+
+  if (!hasRecentAnnouncement) return null;
 
   return (
     <TooltipProvider>
       <Tooltip>
-        <TooltipTrigger asChild>
-          <Badge variant="destructive" className="ml-2 cursor-help">
-            <AlertCircle size={14} className="mr-1" />
-            {recentAnnouncements.length}
-          </Badge>
+        <TooltipTrigger className="cursor-help">
+          <Bell size={16} className="text-red-500" />
         </TooltipTrigger>
-        <TooltipContent>
-          <p>{recentAnnouncements.length} ny(e) kunngjøring(er) siste 7 dager</p>
-          <ul className="text-xs mt-1">
-            {recentAnnouncements.slice(0, 3).map((announcement) => (
-              <li key={announcement.announcement_id} className="truncate max-w-[200px]">
-                • {announcement.title}
-              </li>
-            ))}
-            {recentAnnouncements.length > 3 && (
-              <li className="italic">...og {recentAnnouncements.length - 3} mer</li>
-            )}
-          </ul>
+        <TooltipContent side="right" className="max-w-[320px] p-0">
+          <div className="p-3 space-y-2">
+            <h4 className="font-medium">Nye kunngjøringer</h4>
+            <ul className="space-y-2 text-sm">
+              {recentAnnouncements.slice(0, 3).map(announcement => (
+                <li key={announcement.announcement_id} className="border-b pb-1 last:border-0">
+                  <div className="font-medium">{announcement.title}</div>
+                  <div className="text-xs text-gray-500">
+                    {format(new Date(announcement.announcement_date), 'dd. MMM yyyy', { locale: nb })}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
