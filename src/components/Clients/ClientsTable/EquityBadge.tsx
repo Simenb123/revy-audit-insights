@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Bitcoin } from "lucide-react";
@@ -15,8 +16,19 @@ const format = (n?: number | null) =>
 const EquityBadge: React.FC<EquityBadgeProps> = ({ equityCapital, shareCapital }) => {
   const [showInfo, setShowInfo] = useState(false);
 
-  // Vis badge kun dersom minst én verdi finnes og > 0
-  if ((!equityCapital && !shareCapital) || ((equityCapital ?? 0) <= 0 && (shareCapital ?? 0) <= 0)) return null;
+  // Render kun hvis minst én kapitalverdi > 0
+  const hasEquityCapital = equityCapital !== undefined && equityCapital !== null && equityCapital > 0;
+  const hasShareCapital = shareCapital !== undefined && shareCapital !== null && shareCapital > 0;
+  if (!hasEquityCapital && !hasShareCapital) return null;
+
+  // Tekst for badge
+  const badgeText = hasEquityCapital && hasShareCapital
+    ? "NOK"
+    : hasEquityCapital
+      ? format(equityCapital)
+      : hasShareCapital
+        ? format(shareCapital)
+        : null;
 
   return (
     <span
@@ -30,13 +42,7 @@ const EquityBadge: React.FC<EquityBadgeProps> = ({ equityCapital, shareCapital }
     >
       <Badge variant="secondary" className="cursor-help flex gap-1 items-center p-1 px-2" title="Vis kapital">
         <Bitcoin size={14} className="inline" /> 
-        {equityCapital && equityCapital > 0 && shareCapital && shareCapital > 0
-          ? "NOK"
-          : equityCapital && equityCapital > 0
-            ? format(equityCapital)
-            : shareCapital && shareCapital > 0
-              ? format(shareCapital)
-              : null}
+        {badgeText}
       </Badge>
       {showInfo && (
         <div className="absolute z-20 left-1/2 transform -translate-x-1/2 mt-2 bg-white text-sm border rounded shadow p-2 min-w-[180px] dark:bg-gray-900 dark:text-white">
@@ -53,3 +59,4 @@ const EquityBadge: React.FC<EquityBadgeProps> = ({ equityCapital, shareCapital }
 };
 
 export default EquityBadge;
+
