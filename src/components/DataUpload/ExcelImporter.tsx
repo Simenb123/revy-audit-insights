@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -91,7 +90,7 @@ const ExcelImporter = ({ onImportSuccess }: ExcelImporterProps) => {
             setTotalRows(total);
             setProgress((processed / total) * 100);
           },
-          onSuccess: async (successful: number, total: number, clients: any[]) => {
+          onSuccess: async (successful: number, total: number, clients: any[] = []) => {
             // Save clients to the database
             let savedCount = 0;
             for (const client of clients) {

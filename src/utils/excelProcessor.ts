@@ -116,7 +116,7 @@ export const processExcelFile = async (
   addLog: AddLogFunction,
   callbacks: {
     onProgress: (processed: number, total: number) => void;
-    onSuccess: (successful: number, total: number) => void;
+    onSuccess: (successful: number, total: number, clients?: any[]) => void;
   }
 ) => {
   const { onProgress, onSuccess } = callbacks;
@@ -161,6 +161,8 @@ export const processExcelFile = async (
         addLog(`First 5 org numbers: ${rows.slice(0, 5).join(', ')}`);
 
         let successful = 0;
+        const processedClients = [];
+        
         for (let i = 0; i < rows.length; i++) {
           const orgNumber = rows[i];
           addLog(`Processing row ${i+1}: org number ${orgNumber}`);
@@ -169,12 +171,13 @@ export const processExcelFile = async (
           if (result) {
             successful++;
             addLog(`Successfully added client: ${result.name} (${result.id})`);
+            processedClients.push(result);
           }
           
           onProgress(i + 1, rows.length);
         }
 
-        onSuccess(successful, rows.length);
+        onSuccess(successful, rows.length, processedClients);
         resolve({ successful, total: rows.length });
       } catch (error) {
         reject(error);
