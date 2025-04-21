@@ -20,8 +20,8 @@ const format = (n?: number | null) =>
 const EquityBadge: React.FC<EquityBadgeProps> = ({ equityCapital, shareCapital }) => {
   const [showInfo, setShowInfo] = useState(false);
 
-  // Show the badge only if at least one of equityCapital or shareCapital has a value
-  if ((!equityCapital || equityCapital <= 0) && (!shareCapital || shareCapital <= 0)) return null;
+  // Vis KUN dersom minst én verdi finnes og > 0
+  if ((!equityCapital && !shareCapital) || ((equityCapital ?? 0) <= 0 && (shareCapital ?? 0) <= 0)) return null;
 
   return (
     <span

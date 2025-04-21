@@ -1,4 +1,3 @@
-
 export type AuditPhase = 'engagement' | 'planning' | 'execution' | 'conclusion';
 
 export interface RiskArea {
@@ -23,20 +22,12 @@ export interface ClientRole {
 
 export interface Announcement {
   id: string;
-  announcement_id: string;
-  client_id: string;
-  org_number: string;
-  announcement_date: string;
-  title: string;
+  clientId: string;
   type: string;
-  normalized_type: string;
-  details_url: string;
-  kid: string;
-  created_at: string;
-  isRead?: boolean;
-  clientName?: string;
-  date?: string;
-  description?: string;
+  title: string;
+  url: string;
+  date: string; // ISO YYYY‑MM‑DD
+  isRead: boolean;
 }
 
 export interface Client {
@@ -68,8 +59,8 @@ export interface Client {
   naceDescription: string;
   municipalityCode: string;
   municipalityName: string;
-  equityCapital?: number;
-  shareCapital?: number;
+  equityCapital: number | null;
+  shareCapital: number | null;
   // Relationships
   riskAreas: RiskArea[];
   documents: ClientDocument[];

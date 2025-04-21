@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import ClientStatsCard from "./ClientStatsCard";
 import { Client, Announcement } from "@/types/revio";
@@ -9,11 +8,8 @@ interface ClientStatsGridProps {
 }
 
 const ClientStatsGrid = ({ clients, announcements }: ClientStatsGridProps) => {
-  // Process announcements to add UI-specific properties
-  const processedAnnouncements = announcements.map(announcement => ({
-    ...announcement,
-    isRead: announcement.isRead ?? false // Default all to unread if not specified
-  }));
+  // Ny: Tell uleste
+  const unreadCount = announcements.filter(a => !a.isRead).length;
 
   return (
     <div className="grid grid-cols-3 gap-6 mb-8">
@@ -42,10 +38,10 @@ const ClientStatsGrid = ({ clients, announcements }: ClientStatsGridProps) => {
       <ClientStatsCard
         title="Nye kunngjøringer"
         description="Fra Brønnøysundregistrene"
-        value={processedAnnouncements.filter(a => !a.isRead).length}
+        value={unreadCount}
         footer={
           <div className="flex justify-between">
-            <span>Uleste: {processedAnnouncements.filter(a => !a.isRead).length}</span>
+            <span>Uleste: {unreadCount}</span>
             <Button variant="ghost" size="sm" className="p-0 h-auto text-revio-500 hover:text-revio-600 hover:bg-transparent">
               <span>Se alle</span>
             </Button>

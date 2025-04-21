@@ -244,28 +244,46 @@ serve(async (req) => {
     }
 
     // Extract capital fields from various possible locations
-    let equityCapital = 0;
-    let shareCapital = 0;
+    let equityCapital: number | null = null;
+    let shareCapital: number | null = null;
 
     if (baseData.kapital) {
-      // First check for aksjekapital (share capital)
-      if (baseData.kapital.aksjekapital) {
-        shareCapital = parseFloat(baseData.kapital.aksjekapital) || 0;
-      } else if (baseData.kapital.aksjekapitalNOK) {
-        shareCapital = parseFloat(baseData.kapital.aksjekapitalNOK) || 0;
+      // Aksjekapital → shareCapital
+      if (
+        baseData.kapital.aksjekapital !== undefined &&
+        !isNaN(Number(baseData.kapital.aksjekapital))
+      ) {
+        shareCapital = Number(baseData.kapital.aksjekapital);
+      } else if (
+        baseData.kapital.aksjekapitalNOK !== undefined &&
+        !isNaN(Number(baseData.kapital.aksjekapitalNOK))
+      ) {
+        shareCapital = Number(baseData.kapital.aksjekapitalNOK);
       }
-      
-      // Then check for innskuddskapital (equity capital)
-      if (baseData.kapital.innskuddskapital) {
-        equityCapital = parseFloat(baseData.kapital.innskuddskapital) || 0;
-      } else if (shareCapital > 0) {
-        // If we have share capital but no equity capital, use share capital for equity
+
+      // Innskuddskapital → equityCapital
+      if (
+        baseData.kapital.innskuddskapital !== undefined &&
+        !isNaN(Number(baseData.kapital.innskuddskapital))
+      ) {
+        equityCapital = Number(baseData.kapital.innskuddskapital);
+      } else if (shareCapital !== null) {
+        // fallback: bruk share om equity mangler
         equityCapital = shareCapital;
       }
     }
 
-    // Log capital information for debugging
-    console.log(`[BRREG] Saved capital: equity=${equityCapital}, share=${shareCapital}`);
+    // Logg råverdier for sanity check
+    console.log("[BRREG] Rå kapital-felter:", {
+      aksjekapital: baseData.kapital?.aksjekapital,
+      aksjekapitalNOK: baseData.kapital?.aksjekapitalNOK,
+      innskuddskapital: baseData.kapital?.innskuddskapital,
+      sum_eiendeler: baseData.kapital?.sum_eiendeler,
+      sum_egenkapital: baseData.kapital?.sum_egenkapital,
+    });
+
+    // Logg den faktiske mappingen ut
+    console.log("Saved capital:", { equity: equityCapital, share: shareCapital });
 
     // Build enhanced data object, taking from BRREG mapping table
     const enhancedData = {

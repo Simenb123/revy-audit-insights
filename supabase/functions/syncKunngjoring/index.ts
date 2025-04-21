@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 
@@ -45,124 +44,152 @@ serve(async (req) => {
             continue;
           }
           
-          // Fetch announcements from Brønnøysund
-          const url = `https://w2.brreg.no/kunngjoring/hent_nr.jsp?orgnr=${orgNumber}&spraak=no`;
-          const response = await fetch(url);
+          // --- PRIMÆR: Prøv JSON-endepunktet først ---
+          let announcements = [];
+          let fetchedFrom = "json";
+          const jsonUrl = `https://data.brreg.no/kunngjoring/hen?t?orgnr=${orgNumber}&sprak=no`;
+          let response = await fetch(jsonUrl);
+          
+          if (response.status === 404) {
+            // Fallback til HTML-endepunkt
+            const htmlUrl = `https://w2.brreg.no/kunngjoring/hent_nr.jsp?orgnr=${orgNumber}&spraak=no`;
+            response = await fetch(htmlUrl);
+            fetchedFrom = "html";
+          }
           
           if (!response.ok) {
             console.error(`Error fetching announcements for ${orgNumber}:`, response.status);
             results.push({ orgNumber, status: "error", error: `HTTP error: ${response.status}` });
             continue;
           }
-          
-          const html = await response.text();
-          
-          // Parse the HTML to extract announcements
-          const announcements = parseAnnouncementsHtml(html, client.id, orgNumber);
-          console.log(`Found ${announcements.length} announcements for ${client.name} (${orgNumber})`);
-          
+
+          if (fetchedFrom === "json") {
+            const json = await response.json();
+            if (Array.isArray(json.resultat)) {
+              announcements = json.resultat.slice(0, 100).map(entry => ({
+                client_id: client.id,
+                announcement_id: entry.kunngjormingsId || entry.KID || crypto.randomUUID(),
+                org_number: orgNumber,
+                announcement_date: entry.dato ? new Date(entry.dato).toISOString() : new Date().toISOString(),
+                title: entry.tittel || "",
+                type: entry.type || "",
+                normalized_type: (entry.type || "").toLowerCase(),
+                details_url: entry.url ? String(entry.url) : "",
+                kid: entry.KID || null,
+                created_at: new Date().toISOString()
+              }));
+            }
+          } else if (fetchedFrom === "html") {
+            const html = await response.text();
+            announcements = parseAnnouncementsHtml(html, client.id, orgNumber).slice(0, 100);
+          }
+
+          console.log(`Fetched ${announcements.length} announcements from ${fetchedFrom} for ${client.name} (${orgNumber})`);
+
           if (announcements.length === 0) {
-            results.push({ orgNumber, status: "success", inserted: 0, message: "No announcements found" });
+            results.push({ orgNumber, status: "success", inserted: 0 });
             continue;
           }
-          
-          // Insert announcements into the database
+
+          // Upsert announcements
           const { data: insertedData, error: insertError } = await supabase
             .from("announcements")
             .upsert(announcements, { 
               onConflict: "client_id,announcement_id",
               ignoreDuplicates: false 
             });
-            
-          if (insertError) {
-            console.error(`Error inserting announcements for ${orgNumber}:`, insertError);
-            results.push({ orgNumber, status: "error", error: `Insert error: ${insertError.message}` });
-            continue;
+
+            if (insertError) {
+              console.error(`Error inserting announcements for ${orgNumber}:`, insertError);
+              results.push({ orgNumber, status: "error", error: `Insert error: ${insertError.message}` });
+              continue;
+            }
+
+            // Logg faktisk insert count
+            const inserted = Array.isArray(insertedData) ? insertedData : [];
+            console.log("Inserted announcements:", inserted.length);
+
+            results.push({ 
+              orgNumber, 
+              status: "success", 
+              inserted: announcements.length,
+              clientName: client.name
+            });
+            processed++;
+            totalInserted += announcements.length;
+          } catch (error) {
+            console.error(`Error processing org number ${orgNumber}:`, error);
+            results.push({ orgNumber, status: "error", error: error.message });
           }
-          
-          console.log(`Successfully processed ${announcements.length} announcements for ${client.name}`);
-          results.push({ 
-            orgNumber, 
-            status: "success", 
-            inserted: announcements.length,
-            clientName: client.name
-          });
-          
-          processed++;
-          totalInserted += announcements.length;
-        } catch (error) {
-          console.error(`Error processing org number ${orgNumber}:`, error);
-          results.push({ orgNumber, status: "error", error: error.message });
         }
-      }
-    } else {
-      // If no specific org numbers provided, process all clients
-      const { data: clients, error: clientsError } = await supabase
-        .from("clients")
-        .select("id, name, org_number")
-        .not("org_number", "is", null);
+      } else {
+        // If no specific org numbers provided, process all clients
+        const { data: clients, error: clientsError } = await supabase
+          .from("clients")
+          .select("id, name, org_number")
+          .not("org_number", "is", null);
         
-      if (clientsError) {
-        throw new Error(`Error fetching clients: ${clientsError.message}`);
-      }
-      
-      console.log(`Processing announcements for ${clients.length} clients`);
-      
-      for (const client of clients) {
-        try {
-          if (!client.org_number) continue;
-          
-          // Fetch announcements from Brønnøysund
-          const url = `https://w2.brreg.no/kunngjoring/hent_nr.jsp?orgnr=${client.org_number}&spraak=no`;
-          const response = await fetch(url);
-          
-          if (!response.ok) {
-            console.error(`Error fetching announcements for ${client.name}:`, response.status);
-            results.push({ orgNumber: client.org_number, status: "error", error: `HTTP error: ${response.status}` });
-            continue;
-          }
-          
-          const html = await response.text();
-          
-          // Parse the HTML to extract announcements
-          const announcements = parseAnnouncementsHtml(html, client.id, client.org_number);
-          console.log(`Found ${announcements.length} announcements for ${client.name} (${client.org_number})`);
-          
-          if (announcements.length === 0) {
-            results.push({ orgNumber: client.org_number, status: "success", inserted: 0, message: "No announcements found" });
-            continue;
-          }
-          
-          // Insert announcements into the database
-          const { error: insertError } = await supabase
-            .from("announcements")
-            .upsert(announcements, { 
-              onConflict: "client_id,announcement_id",
-              ignoreDuplicates: false 
+        if (clientsError) {
+          throw new Error(`Error fetching clients: ${clientsError.message}`);
+        }
+        
+        console.log(`Processing announcements for ${clients.length} clients`);
+        
+        for (const client of clients) {
+          try {
+            if (!client.org_number) continue;
+            
+            // Fetch announcements from Brønnøysund
+            const url = `https://w2.brreg.no/kunngjoring/hent_nr.jsp?orgnr=${client.org_number}&spraak=no`;
+            const response = await fetch(url);
+            
+            if (!response.ok) {
+              console.error(`Error fetching announcements for ${client.name}:`, response.status);
+              results.push({ orgNumber: client.org_number, status: "error", error: `HTTP error: ${response.status}` });
+              continue;
+            }
+            
+            const html = await response.text();
+            
+            // Parse the HTML to extract announcements
+            const announcements = parseAnnouncementsHtml(html, client.id, client.org_number);
+            console.log(`Found ${announcements.length} announcements for ${client.name} (${client.org_number})`);
+            
+            if (announcements.length === 0) {
+              results.push({ orgNumber: client.org_number, status: "success", inserted: 0, message: "No announcements found" });
+              continue;
+            }
+            
+            // Insert announcements into the database
+            const { error: insertError } = await supabase
+              .from("announcements")
+              .upsert(announcements, { 
+                onConflict: "client_id,announcement_id",
+                ignoreDuplicates: false 
+              });
+            
+            if (insertError) {
+              console.error(`Error inserting announcements for ${client.name}:`, insertError);
+              results.push({ orgNumber: client.org_number, status: "error", error: `Insert error: ${insertError.message}` });
+              continue;
+            }
+            
+            console.log(`Successfully processed ${announcements.length} announcements for ${client.name}`);
+            results.push({ 
+              orgNumber: client.org_number, 
+              status: "success", 
+              inserted: announcements.length,
+              clientName: client.name
             });
             
-          if (insertError) {
-            console.error(`Error inserting announcements for ${client.name}:`, insertError);
-            results.push({ orgNumber: client.org_number, status: "error", error: `Insert error: ${insertError.message}` });
-            continue;
+            processed++;
+            totalInserted += announcements.length;
+          } catch (error) {
+            console.error(`Error processing client ${client.name}:`, error);
+            results.push({ orgNumber: client.org_number, status: "error", error: error.message });
           }
-          
-          console.log(`Successfully processed ${announcements.length} announcements for ${client.name}`);
-          results.push({ 
-            orgNumber: client.org_number, 
-            status: "success", 
-            inserted: announcements.length,
-            clientName: client.name
-          });
-          
-          processed++;
-          totalInserted += announcements.length;
-        } catch (error) {
-          console.error(`Error processing client ${client.name}:`, error);
-          results.push({ orgNumber: client.org_number, status: "error", error: error.message });
         }
       }
-    }
     
     console.log(`Processed ${processed} clients, inserted ${totalInserted} announcements`);
     
