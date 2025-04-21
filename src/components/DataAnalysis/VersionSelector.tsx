@@ -1,66 +1,75 @@
 
 import React from 'react';
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Calendar, ChevronDown } from 'lucide-react';
 import { DocumentVersion } from '@/types/revio';
-import { Badge } from '@/components/ui/badge';
-import { History } from 'lucide-react';
+import { formatDistance } from 'date-fns';
+import { nb } from 'date-fns/locale';
 
 interface VersionSelectorProps {
+  versions: DocumentVersion[];
   selectedVersion: DocumentVersion;
   onVersionChange: (version: DocumentVersion) => void;
 }
 
-const VersionSelector = ({ selectedVersion, onVersionChange }: VersionSelectorProps) => {
-  const handleValueChange = (value: string) => {
-    onVersionChange(value as DocumentVersion);
+const VersionSelector: React.FC<VersionSelectorProps> = ({ 
+  versions, 
+  selectedVersion, 
+  onVersionChange 
+}) => {
+  const handleVersionChange = (versionId: string) => {
+    const version = versions.find(v => v.id === versionId);
+    if (version) {
+      onVersionChange(version);
+    }
+  };
+  
+  const getTimeAgo = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      return formatDistance(date, new Date(), { addSuffix: true, locale: nb });
+    } catch (e) {
+      return dateString;
+    }
   };
   
   return (
     <div className="flex items-center gap-2">
-      <History size={16} className="text-muted-foreground" />
-      <span className="text-sm text-muted-foreground mr-1">Versjon:</span>
-      <Select value={selectedVersion} onValueChange={handleValueChange}>
-        <SelectTrigger className="w-[180px]">
+      <Calendar size={16} className="text-muted-foreground" />
+      <Select
+        value={selectedVersion.id}
+        onValueChange={handleVersionChange}
+      >
+        <SelectTrigger className="w-[280px]">
           <SelectValue placeholder="Velg versjon" />
         </SelectTrigger>
         <SelectContent>
-          <SelectGroup>
-            <SelectLabel>Tilgjengelige versjoner</SelectLabel>
-            <SelectItem value="interim1">
-              <div className="flex items-center justify-between w-full">
-                <span>Interim 1</span>
-                <Badge variant="outline" className="ml-2 text-xs">15.01.2024</Badge>
+          {versions.map(version => (
+            <SelectItem key={version.id} value={version.id}>
+              <div className="flex flex-col">
+                <span>{version.name}</span>
+                <span className="text-xs text-muted-foreground">
+                  {version.date} ({getTimeAgo(version.date)})
+                </span>
               </div>
             </SelectItem>
-            <SelectItem value="interim2">
-              <div className="flex items-center justify-between w-full">
-                <span>Interim 2</span>
-                <Badge variant="outline" className="ml-2 text-xs">15.03.2024</Badge>
-              </div>
-            </SelectItem>
-            <SelectItem value="final">
-              <div className="flex items-center justify-between w-full">
-                <span>Endelig</span>
-                <Badge variant="outline" className="ml-2 text-xs">01.04.2024</Badge>
-              </div>
-            </SelectItem>
-            <SelectItem value="revised">
-              <div className="flex items-center justify-between w-full">
-                <span>Revidert</span>
-                <Badge variant="outline" className="ml-2 text-xs">15.04.2024</Badge>
-              </div>
-            </SelectItem>
-          </SelectGroup>
+          ))}
         </SelectContent>
       </Select>
+      
+      {selectedVersion.status === 'active' && (
+        <Button variant="outline" size="sm" className="gap-1">
+          <span>Sammenlikn</span>
+          <ChevronDown size={14} />
+        </Button>
+      )}
     </div>
   );
 };

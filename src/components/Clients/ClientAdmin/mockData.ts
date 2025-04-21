@@ -24,10 +24,25 @@ export const mockClients: Client[] = [
       { name: 'Anleggsmidler', risk: 'high' }
     ],
     documents: [
-      { type: 'shareholder_report', status: 'submitted', dueDate: '2025-05-15' },
+      { type: 'shareholder_report', status: 'pending', dueDate: '2025-05-15' },
       { type: 'tax_return', status: 'pending', dueDate: '2025-06-30' },
       { type: 'annual_report', status: 'pending', dueDate: '2025-07-31' }
-    ]
+    ],
+    email: '',
+    phone: '',
+    bankAccount: '',
+    notes: '',
+    orgFormCode: 'AS',
+    orgFormDescription: 'Aksjeselskap',
+    homepage: '',
+    status: 'ACTIVE',
+    naceCode: '',
+    naceDescription: '',
+    municipalityCode: '',
+    municipalityName: '',
+    equityCapital: 0,
+    shareCapital: 0,
+    roles: []
   },
   {
     id: '2',
@@ -51,9 +66,24 @@ export const mockClients: Client[] = [
       { name: 'Anleggsmidler', risk: 'low' }
     ],
     documents: [
-      { type: 'shareholder_report', status: 'accepted', dueDate: '2025-05-15' },
-      { type: 'tax_return', status: 'submitted', dueDate: '2025-06-30' },
+      { type: 'shareholder_report', status: 'pending', dueDate: '2025-05-15' },
+      { type: 'tax_return', status: 'pending', dueDate: '2025-06-30' },
       { type: 'annual_report', status: 'pending', dueDate: '2025-07-31' }
-    ]
+    ],
+    email: '',
+    phone: '',
+    bankAccount: '',
+    notes: '',
+    orgFormCode: 'AS',
+    orgFormDescription: 'Aksjeselskap',
+    homepage: '',
+    status: 'ACTIVE',
+    naceCode: '',
+    naceDescription: '',
+    municipalityCode: '',
+    municipalityName: '',
+    equityCapital: 0,
+    shareCapital: 0,
+    roles: []
   }
 ];

@@ -16,10 +16,10 @@ const AnnouncementsList = ({ announcements }: AnnouncementsListProps) => {
     const date = format(new Date(announcement.announcement_date), 'dd. MMM yyyy', { locale: nb });
     return {
       ...announcement,
-      isRead: false, // Default to unread
+      isRead: announcement.isRead ?? false, // Default to unread if not specified
       date,
-      clientName: "Client", // This would need to be populated from the client data
-      description: announcement.type
+      clientName: announcement.clientName || "Klient", // Default client name if not provided
+      description: announcement.description || announcement.type // Default to type if description not provided
     };
   });
 

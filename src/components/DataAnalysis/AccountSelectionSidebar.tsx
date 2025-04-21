@@ -1,84 +1,94 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { 
-  Sidebar, 
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Search, Plus, Briefcase, BarChart, CreditCard, Building2 } from 'lucide-react';
+import { Badge } from "@/components/ui/badge";
+import { Account, AccountGroup } from '@/types/revio';
+import { 
   SidebarContent, 
-  SidebarGroup, 
-  SidebarGroupLabel, 
-  SidebarGroupContent,
+  SidebarHeader, 
   SidebarMenu,
   SidebarMenuItem,
-  SidebarMenuButton,
   SidebarMenuSub,
   SidebarMenuSubItem,
-  SidebarMenuSubButton
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarInput,
 } from "@/components/ui/sidebar";
-import { Search, ChevronRight, ChevronDown } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Account, AccountGroup } from '@/types/revio';
 
-// Mock data for account groups and accounts
-const mockAccountGroups: AccountGroup[] = [
-  {
-    id: "income",
-    name: "Driftsinntekter",
-    balance: 15450000,
-    prevBalance: 14200000,
-    accounts: [
-      { id: "3000", accountId: "3000", name: "Salgsinntekt, avgiftspliktig", groupId: "income", balance: 12500000, prevBalance: 11600000 },
-      { id: "3100", accountId: "3100", name: "Salgsinntekt, avgiftsfri", groupId: "income", balance: 2950000, prevBalance: 2600000 },
-    ]
+// Mock account data
+const incomeAccounts: Account[] = [
+  { id: '3000', number: '3000', name: 'Salgsinntekt, avgiftspliktig', balance: 1430000, type: 'income', groupId: 'income' },
+  { id: '3100', number: '3100', name: 'Salgsinntekt, avgiftsfri', balance: 245000, type: 'income', groupId: 'income' },
+];
+
+const expenseAccounts: Account[] = [
+  { id: '4300', number: '4300', name: 'Innkjøp varer', balance: -545000, type: 'expense', groupId: 'expenses' },
+  { id: '5000', number: '5000', name: 'Lønn', balance: -1215000, type: 'expense', groupId: 'expenses' },
+  { id: '5400', number: '5400', name: 'Arbeidsgiveravgift', balance: -171315, type: 'expense', groupId: 'expenses' },
+  { id: '6300', number: '6300', name: 'Leie lokaler', balance: -570000, type: 'expense', groupId: 'expenses' },
+  { id: '6340', number: '6340', name: 'Lys og varme', balance: -87500, type: 'expense', groupId: 'expenses' },
+  { id: '6500', number: '6500', name: 'Kontorutstyr', balance: -94300, type: 'expense', groupId: 'expenses' },
+  { id: '6700', number: '6700', name: 'Revisjonshonorar', balance: -48000, type: 'expense', groupId: 'expenses' },
+];
+
+const assetAccounts: Account[] = [
+  { id: '1500', number: '1500', name: 'Kundefordringer', balance: 695000, type: 'asset', groupId: 'assets' },
+  { id: '1920', number: '1920', name: 'Driftskonto', balance: 853000, type: 'asset', groupId: 'assets' },
+  { id: '1950', number: '1950', name: 'Skattetrekkskonto', balance: 136000, type: 'asset', groupId: 'assets' },
+];
+
+const liabilityAccounts: Account[] = [
+  { id: '2400', number: '2400', name: 'Leverandørgjeld', balance: -410000, type: 'liability', groupId: 'liabilities' },
+  { id: '2600', number: '2600', name: 'Skattetrekk', balance: -136000, type: 'liability', groupId: 'liabilities' },
+];
+
+// Group accounts
+const accountGroups: AccountGroup[] = [
+  { 
+    id: 'income', 
+    name: 'Inntekter', 
+    accounts: incomeAccounts,
+    balance: incomeAccounts.reduce((sum, acc) => sum + acc.balance, 0)
   },
-  {
-    id: "expenses",
-    name: "Driftskostnader",
-    balance: 11230000,
-    prevBalance: 10400000,
-    accounts: [
-      { id: "4300", accountId: "4300", name: "Varekjøp, høy avgiftssats", groupId: "expenses", balance: 4500000, prevBalance: 4100000 },
-      { id: "5000", accountId: "5000", name: "Lønn til ansatte", groupId: "expenses", balance: 4850000, prevBalance: 4500000 },
-      { id: "6300", accountId: "6300", name: "Leie lokaler", groupId: "expenses", balance: 950000, prevBalance: 950000 },
-      { id: "6340", accountId: "6340", name: "Lys og varme", groupId: "expenses", balance: 325000, prevBalance: 290000 },
-      { id: "6500", accountId: "6500", name: "Kontorrekvisita", groupId: "expenses", balance: 155000, prevBalance: 175000 },
-      { id: "6700", accountId: "6700", name: "Regnskapshonorar", groupId: "expenses", balance: 275000, prevBalance: 225000 },
-      { id: "6800", accountId: "6800", name: "Kontorrekvisita", groupId: "expenses", balance: 175000, prevBalance: 160000 },
-    ]
+  { 
+    id: 'expenses', 
+    name: 'Kostnader', 
+    accounts: expenseAccounts,
+    balance: expenseAccounts.reduce((sum, acc) => sum + acc.balance, 0)
   },
-  {
-    id: "assets",
-    name: "Eiendeler",
-    balance: 8120000,
-    prevBalance: 7250000,
-    accounts: [
-      { id: "1500", accountId: "1500", name: "Kundefordringer", groupId: "assets", balance: 1850000, prevBalance: 1620000 },
-      { id: "1900", accountId: "1900", name: "Kontanter", groupId: "assets", balance: 28000, prevBalance: 35000 },
-      { id: "1920", accountId: "1920", name: "Bankinnskudd", groupId: "assets", balance: 6242000, prevBalance: 5595000 },
-    ]
+  { 
+    id: 'assets', 
+    name: 'Eiendeler', 
+    accounts: assetAccounts,
+    balance: assetAccounts.reduce((sum, acc) => sum + acc.balance, 0)
   },
-  {
-    id: "liabilities",
-    name: "Gjeld og egenkapital",
-    balance: 8120000,
-    prevBalance: 7250000,
-    accounts: [
-      { id: "2000", accountId: "2000", name: "Egenkapital", groupId: "liabilities", balance: 4850000, prevBalance: 4100000 },
-      { id: "2400", accountId: "2400", name: "Leverandørgjeld", groupId: "liabilities", balance: 1250000, prevBalance: 1150000 },
-      { id: "2600", accountId: "2600", name: "Skattetrekk", groupId: "liabilities", balance: 405000, prevBalance: 385000 },
-      { id: "2770", accountId: "2770", name: "Skyldig arbeidsgiveravgift", groupId: "liabilities", balance: 215000, prevBalance: 195000 },
-      { id: "2800", accountId: "2800", name: "Avsatt utbytte", groupId: "liabilities", balance: 1400000, prevBalance: 1420000 },
-    ]
-  }
+  { 
+    id: 'liabilities', 
+    name: 'Gjeld', 
+    accounts: liabilityAccounts,
+    balance: liabilityAccounts.reduce((sum, acc) => sum + acc.balance, 0)
+  },
 ];
 
 interface AccountSelectionSidebarProps {
   onAccountSelect: (account: Account | null) => void;
   onAccountGroupSelect: (group: AccountGroup | null) => void;
-  onMultiSelect?: (accounts: Account[]) => void;
-  selectedAccount?: Account | null;
-  selectedAccountGroup?: AccountGroup | null;
-  selectedAccounts?: Account[];
+  onMultiSelect: (accounts: Account[]) => void;
+  selectedAccount: Account | null;
+  selectedAccountGroup: AccountGroup | null;
+  selectedAccounts: Account[];
   side?: 'left' | 'right';
 }
 
@@ -88,201 +98,365 @@ const AccountSelectionSidebar = ({
   onMultiSelect,
   selectedAccount,
   selectedAccountGroup,
-  selectedAccounts = [],
-  side = 'left'
+  selectedAccounts,
+  side = 'left',
 }: AccountSelectionSidebarProps) => {
-  const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [accountGroups] = useState<AccountGroup[]>(mockAccountGroups);
-  const [isMouseDown, setIsMouseDown] = useState(false);
-  const [multiSelectAccounts, setMultiSelectAccounts] = useState<Account[]>(selectedAccounts || []);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isMultiSelectDialogOpen, setIsMultiSelectDialogOpen] = useState(false);
+  const [dialogSelectedAccounts, setDialogSelectedAccounts] = useState<Account[]>(selectedAccounts || []);
   
-  // Update multiSelectAccounts when selectedAccounts prop changes
-  useEffect(() => {
-    setMultiSelectAccounts(selectedAccounts);
-  }, [selectedAccounts]);
+  const allAccounts = [...incomeAccounts, ...expenseAccounts, ...assetAccounts, ...liabilityAccounts];
   
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('nb-NO', { style: 'currency', currency: 'NOK' }).format(amount);
-  };
-  
-  const toggleGroup = (groupId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setExpandedGroups(prev => 
-      prev.includes(groupId) 
-        ? prev.filter(id => id !== groupId)
-        : [...prev, groupId]
-    );
-  };
-  
-  const handleAccountGroupClick = (group: AccountGroup) => {
-    onAccountGroupSelect(group);
-    onAccountSelect(null);
-    
-    // Auto-expand the selected group
-    if (!expandedGroups.includes(group.id)) {
-      setExpandedGroups(prev => [...prev, group.id]);
-    }
-  };
-  
-  const handleAccountClick = (account: Account, e: React.MouseEvent) => {
-    // If multi-select is enabled (if onMultiSelect is provided)
-    if (onMultiSelect && e.ctrlKey) {
-      handleMultiSelect(account);
-    } else {
-      onAccountSelect(account);
-      
-      // Find and set the parent group
-      const parentGroup = accountGroups.find(group => 
-        group.accounts.some(acc => acc.id === account.id)
+  // Filter accounts based on search term
+  const filteredAccounts = searchTerm.trim() === '' 
+    ? allAccounts 
+    : allAccounts.filter(account => 
+        account.number.includes(searchTerm) || 
+        account.name.toLowerCase().includes(searchTerm.toLowerCase())
       );
-      
-      if (parentGroup) {
-        onAccountGroupSelect(parentGroup);
+  
+  const toggleAccount = (account: Account) => {
+    setDialogSelectedAccounts(prev => {
+      const isSelected = prev.some(a => a.id === account.id);
+      if (isSelected) {
+        return prev.filter(a => a.id !== account.id);
+      } else {
+        return [...prev, account];
+      }
+    });
+  };
+  
+  const formatBalance = (balance: number) => {
+    return new Intl.NumberFormat('nb-NO', { style: 'currency', currency: 'NOK' }).format(balance);
+  };
+  
+  const handleSelectGroup = (group: AccountGroup) => {
+    if (selectedAccountGroup?.id === group.id) {
+      onAccountGroupSelect(null);
+    } else {
+      onAccountGroupSelect(group);
+      if (selectedAccount) {
+        onAccountSelect(null);
       }
     }
   };
   
-  const handleMouseDown = () => {
-    setIsMouseDown(true);
-  };
-  
-  const handleMouseUp = () => {
-    setIsMouseDown(false);
-  };
-  
-  const handleMultiSelect = (account: Account) => {
-    const isSelected = multiSelectAccounts.some(a => a.id === account.id);
-    
-    let newSelectedAccounts: Account[];
-    if (isSelected) {
-      // Remove account if already selected
-      newSelectedAccounts = multiSelectAccounts.filter(a => a.id !== account.id);
+  const handleSelectAccount = (account: Account) => {
+    if (selectedAccount?.id === account.id) {
+      onAccountSelect(null);
     } else {
-      // Add account if not already selected
-      newSelectedAccounts = [...multiSelectAccounts, account];
-    }
-    
-    setMultiSelectAccounts(newSelectedAccounts);
-    
-    if (onMultiSelect) {
-      onMultiSelect(newSelectedAccounts);
+      onAccountSelect(account);
     }
   };
   
-  const handleAccountMouseOver = (account: Account) => {
-    if (isMouseDown && onMultiSelect) {
-      handleMultiSelect(account);
-    }
+  const openMultiSelectDialog = () => {
+    setDialogSelectedAccounts(selectedAccounts || []);
+    setIsMultiSelectDialogOpen(true);
   };
   
-  const isAccountSelected = (accountId: string) => {
-    return multiSelectAccounts.some(a => a.id === accountId) || (selectedAccount?.id === accountId);
+  const applyMultiSelection = () => {
+    onMultiSelect(dialogSelectedAccounts);
+    setIsMultiSelectDialogOpen(false);
   };
   
-  const filteredGroups = accountGroups.filter(group => {
-    // If no search query, return all groups
-    if (!searchQuery) return true;
-    
-    // Filter by group name
-    if (group.name.toLowerCase().includes(searchQuery.toLowerCase())) return true;
-    
-    // Filter by accounts within the group
-    return group.accounts.some(account => 
-      account.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      account.accountId.includes(searchQuery)
-    );
-  });
-
-  useEffect(() => {
-    // Add event listeners to handle mouse up outside component
-    document.addEventListener('mouseup', handleMouseUp);
-    
-    return () => {
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, []);
-
   return (
-    <Sidebar collapsible="icon" side={side} className="border-r">
-      <SidebarContent>
-        <SidebarGroup>
-          <div className="flex items-center px-2 py-2">
-            <div className="relative w-full">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Søk etter konto..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-8"
-              />
-            </div>
-          </div>
-        </SidebarGroup>
+    <>
+      <SidebarContent side={side} className="w-80 border-r p-0">
+        <SidebarHeader className="border-b p-4">
+          <h2 className="text-lg font-medium">Kontoplan</h2>
+          <p className="text-sm text-muted-foreground">Velg konto for utvalg</p>
+          <SidebarInput 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Søk konto..."
+            className="mt-2"
+            leadingIcon={<Search className="h-4 w-4 text-muted-foreground" />}
+            clearButton
+            onClear={() => setSearchTerm('')}
+          />
+          <Button 
+            variant="outline" 
+            className="w-full mt-2 gap-2 justify-start"
+            onClick={openMultiSelectDialog}
+          >
+            <Plus size={16} />
+            <span>Multiutvalg ({selectedAccounts.length || 0})</span>
+            {selectedAccounts.length > 0 && (
+              <Badge variant="secondary" className="ml-auto">
+                {selectedAccounts.length}
+              </Badge>
+            )}
+          </Button>
+        </SidebarHeader>
         
-        <ScrollArea className="h-[calc(100vh-10rem)]">
-          <SidebarGroup>
-            <SidebarGroupLabel>Regnskapslinjer</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {filteredGroups.map((group) => (
-                  <SidebarMenuItem key={group.id}>
-                    <SidebarMenuButton 
-                      onClick={() => handleAccountGroupClick(group)}
-                      isActive={selectedAccountGroup?.id === group.id}
-                      className="justify-between"
-                    >
-                      <span>{group.name}</span>
+        <ScrollArea className="h-[calc(100vh-13.5rem)]">
+          <SidebarMenu>
+            {searchTerm ? (
+              <div className="py-2">
+                <div className="px-4 py-2 text-sm text-muted-foreground">
+                  Søkeresultater ({filteredAccounts.length})
+                </div>
+                {filteredAccounts.map(account => (
+                  <SidebarMenuItem
+                    key={account.id}
+                    isActive={selectedAccount?.id === account.id}
+                    onClick={() => handleSelectAccount(account)}
+                  >
+                    <div className="flex justify-between w-full items-center">
                       <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="font-mono text-xs">
-                          {formatCurrency(group.balance)}
-                        </Badge>
-                        <div onClick={(e) => toggleGroup(group.id, e)}>
-                          {expandedGroups.includes(group.id) ? (
-                            <ChevronDown size={16} />
-                          ) : (
-                            <ChevronRight size={16} />
-                          )}
-                        </div>
+                        <span className="font-mono text-xs">{account.number}</span>
+                        <span>{account.name}</span>
                       </div>
-                    </SidebarMenuButton>
-                    
-                    {expandedGroups.includes(group.id) && (
-                      <SidebarMenuSub>
-                        {group.accounts
-                          .filter(account => 
-                            !searchQuery || 
-                            account.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                            account.accountId.includes(searchQuery)
-                          )
-                          .map((account) => (
-                            <SidebarMenuSubItem key={account.id} onMouseDown={handleMouseDown}>
-                              <SidebarMenuSubButton 
-                                onClick={(e: React.MouseEvent) => handleAccountClick(account, e)}
-                                onMouseOver={() => handleAccountMouseOver(account)}
-                                isActive={isAccountSelected(account.id)}
-                                className={`justify-between ${isAccountSelected(account.id) ? 'bg-primary-50 text-primary-600' : ''}`}
-                              >
-                                <div className="flex items-center gap-2">
-                                  <span className="text-xs font-mono text-muted-foreground">{account.accountId}</span>
-                                  <span>{account.name}</span>
-                                </div>
-                                <Badge variant="outline" className="font-mono text-xs">
-                                  {formatCurrency(account.balance)}
-                                </Badge>
-                              </SidebarMenuSubButton>
-                            </SidebarMenuSubItem>
-                          ))}
-                      </SidebarMenuSub>
-                    )}
+                      <span className={account.balance >= 0 ? 'text-green-600' : 'text-red-600'}>
+                        {formatBalance(account.balance)}
+                      </span>
+                    </div>
                   </SidebarMenuItem>
                 ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+                {filteredAccounts.length === 0 && (
+                  <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+                    Ingen kontoer matcher søket
+                  </div>
+                )}
+              </div>
+            ) : (
+              <>
+                <SidebarGroup>
+                  <SidebarMenuItem 
+                    icon={<BarChart size={16} />}
+                    isActive={selectedAccountGroup?.id === 'income'}
+                    onClick={() => handleSelectGroup(accountGroups[0])}
+                  >
+                    <div className="flex justify-between w-full">
+                      <span>Inntekter</span>
+                      <span className="text-green-600">{formatBalance(accountGroups[0].balance)}</span>
+                    </div>
+                  </SidebarMenuItem>
+                  
+                  <SidebarMenuSub>
+                    {incomeAccounts.map(account => (
+                      <SidebarMenuSubItem
+                        key={account.id}
+                        isActive={selectedAccount?.id === account.id}
+                        onClick={() => handleSelectAccount(account)}
+                      >
+                        <div className="flex justify-between w-full">
+                          <div>
+                            <span className="font-mono text-xs">{account.number}</span> {account.name}
+                          </div>
+                          <span className="text-green-600">{formatBalance(account.balance)}</span>
+                        </div>
+                      </SidebarMenuSubItem>
+                    ))}
+                  </SidebarMenuSub>
+                </SidebarGroup>
+                
+                <SidebarGroup>
+                  <SidebarMenuItem 
+                    icon={<Briefcase size={16} />}
+                    isActive={selectedAccountGroup?.id === 'expenses'}
+                    onClick={() => handleSelectGroup(accountGroups[1])}
+                  >
+                    <div className="flex justify-between w-full">
+                      <span>Kostnader</span>
+                      <span className="text-red-600">{formatBalance(accountGroups[1].balance)}</span>
+                    </div>
+                  </SidebarMenuItem>
+                  
+                  <SidebarMenuSub>
+                    {expenseAccounts.map(account => (
+                      <SidebarMenuSubItem
+                        key={account.id}
+                        isActive={selectedAccount?.id === account.id}
+                        onClick={() => handleSelectAccount(account)}
+                      >
+                        <div className="flex justify-between w-full">
+                          <div>
+                            <span className="font-mono text-xs">{account.number}</span> {account.name}
+                          </div>
+                          <span className="text-red-600">{formatBalance(account.balance)}</span>
+                        </div>
+                      </SidebarMenuSubItem>
+                    ))}
+                  </SidebarMenuSub>
+                </SidebarGroup>
+                
+                <SidebarGroup>
+                  <SidebarMenuItem 
+                    icon={<CreditCard size={16} />}
+                    isActive={selectedAccountGroup?.id === 'assets'}
+                    onClick={() => handleSelectGroup(accountGroups[2])}
+                  >
+                    <div className="flex justify-between w-full">
+                      <span>Eiendeler</span>
+                      <span className="text-green-600">{formatBalance(accountGroups[2].balance)}</span>
+                    </div>
+                  </SidebarMenuItem>
+                  
+                  <SidebarMenuSub>
+                    {assetAccounts.map(account => (
+                      <SidebarMenuSubItem
+                        key={account.id}
+                        isActive={selectedAccount?.id === account.id}
+                        onClick={() => handleSelectAccount(account)}
+                      >
+                        <div className="flex justify-between w-full">
+                          <div>
+                            <span className="font-mono text-xs">{account.number}</span> {account.name}
+                          </div>
+                          <span className="text-green-600">{formatBalance(account.balance)}</span>
+                        </div>
+                      </SidebarMenuSubItem>
+                    ))}
+                  </SidebarMenuSub>
+                </SidebarGroup>
+                
+                <SidebarGroup>
+                  <SidebarMenuItem 
+                    icon={<Building2 size={16} />}
+                    isActive={selectedAccountGroup?.id === 'liabilities'}
+                    onClick={() => handleSelectGroup(accountGroups[3])}
+                  >
+                    <div className="flex justify-between w-full">
+                      <span>Gjeld</span>
+                      <span className="text-red-600">{formatBalance(accountGroups[3].balance)}</span>
+                    </div>
+                  </SidebarMenuItem>
+                  
+                  <SidebarMenuSub>
+                    {liabilityAccounts.map(account => (
+                      <SidebarMenuSubItem
+                        key={account.id}
+                        isActive={selectedAccount?.id === account.id}
+                        onClick={() => handleSelectAccount(account)}
+                      >
+                        <div className="flex justify-between w-full">
+                          <div>
+                            <span className="font-mono text-xs">{account.number}</span> {account.name}
+                          </div>
+                          <span className="text-red-600">{formatBalance(account.balance)}</span>
+                        </div>
+                      </SidebarMenuSubItem>
+                    ))}
+                  </SidebarMenuSub>
+                </SidebarGroup>
+              </>
+            )}
+          </SidebarMenu>
         </ScrollArea>
+        
+        <SidebarFooter className="border-t p-4">
+          <div className="text-xs text-muted-foreground">
+            {selectedAccount ? (
+              <div>
+                <div className="font-medium">Valgt konto:</div>
+                <div className="mt-1">
+                  <span className="font-mono">{selectedAccount.number}</span> {selectedAccount.name}
+                </div>
+              </div>
+            ) : selectedAccountGroup ? (
+              <div>
+                <div className="font-medium">Valgt gruppe:</div>
+                <div className="mt-1">
+                  {selectedAccountGroup.name} ({selectedAccountGroup.accounts.length} kontoer)
+                </div>
+                <div className="mt-1 font-medium">
+                  Sum: {formatBalance(selectedAccountGroup.balance)}
+                </div>
+              </div>
+            ) : selectedAccounts.length > 0 ? (
+              <div>
+                <div className="font-medium">Multiutvalg:</div>
+                <div className="mt-1">
+                  {selectedAccounts.length} kontoer valgt
+                </div>
+                <div className="mt-1 font-medium">
+                  Sum: {formatBalance(selectedAccounts.reduce((sum, acc) => sum + acc.balance, 0))}
+                </div>
+              </div>
+            ) : (
+              <div>Velg en konto eller kontogruppe for å se detaljer</div>
+            )}
+          </div>
+        </SidebarFooter>
       </SidebarContent>
-    </Sidebar>
+      
+      {/* Multi-select dialog */}
+      <Dialog open={isMultiSelectDialogOpen} onOpenChange={setIsMultiSelectDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Velg flere kontoer</DialogTitle>
+            <DialogDescription>
+              Velg flere kontoer for å analysere dem samlet
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-2">
+            <Input
+              placeholder="Søk..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="mb-4"
+            />
+            
+            <ScrollArea className="h-[300px] border rounded-md p-2">
+              {filteredAccounts.map(account => (
+                <div key={account.id} className="flex items-center space-x-2 py-2 px-1 hover:bg-muted/50 rounded">
+                  <Checkbox
+                    id={`account-${account.id}`}
+                    checked={dialogSelectedAccounts.some(a => a.id === account.id)}
+                    onCheckedChange={() => toggleAccount(account)}
+                  />
+                  <label
+                    htmlFor={`account-${account.id}`}
+                    className="flex justify-between w-full text-sm cursor-pointer"
+                  >
+                    <div>
+                      <span className="font-mono">{account.number}</span> {account.name}
+                    </div>
+                    <span className={account.balance >= 0 ? 'text-green-600' : 'text-red-600'}>
+                      {formatBalance(account.balance)}
+                    </span>
+                  </label>
+                </div>
+              ))}
+              
+              {filteredAccounts.length === 0 && (
+                <div className="py-8 text-center text-sm text-muted-foreground">
+                  Ingen kontoer matcher søket
+                </div>
+              )}
+            </ScrollArea>
+            
+            {dialogSelectedAccounts.length > 0 && (
+              <div className="mt-4 p-3 bg-muted rounded-md">
+                <div className="text-sm font-medium">
+                  {dialogSelectedAccounts.length} konto{dialogSelectedAccounts.length !== 1 ? 'er' : ''} valgt
+                </div>
+                <div className="text-sm mt-1">
+                  Sum: {formatBalance(dialogSelectedAccounts.reduce((sum, acc) => sum + acc.balance, 0))}
+                </div>
+              </div>
+            )}
+          </div>
+          
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setIsMultiSelectDialogOpen(false)}
+            >
+              Avbryt
+            </Button>
+            <Button 
+              onClick={applyMultiSelection}
+              disabled={dialogSelectedAccounts.length === 0}
+            >
+              Velg ({dialogSelectedAccounts.length})
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 

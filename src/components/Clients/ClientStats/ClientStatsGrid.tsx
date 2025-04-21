@@ -12,7 +12,7 @@ const ClientStatsGrid = ({ clients, announcements }: ClientStatsGridProps) => {
   // Process announcements to add UI-specific properties
   const processedAnnouncements = announcements.map(announcement => ({
     ...announcement,
-    isRead: false // Default all to unread for now
+    isRead: announcement.isRead ?? false // Default all to unread if not specified
   }));
 
   return (

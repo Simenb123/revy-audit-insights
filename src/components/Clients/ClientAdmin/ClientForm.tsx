@@ -36,6 +36,17 @@ const clientSchema = z.object({
   phone: z.string().optional(),
   bankAccount: z.string().optional(),
   notes: z.string().optional(),
+  // Add the additional required fields for Client
+  orgFormCode: z.string().optional(),
+  orgFormDescription: z.string().optional(),
+  homepage: z.string().optional(),
+  status: z.string().optional(),
+  naceCode: z.string().optional(),
+  naceDescription: z.string().optional(),
+  municipalityCode: z.string().optional(),
+  municipalityName: z.string().optional(),
+  equityCapital: z.number().optional(),
+  shareCapital: z.number().optional(),
 });
 
 type FormData = z.infer<typeof clientSchema>;
@@ -63,6 +74,17 @@ const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, submitLa
       phone: initialData?.phone || '',
       bankAccount: initialData?.bankAccount || '',
       notes: initialData?.notes || '',
+      // Set default values for the new fields
+      orgFormCode: initialData?.orgFormCode || '',
+      orgFormDescription: initialData?.orgFormDescription || '',
+      homepage: initialData?.homepage || '',
+      status: initialData?.status || 'ACTIVE',
+      naceCode: initialData?.naceCode || '',
+      naceDescription: initialData?.naceDescription || '',
+      municipalityCode: initialData?.municipalityCode || '',
+      municipalityName: initialData?.municipalityName || '',
+      equityCapital: initialData?.equityCapital || 0,
+      shareCapital: initialData?.shareCapital || 0,
     },
   });
 
@@ -88,8 +110,20 @@ const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, submitLa
       phone: data.phone || '',
       bankAccount: data.bankAccount || '',
       notes: data.notes || '',
+      // Add the new fields
+      orgFormCode: data.orgFormCode || '',
+      orgFormDescription: data.orgFormDescription || '',
+      homepage: data.homepage || '',
+      status: data.status || 'ACTIVE',
+      naceCode: data.naceCode || '',
+      naceDescription: data.naceDescription || '',
+      municipalityCode: data.municipalityCode || '',
+      municipalityName: data.municipalityName || '',
+      equityCapital: data.equityCapital || 0,
+      shareCapital: data.shareCapital || 0,
       riskAreas: initialData?.riskAreas || [],
       documents: initialData?.documents || [],
+      roles: initialData?.roles || [],
     };
     
     onSubmit(fullClient);

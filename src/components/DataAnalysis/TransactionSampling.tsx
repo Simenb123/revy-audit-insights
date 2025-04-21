@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   Card, 
@@ -69,53 +68,53 @@ import MaterialityBanner from "./MaterialityBanner";
 // Mock data for transactions (will be filtered based on selected account)
 const allMockTransactions: Transaction[] = [
   // Income transactions (3000)
-  { id: '1001', accountId: '3000', date: '2024-01-15', description: 'Faktura #12345', amount: 45000, voucher: 'FB-2024-0123' },
-  { id: '1002', accountId: '3000', date: '2024-01-22', description: 'Faktura #12346', amount: 68000, voucher: 'FB-2024-0145' },
-  { id: '1003', accountId: '3000', date: '2024-02-05', description: 'Faktura #12350', amount: 52000, voucher: 'FB-2024-0189' },
-  { id: '1004', accountId: '3000', date: '2024-02-18', description: 'Faktura #12356', amount: 78000, voucher: 'FB-2024-0213' },
-  { id: '1005', accountId: '3000', date: '2024-03-10', description: 'Faktura #12370', amount: 61000, voucher: 'FB-2024-0267' },
-  { id: '1006', accountId: '3000', date: '2024-03-25', description: 'Faktura #12385', amount: 54000, voucher: 'FB-2024-0301' },
-  { id: '1007', accountId: '3000', date: '2024-01-18', description: 'Faktura #12347', amount: 112000, voucher: 'FB-2024-0152' },
-  { id: '1008', accountId: '3000', date: '2024-02-12', description: 'Faktura #12358', amount: 95000, voucher: 'FB-2024-0198' },
-  { id: '1009', accountId: '3000', date: '2024-03-05', description: 'Faktura #12368', amount: 135000, voucher: 'FB-2024-0254' },
-  { id: '1010', accountId: '3000', date: '2024-03-18', description: 'Faktura #12380', amount: 28000, voucher: 'FB-2024-0288' },
+  { id: '1001', account: '3000', date: '2024-01-15', description: 'Faktura #12345', amount: 45000, voucher: 'FB-2024-0123' },
+  { id: '1002', account: '3000', date: '2024-01-22', description: 'Faktura #12346', amount: 68000, voucher: 'FB-2024-0145' },
+  { id: '1003', account: '3000', date: '2024-02-05', description: 'Faktura #12350', amount: 52000, voucher: 'FB-2024-0189' },
+  { id: '1004', account: '3000', date: '2024-02-18', description: 'Faktura #12356', amount: 78000, voucher: 'FB-2024-0213' },
+  { id: '1005', account: '3000', date: '2024-03-10', description: 'Faktura #12370', amount: 61000, voucher: 'FB-2024-0267' },
+  { id: '1006', account: '3000', date: '2024-03-25', description: 'Faktura #12385', amount: 54000, voucher: 'FB-2024-0301' },
+  { id: '1007', account: '3000', date: '2024-01-18', description: 'Faktura #12347', amount: 112000, voucher: 'FB-2024-0152' },
+  { id: '1008', account: '3000', date: '2024-02-12', description: 'Faktura #12358', amount: 95000, voucher: 'FB-2024-0198' },
+  { id: '1009', account: '3000', date: '2024-03-05', description: 'Faktura #12368', amount: 135000, voucher: 'FB-2024-0254' },
+  { id: '1010', account: '3000', date: '2024-03-18', description: 'Faktura #12380', amount: 28000, voucher: 'FB-2024-0288' },
   
   // Income transactions (3100)
-  { id: '2001', accountId: '3100', date: '2024-01-20', description: 'Faktura #12348', amount: 32000, voucher: 'FB-2024-0130' },
-  { id: '2002', accountId: '3100', date: '2024-02-15', description: 'Faktura #12360', amount: 45000, voucher: 'FB-2024-0200' },
-  { id: '2003', accountId: '3100', date: '2024-03-05', description: 'Faktura #12375', amount: 38000, voucher: 'FB-2024-0255' },
+  { id: '2001', account: '3100', date: '2024-01-20', description: 'Faktura #12348', amount: 32000, voucher: 'FB-2024-0130' },
+  { id: '2002', account: '3100', date: '2024-02-15', description: 'Faktura #12360', amount: 45000, voucher: 'FB-2024-0200' },
+  { id: '2003', account: '3100', date: '2024-03-05', description: 'Faktura #12375', amount: 38000, voucher: 'FB-2024-0255' },
   
   // Expense transactions (4300)
-  { id: '3001', accountId: '4300', date: '2024-01-10', description: 'Varekjøp', amount: -150000, voucher: 'LB-2024-0050' },
-  { id: '3002', accountId: '4300', date: '2024-02-05', description: 'Varekjøp', amount: -185000, voucher: 'LB-2024-0120' },
-  { id: '3003', accountId: '4300', date: '2024-03-15', description: 'Varekjøp', amount: -210000, voucher: 'LB-2024-0230' },
+  { id: '3001', account: '4300', date: '2024-01-10', description: 'Varekjøp', amount: -150000, voucher: 'LB-2024-0050' },
+  { id: '3002', account: '4300', date: '2024-02-05', description: 'Varekjøp', amount: -185000, voucher: 'LB-2024-0120' },
+  { id: '3003', account: '4300', date: '2024-03-15', description: 'Varekjøp', amount: -210000, voucher: 'LB-2024-0230' },
   
   // Expense transactions (5000)
-  { id: '4001', accountId: '5000', date: '2024-01-15', description: 'Lønn januar', amount: -405000, voucher: 'LB-2024-0070' },
-  { id: '4002', accountId: '5000', date: '2024-02-15', description: 'Lønn februar', amount: -405000, voucher: 'LB-2024-0150' },
-  { id: '4003', accountId: '5000', date: '2024-03-15', description: 'Lønn mars', amount: -405000, voucher: 'LB-2024-0250' },
+  { id: '4001', account: '5000', date: '2024-01-15', description: 'Lønn januar', amount: -405000, voucher: 'LB-2024-0070' },
+  { id: '4002', account: '5000', date: '2024-02-15', description: 'Lønn februar', amount: -405000, voucher: 'LB-2024-0150' },
+  { id: '4003', account: '5000', date: '2024-03-15', description: 'Lønn mars', amount: -405000, voucher: 'LB-2024-0250' },
   
   // Expense transactions (6300)
-  { id: '5001', accountId: '6300', date: '2024-01-05', description: 'Husleie Q1', amount: -285000, voucher: 'LB-2024-0020' },
-  { id: '5002', accountId: '6300', date: '2024-04-05', description: 'Husleie Q2', amount: -285000, voucher: 'LB-2024-0320' },
+  { id: '5001', account: '6300', date: '2024-01-05', description: 'Husleie Q1', amount: -285000, voucher: 'LB-2024-0020' },
+  { id: '5002', account: '6300', date: '2024-04-05', description: 'Husleie Q2', amount: -285000, voucher: 'LB-2024-0320' },
   
   // Asset transactions (1500)
-  { id: '6001', accountId: '1500', date: '2024-01-31', description: 'Kundeposter', amount: 520000, voucher: 'FB-2024-0180' },
-  { id: '6002', accountId: '1500', date: '2024-02-28', description: 'Kundeposter', amount: 635000, voucher: 'FB-2024-0250' },
-  { id: '6003', accountId: '1500', date: '2024-03-31', description: 'Kundeposter', amount: 695000, voucher: 'FB-2024-0350' },
+  { id: '6001', account: '1500', date: '2024-01-31', description: 'Kundeposter', amount: 520000, voucher: 'FB-2024-0180' },
+  { id: '6002', account: '1500', date: '2024-02-28', description: 'Kundeposter', amount: 635000, voucher: 'FB-2024-0250' },
+  { id: '6003', account: '1500', date: '2024-03-31', description: 'Kundeposter', amount: 695000, voucher: 'FB-2024-0350' },
   
   // Asset transactions (1920)
-  { id: '7001', accountId: '1920', date: '2024-01-15', description: 'Innbetaling kundefordringer', amount: 485000, voucher: 'BB-2024-0015' },
-  { id: '7002', accountId: '1920', date: '2024-02-15', description: 'Innbetaling kundefordringer', amount: 520000, voucher: 'BB-2024-0025' },
-  { id: '7003', accountId: '1920', date: '2024-03-15', description: 'Innbetaling kundefordringer', amount: 635000, voucher: 'BB-2024-0035' },
-  { id: '7004', accountId: '1920', date: '2024-01-20', description: 'Betaling leverandører', amount: -320000, voucher: 'BB-2024-0018' },
-  { id: '7005', accountId: '1920', date: '2024-02-20', description: 'Betaling leverandører', amount: -380000, voucher: 'BB-2024-0028' },
-  { id: '7006', accountId: '1920', date: '2024-03-20', description: 'Betaling leverandører', amount: -410000, voucher: 'BB-2024-0038' },
+  { id: '7001', account: '1920', date: '2024-01-15', description: 'Innbetaling kundefordringer', amount: 485000, voucher: 'BB-2024-0015' },
+  { id: '7002', account: '1920', date: '2024-02-15', description: 'Innbetaling kundefordringer', amount: 520000, voucher: 'BB-2024-0025' },
+  { id: '7003', account: '1920', date: '2024-03-15', description: 'Innbetaling kundefordringer', amount: 635000, voucher: 'BB-2024-0035' },
+  { id: '7004', account: '1920', date: '2024-01-20', description: 'Betaling leverandører', amount: -320000, voucher: 'BB-2024-0018' },
+  { id: '7005', account: '1920', date: '2024-02-20', description: 'Betaling leverandører', amount: -380000, voucher: 'BB-2024-0028' },
+  { id: '7006', account: '1920', date: '2024-03-20', description: 'Betaling leverandører', amount: -410000, voucher: 'BB-2024-0038' },
   
   // Liability transactions (2400)
-  { id: '8001', accountId: '2400', date: '2024-01-10', description: 'Leverandørfaktura', amount: -320000, voucher: 'LB-2024-0040' },
-  { id: '8002', accountId: '2400', date: '2024-02-10', description: 'Leverandørfaktura', amount: -380000, voucher: 'LB-2024-0130' },
-  { id: '8003', accountId: '2400', date: '2024-03-10', description: 'Leverandørfaktura', amount: -410000, voucher: 'LB-2024-0210' },
+  { id: '8001', account: '2400', date: '2024-01-10', description: 'Leverandørfaktura', amount: -320000, voucher: 'LB-2024-0040' },
+  { id: '8002', account: '2400', date: '2024-02-10', description: 'Leverandørfaktura', amount: -380000, voucher: 'LB-2024-0130' },
+  { id: '8003', account: '2400', date: '2024-03-10', description: 'Leverandørfaktura', amount: -410000, voucher: 'LB-2024-0210' },
 ];
 
 const materialityThresholds = {
@@ -167,13 +166,13 @@ const TransactionSampling = () => {
   // Filter transactions based on selected account or account group
   const getFilteredTransactions = () => {
     if (selectedAccounts.length > 0) {
-      const accountIds = selectedAccounts.map(a => a.accountId);
-      return allMockTransactions.filter(t => accountIds.includes(t.accountId));
+      const accountNumbers = selectedAccounts.map(a => a.number);
+      return allMockTransactions.filter(t => accountNumbers.includes(t.account));
     } else if (selectedAccount) {
-      return allMockTransactions.filter(t => t.accountId === selectedAccount.accountId);
+      return allMockTransactions.filter(t => t.account === selectedAccount.number);
     } else if (selectedAccountGroup) {
-      const accountIds = selectedAccountGroup.accounts.map(a => a.accountId);
-      return allMockTransactions.filter(t => accountIds.includes(t.accountId));
+      const accountNumbers = selectedAccountGroup.accounts.map(a => a.number);
+      return allMockTransactions.filter(t => accountNumbers.includes(t.account));
     }
     return allMockTransactions;
   };
@@ -692,7 +691,7 @@ const TransactionSampling = () => {
                                   />
                                 </TableCell>
                                 <TableCell>{transaction.date}</TableCell>
-                                <TableCell className="font-mono text-xs">{transaction.accountId}</TableCell>
+                                <TableCell className="font-mono text-xs">{transaction.account}</TableCell>
                                 <TableCell>{transaction.voucher}</TableCell>
                                 <TableCell>{transaction.description}</TableCell>
                                 <TableCell className="text-right font-mono">

@@ -5,119 +5,134 @@ import {
   CardContent, 
   CardDescription, 
   CardHeader, 
-  CardTitle,
-  CardFooter 
+  CardTitle, 
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import DrillDownTable from '@/components/DataAnalysis/DrillDownTable';
-import TransactionSampling from '@/components/DataAnalysis/TransactionSampling';
-import VersionSelector from '@/components/DataAnalysis/VersionSelector';
-import VersionHistory from '@/components/DataAnalysis/VersionHistory';
-import { 
-  BarChart4, 
-  LayoutPanelLeft, 
-  ListFilter, 
-  History,
-  ScanLine,
-  Home,
-  ArrowLeft
-} from 'lucide-react';
 import { DocumentVersion } from '@/types/revio';
+import { Database, FileCheck, LineChart, Layers } from 'lucide-react';
+import DrillDownTable from './DrillDownTable';
 import MaterialityBanner from './MaterialityBanner';
-import { Button } from '@/components/ui/button';
-import { Link } from 'react-router-dom';
+import VersionSelector from './VersionSelector';
+import VersionHistory from './VersionHistory';
+
+const materialityThresholds = {
+  materiality: 2000000,
+  workingMateriality: 1500000,
+  clearlyTrivial: 150000
+};
+
+// Mock data for document versions
+const documentVersions: DocumentVersion[] = [
+  { id: '1', name: 'Årsregnskap 2023 (sist importert)', date: '2024-03-15', status: 'active' },
+  { id: '2', name: 'Årsregnskap 2023 (innlevert)', date: '2024-03-10', status: 'archived' },
+  { id: '3', name: 'Årsregnskap 2023 (utkast)', date: '2024-02-28', status: 'archived' },
+  { id: '4', name: 'Årsregnskap 2022 (endelig)', date: '2023-03-20', status: 'archived' },
+];
 
 const AccountingExplorer = () => {
-  const [selectedVersion, setSelectedVersion] = useState<DocumentVersion>('final');
+  const [activeTab, setActiveTab] = useState('overview');
+  const [selectedVersion, setSelectedVersion] = useState<DocumentVersion>(documentVersions[0]);
   
   const handleVersionChange = (version: DocumentVersion) => {
     setSelectedVersion(version);
-    console.log(`Switched to version: ${version}`);
-    // In a real app, this would trigger data reload
   };
   
   return (
-    <div className="w-full px-4 py-6 md:px-6 lg:px-8">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <div className="flex items-center gap-2 mb-2">
-            <Button variant="ghost" size="sm" asChild className="gap-1">
-              <Link to="/">
-                <ArrowLeft size={16} />
-                <span>Tilbake til dashboard</span>
-              </Link>
-            </Button>
-          </div>
-          <h1 className="text-3xl font-bold">Regnskapsanalyse</h1>
-          <p className="text-muted-foreground mt-1">
-            Utforsk regnskapstall, transaksjoner og utfør analyser
-          </p>
-        </div>
-        
+    <div className="space-y-6">
+      <MaterialityBanner thresholds={materialityThresholds} />
+      
+      <div className="flex justify-between items-center">
         <VersionSelector 
+          versions={documentVersions}
           selectedVersion={selectedVersion}
           onVersionChange={handleVersionChange}
         />
+        
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-[400px]">
+          <TabsList className="grid grid-cols-4 w-full">
+            <TabsTrigger value="overview" className="flex items-center gap-1">
+              <Database size={14} />
+              <span>Oversikt</span>
+            </TabsTrigger>
+            <TabsTrigger value="ledger" className="flex items-center gap-1">
+              <LineChart size={14} />
+              <span>Hovedbok</span>
+            </TabsTrigger>
+            <TabsTrigger value="balances" className="flex items-center gap-1">
+              <Layers size={14} />
+              <span>Saldobalanse</span>
+            </TabsTrigger>
+            <TabsTrigger value="journal" className="flex items-center gap-1">
+              <FileCheck size={14} />
+              <span>Bilag</span>
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
       
-      <MaterialityBanner />
-      
-      <Tabs defaultValue="drilldown" className="mb-8">
-        <TabsList className="grid grid-cols-4 w-[600px]">
-          <TabsTrigger value="drilldown" className="flex items-center gap-2">
-            <BarChart4 size={16} />
-            <span>Drill-down</span>
-          </TabsTrigger>
-          <TabsTrigger value="sampling" className="flex items-center gap-2">
-            <ListFilter size={16} />
-            <span>Transaksjonsutvalg</span>
-          </TabsTrigger>
-          <TabsTrigger value="mapping" className="flex items-center gap-2">
-            <LayoutPanelLeft size={16} />
-            <span>Kontoplan</span>
-          </TabsTrigger>
-          <TabsTrigger value="history" className="flex items-center gap-2">
-            <History size={16} />
-            <span>Versjonshistorikk</span>
-          </TabsTrigger>
-        </TabsList>
+      <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+        <div className="xl:col-span-3">
+          <TabsContent value="overview" className="mt-0">
+            <Card>
+              <CardHeader>
+                <CardTitle>Regnskapsoversikt</CardTitle>
+                <CardDescription>
+                  {selectedVersion.name} ({selectedVersion.date})
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <DrillDownTable />
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="ledger" className="mt-0">
+            <Card>
+              <CardHeader>
+                <CardTitle>Hovedbok</CardTitle>
+                <CardDescription>
+                  {selectedVersion.name} ({selectedVersion.date})
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p>Innhold for hovedbok kommer her...</p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="balances" className="mt-0">
+            <Card>
+              <CardHeader>
+                <CardTitle>Saldobalanse</CardTitle>
+                <CardDescription>
+                  {selectedVersion.name} ({selectedVersion.date})
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p>Innhold for saldobalanse kommer her...</p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="journal" className="mt-0">
+            <Card>
+              <CardHeader>
+                <CardTitle>Bilagsjournal</CardTitle>
+                <CardDescription>
+                  {selectedVersion.name} ({selectedVersion.date})
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p>Innhold for bilagsjournal kommer her...</p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </div>
         
-        <TabsContent value="drilldown" className="mt-6">
-          <DrillDownTable />
-        </TabsContent>
-        
-        <TabsContent value="sampling" className="mt-6">
-          <TransactionSampling />
-        </TabsContent>
-        
-        <TabsContent value="mapping" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Mapping av kontoplan</CardTitle>
-              <CardDescription>
-                Dra kontoer til riktige regnskapslinjer for å organisere regnskapet
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="bg-muted/50 border-2 border-dashed border-muted-foreground/20 rounded-lg p-6 text-center">
-                <ScanLine className="mx-auto h-12 w-12 text-muted-foreground/70 mb-4" />
-                <h3 className="text-lg font-medium mb-2">Kontoplan mapping</h3>
-                <p className="text-muted-foreground max-w-md mx-auto">
-                  Her kan du dra og slippe kontoer til riktige regnskapslinjer. 
-                  Systemet vil oppdatere beregningene automatisk.
-                </p>
-              </div>
-            </CardContent>
-            <CardFooter className="text-sm text-muted-foreground">
-              Last opp en kontoplan eller bruk standard kontoplan for å komme i gang.
-            </CardFooter>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="history" className="mt-6">
-          <VersionHistory />
-        </TabsContent>
-      </Tabs>
+        <div className="xl:col-span-1">
+          <VersionHistory versions={documentVersions} selectedVersion={selectedVersion} />
+        </div>
+      </div>
     </div>
   );
 };

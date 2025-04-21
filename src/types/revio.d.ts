@@ -7,8 +7,8 @@ export interface RiskArea {
 }
 
 export interface ClientDocument {
-  type: 'annual_report' | 'tax_return' | 'other';
-  status: 'pending' | 'completed' | 'overdue';
+  type: 'tax_return' | 'annual_report' | 'other' | 'shareholder_report';
+  status: 'pending' | 'completed' | 'overdue' | 'submitted' | 'accepted' | 'rejected';
   dueDate: string;
 }
 
@@ -99,12 +99,14 @@ export interface Account {
   number: string;
   balance: number;
   type: string;
+  groupId: string;
 }
 
 export interface AccountGroup {
   id: string;
   name: string;
   accounts: Account[];
+  balance: number;
 }
 
 export interface DocumentVersion {
@@ -120,12 +122,19 @@ export interface Transaction {
   description: string;
   amount: number;
   account: string;
+  voucher?: string;
+  isTested?: boolean;
 }
 
 export interface SamplingResult {
-  id: string;
-  name: string;
   transactions: Transaction[];
+  summary: {
+    totalCount: number;
+    sampledCount: number;
+    totalAmount: number;
+    sampledAmount: number;
+    coverage: number;
+  };
 }
 
 export interface RevyMessage {
