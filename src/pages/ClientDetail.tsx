@@ -25,7 +25,7 @@ const ClientDetail = () => {
   if (error || !client) {
     return (
       <SidebarLayout>
-        <div className="container mx-auto px-4 py-8">
+        <div className="container mx-auto py-8">
           <div className="text-center">
             <h1 className="text-2xl font-bold mb-4">Klient ikke funnet</h1>
             <p className="mb-6">Vi kunne ikke finne en klient med org.nummer {orgNumber}</p>
@@ -37,7 +37,7 @@ const ClientDetail = () => {
 
   return (
     <SidebarLayout>
-      <div className="min-h-screen px-6">
+      <div className="min-h-screen">
         <ClientHeader client={client} />
         <div className="lg:grid lg:grid-cols-3 lg:gap-6">
           <div className="col-span-2 space-y-6">
