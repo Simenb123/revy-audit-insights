@@ -2,11 +2,14 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
-import { Client } from "@/types/revio";
 import { ChevronLeft } from "lucide-react";
 
 interface ClientHeaderProps {
-  client: Client;
+  client: {
+    companyName: string;
+    orgNumber: string;
+    status: string;
+  };
 }
 
 const ClientHeader = ({ client }: ClientHeaderProps) => {
@@ -23,10 +26,10 @@ const ClientHeader = ({ client }: ClientHeaderProps) => {
       
       <div className="mt-2">
         <h1 className="text-2xl font-semibold leading-none mb-2">
-          {client.companyName}
+          {client.companyName}{" "}
+          <span className="text-sm font-normal text-muted-foreground">({client.orgNumber})</span>
         </h1>
         <div className="flex items-center gap-3">
-          <p className="text-sm text-muted-foreground">Org.nr: {client.orgNumber}</p>
           <Badge variant={client.status === 'Aktiv' ? 'success' : 'destructive'}>
             {client.status || 'Ukjent'}
           </Badge>
