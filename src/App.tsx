@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -18,6 +17,7 @@ import { SidebarProvider } from '@/components/ui/sidebar';
 import ClientAdmin from "./pages/ClientAdmin";
 import DataImport from "./pages/DataImport";
 import ClientDetail from "./pages/ClientDetail";
+import LedgerPage from "./pages/LedgerPage";
 import SidebarLayout from "@/components/layout/SidebarLayout";
 
 const queryClient = new QueryClient();
@@ -55,6 +55,11 @@ const App = () => {
                       <Route path="/klienter/:orgNumber/*" element={
                         <ProtectedRoute>
                           <ClientDetail />
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/klienter/:orgNumber/regnskap" element={
+                        <ProtectedRoute>
+                          <LedgerPage />
                         </ProtectedRoute>
                       } />
                       <Route path="/analyser" element={
