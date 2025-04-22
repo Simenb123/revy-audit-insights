@@ -45,7 +45,6 @@ const ClientDetail = () => {
           <ClientHeader client={client} />
 
           <div className="lg:grid lg:grid-cols-3 lg:gap-6">
-            {/* Left column - 2/3 width */}
             <div className="col-span-2 space-y-6">
               <KeyFigures 
                 liquidityRatio={1.5} 
@@ -58,8 +57,6 @@ const ClientDetail = () => {
                 { year: 2023, revenue: 1800000, result: 520000 },
               ]} />
             </div>
-
-            {/* Right column - 1/3 width */}
             <div className="mt-6 lg:mt-0">
               <Overview
                 documentCount={client.documents?.length || 0}

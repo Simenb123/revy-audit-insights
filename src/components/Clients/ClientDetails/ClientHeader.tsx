@@ -1,9 +1,9 @@
 
 import { Button } from "@/components/ui/button";
-import { ChevronLeft } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import { Client } from "@/types/revio";
+import { ChevronLeft } from "lucide-react";
 
 interface ClientHeaderProps {
   client: Client;
@@ -18,13 +18,14 @@ const ClientHeader = ({ client }: ClientHeaderProps) => {
         <ChevronLeft className="mr-2 h-4 w-4" /> Tilbake
       </Button>
       
-      <div className="mt-4">
-        <h1 className="text-3xl font-bold">{client.companyName}</h1>
-        <div className="flex items-center gap-2 mt-1">
-          <p className="text-muted-foreground">Org.nr: {client.orgNumber}</p>
-          <Badge variant={client.status === 'Aktiv' ? 'success' : 'destructive'}>
-            {client.status || 'Ukjent'}
-          </Badge>
+      <div className="mt-4 flex items-start justify-between">
+        <div>
+          <div className="flex items-center gap-2">
+            <p className="text-muted-foreground text-sm">Org.nr: {client.orgNumber}</p>
+            <Badge variant={client.status === 'Aktiv' ? 'success' : 'destructive'}>
+              {client.status || 'Ukjent'}
+            </Badge>
+          </div>
         </div>
       </div>
     </div>

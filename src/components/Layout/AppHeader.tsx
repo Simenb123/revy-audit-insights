@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Bell, HelpCircle, Settings, User, Menu, LogOut } from "lucide-react";
@@ -39,7 +38,6 @@ const AppHeader = () => {
     }
   };
   
-  // Map routes to display names
   const getPageTitle = (pathname: string) => {
     const routes: Record<string, string> = {
       '/': 'Dashboard',
@@ -50,11 +48,8 @@ const AppHeader = () => {
       '/innstillinger': 'Innstillinger',
       '/hjelp': 'Hjelp'
     };
-    return routes[pathname] || 'Dashboard';
+    return routes[pathname] || client?.companyName || 'Dashboard';
   };
-
-  const pageTitle = getPageTitle(location.pathname);
-  const isClientPage = location.pathname.startsWith('/klienter/');
 
   return (
     <header className="sticky top-0 w-full bg-revio-500 flex flex-col z-20">
@@ -74,7 +69,7 @@ const AppHeader = () => {
 
         <div className="hidden md:flex items-center justify-center">
           <h1 className="text-2xl font-bold text-white relative px-8 py-2">
-            {pageTitle}
+            {getPageTitle(location.pathname)}
             <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-20 h-0.5 bg-white rounded-full opacity-60" />
           </h1>
         </div>
@@ -105,7 +100,7 @@ const AppHeader = () => {
         </div>
       </div>
       
-      {isClientPage && client && (
+      {client && (
         <div className="h-10 flex items-center px-4 bg-white border-b">
           <ClientBreadcrumb client={client} />
         </div>
