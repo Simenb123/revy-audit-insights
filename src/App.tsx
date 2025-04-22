@@ -20,7 +20,6 @@ import ClientDetail from "./pages/ClientDetail";
 
 const queryClient = new QueryClient();
 
-// Protected Route Component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { session } = useAuth();
   
@@ -45,11 +44,32 @@ const App = () => {
                   <Routes>
                     <Route path="/auth" element={<Auth />} />
                     <Route path="/" element={<Navigate to="/klienter" replace />} />
-                    <Route path="/klienter" element={<ProtectedRoute><ClientsOverview /></ProtectedRoute>} />
-                    <Route path="/klienter/:orgNumber/*" element={<ProtectedRoute><ClientDetail /></ProtectedRoute>} />
-                    <Route path="/dashboard" element={<Navigate to="/klienter" replace />} />
-                    <Route path="/analyser" element={<ProtectedRoute><AccountingExplorer /></ProtectedRoute>} />
-                    <Route path="/analyser/transaksjoner" element={<ProtectedRoute><TransactionSampling /></ProtectedRoute>} />
+                    <Route path="/klienter" element={
+                      <ProtectedRoute>
+                        <SidebarLayout>
+                          <ClientsOverview />
+                        </SidebarLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/klienter/:orgNumber/*" element={
+                      <ProtectedRoute>
+                        <ClientDetail />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/analyser" element={
+                      <ProtectedRoute>
+                        <SidebarLayout>
+                          <AccountingExplorer />
+                        </SidebarLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/analyser/transaksjoner" element={
+                      <ProtectedRoute>
+                        <SidebarLayout>
+                          <TransactionSampling />
+                        </SidebarLayout>
+                      </ProtectedRoute>
+                    } />
                     <Route path="/dokumenter" element={<ProtectedRoute><AppLayout><Index /></AppLayout></ProtectedRoute>} />
                     <Route path="/prosjekter" element={<ProtectedRoute><AppLayout><Index /></AppLayout></ProtectedRoute>} />
                     <Route path="/klienter/administrasjon" element={<ProtectedRoute><ClientAdmin /></ProtectedRoute>} />
