@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useParams } from 'react-router-dom';
 import { useClientDetails } from '@/hooks/useClientDetails';
@@ -25,11 +24,9 @@ const ClientDetail = () => {
   if (error || !client) {
     return (
       <SidebarLayout>
-        <div className="container mx-auto py-8">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold mb-4">Klient ikke funnet</h1>
-            <p className="mb-6">Vi kunne ikke finne en klient med org.nummer {orgNumber}</p>
-          </div>
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Klient ikke funnet</h1>
+          <p className="mb-6">Vi kunne ikke finne en klient med org.nummer {orgNumber}</p>
         </div>
       </SidebarLayout>
     );
