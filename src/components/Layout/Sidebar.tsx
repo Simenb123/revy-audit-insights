@@ -1,6 +1,7 @@
+
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Users, Home, BarChart2, FileText, FolderOpen, Settings, HelpCircle } from 'lucide-react';
+import { Users, Home, BarChart2, FileText, FolderOpen, Settings, HelpCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
