@@ -14,14 +14,14 @@ const ClientHeader = ({ client }: ClientHeaderProps) => {
 
   return (
     <div className="mb-6">
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+      <nav className="flex items-center gap-2 text-sm text-muted-foreground">
         <Button variant="ghost" className="p-0 h-auto font-normal" onClick={() => navigate('/klienter')}>
           <ChevronLeft className="mr-1 h-4 w-4" />
           Mine klienter
         </Button>
         <span>/</span>
         <span>{client.companyName}</span>
-      </div>
+      </nav>
       
       <div className="mt-2 flex items-center gap-3">
         <p className="text-sm text-muted-foreground">Org.nr: {client.orgNumber}</p>
