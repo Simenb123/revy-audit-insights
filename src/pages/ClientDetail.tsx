@@ -1,17 +1,16 @@
 
 import React from 'react';
-import { useParams, useLocation } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { useClientDetails } from '@/hooks/useClientDetails';
 import AppLayout from "@/components/Layout/AppLayout";
 import ClientHeader from '@/components/Clients/ClientDetails/ClientHeader';
-import ClientBreadcrumb from '@/components/Clients/ClientDetails/ClientBreadcrumb';
 import KeyFigures from '@/components/Clients/ClientDetails/ClientDashboard/KeyFigures';
 import FinancialChart from '@/components/Clients/ClientDetails/ClientDashboard/FinancialChart';
 import Overview from '@/components/Clients/ClientDetails/ClientDashboard/Overview';
+import ClientBreadcrumb from '@/components/Clients/ClientDetails/ClientBreadcrumb';
 
 const ClientDetail = () => {
   const { orgNumber } = useParams<{ orgNumber: string }>();
-  const location = useLocation();
   const { data: client, isLoading, error } = useClientDetails(orgNumber || '');
 
   if (isLoading) {
