@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -17,6 +18,7 @@ import { SidebarProvider } from '@/components/ui/sidebar';
 import ClientAdmin from "./pages/ClientAdmin";
 import DataImport from "./pages/DataImport";
 import ClientDetail from "./pages/ClientDetail";
+import SidebarLayout from "@/components/layout/SidebarLayout";
 
 const queryClient = new QueryClient();
 
@@ -41,43 +43,39 @@ const App = () => {
                 <div className="flex flex-col w-full h-screen">
                   <Toaster />
                   <Sonner />
-                  <Routes>
-                    <Route path="/auth" element={<Auth />} />
-                    <Route path="/" element={<Navigate to="/klienter" replace />} />
-                    <Route path="/klienter" element={
-                      <ProtectedRoute>
-                        <SidebarLayout>
+                  <SidebarLayout>
+                    <Routes>
+                      <Route path="/auth" element={<Auth />} />
+                      <Route path="/" element={<Navigate to="/klienter" replace />} />
+                      <Route path="/klienter" element={
+                        <ProtectedRoute>
                           <ClientsOverview />
-                        </SidebarLayout>
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/klienter/:orgNumber/*" element={
-                      <ProtectedRoute>
-                        <ClientDetail />
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/analyser" element={
-                      <ProtectedRoute>
-                        <SidebarLayout>
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/klienter/:orgNumber/*" element={
+                        <ProtectedRoute>
+                          <ClientDetail />
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/analyser" element={
+                        <ProtectedRoute>
                           <AccountingExplorer />
-                        </SidebarLayout>
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/analyser/transaksjoner" element={
-                      <ProtectedRoute>
-                        <SidebarLayout>
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/analyser/transaksjoner" element={
+                        <ProtectedRoute>
                           <TransactionSampling />
-                        </SidebarLayout>
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/dokumenter" element={<ProtectedRoute><AppLayout><Index /></AppLayout></ProtectedRoute>} />
-                    <Route path="/prosjekter" element={<ProtectedRoute><AppLayout><Index /></AppLayout></ProtectedRoute>} />
-                    <Route path="/klienter/administrasjon" element={<ProtectedRoute><ClientAdmin /></ProtectedRoute>} />
-                    <Route path="/innstillinger" element={<ProtectedRoute><AppLayout><Index /></AppLayout></ProtectedRoute>} />
-                    <Route path="/hjelp" element={<ProtectedRoute><AppLayout><Index /></AppLayout></ProtectedRoute>} />
-                    <Route path="/data-import" element={<ProtectedRoute><DataImport /></ProtectedRoute>} />
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/dokumenter" element={<ProtectedRoute><AppLayout><Index /></AppLayout></ProtectedRoute>} />
+                      <Route path="/prosjekter" element={<ProtectedRoute><AppLayout><Index /></AppLayout></ProtectedRoute>} />
+                      <Route path="/klienter/administrasjon" element={<ProtectedRoute><ClientAdmin /></ProtectedRoute>} />
+                      <Route path="/innstillinger" element={<ProtectedRoute><AppLayout><Index /></AppLayout></ProtectedRoute>} />
+                      <Route path="/hjelp" element={<ProtectedRoute><AppLayout><Index /></AppLayout></ProtectedRoute>} />
+                      <Route path="/data-import" element={<ProtectedRoute><DataImport /></ProtectedRoute>} />
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </SidebarLayout>
                 </div>
               </SidebarProvider>
             </BrowserRouter>
