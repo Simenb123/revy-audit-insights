@@ -52,10 +52,14 @@ const AppHeader = () => {
   };
 
   return (
-    <header className="sticky top-0 w-full bg-revio-500 flex flex-col z-20">
+    <header 
+      data-cy="app-header" 
+      className="sticky top-0 w-full bg-revio-500 flex flex-col z-20"
+    >
       <div className="h-14 flex items-center justify-between px-4 border-b border-revio-600">
         <div className="flex items-center gap-4">
           <Button 
+            data-cy="hamburger"
             variant="ghost" 
             size="icon" 
             className="md:hidden text-white hover:bg-revio-600 rounded-md" 

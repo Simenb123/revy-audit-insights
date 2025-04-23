@@ -1,0 +1,10 @@
+
+{
+  "scripts": {
+    "test": "npm run cypress:run",
+    "cypress:run": "cypress run --browser chrome"
+  },
+  "devDependencies": {
+    "cypress": "^13.8.1"
+  }
+}
