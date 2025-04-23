@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -43,9 +42,9 @@ const App = () => {
                 <div className="flex flex-col w-full h-screen">
                   <Toaster />
                   <Sonner />
-                  <Routes>
-                    <Route path="/auth" element={<Auth />} />
-                    <Route element={<MainLayout />}>
+                  <MainLayout>
+                    <Routes>
+                      <Route path="/auth" element={<Auth />} />
                       <Route path="/" element={<Navigate to="/klienter" replace />} />
                       <Route path="/klienter" element={
                         <ProtectedRoute>
@@ -92,11 +91,11 @@ const App = () => {
                           <Index />
                         </ProtectedRoute>
                       } />
-                    </Route>
-                    <Route path="/klienter/administrasjon" element={<ProtectedRoute><ClientAdmin /></ProtectedRoute>} />
-                    <Route path="/data-import" element={<ProtectedRoute><DataImport /></ProtectedRoute>} />
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
+                      <Route path="/klienter/administrasjon" element={<ProtectedRoute><ClientAdmin /></ProtectedRoute>} />
+                      <Route path="/data-import" element={<ProtectedRoute><DataImport /></ProtectedRoute>} />
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </MainLayout>
                 </div>
               </SidebarProvider>
             </BrowserRouter>
