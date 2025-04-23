@@ -18,12 +18,14 @@ interface DrawerProps {
 }
 
 export default function Sidebar({ open, onClose }: DrawerProps) {
-  // Sidebar as drawer on mobile, sticky on desktop
   return (
     <>
       {/* Mobile Drawer */}
       <Drawer open={open} onOpenChange={o => !o && onClose()}>
-        <DrawerContent className="block lg:hidden p-0 w-60">
+        <DrawerContent 
+          data-cy="sidebar" 
+          className="block lg:hidden p-0 w-60"
+        >
           <aside className="bg-white w-60 h-[calc(100vh-64px)] overflow-auto py-4">
             <nav className="space-y-3 px-6">
               {LINKS.map(l => (
@@ -43,6 +45,7 @@ export default function Sidebar({ open, onClose }: DrawerProps) {
       </Drawer>
       {/* Desktop Sidebar */}
       <aside
+        data-cy="sidebar"
         className={cn(
           "hidden lg:block sticky top-16 w-64 h-[calc(100vh-64px)] bg-white border-r shadow z-60"
         )}
