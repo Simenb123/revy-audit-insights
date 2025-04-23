@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -40,101 +39,78 @@ const App = () => {
           <RevyContextProvider>
             <BrowserRouter>
               <SidebarProvider>
-                <div className="flex flex-col w-full h-screen">
+                {/* Layout og header/meny er kun her*/}
+                <MainLayout>
                   <Toaster />
                   <Sonner />
                   <Routes>
                     <Route path="/auth" element={<Auth />} />
                     <Route path="/" element={<Navigate to="/klienter" replace />} />
-                    
-                    {/* Protected routes wrapped in MainLayout */}
+
+                    {/* Protected routes innenfor MainLayout */}
                     <Route path="/klienter" element={
                       <ProtectedRoute>
-                        <MainLayout>
-                          <ClientsOverview />
-                        </MainLayout>
+                        <ClientsOverview />
                       </ProtectedRoute>
                     } />
                     <Route path="/klienter/:orgNumber/*" element={
                       <ProtectedRoute>
-                        <MainLayout>
-                          <ClientDetail />
-                        </MainLayout>
+                        <ClientDetail />
                       </ProtectedRoute>
                     } />
                     <Route path="/klienter/:orgNumber/regnskap" element={
                       <ProtectedRoute>
-                        <MainLayout>
-                          <LedgerPage />
-                        </MainLayout>
+                        <LedgerPage />
                       </ProtectedRoute>
                     } />
                     <Route path="/analyser" element={
                       <ProtectedRoute>
-                        <MainLayout>
-                          <AccountingExplorer />
-                        </MainLayout>
+                        <AccountingExplorer />
                       </ProtectedRoute>
                     } />
                     <Route path="/analyser/transaksjoner" element={
                       <ProtectedRoute>
-                        <MainLayout>
-                          <TransactionSampling />
-                        </MainLayout>
+                        <TransactionSampling />
                       </ProtectedRoute>
                     } />
                     <Route path="/dokumenter" element={
                       <ProtectedRoute>
-                        <MainLayout>
-                          <Index />
-                        </MainLayout>
+                        <Index />
                       </ProtectedRoute>
                     } />
                     <Route path="/prosjekter" element={
                       <ProtectedRoute>
-                        <MainLayout>
-                          <Index />
-                        </MainLayout>
+                        <Index />
                       </ProtectedRoute>
                     } />
                     <Route path="/innstillinger" element={
                       <ProtectedRoute>
-                        <MainLayout>
-                          <Index />
-                        </MainLayout>
+                        <Index />
                       </ProtectedRoute>
                     } />
                     <Route path="/hjelp" element={
                       <ProtectedRoute>
-                        <MainLayout>
-                          <Index />
-                        </MainLayout>
+                        <Index />
                       </ProtectedRoute>
                     } />
                     <Route path="/regnskap" element={
                       <ProtectedRoute>
-                        <MainLayout>
-                          <Index />
-                        </MainLayout>
+                        <Index />
                       </ProtectedRoute>
                     } />
                     <Route path="/klienter/administrasjon" element={
                       <ProtectedRoute>
-                        <MainLayout>
-                          <ClientAdmin />
-                        </MainLayout>
+                        <ClientAdmin />
                       </ProtectedRoute>
                     } />
                     <Route path="/data-import" element={
                       <ProtectedRoute>
-                        <MainLayout>
-                          <DataImport />
-                        </MainLayout>
+                        <DataImport />
                       </ProtectedRoute>
                     } />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
-                </div>
+                </MainLayout>
               </SidebarProvider>
             </BrowserRouter>
           </RevyContextProvider>
