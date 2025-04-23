@@ -8,6 +8,7 @@ export default defineConfig({
     viewportHeight: 800,
     video: false,
     screenshotOnRunFailure: true,
-    specPattern: 'cypress/e2e/**/*.cy.ts'
+    specPattern: 'cypress/e2e/**/*.cy.ts',
+    supportFile: "cypress/support/e2e.ts"
   }
 });
