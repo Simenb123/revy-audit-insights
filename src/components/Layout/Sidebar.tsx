@@ -1,34 +1,50 @@
 
-import { useState } from "react";
+import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { Link } from "react-router-dom";
-import { cn } from "@/lib/utils"; // shadcn-helper
+import { cn } from "@/lib/utils";
 
 const LINKS = [
-  { to: "/clients",     icon: "users",        label: "Klienter" },
-  { to: "/ledger",      icon: "file",         label: "Regnskap" },
-  { to: "/dashboard",   icon: "home",         label: "Dashboard" },
-  { to: "/analysis",    icon: "bar-chart-3",  label: "Analyser" },
-  { to: "/documents",   icon: "file-text",    label: "Dokumenter" },
-  { to: "/projects",    icon: "folder",       label: "Prosjekter" },
+  { to: "/klienter", icon: "users", label: "Klienter" },
+  { to: "/regnskap", icon: "file", label: "Regnskap" },
+  { to: "/dashboard", icon: "home", label: "Dashboard" },
+  { to: "/analyser", icon: "bar-chart-3", label: "Analyser" },
+  { to: "/dokumenter", icon: "file-text", label: "Dokumenter" },
+  { to: "/prosjekter", icon: "folder", label: "Prosjekter" },
 ];
 
-export default function Sidebar() {
-  const [open, setOpen] = useState(false);
+interface DrawerProps {
+  open: boolean;
+  onClose: () => void;
+}
+
+export default function Sidebar({ open, onClose }: DrawerProps) {
+  // Sidebar as drawer on mobile, sticky on desktop
   return (
     <>
-      {/* backdrop for mobile */}
-      <div
-        onClick={() => setOpen(false)}
-        className={cn(
-          "fixed inset-0 bg-black/40 transition-opacity lg:hidden z-30",
-          open ? "opacity-100" : "pointer-events-none opacity-0"
-        )}
-      />
+      {/* Mobile Drawer */}
+      <Drawer open={open} onOpenChange={o => !o && onClose()}>
+        <DrawerContent className="block lg:hidden p-0 w-60">
+          <aside className="bg-white w-60 h-[calc(100vh-64px)] overflow-auto py-4">
+            <nav className="space-y-3 px-6">
+              {LINKS.map(l => (
+                <Link
+                  key={l.to}
+                  to={l.to}
+                  className="flex items-center gap-3 px-3 py-2 rounded hover:bg-muted"
+                  onClick={onClose}
+                >
+                  <i className={`lucide-${l.icon}`} />
+                  <span>{l.label}</span>
+                </Link>
+              ))}
+            </nav>
+          </aside>
+        </DrawerContent>
+      </Drawer>
+      {/* Desktop Sidebar */}
       <aside
         className={cn(
-          "fixed top-16 left-0 w-64 bg-white h-[calc(100vh-64px)] border-r shadow z-40 transition-transform",
-          open ? "translate-x-0" : "-translate-x-full",
-          "lg:translate-x-0"        // desktop alltid synlig
+          "hidden lg:block sticky top-16 w-64 h-[calc(100vh-64px)] bg-white border-r shadow z-60"
         )}
       >
         <nav className="p-6 space-y-3">
@@ -37,7 +53,7 @@ export default function Sidebar() {
               key={l.to}
               to={l.to}
               className="flex items-center gap-3 px-3 py-2 rounded hover:bg-muted"
-              onClick={() => setOpen(false)}
+              onClick={onClose}
             >
               <i className={`lucide-${l.icon}`} />
               <span>{l.label}</span>
@@ -45,14 +61,6 @@ export default function Sidebar() {
           ))}
         </nav>
       </aside>
-
-      {/* hamburger – mobil */}
-      <button
-        className="absolute left-4 top-[72px] p-2 rounded lg:hidden bg-primary text-white z-50"
-        onClick={() => setOpen(!open)}
-      >
-        <i className="lucide-menu" />
-      </button>
     </>
   );
 }
