@@ -1,37 +1,19 @@
 
 import { ReactNode } from "react";
-import SidebarNav from "./SidebarNav";
-import AppHeader from "./Header";
+import Sidebar from "./Sidebar";
+import Header from "./Header";
 
-interface LayoutProps {
+interface MainLayoutProps {
   children: ReactNode;
 }
 
-export default function MainLayout({ children }: LayoutProps) {
+export default function MainLayout({ children }: MainLayoutProps) {
   return (
     <>
-      {/* fast header – høyde 64 px */}
-      <AppHeader />
-
-      {/* flex-container under header */}
+      <Header /> {/* fast header – h-16 = 64 px */}
       <div className="flex">
-        {/* sidebar – blir sticky rett under header */}
-        <aside
-          className="
-            sticky top-16
-            md:top-16
-            h-[calc(100vh-64px)]
-            w-64 shrink-0
-            bg-white border-r
-          "
-        >
-          <SidebarNav />
-        </aside>
-
-        {/* hovedinnhold */}
-        <main className="flex-1 overflow-y-auto px-6 pt-6">
-          {children}
-        </main>
+        <Sidebar /> {/* fast/slide-in sidebar */}
+        <main className="flex-1 overflow-y-auto px-6 pt-16">{children}</main>
       </div>
     </>
   );
