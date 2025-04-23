@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Bell, HelpCircle, Settings, User, Menu, LogOut } from "lucide-react";
@@ -73,7 +74,7 @@ const AppHeader = () => {
         </h1>
       </div>
       
-      <div className="flex items-center space-x-2">
+      <div className="flex items-center space-x-2 ml-auto">
         <Button variant="ghost" size="icon" className="text-white hover:bg-primary-700 rounded-md">
           <Bell size={20} />
         </Button>
@@ -100,4 +101,5 @@ const AppHeader = () => {
     </header>
   );
 };
+
 export default AppHeader;

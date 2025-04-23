@@ -1,11 +1,9 @@
+
 import { cn } from '@/lib/utils';
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Users, Home, BarChart2, FileText, FolderOpen, Settings, HelpCircle, ChevronLeft, ChevronRight } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Users, Home, BarChart2, FileText, FolderOpen, Settings, HelpCircle } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { useSidebar } from '@/components/ui/sidebar';
 
 type SidebarProps = {
   /** Ekstra Tailwind / clsx klasser */
@@ -23,15 +21,6 @@ export default function Sidebar({ className = '' }: SidebarProps) {
     >
       <div className="p-2 flex items-center justify-between border-b">
         <h2 className="text-lg font-semibold text-revio-900 px-2">Navigasjon</h2>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => {}}
-          className="h-8 w-8 text-revio-900 hover:bg-revio-100 rounded-md"
-          aria-label="Skjul sidemeny"
-        >
-          <ChevronLeft size={20} />
-        </Button>
       </div>
       
       <ScrollArea className="h-full pb-10">
