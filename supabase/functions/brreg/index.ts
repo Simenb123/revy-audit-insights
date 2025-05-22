@@ -281,7 +281,7 @@ serve(async (req) => {
       municipalityName = null;
     }
 
-    // Extract homepage from hjemmmeside field directly (may be string or object)
+    // Extract homepage from hjemmeside field directly (may be string or object)
     let homepage = baseData.hjemmeside;
     if (homepage && typeof homepage === "object" && homepage.adresseUrl) {
       homepage = homepage.adresseUrl;
