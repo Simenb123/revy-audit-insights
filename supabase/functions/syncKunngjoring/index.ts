@@ -47,7 +47,7 @@ serve(async (req) => {
           // --- PRIMÆR: Prøv JSON-endepunktet først ---
           let announcements = [];
           let fetchedFrom = "json";
-          const jsonUrl = `https://data.brreg.no/kunngjoring/hen?t?orgnr=${orgNumber}&sprak=no`;
+          const jsonUrl = `https://data.brreg.no/kunngjoring/hent?orgnr=${orgNumber}&sprak=no`;
           let response = await fetch(jsonUrl);
           
           if (response.status === 404) {
