@@ -55,7 +55,11 @@ export function useChartOfAccounts(clientId: string) {
         throw error;
       }
 
-      return data || [];
+      // Type cast the account_type to match our interface
+      return (data || []).map(account => ({
+        ...account,
+        account_type: account.account_type as 'asset' | 'liability' | 'equity' | 'revenue' | 'expense'
+      }));
     },
     enabled: !!clientId,
   });
@@ -106,7 +110,14 @@ export function useAccountMappings(clientId: string) {
         throw error;
       }
 
-      return data || [];
+      // Type cast the nested account_type fields
+      return (data || []).map(mapping => ({
+        ...mapping,
+        client_account: mapping.client_account ? {
+          ...mapping.client_account,
+          account_type: mapping.client_account.account_type as 'asset' | 'liability' | 'equity' | 'revenue' | 'expense'
+        } : undefined
+      }));
     },
     enabled: !!clientId,
   });

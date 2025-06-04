@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Link2, Unlink, CheckCircle } from 'lucide-react';
+import { MapPin, Unlink, CheckCircle } from 'lucide-react';
 import { useChartOfAccounts, useStandardAccounts, useAccountMappings, useCreateAccountMapping, useUpdateAccountMapping } from '@/hooks/useChartOfAccounts';
 
 interface AccountMappingTableProps {
@@ -65,7 +65,7 @@ const AccountMappingTable = ({ clientId }: AccountMappingTableProps) => {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Link2 className="w-5 h-5" />
+          <MapPin className="w-5 h-5" />
           Kontomapping
         </CardTitle>
         <CardDescription>

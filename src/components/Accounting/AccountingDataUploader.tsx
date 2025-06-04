@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Upload, Database, Mapping } from 'lucide-react';
+import { Upload, Database, MapPin } from 'lucide-react';
 import ChartOfAccountsUploader from './ChartOfAccountsUploader';
 import AccountMappingTable from './AccountMappingTable';
 import GeneralLedgerUploader from './GeneralLedgerUploader';

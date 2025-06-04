@@ -32,11 +32,7 @@ const AccountingData = () => {
 
   return (
     <div className="space-y-6">
-      <ClientBreadcrumb 
-        clientName={client.name}
-        orgNumber={client.orgNumber}
-        currentPage="Regnskapsdata"
-      />
+      <ClientBreadcrumb client={client} />
       
       <AccountingDataUploader 
         clientId={client.id}
