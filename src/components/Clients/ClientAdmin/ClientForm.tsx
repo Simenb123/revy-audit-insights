@@ -21,7 +21,7 @@ const clientSchema = z.object({
   name: z.string().min(2, { message: 'Selskapsnavn må ha minst 2 tegn' }),
   companyName: z.string().min(2, { message: 'Firmanavn må ha minst 2 tegn' }),
   orgNumber: z.string().regex(/^\d{9}$/, { message: 'Organisasjonsnummer må være 9 siffer' }),
-  phase: z.enum(['engagement', 'planning', 'execution', 'conclusion']),
+  phase: z.enum(['overview', 'engagement', 'planning', 'execution', 'conclusion']),
   progress: z.number().min(0).max(100),
   department: z.string().optional(),
   contactPerson: z.string().optional(),
@@ -47,6 +47,12 @@ const clientSchema = z.object({
   municipalityName: z.string().optional(),
   equityCapital: z.number().optional(),
   shareCapital: z.number().optional(),
+  // Add the new required fields
+  accountingSystem: z.string().optional(),
+  previousAuditor: z.string().optional(),
+  yearEndDate: z.string().optional(),
+  internalControls: z.string().optional(),
+  riskAssessment: z.string().optional(),
 });
 
 type FormData = z.infer<typeof clientSchema>;
@@ -85,6 +91,12 @@ const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, submitLa
       municipalityName: initialData?.municipalityName || '',
       equityCapital: initialData?.equityCapital || 0,
       shareCapital: initialData?.shareCapital || 0,
+      // Add defaults for new required fields
+      accountingSystem: initialData?.accountingSystem || '',
+      previousAuditor: initialData?.previousAuditor || '',
+      yearEndDate: initialData?.yearEndDate || '',
+      internalControls: initialData?.internalControls || '',
+      riskAssessment: initialData?.riskAssessment || '',
     },
   });
 
@@ -121,9 +133,18 @@ const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, submitLa
       municipalityName: data.municipalityName || '',
       equityCapital: data.equityCapital || 0,
       shareCapital: data.shareCapital || 0,
+      // Add the new required fields
+      accountingSystem: data.accountingSystem || '',
+      previousAuditor: data.previousAuditor || '',
+      yearEndDate: data.yearEndDate || '',
+      internalControls: data.internalControls || '',
+      riskAssessment: data.riskAssessment || '',
+      auditFee: initialData?.auditFee || null,
+      boardMeetingsPerYear: initialData?.boardMeetingsPerYear || null,
       riskAreas: initialData?.riskAreas || [],
       documents: initialData?.documents || [],
       roles: initialData?.roles || [],
+      announcements: initialData?.announcements || [],
     };
     
     onSubmit(fullClient);

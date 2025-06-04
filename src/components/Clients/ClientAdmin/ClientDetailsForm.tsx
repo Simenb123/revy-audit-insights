@@ -17,6 +17,7 @@ interface ClientDetailsFormProps {
 }
 
 const phaseOptions: { value: AuditPhase; label: string }[] = [
+  { value: 'overview', label: 'Oversikt' },
   { value: 'engagement', label: 'Oppdragsvurdering' },
   { value: 'planning', label: 'Planlegging' },
   { value: 'execution', label: 'Utførelse' },

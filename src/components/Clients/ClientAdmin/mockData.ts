@@ -42,6 +42,14 @@ export const mockClients: Client[] = [
     municipalityName: '',
     equityCapital: 0,
     shareCapital: 0,
+    // Add missing required fields
+    accountingSystem: 'Visma Business',
+    previousAuditor: 'Ernst & Young',
+    auditFee: 125000,
+    yearEndDate: '2024-12-31',
+    boardMeetingsPerYear: 4,
+    internalControls: 'Godt etablert',
+    riskAssessment: 'Middels risiko',
     roles: []
   },
   {
@@ -84,6 +92,14 @@ export const mockClients: Client[] = [
     municipalityName: '',
     equityCapital: 0,
     shareCapital: 0,
+    // Add missing required fields
+    accountingSystem: 'PowerOffice',
+    previousAuditor: 'PwC',
+    auditFee: 85000,
+    yearEndDate: '2024-12-31',
+    boardMeetingsPerYear: 6,
+    internalControls: 'Under utvikling',
+    riskAssessment: 'Lav risiko',
     roles: []
   }
 ];

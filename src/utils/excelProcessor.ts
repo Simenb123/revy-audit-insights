@@ -1,7 +1,6 @@
 
 import * as XLSX from 'xlsx';
 import { supabase } from "@/integrations/supabase/client";
-import { AuditPhase } from '@/types/revio';
 
 interface LogEntry {
   message: string;
@@ -74,7 +73,7 @@ export const processOrgNumber = async (orgNumber: string, addLog: AddLogFunction
       name: company.navn,
       company_name: company.navn,
       org_number: company.organisasjonsnummer,
-      phase: 'engagement' as AuditPhase,
+      phase: 'engagement' as const, // Use 'engagement' instead of 'overview' for database compatibility
       progress: 0,
       industry: company.naeringskode1?.beskrivelse || null,
       registration_date: company.registreringsdatoEnhetsregisteret?.split('T')[0] || null,
