@@ -9,6 +9,142 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      account_mappings: {
+        Row: {
+          client_account_id: string
+          client_id: string
+          created_at: string
+          id: string
+          is_manual_mapping: boolean
+          mapping_confidence: number | null
+          standard_account_id: string
+          updated_at: string
+        }
+        Insert: {
+          client_account_id: string
+          client_id: string
+          created_at?: string
+          id?: string
+          is_manual_mapping?: boolean
+          mapping_confidence?: number | null
+          standard_account_id: string
+          updated_at?: string
+        }
+        Update: {
+          client_account_id?: string
+          client_id?: string
+          created_at?: string
+          id?: string
+          is_manual_mapping?: boolean
+          mapping_confidence?: number | null
+          standard_account_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_mappings_client_account_id_fkey"
+            columns: ["client_account_id"]
+            isOneToOne: false
+            referencedRelation: "client_chart_of_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_mappings_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_mappings_standard_account_id_fkey"
+            columns: ["standard_account_id"]
+            isOneToOne: false
+            referencedRelation: "standard_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      analysis_results: {
+        Row: {
+          client_id: string
+          created_at: string
+          id: string
+          period_end: string
+          period_start: string
+          results_json: Json
+          template_id: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          id?: string
+          period_end: string
+          period_start: string
+          results_json: Json
+          template_id: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          id?: string
+          period_end?: string
+          period_start?: string
+          results_json?: Json
+          template_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analysis_results_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "analysis_results_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "analysis_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      analysis_templates: {
+        Row: {
+          config_json: Json
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_system_template: boolean
+          name: string
+          template_type: string
+          updated_at: string
+        }
+        Insert: {
+          config_json: Json
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_system_template?: boolean
+          name: string
+          template_type: string
+          updated_at?: string
+        }
+        Update: {
+          config_json?: Json
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_system_template?: boolean
+          name?: string
+          template_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       announcements: {
         Row: {
           client_id: string
@@ -46,6 +182,57 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_chart_of_accounts: {
+        Row: {
+          account_name: string
+          account_number: string
+          account_type: string
+          client_id: string
+          created_at: string
+          id: string
+          is_active: boolean
+          parent_account_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          account_name: string
+          account_number: string
+          account_type: string
+          client_id: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          parent_account_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          account_name?: string
+          account_number?: string
+          account_type?: string
+          client_id?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          parent_account_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_chart_of_accounts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_chart_of_accounts_parent_account_id_fkey"
+            columns: ["parent_account_id"]
+            isOneToOne: false
+            referencedRelation: "client_chart_of_accounts"
             referencedColumns: ["id"]
           },
         ]
@@ -296,6 +483,72 @@ export type Database = {
         }
         Relationships: []
       }
+      general_ledger_transactions: {
+        Row: {
+          balance_amount: number | null
+          client_account_id: string
+          client_id: string
+          created_at: string
+          credit_amount: number | null
+          debit_amount: number | null
+          description: string | null
+          id: string
+          period_month: number
+          period_year: number
+          reference_number: string | null
+          transaction_date: string
+          upload_batch_id: string | null
+          voucher_number: string | null
+        }
+        Insert: {
+          balance_amount?: number | null
+          client_account_id: string
+          client_id: string
+          created_at?: string
+          credit_amount?: number | null
+          debit_amount?: number | null
+          description?: string | null
+          id?: string
+          period_month: number
+          period_year: number
+          reference_number?: string | null
+          transaction_date: string
+          upload_batch_id?: string | null
+          voucher_number?: string | null
+        }
+        Update: {
+          balance_amount?: number | null
+          client_account_id?: string
+          client_id?: string
+          created_at?: string
+          credit_amount?: number | null
+          debit_amount?: number | null
+          description?: string | null
+          id?: string
+          period_month?: number
+          period_year?: number
+          reference_number?: string | null
+          transaction_date?: string
+          upload_batch_id?: string | null
+          voucher_number?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "general_ledger_transactions_client_account_id_fkey"
+            columns: ["client_account_id"]
+            isOneToOne: false
+            referencedRelation: "client_chart_of_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "general_ledger_transactions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -354,6 +607,149 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "risk_areas_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      standard_accounts: {
+        Row: {
+          account_type: string
+          analysis_group: string | null
+          category: string | null
+          created_at: string
+          id: string
+          standard_name: string
+          standard_number: string
+        }
+        Insert: {
+          account_type: string
+          analysis_group?: string | null
+          category?: string | null
+          created_at?: string
+          id?: string
+          standard_name: string
+          standard_number: string
+        }
+        Update: {
+          account_type?: string
+          analysis_group?: string | null
+          category?: string | null
+          created_at?: string
+          id?: string
+          standard_name?: string
+          standard_number?: string
+        }
+        Relationships: []
+      }
+      trial_balances: {
+        Row: {
+          client_account_id: string
+          client_id: string
+          closing_balance: number | null
+          created_at: string
+          credit_turnover: number | null
+          debit_turnover: number | null
+          id: string
+          opening_balance: number | null
+          period_end_date: string
+          period_year: number
+          upload_batch_id: string | null
+        }
+        Insert: {
+          client_account_id: string
+          client_id: string
+          closing_balance?: number | null
+          created_at?: string
+          credit_turnover?: number | null
+          debit_turnover?: number | null
+          id?: string
+          opening_balance?: number | null
+          period_end_date: string
+          period_year: number
+          upload_batch_id?: string | null
+        }
+        Update: {
+          client_account_id?: string
+          client_id?: string
+          closing_balance?: number | null
+          created_at?: string
+          credit_turnover?: number | null
+          debit_turnover?: number | null
+          id?: string
+          opening_balance?: number | null
+          period_end_date?: string
+          period_year?: number
+          upload_batch_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trial_balances_client_account_id_fkey"
+            columns: ["client_account_id"]
+            isOneToOne: false
+            referencedRelation: "client_chart_of_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trial_balances_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      upload_batches: {
+        Row: {
+          batch_type: string
+          client_id: string
+          completed_at: string | null
+          created_at: string
+          error_log: string | null
+          error_records: number | null
+          file_name: string
+          file_size: number | null
+          id: string
+          processed_records: number | null
+          status: string
+          total_records: number | null
+          user_id: string
+        }
+        Insert: {
+          batch_type: string
+          client_id: string
+          completed_at?: string | null
+          created_at?: string
+          error_log?: string | null
+          error_records?: number | null
+          file_name: string
+          file_size?: number | null
+          id?: string
+          processed_records?: number | null
+          status?: string
+          total_records?: number | null
+          user_id: string
+        }
+        Update: {
+          batch_type?: string
+          client_id?: string
+          completed_at?: string | null
+          created_at?: string
+          error_log?: string | null
+          error_records?: number | null
+          file_name?: string
+          file_size?: number | null
+          id?: string
+          processed_records?: number | null
+          status?: string
+          total_records?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "upload_batches_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
