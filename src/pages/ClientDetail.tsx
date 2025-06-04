@@ -1,15 +1,18 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Routes, Route, useParams } from 'react-router-dom';
 import { useClientDetails } from '@/hooks/useClientDetails';
 import { Skeleton } from '@/components/ui/skeleton';
-import ClientDetails from '@/components/Clients/ClientDetails/ClientDetails';
 import ClientBreadcrumb from '@/components/Clients/ClientDetails/ClientBreadcrumb';
 import ClientNavigation from '@/components/Clients/ClientDetails/ClientNavigation';
+import RevisionWorkflow from '@/components/Clients/ClientDetails/RevisionWorkflow';
+import PhaseContent from '@/components/Clients/ClientDetails/PhaseContent';
+import { AuditPhase } from '@/types/revio';
 
 const ClientDetail = () => {
   const { orgNumber } = useParams<{ orgNumber: string }>();
   const { data: client, isLoading } = useClientDetails(orgNumber || '');
+  const [selectedPhase, setSelectedPhase] = useState<AuditPhase>('overview');
 
   if (isLoading) {
     return (
@@ -32,13 +35,29 @@ const ClientDetail = () => {
     );
   }
 
+  const handlePhaseClick = (phase: AuditPhase) => {
+    setSelectedPhase(phase);
+  };
+
   return (
     <div className="space-y-6 p-6">
       <ClientBreadcrumb client={client} />
       <ClientNavigation orgNumber={client.orgNumber} />
       
       <Routes>
-        <Route path="/" element={<ClientDetails client={client} />} />
+        <Route 
+          path="/" 
+          element={
+            <div className="space-y-6">
+              <RevisionWorkflow 
+                currentPhase={client.phase || 'overview'} 
+                progress={client.progress || 0}
+                onPhaseClick={handlePhaseClick}
+              />
+              <PhaseContent phase={selectedPhase} client={client} />
+            </div>
+          } 
+        />
       </Routes>
     </div>
   );
