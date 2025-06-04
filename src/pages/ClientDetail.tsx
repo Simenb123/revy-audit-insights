@@ -38,9 +38,9 @@ const ClientDetail = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Revision Workflow Section - Right under the header */}
-      <div className="bg-white sticky top-14 z-10 border-b border-gray-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 py-4">
+      {/* Revision Workflow Section - Highest priority, right under the main header */}
+      <div className="bg-white sticky top-14 z-20 border-b border-gray-300 shadow-lg">
+        <div className="max-w-7xl mx-auto px-6 py-6">
           <RevisionWorkflow 
             currentPhase={currentPhase}
             progress={client.progress}
