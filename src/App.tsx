@@ -19,6 +19,7 @@ import ClientAdmin from "./pages/ClientAdmin";
 import DataImport from "./pages/DataImport";
 import ClientDetail from "./pages/ClientDetail";
 import LedgerPage from "./pages/LedgerPage";
+import AccountingData from "./pages/AccountingData";
 
 const queryClient = new QueryClient();
 
@@ -61,6 +62,11 @@ const App = () => {
                     <Route path="/klienter/:orgNumber/regnskap" element={
                       <ProtectedRoute>
                         <LedgerPage />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/klienter/:orgNumber/regnskapsdata" element={
+                      <ProtectedRoute>
+                        <AccountingData />
                       </ProtectedRoute>
                     } />
                     <Route path="/analyser" element={
