@@ -60,19 +60,19 @@ const RevisionWorkflow = ({ currentPhase, progress, onPhaseClick }: RevisionWork
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border p-4">
+    <div className="bg-blue-50 rounded-lg border border-blue-200 p-4 mt-4">
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-base font-semibold text-gray-900">Revisjonsprosess</h2>
-        <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+        <h2 className="text-lg font-semibold text-blue-900">Revisjonsprosess</h2>
+        <Badge variant="outline" className="text-sm bg-blue-100 text-blue-800 border-blue-300 font-medium">
           {progress}% fullført
         </Badge>
       </div>
       
       {/* Progress bar */}
       <div className="relative mb-4">
-        <div className="w-full bg-gray-200 rounded-full h-1.5">
+        <div className="w-full bg-blue-200 rounded-full h-2">
           <div 
-            className="bg-blue-600 h-1.5 rounded-full transition-all duration-300"
+            className="bg-blue-600 h-2 rounded-full transition-all duration-300"
             style={{ width: `${getProgressWidth()}%` }}
           />
         </div>
@@ -90,12 +90,12 @@ const RevisionWorkflow = ({ currentPhase, progress, onPhaseClick }: RevisionWork
               className={`
                 p-3 rounded-md border transition-all cursor-pointer text-center
                 ${status === 'current' 
-                  ? 'border-blue-400 bg-blue-50' 
+                  ? 'border-blue-500 bg-blue-100 shadow-sm' 
                   : status === 'completed'
-                  ? 'border-green-400 bg-green-50'
-                  : 'border-gray-200 bg-gray-50'
+                  ? 'border-green-500 bg-green-100 shadow-sm'
+                  : 'border-gray-300 bg-white'
                 }
-                ${isClickable ? 'hover:shadow-sm' : 'cursor-default'}
+                ${isClickable ? 'hover:shadow-md transform hover:scale-105' : 'cursor-default'}
               `}
               onClick={() => isClickable && onPhaseClick(phase.key)}
             >

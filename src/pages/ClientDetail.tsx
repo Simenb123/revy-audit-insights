@@ -39,14 +39,14 @@ const ClientDetail = () => {
   return (
     <div className="min-h-screen">
       {/* Client Header Section */}
-      <div className="p-6 pb-0">
-        <ClientBreadcrumb client={client} />
-        <ClientHeader client={client} />
-      </div>
-      
-      {/* Sticky Revision Workflow - Moved to top */}
-      <div className="sticky top-14 z-10 bg-white border-b border-gray-200 shadow-sm">
-        <div className="px-6 py-4">
+      <div className="bg-white border-b border-gray-100">
+        <div className="p-6 pb-4">
+          <ClientBreadcrumb client={client} />
+          <ClientHeader client={client} />
+        </div>
+        
+        {/* Revision Workflow Header - Now part of header section */}
+        <div className="px-6 pb-4">
           <RevisionWorkflow 
             currentPhase={currentPhase}
             progress={client.progress}
