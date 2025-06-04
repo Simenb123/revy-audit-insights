@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -5,7 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./components/Auth/AuthProvider";
 import { useAuth } from "./components/Auth/AuthProvider";
-import MainLayout from "./components/Layout/MainLayout";
+import AppLayout from "./components/Layout/AppLayout";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import ClientsOverview from "./pages/ClientsOverview";
@@ -39,15 +40,14 @@ const App = () => {
           <RevyContextProvider>
             <BrowserRouter>
               <SidebarProvider>
-                {/* Layout og header/meny er kun her*/}
-                <MainLayout>
+                <AppLayout>
                   <Toaster />
                   <Sonner />
                   <Routes>
                     <Route path="/auth" element={<Auth />} />
                     <Route path="/" element={<Navigate to="/klienter" replace />} />
 
-                    {/* Protected routes innenfor MainLayout */}
+                    {/* Protected routes innenfor AppLayout */}
                     <Route path="/klienter" element={
                       <ProtectedRoute>
                         <ClientsOverview />
@@ -110,7 +110,7 @@ const App = () => {
                     } />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
-                </MainLayout>
+                </AppLayout>
               </SidebarProvider>
             </BrowserRouter>
           </RevyContextProvider>
