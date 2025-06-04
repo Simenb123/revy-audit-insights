@@ -38,13 +38,14 @@ const ClientDetail = () => {
 
   return (
     <div className="min-h-screen">
+      {/* Client Header Section */}
       <div className="p-6 pb-0">
         <ClientBreadcrumb client={client} />
         <ClientHeader client={client} />
       </div>
       
-      {/* Sticky Revision Workflow Header */}
-      <div className="sticky top-0 z-10 bg-gray-50/80 backdrop-blur-sm border-b border-gray-200">
+      {/* Sticky Revision Workflow - Moved to top */}
+      <div className="sticky top-14 z-10 bg-white border-b border-gray-200 shadow-sm">
         <div className="px-6 py-4">
           <RevisionWorkflow 
             currentPhase={currentPhase}
@@ -54,7 +55,8 @@ const ClientDetail = () => {
         </div>
       </div>
 
-      <div className="p-6 pt-0">
+      {/* Main Content with Tabs */}
+      <div className="p-6">
         <Tabs defaultValue="revision" className="w-full">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="revision">Revisjonsprosess</TabsTrigger>
