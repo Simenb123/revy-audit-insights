@@ -37,16 +37,24 @@ const ClientDetail = () => {
   const currentPhase = selectedPhase || client.phase;
 
   return (
-    <div className="min-h-screen">
-      {/* Client Header Section */}
+    <div className="min-h-screen bg-gray-50">
+      {/* Breadcrumb Section */}
       <div className="bg-white border-b border-gray-100">
-        <div className="p-6 pb-4">
+        <div className="px-6 py-3">
           <ClientBreadcrumb client={client} />
+        </div>
+      </div>
+
+      {/* Client Info Section */}
+      <div className="bg-white border-b border-gray-200 shadow-sm">
+        <div className="px-6 py-6">
           <ClientHeader client={client} />
         </div>
-        
-        {/* Revision Workflow Header - Now part of header section */}
-        <div className="px-6 pb-4">
+      </div>
+
+      {/* Revision Workflow Section */}
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-blue-200">
+        <div className="px-6 py-6">
           <RevisionWorkflow 
             currentPhase={currentPhase}
             progress={client.progress}
@@ -56,32 +64,50 @@ const ClientDetail = () => {
       </div>
 
       {/* Main Content with Tabs */}
-      <div className="p-6">
-        <Tabs defaultValue="revision" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="revision">Revisjonsprosess</TabsTrigger>
-            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-            <TabsTrigger value="overview">Oversikt</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="revision" className="mt-6">
-            <PhaseContent phase={currentPhase} client={client} />
-          </TabsContent>
-          
-          <TabsContent value="dashboard" className="mt-6">
-            <div className="lg:grid lg:grid-cols-3 lg:gap-6">
-              <div className="col-span-2 space-y-6">
-                <KeyFigures 
-                  liquidityRatio={1.5} 
-                  equityRatio={35} 
-                  profitMargin={12.5} 
-                />
-                <FinancialChart financialData={[
-                  { year: 2021, revenue: 1250000, result: 350000 },
-                  { year: 2022, revenue: 1500000, result: 450000 },
-                  { year: 2023, revenue: 1800000, result: 520000 },
-                ]} />
+      <div className="bg-white">
+        <div className="px-6 py-6">
+          <Tabs defaultValue="revision" className="w-full">
+            <TabsList className="grid w-full grid-cols-3 bg-gray-100">
+              <TabsTrigger value="revision" className="data-[state=active]:bg-white">Revisjonsprosess</TabsTrigger>
+              <TabsTrigger value="dashboard" className="data-[state=active]:bg-white">Dashboard</TabsTrigger>
+              <TabsTrigger value="overview" className="data-[state=active]:bg-white">Oversikt</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="revision" className="mt-6">
+              <PhaseContent phase={currentPhase} client={client} />
+            </TabsContent>
+            
+            <TabsContent value="dashboard" className="mt-6">
+              <div className="lg:grid lg:grid-cols-3 lg:gap-6">
+                <div className="col-span-2 space-y-6">
+                  <KeyFigures 
+                    liquidityRatio={1.5} 
+                    equityRatio={35} 
+                    profitMargin={12.5} 
+                  />
+                  <FinancialChart financialData={[
+                    { year: 2021, revenue: 1250000, result: 350000 },
+                    { year: 2022, revenue: 1500000, result: 450000 },
+                    { year: 2023, revenue: 1800000, result: 520000 },
+                  ]} />
+                </div>
+                <div className="mt-6 lg:mt-0">
+                  <Overview
+                    documentCount={client.documents?.length || 0}
+                    nextAuditDeadline="31.05.2025"
+                    lastAccountingFile={{
+                      name: "regnskap_2023.xlsx",
+                      importDate: "15.03.2025"
+                    }}
+                    onUploadClick={() => {
+                      console.log('Upload clicked');
+                    }}
+                  />
+                </div>
               </div>
+            </TabsContent>
+            
+            <TabsContent value="overview" className="mt-6">
               <div className="mt-6 lg:mt-0">
                 <Overview
                   documentCount={client.documents?.length || 0}
@@ -95,25 +121,9 @@ const ClientDetail = () => {
                   }}
                 />
               </div>
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="overview" className="mt-6">
-            <div className="mt-6 lg:mt-0">
-              <Overview
-                documentCount={client.documents?.length || 0}
-                nextAuditDeadline="31.05.2025"
-                lastAccountingFile={{
-                  name: "regnskap_2023.xlsx",
-                  importDate: "15.03.2025"
-                }}
-                onUploadClick={() => {
-                  console.log('Upload clicked');
-                }}
-              />
-            </div>
-          </TabsContent>
-        </Tabs>
+            </TabsContent>
+          </Tabs>
+        </div>
       </div>
     </div>
   );
