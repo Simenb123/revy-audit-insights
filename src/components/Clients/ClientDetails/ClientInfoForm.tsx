@@ -1,10 +1,11 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Trash2, Save, Edit, X } from 'lucide-react';
 import { Client } from '@/types/revio';
 import { useToast } from '@/hooks/use-toast';
@@ -23,10 +24,26 @@ interface ClientContact {
   is_primary: boolean;
 }
 
+// Populære norske regnskapssystemer
+const accountingSystems = [
+  'Visma Business',
+  'PowerOffice',
+  'Fiken',
+  'Tripletex',
+  'Visma eAccounting',
+  'Visma.net',
+  'Mamut',
+  'Xledger',
+  'Unit4 Business World',
+  'SAP',
+  'Annet'
+];
+
 const ClientInfoForm = ({ client }: ClientInfoFormProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [contacts, setContacts] = useState<ClientContact[]>([]);
+  const [showCustomAccountingSystem, setShowCustomAccountingSystem] = useState(false);
   const [formData, setFormData] = useState({
     accounting_system: '',
     previous_auditor: '',
@@ -37,6 +54,35 @@ const ClientInfoForm = ({ client }: ClientInfoFormProps) => {
     risk_assessment: '',
   });
   const { toast } = useToast();
+
+  useEffect(() => {
+    // Initialize form data with client data
+    setFormData({
+      accounting_system: client.accountingSystem || '',
+      previous_auditor: client.previousAuditor || '',
+      audit_fee: client.auditFee?.toString() || '',
+      year_end_date: client.yearEndDate || '',
+      board_meetings_per_year: client.boardMeetingsPerYear?.toString() || '',
+      internal_controls: client.internalControls || '',
+      risk_assessment: client.riskAssessment || '',
+    });
+
+    // Check if current accounting system is in predefined list
+    const isCustomSystem = client.accountingSystem && 
+      !accountingSystems.includes(client.accountingSystem) && 
+      client.accountingSystem !== '';
+    setShowCustomAccountingSystem(isCustomSystem);
+  }, [client]);
+
+  const handleAccountingSystemChange = (value: string) => {
+    if (value === 'Annet') {
+      setShowCustomAccountingSystem(true);
+      setFormData({...formData, accounting_system: ''});
+    } else {
+      setShowCustomAccountingSystem(false);
+      setFormData({...formData, accounting_system: value});
+    }
+  };
 
   const handleSave = async () => {
     setIsLoading(true);
@@ -173,13 +219,38 @@ const ClientInfoForm = ({ client }: ClientInfoFormProps) => {
           <CardContent className="space-y-4">
             <div>
               <Label htmlFor="accounting_system">Regnskapssystem</Label>
-              <Input
-                id="accounting_system"
-                value={formData.accounting_system}
-                onChange={(e) => setFormData({...formData, accounting_system: e.target.value})}
-                disabled={!isEditing}
-                placeholder="F.eks. Visma Business, PowerOffice"
-              />
+              {isEditing ? (
+                <div className="space-y-2">
+                  <Select 
+                    value={showCustomAccountingSystem ? 'Annet' : formData.accounting_system} 
+                    onValueChange={handleAccountingSystemChange}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Velg regnskapssystem" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {accountingSystems.map((system) => (
+                        <SelectItem key={system} value={system}>
+                          {system}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {showCustomAccountingSystem && (
+                    <Input
+                      placeholder="Skriv inn regnskapssystem"
+                      value={formData.accounting_system}
+                      onChange={(e) => setFormData({...formData, accounting_system: e.target.value})}
+                    />
+                  )}
+                </div>
+              ) : (
+                <Input
+                  value={formData.accounting_system}
+                  disabled
+                  placeholder="Ikke angitt"
+                />
+              )}
             </div>
             <div>
               <Label htmlFor="previous_auditor">Tidligere revisor</Label>

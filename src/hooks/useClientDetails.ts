@@ -58,6 +58,14 @@ export function useClientDetails(orgNumber: string) {
         municipalityName: clientData.municipality_name || '',
         equityCapital: clientData.equity_capital != null ? Number(clientData.equity_capital) : undefined,
         shareCapital: clientData.share_capital != null ? Number(clientData.share_capital) : undefined,
+        // New extended fields
+        accountingSystem: clientData.accounting_system || '',
+        previousAuditor: clientData.previous_auditor || '',
+        auditFee: clientData.audit_fee != null ? Number(clientData.audit_fee) : undefined,
+        yearEndDate: clientData.year_end_date || '',
+        boardMeetingsPerYear: clientData.board_meetings_per_year != null ? Number(clientData.board_meetings_per_year) : undefined,
+        internalControls: clientData.internal_controls || '',
+        riskAssessment: clientData.risk_assessment || '',
         riskAreas: [],
         documents: [],
         roles: []
