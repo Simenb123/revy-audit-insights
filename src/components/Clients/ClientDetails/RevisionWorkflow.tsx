@@ -47,9 +47,9 @@ const RevisionWorkflow = ({ currentPhase, progress, onPhaseClick }: RevisionWork
 
   const getPhaseIcon = (phaseIndex: number) => {
     const status = getPhaseStatus(phaseIndex);
-    if (status === 'completed') return <CheckCircle className="w-5 h-5 text-green-600" />;
-    if (status === 'current') return <Clock className="w-5 h-5 text-blue-600" />;
-    return <Circle className="w-5 h-5 text-gray-400" />;
+    if (status === 'completed') return <CheckCircle className="w-4 h-4 text-green-600" />;
+    if (status === 'current') return <Clock className="w-4 h-4 text-blue-600" />;
+    return <Circle className="w-4 h-4 text-gray-400" />;
   };
 
   const getProgressWidth = () => {
@@ -60,26 +60,26 @@ const RevisionWorkflow = ({ currentPhase, progress, onPhaseClick }: RevisionWork
   };
 
   return (
-    <div className="bg-white border rounded-lg p-6 mb-6">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold">Revisjonsprosess</h2>
-        <Badge variant="outline" className="text-sm">
+    <div className="bg-white rounded-lg shadow-sm border p-4">
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-base font-semibold text-gray-900">Revisjonsprosess</h2>
+        <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
           {progress}% fullført
         </Badge>
       </div>
       
       {/* Progress bar */}
-      <div className="relative mb-6">
-        <div className="w-full bg-gray-200 rounded-full h-2">
+      <div className="relative mb-4">
+        <div className="w-full bg-gray-200 rounded-full h-1.5">
           <div 
-            className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+            className="bg-blue-600 h-1.5 rounded-full transition-all duration-300"
             style={{ width: `${getProgressWidth()}%` }}
           />
         </div>
       </div>
 
       {/* Phase steps */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {phases.map((phase, index) => {
           const status = getPhaseStatus(index);
           const isClickable = onPhaseClick && status !== 'upcoming';
@@ -88,20 +88,20 @@ const RevisionWorkflow = ({ currentPhase, progress, onPhaseClick }: RevisionWork
             <div
               key={phase.key}
               className={`
-                p-4 rounded-lg border transition-all cursor-pointer
+                p-3 rounded-md border transition-all cursor-pointer text-center
                 ${status === 'current' 
-                  ? 'border-blue-500 bg-blue-50' 
+                  ? 'border-blue-400 bg-blue-50' 
                   : status === 'completed'
-                  ? 'border-green-500 bg-green-50'
+                  ? 'border-green-400 bg-green-50'
                   : 'border-gray-200 bg-gray-50'
                 }
-                ${isClickable ? 'hover:shadow-md' : 'cursor-default'}
+                ${isClickable ? 'hover:shadow-sm' : 'cursor-default'}
               `}
               onClick={() => isClickable && onPhaseClick(phase.key)}
             >
-              <div className="flex items-center gap-3 mb-2">
+              <div className="flex items-center justify-center gap-2 mb-1">
                 {getPhaseIcon(index)}
-                <span className={`font-medium text-sm ${
+                <span className={`font-medium text-xs ${
                   status === 'current' ? 'text-blue-900' :
                   status === 'completed' ? 'text-green-900' :
                   'text-gray-600'
