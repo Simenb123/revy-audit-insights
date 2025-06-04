@@ -68,7 +68,7 @@ const RevisionWorkflow = ({ currentPhase, progress, onPhaseClick }: RevisionWork
             <div key={phase.key} className="relative">
               <div
                 className={`
-                  relative p-5 rounded-xl border-2 transition-all duration-300 
+                  relative p-5 rounded-xl border-2 transition-all duration-300 group
                   ${isClickable ? 'cursor-pointer hover:scale-105 hover:shadow-xl' : 'cursor-default'}
                   ${status === 'current' 
                     ? 'border-blue-500 bg-blue-50 shadow-xl transform scale-105' 

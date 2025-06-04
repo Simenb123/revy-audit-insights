@@ -10,12 +10,14 @@ import PhaseContent from '@/components/Clients/ClientDetails/PhaseContent';
 import KeyFigures from '@/components/Clients/ClientDetails/ClientDashboard/KeyFigures';
 import FinancialChart from '@/components/Clients/ClientDetails/ClientDashboard/FinancialChart';
 import Overview from '@/components/Clients/ClientDetails/ClientDashboard/Overview';
+import ClientInfoForm from '@/components/Clients/ClientDetails/ClientInfoForm';
 import { AuditPhase } from '@/types/revio';
 
 const ClientDetail = () => {
   const { orgNumber } = useParams<{ orgNumber: string }>();
   const { data: client, isLoading, error } = useClientDetails(orgNumber || '');
   const [selectedPhase, setSelectedPhase] = useState<AuditPhase | null>(null);
+  const [activeTab, setActiveTab] = useState('overview');
 
   if (isLoading) {
     return (
@@ -36,6 +38,11 @@ const ClientDetail = () => {
 
   const currentPhase = selectedPhase || client.phase;
 
+  const handlePhaseClick = (phase: AuditPhase) => {
+    setSelectedPhase(phase);
+    setActiveTab('revision');
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Revision Workflow Section - Right under the main header with no gap */}
@@ -44,7 +51,7 @@ const ClientDetail = () => {
           <RevisionWorkflow 
             currentPhase={currentPhase}
             progress={client.progress}
-            onPhaseClick={setSelectedPhase}
+            onPhaseClick={handlePhaseClick}
           />
         </div>
       </div>
@@ -62,9 +69,15 @@ const ClientDetail = () => {
       {/* Main Content with Tabs - Clean and organized */}
       <div className="bg-white">
         <div className="max-w-7xl mx-auto px-6 py-8">
-          <Tabs defaultValue="revision" className="w-full">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <div className="border-b border-gray-200 mb-8">
-              <TabsList className="grid w-full max-w-md grid-cols-3 bg-gray-100 p-1 rounded-lg">
+              <TabsList className="grid w-full max-w-lg grid-cols-4 bg-gray-100 p-1 rounded-lg">
+                <TabsTrigger 
+                  value="overview" 
+                  className="data-[state=active]:bg-white data-[state=active]:shadow-sm font-medium"
+                >
+                  Oversikt
+                </TabsTrigger>
                 <TabsTrigger 
                   value="revision" 
                   className="data-[state=active]:bg-white data-[state=active]:shadow-sm font-medium"
@@ -72,27 +85,21 @@ const ClientDetail = () => {
                   Revisjonsprosess
                 </TabsTrigger>
                 <TabsTrigger 
+                  value="client-info" 
+                  className="data-[state=active]:bg-white data-[state=active]:shadow-sm font-medium"
+                >
+                  Klientinformasjon
+                </TabsTrigger>
+                <TabsTrigger 
                   value="dashboard" 
                   className="data-[state=active]:bg-white data-[state=active]:shadow-sm font-medium"
                 >
                   Dashboard
                 </TabsTrigger>
-                <TabsTrigger 
-                  value="overview" 
-                  className="data-[state=active]:bg-white data-[state=active]:shadow-sm font-medium"
-                >
-                  Oversikt
-                </TabsTrigger>
               </TabsList>
             </div>
             
-            <TabsContent value="revision" className="mt-0">
-              <div className="animate-fade-in">
-                <PhaseContent phase={currentPhase} client={client} />
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="dashboard" className="mt-0">
+            <TabsContent value="overview" className="mt-0">
               <div className="animate-fade-in">
                 <div className="lg:grid lg:grid-cols-3 lg:gap-8">
                   <div className="col-span-2 space-y-8">
@@ -124,20 +131,46 @@ const ClientDetail = () => {
               </div>
             </TabsContent>
             
-            <TabsContent value="overview" className="mt-0">
+            <TabsContent value="revision" className="mt-0">
               <div className="animate-fade-in">
-                <div className="max-w-2xl">
-                  <Overview
-                    documentCount={client.documents?.length || 0}
-                    nextAuditDeadline="31.05.2025"
-                    lastAccountingFile={{
-                      name: "regnskap_2023.xlsx",
-                      importDate: "15.03.2025"
-                    }}
-                    onUploadClick={() => {
-                      console.log('Upload clicked');
-                    }}
-                  />
+                <PhaseContent phase={currentPhase} client={client} />
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="client-info" className="mt-0">
+              <div className="animate-fade-in">
+                <ClientInfoForm client={client} />
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="dashboard" className="mt-0">
+              <div className="animate-fade-in">
+                <div className="lg:grid lg:grid-cols-3 lg:gap-8">
+                  <div className="col-span-2 space-y-8">
+                    <KeyFigures 
+                      liquidityRatio={1.5} 
+                      equityRatio={35} 
+                      profitMargin={12.5} 
+                    />
+                    <FinancialChart financialData={[
+                      { year: 2021, revenue: 1250000, result: 350000 },
+                      { year: 2022, revenue: 1500000, result: 450000 },
+                      { year: 2023, revenue: 1800000, result: 520000 },
+                    ]} />
+                  </div>
+                  <div className="mt-8 lg:mt-0">
+                    <Overview
+                      documentCount={client.documents?.length || 0}
+                      nextAuditDeadline="31.05.2025"
+                      lastAccountingFile={{
+                        name: "regnskap_2023.xlsx",
+                        importDate: "15.03.2025"
+                      }}
+                      onUploadClick={() => {
+                        console.log('Upload clicked');
+                      }}
+                    />
+                  </div>
                 </div>
               </div>
             </TabsContent>

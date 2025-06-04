@@ -50,6 +50,50 @@ export type Database = {
           },
         ]
       }
+      client_contacts: {
+        Row: {
+          client_id: string
+          created_at: string
+          email: string | null
+          id: string
+          is_primary: boolean | null
+          name: string
+          phone: string | null
+          role: string
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_primary?: boolean | null
+          name: string
+          phone?: string | null
+          role: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_primary?: boolean | null
+          name?: string
+          phone?: string | null
+          role?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_contacts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_documents: {
         Row: {
           client_id: string
@@ -125,9 +169,12 @@ export type Database = {
       }
       clients: {
         Row: {
+          accounting_system: string | null
           address: string | null
           address_line: string | null
+          audit_fee: number | null
           bank_account: string | null
+          board_meetings_per_year: number | null
           ceo: string | null
           chair: string | null
           city: string | null
@@ -140,6 +187,7 @@ export type Database = {
           homepage: string | null
           id: string
           industry: string | null
+          internal_controls: string | null
           municipality_code: string | null
           municipality_name: string | null
           nace_code: string | null
@@ -152,17 +200,23 @@ export type Database = {
           phase: Database["public"]["Enums"]["audit_phase"]
           phone: string | null
           postal_code: string | null
+          previous_auditor: string | null
           progress: number
           registration_date: string | null
+          risk_assessment: string | null
           share_capital: number | null
           status: string | null
           updated_at: string
           user_id: string
+          year_end_date: string | null
         }
         Insert: {
+          accounting_system?: string | null
           address?: string | null
           address_line?: string | null
+          audit_fee?: number | null
           bank_account?: string | null
+          board_meetings_per_year?: number | null
           ceo?: string | null
           chair?: string | null
           city?: string | null
@@ -175,6 +229,7 @@ export type Database = {
           homepage?: string | null
           id?: string
           industry?: string | null
+          internal_controls?: string | null
           municipality_code?: string | null
           municipality_name?: string | null
           nace_code?: string | null
@@ -187,17 +242,23 @@ export type Database = {
           phase?: Database["public"]["Enums"]["audit_phase"]
           phone?: string | null
           postal_code?: string | null
+          previous_auditor?: string | null
           progress?: number
           registration_date?: string | null
+          risk_assessment?: string | null
           share_capital?: number | null
           status?: string | null
           updated_at?: string
           user_id: string
+          year_end_date?: string | null
         }
         Update: {
+          accounting_system?: string | null
           address?: string | null
           address_line?: string | null
+          audit_fee?: number | null
           bank_account?: string | null
+          board_meetings_per_year?: number | null
           ceo?: string | null
           chair?: string | null
           city?: string | null
@@ -210,6 +271,7 @@ export type Database = {
           homepage?: string | null
           id?: string
           industry?: string | null
+          internal_controls?: string | null
           municipality_code?: string | null
           municipality_name?: string | null
           nace_code?: string | null
@@ -222,12 +284,15 @@ export type Database = {
           phase?: Database["public"]["Enums"]["audit_phase"]
           phone?: string | null
           postal_code?: string | null
+          previous_auditor?: string | null
           progress?: number
           registration_date?: string | null
+          risk_assessment?: string | null
           share_capital?: number | null
           status?: string | null
           updated_at?: string
           user_id?: string
+          year_end_date?: string | null
         }
         Relationships: []
       }
