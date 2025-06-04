@@ -35,6 +35,7 @@ const TrialBalanceUploader = ({ clientId }: TrialBalanceUploaderProps) => {
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
+    console.log('File selected:', selectedFile?.name, selectedFile?.size);
     if (selectedFile) {
       setFile(selectedFile);
       setUploadResult(null);
@@ -42,63 +43,108 @@ const TrialBalanceUploader = ({ clientId }: TrialBalanceUploaderProps) => {
   };
 
   const processExcelFile = async (file: File): Promise<TrialBalanceRow[]> => {
+    console.log('Processing Excel file:', file.name);
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       
       reader.onload = (e) => {
         try {
+          console.log('File reader loaded successfully');
           const data = new Uint8Array(e.target?.result as ArrayBuffer);
           const workbook = XLSX.read(data, { type: 'array' });
+          console.log('Workbook loaded, sheets:', workbook.SheetNames);
+          
           const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
           const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+          console.log('Excel data parsed, rows:', jsonData.length);
+          console.log('First few rows:', jsonData.slice(0, 3));
           
-          const balances: TrialBalanceRow[] = jsonData.map((row: any) => ({
-            account_number: row['Kontonummer']?.toString() || row['account_number']?.toString() || '',
-            period_end_date: row['Periode'] || row['period_end_date'] || '',
-            opening_balance: parseFloat(row['Inngående saldo'] || row['opening_balance'] || '0') || 0,
-            debit_turnover: parseFloat(row['Debet omsetning'] || row['debit_turnover'] || '0') || 0,
-            credit_turnover: parseFloat(row['Kredit omsetning'] || row['credit_turnover'] || '0') || 0,
-            closing_balance: parseFloat(row['Utgående saldo'] || row['closing_balance'] || '0') || 0,
-          })).filter(bal => bal.account_number && bal.period_end_date);
+          const balances: TrialBalanceRow[] = jsonData.map((row: any, index) => {
+            console.log(`Processing row ${index}:`, row);
+            return {
+              account_number: row['Kontonummer']?.toString() || row['account_number']?.toString() || '',
+              period_end_date: row['Periode'] || row['period_end_date'] || '',
+              opening_balance: parseFloat(row['Inngående saldo'] || row['opening_balance'] || '0') || 0,
+              debit_turnover: parseFloat(row['Debet omsetning'] || row['debit_turnover'] || '0') || 0,
+              credit_turnover: parseFloat(row['Kredit omsetning'] || row['credit_turnover'] || '0') || 0,
+              closing_balance: parseFloat(row['Utgående saldo'] || row['closing_balance'] || '0') || 0,
+            };
+          }).filter(bal => {
+            const isValid = bal.account_number && bal.period_end_date;
+            console.log(`Row valid: ${isValid}`, bal);
+            return isValid;
+          });
           
+          console.log('Processed balances:', balances.length);
           resolve(balances);
         } catch (error) {
+          console.error('Error processing Excel file:', error);
           reject(error);
         }
       };
       
-      reader.onerror = () => reject(new Error('Kunne ikke lese filen'));
+      reader.onerror = () => {
+        console.error('FileReader error:', reader.error);
+        reject(new Error('Kunne ikke lese filen'));
+      };
+      
       reader.readAsArrayBuffer(file);
     });
   };
 
   const uploadTrialBalance = async () => {
-    if (!file || !clientId) return;
+    if (!file || !clientId) {
+      console.error('Missing file or clientId:', { file: !!file, clientId });
+      return;
+    }
 
+    console.log('Starting upload for client:', clientId);
     setIsUploading(true);
     setProgress(0);
     
     try {
+      // Check authentication first
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError) {
+        console.error('Auth error:', authError);
+        throw new Error(`Autentiseringsfeil: ${authError.message}`);
+      }
+      if (!user) {
+        console.error('No authenticated user');
+        throw new Error('Du må være logget inn for å laste opp data');
+      }
+      console.log('User authenticated:', user.id);
+
       // Process the Excel file
+      console.log('Processing Excel file...');
       const balances = await processExcelFile(file);
       setProgress(25);
+      console.log('Excel processing complete, balances:', balances.length);
 
       // Get client accounts for validation
-      const { data: clientAccounts } = await supabase
+      console.log('Fetching client accounts for validation...');
+      const { data: clientAccounts, error: accountsError } = await supabase
         .from('client_chart_of_accounts')
         .select('id, account_number')
         .eq('client_id', clientId);
 
+      if (accountsError) {
+        console.error('Error fetching client accounts:', accountsError);
+        throw new Error(`Feil ved henting av kontoplan: ${accountsError.message}`);
+      }
+
+      console.log('Client accounts fetched:', clientAccounts?.length || 0);
       const accountMap = new Map(
         clientAccounts?.map(acc => [acc.account_number, acc.id]) || []
       );
 
       // Create upload batch record
+      console.log('Creating upload batch...');
       const { data: batch, error: batchError } = await supabase
         .from('upload_batches')
         .insert({
           client_id: clientId,
-          user_id: (await supabase.auth.getUser()).data.user?.id!,
+          user_id: user.id,
           batch_type: 'trial_balance',
           file_name: file.name,
           file_size: file.size,
@@ -108,38 +154,60 @@ const TrialBalanceUploader = ({ clientId }: TrialBalanceUploaderProps) => {
         .select()
         .single();
 
-      if (batchError) throw batchError;
+      if (batchError) {
+        console.error('Batch creation error:', batchError);
+        throw new Error(`Feil ved opprettelse av batch: ${batchError.message}`);
+      }
+      console.log('Batch created:', batch.id);
       setProgress(50);
 
       // Process balances
       const errors: string[] = [];
       const balancesToInsert = balances
-        .map(bal => {
+        .map((bal, index) => {
           const clientAccountId = accountMap.get(bal.account_number);
           if (!clientAccountId) {
-            errors.push(`Konto ${bal.account_number} ikke funnet i kontoplan`);
+            const error = `Konto ${bal.account_number} ikke funnet i kontoplan`;
+            console.warn(error);
+            errors.push(error);
             return null;
           }
 
-          const periodDate = new Date(bal.period_end_date);
-          return {
-            client_id: clientId,
-            client_account_id: clientAccountId,
-            period_end_date: periodDate.toISOString().split('T')[0],
-            period_year: periodDate.getFullYear(),
-            opening_balance: bal.opening_balance || 0,
-            debit_turnover: bal.debit_turnover || 0,
-            credit_turnover: bal.credit_turnover || 0,
-            closing_balance: bal.closing_balance || 0,
-            upload_batch_id: batch.id,
-          };
+          try {
+            const periodDate = new Date(bal.period_end_date);
+            if (isNaN(periodDate.getTime())) {
+              const error = `Ugyldig dato for konto ${bal.account_number}: ${bal.period_end_date}`;
+              console.warn(error);
+              errors.push(error);
+              return null;
+            }
+
+            return {
+              client_id: clientId,
+              client_account_id: clientAccountId,
+              period_end_date: periodDate.toISOString().split('T')[0],
+              period_year: periodDate.getFullYear(),
+              opening_balance: bal.opening_balance || 0,
+              debit_turnover: bal.debit_turnover || 0,
+              credit_turnover: bal.credit_turnover || 0,
+              closing_balance: bal.closing_balance || 0,
+              upload_batch_id: batch.id,
+            };
+          } catch (error) {
+            const errorMsg = `Feil ved prosessering av rad ${index + 1}: ${error}`;
+            console.error(errorMsg);
+            errors.push(errorMsg);
+            return null;
+          }
         })
         .filter(Boolean);
 
+      console.log('Balances to insert:', balancesToInsert.length);
       setProgress(75);
 
       let processed = 0;
       if (balancesToInsert.length > 0) {
+        console.log('Inserting trial balances...');
         const { data: insertedBalances, error: insertError } = await supabase
           .from('trial_balances')
           .upsert(balancesToInsert, { 
@@ -149,13 +217,16 @@ const TrialBalanceUploader = ({ clientId }: TrialBalanceUploaderProps) => {
           .select();
 
         if (insertError) {
+          console.error('Insert error:', insertError);
           errors.push(`Insert error: ${insertError.message}`);
         } else {
           processed = insertedBalances?.length || 0;
+          console.log('Successfully inserted:', processed);
         }
       }
 
       // Update batch status
+      console.log('Updating batch status...');
       await supabase
         .from('upload_batches')
         .update({
@@ -209,7 +280,7 @@ const TrialBalanceUploader = ({ clientId }: TrialBalanceUploaderProps) => {
           Last opp saldobalanse
         </CardTitle>
         <CardDescription>
-          Last opp saldobalanse fra Excel-fil. Filen må inneholde: Kontonummer, Periode, saldoer og omsetning
+          Last opp saldobalanse fra Excel-fil. Filen må inneholde kolonner: Kontonummer, Periode, Inngående saldo, Debet omsetning, Kredit omsetning, Utgående saldo
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -229,6 +300,12 @@ const TrialBalanceUploader = ({ clientId }: TrialBalanceUploaderProps) => {
             {isUploading ? 'Laster opp...' : 'Last opp'}
           </Button>
         </div>
+
+        {file && (
+          <div className="text-sm text-muted-foreground">
+            Valgt fil: {file.name} ({(file.size / 1024).toFixed(1)} KB)
+          </div>
+        )}
 
         {isUploading && (
           <div className="space-y-2">

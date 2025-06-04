@@ -8,13 +8,30 @@ import ClientBreadcrumb from '@/components/Clients/ClientDetails/ClientBreadcrum
 
 const AccountingData = () => {
   const { orgNumber } = useParams<{ orgNumber: string }>();
-  const { data: client, isLoading } = useClientDetails(orgNumber || '');
+  const { data: client, isLoading, error } = useClientDetails(orgNumber || '');
+
+  console.log('AccountingData - orgNumber:', orgNumber);
+  console.log('AccountingData - client:', client);
+  console.log('AccountingData - isLoading:', isLoading);
+  console.log('AccountingData - error:', error);
 
   if (isLoading) {
     return (
       <div className="space-y-6">
         <Skeleton className="h-8 w-64" />
         <Skeleton className="h-64 w-full" />
+      </div>
+    );
+  }
+
+  if (error) {
+    console.error('Error loading client:', error);
+    return (
+      <div className="text-center py-12">
+        <h1 className="text-2xl font-bold text-gray-900 mb-4">Feil ved lasting av klient</h1>
+        <p className="text-gray-600">
+          Det oppstod en feil: {error.message}
+        </p>
       </div>
     );
   }
