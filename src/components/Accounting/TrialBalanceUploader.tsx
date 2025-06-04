@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
-import { Upload, FileText, CheckCircle, AlertCircle } from 'lucide-react';
+import { Upload, FileText, CheckCircle, AlertCircle, Info } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import * as XLSX from 'xlsx';
@@ -32,6 +32,33 @@ const TrialBalanceUploader = ({ clientId }: TrialBalanceUploaderProps) => {
     processed: number;
     errors: string[];
   } | null>(null);
+  const [hasChartOfAccounts, setHasChartOfAccounts] = useState<boolean | null>(null);
+
+  // Check if client has chart of accounts when component loads
+  React.useEffect(() => {
+    const checkChartOfAccounts = async () => {
+      console.log('Checking if client has chart of accounts...');
+      const { data: accounts, error } = await supabase
+        .from('client_chart_of_accounts')
+        .select('id')
+        .eq('client_id', clientId)
+        .eq('is_active', true)
+        .limit(1);
+
+      if (error) {
+        console.error('Error checking chart of accounts:', error);
+        return;
+      }
+
+      const hasAccounts = accounts && accounts.length > 0;
+      console.log('Client has chart of accounts:', hasAccounts);
+      setHasChartOfAccounts(hasAccounts);
+    };
+
+    if (clientId) {
+      checkChartOfAccounts();
+    }
+  }, [clientId]);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
@@ -134,8 +161,14 @@ const TrialBalanceUploader = ({ clientId }: TrialBalanceUploaderProps) => {
       }
 
       console.log('Client accounts fetched:', clientAccounts?.length || 0);
+      
+      // Check if no accounts exist
+      if (!clientAccounts || clientAccounts.length === 0) {
+        throw new Error('Ingen kontoplan funnet for denne klienten. Du må laste opp kontoplan før du kan laste opp saldobalanse.');
+      }
+
       const accountMap = new Map(
-        clientAccounts?.map(acc => [acc.account_number, acc.id]) || []
+        clientAccounts.map(acc => [acc.account_number, acc.id])
       );
 
       // Create upload batch record
@@ -271,6 +304,35 @@ const TrialBalanceUploader = ({ clientId }: TrialBalanceUploaderProps) => {
       setIsUploading(false);
     }
   };
+
+  // Show warning if no chart of accounts
+  if (hasChartOfAccounts === false) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="w-5 h-5" />
+            Last opp saldobalanse
+          </CardTitle>
+          <CardDescription>
+            Last opp saldobalanse fra Excel-fil
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+            <Info className="w-5 h-5 text-amber-600 mt-0.5" />
+            <div>
+              <h4 className="font-medium text-amber-800">Kontoplan må lastes opp først</h4>
+              <p className="text-sm text-amber-700 mt-1">
+                Du må laste opp kontoplan i "Kontoplan"-taben før du kan laste opp saldobalanse. 
+                Saldobalansen trenger kontoplanen for å validere kontonumrene.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
