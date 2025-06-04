@@ -42,32 +42,27 @@ const ClientHeader = ({ client }: ClientHeaderProps) => {
   };
 
   return (
-    <div className="bg-gradient-to-r from-gray-50 to-white border-b border-gray-200 shadow-sm">
-      <div className="px-6 py-8">
+    <div className="bg-gradient-to-r from-gray-50 to-white border-b border-gray-200">
+      <div className="px-6 py-6">
         <div className="max-w-7xl mx-auto">
-          {/* Main client title with floating status */}
-          <div className="flex items-start justify-between mb-6">
-            <div className="flex-1">
-              <h1 className="text-4xl font-bold text-gray-900 leading-tight mb-2">
-                {client.companyName}
-              </h1>
+          {/* Compact header with org number and status */}
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-4">
               <div className="flex items-center gap-2 text-lg text-gray-600">
                 <span className="font-medium">Org.nr:</span>
                 <span className="font-mono bg-gray-100 px-3 py-1 rounded-md">{client.orgNumber}</span>
               </div>
             </div>
-            <div className="ml-6 flex flex-col items-end gap-2">
-              <Badge 
-                variant={getStatusVariant(client.status)}
-                className="text-base font-semibold px-4 py-2 shadow-sm"
-              >
-                {getStatusText(client.status)}
-              </Badge>
-            </div>
+            <Badge 
+              variant={getStatusVariant(client.status)}
+              className="text-sm font-semibold px-3 py-1 shadow-sm"
+            >
+              {getStatusText(client.status)}
+            </Badge>
           </div>
 
-          {/* Enhanced client information grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* Client information grid - more compact */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {/* Company Info */}
             <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
               <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">

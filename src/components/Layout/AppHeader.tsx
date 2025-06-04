@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Bell, HelpCircle, Settings, User, Menu, LogOut } from "lucide-react";
@@ -7,7 +8,6 @@ import { useLocation, useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useClientDetails } from '@/hooks/useClientDetails';
-import ClientBreadcrumb from '../Clients/ClientDetails/ClientBreadcrumb';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,6 +39,11 @@ const AppHeader = () => {
   };
   
   const getPageTitle = (pathname: string) => {
+    // If we're on a client page and have client data, show client name
+    if (client && pathname.includes('/klienter/')) {
+      return client.companyName;
+    }
+    
     const routes: Record<string, string> = {
       '/': 'Dashboard',
       '/analyser': 'Analyser',
@@ -48,7 +53,7 @@ const AppHeader = () => {
       '/innstillinger': 'Innstillinger',
       '/hjelp': 'Hjelp'
     };
-    return routes[pathname] || client?.companyName || 'Dashboard';
+    return routes[pathname] || 'Dashboard';
   };
 
   return (
@@ -103,12 +108,6 @@ const AppHeader = () => {
           </DropdownMenu>
         </div>
       </div>
-      
-      {client && (
-        <div className="h-10 flex items-center px-4 bg-white border-b">
-          <ClientBreadcrumb client={client} />
-        </div>
-      )}
     </header>
   );
 };

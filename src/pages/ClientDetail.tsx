@@ -38,19 +38,9 @@ const ClientDetail = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Breadcrumb Section - Clean and minimal */}
-      <div className="bg-white border-b border-gray-100">
+      {/* Revision Workflow Section - Right under the header */}
+      <div className="bg-white sticky top-14 z-10 border-b border-gray-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-6 py-4">
-          <ClientBreadcrumb client={client} />
-        </div>
-      </div>
-
-      {/* Client Header Section - Enhanced with better visual hierarchy */}
-      <ClientHeader client={client} />
-
-      {/* Revision Workflow Section - Prominent and engaging */}
-      <div className="bg-gray-50 py-8">
-        <div className="max-w-7xl mx-auto px-6">
           <RevisionWorkflow 
             currentPhase={currentPhase}
             progress={client.progress}
@@ -58,6 +48,16 @@ const ClientDetail = () => {
           />
         </div>
       </div>
+
+      {/* Breadcrumb Section - Clean and minimal */}
+      <div className="bg-white border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-6 py-3">
+          <ClientBreadcrumb client={client} />
+        </div>
+      </div>
+
+      {/* Client Header Section - More compact now */}
+      <ClientHeader client={client} />
 
       {/* Main Content with Tabs - Clean and organized */}
       <div className="bg-white">
