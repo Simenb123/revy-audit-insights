@@ -1,6 +1,6 @@
 
 import { Badge } from "@/components/ui/badge";
-import { Building2, Calendar, MapPin } from "lucide-react";
+import { Building2, Calendar, MapPin, Globe, Phone, Mail } from "lucide-react";
 
 interface ClientHeaderProps {
   client: {
@@ -10,52 +10,142 @@ interface ClientHeaderProps {
     industry?: string;
     city?: string;
     registrationDate?: string;
+    phone?: string;
+    email?: string;
+    homepage?: string;
   };
 }
 
 const ClientHeader = ({ client }: ClientHeaderProps) => {
-  return (
-    <div className="space-y-4">
-      {/* Main client title with floating status */}
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
-          <h1 className="text-3xl font-bold text-gray-900 leading-tight">
-            {client.companyName}
-          </h1>
-          <p className="text-lg text-gray-600 mt-1">
-            Org.nr: {client.orgNumber}
-          </p>
-        </div>
-        <div className="ml-4">
-          <Badge 
-            variant={client.status === 'Aktiv' ? 'success' : 'destructive'}
-            className="text-sm font-medium px-3 py-1"
-          >
-            {client.status || 'Ukjent'}
-          </Badge>
-        </div>
-      </div>
+  const getStatusVariant = (status: string) => {
+    switch (status?.toUpperCase()) {
+      case 'ACTIVE':
+      case 'AKTIV':
+        return 'success';
+      case 'INACTIVE':
+      case 'INAKTIV':
+        return 'destructive';
+      default:
+        return 'secondary';
+    }
+  };
 
-      {/* Additional client information */}
-      <div className="flex flex-wrap gap-6 text-sm text-gray-600">
-        {client.industry && (
-          <div className="flex items-center gap-2">
-            <Building2 className="w-4 h-4" />
-            <span>{client.industry}</span>
+  const getStatusText = (status: string) => {
+    switch (status?.toUpperCase()) {
+      case 'ACTIVE':
+        return 'Aktiv';
+      case 'INACTIVE':
+        return 'Inaktiv';
+      default:
+        return status || 'Ukjent';
+    }
+  };
+
+  return (
+    <div className="bg-gradient-to-r from-gray-50 to-white border-b border-gray-200 shadow-sm">
+      <div className="px-6 py-8">
+        <div className="max-w-7xl mx-auto">
+          {/* Main client title with floating status */}
+          <div className="flex items-start justify-between mb-6">
+            <div className="flex-1">
+              <h1 className="text-4xl font-bold text-gray-900 leading-tight mb-2">
+                {client.companyName}
+              </h1>
+              <div className="flex items-center gap-2 text-lg text-gray-600">
+                <span className="font-medium">Org.nr:</span>
+                <span className="font-mono bg-gray-100 px-3 py-1 rounded-md">{client.orgNumber}</span>
+              </div>
+            </div>
+            <div className="ml-6 flex flex-col items-end gap-2">
+              <Badge 
+                variant={getStatusVariant(client.status)}
+                className="text-base font-semibold px-4 py-2 shadow-sm"
+              >
+                {getStatusText(client.status)}
+              </Badge>
+            </div>
           </div>
-        )}
-        {client.city && (
-          <div className="flex items-center gap-2">
-            <MapPin className="w-4 h-4" />
-            <span>{client.city}</span>
+
+          {/* Enhanced client information grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Company Info */}
+            <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
+              <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                <Building2 className="w-4 h-4 text-blue-600" />
+                Selskapsinfo
+              </h3>
+              <div className="space-y-2 text-sm">
+                {client.industry && (
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <span className="w-16 text-gray-500">Bransje:</span>
+                    <span className="font-medium">{client.industry}</span>
+                  </div>
+                )}
+                {client.registrationDate && (
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <Calendar className="w-4 h-4 text-gray-400" />
+                    <span className="w-16 text-gray-500">Reg.dato:</span>
+                    <span>{client.registrationDate}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Location Info */}
+            {client.city && (
+              <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
+                <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-green-600" />
+                  Lokasjon
+                </h3>
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <span>{client.city}</span>
+                </div>
+              </div>
+            )}
+
+            {/* Contact Info */}
+            {(client.phone || client.email || client.homepage) && (
+              <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
+                <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <Phone className="w-4 h-4 text-purple-600" />
+                  Kontakt
+                </h3>
+                <div className="space-y-2 text-sm">
+                  {client.phone && (
+                    <div className="flex items-center gap-2">
+                      <Phone className="w-4 h-4 text-gray-400" />
+                      <a href={`tel:${client.phone}`} className="text-blue-600 hover:underline">
+                        {client.phone}
+                      </a>
+                    </div>
+                  )}
+                  {client.email && (
+                    <div className="flex items-center gap-2">
+                      <Mail className="w-4 h-4 text-gray-400" />
+                      <a href={`mailto:${client.email}`} className="text-blue-600 hover:underline truncate">
+                        {client.email}
+                      </a>
+                    </div>
+                  )}
+                  {client.homepage && (
+                    <div className="flex items-center gap-2">
+                      <Globe className="w-4 h-4 text-gray-400" />
+                      <a 
+                        href={client.homepage?.startsWith("http") ? client.homepage : `https://${client.homepage}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline truncate"
+                      >
+                        {client.homepage}
+                      </a>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
-        )}
-        {client.registrationDate && (
-          <div className="flex items-center gap-2">
-            <Calendar className="w-4 h-4" />
-            <span>Registrert: {client.registrationDate}</span>
-          </div>
-        )}
+        </div>
       </div>
     </div>
   );

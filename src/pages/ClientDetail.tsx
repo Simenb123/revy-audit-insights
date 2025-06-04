@@ -27,7 +27,7 @@ const ClientDetail = () => {
 
   if (error || !client) {
     return (
-      <div className="text-center">
+      <div className="text-center py-12">
         <h1 className="text-2xl font-bold mb-4">Klient ikke funnet</h1>
         <p className="mb-6">Vi kunne ikke finne en klient med org.nummer {orgNumber}</p>
       </div>
@@ -38,23 +38,19 @@ const ClientDetail = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Breadcrumb Section */}
+      {/* Breadcrumb Section - Clean and minimal */}
       <div className="bg-white border-b border-gray-100">
-        <div className="px-6 py-3">
+        <div className="max-w-7xl mx-auto px-6 py-4">
           <ClientBreadcrumb client={client} />
         </div>
       </div>
 
-      {/* Client Info Section */}
-      <div className="bg-white border-b border-gray-200 shadow-sm">
-        <div className="px-6 py-6">
-          <ClientHeader client={client} />
-        </div>
-      </div>
+      {/* Client Header Section - Enhanced with better visual hierarchy */}
+      <ClientHeader client={client} />
 
-      {/* Revision Workflow Section */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-blue-200">
-        <div className="px-6 py-6">
+      {/* Revision Workflow Section - Prominent and engaging */}
+      <div className="bg-gray-50 py-8">
+        <div className="max-w-7xl mx-auto px-6">
           <RevisionWorkflow 
             currentPhase={currentPhase}
             progress={client.progress}
@@ -63,35 +59,74 @@ const ClientDetail = () => {
         </div>
       </div>
 
-      {/* Main Content with Tabs */}
+      {/* Main Content with Tabs - Clean and organized */}
       <div className="bg-white">
-        <div className="px-6 py-6">
+        <div className="max-w-7xl mx-auto px-6 py-8">
           <Tabs defaultValue="revision" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 bg-gray-100">
-              <TabsTrigger value="revision" className="data-[state=active]:bg-white">Revisjonsprosess</TabsTrigger>
-              <TabsTrigger value="dashboard" className="data-[state=active]:bg-white">Dashboard</TabsTrigger>
-              <TabsTrigger value="overview" className="data-[state=active]:bg-white">Oversikt</TabsTrigger>
-            </TabsList>
+            <div className="border-b border-gray-200 mb-8">
+              <TabsList className="grid w-full max-w-md grid-cols-3 bg-gray-100 p-1 rounded-lg">
+                <TabsTrigger 
+                  value="revision" 
+                  className="data-[state=active]:bg-white data-[state=active]:shadow-sm font-medium"
+                >
+                  Revisjonsprosess
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="dashboard" 
+                  className="data-[state=active]:bg-white data-[state=active]:shadow-sm font-medium"
+                >
+                  Dashboard
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="overview" 
+                  className="data-[state=active]:bg-white data-[state=active]:shadow-sm font-medium"
+                >
+                  Oversikt
+                </TabsTrigger>
+              </TabsList>
+            </div>
             
-            <TabsContent value="revision" className="mt-6">
-              <PhaseContent phase={currentPhase} client={client} />
+            <TabsContent value="revision" className="mt-0">
+              <div className="animate-fade-in">
+                <PhaseContent phase={currentPhase} client={client} />
+              </div>
             </TabsContent>
             
-            <TabsContent value="dashboard" className="mt-6">
-              <div className="lg:grid lg:grid-cols-3 lg:gap-6">
-                <div className="col-span-2 space-y-6">
-                  <KeyFigures 
-                    liquidityRatio={1.5} 
-                    equityRatio={35} 
-                    profitMargin={12.5} 
-                  />
-                  <FinancialChart financialData={[
-                    { year: 2021, revenue: 1250000, result: 350000 },
-                    { year: 2022, revenue: 1500000, result: 450000 },
-                    { year: 2023, revenue: 1800000, result: 520000 },
-                  ]} />
+            <TabsContent value="dashboard" className="mt-0">
+              <div className="animate-fade-in">
+                <div className="lg:grid lg:grid-cols-3 lg:gap-8">
+                  <div className="col-span-2 space-y-8">
+                    <KeyFigures 
+                      liquidityRatio={1.5} 
+                      equityRatio={35} 
+                      profitMargin={12.5} 
+                    />
+                    <FinancialChart financialData={[
+                      { year: 2021, revenue: 1250000, result: 350000 },
+                      { year: 2022, revenue: 1500000, result: 450000 },
+                      { year: 2023, revenue: 1800000, result: 520000 },
+                    ]} />
+                  </div>
+                  <div className="mt-8 lg:mt-0">
+                    <Overview
+                      documentCount={client.documents?.length || 0}
+                      nextAuditDeadline="31.05.2025"
+                      lastAccountingFile={{
+                        name: "regnskap_2023.xlsx",
+                        importDate: "15.03.2025"
+                      }}
+                      onUploadClick={() => {
+                        console.log('Upload clicked');
+                      }}
+                    />
+                  </div>
                 </div>
-                <div className="mt-6 lg:mt-0">
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="overview" className="mt-0">
+              <div className="animate-fade-in">
+                <div className="max-w-2xl">
                   <Overview
                     documentCount={client.documents?.length || 0}
                     nextAuditDeadline="31.05.2025"
@@ -104,22 +139,6 @@ const ClientDetail = () => {
                     }}
                   />
                 </div>
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="overview" className="mt-6">
-              <div className="mt-6 lg:mt-0">
-                <Overview
-                  documentCount={client.documents?.length || 0}
-                  nextAuditDeadline="31.05.2025"
-                  lastAccountingFile={{
-                    name: "regnskap_2023.xlsx",
-                    importDate: "15.03.2025"
-                  }}
-                  onUploadClick={() => {
-                    console.log('Upload clicked');
-                  }}
-                />
               </div>
             </TabsContent>
           </Tabs>
