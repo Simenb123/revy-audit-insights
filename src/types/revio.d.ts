@@ -1,5 +1,5 @@
 
-export type AuditPhase = 'engagement' | 'planning' | 'execution' | 'conclusion';
+export type AuditPhase = 'overview' | 'engagement' | 'planning' | 'execution' | 'conclusion';
 
 export interface RiskArea {
   name: string;
@@ -62,6 +62,14 @@ export interface Client {
   municipalityName: string;
   equityCapital?: number | null;
   shareCapital?: number | null;
+  // New extended fields
+  accountingSystem: string;
+  previousAuditor: string;
+  auditFee?: number | null;
+  yearEndDate: string;
+  boardMeetingsPerYear?: number | null;
+  internalControls: string;
+  riskAssessment: string;
   // Relationships
   riskAreas: RiskArea[];
   documents: ClientDocument[];

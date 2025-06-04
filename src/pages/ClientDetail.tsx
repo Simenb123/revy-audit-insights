@@ -40,13 +40,17 @@ const ClientDetail = () => {
 
   const handlePhaseClick = (phase: AuditPhase) => {
     setSelectedPhase(phase);
-    setActiveTab('revision');
+    if (phase === 'overview') {
+      setActiveTab('client-info');
+    } else {
+      setActiveTab('revision');
+    }
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Revision Workflow Section - Right under the main header with no gap */}
-      <div className="bg-white sticky top-0 z-20 border-b border-gray-300 shadow-lg">
+      {/* Revision Workflow Section - Fixed positioning */}
+      <div className="bg-white border-b border-gray-300 shadow-sm">
         <div className="max-w-7xl mx-auto px-6 py-6">
           <RevisionWorkflow 
             currentPhase={currentPhase}
@@ -56,17 +60,17 @@ const ClientDetail = () => {
         </div>
       </div>
 
-      {/* Breadcrumb Section - Clean and minimal */}
+      {/* Breadcrumb Section */}
       <div className="bg-white border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-6 py-3">
           <ClientBreadcrumb client={client} />
         </div>
       </div>
 
-      {/* Client Header Section - More compact now */}
+      {/* Client Header Section */}
       <ClientHeader client={client} />
 
-      {/* Main Content with Tabs - Clean and organized */}
+      {/* Main Content with Tabs */}
       <div className="bg-white">
         <div className="max-w-7xl mx-auto px-6 py-8">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -76,7 +80,7 @@ const ClientDetail = () => {
                   value="overview" 
                   className="data-[state=active]:bg-white data-[state=active]:shadow-sm font-medium"
                 >
-                  Oversikt
+                  Dashboard
                 </TabsTrigger>
                 <TabsTrigger 
                   value="revision" 
@@ -91,10 +95,10 @@ const ClientDetail = () => {
                   Klientinformasjon
                 </TabsTrigger>
                 <TabsTrigger 
-                  value="dashboard" 
+                  value="documents" 
                   className="data-[state=active]:bg-white data-[state=active]:shadow-sm font-medium"
                 >
-                  Dashboard
+                  Dokumenter
                 </TabsTrigger>
               </TabsList>
             </div>
@@ -143,34 +147,11 @@ const ClientDetail = () => {
               </div>
             </TabsContent>
             
-            <TabsContent value="dashboard" className="mt-0">
+            <TabsContent value="documents" className="mt-0">
               <div className="animate-fade-in">
-                <div className="lg:grid lg:grid-cols-3 lg:gap-8">
-                  <div className="col-span-2 space-y-8">
-                    <KeyFigures 
-                      liquidityRatio={1.5} 
-                      equityRatio={35} 
-                      profitMargin={12.5} 
-                    />
-                    <FinancialChart financialData={[
-                      { year: 2021, revenue: 1250000, result: 350000 },
-                      { year: 2022, revenue: 1500000, result: 450000 },
-                      { year: 2023, revenue: 1800000, result: 520000 },
-                    ]} />
-                  </div>
-                  <div className="mt-8 lg:mt-0">
-                    <Overview
-                      documentCount={client.documents?.length || 0}
-                      nextAuditDeadline="31.05.2025"
-                      lastAccountingFile={{
-                        name: "regnskap_2023.xlsx",
-                        importDate: "15.03.2025"
-                      }}
-                      onUploadClick={() => {
-                        console.log('Upload clicked');
-                      }}
-                    />
-                  </div>
+                <div className="text-center py-12">
+                  <h3 className="text-lg font-semibold mb-4">Dokumenter</h3>
+                  <p className="text-gray-600">Dokumenthåndtering kommer snart</p>
                 </div>
               </div>
             </TabsContent>

@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, Circle, Clock, TrendingUp, ArrowRight } from 'lucide-react';
+import { CheckCircle, Circle, Clock, TrendingUp, ArrowRight, Info } from 'lucide-react';
 import { AuditPhase } from '@/types/revio';
 
 interface RevisionWorkflowProps {
@@ -11,6 +11,13 @@ interface RevisionWorkflowProps {
 }
 
 const phases = [
+  { 
+    key: 'overview' as AuditPhase, 
+    label: 'Oversikt', 
+    description: 'Klientinformasjon og grunndata',
+    number: 0,
+    icon: Info
+  },
   { 
     key: 'engagement' as AuditPhase, 
     label: 'Oppdragsvurdering', 
@@ -58,18 +65,47 @@ const RevisionWorkflow = ({ currentPhase, progress, onPhaseClick }: RevisionWork
 
   return (
     <div className="bg-white">
-      {/* Phase steps - now the most prominent element at the very top */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      {/* Header and progress bar */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-blue-100 rounded-lg">
+            <TrendingUp className="w-5 h-5 text-blue-600" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-gray-900">Revisjonsprosess</h2>
+            <p className="text-gray-600 text-sm">Følg fremgangen gjennom hele revisjonen</p>
+          </div>
+        </div>
+        
+        <div className="flex items-center gap-4">
+          <Badge className="bg-blue-100 text-blue-800 border-blue-200 text-base font-bold px-3 py-1">
+            {Math.round(getProgressWidth())}% fullført
+          </Badge>
+        </div>
+      </div>
+
+      {/* Progress bar */}
+      <div className="mb-6">
+        <div className="w-full bg-gray-200 rounded-full h-2">
+          <div 
+            className="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full transition-all duration-700 shadow-sm"
+            style={{ width: `${getProgressWidth()}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Phase steps - now with equal sizing */}
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
         {phases.map((phase, index) => {
           const status = getPhaseStatus(index);
-          const isClickable = onPhaseClick && (status === 'completed' || status === 'current');
+          const isClickable = onPhaseClick;
+          const IconComponent = phase.icon;
           
           return (
             <div key={phase.key} className="relative">
               <div
                 className={`
-                  relative p-5 rounded-xl border-2 transition-all duration-300 group
-                  ${isClickable ? 'cursor-pointer hover:scale-105 hover:shadow-xl' : 'cursor-default'}
+                  relative p-4 rounded-xl border-2 transition-all duration-300 group cursor-pointer hover:scale-105 hover:shadow-xl min-h-[140px] flex flex-col justify-between
                   ${status === 'current' 
                     ? 'border-blue-500 bg-blue-50 shadow-xl transform scale-105' 
                     : status === 'completed'
@@ -91,14 +127,16 @@ const RevisionWorkflow = ({ currentPhase, progress, onPhaseClick }: RevisionWork
                 `}>
                   {status === 'completed' ? (
                     <CheckCircle className="w-5 h-5 text-white" />
+                  ) : IconComponent ? (
+                    <IconComponent className="w-4 h-4 text-white" />
                   ) : (
                     <span className="text-white">{phase.number}</span>
                   )}
                 </div>
 
                 {/* Content */}
-                <div className="pt-3">
-                  <h3 className={`font-bold text-lg mb-3 ${
+                <div className="pt-3 flex-1">
+                  <h3 className={`font-bold text-base mb-2 ${
                     status === 'current' ? 'text-blue-900' :
                     status === 'completed' ? 'text-green-900' :
                     'text-gray-700'
@@ -112,16 +150,14 @@ const RevisionWorkflow = ({ currentPhase, progress, onPhaseClick }: RevisionWork
                   }`}>
                     {phase.description}
                   </p>
+                </div>
 
-                  {/* Action indicator for clickable phases */}
-                  {isClickable && (
-                    <div className="mt-4 flex items-center text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                      <span className={status === 'completed' ? 'text-green-600' : 'text-blue-600'}>
-                        Vis detaljer
-                      </span>
-                      <ArrowRight className="w-4 h-4 ml-1" />
-                    </div>
-                  )}
+                {/* Action indicator */}
+                <div className="mt-3 flex items-center text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                  <span className={status === 'completed' ? 'text-green-600' : 'text-blue-600'}>
+                    Vis detaljer
+                  </span>
+                  <ArrowRight className="w-4 h-4 ml-1" />
                 </div>
 
                 {/* Status indicator */}
@@ -145,35 +181,6 @@ const RevisionWorkflow = ({ currentPhase, progress, onPhaseClick }: RevisionWork
             </div>
           );
         })}
-      </div>
-
-      {/* Header and progress bar - now below the phase boxes */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-blue-100 rounded-lg">
-            <TrendingUp className="w-5 h-5 text-blue-600" />
-          </div>
-          <div>
-            <h2 className="text-lg font-bold text-gray-900">Revisjonsprosess</h2>
-            <p className="text-gray-600 text-sm">Følg fremgangen gjennom hele revisjonen</p>
-          </div>
-        </div>
-        
-        <div className="flex items-center gap-4">
-          <Badge className="bg-blue-100 text-blue-800 border-blue-200 text-base font-bold px-3 py-1">
-            {Math.round(getProgressWidth())}% fullført
-          </Badge>
-        </div>
-      </div>
-
-      {/* Progress bar */}
-      <div className="mt-4">
-        <div className="w-full bg-gray-200 rounded-full h-2">
-          <div 
-            className="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full transition-all duration-700 shadow-sm"
-            style={{ width: `${getProgressWidth()}%` }}
-          />
-        </div>
       </div>
     </div>
   );
