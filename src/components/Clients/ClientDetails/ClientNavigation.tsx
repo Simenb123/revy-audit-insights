@@ -2,7 +2,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { FileText, Database, BarChart3, UserCheck } from 'lucide-react';
+import { FileText, Database, BarChart3 } from 'lucide-react';
 
 interface ClientNavigationProps {
   orgNumber: string;
@@ -17,11 +17,6 @@ const ClientNavigation = ({ orgNumber }: ClientNavigationProps) => {
       label: 'Oversikt',
       icon: BarChart3,
       exact: true,
-    },
-    {
-      to: `/klienter/${orgNumber}/oppdragsvurdering`,
-      label: 'Oppdragsvurdering',
-      icon: UserCheck,
     },
     {
       to: `/klienter/${orgNumber}/regnskap`,

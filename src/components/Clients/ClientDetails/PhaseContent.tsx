@@ -1,9 +1,9 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AuditPhase, Client } from '@/types/revio';
 import { FileText, Users, Calculator, CheckSquare } from 'lucide-react';
 import ClientDetails from './ClientDetails';
+import EngagementChecklist from '@/components/Engagement/EngagementChecklist';
 
 interface PhaseContentProps {
   phase: AuditPhase;
@@ -13,36 +13,7 @@ interface PhaseContentProps {
 const PhaseContent = ({ phase, client }: PhaseContentProps) => {
   const renderEngagementContent = () => (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="w-5 h-5" />
-            Oppdragsvurdering
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <h4 className="font-medium mb-2">Klientaksept</h4>
-              <ul className="text-sm space-y-1 text-muted-foreground">
-                <li>• Vurder klientens integritet</li>
-                <li>• Kompetansevurdering</li>
-                <li>• Uavhengighetsvurdering</li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-medium mb-2">Oppdragsbrev</h4>
-              <ul className="text-sm space-y-1 text-muted-foreground">
-                <li>• Definere oppdraget</li>
-                <li>• Ansvarsfordeling</li>
-                <li>• Honorar og tidsplan</li>
-              </ul>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-      
-      <ClientDetails client={client} />
+      <EngagementChecklist clientId={client.id} clientName={client.name} />
     </div>
   );
 
