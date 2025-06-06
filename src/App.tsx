@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -13,7 +14,6 @@ import NotFound from "./pages/NotFound";
 import { RevyContextProvider } from "./components/RevyContext/RevyContextProvider";
 import AccountingExplorer from "./components/DataAnalysis/AccountingExplorer";
 import TransactionSampling from "./components/DataAnalysis/TransactionSampling";
-import { SidebarProvider } from '@/components/ui/sidebar';
 import ClientAdmin from "./pages/ClientAdmin";
 import DataImport from "./pages/DataImport";
 import ClientDetail from "./pages/ClientDetail";
@@ -40,89 +40,113 @@ const App = () => {
         <AuthProvider>
           <RevyContextProvider>
             <BrowserRouter>
-              <SidebarProvider>
-                <AppLayout>
-                  <Toaster />
-                  <Sonner />
-                  <Routes>
-                    <Route path="/auth" element={<Auth />} />
-                    <Route path="/" element={<Navigate to="/klienter" replace />} />
+              <Toaster />
+              <Sonner />
+              <Routes>
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/" element={<Navigate to="/klienter" replace />} />
 
-                    {/* Protected routes innenfor AppLayout */}
-                    <Route path="/klienter" element={
-                      <ProtectedRoute>
-                        <ClientsOverview />
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/klienter/:orgNumber/*" element={
-                      <ProtectedRoute>
-                        <ClientDetail />
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/klienter/:orgNumber/regnskap" element={
-                      <ProtectedRoute>
-                        <LedgerPage />
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/klienter/:orgNumber/regnskapsdata" element={
-                      <ProtectedRoute>
-                        <AccountingData />
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/fag/*" element={
-                      <ProtectedRoute>
-                        <KnowledgeBase />
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/analyser" element={
-                      <ProtectedRoute>
-                        <AccountingExplorer />
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/analyser/transaksjoner" element={
-                      <ProtectedRoute>
-                        <TransactionSampling />
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/dokumenter" element={
-                      <ProtectedRoute>
-                        <Index />
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/prosjekter" element={
-                      <ProtectedRoute>
-                        <Index />
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/innstillinger" element={
-                      <ProtectedRoute>
-                        <Index />
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/hjelp" element={
-                      <ProtectedRoute>
-                        <Index />
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/regnskap" element={
-                      <ProtectedRoute>
-                        <Index />
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/klienter/administrasjon" element={
-                      <ProtectedRoute>
-                        <ClientAdmin />
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/data-import" element={
-                      <ProtectedRoute>
-                        <DataImport />
-                      </ProtectedRoute>
-                    } />
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </AppLayout>
-              </SidebarProvider>
+                {/* Protected routes innenfor AppLayout */}
+                <Route path="/klienter" element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <ClientsOverview />
+                    </AppLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/klienter/:orgNumber/*" element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <ClientDetail />
+                    </AppLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/klienter/:orgNumber/regnskap" element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <LedgerPage />
+                    </AppLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/klienter/:orgNumber/regnskapsdata" element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <AccountingData />
+                    </AppLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/fag/*" element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <KnowledgeBase />
+                    </AppLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/analyser" element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <AccountingExplorer />
+                    </AppLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/analyser/transaksjoner" element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <TransactionSampling />
+                    </AppLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/dokumenter" element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <Index />
+                    </AppLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/prosjekter" element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <Index />
+                    </AppLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/innstillinger" element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <Index />
+                    </AppLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/hjelp" element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <Index />
+                    </AppLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/regnskap" element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <Index />
+                    </AppLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/klienter/administrasjon" element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <ClientAdmin />
+                    </AppLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/data-import" element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <DataImport />
+                    </AppLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
             </BrowserRouter>
           </RevyContextProvider>
         </AuthProvider>

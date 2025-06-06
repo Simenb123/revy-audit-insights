@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { cn } from '@/lib/utils';
 import { 
   Users, 
   FileText, 
@@ -12,6 +11,13 @@ import {
   Settings,
   HelpCircle
 } from 'lucide-react';
+import {
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+} from "@/components/ui/sidebar";
 
 const SidebarNav = () => {
   const location = useLocation();
@@ -69,23 +75,22 @@ const SidebarNav = () => {
   };
 
   return (
-    <nav className="space-y-1 p-4">
-      {navItems.map((item) => (
-        <Link
-          key={item.to}
-          to={item.to}
-          className={cn(
-            "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-            isActive(item.to)
-              ? "bg-primary text-primary-foreground"
-              : "text-muted-foreground hover:text-foreground hover:bg-muted"
-          )}
-        >
-          <item.icon className="w-4 h-4" />
-          {item.label}
-        </Link>
-      ))}
-    </nav>
+    <SidebarGroup>
+      <SidebarGroupContent>
+        <SidebarMenu>
+          {navItems.map((item) => (
+            <SidebarMenuItem key={item.to}>
+              <SidebarMenuButton asChild isActive={isActive(item.to)}>
+                <Link to={item.to}>
+                  <item.icon />
+                  <span>{item.label}</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          ))}
+        </SidebarMenu>
+      </SidebarGroupContent>
+    </SidebarGroup>
   );
 };
 

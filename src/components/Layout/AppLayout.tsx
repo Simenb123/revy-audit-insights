@@ -1,5 +1,6 @@
 
-import React, { ReactNode, useState } from 'react';
+import React, { ReactNode } from 'react';
+import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import AppHeader from './AppHeader';
 import Sidebar from './Sidebar';
 import RevyAssistant from '../Revy/RevyAssistant';
@@ -10,26 +11,26 @@ interface AppLayoutProps {
 }
 
 const AppLayout = ({ children }: AppLayoutProps) => {
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  
   return (
     <TooltipProvider delayDuration={0}>
-      <div className="flex flex-col h-screen w-full bg-background">
-        {/* Fixed header */}
-        <AppHeader />
-        
-        {/* Flexible content area */}
-        <div className="flex flex-1 overflow-hidden">
-          <Sidebar open={drawerOpen} onClose={() => setDrawerOpen(false)} />
-          
-          {/* Main content with proper overflow handling */}
-          <main className="flex-1 w-full overflow-auto">
-            {children}
-          </main>
-          
-          <RevyAssistant />
+      <SidebarProvider>
+        <div className="flex min-h-screen w-full bg-background">
+          <Sidebar />
+          <SidebarInset>
+            <div className="flex flex-col h-screen w-full">
+              {/* Fixed header */}
+              <AppHeader />
+              
+              {/* Main content with proper overflow handling */}
+              <main className="flex-1 w-full overflow-auto">
+                {children}
+              </main>
+              
+              <RevyAssistant />
+            </div>
+          </SidebarInset>
         </div>
-      </div>
+      </SidebarProvider>
     </TooltipProvider>
   );
 };

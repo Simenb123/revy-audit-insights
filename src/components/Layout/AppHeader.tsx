@@ -1,9 +1,9 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { Bell, HelpCircle, Settings, User, Menu, LogOut } from "lucide-react";
+import { Bell, HelpCircle, Settings, User, LogOut } from "lucide-react";
+import { SidebarTrigger } from '@/components/ui/sidebar';
 import Logo from './Logo';
-import { useSidebar } from '@/components/ui/sidebar';
 import { useLocation, useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -16,7 +16,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 const AppHeader = () => {
-  const { toggleSidebar } = useSidebar();
   const location = useLocation();
   const { toast } = useToast();
   const { orgNumber } = useParams<{ orgNumber: string }>();
@@ -77,16 +76,7 @@ const AppHeader = () => {
     >
       <div className="h-14 flex items-center justify-between px-4 border-b border-revio-600">
         <div className="flex items-center gap-4">
-          <Button 
-            data-cy="hamburger"
-            variant="ghost" 
-            size="icon" 
-            className="md:hidden text-white hover:bg-revio-600 rounded-md" 
-            onClick={toggleSidebar}
-          >
-            <Menu size={20} />
-            <span className="sr-only">Toggle sidebar</span>
-          </Button>
+          <SidebarTrigger className="text-white hover:bg-revio-600" />
           <Logo />
         </div>
 
