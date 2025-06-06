@@ -84,7 +84,7 @@ const ArticleView = () => {
   if (isLoading) return <div>Loading...</div>;
   if (!article) return <div>Article not found</div>;
 
-  const canEdit = session?.user?.id === article.authorId;
+  const canEdit = session?.user?.id === article.author_id;
 
   return (
     <div className="space-y-6">
@@ -99,7 +99,7 @@ const ArticleView = () => {
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link to={`/fag/kategori/${article.categoryId}`}>
+              <Link to={`/fag/kategori/${article.category_id}`}>
                 {article.category?.name}
               </Link>
             </BreadcrumbLink>
@@ -122,11 +122,11 @@ const ArticleView = () => {
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
             <span className="flex items-center gap-1">
               <Eye className="w-4 h-4" />
-              {article.viewCount} visninger
+              {article.view_count} visninger
             </span>
             <span className="flex items-center gap-1">
               <Clock className="w-4 h-4" />
-              {new Date(article.publishedAt || article.createdAt).toLocaleDateString('nb-NO')}
+              {new Date(article.published_at || article.created_at).toLocaleDateString('nb-NO')}
             </span>
           </div>
           

@@ -145,11 +145,11 @@ const CategoryView = () => {
                     <div className="flex items-center gap-4 text-xs text-muted-foreground ml-auto">
                       <span className="flex items-center gap-1">
                         <Eye className="w-3 h-3" />
-                        {article.viewCount}
+                        {article.view_count}
                       </span>
                       <span className="flex items-center gap-1">
                         <Clock className="w-3 h-3" />
-                        {new Date(article.publishedAt || article.createdAt).toLocaleDateString('nb-NO')}
+                        {new Date(article.published_at || article.created_at).toLocaleDateString('nb-NO')}
                       </span>
                     </div>
                   </div>

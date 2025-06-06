@@ -5,11 +5,11 @@ export interface KnowledgeCategory {
   id: string;
   name: string;
   description?: string;
-  parentCategoryId?: string;
-  displayOrder: number;
+  parent_category_id?: string;
+  display_order: number;
   icon?: string;
-  createdAt: string;
-  updatedAt: string;
+  created_at: string;
+  updated_at: string;
   children?: KnowledgeCategory[];
 }
 
@@ -19,29 +19,29 @@ export interface KnowledgeArticle {
   slug: string;
   summary?: string;
   content: string;
-  categoryId: string;
+  category_id: string;
   status: ArticleStatus;
-  authorId: string;
+  author_id: string;
   tags?: string[];
-  viewCount: number;
-  createdAt: string;
-  updatedAt: string;
-  publishedAt?: string;
+  view_count: number;
+  created_at: string;
+  updated_at: string;
+  published_at?: string;
   category?: KnowledgeCategory;
 }
 
 export interface KnowledgeFavorite {
   id: string;
-  userId: string;
-  articleId: string;
-  createdAt: string;
+  user_id: string;
+  article_id: string;
+  created_at: string;
   article?: KnowledgeArticle;
 }
 
 export interface KnowledgeReadingHistory {
   id: string;
-  userId: string;
-  articleId: string;
-  readAt: string;
+  user_id: string;
+  article_id: string;
+  read_at: string;
   article?: KnowledgeArticle;
 }

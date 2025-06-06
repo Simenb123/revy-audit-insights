@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/Auth/AuthProvider';
-import { KnowledgeCategory, KnowledgeArticle } from '@/types/knowledge';
+import { KnowledgeCategory, KnowledgeArticle, ArticleStatus } from '@/types/knowledge';
 import { Save, X } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -23,7 +23,7 @@ interface ArticleFormData {
   content: string;
   categoryId: string;
   tags: string;
-  status: 'draft' | 'published';
+  status: ArticleStatus;
 }
 
 const ArticleEditor = () => {
@@ -85,7 +85,7 @@ const ArticleEditor = () => {
         slug: article.slug,
         summary: article.summary || '',
         content: article.content,
-        categoryId: article.categoryId,
+        categoryId: article.category_id,
         tags: article.tags?.join(', ') || '',
         status: article.status
       });
@@ -233,7 +233,7 @@ const ArticleEditor = () => {
                 <Label htmlFor="status">Status</Label>
                 <Select
                   value={form.watch('status')}
-                  onValueChange={(value) => form.setValue('status', value as 'draft' | 'published')}
+                  onValueChange={(value) => form.setValue('status', value as ArticleStatus)}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -241,6 +241,7 @@ const ArticleEditor = () => {
                   <SelectContent>
                     <SelectItem value="draft">Utkast</SelectItem>
                     <SelectItem value="published">Publisert</SelectItem>
+                    <SelectItem value="archived">Arkivert</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
