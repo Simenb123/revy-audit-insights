@@ -1,0 +1,295 @@
+
+import React, { useState } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { useForm } from 'react-hook-form';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/components/Auth/AuthProvider';
+import { KnowledgeCategory, KnowledgeArticle } from '@/types/knowledge';
+import { Save, X } from 'lucide-react';
+import { toast } from 'sonner';
+
+interface ArticleFormData {
+  title: string;
+  slug: string;
+  summary: string;
+  content: string;
+  categoryId: string;
+  tags: string;
+  status: 'draft' | 'published';
+}
+
+const ArticleEditor = () => {
+  const { articleId } = useParams<{ articleId: string }>();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { session } = useAuth();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const initialCategoryId = location.state?.categoryId;
+  const isEditing = !!articleId;
+
+  const { data: categories } = useQuery({
+    queryKey: ['knowledge-categories-all'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('knowledge_categories')
+        .select('*')
+        .order('display_order');
+      
+      if (error) throw error;
+      return data as KnowledgeCategory[];
+    }
+  });
+
+  const { data: article } = useQuery({
+    queryKey: ['knowledge-article-edit', articleId],
+    queryFn: async () => {
+      if (!articleId) return null;
+      
+      const { data, error } = await supabase
+        .from('knowledge_articles')
+        .select('*')
+        .eq('id', articleId)
+        .single();
+      
+      if (error) throw error;
+      return data as KnowledgeArticle;
+    },
+    enabled: isEditing
+  });
+
+  const form = useForm<ArticleFormData>({
+    defaultValues: {
+      title: '',
+      slug: '',
+      summary: '',
+      content: '',
+      categoryId: initialCategoryId || '',
+      tags: '',
+      status: 'draft'
+    }
+  });
+
+  React.useEffect(() => {
+    if (article) {
+      form.reset({
+        title: article.title,
+        slug: article.slug,
+        summary: article.summary || '',
+        content: article.content,
+        categoryId: article.categoryId,
+        tags: article.tags?.join(', ') || '',
+        status: article.status
+      });
+    }
+  }, [article, form]);
+
+  const generateSlug = (title: string) => {
+    return title
+      .toLowerCase()
+      .replace(/[æøå]/g, (match) => {
+        const replacements: { [key: string]: string } = { 'æ': 'ae', 'ø': 'o', 'å': 'a' };
+        return replacements[match] || match;
+      })
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .trim();
+  };
+
+  const saveMutation = useMutation({
+    mutationFn: async (data: ArticleFormData) => {
+      if (!session?.user?.id) throw new Error('Not authenticated');
+
+      const articleData = {
+        title: data.title,
+        slug: data.slug,
+        summary: data.summary || null,
+        content: data.content,
+        category_id: data.categoryId,
+        tags: data.tags ? data.tags.split(',').map(tag => tag.trim()).filter(Boolean) : null,
+        status: data.status,
+        author_id: session.user.id,
+        published_at: data.status === 'published' ? new Date().toISOString() : null
+      };
+
+      if (isEditing && articleId) {
+        const { data: result, error } = await supabase
+          .from('knowledge_articles')
+          .update(articleData)
+          .eq('id', articleId)
+          .select()
+          .single();
+        
+        if (error) throw error;
+        return result;
+      } else {
+        const { data: result, error } = await supabase
+          .from('knowledge_articles')
+          .insert(articleData)
+          .select()
+          .single();
+        
+        if (error) throw error;
+        return result;
+      }
+    },
+    onSuccess: (result) => {
+      toast.success(isEditing ? 'Artikkel oppdatert' : 'Artikkel opprettet');
+      navigate(`/fag/artikkel/${result.slug}`);
+    },
+    onError: (error) => {
+      toast.error('Feil ved lagring: ' + error.message);
+    }
+  });
+
+  const onSubmit = (data: ArticleFormData) => {
+    if (!data.slug) {
+      data.slug = generateSlug(data.title);
+    }
+    saveMutation.mutate(data);
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">
+          {isEditing ? 'Rediger artikkel' : 'Ny artikkel'}
+        </h1>
+        <Button variant="outline" onClick={() => navigate(-1)}>
+          <X className="w-4 h-4 mr-2" />
+          Avbryt
+        </Button>
+      </div>
+
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Artikkeldetaljer</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="title">Tittel *</Label>
+                <Input
+                  id="title"
+                  {...form.register('title', { required: true })}
+                  onBlur={(e) => {
+                    if (!form.getValues('slug')) {
+                      form.setValue('slug', generateSlug(e.target.value));
+                    }
+                  }}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="slug">URL-slug *</Label>
+                <Input
+                  id="slug"
+                  {...form.register('slug', { required: true })}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="summary">Sammendrag</Label>
+              <Textarea
+                id="summary"
+                {...form.register('summary')}
+                rows={3}
+                placeholder="Kort beskrivelse av artikkelen..."
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="categoryId">Kategori *</Label>
+                <Select
+                  value={form.watch('categoryId')}
+                  onValueChange={(value) => form.setValue('categoryId', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Velg kategori" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories?.map((category) => (
+                      <SelectItem key={category.id} value={category.id}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="status">Status</Label>
+                <Select
+                  value={form.watch('status')}
+                  onValueChange={(value) => form.setValue('status', value as 'draft' | 'published')}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="draft">Utkast</SelectItem>
+                    <SelectItem value="published">Publisert</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="tags">Tags (kommaseparert)</Label>
+              <Input
+                id="tags"
+                {...form.register('tags')}
+                placeholder="revisjon, isa-315, risikovurdering"
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Innhold</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <Label htmlFor="content">Artikkelinnhold *</Label>
+              <Textarea
+                id="content"
+                {...form.register('content', { required: true })}
+                rows={20}
+                placeholder="Skriv artikkelinnholdet her..."
+                className="font-mono"
+              />
+              <p className="text-xs text-muted-foreground">
+                Du kan bruke HTML-tags for formatering.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="flex justify-end gap-2">
+          <Button
+            type="submit"
+            disabled={saveMutation.isPending}
+          >
+            <Save className="w-4 h-4 mr-2" />
+            {saveMutation.isPending ? 'Lagrer...' : 'Lagre'}
+          </Button>
+        </div>
+      </form>
+    </div>
+  );
+};
+
+export default ArticleEditor;

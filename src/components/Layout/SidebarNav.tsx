@@ -1,70 +1,92 @@
 
-import { Link } from "react-router-dom";
-import { Users, Home, BarChart2, FileText, FolderOpen, Settings, HelpCircle } from "lucide-react";
+import React from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { cn } from '@/lib/utils';
+import { 
+  Users, 
+  FileText, 
+  Home, 
+  BarChart3, 
+  Folder, 
+  Book,
+  Settings,
+  HelpCircle
+} from 'lucide-react';
 
-export default function SidebarNav() {
+const SidebarNav = () => {
+  const location = useLocation();
+  
+  const navItems = [
+    {
+      to: "/klienter",
+      icon: Users,
+      label: "Klienter"
+    },
+    {
+      to: "/regnskap",
+      icon: FileText,
+      label: "Regnskap"
+    },
+    {
+      to: "/dashboard",
+      icon: Home,
+      label: "Dashboard"
+    },
+    {
+      to: "/analyser",
+      icon: BarChart3,
+      label: "Analyser"
+    },
+    {
+      to: "/fag",
+      icon: Book,
+      label: "Fag"
+    },
+    {
+      to: "/dokumenter",
+      icon: FileText,
+      label: "Dokumenter"
+    },
+    {
+      to: "/prosjekter",
+      icon: Folder,
+      label: "Prosjekter"
+    },
+    {
+      to: "/innstillinger",
+      icon: Settings,
+      label: "Innstillinger"
+    },
+    {
+      to: "/hjelp",
+      icon: HelpCircle,
+      label: "Hjelp"
+    }
+  ];
+
+  const isActive = (path: string) => {
+    return location.pathname.startsWith(path);
+  };
+
   return (
-    <nav className="flex flex-col h-full justify-between p-2">
-      <div className="space-y-1">
-        <Link 
-          to="/klienter" 
-          className="flex h-10 items-center gap-3 rounded-md px-3 py-2 text-sm transition-all hover:bg-revio-100 text-revio-900"
+    <nav className="space-y-1 p-4">
+      {navItems.map((item) => (
+        <Link
+          key={item.to}
+          to={item.to}
+          className={cn(
+            "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+            isActive(item.to)
+              ? "bg-primary text-primary-foreground"
+              : "text-muted-foreground hover:text-foreground hover:bg-muted"
+          )}
         >
-          <Users size={20} />
-          <span className="truncate">Klienter</span>
+          <item.icon className="w-4 h-4" />
+          {item.label}
         </Link>
-        <Link 
-          to="/regnskap" 
-          className="flex h-10 items-center gap-3 rounded-md px-3 py-2 text-sm transition-all hover:bg-revio-100 text-revio-900"
-        >
-          <FileText size={20} />
-          <span className="truncate">Regnskap</span>
-        </Link>
-        <Link 
-          to="/" 
-          className="flex h-10 items-center gap-3 rounded-md px-3 py-2 text-sm transition-all hover:bg-revio-100 text-revio-900"
-        >
-          <Home size={20} />
-          <span className="truncate">Dashboard</span>
-        </Link>
-        <Link 
-          to="/analyser" 
-          className="flex h-10 items-center gap-3 rounded-md px-3 py-2 text-sm transition-all hover:bg-revio-100 text-revio-900"
-        >
-          <BarChart2 size={20} />
-          <span className="truncate">Analyser</span>
-        </Link>
-        <Link 
-          to="/dokumenter" 
-          className="flex h-10 items-center gap-3 rounded-md px-3 py-2 text-sm transition-all hover:bg-revio-100 text-revio-900"
-        >
-          <FileText size={20} />
-          <span className="truncate">Dokumenter</span>
-        </Link>
-        <Link 
-          to="/prosjekter" 
-          className="flex h-10 items-center gap-3 rounded-md px-3 py-2 text-sm transition-all hover:bg-revio-100 text-revio-900"
-        >
-          <FolderOpen size={20} />
-          <span className="truncate">Prosjekter</span>
-        </Link>
-      </div>
-      <div className="space-y-1 pt-2 border-t">
-        <Link 
-          to="/innstillinger" 
-          className="flex h-10 items-center gap-3 rounded-md px-3 py-2 text-sm transition-all hover:bg-revio-100 text-revio-900"
-        >
-          <Settings size={20} />
-          <span className="truncate">Innstillinger</span>
-        </Link>
-        <Link 
-          to="/hjelp" 
-          className="flex h-10 items-center gap-3 rounded-md px-3 py-2 text-sm transition-all hover:bg-revio-100 text-revio-900"
-        >
-          <HelpCircle size={20} />
-          <span className="truncate">Hjelp</span>
-        </Link>
-      </div>
+      ))}
     </nav>
   );
-}
+};
+
+export default SidebarNav;
