@@ -1,24 +1,26 @@
 
 import React from 'react';
-import { Drawer } from "@/components/ui/drawer";
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import Sidebar from "@/components/Layout/Sidebar";
 
-interface DrawerWrapperProps {
+interface SidebarLayoutProps {
   children: React.ReactNode;
-  open: boolean;
-  onClose: () => void;
 }
 
-const SidebarLayout = ({ children, open, onClose }: DrawerWrapperProps) => {
+const SidebarLayout = ({ children }: SidebarLayoutProps) => {
   return (
-    <div className="flex h-screen">
-      {/* fast header er 64 px ⇒ top‑16 */}
-      <aside className="sticky top-16 w-64 shrink-0 border-r bg-white">
-        <Sidebar open={open} onClose={onClose} />
-      </aside>
-      {/* innhold starter også 64 px ned */}
-      <main className="flex-1 overflow-y-auto px-6">{children}</main>
-    </div>
+    <SidebarProvider>
+      <div className="flex h-screen w-full">
+        {/* fast header er 64 px ⇒ top‑16 */}
+        <aside className="sticky top-16 w-64 shrink-0 border-r bg-white">
+          <Sidebar />
+        </aside>
+        <SidebarInset>
+          {/* innhold starter også 64 px ned */}
+          <main className="flex-1 overflow-y-auto px-6">{children}</main>
+        </SidebarInset>
+      </div>
+    </SidebarProvider>
   );
 };
 
