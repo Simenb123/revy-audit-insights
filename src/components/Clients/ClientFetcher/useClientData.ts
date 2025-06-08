@@ -8,9 +8,9 @@ export function useClientData() {
   return useQuery<Client[]>({
     queryKey: ['clients'],
     queryFn: async () => {
-      console.log('Fetching clients from database...');
+      console.log('=== STARTING CLIENT DATA FETCH ===');
       
-      // First get clients
+      // First get clients with explicit debugging
       const { data: clientsData, error: clientsError } = await supabase
         .from('clients')
         .select('*')
@@ -26,8 +26,17 @@ export function useClientData() {
         return [];
       }
 
-      console.log('Raw clients data:', clientsData);
-      console.log('Test clients found:', clientsData?.filter(c => c.is_test_data) || []);
+      console.log('Raw clients data from database:', clientsData);
+      console.log('Total clients fetched:', clientsData?.length || 0);
+      
+      // Check for test data specifically
+      const testClientsFromDB = clientsData?.filter(c => c.is_test_data === true) || [];
+      console.log('Test clients found in raw DB data:', testClientsFromDB.length);
+      console.log('Test clients details:', testClientsFromDB.map(c => ({
+        name: c.name,
+        orgNumber: c.org_number,
+        isTestData: c.is_test_data
+      })));
 
       // Then get risk areas for all clients
       const { data: riskAreasData, error: riskAreasError } = await supabase
@@ -58,6 +67,9 @@ export function useClientData() {
 
       // Transform data to match our Client type
       const transformedClients = clientsData.map(client => {
+        console.log(`=== TRANSFORMING CLIENT: ${client.name} ===`);
+        console.log(`Original is_test_data value:`, client.is_test_data, typeof client.is_test_data);
+        
         // Find risk areas for this client
         const clientRiskAreas = (riskAreasData || [])
           .filter(area => area.client_id === client.id)
@@ -159,14 +171,27 @@ export function useClientData() {
           });
         }
 
+        console.log(`=== FINISHED TRANSFORMING CLIENT: ${client.name} (isTestData: ${transformedClient.isTestData}) ===`);
+
         return transformedClient;
       });
 
+      console.log('=== TRANSFORMATION COMPLETE ===');
       console.log('Final transformed clients:', transformedClients.length);
       const testClientsInResult = transformedClients.filter(c => c.isTestData);
-      console.log('Test clients in final result:', testClientsInResult.length, testClientsInResult.map(c => c.name));
+      console.log('Test clients in final result:', testClientsInResult.length);
+      if (testClientsInResult.length > 0) {
+        console.log('Test clients found:', testClientsInResult.map(c => ({ name: c.name, isTestData: c.isTestData })));
+      } else {
+        console.log('NO TEST CLIENTS FOUND IN FINAL RESULT - Investigating why...');
+        console.log('All clients isTestData values:', transformedClients.map(c => ({ name: c.name, isTestData: c.isTestData })));
+      }
 
       return transformedClients;
-    }
+    },
+    // Force fresh data by setting staleTime to 0
+    staleTime: 0,
+    // Refetch when window regains focus
+    refetchOnWindowFocus: true
   });
 }

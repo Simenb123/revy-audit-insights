@@ -21,14 +21,22 @@ export function useClientFilters(clients: Client[]) {
 
   // Filter clients based on search term, department, and test data preference
   const filteredClients = useMemo(() => {
-    console.log('Filtering clients:', { 
+    console.log('=== FILTERING CLIENTS ===');
+    console.log('Filter parameters:', { 
       totalClients: clients.length, 
       showTestData, 
       searchTerm, 
       departmentFilter 
     });
     
-    return clients.filter(client => {
+    // Count test clients in input
+    const testClientsInput = clients.filter(c => c.isTestData);
+    console.log('Test clients in input to filter:', testClientsInput.length);
+    if (testClientsInput.length > 0) {
+      console.log('Test clients details:', testClientsInput.map(c => ({ name: c.name, isTestData: c.isTestData })));
+    }
+    
+    const result = clients.filter(client => {
       // Search filter
       const matchesSearch = !searchTerm || 
         client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -51,19 +59,31 @@ export function useClientFilters(clients: Client[]) {
           matchesDepartment,
           matchesTestDataPreference,
           shouldShow,
-          isTestData: client.isTestData
+          isTestData: client.isTestData,
+          showTestData
         });
       }
 
       return shouldShow;
     });
-  }, [clients, searchTerm, departmentFilter, showTestData]);
 
-  console.log('Filtered clients result:', {
-    total: clients.length,
-    filtered: filteredClients.length,
-    testClients: clients.filter(c => c.isTestData).length
-  });
+    const testClientsInResult = result.filter(c => c.isTestData);
+    console.log('=== FILTER RESULT ===');
+    console.log('Filtered clients result:', {
+      total: clients.length,
+      filtered: result.length,
+      testClientsInInput: testClientsInput.length,
+      testClientsInResult: testClientsInResult.length
+    });
+
+    if (testClientsInResult.length > 0) {
+      console.log('Test clients that passed filter:', testClientsInResult.map(c => c.name));
+    } else if (testClientsInput.length > 0) {
+      console.log('TEST CLIENTS WERE FILTERED OUT - Check filter logic');
+    }
+
+    return result;
+  }, [clients, searchTerm, departmentFilter, showTestData]);
 
   return {
     searchTerm,
