@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowUpRight, BarChart2, FileUp, FolderOpen, Search } from 'lucide-react';
 import DashboardGrid from '@/components/Dashboard/DashboardGrid';
 import FileUploader from '@/components/DataUpload/FileUploader';
+import CSVUploader from '@/components/DataUpload/CSVUploader';
 import DrillDownTable from '@/components/DataAnalysis/DrillDownTable';
 import { useRevyContext } from '@/components/RevyContext/RevyContextProvider';
 import { RevyContext } from '@/types/revio';
@@ -73,6 +74,13 @@ const Index = () => {
         <TabsContent value="upload" className="mt-6 w-full">
           <div className="grid grid-cols-1 gap-6">
             <FileUploader />
+            
+            {/* Add CSV uploader for direct file handling */}
+            <CSVUploader 
+              onUploadSuccess={(filename, recordCount) => {
+                console.log(`CSV uploaded: ${filename} with ${recordCount} records`);
+              }}
+            />
             
             <div className="bg-revio-50 border border-revio-100 rounded-lg p-6 flex items-center gap-4">
               <div className="bg-white p-4 rounded-full">

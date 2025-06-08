@@ -44,7 +44,16 @@ const App = () => {
               <Sonner />
               <Routes>
                 <Route path="/auth" element={<Auth />} />
-                <Route path="/" element={<Navigate to="/klienter" replace />} />
+                <Route path="/" element={<Navigate to="/dashboard" replace />} />
+
+                {/* Add dashboard route */}
+                <Route path="/dashboard" element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <Index />
+                    </AppLayout>
+                  </ProtectedRoute>
+                } />
 
                 {/* Protected routes innenfor AppLayout */}
                 <Route path="/klienter" element={

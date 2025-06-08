@@ -24,6 +24,11 @@ const SidebarNav = () => {
   
   const navItems = [
     {
+      to: "/dashboard",
+      icon: Home,
+      label: "Dashboard"
+    },
+    {
       to: "/klienter",
       icon: Users,
       label: "Klienter"
@@ -32,11 +37,6 @@ const SidebarNav = () => {
       to: "/regnskap",
       icon: FileText,
       label: "Regnskap"
-    },
-    {
-      to: "/dashboard",
-      icon: Home,
-      label: "Dashboard"
     },
     {
       to: "/analyser",
