@@ -70,6 +70,8 @@ export interface Client {
   boardMeetingsPerYear?: number | null;
   internalControls: string;
   riskAssessment: string;
+  // Test data flag
+  isTestData?: boolean;
   // Relationships
   riskAreas: RiskArea[];
   documents: ClientDocument[];

@@ -125,6 +125,16 @@ export function useClientData() {
           municipalityName: client.municipality_name || '',
           equityCapital: client.equity_capital != null ? Number(client.equity_capital) : undefined,
           shareCapital: client.share_capital != null ? Number(client.share_capital) : undefined,
+          // New extended fields
+          accountingSystem: client.accounting_system || '',
+          previousAuditor: client.previous_auditor || '',
+          auditFee: client.audit_fee != null ? Number(client.audit_fee) : undefined,
+          yearEndDate: client.year_end_date || '',
+          boardMeetingsPerYear: client.board_meetings_per_year != null ? Number(client.board_meetings_per_year) : undefined,
+          internalControls: client.internal_controls || '',
+          riskAssessment: client.risk_assessment || '',
+          // Test data flag
+          isTestData: client.is_test_data || false,
           riskAreas: clientRiskAreas,
           documents: clientDocuments,
           roles: clientRoles

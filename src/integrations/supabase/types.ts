@@ -375,6 +375,7 @@ export type Database = {
           id: string
           industry: string | null
           internal_controls: string | null
+          is_test_data: boolean | null
           municipality_code: string | null
           municipality_name: string | null
           nace_code: string | null
@@ -417,6 +418,7 @@ export type Database = {
           id?: string
           industry?: string | null
           internal_controls?: string | null
+          is_test_data?: boolean | null
           municipality_code?: string | null
           municipality_name?: string | null
           nace_code?: string | null
@@ -459,6 +461,7 @@ export type Database = {
           id?: string
           industry?: string | null
           internal_controls?: string | null
+          is_test_data?: boolean | null
           municipality_code?: string | null
           municipality_name?: string | null
           nace_code?: string | null
@@ -796,6 +799,42 @@ export type Database = {
           id?: string
           standard_name?: string
           standard_number?: string
+        }
+        Relationships: []
+      }
+      test_scenarios: {
+        Row: {
+          annual_revenue: number | null
+          company_story: string
+          created_at: string
+          description: string
+          employee_count: number | null
+          id: string
+          industry: string
+          key_challenges: string[]
+          name: string
+        }
+        Insert: {
+          annual_revenue?: number | null
+          company_story: string
+          created_at?: string
+          description: string
+          employee_count?: number | null
+          id?: string
+          industry: string
+          key_challenges?: string[]
+          name: string
+        }
+        Update: {
+          annual_revenue?: number | null
+          company_story?: string
+          created_at?: string
+          description?: string
+          employee_count?: number | null
+          id?: string
+          industry?: string
+          key_challenges?: string[]
+          name?: string
         }
         Relationships: []
       }

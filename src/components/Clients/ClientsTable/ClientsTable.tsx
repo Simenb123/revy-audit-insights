@@ -1,3 +1,4 @@
+
 import {
   Table,
   TableBody,
@@ -10,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Client } from "@/types/revio";
 import { useNavigate } from "react-router-dom";
 import EquityBadge from "./EquityBadge";
+import TestDataBadge from "./TestDataBadge";
 
 interface ClientsTableProps {
   clients: Client[];
@@ -68,7 +70,10 @@ const ClientsTable = ({ clients, onRowSelect, selectedClientId }: ClientsTablePr
                 className={`cursor-pointer hover:bg-muted/50 ${selectedClientId === client.id ? "bg-muted" : ""}`}
               >
                 <TableCell className="font-medium">
-                  {(client.name && client.name.trim()) ? client.name : "—"}
+                  <div className="flex items-center gap-2">
+                    <span>{(client.name && client.name.trim()) ? client.name : "—"}</span>
+                    <TestDataBadge isTestData={client.isTestData} />
+                  </div>
                 </TableCell>
                 <TableCell>
                   <Badge variant={statusMap[client.phase]?.variant as any}>

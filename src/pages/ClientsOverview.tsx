@@ -30,7 +30,9 @@ const ClientsOverview = () => {
     departmentFilter, 
     setDepartmentFilter, 
     departments, 
-    filteredClients 
+    filteredClients,
+    showTestData,
+    setShowTestData
   } = useClientFilters(clients);
 
   // Get the selected client
@@ -85,6 +87,8 @@ const ClientsOverview = () => {
         isRefreshing={isRefreshing}
         hasApiError={hasApiError}
         refreshProgress={refreshProgress}
+        showTestData={showTestData}
+        onTestDataToggle={setShowTestData}
       />
       
       {/* Client Details - shown when a client is selected */}
