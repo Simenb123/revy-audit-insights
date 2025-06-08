@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,7 +17,9 @@ import {
   Scale, 
   ShieldCheck,
   Clock,
-  Star
+  Star,
+  BookOpen,
+  Heart
 } from 'lucide-react';
 
 const iconMap = {
@@ -30,6 +32,7 @@ const iconMap = {
 
 const KnowledgeOverview = () => {
   const [searchTerm, setSearchTerm] = React.useState('');
+  const navigate = useNavigate();
   
   const { data: categories, isLoading } = useQuery({
     queryKey: ['knowledge-categories'],
@@ -63,6 +66,13 @@ const KnowledgeOverview = () => {
     }
   });
 
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchTerm.trim()) {
+      navigate(`/fag/sok?q=${encodeURIComponent(searchTerm.trim())}`);
+    }
+  };
+
   if (isLoading) {
     return <div className="space-y-4">Loading...</div>;
   }
@@ -71,7 +81,7 @@ const KnowledgeOverview = () => {
     <div className="space-y-6">
       {/* Search and Actions */}
       <div className="flex gap-4">
-        <div className="relative flex-1">
+        <form onSubmit={handleSearch} className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             placeholder="Søk i fagartikler..."
@@ -79,11 +89,27 @@ const KnowledgeOverview = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
           />
-        </div>
+        </form>
         <Button asChild>
           <Link to="/fag/ny-artikkel">
             <Plus className="w-4 h-4 mr-2" />
             Ny artikkel
+          </Link>
+        </Button>
+      </div>
+
+      {/* Quick Links */}
+      <div className="flex gap-2">
+        <Button variant="outline" size="sm" asChild>
+          <Link to="/fag/mine-artikler">
+            <BookOpen className="w-4 h-4 mr-2" />
+            Mine artikler
+          </Link>
+        </Button>
+        <Button variant="outline" size="sm" asChild>
+          <Link to="/fag/favoritter">
+            <Heart className="w-4 h-4 mr-2" />
+            Favoritter
           </Link>
         </Button>
       </div>
