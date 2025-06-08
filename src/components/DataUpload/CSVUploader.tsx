@@ -8,7 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import ColumnMappingInterface from './ColumnMappingInterface';
 
 interface CSVUploaderProps {
-  clientOrgNumber?: string;
+  clientId?: string;
   onUploadSuccess?: (filename: string, recordCount: number) => void;
 }
 
@@ -17,7 +17,7 @@ interface ParsedCSVData {
   data: Record<string, string>[];
 }
 
-const CSVUploader = ({ clientOrgNumber, onUploadSuccess }: CSVUploaderProps) => {
+const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
@@ -58,8 +58,13 @@ const CSVUploader = ({ clientOrgNumber, onUploadSuccess }: CSVUploaderProps) => 
     }
   };
 
-  const processTransactionData = async (data: any[], mapping: Record<string, string>, clientId: string | null) => {
+  const processTransactionData = async (data: any[], mapping: Record<string, string>) => {
     console.log('Processing transaction data with mapping:', mapping);
+    console.log('Client ID:', clientId);
+    
+    if (!clientId) {
+      throw new Error('Ingen klient valgt for import');
+    }
     
     // Transform data based on mapping
     const transformedData = data.map(row => {
@@ -91,29 +96,91 @@ const CSVUploader = ({ clientOrgNumber, onUploadSuccess }: CSVUploaderProps) => 
       return transformed;
     });
 
-    // If client org number is provided, try to find the client
-    if (clientOrgNumber && !clientId) {
-      const { data: client, error: clientError } = await supabase
-        .from('clients')
-        .select('id')
-        .eq('org_number', clientOrgNumber)
-        .single();
-      
-      if (clientError || !client) {
-        throw new Error(`Kunne ikke finne klient med org.nr: ${clientOrgNumber}`);
+    // Get client accounts for validation
+    const { data: clientAccounts } = await supabase
+      .from('client_chart_of_accounts')
+      .select('id, account_number')
+      .eq('client_id', clientId);
+
+    const accountMap = new Map(
+      clientAccounts?.map(acc => [acc.account_number, acc.id]) || []
+    );
+
+    // Create upload batch record
+    const { data: batch, error: batchError } = await supabase
+      .from('upload_batches')
+      .insert({
+        client_id: clientId,
+        user_id: (await supabase.auth.getUser()).data.user?.id!,
+        batch_type: 'general_ledger',
+        file_name: fileName,
+        file_size: 0, // CSV file size not tracked here
+        total_records: transformedData.length,
+        status: 'processing'
+      })
+      .select()
+      .single();
+
+    if (batchError) throw batchError;
+
+    // Process transactions
+    let processed = 0;
+    const errors: string[] = [];
+
+    const transactionsToInsert = transformedData
+      .map(tx => {
+        const clientAccountId = accountMap.get(tx.account_number);
+        if (!clientAccountId) {
+          errors.push(`Konto ${tx.account_number} ikke funnet i kontoplan`);
+          return null;
+        }
+
+        const txDate = new Date(tx.transaction_date);
+        return {
+          client_id: clientId,
+          client_account_id: clientAccountId,
+          transaction_date: txDate.toISOString().split('T')[0],
+          period_year: txDate.getFullYear(),
+          period_month: txDate.getMonth() + 1,
+          voucher_number: tx.voucher_number,
+          description: tx.description,
+          debit_amount: tx.debit_amount || 0,
+          credit_amount: tx.credit_amount || 0,
+          balance_amount: tx.balance_amount,
+          upload_batch_id: batch.id,
+        };
+      })
+      .filter(Boolean);
+
+    if (transactionsToInsert.length > 0) {
+      const { error: insertError } = await supabase
+        .from('general_ledger_transactions')
+        .insert(transactionsToInsert);
+
+      if (insertError) {
+        throw new Error(`Database error: ${insertError.message}`);
+      } else {
+        processed = transactionsToInsert.length;
       }
-      clientId = client.id;
     }
 
-    // Mock processing for now - in a real implementation, this would save to database
-    console.log('Transformed data ready for database:', transformedData);
-    
-    toast({
-      title: "CSV behandlet",
-      description: `${transformedData.length} transaksjoner klare for import`,
-    });
+    // Update batch status
+    await supabase
+      .from('upload_batches')
+      .update({
+        status: processed > 0 ? 'completed' : 'failed',
+        processed_records: processed,
+        error_records: errors.length,
+        error_log: errors.join('\n'),
+        completed_at: new Date().toISOString()
+      })
+      .eq('id', batch.id);
 
-    return transformedData.length;
+    if (errors.length > 0) {
+      console.warn('Processing errors:', errors);
+    }
+
+    return processed;
   };
 
   const handleFileUpload = useCallback(async (file: File) => {
@@ -148,14 +215,14 @@ const CSVUploader = ({ clientOrgNumber, onUploadSuccess }: CSVUploaderProps) => 
     } finally {
       setIsUploading(false);
     }
-  }, [clientOrgNumber, toast]);
+  }, [toast]);
 
   const handleMappingComplete = async (mapping: Record<string, string>) => {
     if (!parsedData) return;
     
     setIsUploading(true);
     try {
-      const recordCount = await processTransactionData(parsedData.data, mapping, null);
+      const recordCount = await processTransactionData(parsedData.data, mapping);
       setUploadSuccess(true);
       setShowMapping(false);
       
@@ -245,7 +312,7 @@ const CSVUploader = ({ clientOrgNumber, onUploadSuccess }: CSVUploaderProps) => 
         </CardTitle>
         <CardDescription>
           Last opp CSV-fil med regnskapsdata
-          {clientOrgNumber && ` for ${clientOrgNumber}`}
+          {clientId && ' for valgt klient'}
         </CardDescription>
       </CardHeader>
       <CardContent>

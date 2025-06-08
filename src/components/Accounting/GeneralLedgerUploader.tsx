@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -219,7 +218,7 @@ const GeneralLedgerUploader = ({ clientId }: GeneralLedgerUploaderProps) => {
     <div className="space-y-6">
       {/* CSV Uploader with Column Mapping */}
       <CSVUploader 
-        clientOrgNumber={clientId}
+        clientId={clientId}
         onUploadSuccess={handleCSVUploadSuccess}
       />
 
