@@ -10,7 +10,7 @@ export function useClientData() {
     queryFn: async () => {
       console.log('=== STARTING CLIENT DATA FETCH ===');
       
-      // First get clients with explicit debugging
+      // First get clients with explicit debugging - now with updated RLS
       const { data: clientsData, error: clientsError } = await supabase
         .from('clients')
         .select('*')
@@ -26,7 +26,7 @@ export function useClientData() {
         return [];
       }
 
-      console.log('Raw clients data from database:', clientsData);
+      console.log('Raw clients data from database (with new RLS policy):', clientsData);
       console.log('Total clients fetched:', clientsData?.length || 0);
       
       // Check for test data specifically
@@ -181,9 +181,9 @@ export function useClientData() {
       const testClientsInResult = transformedClients.filter(c => c.isTestData);
       console.log('Test clients in final result:', testClientsInResult.length);
       if (testClientsInResult.length > 0) {
-        console.log('Test clients found:', testClientsInResult.map(c => ({ name: c.name, isTestData: c.isTestData })));
+        console.log('Test clients found with NEW RLS policy:', testClientsInResult.map(c => ({ name: c.name, isTestData: c.isTestData })));
       } else {
-        console.log('NO TEST CLIENTS FOUND IN FINAL RESULT - Investigating why...');
+        console.log('NO TEST CLIENTS FOUND IN FINAL RESULT - Check if test data exists in database');
         console.log('All clients isTestData values:', transformedClients.map(c => ({ name: c.name, isTestData: c.isTestData })));
       }
 

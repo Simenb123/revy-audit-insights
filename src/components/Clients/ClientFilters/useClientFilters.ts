@@ -47,9 +47,8 @@ export function useClientFilters(clients: Client[]) {
       const matchesDepartment = departmentFilter === 'all' || 
         client.department === departmentFilter;
 
-      // Test data filter - if showTestData is true, show all clients
-      // if showTestData is false, only show non-test clients
-      const matchesTestDataPreference = showTestData || !client.isTestData;
+      // Test data filter - FIXED: Now correctly shows/hides test data based on toggle
+      const matchesTestDataPreference = showTestData ? true : !client.isTestData;
 
       const shouldShow = matchesSearch && matchesDepartment && matchesTestDataPreference;
       
@@ -78,8 +77,8 @@ export function useClientFilters(clients: Client[]) {
 
     if (testClientsInResult.length > 0) {
       console.log('Test clients that passed filter:', testClientsInResult.map(c => c.name));
-    } else if (testClientsInput.length > 0) {
-      console.log('TEST CLIENTS WERE FILTERED OUT - Check filter logic');
+    } else if (testClientsInput.length > 0 && showTestData) {
+      console.log('TEST CLIENTS WERE FILTERED OUT despite showTestData being true - Check filter logic');
     }
 
     return result;
