@@ -5,10 +5,16 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Upload, FileSpreadsheet, CheckCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import ColumnMappingInterface from './ColumnMappingInterface';
 
 interface CSVUploaderProps {
   clientOrgNumber?: string;
   onUploadSuccess?: (filename: string, recordCount: number) => void;
+}
+
+interface ParsedCSVData {
+  headers: string[];
+  data: Record<string, string>[];
 }
 
 const CSVUploader = ({ clientOrgNumber, onUploadSuccess }: CSVUploaderProps) => {
@@ -16,9 +22,11 @@ const CSVUploader = ({ clientOrgNumber, onUploadSuccess }: CSVUploaderProps) => 
   const [isUploading, setIsUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [fileName, setFileName] = useState<string>('');
+  const [parsedData, setParsedData] = useState<ParsedCSVData | null>(null);
+  const [showMapping, setShowMapping] = useState(false);
   const { toast } = useToast();
 
-  const processCSVFile = async (file: File) => {
+  const parseCSVFile = async (file: File): Promise<ParsedCSVData> => {
     try {
       const text = await file.text();
       const lines = text.split('\n').filter(line => line.trim());
@@ -32,64 +40,80 @@ const CSVUploader = ({ clientOrgNumber, onUploadSuccess }: CSVUploaderProps) => 
       console.log('CSV headers:', headers);
 
       // Parse data rows
-      const dataRows = lines.slice(1).map(line => {
+      const data = lines.slice(1).map(line => {
         const values = line.split(',').map(v => v.trim().replace(/"/g, ''));
         const row: Record<string, string> = {};
         headers.forEach((header, index) => {
           row[header] = values[index] || '';
         });
         return row;
-      });
+      }).filter(row => Object.values(row).some(value => value.trim() !== ''));
 
-      console.log('Parsed CSV data:', dataRows);
+      console.log('Parsed CSV data:', data);
       
-      // If client org number is provided, try to find the client
-      let clientId = null;
-      if (clientOrgNumber) {
-        const { data: client, error: clientError } = await supabase
-          .from('clients')
-          .select('id')
-          .eq('org_number', clientOrgNumber)
-          .single();
-        
-        if (clientError || !client) {
-          throw new Error(`Kunne ikke finne klient med org.nr: ${clientOrgNumber}`);
-        }
-        clientId = client.id;
-      }
-
-      // Determine data type based on headers and process accordingly
-      if (headers.includes('Konto') || headers.includes('Account')) {
-        await processGeneralLedgerData(dataRows, clientId);
-      } else if (headers.includes('Kontonummer') || headers.includes('AccountNumber')) {
-        await processTrialBalanceData(dataRows, clientId);
-      } else {
-        throw new Error('Ukjent CSV-format. Forventer kolonner som "Konto", "Kontonummer" etc.');
-      }
-
-      return dataRows.length;
+      return { headers, data };
     } catch (error) {
-      console.error('Error processing CSV:', error);
+      console.error('Error parsing CSV:', error);
       throw error;
     }
   };
 
-  const processGeneralLedgerData = async (data: any[], clientId: string | null) => {
-    // Implementation for general ledger data
-    console.log('Processing general ledger data:', data.length, 'records');
+  const processTransactionData = async (data: any[], mapping: Record<string, string>, clientId: string | null) => {
+    console.log('Processing transaction data with mapping:', mapping);
+    
+    // Transform data based on mapping
+    const transformedData = data.map(row => {
+      const transformed: any = {};
+      
+      Object.entries(mapping).forEach(([fileColumn, standardField]) => {
+        let value = row[fileColumn];
+        
+        // Clean and format data based on field type
+        if (standardField === 'transaction_date') {
+          // Handle different date formats
+          if (value) {
+            const date = new Date(value);
+            if (!isNaN(date.getTime())) {
+              transformed[standardField] = date.toISOString().split('T')[0];
+            }
+          }
+        } else if (standardField === 'debit_amount' || standardField === 'credit_amount' || standardField === 'balance_amount') {
+          // Clean numeric values
+          if (value) {
+            const numericValue = parseFloat(value.replace(/[^0-9.-]/g, '')) || 0;
+            transformed[standardField] = numericValue;
+          }
+        } else {
+          transformed[standardField] = value || '';
+        }
+      });
+      
+      return transformed;
+    });
+
+    // If client org number is provided, try to find the client
+    if (clientOrgNumber && !clientId) {
+      const { data: client, error: clientError } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('org_number', clientOrgNumber)
+        .single();
+      
+      if (clientError || !client) {
+        throw new Error(`Kunne ikke finne klient med org.nr: ${clientOrgNumber}`);
+      }
+      clientId = client.id;
+    }
+
+    // Mock processing for now - in a real implementation, this would save to database
+    console.log('Transformed data ready for database:', transformedData);
+    
     toast({
       title: "CSV behandlet",
-      description: `${data.length} hovedbok-transaksjoner identifisert`,
+      description: `${transformedData.length} transaksjoner klare for import`,
     });
-  };
 
-  const processTrialBalanceData = async (data: any[], clientId: string | null) => {
-    // Implementation for trial balance data
-    console.log('Processing trial balance data:', data.length, 'records');
-    toast({
-      title: "CSV behandlet", 
-      description: `${data.length} saldobalanse-poster identifisert`,
-    });
+    return transformedData.length;
   };
 
   const handleFileUpload = useCallback(async (file: File) => {
@@ -106,17 +130,14 @@ const CSVUploader = ({ clientOrgNumber, onUploadSuccess }: CSVUploaderProps) => 
     setFileName(file.name);
     
     try {
-      const recordCount = await processCSVFile(file);
-      setUploadSuccess(true);
+      const parsed = await parseCSVFile(file);
+      setParsedData(parsed);
+      setShowMapping(true);
       
       toast({
-        title: "CSV lastet opp",
-        description: `${recordCount} poster behandlet fra ${file.name}`,
+        title: "CSV lastet inn",
+        description: `${parsed.headers.length} kolonner og ${parsed.data.length} rader funnet`,
       });
-
-      if (onUploadSuccess) {
-        onUploadSuccess(file.name, recordCount);
-      }
     } catch (error) {
       console.error('Upload error:', error);
       toast({
@@ -127,7 +148,37 @@ const CSVUploader = ({ clientOrgNumber, onUploadSuccess }: CSVUploaderProps) => 
     } finally {
       setIsUploading(false);
     }
-  }, [clientOrgNumber, onUploadSuccess, toast]);
+  }, [clientOrgNumber, toast]);
+
+  const handleMappingComplete = async (mapping: Record<string, string>) => {
+    if (!parsedData) return;
+    
+    setIsUploading(true);
+    try {
+      const recordCount = await processTransactionData(parsedData.data, mapping, null);
+      setUploadSuccess(true);
+      setShowMapping(false);
+      
+      if (onUploadSuccess) {
+        onUploadSuccess(fileName, recordCount);
+      }
+    } catch (error) {
+      console.error('Processing error:', error);
+      toast({
+        title: "Behandlingsfeil",
+        description: (error as Error).message,
+        variant: "destructive"
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleMappingCancel = () => {
+    setShowMapping(false);
+    setParsedData(null);
+    setFileName('');
+  };
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -157,7 +208,33 @@ const CSVUploader = ({ clientOrgNumber, onUploadSuccess }: CSVUploaderProps) => 
   const resetUploader = () => {
     setUploadSuccess(false);
     setFileName('');
+    setParsedData(null);
+    setShowMapping(false);
   };
+
+  if (showMapping && parsedData) {
+    return (
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileSpreadsheet className="w-5 h-5" />
+            CSV Kolonnemapping - {fileName}
+          </CardTitle>
+          <CardDescription>
+            Map kolonnene fra filen din til standardfeltene som kreves for import
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ColumnMappingInterface
+            fileColumns={parsedData.headers}
+            sampleData={parsedData.data}
+            onMappingComplete={handleMappingComplete}
+            onCancel={handleMappingCancel}
+          />
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="w-full">
