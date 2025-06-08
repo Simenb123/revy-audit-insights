@@ -81,6 +81,34 @@ const ArticleView = () => {
     }
   });
 
+  // Function to format text content by converting newlines to HTML
+  const formatTextContent = (content: string) => {
+    // Check if content already contains HTML tags
+    const hasHtmlTags = /<[^>]*>/g.test(content);
+    
+    if (hasHtmlTags) {
+      // If it already has HTML, return as is
+      return content;
+    }
+    
+    // Convert plain text with newlines to HTML
+    // First convert double newlines to paragraph breaks
+    let formatted = content.replace(/\n\n+/g, '</p><p>');
+    
+    // Then convert single newlines to line breaks
+    formatted = formatted.replace(/\n/g, '<br>');
+    
+    // Wrap the entire content in a paragraph if it doesn't start with one
+    if (!formatted.startsWith('<p>')) {
+      formatted = '<p>' + formatted;
+    }
+    if (!formatted.endsWith('</p>')) {
+      formatted = formatted + '</p>';
+    }
+    
+    return formatted;
+  };
+
   if (isLoading) return <div>Loading...</div>;
   if (!article) return <div>Article not found</div>;
 
@@ -170,8 +198,8 @@ const ArticleView = () => {
       <Card>
         <CardContent className="p-6">
           <div 
-            className="prose prose-gray max-w-none"
-            dangerouslySetInnerHTML={{ __html: article.content }}
+            className="prose prose-gray max-w-none prose-p:mb-4 prose-br:my-2"
+            dangerouslySetInnerHTML={{ __html: formatTextContent(article.content) }}
           />
         </CardContent>
       </Card>
