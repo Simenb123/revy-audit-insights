@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -81,7 +80,7 @@ const ArticleView = () => {
     }
   });
 
-  // Function to format text content by converting newlines to HTML
+  // Improved function to format text content by converting newlines to HTML
   const formatTextContent = (content: string) => {
     // Check if content already contains HTML tags
     const hasHtmlTags = /<[^>]*>/g.test(content);
@@ -91,22 +90,19 @@ const ArticleView = () => {
       return content;
     }
     
-    // Convert plain text with newlines to HTML
-    // First convert double newlines to paragraph breaks
-    let formatted = content.replace(/\n\n+/g, '</p><p>');
+    // Split content by double newlines to create paragraphs
+    const paragraphs = content.split(/\n\n+/);
     
-    // Then convert single newlines to line breaks
-    formatted = formatted.replace(/\n/g, '<br>');
+    // Process each paragraph
+    const formattedParagraphs = paragraphs
+      .filter(p => p.trim()) // Remove empty paragraphs
+      .map(paragraph => {
+        // Convert single newlines within paragraphs to line breaks
+        const withLineBreaks = paragraph.replace(/\n/g, '<br>');
+        return `<p class="mb-4">${withLineBreaks}</p>`;
+      });
     
-    // Wrap the entire content in a paragraph if it doesn't start with one
-    if (!formatted.startsWith('<p>')) {
-      formatted = '<p>' + formatted;
-    }
-    if (!formatted.endsWith('</p>')) {
-      formatted = formatted + '</p>';
-    }
-    
-    return formatted;
+    return formattedParagraphs.join('');
   };
 
   if (isLoading) return <div>Loading...</div>;
@@ -198,7 +194,7 @@ const ArticleView = () => {
       <Card>
         <CardContent className="p-6">
           <div 
-            className="prose prose-gray max-w-none prose-p:mb-4 prose-br:my-2"
+            className="prose prose-gray max-w-none prose-p:mb-4 prose-p:leading-relaxed"
             dangerouslySetInnerHTML={{ __html: formatTextContent(article.content) }}
           />
         </CardContent>
