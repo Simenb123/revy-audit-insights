@@ -100,6 +100,11 @@ export function useClientData() {
           });
         }
 
+        // Fix the isTestData transformation - ensure it's properly converted from database
+        const isTestData = Boolean(client.is_test_data);
+        
+        console.log(`Client ${client.name}: is_test_data from DB = ${client.is_test_data}, converted to isTestData = ${isTestData}`);
+
         const transformedClient = {
           id: client.id,
           name: client.name,
@@ -139,22 +144,27 @@ export function useClientData() {
           boardMeetingsPerYear: client.board_meetings_per_year != null ? Number(client.board_meetings_per_year) : undefined,
           internalControls: client.internal_controls || '',
           riskAssessment: client.risk_assessment || '',
-          // Test data flag
-          isTestData: client.is_test_data || false,
+          // Test data flag - properly convert from database
+          isTestData: isTestData,
           riskAreas: clientRiskAreas,
           documents: clientDocuments,
           roles: clientRoles
         } as Client;
 
         if (transformedClient.isTestData) {
-          console.log('Transformed test client:', transformedClient);
+          console.log('Successfully transformed test client:', {
+            name: transformedClient.name,
+            isTestData: transformedClient.isTestData,
+            originalValue: client.is_test_data
+          });
         }
 
         return transformedClient;
       });
 
-      console.log('Final transformed clients:', transformedClients);
-      console.log('Test clients in final result:', transformedClients.filter(c => c.isTestData));
+      console.log('Final transformed clients:', transformedClients.length);
+      const testClientsInResult = transformedClients.filter(c => c.isTestData);
+      console.log('Test clients in final result:', testClientsInResult.length, testClientsInResult.map(c => c.name));
 
       return transformedClients;
     }
