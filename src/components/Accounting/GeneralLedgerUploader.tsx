@@ -8,6 +8,7 @@ import { Upload, FileText, CheckCircle, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import * as XLSX from 'xlsx';
+import CSVUploader from '@/components/DataUpload/CSVUploader';
 
 interface GeneralLedgerUploaderProps {
   clientId: string;
@@ -207,72 +208,88 @@ const GeneralLedgerUploader = ({ clientId }: GeneralLedgerUploaderProps) => {
     }
   };
 
+  const handleCSVUploadSuccess = (filename: string, recordCount: number) => {
+    toast({
+      title: "Hovedbok importert",
+      description: `${recordCount} transaksjoner fra ${filename} ble importert`,
+    });
+  };
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <FileText className="w-5 h-5" />
-          Last opp hovedbok
-        </CardTitle>
-        <CardDescription>
-          Last opp hovedboktransaksjoner fra Excel-fil. Filen må inneholde: Dato, Kontonummer, Debet, Kredit
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex items-center gap-4">
-          <Input
-            type="file"
-            accept=".xlsx,.xls"
-            onChange={handleFileSelect}
-            disabled={isUploading}
-          />
-          <Button
-            onClick={uploadGeneralLedger}
-            disabled={!file || isUploading}
-            className="flex items-center gap-2"
-          >
-            <Upload className="w-4 h-4" />
-            {isUploading ? 'Laster opp...' : 'Last opp'}
-          </Button>
-        </div>
+    <div className="space-y-6">
+      {/* CSV Uploader with Column Mapping */}
+      <CSVUploader 
+        clientOrgNumber={clientId}
+        onUploadSuccess={handleCSVUploadSuccess}
+      />
 
-        {isUploading && (
-          <div className="space-y-2">
-            <Progress value={progress} />
-            <p className="text-sm text-muted-foreground">
-              Prosesserer hovedbok... {progress}%
-            </p>
+      {/* Excel Uploader for legacy support */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="w-5 h-5" />
+            Last opp hovedbok (Excel)
+          </CardTitle>
+          <CardDescription>
+            Last opp hovedboktransaksjoner fra Excel-fil. Filen må inneholde: Dato, Kontonummer, Debet, Kredit
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center gap-4">
+            <Input
+              type="file"
+              accept=".xlsx,.xls"
+              onChange={handleFileSelect}
+              disabled={isUploading}
+            />
+            <Button
+              onClick={uploadGeneralLedger}
+              disabled={!file || isUploading}
+              className="flex items-center gap-2"
+            >
+              <Upload className="w-4 h-4" />
+              {isUploading ? 'Laster opp...' : 'Last opp'}
+            </Button>
           </div>
-        )}
 
-        {uploadResult && (
-          <div className={`p-4 rounded-lg border ${
-            uploadResult.success 
-              ? 'bg-green-50 border-green-200 text-green-800' 
-              : 'bg-red-50 border-red-200 text-red-800'
-          }`}>
-            <div className="flex items-center gap-2">
-              {uploadResult.success ? (
-                <CheckCircle className="w-5 h-5" />
-              ) : (
-                <AlertCircle className="w-5 h-5" />
-              )}
-              <span className="font-medium">{uploadResult.message}</span>
+          {isUploading && (
+            <div className="space-y-2">
+              <Progress value={progress} />
+              <p className="text-sm text-muted-foreground">
+                Prosesserer hovedbok... {progress}%
+              </p>
             </div>
-            {uploadResult.errors.length > 0 && (
-              <div className="mt-2">
-                <p className="text-sm font-medium">Feil som oppstod:</p>
-                <ul className="mt-1 list-disc list-inside text-sm">
-                  {uploadResult.errors.map((error, index) => (
-                    <li key={index}>{error}</li>
-                  ))}
-                </ul>
+          )}
+
+          {uploadResult && (
+            <div className={`p-4 rounded-lg border ${
+              uploadResult.success 
+                ? 'bg-green-50 border-green-200 text-green-800' 
+                : 'bg-red-50 border-red-200 text-red-800'
+            }`}>
+              <div className="flex items-center gap-2">
+                {uploadResult.success ? (
+                  <CheckCircle className="w-5 h-5" />
+                ) : (
+                  <AlertCircle className="w-5 h-5" />
+                )}
+                <span className="font-medium">{uploadResult.message}</span>
               </div>
-            )}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+              {uploadResult.errors.length > 0 && (
+                <div className="mt-2">
+                  <p className="text-sm font-medium">Feil som oppstod:</p>
+                  <ul className="mt-1 list-disc list-inside text-sm">
+                    {uploadResult.errors.map((error, index) => (
+                      <li key={index}>{error}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 

@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { ArrowUpRight, BarChart2, FileUp, FolderOpen, Search } from 'lucide-react';
 import DashboardGrid from '@/components/Dashboard/DashboardGrid';
 import FileUploader from '@/components/DataUpload/FileUploader';
-import CSVUploader from '@/components/DataUpload/CSVUploader';
 import DrillDownTable from '@/components/DataAnalysis/DrillDownTable';
 import { useRevyContext } from '@/components/RevyContext/RevyContextProvider';
 import { RevyContext } from '@/types/revio';
@@ -75,13 +74,6 @@ const Index = () => {
           <div className="grid grid-cols-1 gap-6">
             <FileUploader />
             
-            {/* Add CSV uploader for direct file handling */}
-            <CSVUploader 
-              onUploadSuccess={(filename, recordCount) => {
-                console.log(`CSV uploaded: ${filename} with ${recordCount} records`);
-              }}
-            />
-            
             <div className="bg-revio-50 border border-revio-100 rounded-lg p-6 flex items-center gap-4">
               <div className="bg-white p-4 rounded-full">
                 <img 
@@ -93,9 +85,8 @@ const Index = () => {
               <div>
                 <h3 className="text-lg font-medium text-revio-900">Revy tips</h3>
                 <p className="text-revio-800">
-                  Etter at du har lastet opp filen, kan jeg hjelpe deg med å 
-                  mappe kontoene til riktige regnskapslinjer. Klikk på chat-ikonet 
-                  nederst til høyre for assistanse.
+                  For å laste opp regnskapsdata til en spesifikk klient, gå til 
+                  klienten under "Klienter" og velg "Regnskapsdata" fanen.
                 </p>
               </div>
             </div>
