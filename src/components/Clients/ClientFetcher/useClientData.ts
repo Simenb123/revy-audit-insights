@@ -1,13 +1,15 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from '@/hooks/use-toast';
 import { Client, ClientRole } from '@/types/revio';
 
 export function useClientData() {
   return useQuery<Client[]>({
     queryKey: ['clients'],
     queryFn: async () => {
+      console.log('Fetching clients from database...');
+      
       // First get clients
       const { data: clientsData, error: clientsError } = await supabase
         .from('clients')
@@ -15,6 +17,7 @@ export function useClientData() {
         .order('created_at', { ascending: false });
 
       if (clientsError) {
+        console.error('Error fetching clients:', clientsError);
         toast({
           title: "Feil ved lasting av klienter",
           description: clientsError.message,
@@ -22,6 +25,9 @@ export function useClientData() {
         });
         return [];
       }
+
+      console.log('Raw clients data:', clientsData);
+      console.log('Test clients found:', clientsData?.filter(c => c.is_test_data) || []);
 
       // Then get risk areas for all clients
       const { data: riskAreasData, error: riskAreasError } = await supabase
@@ -51,7 +57,7 @@ export function useClientData() {
       }
 
       // Transform data to match our Client type
-      return clientsData.map(client => {
+      const transformedClients = clientsData.map(client => {
         // Find risk areas for this client
         const clientRiskAreas = (riskAreasData || [])
           .filter(area => area.client_id === client.id)
@@ -94,7 +100,7 @@ export function useClientData() {
           });
         }
 
-        return {
+        const transformedClient = {
           id: client.id,
           name: client.name,
           companyName: client.company_name,
@@ -139,7 +145,18 @@ export function useClientData() {
           documents: clientDocuments,
           roles: clientRoles
         } as Client;
+
+        if (transformedClient.isTestData) {
+          console.log('Transformed test client:', transformedClient);
+        }
+
+        return transformedClient;
       });
+
+      console.log('Final transformed clients:', transformedClients);
+      console.log('Test clients in final result:', transformedClients.filter(c => c.isTestData));
+
+      return transformedClients;
     }
   });
 }

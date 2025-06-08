@@ -21,6 +21,13 @@ export function useClientFilters(clients: Client[]) {
 
   // Filter clients based on search term, department, and test data preference
   const filteredClients = useMemo(() => {
+    console.log('Filtering clients:', { 
+      totalClients: clients.length, 
+      showTestData, 
+      searchTerm, 
+      departmentFilter 
+    });
+    
     return clients.filter(client => {
       // Search filter
       const matchesSearch = !searchTerm || 
@@ -32,12 +39,31 @@ export function useClientFilters(clients: Client[]) {
       const matchesDepartment = departmentFilter === 'all' || 
         client.department === departmentFilter;
 
-      // Test data filter
+      // Test data filter - if showTestData is true, show all clients
+      // if showTestData is false, only show non-test clients
       const matchesTestDataPreference = showTestData || !client.isTestData;
 
-      return matchesSearch && matchesDepartment && matchesTestDataPreference;
+      const shouldShow = matchesSearch && matchesDepartment && matchesTestDataPreference;
+      
+      if (client.isTestData) {
+        console.log(`Test client ${client.name}:`, {
+          matchesSearch,
+          matchesDepartment,
+          matchesTestDataPreference,
+          shouldShow,
+          isTestData: client.isTestData
+        });
+      }
+
+      return shouldShow;
     });
   }, [clients, searchTerm, departmentFilter, showTestData]);
+
+  console.log('Filtered clients result:', {
+    total: clients.length,
+    filtered: filteredClients.length,
+    testClients: clients.filter(c => c.isTestData).length
+  });
 
   return {
     searchTerm,
