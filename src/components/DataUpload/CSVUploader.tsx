@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -58,6 +57,20 @@ const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
     }
   };
 
+  const findAccountByNumberOrName = (accountMap: Map<string, string>, nameMap: Map<string, string>, accountNumber?: string, accountName?: string) => {
+    // First try to find by account number (most reliable)
+    if (accountNumber && accountMap.has(accountNumber)) {
+      return accountMap.get(accountNumber);
+    }
+    
+    // Fallback to account name matching
+    if (accountName && nameMap.has(accountName.toLowerCase())) {
+      return nameMap.get(accountName.toLowerCase());
+    }
+    
+    return null;
+  };
+
   const processTransactionData = async (data: any[], mapping: Record<string, string>) => {
     console.log('Processing transaction data with mapping:', mapping);
     console.log('Client ID:', clientId);
@@ -77,12 +90,21 @@ const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
         if (standardField === 'transaction_date') {
           // Handle different date formats
           if (value) {
-            const date = new Date(value);
-            if (!isNaN(date.getTime())) {
-              transformed[standardField] = date.toISOString().split('T')[0];
+            // Handle Norwegian date format (dd.mm.yyyy)
+            if (value.includes('.')) {
+              const [day, month, year] = value.split('.');
+              const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+              if (!isNaN(date.getTime())) {
+                transformed[standardField] = date.toISOString().split('T')[0];
+              }
+            } else {
+              const date = new Date(value);
+              if (!isNaN(date.getTime())) {
+                transformed[standardField] = date.toISOString().split('T')[0];
+              }
             }
           }
-        } else if (standardField === 'debit_amount' || standardField === 'credit_amount' || standardField === 'balance_amount') {
+        } else if (standardField === 'amount' || standardField === 'debit_amount' || standardField === 'credit_amount' || standardField === 'balance_amount' || standardField === 'vat_amount') {
           // Clean numeric values
           if (value) {
             const numericValue = parseFloat(value.replace(/[^0-9.-]/g, '')) || 0;
@@ -99,11 +121,16 @@ const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
     // Get client accounts for validation
     const { data: clientAccounts } = await supabase
       .from('client_chart_of_accounts')
-      .select('id, account_number')
+      .select('id, account_number, account_name')
       .eq('client_id', clientId);
 
     const accountMap = new Map(
       clientAccounts?.map(acc => [acc.account_number, acc.id]) || []
+    );
+    
+    // Create a name-based lookup for fallback (case-insensitive)
+    const nameMap = new Map(
+      clientAccounts?.map(acc => [acc.account_name.toLowerCase(), acc.id]) || []
     );
 
     // Create upload batch record
@@ -129,13 +156,39 @@ const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
 
     const transactionsToInsert = transformedData
       .map(tx => {
-        const clientAccountId = accountMap.get(tx.account_number);
+        // Try to find account by number or name
+        const clientAccountId = findAccountByNumberOrName(
+          accountMap, 
+          nameMap, 
+          tx.account_number, 
+          tx.account_name
+        );
+        
         if (!clientAccountId) {
-          errors.push(`Konto ${tx.account_number} ikke funnet i kontoplan`);
+          const identifier = tx.account_number || tx.account_name || 'ukjent';
+          errors.push(`Konto "${identifier}" ikke funnet i kontoplan`);
           return null;
         }
 
         const txDate = new Date(tx.transaction_date);
+        
+        // Handle the new format vs legacy format
+        let debitAmount = 0;
+        let creditAmount = 0;
+        
+        if (tx.amount !== undefined) {
+          // New format: positive = debit, negative = credit
+          if (tx.amount > 0) {
+            debitAmount = tx.amount;
+          } else {
+            creditAmount = Math.abs(tx.amount);
+          }
+        } else {
+          // Legacy format: separate debit/credit columns
+          debitAmount = tx.debit_amount || 0;
+          creditAmount = tx.credit_amount || 0;
+        }
+        
         return {
           client_id: clientId,
           client_account_id: clientAccountId,
@@ -143,9 +196,9 @@ const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
           period_year: txDate.getFullYear(),
           period_month: txDate.getMonth() + 1,
           voucher_number: tx.voucher_number,
-          description: tx.description,
-          debit_amount: tx.debit_amount || 0,
-          credit_amount: tx.credit_amount || 0,
+          description: tx.description || tx.customer_supplier_name,
+          debit_amount: debitAmount,
+          credit_amount: creditAmount,
           balance_amount: tx.balance_amount,
           upload_batch_id: batch.id,
         };
@@ -177,7 +230,12 @@ const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
       .eq('id', batch.id);
 
     if (errors.length > 0) {
-      console.warn('Processing errors:', errors);
+      console.warn('Processing errors:', errors.slice(0, 10));
+      toast({
+        title: "Delvis vellykket import",
+        description: `${processed} transaksjoner importert. ${errors.length} feil oppstod.`,
+        variant: errors.length > processed / 2 ? "destructive" : "default"
+      });
     }
 
     return processed;

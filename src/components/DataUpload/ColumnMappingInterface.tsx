@@ -25,13 +25,21 @@ interface ColumnMappingInterfaceProps {
 }
 
 const standardFields: StandardField[] = [
-  { key: 'transaction_date', label: 'Dato', required: true, description: 'Transaksjonsdato' },
-  { key: 'account_number', label: 'Kontonummer', required: true, description: 'Kontonummer' },
-  { key: 'voucher_number', label: 'Bilagsnummer', required: false, description: 'Bilagsnummer/referanse' },
-  { key: 'description', label: 'Beskrivelse', required: false, description: 'Transaksjonsbeskrivelse' },
-  { key: 'debit_amount', label: 'Debet', required: false, description: 'Debetbeløp' },
-  { key: 'credit_amount', label: 'Kredit', required: false, description: 'Kreditbeløp' },
-  { key: 'balance_amount', label: 'Saldo', required: false, description: 'Saldo etter transaksjon' },
+  { key: 'transaction_date', label: 'Dato', required: true, description: 'Transaksjonsdato (dd.mm.åååå)' },
+  { key: 'voucher_number', label: 'Bilagsnummer', required: false, description: 'Journal-ID / Bilagsnummer' },
+  { key: 'voucher_type', label: 'Bilagsart', required: false, description: 'OB, SI, PI, CP, PP, PR, RENT, DEP, COGS, BC, INT' },
+  { key: 'description', label: 'Beskrivelse', required: false, description: 'Bilagstekst (f.eks. "Sales invoice ...")' },
+  { key: 'customer_supplier_name', label: 'Tekst', required: false, description: 'Navn på kunde/leverandør' },
+  { key: 'account_number', label: 'Kontonummer', required: true, description: 'Norsk kontonummer' },
+  { key: 'account_name', label: 'Kontonavn', required: false, description: 'Kontonavn (brukes som fallback hvis kontonr mangler)' },
+  { key: 'vat_code', label: 'MVA-kode', required: false, description: '03 = utgående 25%, 01 = inngående 25%' },
+  { key: 'vat_amount', label: 'MVA-beløp', required: false, description: 'Beløp på mva-linjene (0 på andre linjer)' },
+  { key: 'amount', label: 'Beløp', required: true, description: '+ Debet − Kredit (positiv for debet, negativ for kredit)' },
+  
+  // Legacy fields for backward compatibility
+  { key: 'debit_amount', label: 'Debet (legacy)', required: false, description: 'Debetbeløp (eldre format)' },
+  { key: 'credit_amount', label: 'Kredit (legacy)', required: false, description: 'Kreditbeløp (eldre format)' },
+  { key: 'balance_amount', label: 'Saldo (legacy)', required: false, description: 'Saldo etter transaksjon (eldre format)' },
 ];
 
 const ColumnMappingInterface = ({ 
@@ -50,16 +58,31 @@ const ColumnMappingInterface = ({
     fileColumns.forEach(column => {
       const lowerColumn = column.toLowerCase();
       
-      // Auto-detect common patterns
+      // Auto-detect common patterns for new format
       if (lowerColumn.includes('dato') || lowerColumn.includes('date')) {
         autoMapping[column] = 'transaction_date';
-      } else if (lowerColumn.includes('konto') || lowerColumn.includes('account')) {
-        autoMapping[column] = 'account_number';
-      } else if (lowerColumn.includes('bilag') || lowerColumn.includes('voucher') || lowerColumn.includes('ref')) {
+      } else if (lowerColumn.includes('bilag') || lowerColumn.includes('voucher') || lowerColumn.includes('journal')) {
         autoMapping[column] = 'voucher_number';
-      } else if (lowerColumn.includes('beskriv') || lowerColumn.includes('description') || lowerColumn.includes('tekst')) {
+      } else if (lowerColumn.includes('bilagsart') || lowerColumn.includes('type')) {
+        autoMapping[column] = 'voucher_type';
+      } else if (lowerColumn.includes('beskriv') || lowerColumn.includes('description')) {
         autoMapping[column] = 'description';
-      } else if (lowerColumn.includes('debet') || lowerColumn.includes('debit')) {
+      } else if (lowerColumn.includes('tekst') || lowerColumn.includes('kunde') || lowerColumn.includes('leverandør')) {
+        autoMapping[column] = 'customer_supplier_name';
+      } else if (lowerColumn.includes('kontonummer') || lowerColumn.includes('accountno')) {
+        autoMapping[column] = 'account_number';
+      } else if (lowerColumn.includes('kontonavn') || lowerColumn.includes('accountname')) {
+        autoMapping[column] = 'account_name';
+      } else if (lowerColumn.includes('mvakode') || lowerColumn.includes('vat') && lowerColumn.includes('code')) {
+        autoMapping[column] = 'vat_code';
+      } else if (lowerColumn.includes('mvabeløp') || lowerColumn.includes('vat') && lowerColumn.includes('amount')) {
+        autoMapping[column] = 'vat_amount';
+      } else if (lowerColumn.includes('beløp') || lowerColumn.includes('amount')) {
+        autoMapping[column] = 'amount';
+      }
+      
+      // Legacy mappings for backward compatibility
+      else if (lowerColumn.includes('debet') || lowerColumn.includes('debit')) {
         autoMapping[column] = 'debit_amount';
       } else if (lowerColumn.includes('kredit') || lowerColumn.includes('credit')) {
         autoMapping[column] = 'credit_amount';
@@ -131,7 +154,7 @@ const ColumnMappingInterface = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <h4 className="font-medium mb-2">Kolonner i filen din:</h4>
-              <div className="space-y-2">
+              <div className="space-y-2 max-h-96 overflow-y-auto">
                 {fileColumns.map(column => (
                   <div key={column} className="flex items-center justify-between p-2 border rounded">
                     <span className="font-mono text-sm">{column}</span>
@@ -149,7 +172,7 @@ const ColumnMappingInterface = ({
                         }
                       }}
                     >
-                      <SelectTrigger className="w-40">
+                      <SelectTrigger className="w-48">
                         <SelectValue placeholder="Velg felt" />
                       </SelectTrigger>
                       <SelectContent>
@@ -168,7 +191,7 @@ const ColumnMappingInterface = ({
             
             <div>
               <h4 className="font-medium mb-2">Standardfelter:</h4>
-              <div className="space-y-2">
+              <div className="space-y-2 max-h-96 overflow-y-auto">
                 {standardFields.map(field => {
                   const isMapped = Object.values(mapping).includes(field.key);
                   const mappedColumn = Object.keys(mapping).find(col => mapping[col] === field.key);
@@ -232,33 +255,35 @@ const ColumnMappingInterface = ({
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  {standardFields
-                    .filter(field => Object.values(mapping).includes(field.key))
-                    .map(field => (
-                      <TableHead key={field.key}>{field.label}</TableHead>
-                    ))}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {sampleData.slice(0, 5).map((row, index) => (
-                  <TableRow key={index}>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
                     {standardFields
                       .filter(field => Object.values(mapping).includes(field.key))
-                      .map(field => {
-                        const fileColumn = Object.keys(mapping).find(col => mapping[col] === field.key);
-                        return (
-                          <TableCell key={field.key} className="font-mono text-sm">
-                            {fileColumn ? row[fileColumn] || '-' : '-'}
-                          </TableCell>
-                        );
-                      })}
+                      .map(field => (
+                        <TableHead key={field.key}>{field.label}</TableHead>
+                      ))}
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {sampleData.slice(0, 5).map((row, index) => (
+                    <TableRow key={index}>
+                      {standardFields
+                        .filter(field => Object.values(mapping).includes(field.key))
+                        .map(field => {
+                          const fileColumn = Object.keys(mapping).find(col => mapping[col] === field.key);
+                          return (
+                            <TableCell key={field.key} className="font-mono text-sm">
+                              {fileColumn ? row[fileColumn] || '-' : '-'}
+                            </TableCell>
+                          );
+                        })}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
       )}
