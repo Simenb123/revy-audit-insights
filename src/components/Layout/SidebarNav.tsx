@@ -9,7 +9,8 @@ import {
   Folder, 
   Book,
   Settings,
-  HelpCircle
+  HelpCircle,
+  Building2
 } from 'lucide-react';
 import {
   SidebarGroup,
@@ -27,6 +28,11 @@ const SidebarNav = () => {
       to: "/dashboard",
       icon: Home,
       label: "Dashboard"
+    },
+    {
+      to: "/organisasjon",
+      icon: Building2,
+      label: "Organisasjon"
     },
     {
       to: "/klienter",

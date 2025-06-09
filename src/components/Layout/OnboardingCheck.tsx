@@ -12,12 +12,16 @@ const OnboardingCheck = ({ children }: OnboardingCheckProps) => {
   const { session } = useAuth();
   const { data: userProfile, isLoading, error } = useUserProfile();
 
+  console.log('OnboardingCheck - userProfile:', userProfile);
+  console.log('OnboardingCheck - isLoading:', isLoading);
+  console.log('OnboardingCheck - error:', error);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-2 text-muted-foreground">Laster...</p>
+          <p className="mt-2 text-muted-foreground">Laster brukerdata...</p>
         </div>
       </div>
     );
@@ -31,9 +35,11 @@ const OnboardingCheck = ({ children }: OnboardingCheckProps) => {
 
   // If user has no audit firm, redirect to organization setup
   if (userProfile && !userProfile.auditFirmId) {
+    console.log('User has no audit firm, redirecting to setup');
     return <Navigate to="/organisasjon/oppsett" replace />;
   }
 
+  console.log('OnboardingCheck passed, rendering children');
   return <>{children}</>;
 };
 
