@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { useAuditFirm } from '@/hooks/useAuditFirm';
@@ -13,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { UserPlus, Mail, Users, Shield } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import type { UserRole } from '@/types/organization';
 
 const UserAdmin = () => {
   const { data: userProfile } = useUserProfile();
@@ -24,7 +24,7 @@ const UserAdmin = () => {
     email: '',
     firstName: '',
     lastName: '',
-    role: 'employee' as 'admin' | 'partner' | 'manager' | 'employee',
+    role: 'employee' as UserRole,
     departmentId: ''
   });
 
@@ -35,34 +35,50 @@ const UserAdmin = () => {
 
     setLoading(true);
     try {
-      const testUsers = [
+      const testUsers: Array<{
+        email: string;
+        first_name: string;
+        last_name: string;
+        user_role: UserRole;
+        department_id: string;
+        audit_firm_id: string;
+        is_active: boolean;
+      }> = [
         {
           email: 'partner@bhl.no',
           first_name: 'Lars',
           last_name: 'Larsen',
           user_role: 'partner',
-          department_id: departments[0].id
+          department_id: departments[0].id,
+          audit_firm_id: userProfile.auditFirmId,
+          is_active: true
         },
         {
           email: 'manager@bhl.no',
           first_name: 'Kari',
           last_name: 'Nordmann',
           user_role: 'manager',
-          department_id: departments[0].id
+          department_id: departments[0].id,
+          audit_firm_id: userProfile.auditFirmId,
+          is_active: true
         },
         {
           email: 'revisor1@bhl.no',
           first_name: 'Ole',
           last_name: 'Hansen',
           user_role: 'employee',
-          department_id: departments[0].id
+          department_id: departments[0].id,
+          audit_firm_id: userProfile.auditFirmId,
+          is_active: true
         },
         {
           email: 'revisor2@bhl.no',
           first_name: 'Ane',
           last_name: 'Eriksen',
           user_role: 'employee',
-          department_id: departments[0].id
+          department_id: departments[0].id,
+          audit_firm_id: userProfile.auditFirmId,
+          is_active: true
         }
       ];
 
@@ -79,10 +95,10 @@ const UserAdmin = () => {
             email: user.email,
             first_name: user.first_name,
             last_name: user.last_name,
-            audit_firm_id: userProfile.auditFirmId,
+            audit_firm_id: user.audit_firm_id,
             department_id: user.department_id,
             user_role: user.user_role,
-            is_active: true
+            is_active: user.is_active
           });
       }
 
@@ -197,7 +213,7 @@ const UserAdmin = () => {
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="role">Rolle</Label>
-                    <Select value={inviteData.role} onValueChange={(value: any) => setInviteData({ ...inviteData, role: value })}>
+                    <Select value={inviteData.role} onValueChange={(value: UserRole) => setInviteData({ ...inviteData, role: value })}>
                       <SelectTrigger>
                         <SelectValue placeholder="Velg rolle" />
                       </SelectTrigger>
