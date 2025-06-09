@@ -57,6 +57,91 @@ const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
     }
   };
 
+  const determineAccountType = (accountNumber: string): 'asset' | 'liability' | 'equity' | 'revenue' | 'expense' => {
+    const firstDigit = accountNumber.charAt(0);
+    
+    switch (firstDigit) {
+      case '1':
+        return 'asset';
+      case '2':
+        return 'liability';
+      case '3':
+        return 'equity';
+      case '4':
+      case '5':
+      case '6':
+      case '7':
+      case '8':
+        return 'revenue';
+      case '9':
+        return 'expense';
+      default:
+        // Default to asset for unknown patterns
+        return 'asset';
+    }
+  };
+
+  const generateAccountName = (accountNumber: string): string => {
+    const firstDigit = accountNumber.charAt(0);
+    
+    const baseNames: Record<string, string> = {
+      '1': 'Eiendeler',
+      '2': 'Gjeld',
+      '3': 'Egenkapital',
+      '4': 'Salgsinntekt',
+      '5': 'Annen inntekt',
+      '6': 'Varekostnad',
+      '7': 'Lønnskostnad',
+      '8': 'Annen kostnad',
+      '9': 'Finanskostnad'
+    };
+    
+    const baseName = baseNames[firstDigit] || 'Ukjent konto';
+    return `${baseName} ${accountNumber}`;
+  };
+
+  const createMissingAccounts = async (accountNumbers: string[]) => {
+    console.log('Creating missing accounts for:', accountNumbers);
+    
+    // Get existing accounts to avoid duplicates
+    const { data: existingAccounts } = await supabase
+      .from('client_chart_of_accounts')
+      .select('account_number')
+      .eq('client_id', clientId)
+      .in('account_number', accountNumbers);
+
+    const existingNumbers = new Set(existingAccounts?.map(acc => acc.account_number) || []);
+    const missingNumbers = accountNumbers.filter(num => !existingNumbers.has(num));
+
+    if (missingNumbers.length === 0) {
+      console.log('No missing accounts to create');
+      return [];
+    }
+
+    console.log('Missing account numbers:', missingNumbers);
+
+    const accountsToCreate = missingNumbers.map(accountNumber => ({
+      client_id: clientId,
+      account_number: accountNumber,
+      account_name: generateAccountName(accountNumber),
+      account_type: determineAccountType(accountNumber),
+      is_active: true
+    }));
+
+    const { data: newAccounts, error } = await supabase
+      .from('client_chart_of_accounts')
+      .insert(accountsToCreate)
+      .select();
+
+    if (error) {
+      console.error('Error creating accounts:', error);
+      throw new Error(`Kunne ikke opprette manglende kontoer: ${error.message}`);
+    }
+
+    console.log('Successfully created accounts:', newAccounts);
+    return newAccounts || [];
+  };
+
   const findAccountByNumberOrName = (accountMap: Map<string, string>, nameMap: Map<string, string>, accountNumber?: string, accountName?: string) => {
     // First try to find by account number (most reliable)
     if (accountNumber && accountMap.has(accountNumber)) {
@@ -118,7 +203,38 @@ const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
       return transformed;
     });
 
-    // Get client accounts for validation
+    // Extract all unique account numbers from the data
+    const allAccountNumbers = [...new Set(
+      transformedData
+        .map(tx => tx.account_number)
+        .filter(num => num && num.trim() !== '')
+    )];
+
+    console.log('All account numbers in CSV:', allAccountNumbers);
+
+    // Create missing accounts first
+    let createdAccounts: any[] = [];
+    if (allAccountNumbers.length > 0) {
+      try {
+        createdAccounts = await createMissingAccounts(allAccountNumbers);
+        if (createdAccounts.length > 0) {
+          toast({
+            title: "Kontoer opprettet",
+            description: `${createdAccounts.length} nye kontoer ble automatisk opprettet`,
+          });
+        }
+      } catch (error) {
+        console.error('Failed to create missing accounts:', error);
+        toast({
+          title: "Feil ved opprettelse av kontoer",
+          description: (error as Error).message,
+          variant: "destructive"
+        });
+        throw error;
+      }
+    }
+
+    // Get updated client accounts (including newly created ones)
     const { data: clientAccounts } = await supabase
       .from('client_chart_of_accounts')
       .select('id, account_number, account_name')
@@ -235,6 +351,11 @@ const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
         title: "Delvis vellykket import",
         description: `${processed} transaksjoner importert. ${errors.length} feil oppstod.`,
         variant: errors.length > processed / 2 ? "destructive" : "default"
+      });
+    } else if (createdAccounts.length > 0) {
+      toast({
+        title: "Import fullført",
+        description: `${processed} transaksjoner importert. ${createdAccounts.length} nye kontoer opprettet.`,
       });
     }
 
