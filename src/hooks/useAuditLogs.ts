@@ -8,7 +8,7 @@ interface AuditLog {
   clientId: string;
   userId: string;
   reviewerId?: string;
-  actionType: string;
+  actionType: 'review_completed' | 'task_assigned' | 'document_uploaded' | 'analysis_performed';
   areaName: string;
   description?: string;
   isReviewed: boolean;
@@ -19,7 +19,7 @@ interface AuditLog {
 
 interface UseAuditLogsParams {
   searchTerm?: string;
-  actionType?: string;
+  actionType?: 'review_completed' | 'task_assigned' | 'document_uploaded' | 'analysis_performed';
   isReviewed?: boolean;
   clientId?: string;
 }

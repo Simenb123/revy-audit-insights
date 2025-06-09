@@ -12,7 +12,7 @@ const AuditLogStats = () => {
   const totalLogs = allLogs?.length || 0;
   const pendingCount = pendingLogs?.length || 0;
   const reviewedCount = reviewedLogs?.length || 0;
-  const criticalActions = allLogs?.filter(log => log.actionType === 'delete').length || 0;
+  const criticalActions = allLogs?.filter(log => log.actionType === 'analysis_performed').length || 0;
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
@@ -51,7 +51,7 @@ const AuditLogStats = () => {
           <div className="text-center">
             <AlertTriangle className="h-8 w-8 text-red-500 mx-auto mb-2" />
             <h3 className="text-2xl font-bold">{criticalActions}</h3>
-            <p className="text-sm text-muted-foreground">Kritiske handlinger</p>
+            <p className="text-sm text-muted-foreground">Analyser utført</p>
           </div>
         </CardContent>
       </Card>

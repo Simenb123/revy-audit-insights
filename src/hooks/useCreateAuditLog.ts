@@ -6,7 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 
 interface CreateAuditLogParams {
   clientId: string;
-  actionType: 'create' | 'update' | 'delete' | 'review';
+  actionType: 'review_completed' | 'task_assigned' | 'document_uploaded' | 'analysis_performed';
   areaName: string;
   description?: string;
   metadata?: any;

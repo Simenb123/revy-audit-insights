@@ -19,17 +19,27 @@ const AuditLogs = () => {
   
   const { data: auditLogs, isLoading } = useAuditLogs({
     searchTerm,
-    actionType: actionFilter !== 'all' ? actionFilter : undefined,
+    actionType: actionFilter !== 'all' ? actionFilter as any : undefined,
     isReviewed: statusFilter === 'reviewed' ? true : statusFilter === 'pending' ? false : undefined
   });
 
   const getActionTypeColor = (actionType: string) => {
     switch (actionType) {
-      case 'create': return 'bg-green-100 text-green-800';
-      case 'update': return 'bg-blue-100 text-blue-800';
-      case 'delete': return 'bg-red-100 text-red-800';
-      case 'review': return 'bg-purple-100 text-purple-800';
+      case 'task_assigned': return 'bg-green-100 text-green-800';
+      case 'document_uploaded': return 'bg-blue-100 text-blue-800';
+      case 'analysis_performed': return 'bg-purple-100 text-purple-800';
+      case 'review_completed': return 'bg-orange-100 text-orange-800';
       default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getActionTypeLabel = (actionType: string) => {
+    switch (actionType) {
+      case 'task_assigned': return 'Oppgave tildelt';
+      case 'document_uploaded': return 'Dokument lastet opp';
+      case 'analysis_performed': return 'Analyse utført';
+      case 'review_completed': return 'Gjennomgang fullført';
+      default: return actionType;
     }
   };
 
@@ -88,10 +98,10 @@ const AuditLogs = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Alle handlinger</SelectItem>
-                  <SelectItem value="create">Opprett</SelectItem>
-                  <SelectItem value="update">Oppdater</SelectItem>
-                  <SelectItem value="delete">Slett</SelectItem>
-                  <SelectItem value="review">Anmeldelse</SelectItem>
+                  <SelectItem value="task_assigned">Oppgave tildelt</SelectItem>
+                  <SelectItem value="document_uploaded">Dokument lastet opp</SelectItem>
+                  <SelectItem value="analysis_performed">Analyse utført</SelectItem>
+                  <SelectItem value="review_completed">Gjennomgang fullført</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -130,7 +140,7 @@ const AuditLogs = () => {
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
                         <Badge className={getActionTypeColor(log.actionType)}>
-                          {log.actionType}
+                          {getActionTypeLabel(log.actionType)}
                         </Badge>
                         <span className="text-sm text-muted-foreground">
                           {log.areaName}
