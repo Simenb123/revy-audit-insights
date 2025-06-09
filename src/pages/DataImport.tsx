@@ -1,156 +1,37 @@
 
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import ExcelImporter from '@/components/DataUpload/ExcelImporter';
-import { Button } from '@/components/ui/button';
-import { ChevronLeft, Users, FileSpreadsheet, ArrowRight, AlertCircle } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { supabase } from "@/integrations/supabase/client";
+import React from 'react';
+import { useParams, useLocation } from 'react-router-dom';
+import DataUploadHub from '@/components/DataUpload/DataUploadHub';
+import AccountingDataUploader from '@/components/Accounting/AccountingDataUploader';
 
 const DataImport = () => {
-  const [recentUpload, setRecentUpload] = useState<{
-    filename: string;
-    timestamp: string;
-    importedCount: number;
-  } | null>(null);
-  const [authChecked, setAuthChecked] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [authDetails, setAuthDetails] = useState<string>('');
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      if (error) {
-        console.error("Auth error:", error);
-        setAuthDetails(`Authentication error: ${error.message}`);
-      } else if (session && session.user) {
-        setAuthDetails(`Authenticated as: ${session.user.email} (${session.user.id.substring(0, 8)}...)`);
-        console.log("Auth session:", session);
-      } else {
-        setAuthDetails('No active session found');
-        console.log("No active session");
-      }
-      
-      setIsAuthenticated(!!session);
-      setAuthChecked(true);
-    };
-    
-    checkAuth();
-  }, []);
-
-  const handleImportSuccess = (data: { filename: string, importedCount: number }) => {
-    setRecentUpload({
-      filename: data.filename,
-      timestamp: new Date().toLocaleString(),
-      importedCount: data.importedCount
-    });
-  };
-
-  if (authChecked && !isAuthenticated) {
-    return (
-      <div className="container mx-auto py-8">
-        <Alert variant="destructive" className="mb-6">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Autentisering påkrevd</AlertTitle>
-          <AlertDescription>
-            Du må være logget inn for å importere klienter. Vennligst logg inn først.
-            <div className="mt-2 text-xs font-mono bg-red-50 p-2 rounded">
-              {authDetails}
-            </div>
-          </AlertDescription>
-        </Alert>
-        <Button onClick={() => navigate('/auth')}>Gå til innlogging</Button>
-      </div>
-    );
+  const { orgNumber } = useParams<{ orgNumber: string }>();
+  const location = useLocation();
+  
+  // If we're on a specific data category route, show the appropriate uploader
+  if (location.pathname.includes('/grunnlagsdata')) {
+    return <AccountingDataUploader clientId={orgNumber} />;
   }
-
-  return (
-    <div className="container mx-auto py-8">
-      <div className="flex items-center mb-6">
-        <Button variant="ghost" size="sm" asChild className="mr-4">
-          <Link to="/" className="flex items-center gap-1">
-            <ChevronLeft size={16} />
-            <span>Tilbake til dashboard</span>
-          </Link>
-        </Button>
-        <h1 className="text-3xl font-bold">Dataimport</h1>
-      </div>
-      
-      <div className="mb-6 bg-blue-50 border border-blue-100 rounded-lg p-4 text-blue-800">
-        <h3 className="font-bold flex items-center gap-2 mb-2">
-          <FileSpreadsheet size={18} />
-          Import av klientdata
-        </h3>
-        <p>Her kan du importere klienter fra en Excel-fil. Filen må ha organisasjonsnumre i kolonne A.</p>
-        <p className="mt-2">Etter importering vil du finne klientene dine i <Link to="/klienter" className="text-blue-600 hover:underline font-medium">klientoversikten</Link>.</p>
-        <div className="mt-3 text-xs font-mono bg-blue-100 bg-opacity-50 p-2 rounded">
-          Autentiseringsstatus: {authDetails}
-        </div>
-      </div>
-      
-      {recentUpload ? (
-        <div className="mb-6">
-          <Alert className="bg-green-50 border-green-200">
-            <FileSpreadsheet className="h-5 w-5 text-green-600" />
-            <AlertTitle className="text-green-800">Importering fullført</AlertTitle>
-            <AlertDescription className="text-green-700">
-              <p className="mb-2">
-                Filen <span className="font-medium">{recentUpload.filename}</span> ble importert {recentUpload.timestamp}. 
-                <span className="font-medium"> {recentUpload.importedCount} klienter</span> ble lagt til.
-              </p>
-              <div className="mt-4">
-                <Button asChild className="gap-2">
-                  <Link to="/klienter">
-                    <Users size={16} />
-                    <span>Gå til klientoversikt</span>
-                    <ArrowRight size={16} />
-                  </Link>
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="ml-3"
-                  onClick={() => setRecentUpload(null)}
-                >
-                  Importer en ny fil
-                </Button>
-              </div>
-            </AlertDescription>
-          </Alert>
-        </div>
-      ) : (
-        <ExcelImporter onImportSuccess={handleImportSuccess} />
-      )}
-
-      {!recentUpload && (
-        <div className="mt-8">
-          <Card>
-            <CardHeader>
-              <CardTitle>Navigasjonsguide</CardTitle>
-              <CardDescription>Slik navigerer du til importerte klienter</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ol className="list-decimal pl-5 space-y-2">
-                <li>Last opp Excel-filen med organisasjonsnumre</li>
-                <li>Vent til importen er fullført</li>
-                <li>Klikk på "Gå til klientoversikt" knappen, eller</li>
-                <li>Naviger til klientoversikten fra hovedmenyen</li>
-              </ol>
-            </CardContent>
-            <CardFooter>
-              <Button asChild variant="outline" className="gap-2 w-full">
-                <Link to="/klienter">
-                  <Users size={16} />
-                  <span>Gå til klientoversikt</span>
-                </Link>
-              </Button>
-            </CardFooter>
-          </Card>
-        </div>
-      )}
-    </div>
-  );
+  
+  if (location.pathname.includes('/spesialdata')) {
+    return <AccountingDataUploader clientId={orgNumber} />;
+  }
+  
+  if (location.pathname.includes('/transaksjoner')) {
+    return <AccountingDataUploader clientId={orgNumber} />;
+  }
+  
+  if (location.pathname.includes('/import')) {
+    return <AccountingDataUploader clientId={orgNumber} />;
+  }
+  
+  // Default: show the data upload hub if we're in a client context
+  if (orgNumber) {
+    return <DataUploadHub />;
+  }
+  
+  // Fallback for non-client context
+  return <AccountingDataUploader />;
 };
 
 export default DataImport;

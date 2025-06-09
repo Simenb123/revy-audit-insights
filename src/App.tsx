@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -63,24 +62,56 @@ const App = () => {
                     </AppLayout>
                   </ProtectedRoute>
                 } />
-                <Route path="/klienter/:orgNumber/*" element={
+                <Route path="/klienter/:orgNumber" element={
                   <ProtectedRoute>
                     <AppLayout>
                       <ClientDetail />
                     </AppLayout>
                   </ProtectedRoute>
                 } />
+                
+                {/* New data upload routes */}
+                <Route path="/klienter/:orgNumber/regnskapsdata" element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <DataImport />
+                    </AppLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/klienter/:orgNumber/grunnlagsdata" element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <DataImport />
+                    </AppLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/klienter/:orgNumber/spesialdata" element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <DataImport />
+                    </AppLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/klienter/:orgNumber/transaksjoner" element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <DataImport />
+                    </AppLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/klienter/:orgNumber/import" element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <DataImport />
+                    </AppLayout>
+                  </ProtectedRoute>
+                } />
+                
+                {/* Keep existing routes */}
                 <Route path="/klienter/:orgNumber/regnskap" element={
                   <ProtectedRoute>
                     <AppLayout>
                       <LedgerPage />
-                    </AppLayout>
-                  </ProtectedRoute>
-                } />
-                <Route path="/klienter/:orgNumber/regnskapsdata" element={
-                  <ProtectedRoute>
-                    <AppLayout>
-                      <AccountingData />
                     </AppLayout>
                   </ProtectedRoute>
                 } />
