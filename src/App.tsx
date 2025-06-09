@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -19,6 +20,8 @@ import ClientDetail from "./pages/ClientDetail";
 import LedgerPage from "./pages/LedgerPage";
 import AccountingData from "./pages/AccountingData";
 import KnowledgeBase from "./pages/KnowledgeBase";
+import OrganizationOverview from "./pages/OrganizationOverview";
+import DepartmentView from "./pages/DepartmentView";
 
 const queryClient = new QueryClient();
 
@@ -45,7 +48,7 @@ const App = () => {
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
-                {/* Add dashboard route */}
+                {/* Dashboard route */}
                 <Route path="/dashboard" element={
                   <ProtectedRoute>
                     <AppLayout>
@@ -54,7 +57,23 @@ const App = () => {
                   </ProtectedRoute>
                 } />
 
-                {/* Protected routes innenfor AppLayout */}
+                {/* Organization routes */}
+                <Route path="/organisasjon" element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <OrganizationOverview />
+                    </AppLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/avdeling" element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <DepartmentView />
+                    </AppLayout>
+                  </ProtectedRoute>
+                } />
+
+                {/* Client routes */}
                 <Route path="/klienter" element={
                   <ProtectedRoute>
                     <AppLayout>
@@ -70,7 +89,7 @@ const App = () => {
                   </ProtectedRoute>
                 } />
                 
-                {/* New data upload routes */}
+                {/* Data upload routes */}
                 <Route path="/klienter/:orgNumber/regnskapsdata" element={
                   <ProtectedRoute>
                     <AppLayout>

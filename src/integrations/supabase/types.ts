@@ -186,6 +186,98 @@ export type Database = {
           },
         ]
       }
+      audit_firms: {
+        Row: {
+          address: string | null
+          city: string | null
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          org_number: string | null
+          phone: string | null
+          postal_code: string | null
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          org_number?: string | null
+          phone?: string | null
+          postal_code?: string | null
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          org_number?: string | null
+          phone?: string | null
+          postal_code?: string | null
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
+      audit_logs: {
+        Row: {
+          action_type: Database["public"]["Enums"]["audit_log_action"]
+          area_name: string
+          client_id: string
+          created_at: string
+          description: string | null
+          id: string
+          is_reviewed: boolean | null
+          metadata: Json | null
+          reviewed_at: string | null
+          reviewer_id: string | null
+          user_id: string
+        }
+        Insert: {
+          action_type: Database["public"]["Enums"]["audit_log_action"]
+          area_name: string
+          client_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_reviewed?: boolean | null
+          metadata?: Json | null
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          user_id: string
+        }
+        Update: {
+          action_type?: Database["public"]["Enums"]["audit_log_action"]
+          area_name?: string
+          client_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_reviewed?: boolean | null
+          metadata?: Json | null
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_logs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_chart_of_accounts: {
         Row: {
           account_name: string
@@ -354,6 +446,63 @@ export type Database = {
           },
         ]
       }
+      client_teams: {
+        Row: {
+          client_id: string
+          created_at: string
+          department_id: string
+          description: string | null
+          end_date: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          start_date: string | null
+          team_lead_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          department_id: string
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          start_date?: string | null
+          team_lead_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          department_id?: string
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          start_date?: string | null
+          team_lead_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_teams_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_teams_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           accounting_system: string | null
@@ -369,6 +518,7 @@ export type Database = {
           contact_person: string | null
           created_at: string
           department: string | null
+          department_id: string | null
           email: string | null
           equity_capital: number | null
           homepage: string | null
@@ -412,6 +562,7 @@ export type Database = {
           contact_person?: string | null
           created_at?: string
           department?: string | null
+          department_id?: string | null
           email?: string | null
           equity_capital?: number | null
           homepage?: string | null
@@ -455,6 +606,7 @@ export type Database = {
           contact_person?: string | null
           created_at?: string
           department?: string | null
+          department_id?: string | null
           email?: string | null
           equity_capital?: number | null
           homepage?: string | null
@@ -484,7 +636,53 @@ export type Database = {
           user_id?: string
           year_end_date?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "clients_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      departments: {
+        Row: {
+          audit_firm_id: string
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          partner_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          audit_firm_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          partner_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          audit_firm_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          partner_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "departments_audit_firm_id_fkey"
+            columns: ["audit_firm_id"]
+            isOneToOne: false
+            referencedRelation: "audit_firms"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       general_ledger_transactions: {
         Row: {
@@ -709,33 +907,63 @@ export type Database = {
       }
       profiles: {
         Row: {
+          audit_firm_id: string | null
           created_at: string
+          department_id: string | null
           email: string | null
           first_name: string | null
+          hire_date: string | null
           id: string
+          is_active: boolean | null
           last_name: string | null
           updated_at: string
+          user_role: Database["public"]["Enums"]["user_role_type"] | null
           workplace_company_name: string | null
         }
         Insert: {
+          audit_firm_id?: string | null
           created_at?: string
+          department_id?: string | null
           email?: string | null
           first_name?: string | null
+          hire_date?: string | null
           id: string
+          is_active?: boolean | null
           last_name?: string | null
           updated_at?: string
+          user_role?: Database["public"]["Enums"]["user_role_type"] | null
           workplace_company_name?: string | null
         }
         Update: {
+          audit_firm_id?: string | null
           created_at?: string
+          department_id?: string | null
           email?: string | null
           first_name?: string | null
+          hire_date?: string | null
           id?: string
+          is_active?: boolean | null
           last_name?: string | null
           updated_at?: string
+          user_role?: Database["public"]["Enums"]["user_role_type"] | null
           workplace_company_name?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_audit_firm_id_fkey"
+            columns: ["audit_firm_id"]
+            isOneToOne: false
+            referencedRelation: "audit_firms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       risk_areas: {
         Row: {
@@ -801,6 +1029,88 @@ export type Database = {
           standard_number?: string
         }
         Relationships: []
+      }
+      team_communications: {
+        Row: {
+          communication_type: Database["public"]["Enums"]["communication_type"]
+          created_at: string
+          id: string
+          is_announcement: boolean | null
+          message: string
+          parent_message_id: string | null
+          reference_id: string
+          sender_id: string
+          updated_at: string
+        }
+        Insert: {
+          communication_type: Database["public"]["Enums"]["communication_type"]
+          created_at?: string
+          id?: string
+          is_announcement?: boolean | null
+          message: string
+          parent_message_id?: string | null
+          reference_id: string
+          sender_id: string
+          updated_at?: string
+        }
+        Update: {
+          communication_type?: Database["public"]["Enums"]["communication_type"]
+          created_at?: string
+          id?: string
+          is_announcement?: boolean | null
+          message?: string
+          parent_message_id?: string | null
+          reference_id?: string
+          sender_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_communications_parent_message_id_fkey"
+            columns: ["parent_message_id"]
+            isOneToOne: false
+            referencedRelation: "team_communications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_members: {
+        Row: {
+          assigned_date: string | null
+          created_at: string
+          id: string
+          is_active: boolean | null
+          role: string | null
+          team_id: string
+          user_id: string
+        }
+        Insert: {
+          assigned_date?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          role?: string | null
+          team_id: string
+          user_id: string
+        }
+        Update: {
+          assigned_date?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          role?: string | null
+          team_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_members_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "client_teams"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       test_scenarios: {
         Row: {
@@ -956,6 +1266,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_user_department: {
+        Args: { user_uuid: string }
+        Returns: string
+      }
+      get_user_firm: {
+        Args: { user_uuid: string }
+        Returns: string
+      }
+      get_user_role: {
+        Args: { user_uuid: string }
+        Returns: Database["public"]["Enums"]["user_role_type"]
+      }
       user_owns_client: {
         Args: { client_uuid: string }
         Returns: boolean
@@ -963,10 +1285,17 @@ export type Database = {
     }
     Enums: {
       article_status: "draft" | "published" | "archived"
+      audit_log_action:
+        | "review_completed"
+        | "task_assigned"
+        | "document_uploaded"
+        | "analysis_performed"
       audit_phase: "engagement" | "planning" | "execution" | "conclusion"
+      communication_type: "team" | "department" | "firm"
       document_status: "pending" | "submitted" | "accepted" | "rejected"
       document_type: "shareholder_report" | "tax_return" | "annual_report"
       risk_level: "low" | "medium" | "high"
+      user_role_type: "admin" | "partner" | "manager" | "employee"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1083,10 +1412,18 @@ export const Constants = {
   public: {
     Enums: {
       article_status: ["draft", "published", "archived"],
+      audit_log_action: [
+        "review_completed",
+        "task_assigned",
+        "document_uploaded",
+        "analysis_performed",
+      ],
       audit_phase: ["engagement", "planning", "execution", "conclusion"],
+      communication_type: ["team", "department", "firm"],
       document_status: ["pending", "submitted", "accepted", "rejected"],
       document_type: ["shareholder_report", "tax_return", "annual_report"],
       risk_level: ["low", "medium", "high"],
+      user_role_type: ["admin", "partner", "manager", "employee"],
     },
   },
 } as const
