@@ -6,7 +6,7 @@ import { useClientTeams } from '@/hooks/useClientTeams';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Building2, Users, Briefcase, MessageSquare, Plus } from 'lucide-react';
+import { Building2, Users, Briefcase, MessageSquare, Plus, FileText } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const OrganizationOverview = () => {
@@ -119,7 +119,7 @@ const OrganizationOverview = () => {
               <CardTitle>Hurtighandlinger</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <Button asChild className="h-20 flex-col">
                   <Link to="/team">
                     <Briefcase className="h-6 w-6 mb-2" />
@@ -138,6 +138,13 @@ const OrganizationOverview = () => {
                   <Link to="/klienter">
                     <Users className="h-6 w-6 mb-2" />
                     Se klienter
+                  </Link>
+                </Button>
+                
+                <Button asChild variant="outline" className="h-20 flex-col">
+                  <Link to="/revisjonslogger">
+                    <FileText className="h-6 w-6 mb-2" />
+                    Revisjonslogger
                   </Link>
                 </Button>
               </div>

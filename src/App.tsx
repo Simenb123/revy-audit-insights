@@ -26,6 +26,7 @@ import DepartmentView from "./pages/DepartmentView";
 import TeamManagement from "./pages/TeamManagement";
 import Communication from "./pages/Communication";
 import UserAdmin from "./pages/UserAdmin";
+import AuditLogs from "./pages/AuditLogs";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -64,6 +65,7 @@ const App = () => (
                       <Route path="kommunikasjon" element={<Communication />} />
                       <Route path="brukeradministrasjon" element={<UserAdmin />} />
                       <Route path="organisasjonsinnstillinger" element={<OrganizationSettings />} />
+                      <Route path="revisjonslogger" element={<AuditLogs />} />
                       
                       {/* Other routes */}
                       <Route path="fag" element={<KnowledgeBase />} />
