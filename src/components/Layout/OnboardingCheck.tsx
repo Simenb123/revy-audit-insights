@@ -2,13 +2,15 @@
 import React from 'react';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { Navigate } from 'react-router-dom';
+import { useAuth } from '@/components/Auth/AuthProvider';
 
 interface OnboardingCheckProps {
   children: React.ReactNode;
 }
 
 const OnboardingCheck = ({ children }: OnboardingCheckProps) => {
-  const { data: userProfile, isLoading } = useUserProfile();
+  const { session } = useAuth();
+  const { data: userProfile, isLoading, error } = useUserProfile();
 
   if (isLoading) {
     return (
@@ -19,6 +21,12 @@ const OnboardingCheck = ({ children }: OnboardingCheckProps) => {
         </div>
       </div>
     );
+  }
+
+  // If there's an error loading profile or no profile exists, redirect to setup
+  if (error || !userProfile) {
+    console.error('User profile error or missing:', error);
+    return <Navigate to="/organisasjon/oppsett" replace />;
   }
 
   // If user has no audit firm, redirect to organization setup

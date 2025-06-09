@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/components/Auth/AuthProvider';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,14 +8,22 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Building2, Users, ArrowRight } from 'lucide-react';
+import { Building2, Users, ArrowRight, AlertCircle } from 'lucide-react';
+import { useUserProfile } from '@/hooks/useUserProfile';
+import { useExistingFirm } from '@/hooks/useExistingFirm';
+import { useJoinFirm } from '@/hooks/useJoinFirm';
+import ExistingFirmDialog from '@/components/Organization/ExistingFirmDialog';
 
 const OrganizationSetup = () => {
   const navigate = useNavigate();
   const { session } = useAuth();
   const { toast } = useToast();
+  const { data: userProfile, isLoading: profileLoading } = useUserProfile();
+  const joinFirmMutation = useJoinFirm();
+  
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1);
+  const [showExistingFirmDialog, setShowExistingFirmDialog] = useState(false);
   const [firmData, setFirmData] = useState({
     name: '',
     orgNumber: '',
@@ -32,28 +39,73 @@ const OrganizationSetup = () => {
     description: 'Hovedavdeling for revisjonstjenester'
   });
 
+  const { data: existingFirm } = useExistingFirm(firmData.orgNumber);
+
+  // Redirect if user already has a firm
+  useEffect(() => {
+    if (!profileLoading && userProfile?.auditFirmId) {
+      navigate('/organisasjon');
+    }
+  }, [userProfile, profileLoading, navigate]);
+
+  // Show existing firm dialog when firm is found
+  useEffect(() => {
+    if (existingFirm && step === 2 && firmData.orgNumber) {
+      setShowExistingFirmDialog(true);
+    }
+  }, [existingFirm, step, firmData.orgNumber]);
+
   const handleCreateFirm = async () => {
     if (!session?.user?.id) return;
 
+    // Check for existing firm first
+    if (existingFirm) {
+      setShowExistingFirmDialog(true);
+      return;
+    }
+
     setLoading(true);
     try {
+      // Validate required fields
+      if (!firmData.name) {
+        toast({
+          title: "Validering feilet",
+          description: "Firmanavn er påkrevd",
+          variant: "destructive"
+        });
+        setLoading(false);
+        return;
+      }
+
       // Create the audit firm
       const { data: firmResult, error: firmError } = await supabase
         .from('audit_firms')
         .insert({
           name: firmData.name,
-          org_number: firmData.orgNumber,
-          address: firmData.address,
-          city: firmData.city,
-          postal_code: firmData.postalCode,
-          phone: firmData.phone,
-          email: firmData.email,
-          website: firmData.website
+          org_number: firmData.orgNumber || null,
+          address: firmData.address || null,
+          city: firmData.city || null,
+          postal_code: firmData.postalCode || null,
+          phone: firmData.phone || null,
+          email: firmData.email || null,
+          website: firmData.website || null
         })
         .select()
         .single();
 
-      if (firmError) throw firmError;
+      if (firmError) {
+        if (firmError.code === '23505') { // Unique constraint violation
+          toast({
+            title: "Firma eksisterer allerede",
+            description: "Et firma med dette organisasjonsnummeret er allerede registrert.",
+            variant: "destructive"
+          });
+        } else {
+          throw firmError;
+        }
+        setLoading(false);
+        return;
+      }
 
       // Create the main department
       const { data: deptResult, error: deptError } = await supabase
@@ -72,7 +124,9 @@ const OrganizationSetup = () => {
       // Update user profile to link to firm and department with admin role
       const { error: profileError } = await supabase
         .from('profiles')
-        .update({
+        .upsert({
+          id: session.user.id,
+          email: session.user.email,
           audit_firm_id: firmResult.id,
           department_id: deptResult.id,
           user_role: 'admin'
@@ -88,13 +142,39 @@ const OrganizationSetup = () => {
 
       navigate('/organisasjon');
     } catch (error: any) {
+      console.error('Error creating firm:', error);
       toast({
         title: "Feil ved opprettelse",
-        description: error.message,
+        description: error.message || "En uventet feil oppstod",
         variant: "destructive"
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleJoinExistingFirm = async () => {
+    if (!existingFirm) return;
+
+    try {
+      // Get the main department for this firm
+      const { data: departments } = await supabase
+        .from('departments')
+        .select('id')
+        .eq('audit_firm_id', existingFirm.id)
+        .limit(1);
+
+      const departmentId = departments?.[0]?.id;
+
+      await joinFirmMutation.mutateAsync({
+        firmId: existingFirm.id,
+        departmentId
+      });
+
+      setShowExistingFirmDialog(false);
+      navigate('/organisasjon');
+    } catch (error) {
+      console.error('Error joining firm:', error);
     }
   };
 
@@ -117,6 +197,17 @@ const OrganizationSetup = () => {
     setStep(2);
     setLoading(false);
   };
+
+  if (profileLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-2 text-muted-foreground">Laster...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (step === 1) {
     return (
@@ -173,139 +264,161 @@ const OrganizationSetup = () => {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-background p-6">
-      <Card className="w-full max-w-2xl">
-        <CardHeader>
-          <CardTitle>Opprett revisjonsfirma</CardTitle>
-          <CardDescription>
-            Fyll inn informasjon om ditt revisjonsfirma
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="name">Firmanavn *</Label>
-              <Input
-                id="name"
-                value={firmData.name}
-                onChange={(e) => setFirmData({ ...firmData, name: e.target.value })}
-                placeholder="Navn på revisjonsfirmaet"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="orgNumber">Organisasjonsnummer</Label>
-              <Input
-                id="orgNumber"
-                value={firmData.orgNumber}
-                onChange={(e) => setFirmData({ ...firmData, orgNumber: e.target.value })}
-                placeholder="123456789"
-              />
-            </div>
-          </div>
+    <>
+      <div className="flex items-center justify-center min-h-screen bg-background p-6">
+        <Card className="w-full max-w-2xl">
+          <CardHeader>
+            <CardTitle>Opprett revisjonsfirma</CardTitle>
+            <CardDescription>
+              Fyll inn informasjon om ditt revisjonsfirma
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {existingFirm && (
+              <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <AlertCircle className="h-4 w-4 text-amber-600" />
+                <p className="text-sm text-amber-800">
+                  Et firma med dette org.nummeret eksisterer allerede. Vil du koble deg til det?
+                </p>
+              </div>
+            )}
 
-          <div className="space-y-2">
-            <Label htmlFor="address">Adresse</Label>
-            <Input
-              id="address"
-              value={firmData.address}
-              onChange={(e) => setFirmData({ ...firmData, address: e.target.value })}
-              placeholder="Gateadresse"
-            />
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="postalCode">Postnummer</Label>
-              <Input
-                id="postalCode"
-                value={firmData.postalCode}
-                onChange={(e) => setFirmData({ ...firmData, postalCode: e.target.value })}
-                placeholder="0001"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="city">Poststed</Label>
-              <Input
-                id="city"
-                value={firmData.city}
-                onChange={(e) => setFirmData({ ...firmData, city: e.target.value })}
-                placeholder="Oslo"
-              />
-            </div>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="phone">Telefon</Label>
-              <Input
-                id="phone"
-                value={firmData.phone}
-                onChange={(e) => setFirmData({ ...firmData, phone: e.target.value })}
-                placeholder="+47 12 34 56 78"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">E-post</Label>
-              <Input
-                id="email"
-                type="email"
-                value={firmData.email}
-                onChange={(e) => setFirmData({ ...firmData, email: e.target.value })}
-                placeholder="post@firma.no"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="website">Nettside</Label>
-            <Input
-              id="website"
-              value={firmData.website}
-              onChange={(e) => setFirmData({ ...firmData, website: e.target.value })}
-              placeholder="https://firma.no"
-            />
-          </div>
-
-          <div className="border-t pt-6">
-            <h3 className="text-lg font-semibold mb-4">Standard avdeling</h3>
-            <div className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="deptName">Avdelingsnavn</Label>
+                <Label htmlFor="name">Firmanavn *</Label>
                 <Input
-                  id="deptName"
-                  value={departmentData.name}
-                  onChange={(e) => setDepartmentData({ ...departmentData, name: e.target.value })}
-                  placeholder="Revisjon"
+                  id="name"
+                  value={firmData.name}
+                  onChange={(e) => setFirmData({ ...firmData, name: e.target.value })}
+                  placeholder="Navn på revisjonsfirmaet"
+                  required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="deptDescription">Beskrivelse</Label>
-                <Textarea
-                  id="deptDescription"
-                  value={departmentData.description}
-                  onChange={(e) => setDepartmentData({ ...departmentData, description: e.target.value })}
-                  placeholder="Beskrivelse av avdelingen"
+                <Label htmlFor="orgNumber">Organisasjonsnummer</Label>
+                <Input
+                  id="orgNumber"
+                  value={firmData.orgNumber}
+                  onChange={(e) => setFirmData({ ...firmData, orgNumber: e.target.value })}
+                  placeholder="123456789"
                 />
               </div>
             </div>
-          </div>
 
-          <div className="flex gap-4">
-            <Button variant="outline" onClick={() => setStep(1)}>
-              Tilbake
-            </Button>
-            <Button 
-              onClick={handleCreateFirm} 
-              disabled={loading || !firmData.name}
-              className="flex-1"
-            >
-              {loading ? 'Oppretter...' : 'Opprett firma'}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+            <div className="space-y-2">
+              <Label htmlFor="address">Adresse</Label>
+              <Input
+                id="address"
+                value={firmData.address}
+                onChange={(e) => setFirmData({ ...firmData, address: e.target.value })}
+                placeholder="Gateadresse"
+              />
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="postalCode">Postnummer</Label>
+                <Input
+                  id="postalCode"
+                  value={firmData.postalCode}
+                  onChange={(e) => setFirmData({ ...firmData, postalCode: e.target.value })}
+                  placeholder="0001"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="city">Poststed</Label>
+                <Input
+                  id="city"
+                  value={firmData.city}
+                  onChange={(e) => setFirmData({ ...firmData, city: e.target.value })}
+                  placeholder="Oslo"
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="phone">Telefon</Label>
+                <Input
+                  id="phone"
+                  value={firmData.phone}
+                  onChange={(e) => setFirmData({ ...firmData, phone: e.target.value })}
+                  placeholder="+47 12 34 56 78"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">E-post</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={firmData.email}
+                  onChange={(e) => setFirmData({ ...firmData, email: e.target.value })}
+                  placeholder="post@firma.no"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="website">Nettside</Label>
+              <Input
+                id="website"
+                value={firmData.website}
+                onChange={(e) => setFirmData({ ...firmData, website: e.target.value })}
+                placeholder="https://firma.no"
+              />
+            </div>
+
+            <div className="border-t pt-6">
+              <h3 className="text-lg font-semibold mb-4">Standard avdeling</h3>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="deptName">Avdelingsnavn</Label>
+                  <Input
+                    id="deptName"
+                    value={departmentData.name}
+                    onChange={(e) => setDepartmentData({ ...departmentData, name: e.target.value })}
+                    placeholder="Revisjon"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="deptDescription">Beskrivelse</Label>
+                  <Textarea
+                    id="deptDescription"
+                    value={departmentData.description}
+                    onChange={(e) => setDepartmentData({ ...departmentData, description: e.target.value })}
+                    placeholder="Beskrivelse av avdelingen"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-4">
+              <Button variant="outline" onClick={() => setStep(1)}>
+                Tilbake
+              </Button>
+              <Button 
+                onClick={handleCreateFirm} 
+                disabled={loading || !firmData.name}
+                className="flex-1"
+              >
+                {loading ? 'Oppretter...' : 'Opprett firma'}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <ExistingFirmDialog
+        open={showExistingFirmDialog}
+        onOpenChange={setShowExistingFirmDialog}
+        firmName={existingFirm?.name || ''}
+        onJoinFirm={handleJoinExistingFirm}
+        onCreateNew={() => {
+          setShowExistingFirmDialog(false);
+          setFirmData({ ...firmData, orgNumber: '' });
+        }}
+      />
+    </>
   );
 };
 
