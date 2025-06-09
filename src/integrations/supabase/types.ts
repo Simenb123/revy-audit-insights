@@ -956,7 +956,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      user_owns_client: {
+        Args: { client_uuid: string }
+        Returns: boolean
+      }
     }
     Enums: {
       article_status: "draft" | "published" | "archived"

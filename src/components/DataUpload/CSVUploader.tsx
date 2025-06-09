@@ -28,27 +28,58 @@ const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
   const parseCSVFile = async (file: File): Promise<ParsedCSVData> => {
     try {
       const text = await file.text();
+      
+      // Bedre CSV parsing som håndterer komma i verdier
       const lines = text.split('\n').filter(line => line.trim());
       
       if (lines.length === 0) {
         throw new Error('CSV-filen er tom');
       }
 
-      // Parse CSV headers
-      const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+      // Parse CSV med støtte for quoted fields som kan inneholde komma
+      const parseCSVLine = (line: string): string[] => {
+        const result: string[] = [];
+        let current = '';
+        let inQuotes = false;
+        
+        for (let i = 0; i < line.length; i++) {
+          const char = line[i];
+          
+          if (char === '"') {
+            inQuotes = !inQuotes;
+          } else if (char === ',' && !inQuotes) {
+            result.push(current.trim());
+            current = '';
+          } else {
+            current += char;
+          }
+        }
+        
+        result.push(current.trim());
+        return result.map(field => field.replace(/^"|"$/g, '')); // Remove surrounding quotes
+      };
+
+      // Parse headers
+      const headers = parseCSVLine(lines[0]);
       console.log('CSV headers:', headers);
 
       // Parse data rows
-      const data = lines.slice(1).map(line => {
-        const values = line.split(',').map(v => v.trim().replace(/"/g, ''));
-        const row: Record<string, string> = {};
-        headers.forEach((header, index) => {
-          row[header] = values[index] || '';
-        });
-        return row;
-      }).filter(row => Object.values(row).some(value => value.trim() !== ''));
+      const data = lines.slice(1).map((line, index) => {
+        try {
+          const values = parseCSVLine(line);
+          const row: Record<string, string> = {};
+          headers.forEach((header, idx) => {
+            row[header] = values[idx] || '';
+          });
+          return row;
+        } catch (error) {
+          console.warn(`Error parsing line ${index + 2}:`, line);
+          return null;
+        }
+      }).filter(row => row && Object.values(row).some(value => value.trim() !== ''));
 
-      console.log('Parsed CSV data:', data);
+      console.log('Parsed CSV data sample:', data.slice(0, 3));
+      console.log('Total rows after filtering:', data.length);
       
       return { headers, data };
     } catch (error) {
@@ -76,7 +107,6 @@ const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
       case '9':
         return 'expense';
       default:
-        // Default to asset for unknown patterns
         return 'asset';
     }
   };
@@ -101,13 +131,16 @@ const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
   };
 
   const createMissingAccounts = async (uniqueAccountNumbers: string[]) => {
-    console.log('Creating missing accounts for unique numbers:', uniqueAccountNumbers);
+    console.log('=== KONTOOPPRETTELSE START ===');
+    console.log('Unique account numbers to check:', uniqueAccountNumbers);
+    console.log('Client ID:', clientId);
     
     if (!clientId) {
       throw new Error('Ingen klient valgt for import');
     }
     
-    // Get existing accounts to avoid duplicates
+    // Hent eksisterende kontoer
+    console.log('Fetching existing accounts...');
     const { data: existingAccounts, error: fetchError } = await supabase
       .from('client_chart_of_accounts')
       .select('account_number')
@@ -119,16 +152,18 @@ const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
       throw new Error(`Kunne ikke hente eksisterende kontoer: ${fetchError.message}`);
     }
 
+    console.log('Existing accounts:', existingAccounts);
     const existingNumbers = new Set(existingAccounts?.map(acc => acc.account_number) || []);
     const missingNumbers = uniqueAccountNumbers.filter(num => !existingNumbers.has(num));
+
+    console.log('Missing account numbers:', missingNumbers);
 
     if (missingNumbers.length === 0) {
       console.log('No missing accounts to create');
       return [];
     }
 
-    console.log('Missing account numbers to create:', missingNumbers);
-
+    // Opprett manglende kontoer
     const accountsToCreate = missingNumbers.map(accountNumber => ({
       client_id: clientId,
       account_number: accountNumber,
@@ -137,7 +172,7 @@ const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
       is_active: true
     }));
 
-    console.log('Accounts to create:', accountsToCreate);
+    console.log('Creating accounts:', accountsToCreate);
 
     const { data: newAccounts, error: createError } = await supabase
       .from('client_chart_of_accounts')
@@ -146,20 +181,20 @@ const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
 
     if (createError) {
       console.error('Error creating accounts:', createError);
+      console.error('Create error details:', JSON.stringify(createError, null, 2));
       throw new Error(`Kunne ikke opprette manglende kontoer: ${createError.message}`);
     }
 
     console.log('Successfully created accounts:', newAccounts);
+    console.log('=== KONTOOPPRETTELSE SLUTT ===');
     return newAccounts || [];
   };
 
   const findAccountByNumberOrName = (accountMap: Map<string, string>, nameMap: Map<string, string>, accountNumber?: string, accountName?: string) => {
-    // First try to find by account number (most reliable)
     if (accountNumber && accountMap.has(accountNumber)) {
       return accountMap.get(accountNumber);
     }
     
-    // Fallback to account name matching
     if (accountName && nameMap.has(accountName.toLowerCase())) {
       return nameMap.get(accountName.toLowerCase());
     }
@@ -167,26 +202,40 @@ const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
     return null;
   };
 
+  const parseAmount = (amountStr: string): number => {
+    if (!amountStr || amountStr.trim() === '') return 0;
+    
+    // Håndter negative beløp med minus foran eller bak
+    const cleanAmount = amountStr
+      .replace(/\s/g, '') // Fjern mellomrom
+      .replace(/,/g, '.') // Erstatt komma med punktum for desimal
+      .replace(/[^\d.-]/g, ''); // Fjern alt annet enn tall, punktum og minus
+    
+    const parsed = parseFloat(cleanAmount);
+    return isNaN(parsed) ? 0 : parsed;
+  };
+
   const processTransactionData = async (data: any[], mapping: Record<string, string>) => {
+    console.log('=== TRANSAKSJONSPROSESSERING START ===');
     console.log('Processing transaction data with mapping:', mapping);
+    console.log('Number of transactions to process:', data.length);
     console.log('Client ID:', clientId);
     
     if (!clientId) {
       throw new Error('Ingen klient valgt for import');
     }
     
-    // Transform data based on mapping
-    const transformedData = data.map(row => {
+    // Transform data basert på mapping
+    const transformedData = data.map((row, index) => {
       const transformed: any = {};
       
       Object.entries(mapping).forEach(([fileColumn, standardField]) => {
         let value = row[fileColumn];
         
-        // Clean and format data based on field type
+        // Rens og formater data basert på felttype
         if (standardField === 'transaction_date') {
-          // Handle different date formats
           if (value) {
-            // Handle Norwegian date format (dd.mm.yyyy)
+            // Håndter norsk datoformat (dd.mm.yyyy)
             if (value.includes('.')) {
               const [day, month, year] = value.split('.');
               const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
@@ -200,31 +249,31 @@ const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
               }
             }
           }
-        } else if (standardField === 'amount' || standardField === 'debit_amount' || standardField === 'credit_amount' || standardField === 'balance_amount' || standardField === 'vat_amount') {
-          // Clean numeric values
-          if (value) {
-            const numericValue = parseFloat(value.replace(/[^0-9.-]/g, '')) || 0;
-            transformed[standardField] = numericValue;
-          }
+        } else if (standardField === 'amount') {
+          // Håndter enkelt beløp-kolonne
+          transformed[standardField] = parseAmount(value);
+        } else if (standardField === 'debit_amount' || standardField === 'credit_amount' || standardField === 'balance_amount' || standardField === 'vat_amount') {
+          // Håndter separate debet/kredit kolonner
+          transformed[standardField] = parseAmount(value);
         } else {
           transformed[standardField] = value || '';
         }
       });
       
+      console.log(`Row ${index + 1} transformed:`, transformed);
       return transformed;
     });
 
-    // STEP 1: Extract unique account numbers from all transactions
+    // STEG 1: Hent unike kontonummer
     const uniqueAccountNumbers = [...new Set(
       transformedData
         .map(tx => tx.account_number)
         .filter(num => num && num.trim() !== '')
     )];
 
-    console.log('Unique account numbers in CSV:', uniqueAccountNumbers);
-    console.log('Total transactions:', transformedData.length);
+    console.log('Unique account numbers found:', uniqueAccountNumbers);
 
-    // STEP 2: Create missing accounts (only once per unique account number)
+    // STEG 2: Opprett manglende kontoer
     let createdAccounts: any[] = [];
     if (uniqueAccountNumbers.length > 0) {
       try {
@@ -247,26 +296,30 @@ const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
       }
     }
 
-    // STEP 3: Get updated client accounts (including newly created ones)
+    // STEG 3: Hent oppdatert kontoplan
+    console.log('Fetching updated client accounts...');
     const { data: clientAccounts, error: accountsError } = await supabase
       .from('client_chart_of_accounts')
       .select('id, account_number, account_name')
       .eq('client_id', clientId);
 
     if (accountsError) {
+      console.error('Error fetching accounts:', accountsError);
       throw new Error(`Kunne ikke hente kontoplan: ${accountsError.message}`);
     }
+
+    console.log('Available client accounts:', clientAccounts);
 
     const accountMap = new Map(
       clientAccounts?.map(acc => [acc.account_number, acc.id]) || []
     );
     
-    // Create a name-based lookup for fallback (case-insensitive)
     const nameMap = new Map(
       clientAccounts?.map(acc => [acc.account_name.toLowerCase(), acc.id]) || []
     );
 
-    // Create upload batch record
+    // Opprett upload batch
+    console.log('Creating upload batch...');
     const { data: batch, error: batchError } = await supabase
       .from('upload_batches')
       .insert({
@@ -274,22 +327,26 @@ const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
         user_id: (await supabase.auth.getUser()).data.user?.id!,
         batch_type: 'general_ledger',
         file_name: fileName,
-        file_size: 0, // CSV file size not tracked here
+        file_size: 0,
         total_records: transformedData.length,
         status: 'processing'
       })
       .select()
       .single();
 
-    if (batchError) throw batchError;
+    if (batchError) {
+      console.error('Error creating batch:', batchError);
+      throw batchError;
+    }
 
-    // STEP 4: Process ALL transactions (multiple transactions per account is normal for general ledger)
+    console.log('Upload batch created:', batch);
+
+    // STEG 4: Prosesser transaksjoner
     let processed = 0;
     const errors: string[] = [];
 
     const transactionsToInsert = transformedData
       .map((tx, index) => {
-        // Try to find account by number or name
         const clientAccountId = findAccountByNumberOrName(
           accountMap, 
           nameMap, 
@@ -299,18 +356,20 @@ const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
         
         if (!clientAccountId) {
           const identifier = tx.account_number || tx.account_name || 'ukjent';
-          errors.push(`Rad ${index + 1}: Konto "${identifier}" ikke funnet i kontoplan`);
+          const error = `Rad ${index + 1}: Konto "${identifier}" ikke funnet i kontoplan`;
+          errors.push(error);
+          console.warn(error);
           return null;
         }
 
         const txDate = new Date(tx.transaction_date);
         
-        // Handle the new format vs legacy format
+        // Håndter beløp - bruk amount-feltet hvis det finnes, ellers fall tilbake til debet/kredit
         let debitAmount = 0;
         let creditAmount = 0;
         
-        if (tx.amount !== undefined) {
-          // New format: positive = debit, negative = credit
+        if (tx.amount !== undefined && tx.amount !== 0) {
+          // Ny format: positive = debit, negative = credit
           if (tx.amount > 0) {
             debitAmount = tx.amount;
           } else {
@@ -322,7 +381,7 @@ const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
           creditAmount = tx.credit_amount || 0;
         }
         
-        return {
+        const transaction = {
           client_id: clientId,
           client_account_id: clientAccountId,
           transaction_date: txDate.toISOString().split('T')[0],
@@ -335,6 +394,9 @@ const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
           balance_amount: tx.balance_amount,
           upload_batch_id: batch.id,
         };
+
+        console.log(`Transaction ${index + 1}:`, transaction);
+        return transaction;
       })
       .filter(Boolean);
 
@@ -354,7 +416,7 @@ const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
       }
     }
 
-    // Update batch status
+    // Oppdater batch status
     await supabase
       .from('upload_batches')
       .update({
@@ -365,6 +427,9 @@ const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
         completed_at: new Date().toISOString()
       })
       .eq('id', batch.id);
+
+    console.log('=== TRANSAKSJONSPROSESSERING SLUTT ===');
+    console.log(`Final result: ${processed} processed, ${errors.length} errors`);
 
     if (errors.length > 0) {
       console.warn('Processing errors:', errors.slice(0, 10));
