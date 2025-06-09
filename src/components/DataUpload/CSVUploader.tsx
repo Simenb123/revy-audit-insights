@@ -100,25 +100,34 @@ const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
     return `${baseName} ${accountNumber}`;
   };
 
-  const createMissingAccounts = async (accountNumbers: string[]) => {
-    console.log('Creating missing accounts for:', accountNumbers);
+  const createMissingAccounts = async (uniqueAccountNumbers: string[]) => {
+    console.log('Creating missing accounts for unique numbers:', uniqueAccountNumbers);
+    
+    if (!clientId) {
+      throw new Error('Ingen klient valgt for import');
+    }
     
     // Get existing accounts to avoid duplicates
-    const { data: existingAccounts } = await supabase
+    const { data: existingAccounts, error: fetchError } = await supabase
       .from('client_chart_of_accounts')
       .select('account_number')
       .eq('client_id', clientId)
-      .in('account_number', accountNumbers);
+      .in('account_number', uniqueAccountNumbers);
+
+    if (fetchError) {
+      console.error('Error fetching existing accounts:', fetchError);
+      throw new Error(`Kunne ikke hente eksisterende kontoer: ${fetchError.message}`);
+    }
 
     const existingNumbers = new Set(existingAccounts?.map(acc => acc.account_number) || []);
-    const missingNumbers = accountNumbers.filter(num => !existingNumbers.has(num));
+    const missingNumbers = uniqueAccountNumbers.filter(num => !existingNumbers.has(num));
 
     if (missingNumbers.length === 0) {
       console.log('No missing accounts to create');
       return [];
     }
 
-    console.log('Missing account numbers:', missingNumbers);
+    console.log('Missing account numbers to create:', missingNumbers);
 
     const accountsToCreate = missingNumbers.map(accountNumber => ({
       client_id: clientId,
@@ -128,14 +137,16 @@ const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
       is_active: true
     }));
 
-    const { data: newAccounts, error } = await supabase
+    console.log('Accounts to create:', accountsToCreate);
+
+    const { data: newAccounts, error: createError } = await supabase
       .from('client_chart_of_accounts')
       .insert(accountsToCreate)
       .select();
 
-    if (error) {
-      console.error('Error creating accounts:', error);
-      throw new Error(`Kunne ikke opprette manglende kontoer: ${error.message}`);
+    if (createError) {
+      console.error('Error creating accounts:', createError);
+      throw new Error(`Kunne ikke opprette manglende kontoer: ${createError.message}`);
     }
 
     console.log('Successfully created accounts:', newAccounts);
@@ -203,21 +214,23 @@ const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
       return transformed;
     });
 
-    // Extract all unique account numbers from the data
-    const allAccountNumbers = [...new Set(
+    // STEP 1: Extract unique account numbers from all transactions
+    const uniqueAccountNumbers = [...new Set(
       transformedData
         .map(tx => tx.account_number)
         .filter(num => num && num.trim() !== '')
     )];
 
-    console.log('All account numbers in CSV:', allAccountNumbers);
+    console.log('Unique account numbers in CSV:', uniqueAccountNumbers);
+    console.log('Total transactions:', transformedData.length);
 
-    // Create missing accounts first
+    // STEP 2: Create missing accounts (only once per unique account number)
     let createdAccounts: any[] = [];
-    if (allAccountNumbers.length > 0) {
+    if (uniqueAccountNumbers.length > 0) {
       try {
-        createdAccounts = await createMissingAccounts(allAccountNumbers);
+        createdAccounts = await createMissingAccounts(uniqueAccountNumbers);
         if (createdAccounts.length > 0) {
+          console.log(`Created ${createdAccounts.length} new accounts`);
           toast({
             title: "Kontoer opprettet",
             description: `${createdAccounts.length} nye kontoer ble automatisk opprettet`,
@@ -234,11 +247,15 @@ const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
       }
     }
 
-    // Get updated client accounts (including newly created ones)
-    const { data: clientAccounts } = await supabase
+    // STEP 3: Get updated client accounts (including newly created ones)
+    const { data: clientAccounts, error: accountsError } = await supabase
       .from('client_chart_of_accounts')
       .select('id, account_number, account_name')
       .eq('client_id', clientId);
+
+    if (accountsError) {
+      throw new Error(`Kunne ikke hente kontoplan: ${accountsError.message}`);
+    }
 
     const accountMap = new Map(
       clientAccounts?.map(acc => [acc.account_number, acc.id]) || []
@@ -266,12 +283,12 @@ const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
 
     if (batchError) throw batchError;
 
-    // Process transactions
+    // STEP 4: Process ALL transactions (multiple transactions per account is normal for general ledger)
     let processed = 0;
     const errors: string[] = [];
 
     const transactionsToInsert = transformedData
-      .map(tx => {
+      .map((tx, index) => {
         // Try to find account by number or name
         const clientAccountId = findAccountByNumberOrName(
           accountMap, 
@@ -282,7 +299,7 @@ const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
         
         if (!clientAccountId) {
           const identifier = tx.account_number || tx.account_name || 'ukjent';
-          errors.push(`Konto "${identifier}" ikke funnet i kontoplan`);
+          errors.push(`Rad ${index + 1}: Konto "${identifier}" ikke funnet i kontoplan`);
           return null;
         }
 
@@ -321,15 +338,19 @@ const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
       })
       .filter(Boolean);
 
+    console.log(`Attempting to insert ${transactionsToInsert.length} transactions`);
+
     if (transactionsToInsert.length > 0) {
       const { error: insertError } = await supabase
         .from('general_ledger_transactions')
         .insert(transactionsToInsert);
 
       if (insertError) {
+        console.error('Transaction insert error:', insertError);
         throw new Error(`Database error: ${insertError.message}`);
       } else {
         processed = transactionsToInsert.length;
+        console.log(`Successfully inserted ${processed} transactions`);
       }
     }
 
