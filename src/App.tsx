@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -7,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./components/Auth/AuthProvider";
 import { useAuth } from "./components/Auth/AuthProvider";
 import AppLayout from "./components/Layout/AppLayout";
+import OnboardingCheck from "./components/Layout/OnboardingCheck";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import ClientsOverview from "./pages/ClientsOverview";
@@ -21,7 +21,10 @@ import LedgerPage from "./pages/LedgerPage";
 import AccountingData from "./pages/AccountingData";
 import KnowledgeBase from "./pages/KnowledgeBase";
 import OrganizationOverview from "./pages/OrganizationOverview";
+import OrganizationSetup from "./pages/OrganizationSetup";
 import DepartmentView from "./pages/DepartmentView";
+import UserAdmin from "./pages/UserAdmin";
+import OrganizationSettings from "./pages/OrganizationSettings";
 
 const queryClient = new QueryClient();
 
@@ -48,160 +51,227 @@ const App = () => {
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
-                {/* Dashboard route */}
-                <Route path="/dashboard" element={
+                {/* Organization setup route - no onboarding check */}
+                <Route path="/organisasjon/oppsett" element={
                   <ProtectedRoute>
-                    <AppLayout>
-                      <Index />
-                    </AppLayout>
+                    <OrganizationSetup />
                   </ProtectedRoute>
                 } />
 
-                {/* Organization routes */}
+                {/* Dashboard route with onboarding check */}
+                <Route path="/dashboard" element={
+                  <ProtectedRoute>
+                    <OnboardingCheck>
+                      <AppLayout>
+                        <Index />
+                      </AppLayout>
+                    </OnboardingCheck>
+                  </ProtectedRoute>
+                } />
+
+                {/* Organization routes with onboarding check */}
                 <Route path="/organisasjon" element={
                   <ProtectedRoute>
-                    <AppLayout>
-                      <OrganizationOverview />
-                    </AppLayout>
+                    <OnboardingCheck>
+                      <AppLayout>
+                        <OrganizationOverview />
+                      </AppLayout>
+                    </OnboardingCheck>
                   </ProtectedRoute>
                 } />
                 <Route path="/avdeling" element={
                   <ProtectedRoute>
-                    <AppLayout>
-                      <DepartmentView />
-                    </AppLayout>
+                    <OnboardingCheck>
+                      <AppLayout>
+                        <DepartmentView />
+                      </AppLayout>
+                    </OnboardingCheck>
+                  </ProtectedRoute>
+                } />
+                <Route path="/brukeradministrasjon" element={
+                  <ProtectedRoute>
+                    <OnboardingCheck>
+                      <AppLayout>
+                        <UserAdmin />
+                      </AppLayout>
+                    </OnboardingCheck>
+                  </ProtectedRoute>
+                } />
+                <Route path="/organisasjonsinnstillinger" element={
+                  <ProtectedRoute>
+                    <OnboardingCheck>
+                      <AppLayout>
+                        <OrganizationSettings />
+                      </AppLayout>
+                    </OnboardingCheck>
                   </ProtectedRoute>
                 } />
 
-                {/* Client routes */}
+                {/* Client routes with onboarding check */}
                 <Route path="/klienter" element={
                   <ProtectedRoute>
-                    <AppLayout>
-                      <ClientsOverview />
-                    </AppLayout>
+                    <OnboardingCheck>
+                      <AppLayout>
+                        <ClientsOverview />
+                      </AppLayout>
+                    </OnboardingCheck>
                   </ProtectedRoute>
                 } />
                 <Route path="/klienter/:orgNumber" element={
                   <ProtectedRoute>
-                    <AppLayout>
-                      <ClientDetail />
-                    </AppLayout>
+                    <OnboardingCheck>
+                      <AppLayout>
+                        <ClientDetail />
+                      </AppLayout>
+                    </OnboardingCheck>
                   </ProtectedRoute>
                 } />
                 
                 {/* Data upload routes */}
                 <Route path="/klienter/:orgNumber/regnskapsdata" element={
                   <ProtectedRoute>
-                    <AppLayout>
-                      <DataImport />
-                    </AppLayout>
+                    <OnboardingCheck>
+                      <AppLayout>
+                        <DataImport />
+                      </AppLayout>
+                    </OnboardingCheck>
                   </ProtectedRoute>
                 } />
                 <Route path="/klienter/:orgNumber/grunnlagsdata" element={
                   <ProtectedRoute>
-                    <AppLayout>
-                      <DataImport />
-                    </AppLayout>
+                    <OnboardingCheck>
+                      <AppLayout>
+                        <DataImport />
+                      </AppLayout>
+                    </OnboardingCheck>
                   </ProtectedRoute>
                 } />
                 <Route path="/klienter/:orgNumber/spesialdata" element={
                   <ProtectedRoute>
-                    <AppLayout>
-                      <DataImport />
-                    </AppLayout>
+                    <OnboardingCheck>
+                      <AppLayout>
+                        <DataImport />
+                      </AppLayout>
+                    </OnboardingCheck>
                   </ProtectedRoute>
                 } />
                 <Route path="/klienter/:orgNumber/transaksjoner" element={
                   <ProtectedRoute>
-                    <AppLayout>
-                      <DataImport />
-                    </AppLayout>
+                    <OnboardingCheck>
+                      <AppLayout>
+                        <DataImport />
+                      </AppLayout>
+                    </OnboardingCheck>
                   </ProtectedRoute>
                 } />
                 <Route path="/klienter/:orgNumber/import" element={
                   <ProtectedRoute>
-                    <AppLayout>
-                      <DataImport />
-                    </AppLayout>
+                    <OnboardingCheck>
+                      <AppLayout>
+                        <DataImport />
+                      </AppLayout>
+                    </OnboardingCheck>
                   </ProtectedRoute>
                 } />
                 
                 {/* Keep existing routes */}
                 <Route path="/klienter/:orgNumber/regnskap" element={
                   <ProtectedRoute>
-                    <AppLayout>
-                      <LedgerPage />
-                    </AppLayout>
+                    <OnboardingCheck>
+                      <AppLayout>
+                        <LedgerPage />
+                      </AppLayout>
+                    </OnboardingCheck>
                   </ProtectedRoute>
                 } />
                 <Route path="/fag/*" element={
                   <ProtectedRoute>
-                    <AppLayout>
-                      <KnowledgeBase />
-                    </AppLayout>
+                    <OnboardingCheck>
+                      <AppLayout>
+                        <KnowledgeBase />
+                      </AppLayout>
+                    </OnboardingCheck>
                   </ProtectedRoute>
                 } />
                 <Route path="/analyser" element={
                   <ProtectedRoute>
-                    <AppLayout>
-                      <AccountingExplorer />
-                    </AppLayout>
+                    <OnboardingCheck>
+                      <AppLayout>
+                        <AccountingExplorer />
+                      </AppLayout>
+                    </OnboardingCheck>
                   </ProtectedRoute>
                 } />
                 <Route path="/analyser/transaksjoner" element={
                   <ProtectedRoute>
-                    <AppLayout>
-                      <TransactionSampling />
-                    </AppLayout>
+                    <OnboardingCheck>
+                      <AppLayout>
+                        <TransactionSampling />
+                      </AppLayout>
+                    </OnboardingCheck>
                   </ProtectedRoute>
                 } />
                 <Route path="/dokumenter" element={
                   <ProtectedRoute>
-                    <AppLayout>
-                      <Index />
-                    </AppLayout>
+                    <OnboardingCheck>
+                      <AppLayout>
+                        <Index />
+                      </AppLayout>
+                    </OnboardingCheck>
                   </ProtectedRoute>
                 } />
                 <Route path="/prosjekter" element={
                   <ProtectedRoute>
-                    <AppLayout>
-                      <Index />
-                    </AppLayout>
+                    <OnboardingCheck>
+                      <AppLayout>
+                        <Index />
+                      </AppLayout>
+                    </OnboardingCheck>
                   </ProtectedRoute>
                 } />
                 <Route path="/innstillinger" element={
                   <ProtectedRoute>
-                    <AppLayout>
-                      <Index />
-                    </AppLayout>
+                    <OnboardingCheck>
+                      <AppLayout>
+                        <Index />
+                      </AppLayout>
+                    </OnboardingCheck>
                   </ProtectedRoute>
                 } />
                 <Route path="/hjelp" element={
                   <ProtectedRoute>
-                    <AppLayout>
-                      <Index />
-                    </AppLayout>
+                    <OnboardingCheck>
+                      <AppLayout>
+                        <Index />
+                      </AppLayout>
+                    </OnboardingCheck>
                   </ProtectedRoute>
                 } />
                 <Route path="/regnskap" element={
                   <ProtectedRoute>
-                    <AppLayout>
-                      <Index />
-                    </AppLayout>
+                    <OnboardingCheck>
+                      <AppLayout>
+                        <Index />
+                      </AppLayout>
+                    </OnboardingCheck>
                   </ProtectedRoute>
                 } />
                 <Route path="/klienter/administrasjon" element={
                   <ProtectedRoute>
-                    <AppLayout>
-                      <ClientAdmin />
-                    </AppLayout>
+                    <OnboardingCheck>
+                      <AppLayout>
+                        <ClientAdmin />
+                      </AppLayout>
+                    </OnboardingCheck>
                   </ProtectedRoute>
                 } />
                 <Route path="/data-import" element={
                   <ProtectedRoute>
-                    <AppLayout>
-                      <DataImport />
-                    </AppLayout>
+                    <OnboardingCheck>
+                      <AppLayout>
+                        <DataImport />
+                      </AppLayout>
+                    </OnboardingCheck>
                   </ProtectedRoute>
                 } />
                 <Route path="*" element={<NotFound />} />
