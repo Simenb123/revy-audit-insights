@@ -24,6 +24,7 @@ import OrganizationSetup from "./pages/OrganizationSetup";
 import OrganizationSettings from "./pages/OrganizationSettings";
 import DepartmentView from "./pages/DepartmentView";
 import TeamManagement from "./pages/TeamManagement";
+import Communication from "./pages/Communication";
 import UserAdmin from "./pages/UserAdmin";
 import NotFound from "./pages/NotFound";
 
@@ -60,6 +61,7 @@ const App = () => (
                       <Route path="organisasjon" element={<OrganizationOverview />} />
                       <Route path="avdeling" element={<DepartmentView />} />
                       <Route path="team" element={<TeamManagement />} />
+                      <Route path="kommunikasjon" element={<Communication />} />
                       <Route path="brukeradministrasjon" element={<UserAdmin />} />
                       <Route path="organisasjonsinnstillinger" element={<OrganizationSettings />} />
                       
