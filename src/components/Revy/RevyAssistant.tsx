@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from "@/components/ui/button";
@@ -10,7 +9,11 @@ import { useRevyContext } from '../RevyContext/RevyContextProvider';
 import { generateResponse, getContextualTip } from '@/services/revyService';
 import { RevyMessage } from '@/types/revio';
 
-const RevyAssistant = () => {
+interface RevyAssistantProps {
+  embedded?: boolean;
+}
+
+const RevyAssistant = ({ embedded = false }: RevyAssistantProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [message, setMessage] = useState('');
@@ -27,7 +30,7 @@ const RevyAssistant = () => {
   
   // Provide contextual tips when the context changes
   useEffect(() => {
-    if (isOpen) {
+    if ((isOpen || embedded) && messages.length <= 1) {
       const tip = getContextualTip(currentContext);
       const newMessage: RevyMessage = {
         id: Date.now().toString(),
@@ -38,7 +41,7 @@ const RevyAssistant = () => {
       
       setMessages(prev => [...prev, newMessage]);
     }
-  }, [currentContext, isOpen]);
+  }, [currentContext, isOpen, embedded]);
   
   const contextToNorwegian = (context: string): string => {
     const mapping: Record<string, string> = {
@@ -113,6 +116,55 @@ const RevyAssistant = () => {
     }
   };
 
+  // Embedded mode for sidebar
+  if (embedded) {
+    return (
+      <div className="h-full flex flex-col bg-white">
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto p-3 space-y-3 bg-gray-50">
+          {messages.map((msg) => (
+            <div 
+              key={msg.id} 
+              className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+            >
+              {msg.sender === 'revy' && (
+                <div className="flex items-end gap-2">
+                  <RevyAvatar size="xs" />
+                  <div className="bg-white border border-gray-200 p-2 rounded-lg rounded-bl-none max-w-[85%] shadow-sm text-sm">
+                    {msg.content}
+                  </div>
+                </div>
+              )}
+              
+              {msg.sender === 'user' && (
+                <div className="bg-blue-100 text-blue-900 p-2 rounded-lg rounded-br-none max-w-[85%] text-sm">
+                  {msg.content}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+        
+        {/* Input */}
+        <div className="p-3 bg-white border-t">
+          <div className="flex gap-2">
+            <Input
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Skriv en melding..."
+              className="flex-1 text-sm"
+            />
+            <Button size="sm" onClick={handleSendMessage} className="bg-revio-500 hover:bg-revio-600">
+              <SendIcon size={14} />
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Original floating mode (keep existing code for backwards compatibility)
   return (
     <>
       {/* Floating button when closed */}
