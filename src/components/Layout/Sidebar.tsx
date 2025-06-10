@@ -24,7 +24,7 @@ import {
   Shield,
   UserCheck
 } from 'lucide-react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, Link } from 'react-router-dom';
 import Logo from './Logo';
 
 const Sidebar = () => {
@@ -119,7 +119,7 @@ const Sidebar = () => {
                     isActive={isActive(item.url)}
                     className="w-full justify-start"
                   >
-                    <a href={item.url} className="flex items-center gap-3">
+                    <Link to={item.url} className="flex items-center gap-3">
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
                       {item.badge && (
@@ -127,7 +127,7 @@ const Sidebar = () => {
                           {item.badge}
                         </span>
                       )}
-                    </a>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -146,10 +146,10 @@ const Sidebar = () => {
                     isActive={isActive(item.url)}
                     className="w-full justify-start"
                   >
-                    <a href={item.url} className="flex items-center gap-3">
+                    <Link to={item.url} className="flex items-center gap-3">
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
-                    </a>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -168,10 +168,10 @@ const Sidebar = () => {
                     isActive={isActive(item.url)}
                     className="w-full justify-start"
                   >
-                    <a href={item.url} className="flex items-center gap-3">
+                    <Link to={item.url} className="flex items-center gap-3">
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
-                    </a>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}

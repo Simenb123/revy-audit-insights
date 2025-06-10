@@ -37,7 +37,7 @@ function App() {
           <Toaster />
           <Routes>
             <Route path="/auth" element={<Auth />} />
-            <Route path="/" element={<SidebarLayout />}>
+            <Route path="/*" element={<SidebarLayout />}>
               <Route index element={<Index />} />
               <Route path="dashboard" element={<NavigationDashboard />} />
               <Route path="clients" element={<ClientsOverview />} />
