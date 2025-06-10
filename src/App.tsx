@@ -40,35 +40,37 @@ const App = () => (
         <AuthProvider>
           <RevyContextProvider>
             <Routes>
+              {/* Public routes */}
               <Route path="/auth" element={<Auth />} />
               <Route path="/organisasjon/oppsett" element={<OrganizationSetup />} />
               
-              <Route path="/" element={
+              {/* Protected routes */}
+              <Route path="/*" element={
                 <OnboardingCheck>
                   <AppLayout>
                     <Routes>
-                      <Route index element={<Navigate to="/dashboard" replace />} />
-                      <Route path="dashboard" element={<Index />} />
-                      
-                      {/* Client routes */}
-                      <Route path="klienter" element={<ClientsOverview />} />
-                      <Route path="klienter/admin" element={<ClientAdmin />} />
-                      <Route path="klienter/:orgNumber/*" element={<ClientDetail />} />
-                      <Route path="klienter/:orgNumber/regnskap" element={<LedgerPage />} />
-                      <Route path="klienter/:orgNumber/regnskapsdata" element={<AccountingData />} />
-                      <Route path="klienter/:orgNumber/import" element={<DataImport />} />
+                      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                      <Route path="/dashboard" element={<Index />} />
                       
                       {/* Organization routes */}
-                      <Route path="organisasjon" element={<OrganizationOverview />} />
-                      <Route path="avdeling" element={<DepartmentView />} />
-                      <Route path="team" element={<TeamManagement />} />
-                      <Route path="kommunikasjon" element={<Communication />} />
-                      <Route path="brukeradministrasjon" element={<UserAdmin />} />
-                      <Route path="organisasjonsinnstillinger" element={<OrganizationSettings />} />
-                      <Route path="revisjonslogger" element={<AuditLogs />} />
+                      <Route path="/organisasjon" element={<OrganizationOverview />} />
+                      <Route path="/avdeling" element={<DepartmentView />} />
+                      <Route path="/team" element={<TeamManagement />} />
+                      <Route path="/kommunikasjon" element={<Communication />} />
+                      <Route path="/brukeradministrasjon" element={<UserAdmin />} />
+                      <Route path="/organisasjonsinnstillinger" element={<OrganizationSettings />} />
+                      <Route path="/revisjonslogger" element={<AuditLogs />} />
+                      
+                      {/* Client routes */}
+                      <Route path="/klienter" element={<ClientsOverview />} />
+                      <Route path="/klienter/admin" element={<ClientAdmin />} />
+                      <Route path="/klienter/:orgNumber" element={<ClientDetail />} />
+                      <Route path="/klienter/:orgNumber/regnskap" element={<LedgerPage />} />
+                      <Route path="/klienter/:orgNumber/regnskapsdata" element={<AccountingData />} />
+                      <Route path="/klienter/:orgNumber/import" element={<DataImport />} />
                       
                       {/* Other routes */}
-                      <Route path="fag" element={<KnowledgeBase />} />
+                      <Route path="/fag" element={<KnowledgeBase />} />
                       
                       <Route path="*" element={<NotFound />} />
                     </Routes>

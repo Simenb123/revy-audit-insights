@@ -12,14 +12,20 @@ const OnboardingCheck = ({ children }: OnboardingCheckProps) => {
   const { session } = useAuth();
   const { data: userProfile, isLoading, error } = useUserProfile();
 
-  console.log('OnboardingCheck - session:', !!session);
+  console.log('OnboardingCheck - session exists:', !!session);
   console.log('OnboardingCheck - userProfile:', userProfile);
   console.log('OnboardingCheck - isLoading:', isLoading);
   console.log('OnboardingCheck - error:', error);
 
-  // Don't redirect if we're still loading
+  // No session = not authenticated
+  if (!session) {
+    console.log('OnboardingCheck - No session, redirecting to auth');
+    return <Navigate to="/auth" replace />;
+  }
+
+  // Still loading profile data
   if (isLoading) {
-    console.log('OnboardingCheck - Still loading, showing loading state');
+    console.log('OnboardingCheck - Loading profile...');
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -30,33 +36,15 @@ const OnboardingCheck = ({ children }: OnboardingCheckProps) => {
     );
   }
 
-  // If no session, something is wrong with auth
-  if (!session) {
-    console.log('OnboardingCheck - No session, redirecting to auth');
-    return <Navigate to="/auth" replace />;
-  }
-
-  // If there's an error loading profile, redirect to setup
-  if (error) {
-    console.error('OnboardingCheck - Profile error:', error);
+  // Error loading profile or no profile exists = needs setup
+  if (error || !userProfile || !userProfile.auditFirmId) {
+    console.log('OnboardingCheck - Profile missing or no firm, redirecting to setup');
     return <Navigate to="/organisasjon/oppsett" replace />;
   }
 
-  // If user profile exists and has audit firm, allow access
-  if (userProfile && userProfile.auditFirmId) {
-    console.log('OnboardingCheck - User has profile and audit firm, allowing access');
-    return <>{children}</>;
-  }
-
-  // If user profile exists but no audit firm, redirect to setup
-  if (userProfile && !userProfile.auditFirmId) {
-    console.log('OnboardingCheck - User has profile but no audit firm, redirecting to setup');
-    return <Navigate to="/organisasjon/oppsett" replace />;
-  }
-
-  // If we get here and still no profile, redirect to setup
-  console.log('OnboardingCheck - No user profile found, redirecting to setup');
-  return <Navigate to="/organisasjon/oppsett" replace />;
+  // All good - user has profile and firm
+  console.log('OnboardingCheck - User ready, showing content');
+  return <>{children}</>;
 };
 
 export default OnboardingCheck;

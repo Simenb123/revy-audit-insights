@@ -13,9 +13,9 @@ import {
   MessageSquare, 
   Settings, 
   UserCog,
-  Shield,
   LogIn,
-  User
+  User,
+  Book
 } from 'lucide-react';
 
 interface NavigationItem {
@@ -28,7 +28,7 @@ interface NavigationItem {
 }
 
 const MainNavigation = () => {
-  const { session, user } = useAuth();
+  const { session } = useAuth();
   const { data: userProfile, isLoading } = useUserProfile();
   const location = useLocation();
 
@@ -37,7 +37,7 @@ const MainNavigation = () => {
       to: '/dashboard',
       label: 'Dashboard',
       icon: Home,
-      description: 'Hovedoversikt og statistikk',
+      description: 'Hovedoversikt og navigasjon',
       requiresAuth: true
     },
     {
@@ -48,6 +48,13 @@ const MainNavigation = () => {
       requiresAuth: true
     },
     {
+      to: '/klienter',
+      label: 'Klienter',
+      icon: Users,
+      description: 'Klientoversikt og administrasjon',
+      requiresAuth: true
+    },
+    {
       to: '/kommunikasjon',
       label: 'Kommunikasjon',
       icon: MessageSquare,
@@ -55,10 +62,10 @@ const MainNavigation = () => {
       requiresAuth: true
     },
     {
-      to: '/klienter',
-      label: 'Klienter',
-      icon: Users,
-      description: 'Klientoversikt og administrasjon',
+      to: '/fag',
+      label: 'Kunnskapsbase',
+      icon: Book,
+      description: 'Faglige ressurser og veiledning',
       requiresAuth: true
     },
     {
@@ -81,16 +88,16 @@ const MainNavigation = () => {
 
   const canAccessItem = (item: NavigationItem) => {
     if (!item.requiresAuth) return true;
-    if (!session || !user) return false;
+    if (!session) return false;
     if (!item.requiredRole) return true;
     if (!userProfile) return false;
     return item.requiredRole.includes(userProfile.userRole);
   };
 
   const getAccessLevel = () => {
-    if (!session || !user) return 'Ikke logget inn';
+    if (!session) return 'Ikke logget inn';
     if (!userProfile) return 'Laster profil...';
-    return `${userProfile.userRole} (${userProfile.firstName} ${userProfile.lastName})`;
+    return `${userProfile.firstName} ${userProfile.lastName}`;
   };
 
   if (isLoading) {
@@ -116,7 +123,7 @@ const MainNavigation = () => {
           <div className="flex items-center justify-between">
             <span>{getAccessLevel()}</span>
             {userProfile && (
-              <Badge variant="outline">
+              <Badge variant="outline" className="capitalize">
                 {userProfile.userRole}
               </Badge>
             )}
@@ -133,7 +140,7 @@ const MainNavigation = () => {
       </Card>
 
       {/* Navigation Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {navigationItems.map((item) => {
           const isAccessible = canAccessItem(item);
           const isActive = location.pathname === item.to;
@@ -160,7 +167,6 @@ const MainNavigation = () => {
                     <div className="flex items-center gap-3 mb-2">
                       <item.icon className="h-6 w-6 text-muted-foreground" />
                       <span className="font-semibold text-muted-foreground">{item.label}</span>
-                      <Shield className="h-4 w-4 text-muted-foreground" />
                     </div>
                     <p className="text-sm text-muted-foreground">{item.description}</p>
                     {item.requiredRole && (

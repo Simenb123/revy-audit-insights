@@ -4,83 +4,51 @@ import { useUserProfile } from '@/hooks/useUserProfile';
 import { useDepartments } from '@/hooks/useDepartments';
 import { useClientTeams } from '@/hooks/useClientTeams';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Building2, Users, Briefcase, MessageSquare, Plus, FileText, ArrowLeft } from 'lucide-react';
+import { Building2, Users, Briefcase, ArrowLeft, Settings, MessageSquare } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const OrganizationOverview = () => {
-  console.log('OrganizationOverview component is rendering!');
-  
-  const { data: userProfile, isLoading: profileLoading, error: profileError } = useUserProfile();
+  const { data: userProfile, isLoading: profileLoading } = useUserProfile();
   const { data: departments = [], isLoading: departmentsLoading } = useDepartments();
   const { data: teams = [], isLoading: teamsLoading } = useClientTeams();
 
-  console.log('OrganizationOverview - userProfile:', userProfile);
-  console.log('OrganizationOverview - profileLoading:', profileLoading);
-  console.log('OrganizationOverview - profileError:', profileError);
-  console.log('OrganizationOverview - departments:', departments);
-  console.log('OrganizationOverview - teams:', teams);
+  console.log('OrganizationOverview rendering with profile:', userProfile);
 
-  // Show loading while profile is loading
   if (profileLoading) {
-    console.log('OrganizationOverview - Showing loading state');
     return (
       <div className="w-full px-4 py-6 md:px-6 lg:px-8">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-              <p className="mt-2 text-muted-foreground">Laster organisasjonsdata...</p>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-64 mb-2"></div>
+          <div className="h-4 bg-gray-200 rounded w-96 mb-6"></div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="h-32 bg-gray-200 rounded"></div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
 
-  // Show error if profile failed to load
-  if (profileError) {
-    console.log('OrganizationOverview - Showing error state');
-    return (
-      <div className="w-full px-4 py-6 md:px-6 lg:px-8">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <p className="text-red-600">Feil ved lasting av brukerdata: {profileError.message}</p>
-              <Link to="/dashboard">
-                <Button className="mt-4">Tilbake til hovedmeny</Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  // Show message if no profile data
   if (!userProfile) {
-    console.log('OrganizationOverview - No user profile found');
     return (
       <div className="w-full px-4 py-6 md:px-6 lg:px-8">
         <Card>
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <p className="text-orange-600">Ingen brukerdata funnet</p>
-              <Link to="/dashboard">
-                <Button className="mt-4">Tilbake til hovedmeny</Button>
-              </Link>
-            </div>
+          <CardContent className="pt-6 text-center">
+            <p className="text-red-600 mb-4">Kunne ikke laste brukerdata</p>
+            <Link to="/dashboard">
+              <Button>Tilbake til hovedmeny</Button>
+            </Link>
           </CardContent>
         </Card>
       </div>
     );
   }
 
-  console.log('OrganizationOverview - Rendering main content');
-
-  const userDepartment = departments.find(d => d.id === userProfile?.departmentId);
+  const userDepartment = departments.find(d => d.id === userProfile.departmentId);
   const activeTeams = teams.filter(t => t.isActive);
+  const isAdmin = userProfile.userRole === 'admin' || userProfile.userRole === 'partner';
 
   return (
     <div className="w-full px-4 py-6 md:px-6 lg:px-8">
@@ -88,208 +56,139 @@ const OrganizationOverview = () => {
         <div>
           <h1 className="text-3xl font-bold">Organisasjonsoversikt</h1>
           <p className="text-muted-foreground mt-1">
-            Oversikt over din organisasjon, avdeling og team
+            Oversikt over din organisasjon og rolle
           </p>
         </div>
         <Link to="/dashboard">
           <Button variant="outline" className="gap-2">
             <ArrowLeft className="h-4 w-4" />
-            Tilbake til hovedmeny
+            Tilbake
           </Button>
         </Link>
       </div>
 
-      <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="overview">Oversikt</TabsTrigger>
-          <TabsTrigger value="communication">Kommunikasjon</TabsTrigger>
-        </TabsList>
+      <div className="space-y-6">
+        {/* User Info Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Din profil</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-3">
+              <div className="flex justify-between">
+                <span className="font-medium">Navn:</span>
+                <span>{userProfile.firstName} {userProfile.lastName}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="font-medium">E-post:</span>
+                <span>{userProfile.email}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="font-medium">Rolle:</span>
+                <span className="font-semibold capitalize">{userProfile.userRole}</span>
+              </div>
+              {userProfile.workplaceCompanyName && (
+                <div className="flex justify-between">
+                  <span className="font-medium">Firma:</span>
+                  <span>{userProfile.workplaceCompanyName}</span>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
-        <TabsContent value="overview" className="space-y-6">
-          {/* User Profile Info */}
+        {/* Quick Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card>
-            <CardHeader>
-              <CardTitle>Din profil</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-2">
-                <div className="flex justify-between">
-                  <span>Navn:</span>
-                  <span>{userProfile.firstName} {userProfile.lastName}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>E-post:</span>
-                  <span>{userProfile.email}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Rolle:</span>
-                  <span className="font-semibold">{userProfile.userRole}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Firma ID:</span>
-                  <span className="text-sm text-muted-foreground">{userProfile.auditFirmId || 'Ikke tilordnet'}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Avdeling ID:</span>
-                  <span className="text-sm text-muted-foreground">{userProfile.departmentId || 'Ikke tilordnet'}</span>
-                </div>
+            <CardContent className="flex items-center justify-center p-6">
+              <div className="text-center">
+                <Building2 className="h-8 w-8 text-blue-500 mx-auto mb-2" />
+                <h3 className="text-2xl font-bold">{departmentsLoading ? '...' : departments.length}</h3>
+                <p className="text-sm text-muted-foreground">Avdelinger</p>
               </div>
             </CardContent>
           </Card>
+          
+          <Card>
+            <CardContent className="flex items-center justify-center p-6">
+              <div className="text-center">
+                <Briefcase className="h-8 w-8 text-green-500 mx-auto mb-2" />
+                <h3 className="text-2xl font-bold">{teamsLoading ? '...' : activeTeams.length}</h3>
+                <p className="text-sm text-muted-foreground">Aktive team</p>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="flex items-center justify-center p-6">
+              <div className="text-center">
+                <Users className="h-8 w-8 text-purple-500 mx-auto mb-2" />
+                <h3 className="text-2xl font-bold">1</h3>
+                <p className="text-sm text-muted-foreground">Ditt firma</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
-          {/* Quick Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card>
-              <CardContent className="flex items-center justify-center p-6">
-                <div className="text-center">
-                  <Building2 className="h-8 w-8 text-blue-500 mx-auto mb-2" />
-                  <h3 className="text-2xl font-bold">1</h3>
-                  <p className="text-sm text-muted-foreground">Revisjonsfirma</p>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="flex items-center justify-center p-6">
-                <div className="text-center">
-                  <Users className="h-8 w-8 text-green-500 mx-auto mb-2" />
-                  <h3 className="text-2xl font-bold">{departmentsLoading ? '...' : departments.length}</h3>
-                  <p className="text-sm text-muted-foreground">Avdelinger</p>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="flex items-center justify-center p-6">
-                <div className="text-center">
-                  <Briefcase className="h-8 w-8 text-purple-500 mx-auto mb-2" />
-                  <h3 className="text-2xl font-bold">{teamsLoading ? '...' : activeTeams.length}</h3>
-                  <p className="text-sm text-muted-foreground">Aktive team</p>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="flex items-center justify-center p-6">
-                <div className="text-center">
-                  <MessageSquare className="h-8 w-8 text-orange-500 mx-auto mb-2" />
-                  <h3 className="text-2xl font-bold">0</h3>
-                  <p className="text-sm text-muted-foreground">Nye meldinger</p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Current Department */}
-          {userDepartment ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>Min avdeling</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <h3 className="text-lg font-semibold">{userDepartment.name}</h3>
-                  {userDepartment.description && (
-                    <p className="text-muted-foreground">{userDepartment.description}</p>
-                  )}
-                  <div className="flex gap-2 pt-2">
-                    <Button asChild variant="outline">
-                      <Link to="/avdeling">
-                        Se avdelingsdetaljer
-                      </Link>
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card>
-              <CardHeader>
-                <CardTitle>Avdelingsinformasjon</CardTitle>
-              </CardHeader>
-              <CardContent>
+        {/* Department Info */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Min avdeling</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {userDepartment ? (
+              <div className="space-y-2">
+                <h3 className="text-lg font-semibold">{userDepartment.name}</h3>
+                {userDepartment.description && (
+                  <p className="text-muted-foreground">{userDepartment.description}</p>
+                )}
+                <Button asChild variant="outline" className="mt-2">
+                  <Link to="/avdeling">Se avdelingsdetaljer</Link>
+                </Button>
+              </div>
+            ) : (
+              <div className="text-center py-4">
                 <p className="text-muted-foreground">
                   {departmentsLoading ? 'Laster avdelingsdata...' : 'Du er ikke tilordnet en avdeling ennå.'}
                 </p>
-                {userProfile.userRole === 'admin' && (
-                  <div className="mt-4">
-                    <Button asChild>
-                      <Link to="/organisasjonsinnstillinger">
-                        Administrer avdelinger
-                      </Link>
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Quick Actions */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Hurtighandlinger</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <Button asChild className="h-20 flex-col">
-                  <Link to="/team">
-                    <Briefcase className="h-6 w-6 mb-2" />
-                    Administrer team
-                  </Link>
-                </Button>
-                
-                <Button asChild variant="outline" className="h-20 flex-col">
-                  <Link to="/kommunikasjon">
-                    <MessageSquare className="h-6 w-6 mb-2" />
-                    Kommunikasjon
-                  </Link>
-                </Button>
-                
-                <Button asChild variant="outline" className="h-20 flex-col">
-                  <Link to="/klienter">
-                    <Users className="h-6 w-6 mb-2" />
-                    Se klienter
-                  </Link>
-                </Button>
-                
-                <Button asChild variant="outline" className="h-20 flex-col">
-                  <Link to="/revisjonslogger">
-                    <FileText className="h-6 w-6 mb-2" />
-                    Revisjonslogger
-                  </Link>
-                </Button>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+            )}
+          </CardContent>
+        </Card>
 
-        <TabsContent value="communication">
-          <Card>
-            <CardHeader>
-              <CardTitle>Kommunikasjonssystem</CardTitle>
-              <p className="text-muted-foreground">
-                Kommuniser med teammedlemmer og avdelingen din
-              </p>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8">
-                <MessageSquare className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground mb-4">Kommunikasjonssystemet kommer snart</p>
-                <p className="text-sm text-muted-foreground">
-                  Dette vil inkludere team-chat, kunngjøringer og meldinger
-                </p>
-                <div className="mt-4">
-                  <Button asChild>
-                    <Link to="/kommunikasjon">
-                      Gå til kommunikasjon
-                    </Link>
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+        {/* Quick Actions */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Hurtighandlinger</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Button asChild className="h-16 flex-col">
+                <Link to="/team">
+                  <Briefcase className="h-5 w-5 mb-1" />
+                  Mine team
+                </Link>
+              </Button>
+              
+              <Button asChild variant="outline" className="h-16 flex-col">
+                <Link to="/kommunikasjon">
+                  <MessageSquare className="h-5 w-5 mb-1" />
+                  Kommunikasjon
+                </Link>
+              </Button>
+              
+              {isAdmin && (
+                <Button asChild variant="outline" className="h-16 flex-col">
+                  <Link to="/organisasjonsinnstillinger">
+                    <Settings className="h-5 w-5 mb-1" />
+                    Innstillinger
+                  </Link>
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };
