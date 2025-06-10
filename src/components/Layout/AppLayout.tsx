@@ -33,13 +33,13 @@ const AppLayout = ({ children }: AppLayoutProps) => {
                   <main className="h-full w-full overflow-auto relative">
                     {children}
                     
-                    {/* Show expand button when sidebar is collapsed */}
+                    {/* Show expand button when sidebar is collapsed - positioned at header height */}
                     {isRightSidebarCollapsed && (
                       <Button
                         variant="ghost"
                         size="icon"
                         onClick={() => setIsRightSidebarCollapsed(false)}
-                        className="fixed top-1/2 right-4 transform -translate-y-1/2 z-10 bg-white border border-border shadow-md hover:shadow-lg"
+                        className="fixed top-20 right-4 z-10 bg-white border border-border shadow-md hover:shadow-lg h-6 w-6"
                       >
                         <ChevronLeft className="h-4 w-4" />
                       </Button>

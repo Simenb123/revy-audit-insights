@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from "@/components/ui/button";
@@ -128,16 +129,16 @@ const RevyAssistant = ({ embedded = false }: RevyAssistantProps) => {
               className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               {msg.sender === 'revy' && (
-                <div className="flex items-end gap-2">
+                <div className="flex items-end gap-2 max-w-[90%]">
                   <RevyAvatar size="xs" />
-                  <div className="bg-white border border-gray-200 p-2 rounded-lg rounded-bl-none max-w-[85%] shadow-sm text-sm">
+                  <div className="bg-white border border-gray-200 p-2 rounded-lg rounded-bl-none shadow-sm text-sm">
                     {msg.content}
                   </div>
                 </div>
               )}
               
               {msg.sender === 'user' && (
-                <div className="bg-blue-100 text-blue-900 p-2 rounded-lg rounded-br-none max-w-[85%] text-sm">
+                <div className="bg-blue-100 text-blue-900 p-2 rounded-lg rounded-br-none max-w-[90%] text-sm">
                   {msg.content}
                 </div>
               )}
@@ -145,18 +146,18 @@ const RevyAssistant = ({ embedded = false }: RevyAssistantProps) => {
           ))}
         </div>
         
-        {/* Input */}
-        <div className="p-3 bg-white border-t">
-          <div className="flex gap-2">
+        {/* Input - responsive to container width */}
+        <div className="p-2 bg-white border-t">
+          <div className="flex gap-1">
             <Input
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Skriv en melding..."
-              className="flex-1 text-sm"
+              className="flex-1 text-xs h-8"
             />
-            <Button size="sm" onClick={handleSendMessage} className="bg-revio-500 hover:bg-revio-600">
-              <SendIcon size={14} />
+            <Button size="sm" onClick={handleSendMessage} className="bg-revio-500 hover:bg-revio-600 h-8 w-8 p-0">
+              <SendIcon size={12} />
             </Button>
           </div>
         </div>
