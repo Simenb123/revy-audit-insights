@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/components/Auth/AuthProvider';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Building2, Users, ArrowRight, AlertCircle } from 'lucide-react';
+import { Building2, Users, ArrowRight, AlertCircle, MessageSquare } from 'lucide-react';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { useExistingFirm } from '@/hooks/useExistingFirm';
 import { useJoinFirm } from '@/hooks/useJoinFirm';
@@ -257,6 +258,21 @@ const OrganizationSetup = () => {
                 </Button>
               </CardContent>
             </Card>
+          </div>
+
+          {/* Add navigation to test communication */}
+          <div className="mt-8 pt-6 border-t">
+            <div className="text-center space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Vil du teste kommunikasjonssystemet uten å opprette et firma først?
+              </p>
+              <Link to="/kommunikasjon">
+                <Button variant="outline" className="gap-2">
+                  <MessageSquare className="h-4 w-4" />
+                  Gå til kommunikasjon
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
       </div>
