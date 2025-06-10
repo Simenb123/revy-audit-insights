@@ -3,6 +3,7 @@ import React from 'react';
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { Outlet } from 'react-router-dom';
 import Sidebar from "@/components/Layout/Sidebar";
+import AppHeader from "@/components/Layout/AppHeader";
 
 const SidebarLayout = () => {
   return (
@@ -12,6 +13,7 @@ const SidebarLayout = () => {
           <Sidebar />
         </aside>
         <SidebarInset>
+          <AppHeader />
           <main className="flex-1 p-6">
             <Outlet />
           </main>
