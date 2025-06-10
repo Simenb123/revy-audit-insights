@@ -26,11 +26,11 @@ export function useUserPresence() {
       const { data, error } = await supabase
         .from('user_presence')
         .select(`
-          *,
-          profiles:user_id (
-            first_name,
-            last_name
-          )
+          id,
+          user_id,
+          is_online,
+          last_seen,
+          current_room_id
         `)
         .eq('is_online', true);
 
@@ -39,17 +39,29 @@ export function useUserPresence() {
         return [];
       }
 
-      return data.map(presence => ({
-        id: presence.id,
-        userId: presence.user_id,
-        isOnline: presence.is_online,
-        lastSeen: presence.last_seen,
-        currentRoomId: presence.current_room_id,
-        userProfile: presence.profiles ? {
-          firstName: presence.profiles.first_name,
-          lastName: presence.profiles.last_name
-        } : undefined
-      }));
+      // Fetch profiles separately to avoid join issues
+      const userIds = [...new Set(data.map(presence => presence.user_id))];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name')
+        .in('id', userIds);
+
+      const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+
+      return data.map(presence => {
+        const profile = profileMap.get(presence.user_id);
+        return {
+          id: presence.id,
+          userId: presence.user_id,
+          isOnline: presence.is_online,
+          lastSeen: presence.last_seen,
+          currentRoomId: presence.current_room_id,
+          userProfile: profile ? {
+            firstName: profile.first_name,
+            lastName: profile.last_name
+          } : undefined
+        };
+      });
     },
     enabled: !!session,
     staleTime: 1000 * 30, // 30 seconds

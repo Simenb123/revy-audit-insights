@@ -42,11 +42,16 @@ export function useMessages(roomId: string) {
       const { data, error } = await supabase
         .from('messages')
         .select(`
-          *,
-          profiles:sender_id (
-            first_name,
-            last_name
-          )
+          id,
+          room_id,
+          sender_id,
+          content,
+          message_type,
+          parent_message_id,
+          is_edited,
+          edited_at,
+          metadata,
+          created_at
         `)
         .eq('room_id', roomId)
         .order('created_at', { ascending: true })
@@ -57,22 +62,34 @@ export function useMessages(roomId: string) {
         return [];
       }
 
-      return data.map(msg => ({
-        id: msg.id,
-        roomId: msg.room_id,
-        senderId: msg.sender_id,
-        content: msg.content,
-        messageType: msg.message_type,
-        parentMessageId: msg.parent_message_id,
-        isEdited: msg.is_edited,
-        editedAt: msg.edited_at,
-        metadata: msg.metadata,
-        createdAt: msg.created_at,
-        senderProfile: msg.profiles ? {
-          firstName: msg.profiles.first_name,
-          lastName: msg.profiles.last_name
-        } : undefined
-      }));
+      // Fetch profiles separately to avoid join issues
+      const senderIds = [...new Set(data.map(msg => msg.sender_id))];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name')
+        .in('id', senderIds);
+
+      const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+
+      return data.map(msg => {
+        const profile = profileMap.get(msg.sender_id);
+        return {
+          id: msg.id,
+          roomId: msg.room_id,
+          senderId: msg.sender_id,
+          content: msg.content,
+          messageType: msg.message_type,
+          parentMessageId: msg.parent_message_id,
+          isEdited: msg.is_edited,
+          editedAt: msg.edited_at,
+          metadata: msg.metadata,
+          createdAt: msg.created_at,
+          senderProfile: profile ? {
+            firstName: profile.first_name,
+            lastName: profile.last_name
+          } : undefined
+        };
+      });
     },
     enabled: !!roomId && !!session,
     staleTime: 0, // Always fetch fresh data for real-time
