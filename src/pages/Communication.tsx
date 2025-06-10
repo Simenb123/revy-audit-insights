@@ -54,7 +54,7 @@ const Communication = () => {
           ) : (
             <div className="space-y-4">
               {chatRooms.map((room) => (
-                <ChatRoom key={room.id} room={room} />
+                <ChatRoom key={room.id} roomId={room.id} roomName={room.name} />
               ))}
             </div>
           )}

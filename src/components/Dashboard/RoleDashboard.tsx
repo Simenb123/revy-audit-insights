@@ -29,10 +29,10 @@ const RoleDashboard = () => {
 
   switch (userProfile.userRole) {
     case 'admin':
+      return <AdminDashboard />;
     case 'partner':
-      return userProfile.userRole === 'admin' ? <AdminDashboard /> : <PartnerDashboard />;
+      return <PartnerDashboard />;
     case 'manager':
-    case 'senior':
     case 'employee':
     default:
       return <EmployeeDashboard />;
