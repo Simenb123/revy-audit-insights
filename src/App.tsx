@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -29,6 +28,7 @@ import Communication from "./pages/Communication";
 import UserAdmin from "./pages/UserAdmin";
 import AuditLogs from "./pages/AuditLogs";
 import NotFound from "./pages/NotFound";
+import UserProfile from "./pages/UserProfile";
 
 const queryClient = new QueryClient();
 
@@ -52,6 +52,7 @@ const App = () => (
                     <Routes>
                       <Route path="/" element={<Navigate to="/dashboard" replace />} />
                       <Route path="/dashboard" element={<Index />} />
+                      <Route path="/profil" element={<UserProfile />} />
                       
                       {/* Organization routes */}
                       <Route path="/organisasjon" element={<OrganizationOverview />} />

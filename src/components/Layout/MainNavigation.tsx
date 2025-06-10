@@ -41,6 +41,13 @@ const MainNavigation = () => {
       requiresAuth: true
     },
     {
+      to: '/profil',
+      label: 'Min profil',
+      icon: User,
+      description: 'Personlige innstillinger og profil',
+      requiresAuth: true
+    },
+    {
       to: '/organisasjon',
       label: 'Organisasjon',
       icon: Building2,

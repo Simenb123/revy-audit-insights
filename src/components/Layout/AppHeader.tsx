@@ -4,14 +4,16 @@ import { Button } from "@/components/ui/button";
 import { Bell, HelpCircle, Settings, User, LogOut } from "lucide-react";
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import Logo from './Logo';
-import { useLocation, useParams } from 'react-router-dom';
+import { useLocation, useParams, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useClientDetails } from '@/hooks/useClientDetails';
+import { useUserProfile } from '@/hooks/useUserProfile';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
@@ -20,6 +22,7 @@ const AppHeader = () => {
   const { toast } = useToast();
   const { orgNumber } = useParams<{ orgNumber: string }>();
   const { data: client } = useClientDetails(orgNumber || '');
+  const { data: userProfile } = useUserProfile();
   
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
@@ -51,10 +54,13 @@ const AppHeader = () => {
     
     const routes: Record<string, string> = {
       '/': 'Dashboard',
+      '/dashboard': 'Dashboard',
+      '/profil': 'Min profil',
       '/analyser': 'Analyser',
       '/dokumenter': 'Dokumenter',
       '/prosjekter': 'Prosjekter',
       '/klienter': 'Klienter',
+      '/fag': 'Kunnskapsbase',
       '/innstillinger': 'Innstillinger',
       '/hjelp': 'Hjelp'
     };
@@ -104,6 +110,22 @@ const AppHeader = () => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              <div className="px-2 py-1.5 text-sm">
+                <div className="font-medium">
+                  {userProfile?.firstName} {userProfile?.lastName}
+                </div>
+                <div className="text-muted-foreground">
+                  {userProfile?.email}
+                </div>
+              </div>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link to="/profil">
+                  <User className="mr-2 h-4 w-4" />
+                  <span>Min profil</span>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout}>
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Logg ut</span>
