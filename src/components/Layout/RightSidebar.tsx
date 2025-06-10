@@ -33,30 +33,9 @@ const RightSidebar = ({ isCollapsed, onToggle }: RightSidebarProps) => {
     completionRate: 92
   };
 
+  // If completely collapsed, don't render the sidebar at all
   if (isCollapsed) {
-    return (
-      <div className="w-12 bg-white border-l border-border flex flex-col items-center py-4">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onToggle}
-          className="h-8 w-8 mb-4"
-        >
-          <ChevronRight className="h-4 w-4 rotate-180" />
-        </Button>
-        <div className="flex flex-col gap-2">
-          <Button variant="ghost" size="icon" className="h-8 w-8">
-            <MessageSquare className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8">
-            <BarChart3 className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8">
-            <Activity className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   return (
