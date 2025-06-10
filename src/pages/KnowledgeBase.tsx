@@ -20,14 +20,14 @@ const KnowledgeBase = () => {
       </div>
       
       <Routes>
-        <Route path="/" element={<KnowledgeOverview />} />
-        <Route path="/kategori/:categoryId" element={<CategoryView />} />
-        <Route path="/artikkel/:slug" element={<ArticleView />} />
-        <Route path="/ny-artikkel" element={<ArticleEditor />} />
-        <Route path="/rediger/:articleId" element={<ArticleEditor />} />
-        <Route path="/mine-artikler" element={<MyArticles />} />
-        <Route path="/favoritter" element={<MyFavorites />} />
-        <Route path="/sok" element={<SearchResults />} />
+        <Route index element={<KnowledgeOverview />} />
+        <Route path="kategori/:categoryId" element={<CategoryView />} />
+        <Route path="artikkel/:slug" element={<ArticleView />} />
+        <Route path="ny-artikkel" element={<ArticleEditor />} />
+        <Route path="rediger/:articleId" element={<ArticleEditor />} />
+        <Route path="mine-artikler" element={<MyArticles />} />
+        <Route path="favoritter" element={<MyFavorites />} />
+        <Route path="sok" element={<SearchResults />} />
       </Routes>
     </div>
   );

@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -69,8 +70,8 @@ const App = () => (
                       <Route path="/klienter/:orgNumber/regnskapsdata" element={<AccountingData />} />
                       <Route path="/klienter/:orgNumber/import" element={<DataImport />} />
                       
-                      {/* Other routes */}
-                      <Route path="/fag" element={<KnowledgeBase />} />
+                      {/* Knowledge base routes - Fixed to support nested routes */}
+                      <Route path="/fag/*" element={<KnowledgeBase />} />
                       
                       <Route path="*" element={<NotFound />} />
                     </Routes>
