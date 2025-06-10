@@ -151,7 +151,7 @@ const MainNavigation = () => {
                     <div className="flex items-center gap-3 mb-2">
                       <item.icon className="h-6 w-6 text-primary" />
                       <span className="font-semibold">{item.label}</span>
-                      {isActive && <Badge variant="default" size="sm">Aktiv</Badge>}
+                      {isActive && <Badge variant="default">Aktiv</Badge>}
                     </div>
                     <p className="text-sm text-muted-foreground">{item.description}</p>
                   </Link>
