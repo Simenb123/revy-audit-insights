@@ -1052,6 +1052,56 @@ export type Database = {
           },
         ]
       }
+      quiz_questions: {
+        Row: {
+          correct_answer: string
+          created_at: string
+          difficulty_level: string | null
+          explanation: string | null
+          id: string
+          module_name: string
+          options: Json | null
+          points: number | null
+          question_text: string
+          question_type: string
+          scenario_id: string | null
+        }
+        Insert: {
+          correct_answer: string
+          created_at?: string
+          difficulty_level?: string | null
+          explanation?: string | null
+          id?: string
+          module_name: string
+          options?: Json | null
+          points?: number | null
+          question_text: string
+          question_type?: string
+          scenario_id?: string | null
+        }
+        Update: {
+          correct_answer?: string
+          created_at?: string
+          difficulty_level?: string | null
+          explanation?: string | null
+          id?: string
+          module_name?: string
+          options?: Json | null
+          points?: number | null
+          question_text?: string
+          question_type?: string
+          scenario_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_questions_scenario_id_fkey"
+            columns: ["scenario_id"]
+            isOneToOne: false
+            referencedRelation: "test_scenarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       risk_areas: {
         Row: {
           client_id: string
@@ -1235,6 +1285,53 @@ export type Database = {
         }
         Relationships: []
       }
+      training_progress: {
+        Row: {
+          attempts: number | null
+          completed_at: string | null
+          created_at: string
+          id: string
+          max_score: number | null
+          module_name: string
+          scenario_id: string
+          score: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          attempts?: number | null
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          max_score?: number | null
+          module_name: string
+          scenario_id: string
+          score?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          attempts?: number | null
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          max_score?: number | null
+          module_name?: string
+          scenario_id?: string
+          score?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_progress_scenario_id_fkey"
+            columns: ["scenario_id"]
+            isOneToOne: false
+            referencedRelation: "test_scenarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trial_balances: {
         Row: {
           client_account_id: string
@@ -1344,6 +1441,47 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_badges: {
+        Row: {
+          badge_name: string
+          badge_type: string
+          description: string | null
+          earned_at: string
+          id: string
+          points_earned: number | null
+          scenario_id: string | null
+          user_id: string
+        }
+        Insert: {
+          badge_name: string
+          badge_type: string
+          description?: string | null
+          earned_at?: string
+          id?: string
+          points_earned?: number | null
+          scenario_id?: string | null
+          user_id: string
+        }
+        Update: {
+          badge_name?: string
+          badge_type?: string
+          description?: string | null
+          earned_at?: string
+          id?: string
+          points_earned?: number | null
+          scenario_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_badges_scenario_id_fkey"
+            columns: ["scenario_id"]
+            isOneToOne: false
+            referencedRelation: "test_scenarios"
             referencedColumns: ["id"]
           },
         ]
