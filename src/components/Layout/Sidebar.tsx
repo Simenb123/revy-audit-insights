@@ -39,7 +39,7 @@ const Sidebar = () => {
     },
     { 
       title: "Klienter", 
-      url: "/clients", 
+      url: "/klienter", 
       icon: Users,
       badge: null
     },

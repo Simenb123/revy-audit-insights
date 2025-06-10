@@ -44,8 +44,8 @@ function App() {
                   <Routes>
                     <Route index element={<Index />} />
                     <Route path="dashboard" element={<NavigationDashboard />} />
-                    <Route path="clients" element={<ClientsOverview />} />
-                    <Route path="clients/:id" element={<ClientDetail />} />
+                    <Route path="klienter" element={<ClientsOverview />} />
+                    <Route path="klienter/:id" element={<ClientDetail />} />
                     <Route path="client-admin" element={<ClientAdmin />} />
                     <Route path="data-import" element={<DataImport />} />
                     <Route path="accounting-data" element={<AccountingData />} />
