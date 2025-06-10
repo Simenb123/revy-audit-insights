@@ -62,7 +62,8 @@ const AppHeader = () => {
       '/klienter': 'Klienter',
       '/fag': 'Kunnskapsbase',
       '/innstillinger': 'Innstillinger',
-      '/hjelp': 'Hjelp'
+      '/hjelp': 'Hjelp',
+      '/audit-logs': 'Revisjonslogger'
     };
     
     // Check if we're on a client page but don't have client data yet
@@ -78,9 +79,9 @@ const AppHeader = () => {
   return (
     <header 
       data-cy="app-header" 
-      className="sticky top-0 w-full bg-revio-500 flex flex-col z-30"
+      className="sticky top-0 w-full bg-revio-500 flex flex-col z-50 border-b border-revio-600"
     >
-      <div className="h-14 flex items-center justify-between px-4 border-b border-revio-600">
+      <div className="h-14 flex items-center justify-between px-4">
         <div className="flex items-center gap-4">
           <SidebarTrigger className="text-white hover:bg-revio-600" />
           <Logo />

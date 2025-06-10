@@ -20,20 +20,23 @@ const AppLayout = ({ children }: AppLayoutProps) => {
     <TooltipProvider delayDuration={0}>
       <SidebarProvider>
         <div className="flex min-h-screen w-full bg-background">
+          {/* Left Sidebar */}
           <Sidebar />
-          <SidebarInset className="flex-1">
-            <div className="flex flex-col h-screen w-full">
-              {/* Fixed header */}
-              <AppHeader />
-              
-              {/* Resizable content area */}
-              <ResizablePanelGroup direction="horizontal" className="flex-1">
+          
+          {/* Main content area with header */}
+          <div className="flex-1 flex flex-col">
+            {/* Fixed header spanning full width of main area */}
+            <AppHeader />
+            
+            {/* Content area below header */}
+            <div className="flex-1">
+              <ResizablePanelGroup direction="horizontal" className="h-full">
                 {/* Main content */}
                 <ResizablePanel defaultSize={isRightSidebarCollapsed ? 100 : 75} minSize={50}>
-                  <main className="h-full w-full overflow-auto relative">
+                  <main className="h-full w-full overflow-auto p-6">
                     {children}
                     
-                    {/* Show expand button when sidebar is collapsed - positioned at header height */}
+                    {/* Show expand button when sidebar is collapsed */}
                     {isRightSidebarCollapsed && (
                       <Button
                         variant="ghost"
@@ -68,7 +71,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
                 )}
               </ResizablePanelGroup>
             </div>
-          </SidebarInset>
+          </div>
         </div>
       </SidebarProvider>
     </TooltipProvider>
