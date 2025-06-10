@@ -13,44 +13,80 @@ import {
   Calendar
 } from 'lucide-react';
 
-interface UserProgressProps {
-  userProgress: any[];
-  userBadges: any[];
+interface TrainingProgressItem {
+  id: string;
+  scenario_id: string;
+  module_name: string;
+  completed_at?: string;
+  score?: number;
+  max_score?: number;
+  attempts: number;
 }
 
-const UserProgress = ({ userProgress, userBadges }: UserProgressProps) => {
+interface UserBadge {
+  id: string;
+  badge_type: string;
+  badge_name: string;
+  description?: string;
+  earned_at: string;
+  points_earned?: number;
+}
+
+interface UserProgressProps {
+  userProgress?: TrainingProgressItem[];
+  userBadges?: UserBadge[];
+}
+
+const UserProgress = ({ userProgress = [], userBadges = [] }: UserProgressProps) => {
   // Calculate statistics
-  const totalPoints = userBadges?.reduce((sum, badge) => sum + (badge.points_earned || 0), 0) || 0;
+  const totalPoints = userBadges.reduce((sum, badge) => sum + (badge.points_earned || 0), 0);
   const currentLevel = Math.floor(totalPoints / 100) + 1;
   const pointsToNextLevel = (currentLevel * 100) - totalPoints;
   const levelProgress = ((totalPoints % 100) / 100) * 100;
 
-  const completedModules = userProgress?.filter(p => p.completed_at).length || 0;
+  const completedModules = userProgress.filter(p => p.completed_at).length;
   const totalModules = 5; // Total number of modules available
-  const averageScore = userProgress?.filter(p => p.score && p.completed_at)
-    .reduce((sum, p, _, arr) => sum + p.score / arr.length, 0) || 0;
+  const averageScore = userProgress.filter(p => p.score && p.completed_at)
+    .reduce((sum, p, _, arr) => sum + (p.score || 0) / arr.length, 0);
 
   // Group badges by type
-  const badgesByType = userBadges?.reduce((acc, badge) => {
+  const badgesByType = userBadges.reduce((acc, badge) => {
     if (!acc[badge.badge_type]) acc[badge.badge_type] = [];
     acc[badge.badge_type].push(badge);
     return acc;
-  }, {} as Record<string, any[]>) || {};
+  }, {} as Record<string, UserBadge[]>);
+
+  // Define activity type interfaces
+  interface ModuleActivity {
+    type: 'module_completed';
+    date: string;
+    title: string;
+    score?: number;
+  }
+
+  interface BadgeActivity {
+    type: 'badge_earned';
+    date: string;
+    title: string;
+    points?: number;
+  }
+
+  type Activity = ModuleActivity | BadgeActivity;
 
   // Recent activities
-  const recentActivities = [
-    ...userProgress?.filter(p => p.completed_at).map(p => ({
-      type: 'module_completed',
-      date: p.completed_at,
+  const recentActivities: Activity[] = [
+    ...userProgress.filter(p => p.completed_at).map(p => ({
+      type: 'module_completed' as const,
+      date: p.completed_at!,
       title: `Fullførte ${p.module_name}`,
       score: p.score
-    })) || [],
-    ...userBadges?.map(badge => ({
-      type: 'badge_earned',
+    })),
+    ...userBadges.map(badge => ({
+      type: 'badge_earned' as const,
       date: badge.earned_at,
       title: `Opptjente "${badge.badge_name}"`,
       points: badge.points_earned
-    })) || []
+    }))
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 10);
 
   return (
@@ -121,7 +157,7 @@ const UserProgress = ({ userProgress, userBadges }: UserProgressProps) => {
             </div>
             <div>
               <p className="text-sm text-gray-600">Badges opptjent</p>
-              <p className="text-xl font-bold">{userBadges?.length || 0}</p>
+              <p className="text-xl font-bold">{userBadges.length}</p>
             </div>
           </CardContent>
         </Card>
@@ -203,10 +239,10 @@ const UserProgress = ({ userProgress, userBadges }: UserProgressProps) => {
                       })}
                     </p>
                   </div>
-                  {activity.score && (
+                  {activity.type === 'module_completed' && activity.score && (
                     <Badge variant="outline">{activity.score}% score</Badge>
                   )}
-                  {activity.points && (
+                  {activity.type === 'badge_earned' && activity.points && (
                     <Badge className="bg-yellow-100 text-yellow-800">+{activity.points} poeng</Badge>
                   )}
                 </div>
