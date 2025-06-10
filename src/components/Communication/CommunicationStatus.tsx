@@ -8,10 +8,14 @@ import { CheckCircle, AlertCircle, Users, MessageSquare, Building2 } from 'lucid
 import CreateTestDataButton from './CreateTestDataButton';
 
 const CommunicationStatus = () => {
-  const { data: userProfile, isLoading: profileLoading } = useUserProfile();
+  const { data: userProfile, isLoading: profileLoading, error: profileError } = useUserProfile();
   const { data: teamRooms } = useChatRooms('team');
   const { data: departmentRooms } = useChatRooms('department');
   const { data: firmRooms } = useChatRooms('firm');
+
+  console.log('CommunicationStatus - userProfile:', userProfile);
+  console.log('CommunicationStatus - profileLoading:', profileLoading);
+  console.log('CommunicationStatus - profileError:', profileError);
 
   if (profileLoading) {
     return (
@@ -23,6 +27,7 @@ const CommunicationStatus = () => {
     );
   }
 
+  // Handle case where profile doesn't exist or failed to load
   const hasAuditFirm = !!userProfile?.auditFirmId;
   const hasDepartment = !!userProfile?.departmentId;
   const hasTeamRooms = (teamRooms?.length || 0) > 0;
@@ -41,6 +46,14 @@ const CommunicationStatus = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          {profileError && (
+            <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
+              <p className="text-sm text-orange-800">
+                Kunne ikke laste brukerprofil. Dette kan være fordi du ikke er autentisert eller ikke har opprettet en profil ennå.
+              </p>
+            </div>
+          )}
+
           <div className="grid gap-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">

@@ -10,13 +10,18 @@ import OnlineUsers from '@/components/Communication/OnlineUsers';
 import CommunicationStatus from '@/components/Communication/CommunicationStatus';
 
 const Communication = () => {
-  const { data: userProfile } = useUserProfile();
+  const { data: userProfile, isLoading: profileLoading } = useUserProfile();
   const [selectedRoomId, setSelectedRoomId] = useState<string>('');
   const [selectedRoomName, setSelectedRoomName] = useState<string>('');
   
   const { data: teamRooms } = useChatRooms('team');
   const { data: departmentRooms } = useChatRooms('department');
   const { data: firmRooms } = useChatRooms('firm');
+
+  console.log('Communication page - userProfile:', userProfile);
+  console.log('Communication page - teamRooms:', teamRooms);
+  console.log('Communication page - departmentRooms:', departmentRooms);
+  console.log('Communication page - firmRooms:', firmRooms);
 
   const handleRoomSelect = (roomId: string, roomName: string) => {
     setSelectedRoomId(roomId);
@@ -34,6 +39,29 @@ const Communication = () => {
   }, [teamRooms, departmentRooms, firmRooms, selectedRoomId]);
 
   const hasAnyRooms = (teamRooms?.length || 0) + (departmentRooms?.length || 0) + (firmRooms?.length || 0) > 0;
+
+  if (profileLoading) {
+    return (
+      <div className="w-full px-4 py-6 md:px-6 lg:px-8">
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h1 className="text-3xl font-bold">Kommunikasjon</h1>
+            <p className="text-muted-foreground mt-1">
+              Real-time chat med teammedlemmer og avdelingen
+            </p>
+          </div>
+        </div>
+        <Card>
+          <CardContent className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+              <p className="mt-2 text-muted-foreground">Laster...</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full px-4 py-6 md:px-6 lg:px-8">
