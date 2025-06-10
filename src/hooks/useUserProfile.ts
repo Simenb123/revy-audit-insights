@@ -10,7 +10,12 @@ export function useUserProfile() {
   return useQuery({
     queryKey: ['userProfile', session?.user?.id],
     queryFn: async (): Promise<UserProfile | null> => {
-      if (!session?.user?.id) return null;
+      if (!session?.user?.id) {
+        console.log('useUserProfile: No session or user ID available');
+        return null;
+      }
+      
+      console.log('useUserProfile: Fetching profile for user:', session.user.id);
       
       const { data, error } = await supabase
         .from('profiles')
@@ -20,8 +25,11 @@ export function useUserProfile() {
 
       if (error) {
         console.error('Error fetching user profile:', error);
+        // Don't throw error, just return null so the query can handle it gracefully
         return null;
       }
+
+      console.log('useUserProfile: Profile data received:', data);
 
       return {
         id: data.id,
@@ -40,5 +48,6 @@ export function useUserProfile() {
     },
     enabled: !!session?.user?.id,
     staleTime: 1000 * 60 * 5, // 5 minutes
+    retry: false, // Don't retry on error to avoid infinite loops
   });
 }
