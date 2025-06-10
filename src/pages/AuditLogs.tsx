@@ -2,6 +2,8 @@
 import React, { useState } from 'react';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { useAuditLogs } from '@/hooks/useAuditLogs';
+import { useReviewAuditLog } from '@/hooks/useReviewAuditLog';
+import { useCreateAuditLog } from '@/hooks/useCreateAuditLog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Calendar, Search, Filter, FileText, Eye, CheckCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { nb } from 'date-fns/locale';
+import AuditLogStats from '@/components/AuditLogs/AuditLogStats';
 
 const AuditLogs = () => {
   const { data: userProfile } = useUserProfile();
@@ -22,6 +25,9 @@ const AuditLogs = () => {
     actionType: actionFilter !== 'all' ? actionFilter as any : undefined,
     isReviewed: statusFilter === 'reviewed' ? true : statusFilter === 'pending' ? false : undefined
   });
+
+  const reviewAuditLog = useReviewAuditLog();
+  const createAuditLog = useCreateAuditLog();
 
   const getActionTypeColor = (actionType: string) => {
     switch (actionType) {
@@ -45,6 +51,25 @@ const AuditLogs = () => {
 
   const canReview = userProfile?.userRole === 'admin' || userProfile?.userRole === 'partner';
 
+  const handleReview = (logId: string) => {
+    reviewAuditLog.mutate(logId);
+  };
+
+  // Demo function to create a test audit log
+  const handleCreateTestLog = () => {
+    createAuditLog.mutate({
+      clientId: 'demo-client-id',
+      actionType: 'analysis_performed',
+      areaName: 'Kommunikasjonssystem',
+      description: 'Real-time chat implementert med Supabase real-time funksjonalitet',
+      metadata: {
+        feature: 'communication',
+        tables: ['chat_rooms', 'messages', 'user_presence'],
+        realtime: true
+      }
+    });
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -65,7 +90,15 @@ const AuditLogs = () => {
             Spor alle handlinger og anmeldelser i systemet
           </p>
         </div>
+        {canReview && (
+          <Button onClick={handleCreateTestLog} variant="outline">
+            Opprett test-logg
+          </Button>
+        )}
       </div>
+
+      {/* Stats */}
+      <AuditLogStats />
 
       {/* Filters */}
       <Card className="mb-6">
@@ -153,8 +186,8 @@ const AuditLogs = () => {
                       <h3 className="font-medium mb-1">{log.description}</h3>
                       
                       {log.metadata && (
-                        <div className="text-sm text-muted-foreground">
-                          <pre className="whitespace-pre-wrap">
+                        <div className="text-sm text-muted-foreground bg-muted p-2 rounded mt-2">
+                          <pre className="whitespace-pre-wrap text-xs">
                             {JSON.stringify(log.metadata, null, 2)}
                           </pre>
                         </div>
@@ -169,7 +202,12 @@ const AuditLogs = () => {
                         </Badge>
                       ) : (
                         canReview && (
-                          <Button variant="outline" size="sm">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleReview(log.id)}
+                            disabled={reviewAuditLog.isPending}
+                          >
                             <Eye className="h-4 w-4 mr-1" />
                             Anmeld
                           </Button>

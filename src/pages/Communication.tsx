@@ -1,34 +1,36 @@
 
 import React, { useState } from 'react';
 import { useUserProfile } from '@/hooks/useUserProfile';
+import { useChatRooms } from '@/hooks/useChatRooms';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { MessageSquare, Users, Building2, Send } from 'lucide-react';
-import { Badge } from "@/components/ui/badge";
+import { MessageSquare, Users, Building2 } from 'lucide-react';
+import ChatRoom from '@/components/Communication/ChatRoom';
+import OnlineUsers from '@/components/Communication/OnlineUsers';
 
 const Communication = () => {
   const { data: userProfile } = useUserProfile();
-  const [newMessage, setNewMessage] = useState('');
+  const [selectedRoomId, setSelectedRoomId] = useState<string>('');
+  const [selectedRoomName, setSelectedRoomName] = useState<string>('');
+  
+  const { data: teamRooms } = useChatRooms('team');
+  const { data: departmentRooms } = useChatRooms('department');
+  const { data: firmRooms } = useChatRooms('firm');
 
-  const mockMessages = [
-    {
-      id: 1,
-      sender: 'Anna Hansen',
-      message: 'Hei alle sammen! Møtet i morgen er flyttet til kl 10:00.',
-      timestamp: '2 timer siden',
-      type: 'team'
-    },
-    {
-      id: 2,
-      sender: 'Per Olsen',
-      message: 'Kan noen hjelpe meg med revisjonen av Klient ABC?',
-      timestamp: '4 timer siden',
-      type: 'department'
+  const handleRoomSelect = (roomId: string, roomName: string) => {
+    setSelectedRoomId(roomId);
+    setSelectedRoomName(roomName);
+  };
+
+  // Auto-select first available room
+  React.useEffect(() => {
+    if (!selectedRoomId) {
+      const firstRoom = teamRooms?.[0] || departmentRooms?.[0] || firmRooms?.[0];
+      if (firstRoom) {
+        handleRoomSelect(firstRoom.id, firstRoom.name);
+      }
     }
-  ];
+  }, [teamRooms, departmentRooms, firmRooms, selectedRoomId]);
 
   return (
     <div className="w-full px-4 py-6 md:px-6 lg:px-8">
@@ -36,7 +38,7 @@ const Communication = () => {
         <div>
           <h1 className="text-3xl font-bold">Kommunikasjon</h1>
           <p className="text-muted-foreground mt-1">
-            Chat med teammedlemmer og avdelingen
+            Real-time chat med teammedlemmer og avdelingen
           </p>
         </div>
       </div>
@@ -45,134 +47,196 @@ const Communication = () => {
         <TabsList>
           <TabsTrigger value="team">
             <Users className="h-4 w-4 mr-2" />
-            Team-chat
+            Team-chat ({teamRooms?.length || 0})
           </TabsTrigger>
           <TabsTrigger value="department">
             <Building2 className="h-4 w-4 mr-2" />
-            Avdelingschat
+            Avdelingschat ({departmentRooms?.length || 0})
           </TabsTrigger>
-          <TabsTrigger value="announcements">
+          <TabsTrigger value="firm">
             <MessageSquare className="h-4 w-4 mr-2" />
-            Kunngjøringer
+            Firmachat ({firmRooms?.length || 0})
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="team" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2">
-              <Card className="h-96">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Users className="h-5 w-5" />
-                    Team-chat
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="flex flex-col h-full">
-                  <div className="flex-1 space-y-3 mb-4 overflow-y-auto">
-                    {mockMessages
-                      .filter(m => m.type === 'team')
-                      .map(message => (
-                        <div key={message.id} className="p-3 bg-muted rounded-lg">
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="font-medium text-sm">{message.sender}</span>
-                            <span className="text-xs text-muted-foreground">{message.timestamp}</span>
-                          </div>
-                          <p className="text-sm">{message.message}</p>
-                        </div>
-                      ))}
-                  </div>
-                  
-                  <div className="flex gap-2">
-                    <Textarea
-                      placeholder="Skriv en melding..."
-                      value={newMessage}
-                      onChange={(e) => setNewMessage(e.target.value)}
-                      className="flex-1 min-h-[60px]"
-                    />
-                    <Button size="icon" className="self-end">
-                      <Send className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+              {teamRooms && teamRooms.length > 0 ? (
+                <div className="space-y-4">
+                  {/* Room selector */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Velg team-chat</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid gap-2">
+                        {teamRooms.map((room) => (
+                          <button
+                            key={room.id}
+                            onClick={() => handleRoomSelect(room.id, room.name)}
+                            className={`p-3 text-left rounded-lg border transition-colors ${
+                              selectedRoomId === room.id
+                                ? 'bg-primary text-primary-foreground'
+                                : 'hover:bg-muted'
+                            }`}
+                          >
+                            <div className="font-medium">{room.name}</div>
+                            {room.description && (
+                              <div className="text-sm opacity-70">{room.description}</div>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Chat room */}
+                  {selectedRoomId && (
+                    <Card className="h-96">
+                      <ChatRoom roomId={selectedRoomId} roomName={selectedRoomName} />
+                    </Card>
+                  )}
+                </div>
+              ) : (
+                <Card className="h-96">
+                  <CardContent className="flex items-center justify-center h-full">
+                    <div className="text-center">
+                      <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <p className="text-muted-foreground">Ingen team-chatter tilgjengelig</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Team-chatter opprettes automatisk når du blir lagt til i et team
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </div>
             
             <div>
-              <Card>
-                <CardHeader>
-                  <CardTitle>Teammedlemmer online</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <span className="text-sm">Anna Hansen</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <span className="text-sm">Per Olsen</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
-                      <span className="text-sm text-muted-foreground">Kari Nordmann</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              <OnlineUsers currentRoomId={selectedRoomId} />
             </div>
           </div>
         </TabsContent>
 
         <TabsContent value="department">
-          <Card>
-            <CardHeader>
-              <CardTitle>Avdelingschat</CardTitle>
-              <p className="text-muted-foreground">Chat med hele avdelingen</p>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3 mb-4">
-                {mockMessages
-                  .filter(m => m.type === 'department')
-                  .map(message => (
-                    <div key={message.id} className="p-3 bg-muted rounded-lg">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="font-medium text-sm">{message.sender}</span>
-                        <span className="text-xs text-muted-foreground">{message.timestamp}</span>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2">
+              {departmentRooms && departmentRooms.length > 0 ? (
+                <div className="space-y-4">
+                  {/* Department room selector */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Avdelingschat</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid gap-2">
+                        {departmentRooms.map((room) => (
+                          <button
+                            key={room.id}
+                            onClick={() => handleRoomSelect(room.id, room.name)}
+                            className={`p-3 text-left rounded-lg border transition-colors ${
+                              selectedRoomId === room.id
+                                ? 'bg-primary text-primary-foreground'
+                                : 'hover:bg-muted'
+                            }`}
+                          >
+                            <div className="font-medium">{room.name}</div>
+                            {room.description && (
+                              <div className="text-sm opacity-70">{room.description}</div>
+                            )}
+                          </button>
+                        ))}
                       </div>
-                      <p className="text-sm">{message.message}</p>
+                    </CardContent>
+                  </Card>
+
+                  {/* Chat room */}
+                  {selectedRoomId && (
+                    <Card className="h-96">
+                      <ChatRoom roomId={selectedRoomId} roomName={selectedRoomName} />
+                    </Card>
+                  )}
+                </div>
+              ) : (
+                <Card className="h-96">
+                  <CardContent className="flex items-center justify-center h-full">
+                    <div className="text-center">
+                      <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <p className="text-muted-foreground">Ingen avdelingschat tilgjengelig</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Du må være tilknyttet en avdeling for å se avdelingschat
+                      </p>
                     </div>
-                  ))}
-              </div>
-              
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Skriv en melding til avdelingen..."
-                  className="flex-1"
-                />
-                <Button>
-                  <Send className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+            
+            <div>
+              <OnlineUsers currentRoomId={selectedRoomId} />
+            </div>
+          </div>
         </TabsContent>
 
-        <TabsContent value="announcements">
-          <Card>
-            <CardHeader>
-              <CardTitle>Kunngjøringer</CardTitle>
-              <p className="text-muted-foreground">Viktige meldinger og oppdateringer</p>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8">
-                <MessageSquare className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground">Ingen kunngjøringer ennå</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Kunngjøringer fra ledelsen vil vises her
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+        <TabsContent value="firm">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2">
+              {firmRooms && firmRooms.length > 0 ? (
+                <div className="space-y-4">
+                  {/* Firm room selector */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Firmachat</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid gap-2">
+                        {firmRooms.map((room) => (
+                          <button
+                            key={room.id}
+                            onClick={() => handleRoomSelect(room.id, room.name)}
+                            className={`p-3 text-left rounded-lg border transition-colors ${
+                              selectedRoomId === room.id
+                                ? 'bg-primary text-primary-foreground'
+                                : 'hover:bg-muted'
+                            }`}
+                          >
+                            <div className="font-medium">{room.name}</div>
+                            {room.description && (
+                              <div className="text-sm opacity-70">{room.description}</div>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Chat room */}
+                  {selectedRoomId && (
+                    <Card className="h-96">
+                      <ChatRoom roomId={selectedRoomId} roomName={selectedRoomName} />
+                    </Card>
+                  )}
+                </div>
+              ) : (
+                <Card className="h-96">
+                  <CardContent className="flex items-center justify-center h-full">
+                    <div className="text-center">
+                      <MessageSquare className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <p className="text-muted-foreground">Ingen firmachat tilgjengelig</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Firmachat må opprettes av administratoren
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+            
+            <div>
+              <OnlineUsers currentRoomId={selectedRoomId} />
+            </div>
+          </div>
         </TabsContent>
       </Tabs>
     </div>
