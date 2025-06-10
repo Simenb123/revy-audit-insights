@@ -60,6 +60,7 @@ const AppHeader = () => {
       '/dokumenter': 'Dokumenter',
       '/prosjekter': 'Prosjekter',
       '/klienter': 'Klienter',
+      '/knowledge': 'Kunnskapsbase',
       '/fag': 'Kunnskapsbase',
       '/innstillinger': 'Innstillinger',
       '/hjelp': 'Hjelp',
