@@ -1,7 +1,5 @@
 
 import React from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,48 +11,23 @@ import {
   Star,
   Clock
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 
-const ScenarioSelection = () => {
-  const navigate = useNavigate();
+interface Scenario {
+  id: string;
+  name: string;
+  industry: string;
+  description: string;
+  employee_count: number | null;
+  annual_revenue: number | null;
+  key_challenges: string[];
+}
 
-  // Fetch available scenarios
-  const { data: scenarios, isLoading } = useQuery({
-    queryKey: ['test-scenarios'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('test_scenarios')
-        .select('*')
-        .order('created_at', { ascending: true });
-      
-      if (error) throw error;
-      return data;
-    }
-  });
+interface ScenarioSelectionProps {
+  scenarios: Scenario[] | undefined;
+  onScenarioSelect: (scenarioId: string) => void;
+}
 
-  // Fetch user progress for scenarios
-  const { data: userProgress } = useQuery({
-    queryKey: ['user-scenario-progress'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('training_progress')
-        .select('scenario_id, module_name, completed_at, score')
-        .eq('user_id', (await supabase.auth.getUser()).data.user?.id);
-      
-      if (error) throw error;
-      return data;
-    }
-  });
-
-  const getScenarioProgress = (scenarioId: string) => {
-    if (!userProgress) return { completed: 0, total: 5 };
-    
-    const scenarioModules = userProgress.filter(p => p.scenario_id === scenarioId);
-    const completed = scenarioModules.filter(p => p.completed_at).length;
-    
-    return { completed, total: 5 }; // 5 modules total
-  };
-
+const ScenarioSelection = ({ scenarios, onScenarioSelect }: ScenarioSelectionProps) => {
   const getScenarioIcon = (industry: string) => {
     if (industry.toLowerCase().includes('varehandel') || industry.toLowerCase().includes('retail')) {
       return Building2;
@@ -75,7 +48,7 @@ const ScenarioSelection = () => {
     }).format(amount);
   };
 
-  if (isLoading) {
+  if (!scenarios) {
     return <div className="text-center py-8">Laster scenarier...</div>;
   }
 
@@ -92,8 +65,6 @@ const ScenarioSelection = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {scenarios?.map((scenario) => {
           const IconComponent = getScenarioIcon(scenario.industry);
-          const progress = getScenarioProgress(scenario.id);
-          const progressPercentage = (progress.completed / progress.total) * 100;
           
           return (
             <Card key={scenario.id} className="hover:shadow-lg transition-shadow">
@@ -113,7 +84,7 @@ const ScenarioSelection = () => {
                   <div className="text-right">
                     <div className="text-sm text-gray-600">Progresjon</div>
                     <div className="text-lg font-bold text-revio-600">
-                      {Math.round(progressPercentage)}%
+                      0%
                     </div>
                   </div>
                 </div>
@@ -150,12 +121,12 @@ const ScenarioSelection = () => {
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span>Moduler fullført</span>
-                    <span>{progress.completed}/{progress.total}</span>
+                    <span>0/3</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <div 
                       className="bg-revio-500 h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${progressPercentage}%` }}
+                      style={{ width: '0%' }}
                     />
                   </div>
                 </div>
@@ -164,15 +135,12 @@ const ScenarioSelection = () => {
                 <div className="flex gap-2 pt-2">
                   <Button 
                     className="flex-1 bg-revio-500 hover:bg-revio-600"
-                    onClick={() => navigate(`/training/scenario/${scenario.id}`)}
+                    onClick={() => onScenarioSelect(scenario.id)}
                   >
                     <Play className="h-4 w-4 mr-2" />
-                    {progress.completed > 0 ? 'Fortsett' : 'Start scenario'}
+                    Start scenario
                   </Button>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => navigate(`/training/scenario/${scenario.id}/overview`)}
-                  >
+                  <Button variant="outline">
                     Se detaljer
                   </Button>
                 </div>
@@ -215,7 +183,7 @@ const ScenarioSelection = () => {
           
           <Button 
             className="bg-purple-600 hover:bg-purple-700"
-            onClick={() => navigate('/training/general')}
+            onClick={() => onScenarioSelect('general')}
           >
             <Play className="h-4 w-4 mr-2" />
             Start generell opplæring
