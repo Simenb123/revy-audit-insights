@@ -117,7 +117,7 @@ export function useClientData() {
         
         console.log(`Client ${client.name}: is_test_data from DB = ${client.is_test_data}, converted to isTestData = ${isTestData}`);
 
-        const transformedClient = {
+        const transformedClient: Client = {
           id: client.id,
           name: client.name,
           companyName: client.company_name,
@@ -158,10 +158,13 @@ export function useClientData() {
           riskAssessment: client.risk_assessment || '',
           // Test data flag - properly convert from database
           isTestData: isTestData,
+          // Timestamps
+          createdAt: client.created_at,
+          updatedAt: client.updated_at,
           riskAreas: clientRiskAreas,
           documents: clientDocuments,
           roles: clientRoles
-        } as Client;
+        };
 
         if (transformedClient.isTestData) {
           console.log('Successfully transformed test client:', {

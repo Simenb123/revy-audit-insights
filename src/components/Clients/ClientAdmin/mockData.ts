@@ -50,6 +50,8 @@ export const mockClients: Client[] = [
     boardMeetingsPerYear: 4,
     internalControls: 'Godt etablert',
     riskAssessment: 'Middels risiko',
+    createdAt: '2023-01-01T00:00:00Z',
+    updatedAt: '2023-01-01T00:00:00Z',
     roles: []
   },
   {
@@ -100,6 +102,8 @@ export const mockClients: Client[] = [
     boardMeetingsPerYear: 6,
     internalControls: 'Under utvikling',
     riskAssessment: 'Lav risiko',
+    createdAt: '2023-01-01T00:00:00Z',
+    updatedAt: '2023-01-01T00:00:00Z',
     roles: []
   }
 ];
