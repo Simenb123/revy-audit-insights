@@ -31,8 +31,8 @@ const AppLayout = ({ children }: AppLayoutProps) => {
             <SidebarInset className="flex-1 min-h-[calc(100vh-3.5rem)]">
               <div className="flex w-full h-full">
                 {/* Main content - takes remaining space after right sidebar */}
-                <main className={`flex-1 overflow-auto p-4 transition-all duration-300 ${
-                  isRightSidebarCollapsed ? 'mr-0' : 'mr-80'
+                <main className={`flex-1 overflow-auto p-3 transition-all duration-300 ${
+                  isRightSidebarCollapsed ? 'mr-0' : 'mr-64'
                 }`}>
                   {children}
                   
@@ -49,8 +49,8 @@ const AppLayout = ({ children }: AppLayoutProps) => {
                   )}
                 </main>
                 
-                {/* Right sidebar - fixed positioning */}
-                <div className={`fixed top-14 right-0 h-[calc(100vh-3.5rem)] w-80 transition-transform duration-300 z-20 ${
+                {/* Right sidebar - fixed positioning with reduced width */}
+                <div className={`fixed top-14 right-0 h-[calc(100vh-3.5rem)] w-64 transition-transform duration-300 z-20 ${
                   isRightSidebarCollapsed ? 'translate-x-full' : 'translate-x-0'
                 }`}>
                   <RightSidebar 

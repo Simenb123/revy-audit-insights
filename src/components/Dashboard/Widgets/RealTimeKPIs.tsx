@@ -46,26 +46,26 @@ const RealTimeKPIs = () => {
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
       {kpis.map((kpi, index) => {
         const Icon = kpi.icon;
         const TrendIcon = kpi.trend === 'up' ? TrendingUp : TrendingDown;
         
         return (
           <Card key={index}>
-            <CardContent className="p-6">
+            <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-muted-foreground">
+                  <p className="text-xs font-medium text-muted-foreground">
                     {kpi.title}
                   </p>
-                  <div className="flex items-center gap-2 mt-2">
-                    <h3 className="text-2xl font-bold">{kpi.value}</h3>
+                  <div className="flex items-center gap-2 mt-1">
+                    <h3 className="text-xl font-bold">{kpi.value}</h3>
                     <Badge 
                       variant={kpi.trend === 'up' ? 'default' : 'secondary'}
-                      className="flex items-center gap-1"
+                      className="flex items-center gap-1 text-xs"
                     >
-                      <TrendIcon className="h-3 w-3" />
+                      <TrendIcon className="h-2 w-2" />
                       {Math.abs(kpi.changePercent)}%
                     </Badge>
                   </div>
@@ -75,7 +75,7 @@ const RealTimeKPIs = () => {
                     {kpi.change > 0 ? '+' : ''}{kpi.change} siden i går
                   </p>
                 </div>
-                <Icon className={`h-8 w-8 ${kpi.color}`} />
+                <Icon className={`h-6 w-6 ${kpi.color}`} />
               </div>
             </CardContent>
           </Card>
