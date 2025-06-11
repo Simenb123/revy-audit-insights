@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRevyContext } from '@/components/RevyContext/RevyContextProvider';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Announcement, Client, RevyContext } from '@/types/revio';
+import { Announcement, Client } from '@/types/revio';
 import ClientStatsGrid from '@/components/Clients/ClientStats/ClientStatsGrid';
 import ClientsTable from '@/components/Clients/ClientsTable/ClientsTable';
 import AnnouncementsList from '@/components/Clients/Announcements/AnnouncementsList';
@@ -62,7 +62,7 @@ const ClientsOverview = () => {
 
   // Set context for Revy assistant
   React.useEffect(() => {
-    setContext('client-overview' as RevyContext);
+    setContext('client-overview');
   }, [setContext]);
 
   if (isLoading) {

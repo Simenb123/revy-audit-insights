@@ -2,21 +2,22 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import { useClientDetails } from '@/hooks/useClientDetails';
-import { Client, AuditPhase } from '@/types/revio';
+import { Client, AuditPhase, RevyContext } from '@/types/revio';
 
 interface RevyContextType {
-  currentContext: string;
+  currentContext: RevyContext;
   currentClient: Client | null;
   currentPhase: AuditPhase | null;
   isClientContext: boolean;
   contextualData: any;
-  updateContext: (context: string, data?: any) => void;
+  updateContext: (context: RevyContext, data?: any) => void;
+  setContext: (context: RevyContext) => void;
 }
 
-const RevyContext = createContext<RevyContextType | undefined>(undefined);
+const RevyContextContext = createContext<RevyContextType | undefined>(undefined);
 
 export const useRevyContext = () => {
-  const context = useContext(RevyContext);
+  const context = useContext(RevyContextContext);
   if (!context) {
     throw new Error('useRevyContext must be used within a RevyContextProvider');
   }
@@ -26,7 +27,7 @@ export const useRevyContext = () => {
 export const RevyContextProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
   const { orgNumber } = useParams<{ orgNumber: string }>();
-  const [currentContext, setCurrentContext] = useState('general');
+  const [currentContext, setCurrentContext] = useState<RevyContext>('general');
   const [contextualData, setContextualData] = useState<any>({});
 
   // Get client data if we're in a client context
@@ -38,11 +39,11 @@ export const RevyContextProvider: React.FC<{ children: React.ReactNode }> = ({ c
     
     if (path.includes('/klienter/') && orgNumber) {
       if (path.includes('/regnskap')) {
-        setCurrentContext('accounting-data');
+        setCurrentContext('general' as RevyContext); // accounting-data doesn't exist in RevyContext
       } else if (path.includes('/analyser')) {
-        setCurrentContext('analysis');
+        setCurrentContext('general' as RevyContext); // analysis doesn't exist in RevyContext  
       } else if (path.includes('/regnskapsdata')) {
-        setCurrentContext('data-upload');
+        setCurrentContext('general' as RevyContext); // data-upload doesn't exist in RevyContext
       } else {
         setCurrentContext('client-detail');
       }
@@ -51,9 +52,9 @@ export const RevyContextProvider: React.FC<{ children: React.ReactNode }> = ({ c
     } else if (path.includes('/dashboard')) {
       setCurrentContext('dashboard');
     } else if (path.includes('/knowledge')) {
-      setCurrentContext('knowledge-base');
+      setCurrentContext('general'); // knowledge-base doesn't exist in RevyContext
     } else if (path.includes('/teams')) {
-      setCurrentContext('collaboration');
+      setCurrentContext('team-management');
     } else if (path.includes('/communication')) {
       setCurrentContext('communication');
     } else {
@@ -75,11 +76,15 @@ export const RevyContextProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
   }, [location.pathname, orgNumber, client]);
 
-  const updateContext = (context: string, data?: any) => {
+  const updateContext = (context: RevyContext, data?: any) => {
     setCurrentContext(context);
     if (data) {
       setContextualData(prev => ({ ...prev, ...data }));
     }
+  };
+
+  const setContext = (context: RevyContext) => {
+    setCurrentContext(context);
   };
 
   const value: RevyContextType = {
@@ -88,12 +93,13 @@ export const RevyContextProvider: React.FC<{ children: React.ReactNode }> = ({ c
     currentPhase: client?.phase || null,
     isClientContext: !!orgNumber && !!client,
     contextualData,
-    updateContext
+    updateContext,
+    setContext
   };
 
   return (
-    <RevyContext.Provider value={value}>
+    <RevyContextContext.Provider value={value}>
       {children}
-    </RevyContext.Provider>
+    </RevyContextContext.Provider>
   );
 };

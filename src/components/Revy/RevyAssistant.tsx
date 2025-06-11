@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from "@/components/ui/button";
@@ -7,7 +8,7 @@ import RevyAvatar from './RevyAvatar';
 import { useToast } from '@/hooks/use-toast';
 import { useRevyContext } from '../RevyContext/RevyContextProvider';
 import { generateAIResponse, getContextualTip } from '@/services/revyService';
-import { RevyMessage } from '@/types/revio';
+import { RevyMessage, RevyContext } from '@/types/revio';
 
 interface RevyAssistantProps {
   embedded?: boolean;
@@ -35,7 +36,7 @@ const RevyAssistant = ({ embedded = false, clientData, userRole }: RevyAssistant
   // Provide contextual tips when the context changes
   useEffect(() => {
     if ((isOpen || embedded) && messages.length <= 1) {
-      const tip = getContextualTip(currentContext);
+      const tip = getContextualTip(currentContext as RevyContext);
       const newMessage: RevyMessage = {
         id: Date.now().toString(),
         content: `Jeg ser at du er i ${contextToNorwegian(currentContext)}-visningen. ${tip}`,
@@ -47,8 +48,8 @@ const RevyAssistant = ({ embedded = false, clientData, userRole }: RevyAssistant
     }
   }, [currentContext, isOpen, embedded]);
   
-  const contextToNorwegian = (context: string): string => {
-    const mapping: Record<string, string> = {
+  const contextToNorwegian = (context: RevyContext): string => {
+    const mapping: Record<RevyContext, string> = {
       'dashboard': 'dashbord',
       'drill-down': 'drill-down',
       'risk-assessment': 'risikovurdering',
@@ -57,6 +58,9 @@ const RevyAssistant = ({ embedded = false, clientData, userRole }: RevyAssistant
       'client-overview': 'klientoversikt',
       'client-detail': 'klientdetalj',
       'collaboration': 'samarbeids',
+      'communication': 'kommunikasjons',
+      'audit-actions': 'revisjonshandlinger',
+      'team-management': 'teamledelse',
       'general': 'generell'
     };
     
@@ -82,7 +86,7 @@ const RevyAssistant = ({ embedded = false, clientData, userRole }: RevyAssistant
       // Generate enhanced AI response with usage tracking
       const responseText = await generateAIResponse(
         userMessage.content, 
-        currentContext,
+        currentContext as RevyContext,
         clientData,
         userRole,
         sessionId
@@ -130,7 +134,7 @@ const RevyAssistant = ({ embedded = false, clientData, userRole }: RevyAssistant
       
       // Show a contextual tip when opening
       if (messages.length <= 1) {
-        const tip = getContextualTip(currentContext);
+        const tip = getContextualTip(currentContext as RevyContext);
         const welcomeMessage: RevyMessage = {
           id: Date.now().toString(),
           content: tip,
