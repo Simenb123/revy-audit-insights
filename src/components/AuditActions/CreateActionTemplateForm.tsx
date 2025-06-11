@@ -70,11 +70,24 @@ const CreateActionTemplateForm = ({ selectedArea, onSuccess, onCancel }: CreateA
 
   const onSubmit = async (data: FormData) => {
     try {
-      await createTemplate.mutateAsync({
-        ...data,
+      // Ensure all required fields are present for the template
+      const templateData = {
+        name: data.name,
+        description: data.description || '',
+        subject_area: data.subject_area,
+        action_type: data.action_type,
+        objective: data.objective || '',
+        procedures: data.procedures,
+        documentation_requirements: data.documentation_requirements || '',
+        estimated_hours: data.estimated_hours,
+        risk_level: data.risk_level,
+        applicable_phases: data.applicable_phases,
+        sort_order: data.sort_order,
         is_system_template: false,
         is_active: true
-      });
+      };
+      
+      await createTemplate.mutateAsync(templateData);
       
       if (onSuccess) {
         onSuccess();
