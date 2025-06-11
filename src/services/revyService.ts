@@ -37,55 +37,123 @@ export const getContextualTip = (context: RevyContext): string => {
 
 // Enhanced AI-powered response generation with usage tracking
 export const generateAIResponse = async (
-  message: string,
+  message: string, 
   context: string = 'general',
   clientData?: any,
-  userRole?: string,
+  userRole: string = 'employee',
   sessionId?: string
 ): Promise<string> => {
   try {
-    console.log('🚀 Generating AI response...');
-    
-    // Get current session but don't fail if not authenticated
-    const { data: { session } } = await supabase.auth.getSession();
-    const userId = session?.user?.id;
-    
-    console.log('📋 AI Request details:', { 
-      hasAuth: !!userId,
+    console.log('🔍 Generating enhanced AI response', { 
       context, 
+      hasClientData: !!clientData, 
       userRole,
-      hasClientData: !!clientData 
+      messageLength: message.length 
     });
+
+    // Enhanced prompt that encourages actionable responses
+    const enhancedMessage = `
+${message}
+
+CONTEXT: Jeg er i ${context}-visningen i Revio-appen.
+${clientData ? `KLIENT: ${clientData.company_name || clientData.name} (${clientData.industry || 'Ukjent bransje'})` : ''}
+ROLLE: ${userRole}
+
+Vennligst gi et praktisk, handlingsrettet svar som:
+1. Svarer direkte på spørsmålet
+2. Gir konkrete neste steg
+3. Refererer til relevante ISA-standarder når aktuelt
+4. Foreslår spesifikke funksjoner i appen som kan hjelpe
+5. Inkluderer bransje-spesifikke råd hvis relevant
+
+Gjør svaret actionable med konkrete forslag til hva jeg kan gjøre videre.`;
 
     const { data, error } = await supabase.functions.invoke('revy-ai-chat', {
       body: {
-        message,
+        message: enhancedMessage,
         context,
         clientData,
         userRole,
-        userId, // May be null for guest users
+        userId: supabase.auth.getUser().then(u => u.data.user?.id),
         sessionId
       }
     });
 
     if (error) {
-      console.error('💥 Supabase function error:', error);
-      throw new Error(`AI service error: ${error.message}`);
+      console.error('❌ Supabase function error:', error);
+      throw new Error(error.message || 'Failed to get AI response');
     }
 
-    if (data.error) {
-      console.error('💥 AI function returned error:', data.error);
-      // Return the fallback response if provided
-      return data.response || getLocalFallbackResponse(context, userRole);
+    if (data.isError) {
+      console.warn('⚠️ AI function returned error response');
+      return data.response || 'Beklager, jeg kunne ikke behandle forespørselen din akkurat nå.';
     }
 
-    console.log('✅ AI response received successfully');
-    return data.response;
-    
+    console.log('✅ Enhanced AI response received', { 
+      responseLength: data.response?.length,
+      model: data.model,
+      usage: data.usage 
+    });
+
+    return data.response || 'Jeg kunne ikke generere et svar akkurat nå. Prøv igjen senere.';
+
   } catch (error) {
     console.error('💥 Error in generateAIResponse:', error);
-    return getLocalFallbackResponse(context, userRole);
+    
+    // Enhanced fallback based on context
+    const contextualFallback = getContextualFallback(context, clientData, userRole);
+    return contextualFallback;
   }
+};
+
+// Enhanced contextual fallback function
+const getContextualFallback = (context: string, clientData?: any, userRole: string = 'employee'): string => {
+  const fallbacks = {
+    'risk-assessment': `Jeg har tekniske problemer, men her er noen tips for risikovurdering:
+    
+• Start med å identifisere ${clientData?.industry ? `${clientData.industry}-spesifikke` : 'bransje'} risikoer
+• Vurder materialitetsnivå basert på ${clientData?.company_name ? `${clientData.company_name}s` : 'klientens'} størrelse  
+• Se ISA 315 for detaljerte retningslinjer om risikoidentifisering
+• Dokumenter alle vesentlige risikovurderinger
+
+Du kan gå til Risikoanalyse-seksjonen for å starte en strukturert gjennomgang.`,
+
+    'client-detail': `Midlertidig feil. For ${clientData?.company_name || 'klientanalyse'}:
+    
+• Analyser nøkkeltall som omsetningsvekst og lønnsomhet
+• Sammenlign med bransjegjennomsnitt ${clientData?.industry ? `(${clientData.industry})` : ''}
+• Vurder trender over tid og sesongvariasjoner
+• Identifiser avvik som krever oppfølging
+
+Gå til klientdetaljene for fullstendig analyse og fremdriftsoppfølging.`,
+
+    'documentation': `Tekniske problemer oppstått. For dokumentasjon:
+    
+• ISA 230 krever tilstrekkelig og hensiktsmessig dokumentasjon
+• Strukturer arbeidspapirene logisk med klar konklusjon
+• Inkluder alle vesentlige vurderinger og beslutninger
+• Forbered for partner review og kvalitetskontroll
+
+Bruk Dokumentasjon-seksjonen for standardiserte maler og sjekklister.`,
+
+    'general': `Jeg opplever tekniske problemer akkurat nå. 
+    
+Mens jeg er utilgjengelig, kan du:
+• Utforske kunnskapsbasen for faglige spørsmål
+• Sjekke fremdrift på pågående revisjoner
+• Laste opp dokumenter eller regnskapsdata
+• Kontakte teamleder hvis det haster
+
+Prøv igjen om litt, eller kontakt support hvis problemet vedvarer.`
+  };
+
+  const roleSpecific = userRole === 'partner' ? 
+    '\n\nSom partner: Vurder også porteføljens samlede risiko og strategiske implikasjoner.' :
+    userRole === 'manager' ? 
+    '\n\nSom manager: Sørg for at teamet følger prosedyrer og kvalitetsstandarder.' :
+    '\n\nKontakt din manager for ytterligere veiledning ved behov.';
+
+  return (fallbacks[context as keyof typeof fallbacks] || fallbacks.general) + roleSpecific;
 };
 
 // Local fallback for when AI service is unavailable

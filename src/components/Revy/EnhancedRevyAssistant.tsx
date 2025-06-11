@@ -15,9 +15,11 @@ import {
   Users
 } from 'lucide-react';
 import RevyAvatar from './RevyAvatar';
+import ActionableMessage from './ActionableMessage';
 import { useToast } from '@/hooks/use-toast';
 import { useRevyContext } from '../RevyContext/RevyContextProvider';
 import { generateAIResponse, getContextualTip } from '@/services/revyService';
+import { enhanceAIResponse, generateProactiveActions } from '@/services/revyEnhancementService';
 import { RevyMessage } from '@/types/revio';
 import { useAuth } from '@/components/Auth/AuthProvider';
 
@@ -159,7 +161,7 @@ const EnhancedRevyAssistant = ({ embedded = false, clientData, userRole }: Enhan
     try {
       console.log('🚀 Sending AI request...', { guestMode });
       
-      // Enhanced AI response with guest mode support
+      // Enhance the response with actionable content
       const responseText = await generateAIResponse(
         userMessage.content, 
         currentContext,
@@ -168,11 +170,15 @@ const EnhancedRevyAssistant = ({ embedded = false, clientData, userRole }: Enhan
         sessionId
       );
       
+      // Enhance the response with actionable content
+      const enhancedResponse = enhanceAIResponse(responseText, currentContext, clientData);
+      
       const revyResponse: RevyMessage = {
         id: (Date.now() + 1).toString(),
         content: responseText,
         timestamp: new Date().toISOString(),
-        sender: 'revy'
+        sender: 'revy',
+        enhanced: enhancedResponse // Add enhanced data to message
       };
       
       setMessages(prev => [...prev, revyResponse]);
@@ -324,6 +330,20 @@ const EnhancedRevyAssistant = ({ embedded = false, clientData, userRole }: Enhan
     )
   );
 
+  // Enhanced message rendering component
+  const MessageContent = ({ msg }: { msg: RevyMessage }) => {
+    if (msg.sender === 'revy' && msg.enhanced) {
+      return (
+        <ActionableMessage 
+          content={msg.enhanced.content}
+          links={msg.enhanced.links}
+          sources={msg.enhanced.sources}
+        />
+      );
+    }
+    return <div className="whitespace-pre-wrap">{msg.content}</div>;
+  };
+
   // Embedded mode
   if (embedded) {
     return (
@@ -349,7 +369,7 @@ const EnhancedRevyAssistant = ({ embedded = false, clientData, userRole }: Enhan
                 <div className="flex items-end gap-2 max-w-[90%]">
                   <RevyAvatar size="xs" />
                   <div className="bg-white border border-gray-200 p-2 rounded-lg rounded-bl-none shadow-sm text-sm">
-                    {msg.content}
+                    <MessageContent msg={msg} />
                   </div>
                 </div>
               )}
@@ -477,7 +497,7 @@ const EnhancedRevyAssistant = ({ embedded = false, clientData, userRole }: Enhan
                         <div className="flex items-end gap-2">
                           <RevyAvatar size="xs" />
                           <div className="bg-white border border-gray-200 p-3 rounded-2xl rounded-bl-none max-w-[85%] shadow-sm">
-                            {msg.content}
+                            <MessageContent msg={msg} />
                           </div>
                         </div>
                       )}
@@ -543,3 +563,5 @@ const EnhancedRevyAssistant = ({ embedded = false, clientData, userRole }: Enhan
 };
 
 export default EnhancedRevyAssistant;
+
+</edits_to_apply>
