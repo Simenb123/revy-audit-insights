@@ -34,7 +34,8 @@ const ClientActionsList = ({ actions, selectedArea }: ClientActionsListProps) =>
     { value: 'not_started', label: 'Ikke startet' },
     { value: 'in_progress', label: 'Pågående' },
     { value: 'completed', label: 'Fullført' },
-    { value: 'under_review', label: 'Under gjennomgang' }
+    { value: 'reviewed', label: 'Under gjennomgang' },
+    { value: 'approved', label: 'Godkjent' }
   ];
 
   return (

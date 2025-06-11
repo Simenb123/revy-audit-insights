@@ -11,7 +11,7 @@ const ActionProgressIndicator = ({ actions }: ActionProgressIndicatorProps) => {
   const totalActions = actions.length;
   const completedActions = actions.filter(action => action.status === 'completed').length;
   const inProgressActions = actions.filter(action => action.status === 'in_progress').length;
-  const underReviewActions = actions.filter(action => action.status === 'under_review').length;
+  const reviewedActions = actions.filter(action => action.status === 'reviewed').length;
   
   const progressPercentage = totalActions > 0 ? (completedActions / totalActions) * 100 : 0;
 
@@ -44,7 +44,7 @@ const ActionProgressIndicator = ({ actions }: ActionProgressIndicatorProps) => {
           <div className="text-muted-foreground">Pågående</div>
         </div>
         <div className="text-center">
-          <div className="font-medium text-orange-600">{underReviewActions}</div>
+          <div className="font-medium text-orange-600">{reviewedActions}</div>
           <div className="text-muted-foreground">Gjennomgang</div>
         </div>
         <div className="text-center">

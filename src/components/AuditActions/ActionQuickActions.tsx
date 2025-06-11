@@ -79,7 +79,7 @@ const ActionQuickActions = ({ action, onEdit }: ActionQuickActionsProps) => {
         
         {action.status === 'completed' && (
           <>
-            <DropdownMenuItem onClick={() => handleStatusChange('under_review')}>
+            <DropdownMenuItem onClick={() => handleStatusChange('reviewed')}>
               <Clock size={16} className="mr-2" />
               Send til gjennomgang
             </DropdownMenuItem>
@@ -90,8 +90,8 @@ const ActionQuickActions = ({ action, onEdit }: ActionQuickActionsProps) => {
           </>
         )}
 
-        {action.status === 'under_review' && (
-          <DropdownMenuItem onClick={() => handleStatusChange('completed')}>
+        {action.status === 'reviewed' && (
+          <DropdownMenuItem onClick={() => handleStatusChange('approved')}>
             <CheckCircle size={16} className="mr-2" />
             Godkjenn
           </DropdownMenuItem>

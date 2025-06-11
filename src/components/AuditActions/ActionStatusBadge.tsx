@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, Clock, Play, Pause } from 'lucide-react';
+import { CheckCircle, Clock, Play, Pause, Award } from 'lucide-react';
 
 interface ActionStatusBadgeProps {
   status: string;
@@ -27,11 +27,17 @@ const statusConfig = {
     icon: CheckCircle,
     color: 'text-green-500'
   },
-  under_review: {
+  reviewed: {
     label: 'Under gjennomgang',
     variant: 'outline' as const,
     icon: Clock,
     color: 'text-orange-500'
+  },
+  approved: {
+    label: 'Godkjent',
+    variant: 'default' as const,
+    icon: Award,
+    color: 'text-green-600'
   }
 };
 
