@@ -20,16 +20,7 @@ const EmployeeDashboard = () => {
           <PersonalizedWorkQueue />
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <ProjectCard
-              title="Aktive Klienter"
-              description="Klienter under revisjon"
-              progress={68}
-              daysLeft={12}
-              team={[
-                { name: "John Doe", avatar: "/placeholder.svg" },
-                { name: "Jane Smith", avatar: "/placeholder.svg" }
-              ]}
-            />
+            <ProjectCard />
             
             <Card>
               <CardHeader>

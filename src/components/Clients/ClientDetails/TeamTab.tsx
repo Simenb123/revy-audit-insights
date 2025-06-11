@@ -87,7 +87,6 @@ const TeamTab = ({ client }: TeamTabProps) => {
       <CreateTeamDialog
         open={isCreateDialogOpen}
         onOpenChange={setIsCreateDialogOpen}
-        clientId={client.id}
         onTeamCreated={handleTeamCreated}
       />
     </div>
