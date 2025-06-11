@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from "@/components/ui/button";
@@ -349,7 +348,7 @@ const EnhancedRevyAssistant = ({ embedded = false, clientData, userRole }: Enhan
   // Embedded mode
   if (embedded) {
     return (
-      <div className="h-full flex flex-col bg-white overflow-hidden">
+      <div className="h-full flex flex-col bg-white">
         <div className="p-2 border-b flex justify-between items-center flex-shrink-0">
           <div className="flex items-center gap-2">
             <RevyAvatar size="xs" />
@@ -397,70 +396,72 @@ const EnhancedRevyAssistant = ({ embedded = false, clientData, userRole }: Enhan
           </div>
         )}
         
-        {/* Messages with ScrollArea */}
-        <div className="flex-1 overflow-hidden">
-          <ScrollArea className="h-full">
-            <div className="p-2 space-y-3 bg-gray-50">
-              {messages.map((msg) => (
-                <div 
-                  key={msg.id} 
-                  className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
-                  {msg.sender === 'revy' && (
+        {/* Messages with proper height management */}
+        <div className="flex-1 min-h-0">
+          <div className="h-full flex flex-col">
+            <ScrollArea className="flex-1">
+              <div className="p-2 space-y-3 bg-gray-50">
+                {messages.map((msg) => (
+                  <div 
+                    key={msg.id} 
+                    className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                  >
+                    {msg.sender === 'revy' && (
+                      <div className="flex items-end gap-2 max-w-[90%]">
+                        <RevyAvatar size="xs" />
+                        <div className="bg-white border border-gray-200 p-2 rounded-lg rounded-bl-none shadow-sm text-sm">
+                          <MessageContent msg={msg} />
+                        </div>
+                      </div>
+                    )}
+                    
+                    {msg.sender === 'user' && (
+                      <div className="bg-blue-100 text-blue-900 p-2 rounded-lg rounded-br-none max-w-[90%] text-sm">
+                        {msg.content}
+                      </div>
+                    )}
+                  </div>
+                ))}
+                
+                {isTyping && (
+                  <div className="flex justify-start">
                     <div className="flex items-end gap-2 max-w-[90%]">
                       <RevyAvatar size="xs" />
-                      <div className="bg-white border border-gray-200 p-2 rounded-lg rounded-bl-none shadow-sm text-sm">
-                        <MessageContent msg={msg} />
+                      <div className="bg-white border border-gray-200 p-2 rounded-lg rounded-bl-none shadow-sm text-sm flex items-center gap-2">
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                        Analyserer...
                       </div>
                     </div>
-                  )}
-                  
-                  {msg.sender === 'user' && (
-                    <div className="bg-blue-100 text-blue-900 p-2 rounded-lg rounded-br-none max-w-[90%] text-sm">
-                      {msg.content}
-                    </div>
-                  )}
-                </div>
-              ))}
-              
-              {isTyping && (
-                <div className="flex justify-start">
-                  <div className="flex items-end gap-2 max-w-[90%]">
-                    <RevyAvatar size="xs" />
-                    <div className="bg-white border border-gray-200 p-2 rounded-lg rounded-bl-none shadow-sm text-sm flex items-center gap-2">
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                      Analyserer...
-                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
+            </ScrollArea>
+            
+            {/* Input fixed at bottom */}
+            <div className="p-2 bg-white border-t flex-shrink-0">
+              <div className="flex gap-1">
+                <Input
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder={isOnline ? "Skriv en melding..." : "Offline - prøv igjen senere"}
+                  className="flex-1 text-xs h-8"
+                  disabled={isTyping || !isOnline}
+                />
+                <Button 
+                  size="sm" 
+                  onClick={() => handleSendMessage()} 
+                  className="bg-revio-500 hover:bg-revio-600 h-8 w-8 p-0"
+                  disabled={isTyping || !message.trim() || !isOnline}
+                >
+                  {isTyping ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <SendIcon size={12} />
+                  )}
+                </Button>
+              </div>
             </div>
-          </ScrollArea>
-        </div>
-        
-        {/* Input */}
-        <div className="p-2 bg-white border-t flex-shrink-0">
-          <div className="flex gap-1">
-            <Input
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder={isOnline ? "Skriv en melding..." : "Offline - prøv igjen senere"}
-              className="flex-1 text-xs h-8"
-              disabled={isTyping || !isOnline}
-            />
-            <Button 
-              size="sm" 
-              onClick={() => handleSendMessage()} 
-              className="bg-revio-500 hover:bg-revio-600 h-8 w-8 p-0"
-              disabled={isTyping || !message.trim() || !isOnline}
-            >
-              {isTyping ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
-              ) : (
-                <SendIcon size={12} />
-              )}
-            </Button>
           </div>
         </div>
       </div>

@@ -53,7 +53,7 @@ const RightSidebar = ({ isCollapsed, onToggle, clientData, userRole }: RightSide
   };
 
   return (
-    <div className="bg-white border-l border-border h-full flex flex-col overflow-hidden">
+    <div className="bg-white border-l border-border h-full flex flex-col">
       <div className="p-2 border-b border-border flex items-center justify-between flex-shrink-0">
         <h3 className="font-semibold text-sm">Verktøy</h3>
         <Button
@@ -66,7 +66,7 @@ const RightSidebar = ({ isCollapsed, onToggle, clientData, userRole }: RightSide
         </Button>
       </div>
       
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col min-h-0">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
           <TabsList className="grid w-full grid-cols-3 mx-2 mt-2 flex-shrink-0">
             <TabsTrigger value="revy" className="text-xs p-1">
@@ -83,8 +83,8 @@ const RightSidebar = ({ isCollapsed, onToggle, clientData, userRole }: RightSide
             </TabsTrigger>
           </TabsList>
           
-          <div className="flex-1 overflow-hidden">
-            <TabsContent value="revy" className="h-full m-0 p-2">
+          <div className="flex-1 min-h-0">
+            <TabsContent value="revy" className="h-full m-0 p-2 data-[state=inactive]:hidden">
               <div className="h-full">
                 <EnhancedRevyAssistant 
                   embedded={true} 
@@ -94,7 +94,7 @@ const RightSidebar = ({ isCollapsed, onToggle, clientData, userRole }: RightSide
               </div>
             </TabsContent>
             
-            <TabsContent value="analytics" className="h-full m-0">
+            <TabsContent value="analytics" className="h-full m-0 data-[state=inactive]:hidden">
               <ScrollArea className="h-full">
                 <div className="p-2 space-y-3">
                   {/* AI Usage Stats */}
@@ -192,7 +192,7 @@ const RightSidebar = ({ isCollapsed, onToggle, clientData, userRole }: RightSide
               </ScrollArea>
             </TabsContent>
             
-            <TabsContent value="activity" className="h-full m-0">
+            <TabsContent value="activity" className="h-full m-0 data-[state=inactive]:hidden">
               <ScrollArea className="h-full">
                 <div className="p-2 space-y-2">
                   <div className="flex items-center gap-2 p-2 bg-gray-50 rounded text-xs">
