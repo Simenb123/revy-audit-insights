@@ -14,7 +14,7 @@ import {
   Brain,
   DollarSign
 } from 'lucide-react';
-import RevyAssistant from '../Revy/RevyAssistant';
+import EnhancedRevyAssistant from '../Revy/EnhancedRevyAssistant';
 import { useLocation } from 'react-router-dom';
 import { useAIUsage } from '@/hooks/useAIUsage';
 
@@ -85,7 +85,7 @@ const RightSidebar = ({ isCollapsed, onToggle, clientData, userRole }: RightSide
           <div className="flex-1 overflow-auto p-4">
             <TabsContent value="revy" className="h-full m-0">
               <div className="h-full">
-                <RevyAssistant 
+                <EnhancedRevyAssistant 
                   embedded={true} 
                   clientData={clientData}
                   userRole={userRole}

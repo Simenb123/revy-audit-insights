@@ -1,0 +1,522 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { 
+  MinusCircle, 
+  SendIcon, 
+  X, 
+  Loader2, 
+  AlertCircle, 
+  Lightbulb,
+  TrendingUp,
+  Clock,
+  Users
+} from 'lucide-react';
+import RevyAvatar from './RevyAvatar';
+import { useToast } from '@/hooks/use-toast';
+import { useRevyContext } from '../RevyContext/RevyContextProvider';
+import { generateAIResponse, getContextualTip } from '@/services/revyService';
+import { RevyMessage } from '@/types/revio';
+
+interface EnhancedRevyAssistantProps {
+  embedded?: boolean;
+  clientData?: any;
+  userRole?: string;
+}
+
+interface ProactiveSuggestion {
+  id: string;
+  title: string;
+  description: string;
+  priority: 'high' | 'medium' | 'low';
+  category: 'risk' | 'efficiency' | 'quality' | 'timeline';
+  action?: string;
+}
+
+const EnhancedRevyAssistant = ({ embedded = false, clientData, userRole }: EnhancedRevyAssistantProps) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
+  const [message, setMessage] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const [isOnline, setIsOnline] = useState(true);
+  const [retryCount, setRetryCount] = useState(0);
+  const [sessionId] = useState(() => crypto.randomUUID());
+  const [proactiveSuggestions, setProactiveSuggestions] = useState<ProactiveSuggestion[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(true);
+  const [messages, setMessages] = useState<RevyMessage[]>([
+    {
+      id: '1',
+      content: 'Hei! Jeg er Revy, din forbedrede AI-revisjonsassistent. Jeg har nå tilgang til utvidet fagstoff, klientdata og kan gi proaktive forslag. Hvordan kan jeg hjelpe deg i dag?',
+      timestamp: new Date().toISOString(),
+      sender: 'revy'
+    }
+  ]);
+  const { toast } = useToast();
+  const { currentContext } = useRevyContext();
+  
+  // Generate proactive suggestions based on context and client data
+  useEffect(() => {
+    generateProactiveSuggestions();
+  }, [currentContext, clientData]);
+
+  // Enhanced connectivity monitoring
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  const generateProactiveSuggestions = useCallback(() => {
+    const suggestions: ProactiveSuggestion[] = [];
+
+    // Context-based suggestions
+    if (currentContext === 'risk-assessment') {
+      suggestions.push({
+        id: 'risk-1',
+        title: 'Automatisk risikoanalyse',
+        description: 'Skal jeg analysere klientens risikoområder basert på bransje og størrelse?',
+        priority: 'high',
+        category: 'risk',
+        action: 'Analyser risikoområder for denne klienten basert på bransje og historiske data'
+      });
+    }
+
+    if (currentContext === 'client-detail' && clientData) {
+      suggestions.push({
+        id: 'client-1',
+        title: 'Bransjesammenligning',
+        description: `Sammenlign ${clientData.company_name} med bransjegjennomsnitt`,
+        priority: 'medium',
+        category: 'efficiency',
+        action: `Gi meg en bransjesammenligning for ${clientData.company_name} innen ${clientData.industry}`
+      });
+
+      if (clientData.progress && clientData.progress < 50) {
+        suggestions.push({
+          id: 'timeline-1',
+          title: 'Fremdriftsoptimalisering',
+          description: 'Klienten er kun ' + clientData.progress + '% ferdig. Trenger du hjelp med prioritering?',
+          priority: 'high',
+          category: 'timeline',
+          action: 'Hjelp meg med å prioritere revisjonsoppgaver for å øke fremdriften'
+        });
+      }
+    }
+
+    // Role-based suggestions
+    if (userRole === 'partner') {
+      suggestions.push({
+        id: 'partner-1',
+        title: 'Porteføljeanalyse',
+        description: 'Generer en oversikt over klientporteføljens samlede risiko',
+        priority: 'medium',
+        category: 'risk'
+      });
+    }
+
+    setProactiveSuggestions(suggestions.slice(0, 3)); // Limit to 3 suggestions
+  }, [currentContext, clientData, userRole]);
+
+  const handleSendMessage = async (messageText?: string) => {
+    const textToSend = messageText || message;
+    if (!textToSend.trim() || isTyping) return;
+    
+    const userMessage: RevyMessage = { 
+      id: Date.now().toString(), 
+      content: textToSend,
+      timestamp: new Date().toISOString(),
+      sender: 'user'
+    };
+    
+    const newMessages = [...messages, userMessage];
+    setMessages(newMessages);
+    setMessage('');
+    setIsTyping(true);
+    setShowSuggestions(false);
+    
+    try {
+      console.log('🚀 Sending enhanced AI request...');
+      
+      // Enhanced AI response with better error handling
+      const responseText = await generateAIResponse(
+        userMessage.content, 
+        currentContext,
+        clientData,
+        userRole,
+        sessionId
+      );
+      
+      const revyResponse: RevyMessage = {
+        id: (Date.now() + 1).toString(),
+        content: responseText,
+        timestamp: new Date().toISOString(),
+        sender: 'revy'
+      };
+      
+      setMessages(prev => [...prev, revyResponse]);
+      setRetryCount(0); // Reset retry count on success
+      
+      // Show success feedback
+      if (!embedded) {
+        toast({
+          title: "Revy svarte",
+          description: "AI-assistenten ga deg et svar",
+          duration: 2000
+        });
+      }
+      
+    } catch (error) {
+      console.error('💥 Error getting AI response:', error);
+      
+      // Enhanced error handling with retry logic
+      if (retryCount < 2 && isOnline) {
+        setRetryCount(prev => prev + 1);
+        toast({
+          title: "Prøver på nytt...",
+          description: `Forsøk ${retryCount + 1} av 3`,
+          duration: 2000
+        });
+        
+        // Retry after a short delay
+        setTimeout(() => handleSendMessage(textToSend), 2000);
+        return;
+      }
+      
+      // Intelligent fallback response
+      const fallbackResponse: RevyMessage = {
+        id: (Date.now() + 1).toString(),
+        content: getIntelligentFallback(error, currentContext, userRole),
+        timestamp: new Date().toISOString(),
+        sender: 'revy'
+      };
+      
+      setMessages(prev => [...prev, fallbackResponse]);
+      setRetryCount(0);
+      
+      toast({
+        title: "AI-feil",
+        description: "Bruker fallback-respons. Prøv igjen senere.",
+        variant: "destructive",
+        duration: 5000
+      });
+    } finally {
+      setIsTyping(false);
+    }
+  };
+
+  const getIntelligentFallback = (error: any, context: string, role: string): string => {
+    const fallbacks = {
+      'risk-assessment': 'Jeg har tekniske problemer, men her er noen generelle tips for risikovurdering: Start med å identifisere klientens bransje og nøkkelrisikoer. Vurder materialitetsnivå basert på størrelse og kompleksitet. Se ISA 315 for detaljerte retningslinjer.',
+      'documentation': 'Tekniske problemer oppstått. For dokumentasjon, husk: ISA 230 krever at all dokumentasjon skal være tilstrekkelig og hensiktsmessig for å støtte revisjonskonklusjoner. Strukturer arbeidspapirene logisk og inkluder alle vesentlige vurderinger.',
+      'client-detail': 'Midlertidig feil. For klientanalyse, se på nøkkeltall som omsetningsvekst, lønnsomhet og likviditet. Sammenlign med bransjegjennomsnitt og vurder trender over tid.',
+      'collaboration': 'Teknisk feil. For teamarbeid: Sørg for klar rollefordeling, regelmessig kommunikasjon og dokumenterte beslutninger. Bruk standardiserte maler for konsistens.',
+      'general': 'Jeg opplever tekniske problemer. Prøv igjen om litt, eller kontakt support hvis problemet vedvarer.'
+    };
+    
+    const roleSpecific = role === 'partner' ? 
+      ' Som partner bør du også vurdere klientporteføljens samlede risiko og strategiske implikasjoner.' :
+      role === 'manager' ? 
+      ' Som manager, sørg for at teamet følger etablerte prosedyrer og kvalitetsstandarder.' :
+      ' Kontakt din manager hvis du trenger ytterligere veiledning eller støtte.';
+    
+    return (fallbacks[context as keyof typeof fallbacks] || fallbacks.general) + roleSpecific;
+  };
+
+  const handleSuggestionClick = (suggestion: ProactiveSuggestion) => {
+    if (suggestion.action) {
+      handleSendMessage(suggestion.action);
+    }
+  };
+
+  const toggleOpen = () => {
+    setIsOpen(!isOpen);
+    if (!isOpen) {
+      setIsMinimized(false);
+      setShowSuggestions(true);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !isTyping) {
+      handleSendMessage();
+    }
+  };
+
+  // Connection status indicator
+  const ConnectionStatus = () => (
+    <div className={`flex items-center gap-1 text-xs ${isOnline ? 'text-green-600' : 'text-red-600'}`}>
+      <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-green-500' : 'bg-red-500'}`}></div>
+      {isOnline ? 'Online' : 'Offline'}
+    </div>
+  );
+
+  // Proactive suggestions component
+  const ProactiveSuggestions = () => (
+    showSuggestions && proactiveSuggestions.length > 0 && (
+      <div className="p-3 border-b bg-blue-50">
+        <div className="flex items-center gap-2 mb-2">
+          <Lightbulb className="h-4 w-4 text-blue-600" />
+          <span className="text-sm font-medium text-blue-800">Forslag fra Revy</span>
+        </div>
+        <div className="space-y-2">
+          {proactiveSuggestions.map((suggestion) => (
+            <div 
+              key={suggestion.id}
+              className="p-2 bg-white rounded border cursor-pointer hover:bg-blue-50 transition-colors"
+              onClick={() => handleSuggestionClick(suggestion)}
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">{suggestion.title}</span>
+                    <Badge 
+                      variant={suggestion.priority === 'high' ? 'destructive' : 'secondary'}
+                      className="text-xs"
+                    >
+                      {suggestion.priority}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-gray-600 mt-1">{suggestion.description}</p>
+                </div>
+                <div className="ml-2">
+                  {suggestion.category === 'risk' && <AlertCircle className="h-4 w-4 text-red-500" />}
+                  {suggestion.category === 'efficiency' && <TrendingUp className="h-4 w-4 text-green-500" />}
+                  {suggestion.category === 'timeline' && <Clock className="h-4 w-4 text-orange-500" />}
+                  {suggestion.category === 'quality' && <Users className="h-4 w-4 text-blue-500" />}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  );
+
+  // Embedded mode
+  if (embedded) {
+    return (
+      <div className="h-full flex flex-col bg-white">
+        <div className="p-2 border-b flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <RevyAvatar size="xs" />
+            <span className="text-sm font-medium">Revy AI</span>
+          </div>
+          <ConnectionStatus />
+        </div>
+        
+        <ProactiveSuggestions />
+        
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto p-3 space-y-3 bg-gray-50">
+          {messages.map((msg) => (
+            <div 
+              key={msg.id} 
+              className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+            >
+              {msg.sender === 'revy' && (
+                <div className="flex items-end gap-2 max-w-[90%]">
+                  <RevyAvatar size="xs" />
+                  <div className="bg-white border border-gray-200 p-2 rounded-lg rounded-bl-none shadow-sm text-sm">
+                    {msg.content}
+                  </div>
+                </div>
+              )}
+              
+              {msg.sender === 'user' && (
+                <div className="bg-blue-100 text-blue-900 p-2 rounded-lg rounded-br-none max-w-[90%] text-sm">
+                  {msg.content}
+                </div>
+              )}
+            </div>
+          ))}
+          
+          {isTyping && (
+            <div className="flex justify-start">
+              <div className="flex items-end gap-2 max-w-[90%]">
+                <RevyAvatar size="xs" />
+                <div className="bg-white border border-gray-200 p-2 rounded-lg rounded-bl-none shadow-sm text-sm flex items-center gap-2">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  Analyserer...
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+        
+        {/* Input */}
+        <div className="p-2 bg-white border-t">
+          <div className="flex gap-1">
+            <Input
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={isOnline ? "Skriv en melding..." : "Offline - prøv igjen senere"}
+              className="flex-1 text-xs h-8"
+              disabled={isTyping || !isOnline}
+            />
+            <Button 
+              size="sm" 
+              onClick={() => handleSendMessage()} 
+              className="bg-revio-500 hover:bg-revio-600 h-8 w-8 p-0"
+              disabled={isTyping || !message.trim() || !isOnline}
+            >
+              {isTyping ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <SendIcon size={12} />
+              )}
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Floating mode (keep existing structure with enhancements)
+  return (
+    <>
+      {!isOpen && (
+        <motion.div 
+          className="fixed bottom-4 right-4 z-50"
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.3 }}
+          onClick={toggleOpen}
+        >
+          <div className="relative">
+            <RevyAvatar size="lg" className="cursor-pointer hover:shadow-lg transition-shadow duration-300" />
+            {!isOnline && (
+              <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
+                <AlertCircle className="h-2 w-2 text-white" />
+              </div>
+            )}
+            {proactiveSuggestions.length > 0 && isOnline && (
+              <div className="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+                <span className="text-xs text-white font-bold">{proactiveSuggestions.length}</span>
+              </div>
+            )}
+          </div>
+        </motion.div>
+      )}
+      
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div 
+            className="fixed bottom-0 right-0 z-50 w-80 bg-white shadow-xl rounded-tl-2xl overflow-hidden flex flex-col"
+            style={{ height: isMinimized ? '48px' : '500px' }}
+            initial={{ y: 500, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 500, opacity: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            {/* Enhanced Header */}
+            <div className="bg-revio-500 text-white p-2 flex items-center justify-between cursor-pointer" onClick={() => setIsMinimized(!isMinimized)}>
+              <div className="flex items-center gap-2">
+                <RevyAvatar size="sm" />
+                <div>
+                  <span className="font-medium">Revy AI</span>
+                  <div className="text-xs opacity-80">
+                    <ConnectionStatus />
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-1">
+                <Button variant="ghost" size="icon" className="h-6 w-6 text-white hover:bg-revio-600">
+                  <MinusCircle size={16} />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-6 w-6 text-white hover:bg-revio-600" onClick={(e) => { e.stopPropagation(); toggleOpen(); }}>
+                  <X size={16} />
+                </Button>
+              </div>
+            </div>
+            
+            {!isMinimized && (
+              <>
+                <ProactiveSuggestions />
+                
+                {/* Messages */}
+                <div className="flex-1 overflow-y-auto p-3 space-y-3 bg-gray-50">
+                  {messages.map((msg) => (
+                    <div 
+                      key={msg.id} 
+                      className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                    >
+                      {msg.sender === 'revy' && (
+                        <div className="flex items-end gap-2">
+                          <RevyAvatar size="xs" />
+                          <div className="bg-white border border-gray-200 p-3 rounded-2xl rounded-bl-none max-w-[85%] shadow-sm">
+                            {msg.content}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {msg.sender === 'user' && (
+                        <div className="bg-blue-100 text-blue-900 p-3 rounded-2xl rounded-br-none max-w-[85%]">
+                          {msg.content}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  
+                  {isTyping && (
+                    <div className="flex justify-start">
+                      <div className="flex items-end gap-2">
+                        <RevyAvatar size="xs" />
+                        <div className="bg-white border border-gray-200 p-3 rounded-2xl rounded-bl-none shadow-sm flex items-center gap-2">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Analyserer...
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Enhanced Input */}
+                <div className="p-3 bg-white border-t">
+                  <div className="flex gap-2">
+                    <Input
+                      value={message}
+                      onChange={(e) => setMessage(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      placeholder={isOnline ? "Skriv en melding..." : "Offline - prøv igjen senere"}
+                      className="flex-1"
+                      disabled={isTyping || !isOnline}
+                    />
+                    <Button 
+                      size="icon" 
+                      onClick={() => handleSendMessage()} 
+                      className="bg-revio-500 hover:bg-revio-600"
+                      disabled={isTyping || !message.trim() || !isOnline}
+                    >
+                      {isTyping ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <SendIcon size={16} />
+                      )}
+                    </Button>
+                  </div>
+                  {retryCount > 0 && (
+                    <div className="text-xs text-orange-600 mt-1">
+                      Prøver igjen... (forsøk {retryCount} av 3)
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
+  );
+};
+
+export default EnhancedRevyAssistant;
