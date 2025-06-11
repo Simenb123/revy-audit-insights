@@ -30,8 +30,22 @@ import {
   Bar
 } from 'recharts';
 
+interface AIUsageLog {
+  id: string;
+  user_id: string;
+  model: string;
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_tokens: number;
+  estimated_cost_usd: number;
+  request_type: string;
+  context_type: string | null;
+  response_time_ms: number | null;
+  created_at: string;
+}
+
 interface AIUsageStats {
-  logs: any[];
+  logs: AIUsageLog[];
   summary: {
     totalRequests: number;
     totalTokens: number;
@@ -88,17 +102,17 @@ const AIUsageDashboard = () => {
     }).format(amount);
   };
 
-  const getChartData = (logs: any[]) => {
+  const getChartData = (logs: AIUsageLog[]) => {
     const dailyData = logs.reduce((acc, log) => {
       const date = new Date(log.created_at).toLocaleDateString('no-NO');
       if (!acc[date]) {
         acc[date] = { date, requests: 0, cost: 0, tokens: 0 };
       }
       acc[date].requests += 1;
-      acc[date].cost += parseFloat(log.estimated_cost_usd);
+      acc[date].cost += Number(log.estimated_cost_usd);
       acc[date].tokens += log.total_tokens;
       return acc;
-    }, {});
+    }, {} as Record<string, { date: string; requests: number; cost: number; tokens: number }>);
 
     return Object.values(dailyData).slice(-7); // Last 7 days
   };
@@ -293,7 +307,7 @@ const AIUsageDashboard = () => {
                     <div className="grid grid-cols-3 gap-4 mb-6">
                       <div className="text-center">
                         <div className="text-2xl font-bold">
-                          {formatCurrency(firmStats.reduce((sum, log) => sum + parseFloat(log.estimated_cost_usd), 0))}
+                          {formatCurrency(firmStats.reduce((sum, log) => sum + Number(log.estimated_cost_usd), 0))}
                         </div>
                         <p className="text-sm text-muted-foreground">Total kostnad</p>
                       </div>
@@ -318,7 +332,7 @@ const AIUsageDashboard = () => {
                             acc[userName] = { requests: 0, cost: 0, role: log.profiles?.user_role || 'unknown' };
                           }
                           acc[userName].requests += 1;
-                          acc[userName].cost += parseFloat(log.estimated_cost_usd);
+                          acc[userName].cost += Number(log.estimated_cost_usd);
                           return acc;
                         }, {} as Record<string, FirmUserStats>)
                       )

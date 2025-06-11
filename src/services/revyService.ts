@@ -141,7 +141,7 @@ export const getAIUsageStats = async (timeframe: 'day' | 'week' | 'month' = 'wee
     const summary = {
       totalRequests: data.length,
       totalTokens: data.reduce((sum, log) => sum + log.total_tokens, 0),
-      totalCost: data.reduce((sum, log) => sum + parseFloat(log.estimated_cost_usd.toString()), 0),
+      totalCost: data.reduce((sum, log) => sum + Number(log.estimated_cost_usd), 0),
       avgResponseTime: data.length > 0 
         ? data.reduce((sum, log) => sum + (log.response_time_ms || 0), 0) / data.length 
         : 0,

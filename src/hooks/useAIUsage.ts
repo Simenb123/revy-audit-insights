@@ -4,9 +4,12 @@ import { getAIUsageStats, getFirmAIUsageStats } from '@/services/revyService';
 
 interface AIUsageLog {
   id: string;
+  user_id: string;
   model: string;
+  prompt_tokens: number;
+  completion_tokens: number;
   total_tokens: number;
-  estimated_cost_usd: string;
+  estimated_cost_usd: number; // Changed from string to number to match database
   request_type: string;
   context_type: string | null;
   response_time_ms: number | null;
