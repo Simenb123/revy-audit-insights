@@ -2,6 +2,8 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { Copy } from 'lucide-react';
 import { AuditSubjectArea, SUBJECT_AREA_LABELS } from '@/types/audit-actions';
 import {
   useAuditActionTemplates,
@@ -11,6 +13,7 @@ import {
 import SubjectAreaNav from './SubjectAreaNav';
 import ActionTemplateList from './ActionTemplateList';
 import ClientActionsList from './ClientActionsList';
+import CopyFromClientDialog from './CopyFromClientDialog';
 
 interface AuditActionsManagerProps {
   clientId: string;
@@ -19,6 +22,7 @@ interface AuditActionsManagerProps {
 
 const AuditActionsManager = ({ clientId, phase = 'execution' }: AuditActionsManagerProps) => {
   const [selectedArea, setSelectedArea] = useState<AuditSubjectArea>('sales');
+  const [copyFromClientOpen, setCopyFromClientOpen] = useState(false);
   
   const { data: templates = [], isLoading: templatesLoading } = useAuditActionTemplates();
   const { data: clientActions = [], isLoading: actionsLoading } = useClientAuditActions(clientId);
@@ -78,6 +82,17 @@ const AuditActionsManager = ({ clientId, phase = 'execution' }: AuditActionsMana
         </TabsList>
         
         <TabsContent value="client-actions" className="space-y-4">
+          <div className="flex justify-end">
+            <Button
+              onClick={() => setCopyFromClientOpen(true)}
+              variant="outline"
+              className="gap-2"
+            >
+              <Copy size={16} />
+              Kopier fra annen klient
+            </Button>
+          </div>
+          
           <ClientActionsList
             actions={clientActions}
             selectedArea={selectedArea}
@@ -92,6 +107,14 @@ const AuditActionsManager = ({ clientId, phase = 'execution' }: AuditActionsMana
           />
         </TabsContent>
       </Tabs>
+
+      <CopyFromClientDialog
+        open={copyFromClientOpen}
+        onOpenChange={setCopyFromClientOpen}
+        targetClientId={clientId}
+        selectedArea={selectedArea}
+        phase={phase}
+      />
     </div>
   );
 };
