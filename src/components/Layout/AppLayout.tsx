@@ -1,7 +1,6 @@
 
 import React, { ReactNode, useState } from 'react';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
-import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import AppHeader from './AppHeader';
 import Sidebar from './Sidebar';
 import RightSidebar from './RightSidebar';
@@ -18,62 +17,52 @@ const AppLayout = ({ children }: AppLayoutProps) => {
 
   return (
     <TooltipProvider delayDuration={0}>
-      <SidebarProvider>
-        <div className="flex min-h-screen w-full bg-background">
-          {/* Fixed header spanning full width at the top */}
-          <AppHeader />
-          
-          {/* Main layout below header */}
+      <div className="min-h-screen w-full bg-background">
+        {/* Fixed header spanning full width at the top */}
+        <AppHeader />
+        
+        {/* Main layout below header using SidebarProvider */}
+        <SidebarProvider>
           <div className="flex w-full pt-14"> {/* pt-14 to account for fixed header height */}
             {/* Left Sidebar */}
             <Sidebar />
             
-            {/* Main content area */}
-            <div className="flex-1">
-              <ResizablePanelGroup direction="horizontal" className="h-[calc(100vh-3.5rem)]"> {/* Subtract header height */}
+            {/* Main content area using SidebarInset */}
+            <SidebarInset className="flex-1">
+              <div className="flex h-[calc(100vh-3.5rem)] w-full"> {/* Subtract header height */}
                 {/* Main content */}
-                <ResizablePanel defaultSize={isRightSidebarCollapsed ? 100 : 75} minSize={50}>
-                  <main className="h-full w-full overflow-auto p-6">
-                    {children}
-                    
-                    {/* Show expand button when sidebar is collapsed */}
-                    {isRightSidebarCollapsed && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setIsRightSidebarCollapsed(false)}
-                        className="fixed top-20 right-4 z-10 bg-white border border-border shadow-md hover:shadow-lg h-6 w-6"
-                      >
-                        <ChevronLeft className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </main>
-                </ResizablePanel>
-                
-                {/* Only show resizable handle and right sidebar when not collapsed */}
-                {!isRightSidebarCollapsed && (
-                  <>
-                    {/* Resizable handle */}
-                    <ResizableHandle withHandle />
-                    
-                    {/* Right sidebar */}
-                    <ResizablePanel 
-                      defaultSize={25} 
-                      minSize={15}
-                      maxSize={40}
+                <main className={`flex-1 overflow-auto p-6 transition-all duration-300 ${
+                  isRightSidebarCollapsed ? 'mr-0' : 'mr-80'
+                }`}>
+                  {children}
+                  
+                  {/* Show expand button when right sidebar is collapsed */}
+                  {isRightSidebarCollapsed && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setIsRightSidebarCollapsed(false)}
+                      className="fixed top-20 right-4 z-10 bg-white border border-border shadow-md hover:shadow-lg h-6 w-6"
                     >
-                      <RightSidebar 
-                        isCollapsed={isRightSidebarCollapsed}
-                        onToggle={() => setIsRightSidebarCollapsed(!isRightSidebarCollapsed)}
-                      />
-                    </ResizablePanel>
-                  </>
-                )}
-              </ResizablePanelGroup>
-            </div>
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                  )}
+                </main>
+                
+                {/* Right sidebar - fixed positioning */}
+                <div className={`fixed top-14 right-0 h-[calc(100vh-3.5rem)] w-80 transition-transform duration-300 z-20 ${
+                  isRightSidebarCollapsed ? 'translate-x-full' : 'translate-x-0'
+                }`}>
+                  <RightSidebar 
+                    isCollapsed={isRightSidebarCollapsed}
+                    onToggle={() => setIsRightSidebarCollapsed(!isRightSidebarCollapsed)}
+                  />
+                </div>
+              </div>
+            </SidebarInset>
           </div>
-        </div>
-      </SidebarProvider>
+        </SidebarProvider>
+      </div>
     </TooltipProvider>
   );
 };

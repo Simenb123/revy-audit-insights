@@ -2,7 +2,6 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Bell, HelpCircle, Settings, User, LogOut } from "lucide-react";
-import { SidebarTrigger } from '@/components/ui/sidebar';
 import Logo from './Logo';
 import { useLocation, useParams, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -83,7 +82,6 @@ const AppHeader = () => {
       className="fixed top-0 left-0 right-0 w-full h-14 bg-revio-500 flex items-center justify-between px-4 z-50 border-b border-revio-600"
     >
       <div className="flex items-center gap-4">
-        <SidebarTrigger className="text-white hover:bg-revio-600" />
         <Logo />
       </div>
 
@@ -110,7 +108,7 @@ const AppHeader = () => {
               <User size={20} />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
+          <DropdownMenuContent align="end" className="bg-white z-[60]">
             <div className="px-2 py-1.5 text-sm">
               <div className="font-medium">
                 {userProfile?.firstName} {userProfile?.lastName}

@@ -9,7 +9,8 @@ import {
   SidebarMenuButton,
   SidebarGroup,
   SidebarGroupLabel,
-  SidebarGroupContent
+  SidebarGroupContent,
+  SidebarTrigger
 } from '@/components/ui/sidebar';
 import { 
   LayoutDashboard, 
@@ -25,7 +26,6 @@ import {
   UserCheck
 } from 'lucide-react';
 import { useLocation, Link } from 'react-router-dom';
-import Logo from './Logo';
 
 const Sidebar = () => {
   const location = useLocation();
@@ -102,9 +102,12 @@ const Sidebar = () => {
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <SidebarContainer className="pt-14"> {/* Add top padding to account for fixed header */}
+    <SidebarContainer>
       <SidebarHeader className="border-b border-border p-4">
-        <Logo />
+        <div className="flex items-center gap-2">
+          <SidebarTrigger className="h-7 w-7" />
+          <span className="font-semibold text-sidebar-foreground">Menu</span>
+        </div>
       </SidebarHeader>
       
       <SidebarContent>
