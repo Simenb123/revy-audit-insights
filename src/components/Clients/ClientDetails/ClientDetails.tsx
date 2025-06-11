@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Client } from '@/types/revio';
@@ -33,7 +32,7 @@ const ClientDetails = ({ client }: ClientDetailsProps) => {
                 </div>
                 <div>
                   <h4 className="text-sm font-medium text-gray-500">Organisasjonsnummer</h4>
-                  <p className="text-lg">{client.org_number}</p>
+                  <p className="text-lg">{client.orgNumber}</p>
                 </div>
               </div>
             </CardContent>

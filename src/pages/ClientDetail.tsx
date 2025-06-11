@@ -42,7 +42,6 @@ const ClientDetail = () => {
   return (
     <div className="space-y-6 p-6">
       <ClientBreadcrumb client={client} />
-      <ClientNavigation orgNumber={client.orgNumber} />
       
       <Routes>
         <Route 
