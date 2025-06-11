@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useRevyContext } from '@/components/RevyContext/RevyContextProvider';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -66,15 +65,15 @@ const ClientsOverview = () => {
   }, [setContext]);
 
   if (isLoading) {
-    return <div>Laster klienter...</div>;
+    return <div className="p-6">Laster klienter...</div>;
   }
 
   if (error) {
-    return <div>Feil ved lasting av klienter</div>;
+    return <div className="p-6">Feil ved lasting av klienter</div>;
   }
 
   return (
-    <div className="w-full px-4 py-6 md:px-6 lg:px-8">
+    <div className="p-6">
       <ClientsHeader 
         title="Mine klienter"
         subtitle="Oversikt over klienter og revisjonsstatus"
