@@ -1,60 +1,57 @@
 
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { cn } from '@/lib/utils';
-import { FileText, Database, BarChart3 } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import { 
+  FileText, 
+  TrendingUp, 
+  Users, 
+  MessageSquare, 
+  Calendar,
+  CheckSquare,
+  BarChart3,
+  Settings
+} from "lucide-react";
 
 interface ClientNavigationProps {
-  orgNumber: string;
+  activeTab: string;
+  onTabChange: (tab: string) => void;
 }
 
-const ClientNavigation = ({ orgNumber }: ClientNavigationProps) => {
-  const location = useLocation();
-  
-  const navItems = [
-    {
-      to: `/klienter/${orgNumber}`,
-      label: 'Oversikt',
-      icon: BarChart3,
-      exact: true,
-    },
-    {
-      to: `/klienter/${orgNumber}/regnskap`,
-      label: 'Regnskap',
-      icon: FileText,
-    },
-    {
-      to: `/klienter/${orgNumber}/regnskapsdata`,
-      label: 'Regnskapsdata',
-      icon: Database,
-    },
+const ClientNavigation = ({ activeTab, onTabChange }: ClientNavigationProps) => {
+  const tabs = [
+    { id: 'overview', label: 'Oversikt', icon: TrendingUp },
+    { id: 'audit-actions', label: 'Revisjonshandlinger', icon: CheckSquare },
+    { id: 'workflow', label: 'Arbeidsflyt', icon: FileText },
+    { id: 'team', label: 'Team', icon: Users },
+    { id: 'communication', label: 'Kommunikasjon', icon: MessageSquare },
+    { id: 'analysis', label: 'Analyse', icon: BarChart3 },
+    { id: 'schedule', label: 'Tidsplan', icon: Calendar },
+    { id: 'settings', label: 'Innstillinger', icon: Settings },
   ];
 
-  const isActive = (path: string, exact?: boolean) => {
-    if (exact) {
-      return location.pathname === path;
-    }
-    return location.pathname.startsWith(path);
-  };
-
   return (
-    <nav className="flex space-x-1 bg-gray-50 p-1 rounded-lg">
-      {navItems.map((item) => (
-        <Link
-          key={item.to}
-          to={item.to}
-          className={cn(
-            "flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors",
-            isActive(item.to, item.exact)
-              ? "bg-white text-gray-900 shadow-sm"
-              : "text-gray-600 hover:text-gray-900 hover:bg-white/50"
-          )}
-        >
-          <item.icon className="w-4 h-4" />
-          {item.label}
-        </Link>
-      ))}
-    </nav>
+    <div className="border-b border-gray-200 bg-white">
+      <div className="flex space-x-8 overflow-x-auto px-6">
+        {tabs.map((tab) => {
+          const Icon = tab.icon;
+          return (
+            <Button
+              key={tab.id}
+              variant={activeTab === tab.id ? "default" : "ghost"}
+              className={`flex items-center space-x-2 whitespace-nowrap py-4 ${
+                activeTab === tab.id 
+                  ? "border-b-2 border-revio-500 bg-revio-50 text-revio-700" 
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
+              onClick={() => onTabChange(tab.id)}
+            >
+              <Icon size={16} />
+              <span>{tab.label}</span>
+            </Button>
+          );
+        })}
+      </div>
+    </div>
   );
 };
 

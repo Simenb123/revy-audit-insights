@@ -64,6 +64,56 @@ export type Database = {
           },
         ]
       }
+      action_groups: {
+        Row: {
+          audit_firm_id: string | null
+          color: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_system_group: boolean | null
+          name: string
+          sort_order: number | null
+          subject_area: Database["public"]["Enums"]["audit_subject_area"]
+          updated_at: string
+        }
+        Insert: {
+          audit_firm_id?: string | null
+          color?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_system_group?: boolean | null
+          name: string
+          sort_order?: number | null
+          subject_area: Database["public"]["Enums"]["audit_subject_area"]
+          updated_at?: string
+        }
+        Update: {
+          audit_firm_id?: string | null
+          color?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_system_group?: boolean | null
+          name?: string
+          sort_order?: number | null
+          subject_area?: Database["public"]["Enums"]["audit_subject_area"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "action_groups_audit_firm_id_fkey"
+            columns: ["audit_firm_id"]
+            isOneToOne: false
+            referencedRelation: "audit_firms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       analysis_results: {
         Row: {
           client_id: string
@@ -182,6 +232,91 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_action_templates: {
+        Row: {
+          action_type: Database["public"]["Enums"]["action_type"]
+          applicable_phases: Database["public"]["Enums"]["audit_phase"][] | null
+          audit_firm_id: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          documentation_requirements: string | null
+          estimated_hours: number | null
+          group_id: string | null
+          id: string
+          is_active: boolean | null
+          is_system_template: boolean | null
+          name: string
+          objective: string | null
+          procedures: string
+          risk_level: string | null
+          sort_order: number | null
+          subject_area: Database["public"]["Enums"]["audit_subject_area"]
+          updated_at: string
+        }
+        Insert: {
+          action_type: Database["public"]["Enums"]["action_type"]
+          applicable_phases?:
+            | Database["public"]["Enums"]["audit_phase"][]
+            | null
+          audit_firm_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          documentation_requirements?: string | null
+          estimated_hours?: number | null
+          group_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_system_template?: boolean | null
+          name: string
+          objective?: string | null
+          procedures: string
+          risk_level?: string | null
+          sort_order?: number | null
+          subject_area: Database["public"]["Enums"]["audit_subject_area"]
+          updated_at?: string
+        }
+        Update: {
+          action_type?: Database["public"]["Enums"]["action_type"]
+          applicable_phases?:
+            | Database["public"]["Enums"]["audit_phase"][]
+            | null
+          audit_firm_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          documentation_requirements?: string | null
+          estimated_hours?: number | null
+          group_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_system_template?: boolean | null
+          name?: string
+          objective?: string | null
+          procedures?: string
+          risk_level?: string | null
+          sort_order?: number | null
+          subject_area?: Database["public"]["Enums"]["audit_subject_area"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_action_templates_audit_firm_id_fkey"
+            columns: ["audit_firm_id"]
+            isOneToOne: false
+            referencedRelation: "audit_firms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_action_templates_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "action_groups"
             referencedColumns: ["id"]
           },
         ]
@@ -310,6 +445,108 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      client_audit_actions: {
+        Row: {
+          action_type: Database["public"]["Enums"]["action_type"]
+          actual_hours: number | null
+          assigned_to: string | null
+          client_id: string
+          completed_at: string | null
+          conclusion: string | null
+          created_at: string
+          description: string | null
+          documentation_requirements: string | null
+          due_date: string | null
+          estimated_hours: number | null
+          findings: string | null
+          id: string
+          name: string
+          objective: string | null
+          phase: Database["public"]["Enums"]["audit_phase"]
+          procedures: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          risk_level: string | null
+          sort_order: number | null
+          status: Database["public"]["Enums"]["action_status"] | null
+          subject_area: Database["public"]["Enums"]["audit_subject_area"]
+          template_id: string | null
+          updated_at: string
+          work_notes: string | null
+        }
+        Insert: {
+          action_type: Database["public"]["Enums"]["action_type"]
+          actual_hours?: number | null
+          assigned_to?: string | null
+          client_id: string
+          completed_at?: string | null
+          conclusion?: string | null
+          created_at?: string
+          description?: string | null
+          documentation_requirements?: string | null
+          due_date?: string | null
+          estimated_hours?: number | null
+          findings?: string | null
+          id?: string
+          name: string
+          objective?: string | null
+          phase: Database["public"]["Enums"]["audit_phase"]
+          procedures: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          risk_level?: string | null
+          sort_order?: number | null
+          status?: Database["public"]["Enums"]["action_status"] | null
+          subject_area: Database["public"]["Enums"]["audit_subject_area"]
+          template_id?: string | null
+          updated_at?: string
+          work_notes?: string | null
+        }
+        Update: {
+          action_type?: Database["public"]["Enums"]["action_type"]
+          actual_hours?: number | null
+          assigned_to?: string | null
+          client_id?: string
+          completed_at?: string | null
+          conclusion?: string | null
+          created_at?: string
+          description?: string | null
+          documentation_requirements?: string | null
+          due_date?: string | null
+          estimated_hours?: number | null
+          findings?: string | null
+          id?: string
+          name?: string
+          objective?: string | null
+          phase?: Database["public"]["Enums"]["audit_phase"]
+          procedures?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          risk_level?: string | null
+          sort_order?: number | null
+          status?: Database["public"]["Enums"]["action_status"] | null
+          subject_area?: Database["public"]["Enums"]["audit_subject_area"]
+          template_id?: string | null
+          updated_at?: string
+          work_notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_audit_actions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_audit_actions_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "audit_action_templates"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       client_chart_of_accounts: {
         Row: {
@@ -1544,6 +1781,21 @@ export type Database = {
       }
     }
     Enums: {
+      action_status:
+        | "not_started"
+        | "in_progress"
+        | "completed"
+        | "reviewed"
+        | "approved"
+      action_type:
+        | "analytical"
+        | "substantive"
+        | "control_test"
+        | "inquiry"
+        | "observation"
+        | "inspection"
+        | "recalculation"
+        | "confirmation"
       article_status: "draft" | "published" | "archived"
       audit_log_action:
         | "review_completed"
@@ -1551,6 +1803,18 @@ export type Database = {
         | "document_uploaded"
         | "analysis_performed"
       audit_phase: "engagement" | "planning" | "execution" | "conclusion"
+      audit_subject_area:
+        | "sales"
+        | "payroll"
+        | "operating_expenses"
+        | "inventory"
+        | "finance"
+        | "banking"
+        | "fixed_assets"
+        | "receivables"
+        | "payables"
+        | "equity"
+        | "other"
       communication_type: "team" | "department" | "firm"
       document_status: "pending" | "submitted" | "accepted" | "rejected"
       document_type: "shareholder_report" | "tax_return" | "annual_report"
@@ -1671,6 +1935,23 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      action_status: [
+        "not_started",
+        "in_progress",
+        "completed",
+        "reviewed",
+        "approved",
+      ],
+      action_type: [
+        "analytical",
+        "substantive",
+        "control_test",
+        "inquiry",
+        "observation",
+        "inspection",
+        "recalculation",
+        "confirmation",
+      ],
       article_status: ["draft", "published", "archived"],
       audit_log_action: [
         "review_completed",
@@ -1679,6 +1960,19 @@ export const Constants = {
         "analysis_performed",
       ],
       audit_phase: ["engagement", "planning", "execution", "conclusion"],
+      audit_subject_area: [
+        "sales",
+        "payroll",
+        "operating_expenses",
+        "inventory",
+        "finance",
+        "banking",
+        "fixed_assets",
+        "receivables",
+        "payables",
+        "equity",
+        "other",
+      ],
       communication_type: ["team", "department", "firm"],
       document_status: ["pending", "submitted", "accepted", "rejected"],
       document_type: ["shareholder_report", "tax_return", "annual_report"],
