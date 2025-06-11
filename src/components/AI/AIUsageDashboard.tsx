@@ -62,10 +62,27 @@ interface FirmUserStats {
   role: string;
 }
 
+interface FirmStatsLog {
+  id: string;
+  user_id: string;
+  model: string;
+  total_tokens: number;
+  estimated_cost_usd: number;
+  request_type: string;
+  context_type: string | null;
+  response_time_ms: number | null;
+  created_at: string;
+  profiles?: {
+    first_name?: string;
+    last_name?: string;
+    user_role?: string;
+  };
+}
+
 const AIUsageDashboard = () => {
   const [timeframe, setTimeframe] = useState<'day' | 'week' | 'month'>('week');
   const [personalStats, setPersonalStats] = useState<AIUsageStats | null>(null);
-  const [firmStats, setFirmStats] = useState<any[] | null>(null);
+  const [firmStats, setFirmStats] = useState<FirmStatsLog[] | null>(null);
   const [loading, setLoading] = useState(true);
   const { data: userProfile } = useUserProfile();
 
@@ -336,17 +353,17 @@ const AIUsageDashboard = () => {
                           return acc;
                         }, {} as Record<string, FirmUserStats>)
                       )
-                        .sort(([,a], [,b]) => b.cost - a.cost)
+                        .sort(([,a], [,b]) => (b as FirmUserStats).cost - (a as FirmUserStats).cost)
                         .slice(0, 10)
                         .map(([userName, stats]) => (
                           <div key={userName} className="flex justify-between items-center p-2 bg-gray-50 rounded">
                             <div>
                               <span className="font-medium">{userName}</span>
-                              <span className="text-sm text-muted-foreground ml-2">({stats.role})</span>
+                              <span className="text-sm text-muted-foreground ml-2">({(stats as FirmUserStats).role})</span>
                             </div>
                             <div className="text-right">
-                              <div className="font-medium">{formatCurrency(stats.cost)}</div>
-                              <div className="text-sm text-muted-foreground">{stats.requests} forespørsler</div>
+                              <div className="font-medium">{formatCurrency((stats as FirmUserStats).cost)}</div>
+                              <div className="text-sm text-muted-foreground">{(stats as FirmUserStats).requests} forespørsler</div>
                             </div>
                           </div>
                         ))}
