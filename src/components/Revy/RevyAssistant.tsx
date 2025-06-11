@@ -334,5 +334,3 @@ const RevyAssistant = ({ embedded = false, clientData, userRole }: RevyAssistant
 };
 
 export default RevyAssistant;
-
-</edits_to_apply>
