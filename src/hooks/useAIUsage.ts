@@ -9,7 +9,7 @@ interface AIUsageLog {
   prompt_tokens: number;
   completion_tokens: number;
   total_tokens: number;
-  estimated_cost_usd: number; // Changed from string to number to match database
+  estimated_cost_usd: number;
   request_type: string;
   context_type: string | null;
   response_time_ms: number | null;
@@ -76,8 +76,9 @@ export const useFirmAIUsage = (timeframe: 'day' | 'week' | 'month' = 'week') => 
     try {
       setLoading(true);
       setError(null);
-      const stats = await getFirmAIUsageStats(timeframe);
-      setFirmStats(stats);
+      const data = await getFirmAIUsageStats(timeframe);
+      // Ensure we're setting an array, not an object with logs property
+      setFirmStats(Array.isArray(data) ? data : []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Feil ved henting av firmastatistikk');
       console.error('Error loading firm AI stats:', err);

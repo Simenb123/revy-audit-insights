@@ -19,7 +19,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useRevyContext } from '../RevyContext/RevyContextProvider';
 import { generateAIResponse, getContextualTip } from '@/services/revyService';
 import { RevyMessage } from '@/types/revio';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth } from '@/components/Auth/AuthProvider';
 
 interface EnhancedRevyAssistantProps {
   embedded?: boolean;
