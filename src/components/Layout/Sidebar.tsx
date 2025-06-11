@@ -102,7 +102,7 @@ const Sidebar = () => {
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <SidebarContainer>
+    <SidebarContainer className="pt-14"> {/* Add top padding to account for fixed header */}
       <SidebarHeader className="border-b border-border p-4">
         <Logo />
       </SidebarHeader>

@@ -20,17 +20,17 @@ const AppLayout = ({ children }: AppLayoutProps) => {
     <TooltipProvider delayDuration={0}>
       <SidebarProvider>
         <div className="flex min-h-screen w-full bg-background">
-          {/* Left Sidebar */}
-          <Sidebar />
+          {/* Fixed header spanning full width at the top */}
+          <AppHeader />
           
-          {/* Main content area with header */}
-          <div className="flex-1 flex flex-col">
-            {/* Fixed header spanning full width of main area */}
-            <AppHeader />
+          {/* Main layout below header */}
+          <div className="flex w-full pt-14"> {/* pt-14 to account for fixed header height */}
+            {/* Left Sidebar */}
+            <Sidebar />
             
-            {/* Content area below header */}
+            {/* Main content area */}
             <div className="flex-1">
-              <ResizablePanelGroup direction="horizontal" className="h-full">
+              <ResizablePanelGroup direction="horizontal" className="h-[calc(100vh-3.5rem)]"> {/* Subtract header height */}
                 {/* Main content */}
                 <ResizablePanel defaultSize={isRightSidebarCollapsed ? 100 : 75} minSize={50}>
                   <main className="h-full w-full overflow-auto p-6">
