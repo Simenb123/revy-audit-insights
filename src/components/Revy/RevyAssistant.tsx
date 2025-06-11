@@ -20,10 +20,11 @@ const RevyAssistant = ({ embedded = false, clientData, userRole }: RevyAssistant
   const [isMinimized, setIsMinimized] = useState(false);
   const [message, setMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [sessionId] = useState(() => crypto.randomUUID());
   const [messages, setMessages] = useState<RevyMessage[]>([
     {
       id: '1',
-      content: 'Hei! Jeg er Revy, din AI-drevne revisjonsassistent. Hvordan kan jeg hjelpe deg i dag?',
+      content: 'Hei! Jeg er Revy, din AI-drevne revisjonsassistent. Jeg har nå tilgang til fagstoff og klientdata for å gi deg enda bedre veiledning. Hvordan kan jeg hjelpe deg i dag?',
       timestamp: new Date().toISOString(),
       sender: 'revy'
     }
@@ -78,12 +79,13 @@ const RevyAssistant = ({ embedded = false, clientData, userRole }: RevyAssistant
     setIsTyping(true);
     
     try {
-      // Generate AI response with context
+      // Generate enhanced AI response with usage tracking
       const responseText = await generateAIResponse(
         userMessage.content, 
         currentContext,
         clientData,
-        userRole
+        userRole,
+        sessionId
       );
       
       const revyResponse: RevyMessage = {

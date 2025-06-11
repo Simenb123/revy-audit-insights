@@ -1,3 +1,4 @@
+
 export type AuditPhase = 'overview' | 'engagement' | 'planning' | 'execution' | 'conclusion';
 
 export interface RiskArea {
@@ -158,3 +159,71 @@ export type RevyContext =
   | 'audit-actions'
   | 'team-management'
   | 'general';
+
+// AI Usage Types
+export interface AIUsageLog {
+  id: string;
+  user_id: string;
+  session_id?: string;
+  model: string;
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_tokens: number;
+  estimated_cost_usd: number;
+  request_type: string;
+  context_type?: string;
+  client_id?: string;
+  response_time_ms?: number;
+  error_message?: string;
+  created_at: string;
+}
+
+export interface AIUsageSummary {
+  totalRequests: number;
+  totalTokens: number;
+  totalCost: number;
+  avgResponseTime: number;
+  modelUsage: Record<string, number>;
+  contextUsage: Record<string, number>;
+}
+
+export interface AIUsageStats {
+  logs: AIUsageLog[];
+  summary: AIUsageSummary;
+}
+
+// Knowledge Base Integration Types
+export interface KnowledgeArticle {
+  id: string;
+  title: string;
+  content: string;
+  summary?: string;
+  tags?: string[];
+  category_id: string;
+  status: 'draft' | 'published' | 'archived';
+  author_id: string;
+  view_count: number;
+  created_at: string;
+  updated_at: string;
+  published_at?: string;
+}
+
+export interface EnhancedRevyContext {
+  userContext: {
+    role: string;
+    department?: string;
+    firm?: string;
+  };
+  clientContext?: {
+    id: string;
+    name: string;
+    phase: AuditPhase;
+    riskAreas: RiskArea[];
+    activeActions: any[];
+  };
+  knowledgeContext?: KnowledgeArticle[];
+  sessionContext: {
+    sessionId: string;
+    previousMessages: RevyMessage[];
+  };
+}

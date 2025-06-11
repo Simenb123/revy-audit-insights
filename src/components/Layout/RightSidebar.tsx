@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,14 +7,16 @@ import {
   MessageSquare, 
   BarChart3, 
   Activity, 
-  X, 
   ChevronRight,
   TrendingUp,
   Users,
-  FileText
+  FileText,
+  Brain,
+  DollarSign
 } from 'lucide-react';
 import RevyAssistant from '../Revy/RevyAssistant';
 import { useLocation } from 'react-router-dom';
+import { useAIUsage } from '@/hooks/useAIUsage';
 
 interface RightSidebarProps {
   isCollapsed: boolean;
@@ -25,6 +28,7 @@ interface RightSidebarProps {
 const RightSidebar = ({ isCollapsed, onToggle, clientData, userRole }: RightSidebarProps) => {
   const location = useLocation();
   const [activeTab, setActiveTab] = useState('revy');
+  const { personalStats } = useAIUsage('week');
 
   // Mock analytics data - would be replaced with real data
   const analyticsData = {
@@ -38,6 +42,14 @@ const RightSidebar = ({ isCollapsed, onToggle, clientData, userRole }: RightSide
   if (isCollapsed) {
     return null;
   }
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('no-NO', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 4
+    }).format(amount);
+  };
 
   return (
     <div className="bg-white border-l border-border h-full flex flex-col">
@@ -82,6 +94,36 @@ const RightSidebar = ({ isCollapsed, onToggle, clientData, userRole }: RightSide
             </TabsContent>
             
             <TabsContent value="analytics" className="space-y-4 m-0">
+              {/* AI Usage Stats */}
+              {personalStats && (
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Brain className="h-4 w-4" />
+                      AI-bruk (uke)
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <div className="flex justify-between text-xs">
+                      <span>Kostnad</span>
+                      <span className="font-medium">
+                        {formatCurrency(personalStats.summary.totalCost)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span>Forespørsler</span>
+                      <span className="font-medium">{personalStats.summary.totalRequests}</span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span>Tokens</span>
+                      <span className="font-medium">
+                        {personalStats.summary.totalTokens.toLocaleString('no-NO')}
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               <div className="grid grid-cols-2 gap-2">
                 <Card className="p-3">
                   <div className="flex items-center gap-2">
@@ -170,6 +212,14 @@ const RightSidebar = ({ isCollapsed, onToggle, clientData, userRole }: RightSide
                   <span>Dokument lastet opp</span>
                   <span className="text-muted-foreground ml-auto">07:30</span>
                 </div>
+
+                {personalStats && personalStats.summary.totalRequests > 0 && (
+                  <div className="flex items-center gap-2 p-2 bg-blue-50 rounded text-xs">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    <span>AI-assistent brukt {personalStats.summary.totalRequests} ganger</span>
+                    <span className="text-muted-foreground ml-auto">i dag</span>
+                  </div>
+                )}
               </div>
             </TabsContent>
           </div>

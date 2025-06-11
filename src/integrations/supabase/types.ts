@@ -114,6 +114,65 @@ export type Database = {
           },
         ]
       }
+      ai_usage_logs: {
+        Row: {
+          client_id: string | null
+          completion_tokens: number
+          context_type: string | null
+          created_at: string
+          error_message: string | null
+          estimated_cost_usd: number
+          id: string
+          model: string
+          prompt_tokens: number
+          request_type: string
+          response_time_ms: number | null
+          session_id: string | null
+          total_tokens: number
+          user_id: string
+        }
+        Insert: {
+          client_id?: string | null
+          completion_tokens?: number
+          context_type?: string | null
+          created_at?: string
+          error_message?: string | null
+          estimated_cost_usd?: number
+          id?: string
+          model: string
+          prompt_tokens?: number
+          request_type?: string
+          response_time_ms?: number | null
+          session_id?: string | null
+          total_tokens?: number
+          user_id: string
+        }
+        Update: {
+          client_id?: string | null
+          completion_tokens?: number
+          context_type?: string | null
+          created_at?: string
+          error_message?: string | null
+          estimated_cost_usd?: number
+          id?: string
+          model?: string
+          prompt_tokens?: number
+          request_type?: string
+          response_time_ms?: number | null
+          session_id?: string | null
+          total_tokens?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_usage_logs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       analysis_results: {
         Row: {
           client_id: string
@@ -1783,6 +1842,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_ai_cost: {
+        Args: {
+          model_name: string
+          prompt_tokens: number
+          completion_tokens: number
+        }
+        Returns: number
+      }
       get_user_department: {
         Args: { user_uuid: string }
         Returns: string
