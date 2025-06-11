@@ -1,8 +1,10 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   MinusCircle, 
   SendIcon, 
@@ -347,8 +349,8 @@ const EnhancedRevyAssistant = ({ embedded = false, clientData, userRole }: Enhan
   // Embedded mode
   if (embedded) {
     return (
-      <div className="h-full flex flex-col bg-white">
-        <div className="p-2 border-b flex justify-between items-center">
+      <div className="h-full flex flex-col bg-white overflow-hidden">
+        <div className="p-2 border-b flex justify-between items-center flex-shrink-0">
           <div className="flex items-center gap-2">
             <RevyAvatar size="xs" />
             <span className="text-sm font-medium">Revy AI</span>
@@ -356,47 +358,88 @@ const EnhancedRevyAssistant = ({ embedded = false, clientData, userRole }: Enhan
           <ConnectionStatus />
         </div>
         
-        <ProactiveSuggestions />
+        {showSuggestions && proactiveSuggestions.length > 0 && (
+          <div className="p-2 border-b bg-blue-50 flex-shrink-0">
+            <div className="flex items-center gap-2 mb-2">
+              <Lightbulb className="h-4 w-4 text-blue-600" />
+              <span className="text-sm font-medium text-blue-800">Forslag fra Revy</span>
+            </div>
+            <div className="space-y-2">
+              {proactiveSuggestions.map((suggestion) => (
+                <div 
+                  key={suggestion.id}
+                  className="p-2 bg-white rounded border cursor-pointer hover:bg-blue-50 transition-colors"
+                  onClick={() => handleSuggestionClick(suggestion)}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">{suggestion.title}</span>
+                        <Badge 
+                          variant={suggestion.priority === 'high' ? 'destructive' : 'secondary'}
+                          className="text-xs"
+                        >
+                          {suggestion.priority}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-gray-600 mt-1">{suggestion.description}</p>
+                    </div>
+                    <div className="ml-2">
+                      {suggestion.category === 'risk' && <AlertCircle className="h-4 w-4 text-red-500" />}
+                      {suggestion.category === 'efficiency' && <TrendingUp className="h-4 w-4 text-green-500" />}
+                      {suggestion.category === 'timeline' && <Clock className="h-4 w-4 text-orange-500" />}
+                      {suggestion.category === 'quality' && <Users className="h-4 w-4 text-blue-500" />}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-3 space-y-3 bg-gray-50">
-          {messages.map((msg) => (
-            <div 
-              key={msg.id} 
-              className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              {msg.sender === 'revy' && (
-                <div className="flex items-end gap-2 max-w-[90%]">
-                  <RevyAvatar size="xs" />
-                  <div className="bg-white border border-gray-200 p-2 rounded-lg rounded-bl-none shadow-sm text-sm">
-                    <MessageContent msg={msg} />
+        {/* Messages with ScrollArea */}
+        <div className="flex-1 overflow-hidden">
+          <ScrollArea className="h-full">
+            <div className="p-2 space-y-3 bg-gray-50">
+              {messages.map((msg) => (
+                <div 
+                  key={msg.id} 
+                  className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
+                  {msg.sender === 'revy' && (
+                    <div className="flex items-end gap-2 max-w-[90%]">
+                      <RevyAvatar size="xs" />
+                      <div className="bg-white border border-gray-200 p-2 rounded-lg rounded-bl-none shadow-sm text-sm">
+                        <MessageContent msg={msg} />
+                      </div>
+                    </div>
+                  )}
+                  
+                  {msg.sender === 'user' && (
+                    <div className="bg-blue-100 text-blue-900 p-2 rounded-lg rounded-br-none max-w-[90%] text-sm">
+                      {msg.content}
+                    </div>
+                  )}
+                </div>
+              ))}
+              
+              {isTyping && (
+                <div className="flex justify-start">
+                  <div className="flex items-end gap-2 max-w-[90%]">
+                    <RevyAvatar size="xs" />
+                    <div className="bg-white border border-gray-200 p-2 rounded-lg rounded-bl-none shadow-sm text-sm flex items-center gap-2">
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      Analyserer...
+                    </div>
                   </div>
                 </div>
               )}
-              
-              {msg.sender === 'user' && (
-                <div className="bg-blue-100 text-blue-900 p-2 rounded-lg rounded-br-none max-w-[90%] text-sm">
-                  {msg.content}
-                </div>
-              )}
             </div>
-          ))}
-          
-          {isTyping && (
-            <div className="flex justify-start">
-              <div className="flex items-end gap-2 max-w-[90%]">
-                <RevyAvatar size="xs" />
-                <div className="bg-white border border-gray-200 p-2 rounded-lg rounded-bl-none shadow-sm text-sm flex items-center gap-2">
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                  Analyserer...
-                </div>
-              </div>
-            </div>
-          )}
+          </ScrollArea>
         </div>
         
         {/* Input */}
-        <div className="p-2 bg-white border-t">
+        <div className="p-2 bg-white border-t flex-shrink-0">
           <div className="flex gap-1">
             <Input
               value={message}
