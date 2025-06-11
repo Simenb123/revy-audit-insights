@@ -91,10 +91,69 @@ const EnhancedRevyAssistant = ({ embedded = false, clientData, userRole }: Enhan
     };
   }, []);
 
-  const generateProactiveSuggestions = useCallback(() => {
+  // Enhanced proactive suggestions with audit process intelligence
+  const generateProactiveSuggestions = useCallback(async () => {
     const suggestions: ProactiveSuggestion[] = [];
 
-    // Context-based suggestions
+    // Import audit process service
+    const { analyzeAuditProcess } = await import('@/services/revyAuditProcessService');
+
+    try {
+      // Get audit process insights if we have client data
+      if (clientData && clientData.id && !guestMode) {
+        const auditInsights = await analyzeAuditProcess(clientData, userRole);
+        
+        // Generate suggestions based on audit insights
+        if (auditInsights.requiredActions.length > 0) {
+          suggestions.push({
+            id: 'required-action',
+            title: 'Manglende handlinger',
+            description: `${auditInsights.requiredActions.length} påkrevde handlinger mangler`,
+            priority: 'high',
+            category: 'quality',
+            action: `Hjelp meg med å identifisere og planlegge de manglende handlingene: ${auditInsights.requiredActions.join(', ')}`
+          });
+        }
+        
+        if (auditInsights.riskAreas.length > 0) {
+          suggestions.push({
+            id: 'risk-areas',
+            title: 'Risikoområder',
+            description: `${auditInsights.riskAreas.length} risikoområder krever oppmerksomhet`,
+            priority: 'high',
+            category: 'risk',
+            action: `Gi meg veiledning om risikoområdene: ${auditInsights.riskAreas.join(', ')}`
+          });
+        }
+        
+        if (auditInsights.completionRate < 50) {
+          suggestions.push({
+            id: 'progress',
+            title: 'Fremdrift',
+            description: `Kun ${auditInsights.completionRate}% fullført - trenger optimalisering`,
+            priority: 'medium',
+            category: 'timeline',
+            action: `Hjelp meg med å forbedre fremdriften på revisjonen. Gjeldende status er ${auditInsights.completionRate}% fullført`
+          });
+        }
+        
+        // Add next steps as suggestions
+        if (auditInsights.nextSteps.length > 0) {
+          suggestions.push({
+            id: 'next-steps',
+            title: 'Neste steg',
+            description: auditInsights.nextSteps[0],
+            priority: 'medium',
+            category: 'efficiency',
+            action: `Gi meg detaljert veiledning om: ${auditInsights.nextSteps[0]}`
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error generating audit process suggestions:', error);
+    }
+
+    // Keep existing context-based suggestions as fallback
     if (currentContext === 'risk-assessment') {
       suggestions.push({
         id: 'risk-1',
@@ -128,19 +187,29 @@ const EnhancedRevyAssistant = ({ embedded = false, clientData, userRole }: Enhan
       }
     }
 
-    // Role-based suggestions
+    // Role-based suggestions with audit process focus
     if (userRole === 'partner') {
       suggestions.push({
         id: 'partner-1',
-        title: 'Porteføljeanalyse',
-        description: 'Generer en oversikt over klientporteføljens samlede risiko',
+        title: 'Strategisk review',
+        description: 'Gjennomfør strategisk review av revisjonstilnærming og kvalitet',
         priority: 'medium',
-        category: 'risk'
+        category: 'quality',
+        action: 'Gi meg en sjekkliste for strategisk review av revisjonsoppdraget'
+      });
+    } else if (userRole === 'manager') {
+      suggestions.push({
+        id: 'manager-1',
+        title: 'Teamkoordinering',
+        description: 'Optimaliser teamressurser og fremdriftsoppfølging',
+        priority: 'medium',
+        category: 'efficiency',
+        action: 'Hjelp meg med å koordinere teamet og overvåke revisjonsfremdrift'
       });
     }
 
     setProactiveSuggestions(suggestions.slice(0, 3)); // Limit to 3 suggestions
-  }, [currentContext, clientData, userRole]);
+  }, [currentContext, clientData, userRole, guestMode]);
 
   const handleSendMessage = async (messageText?: string) => {
     const textToSend = messageText || message;
@@ -160,13 +229,18 @@ const EnhancedRevyAssistant = ({ embedded = false, clientData, userRole }: Enhan
     setShowSuggestions(false);
     
     try {
-      console.log('🚀 Sending AI request...', { guestMode });
+      console.log('🚀 Sending enhanced AI request with audit process context...', { guestMode });
       
-      // Enhance the response with actionable content
+      // Enhanced AI response with audit process integration
       const responseText = await generateAIResponse(
         userMessage.content, 
         currentContext,
-        guestMode ? null : clientData, // Don't send client data in guest mode
+        guestMode ? null : {
+          ...clientData,
+          // Add audit-specific context
+          subject_area: extractSubjectArea(userMessage.content),
+          phase: clientData?.phase || 'planning'
+        },
         guestMode ? 'guest' : userRole,
         sessionId
       );
@@ -185,11 +259,14 @@ const EnhancedRevyAssistant = ({ embedded = false, clientData, userRole }: Enhan
       setMessages(prev => [...prev, revyResponse]);
       setRetryCount(0);
       
+      // Regenerate suggestions after interaction
+      setTimeout(generateProactiveSuggestions, 1000);
+      
       // Show success feedback
       if (!embedded) {
         toast({
-          title: guestMode ? "Revy svarte (gjestmodus)" : "Revy svarte",
-          description: guestMode ? "Begrenset funksjonalitet i gjestmodus" : "AI-assistenten ga deg et svar",
+          title: guestMode ? "Revy svarte (gjestmodus)" : "Revy svarte med faglige referanser",
+          description: guestMode ? "Begrenset funksjonalitet i gjestmodus" : "AI-assistenten ga deg et svar med fagstoff og prosessveiledning",
           duration: 2000
         });
       }
@@ -231,6 +308,26 @@ const EnhancedRevyAssistant = ({ embedded = false, clientData, userRole }: Enhan
     } finally {
       setIsTyping(false);
     }
+  };
+
+  const extractSubjectArea = (messageContent: string): string | undefined => {
+    const content = messageContent.toLowerCase();
+    const subjectMappings = {
+      'revenue': ['omsetning', 'inntekt', 'salg'],
+      'expenses': ['kostnader', 'utgifter', 'lønn'],
+      'assets': ['eiendeler', 'anleggsmidler', 'varelager'],
+      'liabilities': ['gjeld', 'forpliktelser'],
+      'equity': ['egenkapital', 'aksjekapital'],
+      'cash': ['kontanter', 'bank', 'likviditet']
+    };
+    
+    for (const [area, keywords] of Object.entries(subjectMappings)) {
+      if (keywords.some(keyword => content.includes(keyword))) {
+        return area;
+      }
+    }
+    
+    return undefined;
   };
 
   const getIntelligentFallback = (error: any, context: string, role: string): string => {

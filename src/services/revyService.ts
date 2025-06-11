@@ -1,5 +1,7 @@
 import { RevyContext, RevyMessage } from '@/types/revio';
 import { supabase } from '@/integrations/supabase/client';
+import { searchRelevantKnowledge, RelevantKnowledge } from './knowledgeIntegrationService';
+import { analyzeAuditProcess, generateContextualRecommendations, getPhaseGuidance } from './revyAuditProcessService';
 
 // Context-aware tips for Revy assistant (fallback hvis AI feiler)
 const contextualTips: Record<string, string[]> = {
@@ -35,7 +37,7 @@ export const getContextualTip = (context: RevyContext): string => {
   return tips[Math.floor(Math.random() * tips.length)];
 };
 
-// Enhanced AI-powered response generation with usage tracking
+// Enhanced AI-powered response generation with knowledge integration
 export const generateAIResponse = async (
   message: string, 
   context: string = 'general',
@@ -44,29 +46,67 @@ export const generateAIResponse = async (
   sessionId?: string
 ): Promise<string> => {
   try {
-    console.log('🔍 Generating enhanced AI response', { 
+    console.log('🔍 Generating enhanced AI response with knowledge integration', { 
       context, 
       hasClientData: !!clientData, 
       userRole,
       messageLength: message.length 
     });
 
-    // Enhanced prompt that encourages actionable responses
+    // Search relevant knowledge base content
+    const relevantKnowledge = await searchRelevantKnowledge(
+      message, 
+      context, 
+      clientData?.subject_area,
+      clientData?.phase
+    );
+
+    // Analyze audit process if client data is available
+    let auditInsights = null;
+    if (clientData && clientData.id) {
+      auditInsights = await analyzeAuditProcess(clientData, userRole);
+    }
+
+    // Get phase-specific guidance
+    let phaseGuidance = null;
+    if (clientData?.phase) {
+      phaseGuidance = await getPhaseGuidance(clientData.phase, clientData.industry);
+    }
+
+    // Generate contextual recommendations
+    let recommendations: string[] = [];
+    if (clientData) {
+      recommendations = await generateContextualRecommendations(
+        message, 
+        clientData, 
+        clientData.phase || 'planning', 
+        userRole
+      );
+    }
+
+    // Build enhanced prompt with knowledge integration
+    const knowledgeContext = buildKnowledgeContext(relevantKnowledge, auditInsights, phaseGuidance);
+    
     const enhancedMessage = `
 ${message}
 
-CONTEXT: Jeg er i ${context}-visningen i Revio-appen.
-${clientData ? `KLIENT: ${clientData.company_name || clientData.name} (${clientData.industry || 'Ukjent bransje'})` : ''}
+CONTEXT: ${context} ${clientData ? `- Klient: ${clientData.company_name || clientData.name}` : ''}
+${clientData?.phase ? `REVISJONSFASE: ${clientData.phase}` : ''}
+${clientData?.industry ? `BRANSJE: ${clientData.industry}` : ''}
 ROLLE: ${userRole}
 
-Vennligst gi et praktisk, handlingsrettet svar som:
-1. Svarer direkte på spørsmålet
-2. Gir konkrete neste steg
-3. Refererer til relevante ISA-standarder når aktuelt
-4. Foreslår spesifikke funksjoner i appen som kan hjelpe
-5. Inkluderer bransje-spesifikke råd hvis relevant
+${knowledgeContext}
 
-Gjør svaret actionable med konkrete forslag til hva jeg kan gjøre videre.`;
+INSTRUKSJONER:
+1. Svar direkte og praktisk på spørsmålet
+2. Referer til relevante fagartikler og ISA-standarder når aktuelt
+3. Gi konkrete neste steg basert på revisjonsfasen
+4. Inkluder bransje-spesifikke råd hvis relevant
+5. Foreslå spesifikke handlinger eller prosedyrer
+6. Vurder risikoaspekter og kvalitetskrav
+7. Tilpass svaret til brukerens rolle og erfaring
+
+Gjør svaret handlingsrettet med konkrete forslag og faglige referanser.`;
 
     const { data, error } = await supabase.functions.invoke('revy-ai-chat', {
       body: {
@@ -75,7 +115,10 @@ Gjør svaret actionable med konkrete forslag til hva jeg kan gjøre videre.`;
         clientData,
         userRole,
         userId: supabase.auth.getUser().then(u => u.data.user?.id),
-        sessionId
+        sessionId,
+        knowledgeContext: relevantKnowledge,
+        auditInsights,
+        recommendations
       }
     });
 
@@ -89,20 +132,135 @@ Gjør svaret actionable med konkrete forslag til hva jeg kan gjøre videre.`;
       return data.response || 'Beklager, jeg kunne ikke behandle forespørselen din akkurat nå.';
     }
 
-    console.log('✅ Enhanced AI response received', { 
+    console.log('✅ Enhanced AI response with knowledge integration received', { 
       responseLength: data.response?.length,
       model: data.model,
-      usage: data.usage 
+      usage: data.usage,
+      knowledgeArticles: relevantKnowledge?.articles?.length || 0,
+      isaStandards: relevantKnowledge?.isaStandards?.length || 0
     });
 
-    return data.response || 'Jeg kunne ikke generere et svar akkurat nå. Prøv igjen senere.';
+    // Enhance response with knowledge references
+    const enhancedResponse = enhanceResponseWithKnowledge(data.response, relevantKnowledge, recommendations);
+
+    return enhancedResponse || 'Jeg kunne ikke generere et svar akkurat nå. Prøv igjen senere.';
 
   } catch (error) {
     console.error('💥 Error in generateAIResponse:', error);
     
-    // Enhanced fallback based on context
-    const contextualFallback = getContextualFallback(context, clientData, userRole);
+    // Enhanced fallback with knowledge integration
+    const contextualFallback = await getEnhancedContextualFallback(context, clientData, userRole, message);
     return contextualFallback;
+  }
+};
+
+// Build knowledge context for AI prompt
+const buildKnowledgeContext = (
+  knowledge: RelevantKnowledge | null,
+  auditInsights: any,
+  phaseGuidance: any
+): string => {
+  let context = '\nTILGJENGELIG KUNNSKAP:\n';
+  
+  if (knowledge?.articles && knowledge.articles.length > 0) {
+    context += '\nRelevante fagartikler:\n';
+    knowledge.articles.slice(0, 3).forEach((result, index) => {
+      context += `${index + 1}. "${result.article.title}": ${result.article.summary || 'Ingen sammendrag'}\n`;
+    });
+  }
+  
+  if (knowledge?.isaStandards && knowledge.isaStandards.length > 0) {
+    context += `\nRelevante ISA-standarder: ${knowledge.isaStandards.join(', ')}\n`;
+  }
+  
+  if (knowledge?.procedures && knowledge.procedures.length > 0) {
+    context += '\nForeslåtte prosedyrer:\n';
+    knowledge.procedures.slice(0, 3).forEach((proc, index) => {
+      context += `- ${proc}\n`;
+    });
+  }
+  
+  if (auditInsights) {
+    context += `\nREVISJONSSTATUS:\n`;
+    context += `- Gjeldende fase: ${auditInsights.currentPhase}\n`;
+    context += `- Fremdrift: ${auditInsights.completionRate}%\n`;
+    if (auditInsights.riskAreas.length > 0) {
+      context += `- Risikoområder: ${auditInsights.riskAreas.join(', ')}\n`;
+    }
+  }
+  
+  if (phaseGuidance) {
+    context += `\nFASEVEILEDNING (${phaseGuidance.phaseDescription}):\n`;
+    context += `Hovedmål: ${phaseGuidance.keyObjectives.slice(0, 2).join(', ')}\n`;
+  }
+  
+  return context;
+};
+
+// Enhance AI response with knowledge references and links
+const enhanceResponseWithKnowledge = (
+  response: string,
+  knowledge: RelevantKnowledge | null,
+  recommendations: string[]
+): string => {
+  let enhancedResponse = response;
+  
+  // Add knowledge references
+  if (knowledge?.articles && knowledge.articles.length > 0) {
+    enhancedResponse += '\n\n📚 **Relevante ressurser:**\n';
+    knowledge.articles.slice(0, 2).forEach(result => {
+      enhancedResponse += `• ${result.article.title}\n`;
+    });
+  }
+  
+  // Add ISA references
+  if (knowledge?.isaStandards && knowledge.isaStandards.length > 0) {
+    enhancedResponse += `\n📋 **ISA-standarder:** ${knowledge.isaStandards.slice(0, 3).join(', ')}\n`;
+  }
+  
+  // Add recommendations
+  if (recommendations.length > 0) {
+    enhancedResponse += '\n💡 **Anbefalinger:**\n';
+    recommendations.slice(0, 3).forEach(rec => {
+      enhancedResponse += `• ${rec}\n`;
+    });
+  }
+  
+  return enhancedResponse;
+};
+
+// Enhanced contextual fallback with knowledge integration
+const getEnhancedContextualFallback = async (
+  context: string, 
+  clientData?: any, 
+  userRole: string = 'employee',
+  originalQuery: string = ''
+): Promise<string> => {
+  try {
+    // Try to get some knowledge even in fallback mode
+    const knowledge = await searchRelevantKnowledge(originalQuery, context);
+    
+    let fallback = getContextualFallback(context, clientData, userRole);
+    
+    // Add knowledge-based suggestions to fallback
+    if (knowledge?.articles && knowledge.articles.length > 0) {
+      fallback += '\n\nBasert på fagstoffet kan du:';
+      knowledge.articles.slice(0, 2).forEach(result => {
+        fallback += `\n• Les "${result.article.title}" for mer informasjon`;
+      });
+    }
+    
+    if (knowledge?.procedures && knowledge.procedures.length > 0) {
+      fallback += '\n\nRelevante prosedyrer:';
+      knowledge.procedures.slice(0, 2).forEach(proc => {
+        fallback += `\n• ${proc}`;
+      });
+    }
+    
+    return fallback;
+  } catch (error) {
+    console.error('Error in enhanced fallback:', error);
+    return getContextualFallback(context, clientData, userRole);
   }
 };
 
@@ -152,7 +310,7 @@ Prøv igjen om litt, eller kontakt support hvis problemet vedvarer.`
     userRole === 'manager' ? 
     '\n\nSom manager: Sørg for at teamet følger prosedyrer og kvalitetsstandarder.' :
     '\n\nKontakt din manager for ytterligere veiledning ved behov.';
-
+  
   return (fallbacks[context as keyof typeof fallbacks] || fallbacks.general) + roleSpecific;
 };
 
