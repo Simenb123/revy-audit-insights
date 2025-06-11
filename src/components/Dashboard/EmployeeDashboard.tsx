@@ -10,16 +10,16 @@ import FinancialRatios from './Widgets/FinancialRatios';
 
 const EmployeeDashboard = () => {
   return (
-    <div className="space-y-6">
+    <div className="w-full h-full space-y-4">
       {/* Real-time KPIs */}
       <RealTimeKPIs />
       
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Main work area */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-4">
           <PersonalizedWorkQueue />
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <ProjectCard />
             
             <Card>
@@ -41,14 +41,14 @@ const EmployeeDashboard = () => {
             </Card>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <RevenueAnalysis />
             <FinancialRatios />
           </div>
         </div>
         
         {/* Sidebar */}
-        <div className="space-y-6">
+        <div className="space-y-4">
           <IntelligentNotifications />
           
           <Card>

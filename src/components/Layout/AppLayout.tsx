@@ -31,7 +31,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
             <SidebarInset className="flex-1 min-h-[calc(100vh-3.5rem)]">
               <div className="flex w-full h-full">
                 {/* Main content - takes remaining space after right sidebar */}
-                <main className={`flex-1 overflow-auto p-6 transition-all duration-300 ${
+                <main className={`flex-1 overflow-auto p-4 transition-all duration-300 ${
                   isRightSidebarCollapsed ? 'mr-0' : 'mr-80'
                 }`}>
                   {children}
