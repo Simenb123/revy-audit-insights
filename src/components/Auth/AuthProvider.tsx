@@ -6,9 +6,18 @@ import { supabase } from '@/integrations/supabase/client';
 interface AuthContextType {
   session: Session | null;
   user: User | null;
+  isLoading: boolean;
+  signOut: () => Promise<void>;
+  refreshSession: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType>({ session: null, user: null });
+const AuthContext = createContext<AuthContextType>({ 
+  session: null, 
+  user: null, 
+  isLoading: true,
+  signOut: async () => {},
+  refreshSession: async () => {}
+});
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -21,27 +30,63 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const refreshSession = async () => {
+    try {
+      const { data: { session }, error } = await supabase.auth.refreshSession();
+      if (error) {
+        console.error('Error refreshing session:', error);
+      } else {
+        setSession(session);
+        setUser(session?.user ?? null);
+      }
+    } catch (error) {
+      console.error('Failed to refresh session:', error);
+    }
+  };
+
+  const signOut = async () => {
+    try {
+      await supabase.auth.signOut();
+      setSession(null);
+      setUser(null);
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
 
   useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.id);
         setSession(session);
         setUser(session?.user ?? null);
+        setIsLoading(false);
+        
+        // Auto-refresh session if it's about to expire
+        if (session && event === 'SIGNED_IN') {
+          setTimeout(refreshSession, 1000 * 60 * 50); // Refresh 10 minutes before expiry
+        }
       }
     );
 
     // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) {
+        console.error('Error getting session:', error);
+      }
       setSession(session);
       setUser(session?.user ?? null);
+      setIsLoading(false);
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
   return (
-    <AuthContext.Provider value={{ session, user }}>
+    <AuthContext.Provider value={{ session, user, isLoading, signOut, refreshSession }}>
       {children}
     </AuthContext.Provider>
   );

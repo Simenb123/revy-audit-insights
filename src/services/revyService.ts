@@ -1,4 +1,3 @@
-
 import { RevyContext, RevyMessage } from '@/types/revio';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -38,53 +37,74 @@ export const getContextualTip = (context: RevyContext): string => {
 
 // Enhanced AI-powered response generation with usage tracking
 export const generateAIResponse = async (
-  userMessage: string, 
-  context: RevyContext,
+  message: string,
+  context: string = 'general',
   clientData?: any,
   userRole?: string,
   sessionId?: string
 ): Promise<string> => {
   try {
-    console.log('Generating enhanced AI response for:', { userMessage, context, userRole });
+    console.log('🚀 Generating AI response...');
     
-    // Get current user
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      throw new Error('User not authenticated');
-    }
-
-    const requestSessionId = sessionId || crypto.randomUUID();
+    // Get current session but don't fail if not authenticated
+    const { data: { session } } = await supabase.auth.getSession();
+    const userId = session?.user?.id;
+    
+    console.log('📋 AI Request details:', { 
+      hasAuth: !!userId,
+      context, 
+      userRole,
+      hasClientData: !!clientData 
+    });
 
     const { data, error } = await supabase.functions.invoke('revy-ai-chat', {
       body: {
-        message: userMessage,
-        context: context,
-        clientData: clientData,
-        userRole: userRole || 'employee',
-        userId: user.id,
-        sessionId: requestSessionId
+        message,
+        context,
+        clientData,
+        userRole,
+        userId, // May be null for guest users
+        sessionId
       }
     });
 
     if (error) {
-      console.error('Supabase function error:', error);
-      throw error;
+      console.error('💥 Supabase function error:', error);
+      throw new Error(`AI service error: ${error.message}`);
     }
 
-    if (data?.response) {
-      console.log('Enhanced AI response received successfully', {
-        usage: data.usage,
-        context: data.context
-      });
-      return data.response;
-    } else {
-      throw new Error('No response from AI');
+    if (data.error) {
+      console.error('💥 AI function returned error:', data.error);
+      // Return the fallback response if provided
+      return data.response || getLocalFallbackResponse(context, userRole);
     }
+
+    console.log('✅ AI response received successfully');
+    return data.response;
+    
   } catch (error) {
-    console.error('Error generating AI response:', error);
-    // Fallback to contextual tips
-    return getContextualTip(context);
+    console.error('💥 Error in generateAIResponse:', error);
+    return getLocalFallbackResponse(context, userRole);
   }
+};
+
+// Local fallback for when AI service is unavailable
+const getLocalFallbackResponse = (context: string, userRole?: string): string => {
+  const fallbacks = {
+    'risk-assessment': 'Jeg har tekniske problemer, men her er noen generelle tips for risikovurdering: Start med å identifisere klientens bransje og nøkkelrisikoer. Vurder materialitetsnivå basert på størrelse og kompleksitet. Se ISA 315 for detaljerte retningslinjer.',
+    'documentation': 'Tekniske problemer oppstått. For dokumentasjon, husk: ISA 230 krever at all dokumentasjon skal være tilstrekkelig og hensiktsmessig for å støtte revisjonskonklusjoner. Strukturer arbeidspapirene logisk og inkluder alle vesentlige vurderinger.',
+    'client-detail': 'Midlertidig feil. For klientanalyse, se på nøkkeltall som omsetningsvekst, lønnsomhet og likviditet. Sammenlign med bransjegjennomsnitt og vurder trender over tid.',
+    'collaboration': 'Teknisk feil. For teamarbeid: Sørg for klar rollefordeling, regelmessig kommunikasjon og dokumenterte beslutninger. Bruk standardiserte maler for konsistens.',
+    'general': 'Jeg opplever tekniske problemer, men jeg er her for å hjelpe! Prøv igjen om litt, eller still spørsmål om revisjonsarbeid så skal jeg gjøre mitt beste for å hjelpe deg.'
+  };
+  
+  const roleSpecific = userRole === 'partner' ? 
+    ' Som partner bør du også vurdere klientporteføljens samlede risiko og strategiske implikasjoner.' :
+    userRole === 'manager' ? 
+    ' Som manager, sørg for at teamet følger etablerte prosedyrer og kvalitetsstandarder.' :
+    ' Kontakt din manager hvis du trenger ytterligere veiledning eller støtte.';
+  
+  return (fallbacks[context as keyof typeof fallbacks] || fallbacks.general) + roleSpecific;
 };
 
 // Legacy function for backwards compatibility
@@ -95,9 +115,22 @@ export const generateResponse = (userMessage: string, context: RevyContext): str
 // New function to fetch AI usage statistics
 export const getAIUsageStats = async (timeframe: 'day' | 'week' | 'month' = 'week') => {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      throw new Error('User not authenticated');
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session?.user?.id) {
+      console.log('No authenticated user for AI usage stats');
+      // Return empty stats instead of throwing error
+      return {
+        logs: [],
+        summary: {
+          totalRequests: 0,
+          totalTokens: 0,
+          totalCost: 0,
+          avgResponseTime: 0,
+          modelUsage: {},
+          contextUsage: {}
+        }
+      };
     }
 
     let dateFilter = new Date();
@@ -128,7 +161,7 @@ export const getAIUsageStats = async (timeframe: 'day' | 'week' | 'month' = 'wee
         response_time_ms,
         created_at
       `)
-      .eq('user_id', user.id)
+      .eq('user_id', session?.user?.id)
       .gte('created_at', dateFilter.toISOString())
       .order('created_at', { ascending: false });
 
@@ -161,16 +194,40 @@ export const getAIUsageStats = async (timeframe: 'day' | 'week' | 'month' = 'wee
     };
   } catch (error) {
     console.error('Error in getAIUsageStats:', error);
-    return null;
+    // Return empty stats on error
+    return {
+      logs: [],
+      summary: {
+        totalRequests: 0,
+        totalTokens: 0,
+        totalCost: 0,
+        avgResponseTime: 0,
+        modelUsage: {},
+        contextUsage: {}
+      }
+    };
   }
 };
 
 // Function to get firm-wide usage stats (for admins)
 export const getFirmAIUsageStats = async (timeframe: 'day' | 'week' | 'month' = 'week') => {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      throw new Error('User not authenticated');
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session?.user?.id) {
+      console.log('No authenticated user for AI usage stats');
+      // Return empty stats instead of throwing error
+      return {
+        logs: [],
+        summary: {
+          totalRequests: 0,
+          totalTokens: 0,
+          totalCost: 0,
+          avgResponseTime: 0,
+          modelUsage: {},
+          contextUsage: {}
+        }
+      };
     }
 
     let dateFilter = new Date();

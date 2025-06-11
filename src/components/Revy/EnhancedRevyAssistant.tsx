@@ -19,6 +19,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useRevyContext } from '../RevyContext/RevyContextProvider';
 import { generateAIResponse, getContextualTip } from '@/services/revyService';
 import { RevyMessage } from '@/types/revio';
+import { useAuth } from '@/hooks/use-auth';
 
 interface EnhancedRevyAssistantProps {
   embedded?: boolean;
@@ -45,17 +46,29 @@ const EnhancedRevyAssistant = ({ embedded = false, clientData, userRole }: Enhan
   const [sessionId] = useState(() => crypto.randomUUID());
   const [proactiveSuggestions, setProactiveSuggestions] = useState<ProactiveSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(true);
-  const [messages, setMessages] = useState<RevyMessage[]>([
-    {
-      id: '1',
-      content: 'Hei! Jeg er Revy, din forbedrede AI-revisjonsassistent. Jeg har nå tilgang til utvidet fagstoff, klientdata og kan gi proaktive forslag. Hvordan kan jeg hjelpe deg i dag?',
-      timestamp: new Date().toISOString(),
-      sender: 'revy'
-    }
-  ]);
+  const [guestMode, setGuestMode] = useState(false);
+  const [messages, setMessages] = useState<RevyMessage[]>([]);
   const { toast } = useToast();
   const { currentContext } = useRevyContext();
-  
+  const { session, user } = useAuth();
+
+  // Initialize with appropriate welcome message
+  useEffect(() => {
+    const isGuest = !session?.user?.id;
+    setGuestMode(isGuest);
+    
+    const welcomeMessage = isGuest 
+      ? 'Hei! Jeg er Revy, din AI-revisjonsassistent. Du bruker gjestmodus med begrenset funksjonalitet. Logg inn for full tilgang til alle funksjoner!'
+      : 'Hei! Jeg er Revy, din forbedrede AI-revisjonsassistent. Jeg har tilgang til utvidet fagstoff, klientdata og kan gi proaktive forslag. Hvordan kan jeg hjelpe deg i dag?';
+
+    setMessages([{
+      id: '1',
+      content: welcomeMessage,
+      timestamp: new Date().toISOString(),
+      sender: 'revy'
+    }]);
+  }, [session]);
+
   // Generate proactive suggestions based on context and client data
   useEffect(() => {
     generateProactiveSuggestions();
@@ -144,14 +157,14 @@ const EnhancedRevyAssistant = ({ embedded = false, clientData, userRole }: Enhan
     setShowSuggestions(false);
     
     try {
-      console.log('🚀 Sending enhanced AI request...');
+      console.log('🚀 Sending AI request...', { guestMode });
       
-      // Enhanced AI response with better error handling
+      // Enhanced AI response with guest mode support
       const responseText = await generateAIResponse(
         userMessage.content, 
         currentContext,
-        clientData,
-        userRole,
+        guestMode ? null : clientData, // Don't send client data in guest mode
+        guestMode ? 'guest' : userRole,
         sessionId
       );
       
@@ -163,13 +176,13 @@ const EnhancedRevyAssistant = ({ embedded = false, clientData, userRole }: Enhan
       };
       
       setMessages(prev => [...prev, revyResponse]);
-      setRetryCount(0); // Reset retry count on success
+      setRetryCount(0);
       
       // Show success feedback
       if (!embedded) {
         toast({
-          title: "Revy svarte",
-          description: "AI-assistenten ga deg et svar",
+          title: guestMode ? "Revy svarte (gjestmodus)" : "Revy svarte",
+          description: guestMode ? "Begrenset funksjonalitet i gjestmodus" : "AI-assistenten ga deg et svar",
           duration: 2000
         });
       }
@@ -177,8 +190,8 @@ const EnhancedRevyAssistant = ({ embedded = false, clientData, userRole }: Enhan
     } catch (error) {
       console.error('💥 Error getting AI response:', error);
       
-      // Enhanced error handling with retry logic
-      if (retryCount < 2 && isOnline) {
+      // Enhanced error handling with retry logic (only if not in guest mode)
+      if (retryCount < 2 && isOnline && !guestMode) {
         setRetryCount(prev => prev + 1);
         toast({
           title: "Prøver på nytt...",
@@ -194,7 +207,7 @@ const EnhancedRevyAssistant = ({ embedded = false, clientData, userRole }: Enhan
       // Intelligent fallback response
       const fallbackResponse: RevyMessage = {
         id: (Date.now() + 1).toString(),
-        content: getIntelligentFallback(error, currentContext, userRole),
+        content: getIntelligentFallback(error, currentContext, guestMode ? 'guest' : userRole),
         timestamp: new Date().toISOString(),
         sender: 'revy'
       };
@@ -203,9 +216,9 @@ const EnhancedRevyAssistant = ({ embedded = false, clientData, userRole }: Enhan
       setRetryCount(0);
       
       toast({
-        title: "AI-feil",
-        description: "Bruker fallback-respons. Prøv igjen senere.",
-        variant: "destructive",
+        title: guestMode ? "Gjestmodus-begrensning" : "AI-feil",
+        description: guestMode ? "Logg inn for bedre funksjonalitet" : "Bruker fallback-respons. Prøv igjen senere.",
+        variant: guestMode ? "default" : "destructive",
         duration: 5000
       });
     } finally {
@@ -214,6 +227,10 @@ const EnhancedRevyAssistant = ({ embedded = false, clientData, userRole }: Enhan
   };
 
   const getIntelligentFallback = (error: any, context: string, role: string): string => {
+    if (role === 'guest') {
+      return 'Som gjest har du begrenset tilgang til AI-assistenten. Logg inn for full funksjonalitet og tilgang til personaliserte svar basert på dine klienter og prosjekter.';
+    }
+
     const fallbacks = {
       'risk-assessment': 'Jeg har tekniske problemer, men her er noen generelle tips for risikovurdering: Start med å identifisere klientens bransje og nøkkelrisikoer. Vurder materialitetsnivå basert på størrelse og kompleksitet. Se ISA 315 for detaljerte retningslinjer.',
       'documentation': 'Tekniske problemer oppstått. For dokumentasjon, husk: ISA 230 krever at all dokumentasjon skal være tilstrekkelig og hensiktsmessig for å støtte revisjonskonklusjoner. Strukturer arbeidspapirene logisk og inkluder alle vesentlige vurderinger.',
@@ -253,9 +270,15 @@ const EnhancedRevyAssistant = ({ embedded = false, clientData, userRole }: Enhan
 
   // Connection status indicator
   const ConnectionStatus = () => (
-    <div className={`flex items-center gap-1 text-xs ${isOnline ? 'text-green-600' : 'text-red-600'}`}>
-      <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-green-500' : 'bg-red-500'}`}></div>
-      {isOnline ? 'Online' : 'Offline'}
+    <div className={`flex items-center gap-1 text-xs ${
+      guestMode ? 'text-orange-600' : 
+      isOnline ? 'text-green-600' : 'text-red-600'
+    }`}>
+      <div className={`w-2 h-2 rounded-full ${
+        guestMode ? 'bg-orange-500' : 
+        isOnline ? 'bg-green-500' : 'bg-red-500'
+      }`}></div>
+      {guestMode ? 'Gjest' : isOnline ? 'Online' : 'Offline'}
     </div>
   );
 

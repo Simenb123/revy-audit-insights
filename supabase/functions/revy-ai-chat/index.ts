@@ -1,4 +1,3 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
@@ -32,28 +31,40 @@ serve(async (req) => {
       message: message.substring(0, 50) + '...', 
       context, 
       userRole, 
-      userId: userId?.substring(0, 8) + '...',
+      userId: userId?.substring(0, 8) + '...' || 'guest',
       hasClientData: !!clientData 
     });
 
+    // Handle guest mode gracefully
+    const isGuestMode = !userId;
+    if (isGuestMode) {
+      console.log('👤 Guest mode detected - providing limited functionality');
+    }
+
     const startTime = Date.now();
 
-    // Enhanced context building with better error handling
-    const enhancedContext = await buildEnhancedContext(message, context, clientData);
+    // Enhanced context building with guest mode support
+    const enhancedContext = await buildEnhancedContext(
+      message, 
+      context, 
+      isGuestMode ? null : clientData
+    );
     console.log('🧠 Enhanced context built:', { 
       hasKnowledge: !!enhancedContext.knowledge,
-      hasClientContext: !!enhancedContext.clientContext 
+      hasClientContext: !!enhancedContext.clientContext,
+      isGuestMode
     });
 
-    // Select appropriate model based on complexity
-    const model = selectOptimalModel(message, context);
+    // Select appropriate model based on complexity (simpler for guests)
+    const model = selectOptimalModel(message, context, isGuestMode);
     console.log('🎯 Selected model:', model);
 
     const systemPrompt = buildIntelligentSystemPrompt(
       context, 
-      clientData, 
+      isGuestMode ? null : clientData, 
       userRole, 
-      enhancedContext
+      enhancedContext,
+      isGuestMode
     );
 
     console.log('🚀 Calling OpenAI API...');
@@ -69,8 +80,8 @@ serve(async (req) => {
           { role: 'system', content: systemPrompt },
           { role: 'user', content: message }
         ],
-        temperature: 0.7,
-        max_tokens: model === 'gpt-4o' ? 2000 : 1000,
+        temperature: isGuestMode ? 0.5 : 0.7, // More consistent responses for guests
+        max_tokens: isGuestMode ? 500 : (model === 'gpt-4o' ? 2000 : 1000),
       }),
     });
 
@@ -89,10 +100,11 @@ serve(async (req) => {
     console.log('✅ AI response generated:', { 
       responseLength: aiResponse?.length,
       usage,
-      responseTime: `${responseTime}ms`
+      responseTime: `${responseTime}ms`,
+      isGuestMode
     });
 
-    // Enhanced usage logging with better error handling
+    // Enhanced usage logging (only for authenticated users)
     if (userId && usage) {
       try {
         await logAIUsageEnhanced({
@@ -111,6 +123,8 @@ serve(async (req) => {
       } catch (logError) {
         console.error('⚠️ Failed to log usage (non-critical):', logError);
       }
+    } else if (isGuestMode) {
+      console.log('📊 Guest mode - usage not logged');
     }
 
     return new Response(JSON.stringify({ 
@@ -118,7 +132,8 @@ serve(async (req) => {
       context: context,
       usage: usage,
       model: model,
-      responseTime: responseTime
+      responseTime: responseTime,
+      isGuestMode
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
@@ -126,7 +141,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('💥 Error in revy-ai-chat function:', error);
     
-    // Enhanced error logging
+    // Enhanced error logging for authenticated users
     try {
       const { userId, sessionId, context, clientData } = await req.json();
       if (userId) {
@@ -148,7 +163,7 @@ serve(async (req) => {
       console.error('Failed to log error:', logError);
     }
 
-    // Intelligent fallback responses based on context
+    // Intelligent fallback responses based on context and authentication
     const fallbackResponse = getIntelligentFallback(await req.json().catch(() => ({})));
 
     return new Response(JSON.stringify({ 
@@ -291,7 +306,12 @@ function extractIntelligentKeywords(message: string, context: string): string[] 
 }
 
 // Optimal model selection based on complexity
-function selectOptimalModel(message: string, context: string): string {
+function selectOptimalModel(message: string, context: string, isGuestMode = false): string {
+  // Always use mini model for guests to reduce costs
+  if (isGuestMode) {
+    return 'gpt-4o-mini';
+  }
+
   const complexContexts = ['risk-assessment', 'documentation', 'client-detail'];
   const longMessage = message.length > 200;
   const complexTerms = ['analyse', 'vurder', 'beregn', 'sammenlikn', 'konkluder'];
@@ -385,9 +405,10 @@ function buildIntelligentSystemPrompt(
   context: string, 
   clientData: any, 
   userRole: string,
-  enhancedContext: any
+  enhancedContext: any,
+  isGuestMode = false
 ): string {
-  const basePrompt = `Du er Revy, en ekspert AI-revisjonsassistent for norske revisorer. Du har dyp kunnskap om:
+  let basePrompt = `Du er Revy, en ekspert AI-revisjonsassistent for norske revisorer. Du har dyp kunnskap om:
 - Norsk regnskapslovgivning og standarder (Regnskapsloven, NGRS, IFRS)
 - ISA (International Standards on Auditing) - alle standarder
 - Risikovurdering og revisjonsmetodikk
@@ -397,6 +418,10 @@ function buildIntelligentSystemPrompt(
 - Praktisk revisjonsarbeid og dokumentasjon
 
 Du kommuniserer alltid på norsk og er vennlig, profesjonell og præsis. Dine svar skal være konkrete og handlingsrettede.`;
+
+  if (isGuestMode) {
+    basePrompt += `\n\nVIKTIG: Brukeren er i gjestmodus og har begrenset tilgang. Gi generelle råd og veiledning, men nevn at full funksjonalitet krever innlogging. Hold svarene enkle og praktiske.`;
+  }
 
   let contextPrompt = '';
   let knowledgePrompt = '';
@@ -471,7 +496,9 @@ Du kommuniserer alltid på norsk og er vennlig, profesjonell og præsis. Dine sv
 - Dokumentasjon, rapportering og oppfølging
 - Praktiske utfordringer i revisjonsarbeid`;
 
-  const roleContext = userRole === 'partner' 
+  const roleContext = isGuestMode
+    ? '\nBrukeren er gjest og har begrenset tilgang. Gi generelle, praktiske råd om revisjonsarbeid uten tilgang til spesifikke klientdata.'
+    : userRole === 'partner' 
     ? '\nBrukeren er partner og trenger høynivå strategisk veiledning om klientportefølje, risikostyring og forretningsutvikling. Fokuser på ledelsesperspektiv og beslutningsstøtte.'
     : userRole === 'manager'
     ? '\nBrukeren er manager og fokuserer på prosjektledelse, kvalitetssikring og teamkoordinering. Gi praktiske ledelses- og koordineringsråd.'
@@ -479,7 +506,7 @@ Du kommuniserer alltid på norsk og er vennlig, profesjonell og præsis. Dine sv
 
   return `${basePrompt}${knowledgePrompt}${clientPrompt}${proactivePrompt}${contextPrompt}${roleContext}
 
-VIKTIG: Gi alltid konkrete, handlingsrettede råd. Referer til relevante ISA-standarder når det er aktuelt. Hvis du bruker fagstoff fra kunnskapsbasen, nevn det kort. Hold svarene fokuserte og praktiske. Vær proaktiv med forslag basert på klientdata og kontekst.`;
+VIKTIG: Gi alltid konkrete, handlingsrettede råd. Referer til relevante ISA-standarder når det er aktuelt. Hold svarene fokuserte og praktiske. ${isGuestMode ? 'Nevn gjerne at innlogging gir tilgang til mer avanserte funksjoner.' : 'Vær proaktiv med forslag basert på klientdata og kontekst.'}`;
 }
 
 // Proactive insights based on client data
