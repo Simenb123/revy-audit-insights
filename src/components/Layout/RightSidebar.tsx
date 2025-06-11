@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,9 +18,11 @@ import { useLocation } from 'react-router-dom';
 interface RightSidebarProps {
   isCollapsed: boolean;
   onToggle: () => void;
+  clientData?: any;
+  userRole?: string;
 }
 
-const RightSidebar = ({ isCollapsed, onToggle }: RightSidebarProps) => {
+const RightSidebar = ({ isCollapsed, onToggle, clientData, userRole }: RightSidebarProps) => {
   const location = useLocation();
   const [activeTab, setActiveTab] = useState('revy');
 
@@ -72,7 +73,11 @@ const RightSidebar = ({ isCollapsed, onToggle }: RightSidebarProps) => {
           <div className="flex-1 overflow-auto p-4">
             <TabsContent value="revy" className="h-full m-0">
               <div className="h-full">
-                <RevyAssistant embedded={true} />
+                <RevyAssistant 
+                  embedded={true} 
+                  clientData={clientData}
+                  userRole={userRole}
+                />
               </div>
             </TabsContent>
             
