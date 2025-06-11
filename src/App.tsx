@@ -45,7 +45,7 @@ function App() {
                     <Route index element={<Index />} />
                     <Route path="dashboard" element={<NavigationDashboard />} />
                     <Route path="klienter" element={<ClientsOverview />} />
-                    <Route path="klienter/:id" element={<ClientDetail />} />
+                    <Route path="klienter/:orgNumber/*" element={<ClientDetail />} />
                     <Route path="client-admin" element={<ClientAdmin />} />
                     <Route path="data-import" element={<DataImport />} />
                     <Route path="accounting-data" element={<AccountingData />} />
