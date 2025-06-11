@@ -11,7 +11,7 @@ import {
   FileText, 
   Plus, 
   ArrowLeft,
-  Workspace,
+  Building2,
   Calendar,
   Bell
 } from 'lucide-react';
@@ -160,7 +160,7 @@ const Collaboration = () => {
       <Tabs defaultValue="workspaces" className="w-full">
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="workspaces" className="flex items-center gap-2">
-            <Workspace className="h-4 w-4" />
+            <Building2 className="h-4 w-4" />
             Arbeidsområder
           </TabsTrigger>
           <TabsTrigger value="meetings" className="flex items-center gap-2">
