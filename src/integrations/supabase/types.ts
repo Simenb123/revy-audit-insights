@@ -454,6 +454,8 @@ export type Database = {
           client_id: string
           completed_at: string | null
           conclusion: string | null
+          copied_from_action_id: string | null
+          copied_from_client_id: string | null
           created_at: string
           description: string | null
           documentation_requirements: string | null
@@ -482,6 +484,8 @@ export type Database = {
           client_id: string
           completed_at?: string | null
           conclusion?: string | null
+          copied_from_action_id?: string | null
+          copied_from_client_id?: string | null
           created_at?: string
           description?: string | null
           documentation_requirements?: string | null
@@ -510,6 +514,8 @@ export type Database = {
           client_id?: string
           completed_at?: string | null
           conclusion?: string | null
+          copied_from_action_id?: string | null
+          copied_from_client_id?: string | null
           created_at?: string
           description?: string | null
           documentation_requirements?: string | null
@@ -535,6 +541,20 @@ export type Database = {
           {
             foreignKeyName: "client_audit_actions_client_id_fkey"
             columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_audit_actions_copied_from_action_id_fkey"
+            columns: ["copied_from_action_id"]
+            isOneToOne: false
+            referencedRelation: "client_audit_actions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_audit_actions_copied_from_client_id_fkey"
+            columns: ["copied_from_client_id"]
             isOneToOne: false
             referencedRelation: "clients"
             referencedColumns: ["id"]

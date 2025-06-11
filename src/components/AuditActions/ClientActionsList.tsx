@@ -1,168 +1,157 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { 
-  ClientAuditAction, 
-  AuditSubjectArea, 
-  ACTION_TYPE_LABELS,
-  ACTION_STATUS_LABELS 
-} from '@/types/audit-actions';
-import { CheckCircle, Clock, AlertCircle, User } from 'lucide-react';
+import { Search, Plus, Filter } from 'lucide-react';
+import { ClientAuditAction, AuditSubjectArea } from '@/types/audit-actions';
+import ActionStatusBadge from './ActionStatusBadge';
+import ActionQuickActions from './ActionQuickActions';
+import ActionProgressIndicator from './ActionProgressIndicator';
 
 interface ClientActionsListProps {
   actions: ClientAuditAction[];
   selectedArea: AuditSubjectArea;
-  onActionUpdate?: (action: ClientAuditAction) => void;
 }
 
-const ClientActionsList = ({ actions, selectedArea, onActionUpdate }: ClientActionsListProps) => {
-  const filteredActions = actions.filter(a => a.subject_area === selectedArea);
+const ClientActionsList = ({ actions, selectedArea }: ClientActionsListProps) => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'completed': return <CheckCircle className="w-4 h-4 text-green-600" />;
-      case 'in_progress': return <Clock className="w-4 h-4 text-blue-600" />;
-      case 'not_started': return <AlertCircle className="w-4 h-4 text-gray-400" />;
-      case 'reviewed': return <CheckCircle className="w-4 h-4 text-purple-600" />;
-      case 'approved': return <CheckCircle className="w-4 h-4 text-green-700" />;
-      default: return <AlertCircle className="w-4 h-4 text-gray-400" />;
-    }
-  };
+  // Filter actions by selected area, search term, and status
+  const filteredActions = actions.filter(action => {
+    const matchesArea = action.subject_area === selectedArea;
+    const matchesSearch = action.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         action.description?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || action.status === statusFilter;
+    
+    return matchesArea && matchesSearch && matchesStatus;
+  });
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed': return 'bg-green-100 text-green-800';
-      case 'in_progress': return 'bg-blue-100 text-blue-800';
-      case 'not_started': return 'bg-gray-100 text-gray-800';
-      case 'reviewed': return 'bg-purple-100 text-purple-800';
-      case 'approved': return 'bg-green-100 text-green-900';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const calculateProgress = () => {
-    if (filteredActions.length === 0) return 0;
-    const completedActions = filteredActions.filter(a => 
-      ['completed', 'reviewed', 'approved'].includes(a.status)
-    ).length;
-    return (completedActions / filteredActions.length) * 100;
-  };
+  const statusOptions = [
+    { value: 'all', label: 'Alle statuser' },
+    { value: 'not_started', label: 'Ikke startet' },
+    { value: 'in_progress', label: 'Pågående' },
+    { value: 'completed', label: 'Fullført' },
+    { value: 'under_review', label: 'Under gjennomgang' }
+  ];
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold">
-          Revisjonshandlinger for {selectedArea}
-        </h3>
-        <div className="text-sm text-gray-600">
-          {filteredActions.length} handlinger
-        </div>
-      </div>
-
-      {filteredActions.length > 0 && (
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium">Fremgang</span>
-              <span className="text-sm text-gray-600">
-                {Math.round(calculateProgress())}%
-              </span>
+      <ActionProgressIndicator actions={filteredActions} />
+      
+      <Card>
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <CardTitle className="text-lg">Klienthandlinger</CardTitle>
+            <Button size="sm" className="gap-2">
+              <Plus size={16} />
+              Ny handling
+            </Button>
+          </div>
+          
+          {/* Search and Filter Controls */}
+          <div className="flex gap-2 mt-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={16} />
+              <Input
+                placeholder="Søk i handlinger..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
             </div>
-            <Progress value={calculateProgress()} className="h-2" />
-          </CardContent>
-        </Card>
-      )}
-
-      {filteredActions.length === 0 ? (
-        <Card>
-          <CardContent className="p-6 text-center text-gray-500">
-            Ingen handlinger lagt til for dette fagområdet ennå.
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="space-y-3">
-          {filteredActions.map((action) => (
-            <Card key={action.id} className="hover:shadow-md transition-shadow">
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      {getStatusIcon(action.status)}
-                      {action.name}
-                    </CardTitle>
-                    {action.description && (
-                      <p className="text-sm text-gray-600 mt-1">
-                        {action.description}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Badge variant="outline">
-                      {ACTION_TYPE_LABELS[action.action_type]}
-                    </Badge>
-                    <Badge className={getStatusColor(action.status)}>
-                      {ACTION_STATUS_LABELS[action.status]}
-                    </Badge>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-3 py-2 border rounded-md bg-background"
+            >
+              {statusOptions.map(option => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </CardHeader>
+        
+        <CardContent>
+          {filteredActions.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              {actions.filter(a => a.subject_area === selectedArea).length === 0 
+                ? "Ingen handlinger funnet for dette fagområdet"
+                : "Ingen handlinger matcher søkekriteriene"
+              }
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {filteredActions.map((action) => (
+                <div
+                  key={action.id}
+                  className="border rounded-lg p-4 hover:shadow-sm transition-shadow"
+                >
+                  <div className="flex justify-between items-start gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-2">
+                        <h3 className="font-medium text-sm truncate">{action.name}</h3>
+                        <ActionStatusBadge status={action.status} />
+                      </div>
+                      
+                      {action.description && (
+                        <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
+                          {action.description}
+                        </p>
+                      )}
+                      
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <Badge variant="outline" className="text-xs">
+                            {action.action_type}
+                          </Badge>
+                        </span>
+                        
+                        {action.estimated_hours && (
+                          <span>Estimat: {action.estimated_hours}t</span>
+                        )}
+                        
+                        {action.actual_hours && (
+                          <span>Faktisk: {action.actual_hours}t</span>
+                        )}
+                        
+                        {action.risk_level && (
+                          <Badge 
+                            variant={action.risk_level === 'high' ? 'destructive' : 
+                                   action.risk_level === 'medium' ? 'default' : 'secondary'}
+                            className="text-xs"
+                          >
+                            {action.risk_level === 'high' ? 'Høy risiko' : 
+                             action.risk_level === 'medium' ? 'Medium risiko' : 'Lav risiko'}
+                          </Badge>
+                        )}
+                      </div>
+                      
+                      {action.due_date && (
+                        <div className="text-xs text-muted-foreground mt-1">
+                          Forfaller: {new Date(action.due_date).toLocaleDateString('no-NO')}
+                        </div>
+                      )}
+                      
+                      {action.completed_at && (
+                        <div className="text-xs text-green-600 mt-1">
+                          Fullført: {new Date(action.completed_at).toLocaleDateString('no-NO')}
+                        </div>
+                      )}
+                    </div>
+                    
+                    <ActionQuickActions action={action} />
                   </div>
                 </div>
-              </CardHeader>
-              <CardContent className="pt-0">
-                {action.objective && (
-                  <div className="mb-3">
-                    <p className="text-sm font-medium text-gray-700">Formål:</p>
-                    <p className="text-sm text-gray-600">{action.objective}</p>
-                  </div>
-                )}
-                <div className="mb-3">
-                  <p className="text-sm font-medium text-gray-700">Prosedyrer:</p>
-                  <p className="text-sm text-gray-600">{action.procedures}</p>
-                </div>
-                
-                {action.findings && (
-                  <div className="mb-3">
-                    <p className="text-sm font-medium text-gray-700">Funn:</p>
-                    <p className="text-sm text-gray-600">{action.findings}</p>
-                  </div>
-                )}
-
-                <div className="flex justify-between items-center text-xs text-gray-500 mb-3">
-                  <span>
-                    Estimert: {action.estimated_hours || 0}t
-                    {action.actual_hours && ` | Faktisk: ${action.actual_hours}t`}
-                  </span>
-                  {action.due_date && (
-                    <span>
-                      Frist: {new Date(action.due_date).toLocaleDateString()}
-                    </span>
-                  )}
-                </div>
-
-                {action.assigned_to && (
-                  <div className="flex items-center gap-1 text-xs text-gray-600">
-                    <User className="w-3 h-3" />
-                    Tildelt bruker
-                  </div>
-                )}
-
-                {onActionUpdate && (
-                  <div className="mt-3 pt-3 border-t">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => onActionUpdate(action)}
-                    >
-                      Rediger handling
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };
