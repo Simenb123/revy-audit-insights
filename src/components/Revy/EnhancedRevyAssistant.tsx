@@ -563,5 +563,3 @@ const EnhancedRevyAssistant = ({ embedded = false, clientData, userRole }: Enhan
 };
 
 export default EnhancedRevyAssistant;
-
-</edits_to_apply>
