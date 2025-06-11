@@ -18,18 +18,18 @@ import {
 import RevyAssistant from '../Revy/RevyAssistant';
 import { useLocation } from 'react-router-dom';
 import { useAIUsage } from '@/hooks/useAIUsage';
+import { useRevyContext } from '../RevyContext/RevyContextProvider';
 
 interface RightSidebarProps {
   isCollapsed: boolean;
   onToggle: () => void;
-  clientData?: any;
-  userRole?: string;
 }
 
-const RightSidebar = ({ isCollapsed, onToggle, clientData, userRole }: RightSidebarProps) => {
+const RightSidebar = ({ isCollapsed, onToggle }: RightSidebarProps) => {
   const location = useLocation();
   const [activeTab, setActiveTab] = useState('revy');
   const { personalStats } = useAIUsage('week');
+  const { currentClient } = useRevyContext();
 
   // Mock analytics data - would be replaced with real data
   const analyticsData = {
@@ -88,8 +88,8 @@ const RightSidebar = ({ isCollapsed, onToggle, clientData, userRole }: RightSide
               <div className="h-full">
                 <RevyAssistant 
                   embedded={true} 
-                  clientData={clientData}
-                  userRole={userRole}
+                  clientData={currentClient}
+                  userRole="employee"
                 />
               </div>
             </TabsContent>
