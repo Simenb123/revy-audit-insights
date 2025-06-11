@@ -1,4 +1,3 @@
-
 import { AuditPhase, AuditSubjectArea, Client } from '@/types/revio';
 import { supabase } from '@/integrations/supabase/client';
 import { searchRelevantKnowledge, getProcedureTemplates } from './knowledgeIntegrationService';
@@ -100,6 +99,23 @@ export const getPhaseGuidance = async (
         'Utarbeid detaljert prosjektplan med milepæler'
       ]
     },
+    'engagement': {
+      phaseDescription: 'Etablering og oppfølging av revisjonsoppdraget',
+      keyObjectives: [
+        'Inngå oppdragsbrev',
+        'Etablere kommunikasjonslinjer',
+        'Klargjøre forventninger'
+      ],
+      commonPitfalls: [
+        'Uklare oppdragsbetingelser',
+        'Manglende kommunikasjon med ledelsen'
+      ],
+      isaReferences: ['ISA 210', 'ISA 260'],
+      bestPractices: [
+        'Tydelig oppdragsbrev',
+        'Regelmessig kommunikasjon med ledelsen'
+      ]
+    },
     'planning': {
       phaseDescription: 'Detaljert planlegging av revisjonstilnærmingen',
       keyObjectives: [
@@ -178,23 +194,6 @@ export const getPhaseGuidance = async (
         'Gjennomfør systematic review av alle arbeidsområder',
         'Kvalitetskontroll av erfaren revisor',
         'Tidlig utarbeidelse av utkast til beretning'
-      ]
-    },
-    'engagement': {
-      phaseDescription: 'Etablering og oppfølging av revisjonsoppdraget',
-      keyObjectives: [
-        'Inngå oppdragsbrev',
-        'Etablere kommunikasjonslinjer',
-        'Klargjøre forventninger'
-      ],
-      commonPitfalls: [
-        'Uklare oppdragsbetingelser',
-        'Manglende kommunikasjon med ledelsen'
-      ],
-      isaReferences: ['ISA 210', 'ISA 260'],
-      bestPractices: [
-        'Tydelig oppdragsbrev',
-        'Regelmessig kommunikasjon med ledelsen'
       ]
     }
   };
@@ -361,8 +360,8 @@ const generateDeadlines = (phase: AuditPhase, actions: any[], client: Client): a
     });
   
   // Add phase-specific deadlines
-  if (client.year_end_date) {
-    const yearEnd = new Date(client.year_end_date);
+  if (client.yearEndDate) {
+    const yearEnd = new Date(client.yearEndDate);
     deadlines.push({
       task: 'Ferdigstill revisjon',
       date: new Date(yearEnd.getTime() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 90 days after year end

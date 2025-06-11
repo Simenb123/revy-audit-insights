@@ -1,5 +1,6 @@
+export type AuditPhase = 'overview' | 'engagement' | 'planning' | 'risk_assessment' | 'execution' | 'completion';
 
-export type AuditPhase = 'overview' | 'engagement' | 'planning' | 'execution' | 'conclusion';
+export type AuditSubjectArea = 'revenue' | 'expenses' | 'assets' | 'liabilities' | 'equity' | 'cash' | 'other';
 
 export interface RiskArea {
   name: string;
