@@ -27,10 +27,10 @@ const AppLayout = ({ children }: AppLayoutProps) => {
             {/* Left Sidebar */}
             <Sidebar />
             
-            {/* Main content area using SidebarInset */}
-            <SidebarInset className="flex-1">
-              <div className="flex h-[calc(100vh-3.5rem)] w-full"> {/* Subtract header height */}
-                {/* Main content */}
+            {/* Main content area using SidebarInset - this will auto-adjust based on sidebar state */}
+            <SidebarInset className="flex-1 min-h-[calc(100vh-3.5rem)]">
+              <div className="flex w-full h-full">
+                {/* Main content - takes remaining space after right sidebar */}
                 <main className={`flex-1 overflow-auto p-6 transition-all duration-300 ${
                   isRightSidebarCollapsed ? 'mr-0' : 'mr-80'
                 }`}>
