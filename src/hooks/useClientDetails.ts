@@ -66,6 +66,12 @@ export function useClientDetails(orgNumber: string) {
         boardMeetingsPerYear: clientData.board_meetings_per_year != null ? Number(clientData.board_meetings_per_year) : undefined,
         internalControls: clientData.internal_controls || '',
         riskAssessment: clientData.risk_assessment || '',
+        // Test data flag
+        isTestData: Boolean(clientData.is_test_data),
+        // Timestamps - add required timestamps
+        createdAt: clientData.created_at,
+        updatedAt: clientData.updated_at,
+        // Default collections
         riskAreas: [],
         documents: [],
         roles: []

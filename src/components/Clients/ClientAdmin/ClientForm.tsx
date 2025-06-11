@@ -101,6 +101,8 @@ const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, submitLa
   });
 
   const handleSubmit = (data: FormData) => {
+    const now = new Date().toISOString();
+    
     // Ensure all required properties are provided with default values if empty
     const fullClient: Client = {
       id: data.id || Math.random().toString(36).substring(2, 9),
@@ -145,6 +147,9 @@ const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, submitLa
       documents: initialData?.documents || [],
       roles: initialData?.roles || [],
       announcements: initialData?.announcements || [],
+      // Add required timestamps
+      createdAt: initialData?.createdAt || now,
+      updatedAt: now,
     };
     
     onSubmit(fullClient);
