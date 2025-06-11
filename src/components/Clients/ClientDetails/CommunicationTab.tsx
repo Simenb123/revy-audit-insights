@@ -18,7 +18,7 @@ interface CommunicationTabProps {
 const CommunicationTab = ({ client }: CommunicationTabProps) => {
   const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
   const { data: chatRooms = [], refetch: refetchRooms } = useChatRooms();
-  const { data: onlineUsers = [] } = useUserPresence();
+  const { presenceData: onlineUsers = [] } = useUserPresence();
   
   // Find or create client-specific room
   const clientRoom = chatRooms.find(room => room.name.includes(client.companyName));
@@ -90,11 +90,6 @@ const CommunicationTab = ({ client }: CommunicationTabProps) => {
                   >
                     <MessageSquare className="h-4 w-4 mr-2" />
                     {room.name}
-                    {room.unread_count > 0 && (
-                      <Badge variant="destructive" className="ml-auto">
-                        {room.unread_count}
-                      </Badge>
-                    )}
                   </Button>
                 ))
               ) : (
@@ -145,7 +140,7 @@ const CommunicationTab = ({ client }: CommunicationTabProps) => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <OnlineUsers />
+              <OnlineUsers currentRoomId={activeRoomId || undefined} />
             </CardContent>
           </Card>
 
