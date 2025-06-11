@@ -2,7 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { AuditActionTemplate, ClientAuditAction, ActionGroup, AuditSubjectArea } from '@/types/audit-actions';
+import { AuditActionTemplate, ClientAuditAction, ActionGroup, AuditSubjectArea, AuditPhase } from '@/types/audit-actions';
 
 export function useAuditActionTemplates() {
   return useQuery({
@@ -70,7 +70,10 @@ export function useCreateAuditActionTemplate() {
     mutationFn: async (template: Omit<AuditActionTemplate, 'id' | 'created_at' | 'updated_at'>) => {
       const { data, error } = await supabase
         .from('audit_action_templates')
-        .insert(template)
+        .insert({
+          ...template,
+          applicable_phases: template.applicable_phases
+        })
         .select()
         .single();
 
@@ -183,7 +186,7 @@ export function useCopyActionsFromTemplate() {
         template_id: template.id,
         subject_area: template.subject_area,
         action_type: template.action_type,
-        phase: phase,
+        phase: phase as AuditPhase,
         name: template.name,
         description: template.description,
         objective: template.objective,
@@ -203,11 +206,11 @@ export function useCopyActionsFromTemplate() {
       if (error) throw error;
       return data;
     },
-    onSuccess: (_, variables) => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['client-audit-actions', variables.clientId] });
       toast({
         title: "Handlinger kopiert",
-        description: `${_.length} handlinger er lagt til i revisjonsplanen.`,
+        description: `${data.length} handlinger er lagt til i revisjonsplanen.`,
       });
     },
     onError: (error) => {

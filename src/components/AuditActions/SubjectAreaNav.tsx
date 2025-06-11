@@ -14,7 +14,8 @@ import {
   FileText, 
   Receipt, 
   PieChart,
-  MoreHorizontal
+  MoreHorizontal,
+  LucideIcon
 } from 'lucide-react';
 
 interface SubjectAreaNavProps {
@@ -23,7 +24,7 @@ interface SubjectAreaNavProps {
   actionCounts?: Record<AuditSubjectArea, number>;
 }
 
-const AREA_ICONS: Record<AuditSubjectArea, React.ComponentType<{ size?: number; className?: string }>> = {
+const AREA_ICONS: Record<AuditSubjectArea, LucideIcon> = {
   sales: DollarSign,
   payroll: Users,
   operating_expenses: TrendingUp,

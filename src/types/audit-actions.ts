@@ -29,6 +29,12 @@ export type ActionStatus =
   | 'reviewed'
   | 'approved';
 
+export type AuditPhase = 
+  | 'engagement'
+  | 'planning'
+  | 'execution'
+  | 'conclusion';
+
 export interface AuditActionTemplate {
   id: string;
   audit_firm_id?: string;
@@ -46,7 +52,7 @@ export interface AuditActionTemplate {
   documentation_requirements?: string;
   estimated_hours?: number;
   risk_level: string;
-  applicable_phases: string[];
+  applicable_phases: AuditPhase[];
   created_at: string;
   updated_at: string;
 }
@@ -60,7 +66,7 @@ export interface ClientAuditAction {
   subject_area: AuditSubjectArea;
   action_type: ActionType;
   status: ActionStatus;
-  phase: string;
+  phase: AuditPhase;
   sort_order: number;
   due_date?: string;
   completed_at?: string;

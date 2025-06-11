@@ -4,7 +4,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Client } from '@/types/revio';
 import ClientHeader from './ClientHeader';
 import ClientNavigation from './ClientNavigation';
-import Overview from './ClientDashboard/Overview';
 import AuditActionsTab from './AuditActionsTab';
 import RevisionWorkflow from './RevisionWorkflow';
 import PhaseContent from './PhaseContent';
@@ -19,11 +18,38 @@ const ClientDetails = ({ client }: ClientDetailsProps) => {
   const renderTabContent = () => {
     switch (activeTab) {
       case 'overview':
-        return <Overview client={client} />;
+        return (
+          <Card>
+            <CardContent className="p-6">
+              <h3 className="text-lg font-semibold mb-4">Oversikt</h3>
+              <div className="space-y-4">
+                <div>
+                  <h4 className="text-sm font-medium text-gray-500">Fase</h4>
+                  <p className="text-lg">{client.phase}</p>
+                </div>
+                <div>
+                  <h4 className="text-sm font-medium text-gray-500">Fremgang</h4>
+                  <p className="text-lg">{client.progress}%</p>
+                </div>
+                <div>
+                  <h4 className="text-sm font-medium text-gray-500">Organisasjonsnummer</h4>
+                  <p className="text-lg">{client.org_number}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        );
       case 'audit-actions':
         return <AuditActionsTab clientId={client.id} phase={client.phase} />;
       case 'workflow':
-        return <RevisionWorkflow client={client} />;
+        return (
+          <Card>
+            <CardContent className="p-6">
+              <h3 className="text-lg font-semibold mb-4">Arbeidsflyt</h3>
+              <p className="text-gray-600">Arbeidsflytfunksjonalitet kommer snart...</p>
+            </CardContent>
+          </Card>
+        );
       case 'team':
         return (
           <Card>
@@ -70,7 +96,14 @@ const ClientDetails = ({ client }: ClientDetailsProps) => {
           </Card>
         );
       default:
-        return <Overview client={client} />;
+        return (
+          <Card>
+            <CardContent className="p-6">
+              <h3 className="text-lg font-semibold mb-4">Oversikt</h3>
+              <p className="text-gray-600">Oversiktsfunksjonalitet kommer snart...</p>
+            </CardContent>
+          </Card>
+        );
     }
   };
 
