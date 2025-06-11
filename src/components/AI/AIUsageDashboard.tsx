@@ -42,6 +42,12 @@ interface AIUsageStats {
   };
 }
 
+interface FirmUserStats {
+  requests: number;
+  cost: number;
+  role: string;
+}
+
 const AIUsageDashboard = () => {
   const [timeframe, setTimeframe] = useState<'day' | 'week' | 'month'>('week');
   const [personalStats, setPersonalStats] = useState<AIUsageStats | null>(null);
@@ -49,7 +55,7 @@ const AIUsageDashboard = () => {
   const [loading, setLoading] = useState(true);
   const { data: userProfile } = useUserProfile();
 
-  const isAdmin = userProfile?.user_role === 'admin';
+  const isAdmin = userProfile?.userRole === 'admin';
 
   useEffect(() => {
     loadStats();
@@ -314,7 +320,7 @@ const AIUsageDashboard = () => {
                           acc[userName].requests += 1;
                           acc[userName].cost += parseFloat(log.estimated_cost_usd);
                           return acc;
-                        }, {} as Record<string, { requests: number; cost: number; role: string }>)
+                        }, {} as Record<string, FirmUserStats>)
                       )
                         .sort(([,a], [,b]) => b.cost - a.cost)
                         .slice(0, 10)

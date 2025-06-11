@@ -1,7 +1,29 @@
 
 import { useState, useEffect } from 'react';
 import { getAIUsageStats, getFirmAIUsageStats } from '@/services/revyService';
-import { AIUsageStats } from '@/types/revio';
+
+interface AIUsageLog {
+  id: string;
+  model: string;
+  total_tokens: number;
+  estimated_cost_usd: string;
+  request_type: string;
+  context_type: string | null;
+  response_time_ms: number | null;
+  created_at: string;
+}
+
+interface AIUsageStats {
+  logs: AIUsageLog[];
+  summary: {
+    totalRequests: number;
+    totalTokens: number;
+    totalCost: number;
+    avgResponseTime: number;
+    modelUsage: Record<string, number>;
+    contextUsage: Record<string, number>;
+  };
+}
 
 export const useAIUsage = (timeframe: 'day' | 'week' | 'month' = 'week') => {
   const [personalStats, setPersonalStats] = useState<AIUsageStats | null>(null);
