@@ -1,9 +1,14 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Client } from '@/types/revio';
 import ClientHeader from './ClientHeader';
 import ClientNavigation from './ClientNavigation';
 import AuditActionsTab from './AuditActionsTab';
+import TeamTab from './TeamTab';
+import CommunicationTab from './CommunicationTab';
+import AnalysisTab from './AnalysisTab';
+import ScheduleTab from './ScheduleTab';
 import RevisionWorkflow from './RevisionWorkflow';
 import PhaseContent from './PhaseContent';
 
@@ -40,48 +45,27 @@ const ClientDetails = ({ client }: ClientDetailsProps) => {
         );
       case 'audit-actions':
         return <AuditActionsTab clientId={client.id} phase={client.phase} />;
+      case 'team':
+        return <TeamTab client={client} />;
+      case 'communication':
+        return <CommunicationTab client={client} />;
+      case 'analysis':
+        return <AnalysisTab client={client} />;
+      case 'schedule':
+        return <ScheduleTab client={client} />;
       case 'workflow':
         return (
           <Card>
             <CardContent className="p-6">
               <h3 className="text-lg font-semibold mb-4">Arbeidsflyt</h3>
-              <p className="text-gray-600">Arbeidsflytfunksjonalitet kommer snart...</p>
-            </CardContent>
-          </Card>
-        );
-      case 'team':
-        return (
-          <Card>
-            <CardContent className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Team</h3>
-              <p className="text-gray-600">Teamfunksjonalitet kommer snart...</p>
-            </CardContent>
-          </Card>
-        );
-      case 'communication':
-        return (
-          <Card>
-            <CardContent className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Kommunikasjon</h3>
-              <p className="text-gray-600">Kommunikasjonsfunksjonalitet kommer snart...</p>
-            </CardContent>
-          </Card>
-        );
-      case 'analysis':
-        return (
-          <Card>
-            <CardContent className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Analyse</h3>
-              <p className="text-gray-600">Analysefunksjonalitet kommer snart...</p>
-            </CardContent>
-          </Card>
-        );
-      case 'schedule':
-        return (
-          <Card>
-            <CardContent className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Tidsplan</h3>
-              <p className="text-gray-600">Tidsplanfunksjonalitet kommer snart...</p>
+              <div className="space-y-6">
+                <RevisionWorkflow 
+                  currentPhase={client.phase || 'overview'} 
+                  progress={client.progress || 0}
+                  onPhaseClick={() => {}}
+                />
+                <PhaseContent phase={client.phase || 'overview'} client={client} />
+              </div>
             </CardContent>
           </Card>
         );
