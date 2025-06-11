@@ -1,7 +1,8 @@
+
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { Client, ClientRole } from '@/types/revio';
+import { Client, ClientRole, AuditPhase } from '@/types/revio';
 
 export function useClientData() {
   return useQuery<Client[]>({
@@ -116,12 +117,23 @@ export function useClientData() {
         
         console.log(`Client ${client.name}: is_test_data from DB = ${client.is_test_data}, converted to isTestData = ${isTestData}`);
 
+        // Map database phase values to our AuditPhase type
+        let mappedPhase: AuditPhase;
+        switch (client.phase) {
+          case 'conclusion':
+            mappedPhase = 'completion';
+            break;
+          default:
+            mappedPhase = client.phase as AuditPhase;
+            break;
+        }
+
         const transformedClient: Client = {
           id: client.id,
           name: client.name,
           companyName: client.company_name,
           orgNumber: client.org_number,
-          phase: client.phase,
+          phase: mappedPhase,
           progress: client.progress,
           department: client.department || '',
           contactPerson: client.contact_person || '',

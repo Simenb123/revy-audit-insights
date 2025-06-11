@@ -94,12 +94,12 @@ const extractSearchTerms = (
   // Add subject area terms
   if (subjectArea) {
     const subjectTerms = {
-      'revenue': ['omsetning', 'inntekt', 'salg', 'fakturering'],
-      'expenses': ['kostnader', 'utgifter', 'lønn', 'innkjøp'],
-      'assets': ['eiendeler', 'anleggsmidler', 'varelager', 'fordringer'],
-      'liabilities': ['gjeld', 'forpliktelser', 'leverandørgjeld'],
+      'sales': ['omsetning', 'inntekt', 'salg', 'fakturering'],
+      'operating_expenses': ['kostnader', 'utgifter', 'lønn', 'innkjøp'],
+      'fixed_assets': ['eiendeler', 'anleggsmidler', 'varelager', 'fordringer'],
+      'payables': ['gjeld', 'forpliktelser', 'leverandørgjeld'],
       'equity': ['egenkapital', 'aksjekapital', 'opptjent kapital'],
-      'cash': ['kontanter', 'bank', 'likviditet', 'kontantstrøm']
+      'banking': ['kontanter', 'bank', 'likviditet', 'kontantstrøm']
     };
     
     if (subjectTerms[subjectArea as keyof typeof subjectTerms]) {
@@ -206,7 +206,7 @@ const getRelevantProcedures = (
   }
   
   // Subject area procedures
-  if (subjectArea === 'revenue') {
+  if (subjectArea === 'sales') {
     procedures.push(
       'Test inntektsføring i henhold til IFRS 15',
       'Verifiser fullstendighet av omsetning',
@@ -252,7 +252,7 @@ const identifyRiskFactors = (
   });
   
   // Subject area specific risks
-  if (subjectArea === 'revenue') {
+  if (subjectArea === 'sales') {
     riskFactors.push('Inntektsføring', 'Kundefordringer', 'Returer og kreditnotaer');
   }
   

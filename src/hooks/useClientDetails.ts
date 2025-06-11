@@ -1,6 +1,7 @@
+
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Client } from '@/types/revio';
+import { Client, AuditPhase } from '@/types/revio';
 import { toast } from '@/components/ui/use-toast';
 
 export function useClientDetails(orgNumber: string) {
@@ -25,13 +26,24 @@ export function useClientDetails(orgNumber: string) {
         return null;
       }
 
+      // Map database phase values to our AuditPhase type
+      let mappedPhase: AuditPhase;
+      switch (clientData.phase) {
+        case 'conclusion':
+          mappedPhase = 'completion';
+          break;
+        default:
+          mappedPhase = clientData.phase as AuditPhase;
+          break;
+      }
+
       // Transform data to match our Client type
       const client: Client = {
         id: clientData.id,
         name: clientData.name,
         companyName: clientData.company_name,
         orgNumber: clientData.org_number,
-        phase: clientData.phase,
+        phase: mappedPhase,
         progress: clientData.progress,
         department: clientData.department || '',
         contactPerson: clientData.contact_person || '',
