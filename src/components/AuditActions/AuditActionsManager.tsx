@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
 import { AuditSubjectArea, SUBJECT_AREA_LABELS } from '@/types/audit-actions';
 import {
   useAuditActionTemplates,
@@ -12,7 +11,6 @@ import {
 import SubjectAreaNav from './SubjectAreaNav';
 import ActionTemplateList from './ActionTemplateList';
 import ClientActionsList from './ClientActionsList';
-import { toast } from '@/hooks/use-toast';
 
 interface AuditActionsManagerProps {
   clientId: string;

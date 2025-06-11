@@ -9,22 +9,21 @@ import {
   AuditSubjectArea, 
   ACTION_TYPE_LABELS 
 } from '@/types/audit-actions';
-import { Copy, Plus, Edit } from 'lucide-react';
+import { Copy, Edit } from 'lucide-react';
+import CreateActionTemplateDialog from './CreateActionTemplateDialog';
 
 interface ActionTemplateListProps {
   templates: AuditActionTemplate[];
   selectedArea: AuditSubjectArea;
   onCopyToClient?: (templateIds: string[]) => void;
   onEditTemplate?: (template: AuditActionTemplate) => void;
-  onCreateNew?: () => void;
 }
 
 const ActionTemplateList = ({ 
   templates, 
   selectedArea, 
   onCopyToClient, 
-  onEditTemplate,
-  onCreateNew 
+  onEditTemplate
 }: ActionTemplateListProps) => {
   const [selectedTemplates, setSelectedTemplates] = useState<string[]>([]);
 
@@ -67,19 +66,22 @@ const ActionTemplateList = ({
               Kopier valgte ({selectedTemplates.length})
             </Button>
           )}
-          {onCreateNew && (
-            <Button onClick={onCreateNew} size="sm" variant="outline">
-              <Plus className="w-4 h-4 mr-2" />
-              Ny handling
-            </Button>
-          )}
+          <CreateActionTemplateDialog selectedArea={selectedArea} />
         </div>
       </div>
 
       {filteredTemplates.length === 0 ? (
         <Card>
           <CardContent className="p-6 text-center text-gray-500">
-            Ingen handlingsmaler funnet for dette fagområdet.
+            <p className="mb-4">Ingen handlingsmaler funnet for dette fagområdet.</p>
+            <CreateActionTemplateDialog 
+              selectedArea={selectedArea}
+              trigger={
+                <Button>
+                  Opprett første handlingsmal
+                </Button>
+              }
+            />
           </CardContent>
         </Card>
       ) : (
