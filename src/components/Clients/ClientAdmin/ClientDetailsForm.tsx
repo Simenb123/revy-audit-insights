@@ -20,8 +20,9 @@ const phaseOptions: { value: AuditPhase; label: string }[] = [
   { value: 'overview', label: 'Oversikt' },
   { value: 'engagement', label: 'Oppdragsvurdering' },
   { value: 'planning', label: 'Planlegging' },
+  { value: 'risk_assessment', label: 'Risikovurdering' },
   { value: 'execution', label: 'Utførelse' },
-  { value: 'conclusion', label: 'Avslutning' },
+  { value: 'completion', label: 'Avslutning' },
 ];
 
 const ClientDetailsForm = ({ form }: ClientDetailsFormProps) => {

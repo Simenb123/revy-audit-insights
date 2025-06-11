@@ -1,4 +1,3 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -137,7 +136,6 @@ export function useClientData() {
           phone: client.phone || '',
           bankAccount: client.bank_account || '',
           notes: client.notes || '',
-          // Enhanced Brønnøysund data
           orgFormCode: client.org_form_code || '',
           orgFormDescription: client.org_form_description || '',
           homepage: client.homepage || '',
@@ -148,7 +146,6 @@ export function useClientData() {
           municipalityName: client.municipality_name || '',
           equityCapital: client.equity_capital != null ? Number(client.equity_capital) : undefined,
           shareCapital: client.share_capital != null ? Number(client.share_capital) : undefined,
-          // New extended fields
           accountingSystem: client.accounting_system || '',
           previousAuditor: client.previous_auditor || '',
           auditFee: client.audit_fee != null ? Number(client.audit_fee) : undefined,
@@ -156,9 +153,7 @@ export function useClientData() {
           boardMeetingsPerYear: client.board_meetings_per_year != null ? Number(client.board_meetings_per_year) : undefined,
           internalControls: client.internal_controls || '',
           riskAssessment: client.risk_assessment || '',
-          // Test data flag - properly convert from database
           isTestData: isTestData,
-          // Timestamps
           createdAt: client.created_at,
           updatedAt: client.updated_at,
           riskAreas: clientRiskAreas,

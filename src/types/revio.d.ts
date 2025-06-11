@@ -1,6 +1,7 @@
 export type AuditPhase = 'overview' | 'engagement' | 'planning' | 'risk_assessment' | 'execution' | 'completion';
 
-export type AuditSubjectArea = 'revenue' | 'expenses' | 'assets' | 'liabilities' | 'equity' | 'cash' | 'other';
+// Update AuditSubjectArea to match what the database/components expect
+export type AuditSubjectArea = 'sales' | 'payroll' | 'operating_expenses' | 'inventory' | 'finance' | 'banking' | 'fixed_assets' | 'receivables' | 'payables' | 'equity' | 'other';
 
 export interface RiskArea {
   name: string;

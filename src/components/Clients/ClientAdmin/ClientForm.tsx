@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -21,7 +20,7 @@ const clientSchema = z.object({
   name: z.string().min(2, { message: 'Selskapsnavn må ha minst 2 tegn' }),
   companyName: z.string().min(2, { message: 'Firmanavn må ha minst 2 tegn' }),
   orgNumber: z.string().regex(/^\d{9}$/, { message: 'Organisasjonsnummer må være 9 siffer' }),
-  phase: z.enum(['overview', 'engagement', 'planning', 'execution', 'conclusion']),
+  phase: z.enum(['overview', 'engagement', 'planning', 'risk_assessment', 'execution', 'completion']),
   progress: z.number().min(0).max(100),
   department: z.string().optional(),
   contactPerson: z.string().optional(),

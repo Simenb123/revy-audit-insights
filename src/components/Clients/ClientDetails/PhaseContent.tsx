@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AuditPhase, Client } from '@/types/revio';
@@ -83,7 +84,7 @@ const PhaseContent = ({ phase, client }: PhaseContentProps) => {
     </div>
   );
 
-  const renderConclusionContent = () => (
+  const renderCompletionContent = () => (
     <div className="space-y-6">
       <Card>
         <CardHeader>
@@ -123,8 +124,8 @@ const PhaseContent = ({ phase, client }: PhaseContentProps) => {
       return renderPlanningContent();
     case 'execution':
       return renderExecutionContent();
-    case 'conclusion':
-      return renderConclusionContent();
+    case 'completion':
+      return renderCompletionContent();
     default:
       return renderEngagementContent();
   }

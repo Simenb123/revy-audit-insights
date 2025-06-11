@@ -1,4 +1,3 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Client } from '@/types/revio';
@@ -47,7 +46,6 @@ export function useClientDetails(orgNumber: string) {
         phone: clientData.phone || '',
         bankAccount: clientData.bank_account || '',
         notes: clientData.notes || '',
-        // Enhanced Brønnøysund data
         orgFormCode: clientData.org_form_code || '',
         orgFormDescription: clientData.org_form_description || '',
         homepage: clientData.homepage || '',
@@ -58,7 +56,6 @@ export function useClientDetails(orgNumber: string) {
         municipalityName: clientData.municipality_name || '',
         equityCapital: clientData.equity_capital != null ? Number(clientData.equity_capital) : undefined,
         shareCapital: clientData.share_capital != null ? Number(clientData.share_capital) : undefined,
-        // New extended fields
         accountingSystem: clientData.accounting_system || '',
         previousAuditor: clientData.previous_auditor || '',
         auditFee: clientData.audit_fee != null ? Number(clientData.audit_fee) : undefined,
@@ -66,12 +63,9 @@ export function useClientDetails(orgNumber: string) {
         boardMeetingsPerYear: clientData.board_meetings_per_year != null ? Number(clientData.board_meetings_per_year) : undefined,
         internalControls: clientData.internal_controls || '',
         riskAssessment: clientData.risk_assessment || '',
-        // Test data flag
         isTestData: Boolean(clientData.is_test_data),
-        // Timestamps - add required timestamps
         createdAt: clientData.created_at,
         updatedAt: clientData.updated_at,
-        // Default collections
         riskAreas: [],
         documents: [],
         roles: []

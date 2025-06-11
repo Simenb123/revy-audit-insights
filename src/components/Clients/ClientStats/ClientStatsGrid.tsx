@@ -19,8 +19,8 @@ const ClientStatsGrid = ({ clients, announcements }: ClientStatsGridProps) => {
         value={clients.length}
         footer={
           <div className="flex justify-between">
-            <span>Aktive: {clients.filter(c => c.phase !== 'conclusion').length}</span>
-            <span>Fullførte: {clients.filter(c => c.phase === 'conclusion').length}</span>
+            <span>Aktive: {clients.filter(c => c.phase !== 'completion').length}</span>
+            <span>Fullførte: {clients.filter(c => c.phase === 'completion').length}</span>
           </div>
         }
       />
@@ -53,4 +53,3 @@ const ClientStatsGrid = ({ clients, announcements }: ClientStatsGridProps) => {
 };
 
 export default ClientStatsGrid;
-
