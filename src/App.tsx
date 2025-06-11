@@ -39,9 +39,6 @@ function App() {
             <Toaster />
             <Routes>
               <Route path="/auth" element={<Auth />} />
-              {/* Knowledge Base with simple layout */}
-              <Route path="/knowledge/*" element={<KnowledgeBase />} />
-              {/* All other routes with AppLayout */}
               <Route path="/*" element={
                 <AppLayout>
                   <Routes>
@@ -55,6 +52,7 @@ function App() {
                     <Route path="ledger/:clientId" element={<LedgerPage />} />
                     <Route path="communication" element={<Communication />} />
                     <Route path="teams" element={<TeamManagement />} />
+                    <Route path="knowledge/*" element={<KnowledgeBase />} />
                     <Route path="audit-logs" element={<AuditLogs />} />
                     <Route path="user-admin" element={<UserAdmin />} />
                     <Route path="user-profile" element={<UserProfile />} />
