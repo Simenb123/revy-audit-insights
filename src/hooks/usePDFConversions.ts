@@ -43,8 +43,9 @@ export const usePDFConversions = () => {
       if (error) throw error;
       return data as PDFConversion[];
     },
-    refetchInterval: (data) => {
+    refetchInterval: (query) => {
       // Refetch every 2 seconds if there are processing jobs
+      const data = query.state.data;
       const hasProcessing = data?.some(job => 
         job.status === 'uploading' || job.status === 'processing'
       );
