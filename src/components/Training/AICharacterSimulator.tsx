@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,16 +6,16 @@ import { Progress } from '@/components/ui/progress';
 import { 
   Mic, 
   MicOff, 
-  Play, 
-  Pause, 
   Users, 
   CheckCircle, 
-  AlertCircle,
   MessageSquare,
-  Volume2
+  Volume2,
+  ArrowLeft
 } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import ModeSelector from './ModeSelector';
+import ChatInterface from './ChatInterface';
 
 interface AICharacter {
   id: string;
@@ -30,9 +29,16 @@ interface AICharacter {
   objectives: string[];
 }
 
+interface Message {
+  role: 'user' | 'ai';
+  content: string;
+  timestamp: Date;
+}
+
 interface SimulationSession {
   id: string;
   character: AICharacter;
+  mode: 'audio' | 'chat';
   startTime: Date;
   status: 'active' | 'paused' | 'completed';
   progress: number;
@@ -42,10 +48,14 @@ interface SimulationSession {
 
 const AICharacterSimulator = () => {
   const [selectedCharacter, setSelectedCharacter] = useState<AICharacter | null>(null);
+  const [selectedMode, setSelectedMode] = useState<'audio' | 'chat' | null>(null);
   const [session, setSession] = useState<SimulationSession | null>(null);
+  const [conversation, setConversation] = useState<Message[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  
+  // Audio-specific states
   const [isRecording, setIsRecording] = useState(false);
   const [isAISpeaking, setIsAISpeaking] = useState(false);
-  const [conversation, setConversation] = useState<Array<{role: 'user' | 'ai', content: string, timestamp: Date}>>([]);
   const [audioLevel, setAudioLevel] = useState(0);
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -107,22 +117,24 @@ const AICharacterSimulator = () => {
     }
   ];
 
-  const startSimulation = async (character: AICharacter) => {
+  const startSimulation = async (character: AICharacter, mode: 'audio' | 'chat') => {
     try {
-      // Request microphone access
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true
-        }
-      });
-      
-      streamRef.current = stream;
+      if (mode === 'audio') {
+        // Request microphone access for audio mode
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true
+          }
+        });
+        streamRef.current = stream;
+      }
       
       const newSession: SimulationSession = {
         id: crypto.randomUUID(),
         character,
+        mode,
         startTime: new Date(),
         status: 'active',
         progress: 0,
@@ -131,6 +143,7 @@ const AICharacterSimulator = () => {
       };
       
       setSelectedCharacter(character);
+      setSelectedMode(mode);
       setSession(newSession);
       setConversation([]);
       
@@ -138,26 +151,27 @@ const AICharacterSimulator = () => {
       await generateAIResponse(`Du er ${character.name}, ${character.role}. ${character.personality}. 
         Scenario: ${character.scenario}. Start møtet med en naturlig hilsen og introduksjon. 
         Oppfør deg som denne karakteren ville gjort i et ekte oppstartsmøte med revisor.
-        Snakk norsk og vær naturlig.`, character);
+        Snakk norsk og vær naturlig.`, character, mode);
       
       toast({
         title: "Simulering startet",
-        description: `Du møter nå ${character.name} (${character.role})`,
+        description: `Du møter nå ${character.name} (${character.role}) i ${mode === 'audio' ? 'audio' : 'chat'}-modus`,
       });
       
     } catch (error) {
       console.error('Error starting simulation:', error);
       toast({
         title: "Feil",
-        description: "Kunne ikke starte simulering. Sjekk mikrofontilgang.",
+        description: mode === 'audio' ? "Kunne ikke starte simulering. Sjekk mikrofontilgang." : "Kunne ikke starte simulering.",
         variant: "destructive"
       });
     }
   };
 
-  const generateAIResponse = async (userInput: string, character: AICharacter) => {
+  const generateAIResponse = async (userInput: string, character: AICharacter, mode: 'audio' | 'chat') => {
     try {
-      setIsAISpeaking(true);
+      setIsLoading(true);
+      if (mode === 'audio') setIsAISpeaking(true);
       
       const systemPrompt = `Du er ${character.name}, en ${character.role}. 
         Personlighet: ${character.personality}
@@ -188,15 +202,17 @@ const AICharacterSimulator = () => {
       const aiResponse = data.response;
       
       // Add to conversation
-      const newConversation = [
-        ...conversation,
-        { role: 'user' as const, content: userInput, timestamp: new Date() },
-        { role: 'ai' as const, content: aiResponse, timestamp: new Date() }
-      ];
-      setConversation(newConversation);
+      const newMessages = [...conversation];
+      if (userInput !== `Du er ${character.name}, ${character.role}.`) { // Don't add initial prompt
+        newMessages.push({ role: 'user', content: userInput, timestamp: new Date() });
+      }
+      newMessages.push({ role: 'ai', content: aiResponse, timestamp: new Date() });
+      setConversation(newMessages);
       
-      // Generate speech with ElevenLabs
-      await generateSpeech(aiResponse, character.voice_id);
+      // Generate speech for audio mode
+      if (mode === 'audio') {
+        await generateSpeech(aiResponse, character.voice_id);
+      }
       
     } catch (error) {
       console.error('Error generating AI response:', error);
@@ -206,28 +222,35 @@ const AICharacterSimulator = () => {
         variant: "destructive"
       });
     } finally {
-      setIsAISpeaking(false);
+      setIsLoading(false);
+      if (selectedMode === 'audio') setIsAISpeaking(false);
     }
   };
 
   const generateSpeech = async (text: string, voiceId: string) => {
     try {
-      // This would call ElevenLabs API through Supabase edge function
-      const response = await fetch('/api/text-to-speech', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, voiceId })
+      const { data, error } = await supabase.functions.invoke('text-to-speech', {
+        body: { text, voiceId }
       });
       
-      if (response.ok) {
-        const audioBlob = await response.blob();
-        const audioUrl = URL.createObjectURL(audioBlob);
-        const audio = new Audio(audioUrl);
-        await audio.play();
-      }
+      if (error) throw error;
+
+      // Play the audio
+      const audioBlob = new Blob([Uint8Array.from(atob(data.audioContent), c => c.charCodeAt(0))], { type: 'audio/mpeg' });
+      const audioUrl = URL.createObjectURL(audioBlob);
+      const audio = new Audio(audioUrl);
+      await audio.play();
+      
     } catch (error) {
       console.error('Error generating speech:', error);
-      // Fallback to text-only mode
+      // Continue without audio in case of speech generation failure
+    }
+  };
+
+  const handleChatMessage = async (message: string) => {
+    if (selectedCharacter && selectedMode === 'chat') {
+      await generateAIResponse(message, selectedCharacter, 'chat');
+      updateProgress();
     }
   };
 
@@ -271,11 +294,9 @@ const AICharacterSimulator = () => {
 
   const processRecording = async (audioBlob: Blob) => {
     try {
-      // Convert to base64 for API
       const arrayBuffer = await audioBlob.arrayBuffer();
       const base64Audio = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
       
-      // Transcribe with OpenAI Whisper
       const { data, error } = await supabase.functions.invoke('voice-to-text', {
         body: { audio: base64Audio }
       });
@@ -285,7 +306,7 @@ const AICharacterSimulator = () => {
       const transcription = data.text;
       
       if (transcription && selectedCharacter) {
-        await generateAIResponse(transcription, selectedCharacter);
+        await generateAIResponse(transcription, selectedCharacter, 'audio');
         updateProgress();
       }
       
@@ -312,6 +333,7 @@ const AICharacterSimulator = () => {
     }
     
     setSelectedCharacter(null);
+    setSelectedMode(null);
     setSession(null);
     setConversation([]);
     setIsRecording(false);
@@ -323,6 +345,25 @@ const AICharacterSimulator = () => {
     });
   };
 
+  const handleModeSelect = (mode: 'audio' | 'chat') => {
+    if (selectedCharacter) {
+      startSimulation(selectedCharacter, mode);
+    }
+  };
+
+  const goBackToCharacterSelection = () => {
+    setSelectedCharacter(null);
+    setSelectedMode(null);
+  };
+
+  const goBackToModeSelection = () => {
+    setSelectedMode(null);
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+    }
+  };
+
+  // Character selection view
   if (!selectedCharacter) {
     return (
       <div className="space-y-6">
@@ -367,10 +408,10 @@ const AICharacterSimulator = () => {
                 </div>
                 
                 <Button 
-                  onClick={() => startSimulation(character)}
+                  onClick={() => setSelectedCharacter(character)}
                   className="w-full"
                 >
-                  Start møte med {character.name}
+                  Velg {character.name}
                 </Button>
               </CardContent>
             </Card>
@@ -380,117 +421,165 @@ const AICharacterSimulator = () => {
     );
   }
 
-  return (
-    <div className="space-y-6">
-      {/* Session Header */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Møte med {selectedCharacter.name}
-              </CardTitle>
-              <p className="text-sm text-gray-600">{selectedCharacter.role} • {selectedCharacter.scenario}</p>
-            </div>
-            <Button variant="outline" onClick={endSimulation}>
-              Avslutt møte
-            </Button>
+  // Mode selection view
+  if (selectedCharacter && !selectedMode) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <Button variant="outline" onClick={goBackToCharacterSelection}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Tilbake til karakterer
+          </Button>
+          <div>
+            <h3 className="text-xl font-semibold">Møte med {selectedCharacter.name}</h3>
+            <p className="text-gray-600">{selectedCharacter.role} • {selectedCharacter.scenario}</p>
           </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div>
-              <div className="flex justify-between text-sm mb-2">
-                <span>Fremdrift</span>
-                <span>{session?.progress || 0}%</span>
-              </div>
-              <Progress value={session?.progress || 0} className="w-full" />
-            </div>
-            
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-center">
-              {selectedCharacter.objectives.map((objective, index) => (
-                <div key={index} className="space-y-1">
-                  <CheckCircle className={`h-6 w-6 mx-auto ${
-                    session?.objectivesCompleted.includes(objective) 
-                      ? 'text-green-500' 
-                      : 'text-gray-300'
-                  }`} />
-                  <p className="text-xs">{objective}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+        </div>
+        
+        <ModeSelector onModeSelect={handleModeSelect} />
+      </div>
+    );
+  }
 
-      {/* Voice Controls */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex items-center justify-center space-x-4">
-            <Button
-              size="lg"
-              variant={isRecording ? "destructive" : "default"}
-              onClick={isRecording ? stopRecording : startRecording}
-              disabled={isAISpeaking}
-              className="rounded-full w-16 h-16"
-            >
-              {isRecording ? <MicOff className="h-6 w-6" /> : <Mic className="h-6 w-6" />}
-            </Button>
-            
-            <div className="text-center">
-              {isAISpeaking && (
-                <div className="flex items-center gap-2 text-blue-600">
-                  <Volume2 className="h-5 w-5" />
-                  <span className="text-sm">{selectedCharacter.name} snakker...</span>
-                </div>
-              )}
-              {isRecording && (
-                <div className="flex items-center gap-2 text-red-600">
-                  <div className="w-2 h-2 bg-red-600 rounded-full animate-pulse" />
-                  <span className="text-sm">Tar opp...</span>
-                </div>
-              )}
-              {!isRecording && !isAISpeaking && (
-                <span className="text-sm text-gray-600">Trykk for å snakke</span>
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Conversation Log */}
-      {conversation.length > 0 && (
+  // Active session view
+  if (selectedCharacter && selectedMode && session) {
+    return (
+      <div className="space-y-6">
+        {/* Session Header */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MessageSquare className="h-5 w-5" />
-              Samtalelogg
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <Button variant="outline" onClick={goBackToModeSelection}>
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Endre modus
+                </Button>
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    {selectedMode === 'audio' ? <Mic className="h-5 w-5" /> : <MessageSquare className="h-5 w-5" />}
+                    Møte med {selectedCharacter.name}
+                  </CardTitle>
+                  <p className="text-sm text-gray-600">
+                    {selectedCharacter.role} • {selectedCharacter.scenario} • 
+                    <Badge variant="outline" className="ml-2">
+                      {selectedMode === 'audio' ? 'Audio-modus' : 'Chat-modus'}
+                    </Badge>
+                  </p>
+                </div>
+              </div>
+              <Button variant="outline" onClick={endSimulation}>
+                Avslutt møte
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4 max-h-64 overflow-y-auto">
-              {conversation.map((message, index) => (
-                <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[80%] p-3 rounded-lg ${
-                    message.role === 'user' 
-                      ? 'bg-blue-100 text-blue-900' 
-                      : 'bg-gray-100 text-gray-900'
-                  }`}>
-                    <div className="text-xs text-gray-500 mb-1">
-                      {message.role === 'user' ? 'Du' : selectedCharacter.name} • 
-                      {message.timestamp.toLocaleTimeString()}
-                    </div>
-                    <p className="text-sm">{message.content}</p>
-                  </div>
+            <div className="space-y-4">
+              <div>
+                <div className="flex justify-between text-sm mb-2">
+                  <span>Fremdrift</span>
+                  <span>{session.progress || 0}%</span>
                 </div>
-              ))}
+                <Progress value={session.progress || 0} className="w-full" />
+              </div>
+              
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-center">
+                {selectedCharacter.objectives.map((objective, index) => (
+                  <div key={index} className="space-y-1">
+                    <CheckCircle className={`h-6 w-6 mx-auto ${
+                      session.objectivesCompleted.includes(objective) 
+                        ? 'text-green-500' 
+                        : 'text-gray-300'
+                    }`} />
+                    <p className="text-xs">{objective}</p>
+                  </div>
+                ))}
+              </div>
             </div>
           </CardContent>
         </Card>
-      )}
-    </div>
-  );
+
+        {/* Mode-specific interface */}
+        {selectedMode === 'chat' ? (
+          <ChatInterface 
+            character={selectedCharacter}
+            onMessage={handleChatMessage}
+            messages={conversation}
+            isLoading={isLoading}
+          />
+        ) : (
+          <>
+            {/* Voice Controls for Audio Mode */}
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-center space-x-4">
+                  <Button
+                    size="lg"
+                    variant={isRecording ? "destructive" : "default"}
+                    onClick={isRecording ? stopRecording : startRecording}
+                    disabled={isAISpeaking}
+                    className="rounded-full w-16 h-16"
+                  >
+                    {isRecording ? <MicOff className="h-6 w-6" /> : <Mic className="h-6 w-6" />}
+                  </Button>
+                  
+                  <div className="text-center">
+                    {isAISpeaking && (
+                      <div className="flex items-center gap-2 text-blue-600">
+                        <Volume2 className="h-5 w-5" />
+                        <span className="text-sm">{selectedCharacter.name} snakker...</span>
+                      </div>
+                    )}
+                    {isRecording && (
+                      <div className="flex items-center gap-2 text-red-600">
+                        <div className="w-2 h-2 bg-red-600 rounded-full animate-pulse" />
+                        <span className="text-sm">Tar opp...</span>
+                      </div>
+                    )}
+                    {!isRecording && !isAISpeaking && (
+                      <span className="text-sm text-gray-600">Trykk for å snakke</span>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Conversation Log for Audio Mode */}
+            {conversation.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <MessageSquare className="h-5 w-5" />
+                    Samtalelogg
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4 max-h-64 overflow-y-auto">
+                    {conversation.map((message, index) => (
+                      <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                        <div className={`max-w-[80%] p-3 rounded-lg ${
+                          message.role === 'user' 
+                            ? 'bg-blue-100 text-blue-900' 
+                            : 'bg-gray-100 text-gray-900'
+                        }`}>
+                          <div className="text-xs text-gray-500 mb-1">
+                            {message.role === 'user' ? 'Du' : selectedCharacter.name} • 
+                            {message.timestamp.toLocaleTimeString()}
+                          </div>
+                          <p className="text-sm">{message.content}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </>
+        )}
+      </div>
+    );
+  }
+
+  return null;
 };
 
 export default AICharacterSimulator;
