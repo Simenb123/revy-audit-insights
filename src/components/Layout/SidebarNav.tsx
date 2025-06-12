@@ -10,7 +10,11 @@ import {
   Book,
   Settings,
   HelpCircle,
-  Building2
+  Building2,
+  Scale,
+  Shield,
+  Calculator,
+  CheckSquare
 } from 'lucide-react';
 import {
   SidebarGroup,
@@ -52,7 +56,14 @@ const SidebarNav = () => {
     {
       to: "/fag",
       icon: Book,
-      label: "Fag"
+      label: "Fagområder",
+      submenu: [
+        { to: "/fag", label: "Oversikt", icon: Book },
+        { to: "/fag/lover", label: "Lover & Forskrifter", icon: Scale },
+        { to: "/fag/revisjonsstandarder", label: "Revisjonsstandarder", icon: Shield },
+        { to: "/fag/regnskapsstandarder", label: "Regnskapsstandarder", icon: Calculator },
+        { to: "/fag/sjekklister", label: "Sjekklister", icon: CheckSquare }
+      ]
     },
     {
       to: "/dokumenter",
@@ -92,6 +103,23 @@ const SidebarNav = () => {
                   <span>{item.label}</span>
                 </Link>
               </SidebarMenuButton>
+              {item.submenu && isActive(item.to) && (
+                <div className="ml-6 mt-1 space-y-1">
+                  {item.submenu.map((subItem) => (
+                    <SidebarMenuButton 
+                      key={subItem.to} 
+                      asChild 
+                      size="sm"
+                      isActive={location.pathname === subItem.to}
+                    >
+                      <Link to={subItem.to} className="flex items-center gap-2">
+                        <subItem.icon className="h-3 w-3" />
+                        <span className="text-xs">{subItem.label}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  ))}
+                </div>
+              )}
             </SidebarMenuItem>
           ))}
         </SidebarMenu>
