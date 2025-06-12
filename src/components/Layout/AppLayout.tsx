@@ -20,13 +20,13 @@ const AppLayout = ({ children }: AppLayoutProps) => {
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
         <Sidebar />
-        <SidebarInset className="flex-1 flex flex-col">
+        <SidebarInset className="flex-1 flex flex-col min-w-0">
           <AppHeader onRightSidebarToggle={toggleRightSidebar} />
-          <main className="flex-1 overflow-auto p-0">
+          <main className="flex-1 overflow-auto">
             {children}
           </main>
         </SidebarInset>
-        <div className={`transition-all duration-300 ${isRightSidebarCollapsed ? 'w-0' : 'w-80'} flex-shrink-0`}>
+        <div className={`transition-all duration-300 ${isRightSidebarCollapsed ? 'w-0' : 'w-72'} flex-shrink-0`}>
           <RightSidebar 
             isCollapsed={isRightSidebarCollapsed}
             onToggle={toggleRightSidebar}
