@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
+import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { ResizablePanelGroup, ResizablePanel } from '@/components/ui/resizable';
 import Sidebar from './Sidebar';
 import AppHeader from './AppHeader';
@@ -47,9 +47,8 @@ const AppLayout = ({ children }: AppLayoutProps) => {
           {/* Header - Fixed at top */}
           <header className="sticky top-0 z-50">
             <div className="flex h-16 shrink-0 items-center justify-between bg-gradient-to-r from-revio-500 to-revio-600 text-white px-4 shadow-lg">
-              {/* Left Section with Sidebar Trigger */}
+              {/* Left Section - Removed SidebarTrigger */}
               <div className="flex items-center gap-4">
-                <SidebarTrigger className="h-9 w-9 text-white hover:bg-white/20" />
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-2">
                     <div className="w-9 h-9 bg-white/20 rounded-lg flex items-center justify-center">
