@@ -52,7 +52,7 @@ function App() {
                     <Route path="ledger/:clientId" element={<LedgerPage />} />
                     <Route path="communication" element={<Communication />} />
                     <Route path="teams" element={<TeamManagement />} />
-                    <Route path="knowledge/*" element={<KnowledgeBase />} />
+                    <Route path="fag/*" element={<KnowledgeBase />} />
                     <Route path="audit-logs" element={<AuditLogs />} />
                     <Route path="user-admin" element={<UserAdmin />} />
                     <Route path="user-profile" element={<UserProfile />} />
