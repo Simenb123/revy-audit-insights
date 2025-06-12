@@ -5,23 +5,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { FileText, CheckCircle2, AlertCircle, Eye, RotateCcw, Trash2 } from 'lucide-react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-
-interface ConversionJob {
-  id: string;
-  file_name: string;
-  title: string;
-  status: 'uploading' | 'processing' | 'completed' | 'failed';
-  progress: number;
-  category_id: string;
-  conversion_type: 'full' | 'summary' | 'checklist';
-  created_at: string;
-  estimated_time?: number;
-  error_message?: string;
-  completed_at?: string;
-}
+import { usePDFConversions } from '@/hooks/usePDFConversions';
 
 interface ConversionProgressProps {
   onPreview?: (jobId: string) => void;
@@ -29,123 +13,26 @@ interface ConversionProgressProps {
 }
 
 const ConversionProgress = ({ onPreview, onRetry }: ConversionProgressProps) => {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-
-  // Fetch conversion jobs
-  const { data: jobs, isLoading } = useQuery({
-    queryKey: ['pdf-conversions'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('pdf_conversions')
-        .select(`
-          *,
-          category:knowledge_categories(name)
-        `)
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      return data as ConversionJob[];
-    },
-    refetchInterval: (data) => {
-      // Refetch every 2 seconds if there are processing jobs
-      const hasProcessing = data?.some(job => 
-        job.status === 'uploading' || job.status === 'processing'
-      );
-      return hasProcessing ? 2000 : false;
-    }
-  });
+  const { conversions, isLoading, retryConversion, deleteConversion } = usePDFConversions();
 
   const handleRetry = async (jobId: string) => {
     try {
-      const job = jobs?.find(j => j.id === jobId);
-      if (!job) return;
-
-      // Reset job status to processing
-      const { error } = await supabase
-        .from('pdf_conversions')
-        .update({ 
-          status: 'processing', 
-          progress: 0, 
-          error_message: null,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', jobId);
-
-      if (error) throw error;
-
-      // Start conversion process
-      const { error: functionError } = await supabase.functions.invoke('pdf-converter', {
-        body: {
-          conversionId: jobId,
-          filePath: job.file_path,
-          conversionType: job.conversion_type,
-          title: job.title,
-          categoryId: job.category_id
-        }
-      });
-
-      if (functionError) throw functionError;
-
-      toast({
-        title: "Konvertering startet på nytt",
-        description: `${job.title} er nå i konverteringskøen.`,
-      });
-
-      // Refresh the data
-      queryClient.invalidateQueries({ queryKey: ['pdf-conversions'] });
-
+      await retryConversion.mutateAsync(jobId);
       onRetry?.(jobId);
     } catch (error) {
       console.error('Retry failed:', error);
-      toast({
-        title: "Kunne ikke starte på nytt",
-        description: "Det oppstod en feil ved omstart av konvertering.",
-        variant: "destructive"
-      });
     }
   };
 
   const handleDelete = async (jobId: string) => {
     try {
-      const job = jobs?.find(j => j.id === jobId);
-      if (!job) return;
-
-      // Delete the conversion record
-      const { error } = await supabase
-        .from('pdf_conversions')
-        .delete()
-        .eq('id', jobId);
-
-      if (error) throw error;
-
-      // Also delete the file from storage
-      const { error: storageError } = await supabase.storage
-        .from('pdf-documents')
-        .remove([job.file_path]);
-
-      if (storageError) {
-        console.warn('Could not delete file from storage:', storageError);
-      }
-
-      toast({
-        title: "Konverteringsjobb slettet",
-        description: `${job.title} er fjernet.`,
-      });
-
-      // Refresh the data
-      queryClient.invalidateQueries({ queryKey: ['pdf-conversions'] });
+      await deleteConversion.mutateAsync(jobId);
     } catch (error) {
       console.error('Delete failed:', error);
-      toast({
-        title: "Kunne ikke slette",
-        description: "Det oppstod en feil ved sletting av konverteringsjobb.",
-        variant: "destructive"
-      });
     }
   };
 
-  const getStatusColor = (status: ConversionJob['status']) => {
+  const getStatusColor = (status: string) => {
     switch (status) {
       case 'uploading': return 'bg-blue-500';
       case 'processing': return 'bg-yellow-500';
@@ -155,7 +42,7 @@ const ConversionProgress = ({ onPreview, onRetry }: ConversionProgressProps) => 
     }
   };
 
-  const getStatusIcon = (status: ConversionJob['status']) => {
+  const getStatusIcon = (status: string) => {
     switch (status) {
       case 'uploading':
       case 'processing': 
@@ -167,25 +54,27 @@ const ConversionProgress = ({ onPreview, onRetry }: ConversionProgressProps) => 
     }
   };
 
-  const getStatusLabel = (status: ConversionJob['status']) => {
+  const getStatusLabel = (status: string) => {
     switch (status) {
       case 'uploading': return 'Laster opp';
       case 'processing': return 'Behandler';
       case 'completed': return 'Fullført';
       case 'failed': return 'Feilet';
+      default: return 'Ukjent';
     }
   };
 
-  const getConversionTypeLabel = (type: ConversionJob['conversion_type']) => {
+  const getConversionTypeLabel = (type: string) => {
     switch (type) {
       case 'full': return 'Full konvertering';
       case 'summary': return 'Sammendrag';
       case 'checklist': return 'Sjekkliste';
+      default: return 'Ukjent';
     }
   };
 
-  const formatTimeEstimate = (minutes: number) => {
-    if (minutes <= 0) return 'Ferdig snart';
+  const formatTimeEstimate = (minutes?: number) => {
+    if (!minutes || minutes <= 0) return 'Ferdig snart';
     if (minutes < 60) return `${minutes} min`;
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
@@ -216,21 +105,21 @@ const ConversionProgress = ({ onPreview, onRetry }: ConversionProgressProps) => 
         <CardTitle className="flex items-center gap-2">
           <FileText className="h-5 w-5" />
           Konverteringsstatus
-          {jobs && jobs.length > 0 && (
+          {conversions && conversions.length > 0 && (
             <Badge variant="outline" className="ml-2">
-              {jobs.length}
+              {conversions.length}
             </Badge>
           )}
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {!jobs || jobs.length === 0 ? (
+        {!conversions || conversions.length === 0 ? (
           <p className="text-muted-foreground text-center py-8">
             Ingen konverteringsjobber ennå
           </p>
         ) : (
           <div className="space-y-4">
-            {jobs.map((job) => (
+            {conversions.map((job) => (
               <div key={job.id} className="border rounded-lg p-4">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
@@ -248,7 +137,7 @@ const ConversionProgress = ({ onPreview, onRetry }: ConversionProgressProps) => 
                 </div>
                 
                 <p className="text-sm text-muted-foreground mb-2">
-                  {job.file_name} • {(job as any).category?.name || 'Ukjent kategori'}
+                  {job.file_name} • {job.category?.name || 'Ukjent kategori'}
                 </p>
                 
                 {(job.status === 'uploading' || job.status === 'processing') && (
@@ -286,6 +175,7 @@ const ConversionProgress = ({ onPreview, onRetry }: ConversionProgressProps) => 
                       size="sm"
                       variant="outline"
                       onClick={() => handleRetry(job.id)}
+                      disabled={retryConversion.isPending}
                     >
                       <RotateCcw className="h-3 w-3 mr-1" />
                       Prøv igjen
@@ -297,6 +187,7 @@ const ConversionProgress = ({ onPreview, onRetry }: ConversionProgressProps) => 
                     variant="outline"
                     onClick={() => handleDelete(job.id)}
                     className="text-red-600 hover:text-red-700"
+                    disabled={deleteConversion.isPending}
                   >
                     <Trash2 className="h-3 w-3 mr-1" />
                     Slett
