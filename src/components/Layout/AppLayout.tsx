@@ -19,26 +19,28 @@ const AppLayout = ({ children }: AppLayoutProps) => {
   return (
     <div className="min-h-screen w-full bg-background flex flex-col">
       <SidebarProvider>
-        {/* Header - Fixed at top with full width and proper z-index */}
-        <AppHeader onRightSidebarToggle={toggleRightSidebar} />
+        {/* Header - Fixed at top */}
+        <AppHeader />
         
-        {/* Main Layout Container - Full width with proper flex layout */}
+        {/* Main Layout Container */}
         <div className="flex flex-1 w-full" style={{ height: 'calc(100vh - 64px)', marginTop: '64px' }}>
-          {/* Left Sidebar - Fixed width */}
-          <div className="flex-shrink-0">
+          {/* Left Sidebar - Enhanced with better collapse behavior */}
+          <div className="flex-shrink-0 relative">
             <Sidebar />
           </div>
           
-          {/* Main Content Area - Takes all remaining space */}
+          {/* Main Content Area */}
           <main className="flex-1 min-w-0 overflow-auto bg-background">
             <div className="h-full">
               {children}
             </div>
           </main>
           
-          {/* Right Sidebar - Wider and better responsive */}
-          <div className={`flex-shrink-0 bg-background border-l border-border transition-all duration-300 ease-in-out ${
-            isRightSidebarCollapsed ? 'w-0 overflow-hidden' : 'w-80 lg:w-96'
+          {/* Right Sidebar - Enhanced with partial visibility when collapsed */}
+          <div className={`flex-shrink-0 bg-background border-l border-border transition-all duration-300 ease-in-out relative ${
+            isRightSidebarCollapsed 
+              ? 'w-12' // Partial visibility when collapsed 
+              : 'w-80 lg:w-96'
           }`}>
             <RightSidebar 
               isCollapsed={isRightSidebarCollapsed}

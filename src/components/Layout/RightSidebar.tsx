@@ -8,6 +8,7 @@ import {
   MessageSquare, 
   BarChart3, 
   Activity, 
+  ChevronLeft,
   ChevronRight,
   TrendingUp,
   Users,
@@ -38,10 +39,6 @@ const RightSidebar = ({ isCollapsed, onToggle }: RightSidebarProps) => {
     completionRate: 92
   };
 
-  if (isCollapsed) {
-    return null;
-  }
-
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('no-NO', {
       style: 'currency',
@@ -50,16 +47,78 @@ const RightSidebar = ({ isCollapsed, onToggle }: RightSidebarProps) => {
     }).format(amount);
   };
 
+  // Collapsed state - show minimal sidebar with icons only
+  if (isCollapsed) {
+    return (
+      <div className="h-full flex flex-col w-full bg-sidebar border-r border-sidebar-border">
+        {/* Collapsed Toggle Button */}
+        <div className="p-2 border-b border-sidebar-border">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onToggle}
+            className="h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+        </div>
+        
+        {/* Collapsed Icons */}
+        <div className="flex flex-col gap-2 p-2">
+          <Button
+            variant={activeTab === 'revy' ? 'secondary' : 'ghost'}
+            size="icon"
+            onClick={() => {
+              setActiveTab('revy');
+              onToggle();
+            }}
+            className="h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent"
+            title="Revy"
+          >
+            <MessageSquare className="h-4 w-4" />
+          </Button>
+          
+          <Button
+            variant={activeTab === 'analytics' ? 'secondary' : 'ghost'}
+            size="icon"
+            onClick={() => {
+              setActiveTab('analytics');
+              onToggle();
+            }}
+            className="h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent"
+            title="Data"
+          >
+            <BarChart3 className="h-4 w-4" />
+          </Button>
+          
+          <Button
+            variant={activeTab === 'activity' ? 'secondary' : 'ghost'}
+            size="icon"
+            onClick={() => {
+              setActiveTab('activity');
+              onToggle();
+            }}
+            className="h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent"
+            title="Aktivitet"
+          >
+            <Activity className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Expanded state - show full sidebar
   return (
-    <div className="h-full flex flex-col w-full overflow-hidden">
-      {/* Header */}
+    <div className="h-full flex flex-col w-full overflow-hidden bg-background">
+      {/* Header with toggle */}
       <div className="p-4 border-b border-border flex items-center justify-between flex-shrink-0">
         <h3 className="font-semibold text-base">Verktøy</h3>
         <Button
           variant="ghost"
           size="icon"
           onClick={onToggle}
-          className="h-8 w-8"
+          className="h-8 w-8 hover:bg-accent"
         >
           <ChevronRight className="h-4 w-4" />
         </Button>
