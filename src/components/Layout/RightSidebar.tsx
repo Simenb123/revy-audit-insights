@@ -51,7 +51,7 @@ const RightSidebar = ({ isCollapsed, onToggle }: RightSidebarProps) => {
   };
 
   return (
-    <div className="bg-background border-l border-border h-full flex flex-col w-full">
+    <div className="h-full flex flex-col w-full overflow-hidden">
       {/* Header */}
       <div className="p-3 border-b border-border flex items-center justify-between flex-shrink-0">
         <h3 className="font-semibold text-sm">Verktøy</h3>

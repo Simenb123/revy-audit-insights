@@ -10,7 +10,7 @@ interface AppHeaderProps {
 
 const AppHeader = ({ onRightSidebarToggle }: AppHeaderProps) => {
   return (
-    <header className="flex h-16 shrink-0 items-center justify-between border-b bg-background px-4 sticky top-0 z-40">
+    <header className="fixed top-0 left-0 right-0 z-50 flex h-16 shrink-0 items-center justify-between border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4">
       <div className="flex items-center gap-2">
         <SidebarTrigger className="-ml-1 hover:bg-accent" />
         <span className="font-semibold text-foreground">Revio</span>

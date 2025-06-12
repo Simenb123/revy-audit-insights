@@ -9,8 +9,7 @@ import {
   SidebarMenuButton,
   SidebarGroup,
   SidebarGroupLabel,
-  SidebarGroupContent,
-  SidebarTrigger
+  SidebarGroupContent
 } from '@/components/ui/sidebar';
 import { 
   LayoutDashboard, 
@@ -102,10 +101,9 @@ const Sidebar = () => {
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <SidebarContainer>
+    <SidebarContainer className="h-full border-r border-border">
       <SidebarHeader className="border-b border-border p-4">
         <div className="flex items-center gap-2">
-          <SidebarTrigger className="h-7 w-7" />
           <span className="font-semibold text-sidebar-foreground">Menu</span>
         </div>
       </SidebarHeader>

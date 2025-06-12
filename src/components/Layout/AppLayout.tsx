@@ -17,25 +17,27 @@ const AppLayout = ({ children }: AppLayoutProps) => {
   };
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
-        {/* Left Sidebar */}
-        <Sidebar />
+    <div className="min-h-screen w-full bg-background">
+      <SidebarProvider>
+        {/* Header - Fixed at top with full width */}
+        <AppHeader onRightSidebarToggle={toggleRightSidebar} />
         
-        {/* Main Content Area */}
-        <div className="flex-1 flex flex-col min-w-0">
-          {/* Header - Full Width */}
-          <AppHeader onRightSidebarToggle={toggleRightSidebar} />
+        {/* Main Layout Container */}
+        <div className="flex h-[calc(100vh-64px)] mt-16 w-full">
+          {/* Left Sidebar */}
+          <div className="flex-shrink-0">
+            <Sidebar />
+          </div>
           
-          {/* Content with Right Sidebar */}
-          <div className="flex-1 flex overflow-hidden">
-            {/* Main Content */}
-            <main className="flex-1 overflow-auto">
+          {/* Main Content Area */}
+          <div className="flex-1 flex min-w-0 overflow-hidden">
+            {/* Primary Content */}
+            <main className="flex-1 overflow-auto bg-background">
               {children}
             </main>
             
             {/* Right Sidebar */}
-            <div className={`transition-all duration-300 flex-shrink-0 ${
+            <div className={`transition-all duration-300 ease-in-out flex-shrink-0 bg-background border-l border-border ${
               isRightSidebarCollapsed ? 'w-0' : 'w-64'
             }`}>
               <RightSidebar 
@@ -45,8 +47,8 @@ const AppLayout = ({ children }: AppLayoutProps) => {
             </div>
           </div>
         </div>
-      </div>
-    </SidebarProvider>
+      </SidebarProvider>
+    </div>
   );
 };
 
