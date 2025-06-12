@@ -36,50 +36,45 @@ const AppLayout = ({ children }: AppLayoutProps) => {
     return '350px'; // Default width
   };
 
-  // Calculate available width for main content
-  const getMainContentStyle = () => {
-    const rightSidebarWidth = getRightSidebarWidth();
-    if (isRightSidebarExpanded) {
-      return { marginRight: rightSidebarWidth };
-    }
-    if (isRightSidebarCollapsed) {
-      return { marginRight: '60px' };
-    }
-    return { marginRight: '350px' };
-  };
-
   return (
     <div className="min-h-screen w-full bg-background flex flex-col">
       <SidebarProvider defaultOpen={true}>
-        {/* Header - Fixed at top with higher z-index */}
+        {/* Header - Fixed at top */}
         <div className="fixed top-0 left-0 right-0 z-50">
           <AppHeader />
         </div>
         
         {/* Main Layout Container */}
-        <div className="flex flex-1 w-full relative" style={{ height: 'calc(100vh - 64px)', marginTop: '64px' }}>
-          {/* Left Sidebar - positioned below header */}
-          <div className="flex-shrink-0 relative z-40 fixed left-0 top-16 h-[calc(100vh-64px)]">
+        <div className="flex flex-1 w-full pt-16"> {/* Added pt-16 to account for header */}
+          {/* Left Sidebar - Fixed position under header */}
+          <div className="fixed left-0 top-16 h-[calc(100vh-64px)] z-40">
             <Sidebar />
           </div>
           
-          {/* Main Content Area with proper margin for sidebar */}
-          <div className="flex-1 min-w-0 transition-all duration-300 ml-sidebar group-data-[state=collapsed]:ml-sidebar-collapsed" style={getMainContentStyle()}>
-            <ResizablePanelGroup direction="horizontal" className="h-full">
+          {/* Main Content Area - Uses proper margins and transitions */}
+          <div className="flex-1 min-w-0 transition-all duration-300 ml-[var(--sidebar-width)] group-data-[state=collapsed]:ml-[var(--sidebar-width-collapsed)]">
+            <ResizablePanelGroup direction="horizontal" className="h-[calc(100vh-64px)]">
               {/* Main Content Panel */}
               <ResizablePanel 
                 defaultSize={100} 
                 minSize={20}
                 className="min-w-0"
+                style={{ 
+                  marginRight: isRightSidebarExpanded 
+                    ? '85%' 
+                    : isRightSidebarCollapsed 
+                      ? '60px' 
+                      : '350px' 
+                }}
               >
-                <main className="h-full overflow-auto bg-background">
+                <main className="h-full overflow-auto bg-background p-6">
                   {children}
                 </main>
               </ResizablePanel>
             </ResizablePanelGroup>
           </div>
 
-          {/* Right Sidebar - Fixed position, outside ResizablePanelGroup */}
+          {/* Right Sidebar - Fixed position */}
           <div 
             className="fixed right-0 top-16 h-[calc(100vh-64px)] bg-background border-l border-border z-30 transition-all duration-300"
             style={{ width: getRightSidebarWidth() }}
