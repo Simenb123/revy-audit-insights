@@ -10,7 +10,7 @@ interface AppHeaderProps {
 
 const AppHeader = ({ onRightSidebarToggle }: AppHeaderProps) => {
   return (
-    <header className="flex h-16 shrink-0 items-center justify-between border-b px-4">
+    <header className="flex h-16 shrink-0 items-center justify-between border-b px-4 bg-background sticky top-0 z-40">
       <SidebarTrigger className="-ml-1" />
       
       <div className="flex items-center gap-2">
