@@ -9,7 +9,7 @@ import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbP
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/Auth/AuthProvider';
 import { KnowledgeArticle } from '@/types/knowledge';
-import { Eye, Clock, Edit, Star, StarOff } from 'lucide-react';
+import { Eye, Clock, Edit, Star, StarOff, FileText } from 'lucide-react';
 
 const ArticleView = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -81,6 +81,116 @@ const ArticleView = () => {
     }
   });
 
+  // Check if article is PDF-converted and parse structured content
+  const isPdfConverted = article?.tags?.includes('pdf-konvertert');
+  
+  const renderStructuredContent = (content: string) => {
+    try {
+      const structuredData = JSON.parse(content);
+      
+      if (structuredData.type === 'full_article' && structuredData.sections) {
+        return (
+          <div className="space-y-6">
+            {structuredData.sections.map((section: any, index: number) => (
+              <div key={index} className="border-b border-gray-200 last:border-b-0 pb-6 last:pb-0">
+                <h3 className="text-xl font-semibold mb-3 text-gray-900">{section.title}</h3>
+                <div className="prose prose-gray max-w-none">
+                  <p className="text-gray-700 leading-relaxed">{section.content}</p>
+                </div>
+              </div>
+            ))}
+            {structuredData.metadata && (
+              <div className="mt-8 p-4 bg-gray-50 rounded-lg">
+                <p className="text-sm text-gray-600">
+                  <strong>Metadata:</strong> {structuredData.metadata.wordCount} ord • {structuredData.metadata.processingType} konvertering
+                </p>
+              </div>
+            )}
+          </div>
+        );
+      }
+      
+      if (structuredData.type === 'summary') {
+        return (
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-xl font-semibold mb-3 text-gray-900">Sammendrag</h3>
+              <p className="text-gray-700 leading-relaxed mb-4">{structuredData.summary}</p>
+            </div>
+            
+            <div>
+              <h3 className="text-xl font-semibold mb-3 text-gray-900">Nøkkelpunkter</h3>
+              <ul className="list-disc list-inside space-y-2">
+                {structuredData.keyPoints?.map((point: string, index: number) => (
+                  <li key={index} className="text-gray-700">{point}</li>
+                ))}
+              </ul>
+            </div>
+            
+            {structuredData.metadata && (
+              <div className="mt-8 p-4 bg-gray-50 rounded-lg">
+                <p className="text-sm text-gray-600">
+                  <strong>Sammendrag:</strong> {Math.round(structuredData.metadata.summaryRatio * 100)}% av original tekst • {structuredData.metadata.originalLength} tegn i original
+                </p>
+              </div>
+            )}
+          </div>
+        );
+      }
+      
+      if (structuredData.type === 'checklist') {
+        return (
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-xl font-semibold mb-4 text-gray-900">Sjekkliste</h3>
+              <div className="space-y-3">
+                {structuredData.items?.map((item: any, index: number) => (
+                  <div key={index} className="flex items-start gap-3 p-3 border rounded-lg">
+                    <div className={`mt-1 w-4 h-4 rounded border-2 flex items-center justify-center ${
+                      item.required ? 'border-red-400 bg-red-50' : 'border-gray-300 bg-gray-50'
+                    }`}>
+                      {item.completed && <div className="w-2 h-2 bg-green-600 rounded-full"></div>}
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-gray-700">{item.text}</p>
+                      {item.required && (
+                        <Badge variant="outline" className="mt-1 text-xs">Påkrevd</Badge>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            {structuredData.metadata && (
+              <div className="mt-8 p-4 bg-gray-50 rounded-lg">
+                <p className="text-sm text-gray-600">
+                  <strong>Sjekkliste:</strong> {structuredData.metadata.totalItems} punkter • {structuredData.metadata.requiredItems} påkrevde
+                </p>
+              </div>
+            )}
+          </div>
+        );
+      }
+      
+      // Fallback for unknown structured data
+      return (
+        <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <p className="text-yellow-800">Strukturert innhold av type "{structuredData.type}" støttes ikke ennå.</p>
+          <details className="mt-2">
+            <summary className="cursor-pointer text-sm text-yellow-700">Vis rå data</summary>
+            <pre className="mt-2 text-xs bg-white p-2 rounded border overflow-auto max-h-40">
+              {JSON.stringify(structuredData, null, 2)}
+            </pre>
+          </details>
+        </div>
+      );
+    } catch (error) {
+      // If it's not valid JSON, treat as regular text
+      return formatTextContent(content);
+    }
+  };
+
   // Improved function to format text content by converting newlines to HTML
   const formatTextContent = (content: string) => {
     // Check if content already contains HTML tags
@@ -139,7 +249,15 @@ const ArticleView = () => {
       {/* Article Header */}
       <div className="flex items-start justify-between">
         <div className="flex-1">
-          <h1 className="text-3xl font-bold mb-2">{article.title}</h1>
+          <div className="flex items-center gap-2 mb-2">
+            <h1 className="text-3xl font-bold">{article.title}</h1>
+            {isPdfConverted && (
+              <Badge variant="outline" className="flex items-center gap-1">
+                <FileText className="w-3 h-3" />
+                PDF-konvertert
+              </Badge>
+            )}
+          </div>
           {article.summary && (
             <p className="text-lg text-muted-foreground mb-4">{article.summary}</p>
           )}
@@ -194,10 +312,14 @@ const ArticleView = () => {
       {/* Article Content */}
       <Card>
         <CardContent className="p-6">
-          <div 
-            className="prose prose-gray max-w-none prose-p:mb-4 prose-p:leading-relaxed"
-            dangerouslySetInnerHTML={{ __html: formatTextContent(article.content) }}
-          />
+          {isPdfConverted ? (
+            renderStructuredContent(article.content)
+          ) : (
+            <div 
+              className="prose prose-gray max-w-none prose-p:mb-4 prose-p:leading-relaxed"
+              dangerouslySetInnerHTML={{ __html: formatTextContent(article.content) }}
+            />
+          )}
         </CardContent>
       </Card>
     </div>
