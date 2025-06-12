@@ -25,7 +25,9 @@ import {
   Shield,
   UserCheck,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  PanelLeftClose,
+  PanelLeftOpen
 } from 'lucide-react';
 import { useLocation, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -117,7 +119,7 @@ const Sidebar = () => {
             className="h-8 w-8 hover:bg-accent"
             title={state === "collapsed" ? "Utvid sidebar" : "Trekk inn sidebar"}
           >
-            {state === "collapsed" ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+            {state === "collapsed" ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
           </Button>
         </div>
       </SidebarHeader>

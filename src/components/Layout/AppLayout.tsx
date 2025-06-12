@@ -77,10 +77,11 @@ const AppLayout = ({ children }: AppLayoutProps) => {
               {/* Right Sidebar Panel */}
               <ResizablePanel 
                 defaultSize={getRightPanelSize()}
-                minSize={isRightSidebarCollapsed ? 15 : 20}
+                minSize={isRightSidebarCollapsed ? 4 : 20}
                 maxSize={isRightSidebarExpanded ? 85 : 60}
+                className="flex-shrink-0"
               >
-                <div className="h-full bg-background border-l border-border">
+                <div className={`h-full bg-background border-l border-border ${isRightSidebarCollapsed ? 'w-[60px]' : ''}`}>
                   <RightSidebar 
                     isCollapsed={isRightSidebarCollapsed}
                     isExpanded={isRightSidebarExpanded}

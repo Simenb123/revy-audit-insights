@@ -15,7 +15,9 @@ import {
   FileText,
   Brain,
   Maximize2,
-  Minimize2
+  Minimize2,
+  PanelRightClose,
+  PanelRightOpen
 } from 'lucide-react';
 import RevyAssistant from '../Revy/RevyAssistant';
 import { useLocation } from 'react-router-dom';
@@ -54,7 +56,7 @@ const RightSidebar = ({ isCollapsed, isExpanded, onToggle, onToggleExpanded }: R
   // Completely collapsed state - show minimal sidebar with icons only
   if (isCollapsed) {
     return (
-      <div className="h-full flex flex-col bg-sidebar border-l border-sidebar-border" style={{ width: '60px' }}>
+      <div className="h-full flex flex-col bg-sidebar border-l border-sidebar-border w-[60px] flex-shrink-0">
         {/* Collapsed Toggle Button */}
         <div className="p-2 border-b border-sidebar-border">
           <Button
@@ -64,7 +66,7 @@ const RightSidebar = ({ isCollapsed, isExpanded, onToggle, onToggleExpanded }: R
             className="h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent mx-auto"
             title="Utvid sidebar"
           >
-            <ChevronLeft className="h-4 w-4" />
+            <PanelRightOpen className="h-4 w-4" />
           </Button>
         </div>
         
@@ -136,7 +138,7 @@ const RightSidebar = ({ isCollapsed, isExpanded, onToggle, onToggleExpanded }: R
             className="h-8 w-8 hover:bg-accent"
             title="Trekk inn sidebar"
           >
-            <ChevronRight className="h-4 w-4" />
+            <PanelRightClose className="h-4 w-4" />
           </Button>
         </div>
       </div>
