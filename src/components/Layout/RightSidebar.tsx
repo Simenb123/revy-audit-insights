@@ -53,13 +53,13 @@ const RightSidebar = ({ isCollapsed, onToggle }: RightSidebarProps) => {
   return (
     <div className="h-full flex flex-col w-full overflow-hidden">
       {/* Header */}
-      <div className="p-3 border-b border-border flex items-center justify-between flex-shrink-0">
-        <h3 className="font-semibold text-sm">Verktøy</h3>
+      <div className="p-4 border-b border-border flex items-center justify-between flex-shrink-0">
+        <h3 className="font-semibold text-base">Verktøy</h3>
         <Button
           variant="ghost"
           size="icon"
           onClick={onToggle}
-          className="h-6 w-6"
+          className="h-8 w-8"
         >
           <ChevronRight className="h-4 w-4" />
         </Button>
@@ -68,22 +68,22 @@ const RightSidebar = ({ isCollapsed, onToggle }: RightSidebarProps) => {
       {/* Content */}
       <div className="flex-1 flex flex-col min-h-0">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-          <TabsList className="grid w-full grid-cols-3 mx-2 mt-2 flex-shrink-0">
-            <TabsTrigger value="revy" className="text-xs p-1">
-              <MessageSquare className="h-3 w-3 mr-1" />
+          <TabsList className="grid w-full grid-cols-3 mx-4 mt-3 flex-shrink-0">
+            <TabsTrigger value="revy" className="text-sm px-3 py-2">
+              <MessageSquare className="h-4 w-4 mr-2" />
               Revy
             </TabsTrigger>
-            <TabsTrigger value="analytics" className="text-xs p-1">
-              <BarChart3 className="h-3 w-3 mr-1" />
+            <TabsTrigger value="analytics" className="text-sm px-3 py-2">
+              <BarChart3 className="h-4 w-4 mr-2" />
               Data
             </TabsTrigger>
-            <TabsTrigger value="activity" className="text-xs p-1">
-              <Activity className="h-3 w-3 mr-1" />
+            <TabsTrigger value="activity" className="text-sm px-3 py-2">
+              <Activity className="h-4 w-4 mr-2" />
               Aktivitet
             </TabsTrigger>
           </TabsList>
           
-          <div className="flex-1 min-h-0">
+          <div className="flex-1 min-h-0 px-2">
             <TabsContent value="revy" className="h-full m-0 p-2 data-[state=inactive]:hidden">
               <div className="h-full">
                 <RevyAssistant 
@@ -96,30 +96,30 @@ const RightSidebar = ({ isCollapsed, onToggle }: RightSidebarProps) => {
             
             <TabsContent value="analytics" className="h-full m-0 data-[state=inactive]:hidden">
               <ScrollArea className="h-full">
-                <div className="p-2 space-y-3">
+                <div className="p-3 space-y-4">
                   {/* AI Usage Stats */}
                   {personalStats && (
                     <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-xs flex items-center gap-2">
-                          <Brain className="h-3 w-3" />
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-sm flex items-center gap-2">
+                          <Brain className="h-4 w-4" />
                           AI-bruk
                         </CardTitle>
                       </CardHeader>
-                      <CardContent className="space-y-2 p-2 pt-0">
-                        <div className="flex justify-between text-xs">
+                      <CardContent className="space-y-3 p-3 pt-0">
+                        <div className="flex justify-between text-sm">
                           <span>Kostnad</span>
-                          <span className="font-medium text-xs">
+                          <span className="font-medium">
                             {formatCurrency(personalStats.summary.totalCost)}
                           </span>
                         </div>
-                        <div className="flex justify-between text-xs">
+                        <div className="flex justify-between text-sm">
                           <span>Requests</span>
                           <span className="font-medium">{personalStats.summary.totalRequests}</span>
                         </div>
-                        <div className="flex justify-between text-xs">
+                        <div className="flex justify-between text-sm">
                           <span>Tokens</span>
-                          <span className="font-medium text-xs">
+                          <span className="font-medium">
                             {personalStats.summary.totalTokens.toLocaleString('no-NO')}
                           </span>
                         </div>
@@ -128,43 +128,43 @@ const RightSidebar = ({ isCollapsed, onToggle }: RightSidebarProps) => {
                   )}
 
                   {/* Quick Stats Grid */}
-                  <div className="grid grid-cols-2 gap-2">
-                    <Card className="p-2">
-                      <div className="flex items-center gap-1">
-                        <Users className="h-3 w-3 text-blue-500 flex-shrink-0" />
+                  <div className="grid grid-cols-2 gap-3">
+                    <Card className="p-3">
+                      <div className="flex items-center gap-2">
+                        <Users className="h-4 w-4 text-blue-500 flex-shrink-0" />
                         <div className="min-w-0">
                           <p className="text-xs text-muted-foreground truncate">Klienter</p>
-                          <p className="text-sm font-semibold">{analyticsData.clients}</p>
+                          <p className="text-lg font-semibold">{analyticsData.clients}</p>
                         </div>
                       </div>
                     </Card>
                     
-                    <Card className="p-2">
-                      <div className="flex items-center gap-1">
-                        <FileText className="h-3 w-3 text-green-500 flex-shrink-0" />
+                    <Card className="p-3">
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-green-500 flex-shrink-0" />
                         <div className="min-w-0">
                           <p className="text-xs text-muted-foreground truncate">Prosjekter</p>
-                          <p className="text-sm font-semibold">{analyticsData.activeProjects}</p>
+                          <p className="text-lg font-semibold">{analyticsData.activeProjects}</p>
                         </div>
                       </div>
                     </Card>
                     
-                    <Card className="p-2">
-                      <div className="flex items-center gap-1">
-                        <Activity className="h-3 w-3 text-orange-500 flex-shrink-0" />
+                    <Card className="p-3">
+                      <div className="flex items-center gap-2">
+                        <Activity className="h-4 w-4 text-orange-500 flex-shrink-0" />
                         <div className="min-w-0">
                           <p className="text-xs text-muted-foreground truncate">Ventende</p>
-                          <p className="text-sm font-semibold">{analyticsData.pendingReviews}</p>
+                          <p className="text-lg font-semibold">{analyticsData.pendingReviews}</p>
                         </div>
                       </div>
                     </Card>
                     
-                    <Card className="p-2">
-                      <div className="flex items-center gap-1">
-                        <TrendingUp className="h-3 w-3 text-revio-500 flex-shrink-0" />
+                    <Card className="p-3">
+                      <div className="flex items-center gap-2">
+                        <TrendingUp className="h-4 w-4 text-revio-500 flex-shrink-0" />
                         <div className="min-w-0">
                           <p className="text-xs text-muted-foreground truncate">Fullført</p>
-                          <p className="text-sm font-semibold">{analyticsData.completionRate}%</p>
+                          <p className="text-lg font-semibold">{analyticsData.completionRate}%</p>
                         </div>
                       </div>
                     </Card>
@@ -175,37 +175,37 @@ const RightSidebar = ({ isCollapsed, onToggle }: RightSidebarProps) => {
             
             <TabsContent value="activity" className="h-full m-0 data-[state=inactive]:hidden">
               <ScrollArea className="h-full">
-                <div className="p-2 space-y-2">
-                  <div className="flex items-start gap-2 p-2 bg-muted rounded text-xs">
-                    <div className="w-2 h-2 bg-green-500 rounded-full mt-1 flex-shrink-0"></div>
+                <div className="p-3 space-y-3">
+                  <div className="flex items-start gap-3 p-3 bg-muted rounded text-sm">
+                    <div className="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0"></div>
                     <div className="min-w-0 flex-1">
-                      <span className="truncate block">Regnskap oppdatert</span>
-                      <span className="text-muted-foreground">10:30</span>
+                      <span className="truncate block font-medium">Regnskap oppdatert</span>
+                      <span className="text-muted-foreground text-xs">10:30</span>
                     </div>
                   </div>
                   
-                  <div className="flex items-start gap-2 p-2 bg-muted rounded text-xs">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-1 flex-shrink-0"></div>
+                  <div className="flex items-start gap-3 p-3 bg-muted rounded text-sm">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
                     <div className="min-w-0 flex-1">
-                      <span className="truncate block">Ny melding</span>
-                      <span className="text-muted-foreground">09:15</span>
+                      <span className="truncate block font-medium">Ny melding</span>
+                      <span className="text-muted-foreground text-xs">09:15</span>
                     </div>
                   </div>
                   
-                  <div className="flex items-start gap-2 p-2 bg-muted rounded text-xs">
-                    <div className="w-2 h-2 bg-orange-500 rounded-full mt-1 flex-shrink-0"></div>
+                  <div className="flex items-start gap-3 p-3 bg-muted rounded text-sm">
+                    <div className="w-2 h-2 bg-orange-500 rounded-full mt-2 flex-shrink-0"></div>
                     <div className="min-w-0 flex-1">
-                      <span className="truncate block">Revisjon klar</span>
-                      <span className="text-muted-foreground">08:45</span>
+                      <span className="truncate block font-medium">Revisjon klar</span>
+                      <span className="text-muted-foreground text-xs">08:45</span>
                     </div>
                   </div>
 
                   {personalStats && personalStats.summary.totalRequests > 0 && (
-                    <div className="flex items-start gap-2 p-2 bg-blue-50 dark:bg-blue-950 rounded text-xs">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full mt-1 flex-shrink-0"></div>
+                    <div className="flex items-start gap-3 p-3 bg-blue-50 dark:bg-blue-950 rounded text-sm">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
                       <div className="min-w-0 flex-1">
-                        <span className="truncate block">AI brukt {personalStats.summary.totalRequests} ganger</span>
-                        <span className="text-muted-foreground">i dag</span>
+                        <span className="truncate block font-medium">AI brukt {personalStats.summary.totalRequests} ganger</span>
+                        <span className="text-muted-foreground text-xs">i dag</span>
                       </div>
                     </div>
                   )}
