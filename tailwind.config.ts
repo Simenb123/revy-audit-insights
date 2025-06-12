@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -77,6 +78,14 @@ export default {
           800: '#196F62',
           900: '#105045',
         }
+      },
+      spacing: {
+        'sidebar': 'var(--sidebar-width)',
+        'sidebar-collapsed': 'var(--sidebar-width-collapsed)',
+      },
+      width: {
+        'sidebar': 'var(--sidebar-width)',
+        'sidebar-collapsed': 'var(--sidebar-width-collapsed)',
       },
       borderRadius: {
         lg: 'var(--radius)',

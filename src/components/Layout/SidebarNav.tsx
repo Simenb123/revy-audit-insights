@@ -22,10 +22,14 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const SidebarNav = () => {
   const location = useLocation();
+  const { state } = useSidebar();
+  const isCollapsed = state === "collapsed";
   
   const navItems = [
     {
@@ -91,19 +95,42 @@ const SidebarNav = () => {
     return location.pathname.startsWith(path);
   };
 
+  const renderMenuItem = (item: typeof navItems[0]) => {
+    const menuButton = (
+      <SidebarMenuButton asChild isActive={isActive(item.to)}>
+        <Link to={item.to} className="flex items-center gap-3">
+          <item.icon className="h-4 w-4 flex-shrink-0" />
+          {!isCollapsed && <span>{item.label}</span>}
+        </Link>
+      </SidebarMenuButton>
+    );
+
+    if (isCollapsed) {
+      return (
+        <TooltipProvider key={item.to}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              {menuButton}
+            </TooltipTrigger>
+            <TooltipContent side="right" sideOffset={5}>
+              <p>{item.label}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      );
+    }
+
+    return menuButton;
+  };
+
   return (
     <SidebarGroup>
       <SidebarGroupContent>
         <SidebarMenu>
           {navItems.map((item) => (
             <SidebarMenuItem key={item.to}>
-              <SidebarMenuButton asChild isActive={isActive(item.to)}>
-                <Link to={item.to}>
-                  <item.icon />
-                  <span>{item.label}</span>
-                </Link>
-              </SidebarMenuButton>
-              {item.submenu && isActive(item.to) && (
+              {renderMenuItem(item)}
+              {item.submenu && isActive(item.to) && !isCollapsed && (
                 <div className="ml-6 mt-1 space-y-1">
                   {item.submenu.map((subItem) => (
                     <SidebarMenuButton 

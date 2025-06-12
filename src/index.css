@@ -45,6 +45,10 @@
     --sidebar-border: 173 49% 35%;
     --sidebar-ring: 174 57% 80%;
     
+    /* Sidebar width variables */
+    --sidebar-width: 16rem;
+    --sidebar-width-collapsed: 3rem;
+    
     /* Revio specific colors */
     --revio-100: 174 57% 95%;
     --revio-500: 173 49% 39%;
