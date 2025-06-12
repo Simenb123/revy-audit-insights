@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Send, MessageSquare } from 'lucide-react';
 
@@ -104,29 +104,33 @@ const ChatInterface = ({ character, onMessage, messages, isLoading }: ChatInterf
         </CardContent>
       </Card>
 
-      {/* Input Area */}
+      {/* Input Area - Now with larger textarea */}
       <Card>
         <CardContent className="p-4">
-          <div className="flex space-x-2">
-            <Input
+          <div className="space-y-3">
+            <Textarea
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder={`Skriv din melding til ${character.name}...`}
               disabled={isLoading}
-              className="flex-1"
+              className="min-h-[120px] text-base resize-none"
+              rows={4}
             />
-            <Button 
-              onClick={handleSend}
-              disabled={!inputValue.trim() || isLoading}
-              size="icon"
-            >
-              <Send className="h-4 w-4" />
-            </Button>
+            <div className="flex justify-between items-center">
+              <p className="text-xs text-gray-500">
+                Trykk Enter for å sende • Shift+Enter for ny linje
+              </p>
+              <Button 
+                onClick={handleSend}
+                disabled={!inputValue.trim() || isLoading}
+                className="ml-auto"
+              >
+                <Send className="h-4 w-4 mr-2" />
+                Send melding
+              </Button>
+            </div>
           </div>
-          <p className="text-xs text-gray-500 mt-2">
-            Trykk Enter for å sende • Shift+Enter for ny linje
-          </p>
         </CardContent>
       </Card>
     </div>
