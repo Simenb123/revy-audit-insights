@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { SidebarProvider } from '@/components/ui/sidebar';
-import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
+import { ResizablePanelGroup, ResizablePanel } from '@/components/ui/resizable';
 import Sidebar from './Sidebar';
 import AppHeader from './AppHeader';
 import RightSidebar from './RightSidebar';
@@ -50,7 +50,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
 
   return (
     <div className="min-h-screen w-full bg-background flex flex-col">
-      <SidebarProvider>
+      <SidebarProvider defaultOpen={true}>
         {/* Header - Fixed at top */}
         <AppHeader />
         

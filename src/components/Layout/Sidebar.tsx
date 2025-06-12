@@ -22,16 +22,16 @@ const Sidebar = () => {
   
   return (
     <SidebarContainer className="h-full border-r border-border">
-      <SidebarHeader className="border-b border-border p-4">
-        <div className="flex items-center justify-between">
+      <SidebarHeader className="border-b border-border p-2">
+        <div className="flex items-center justify-between w-full">
           {!isCollapsed && (
-            <span className="font-semibold text-sidebar-foreground">Menu</span>
+            <span className="font-semibold text-sidebar-foreground ml-2">Menu</span>
           )}
           <Button
             variant="ghost"
             size="icon"
             onClick={toggleSidebar}
-            className="h-8 w-8 hover:bg-accent flex-shrink-0"
+            className="h-8 w-8 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex-shrink-0"
             title={isCollapsed ? "Utvid sidebar" : "Trekk inn sidebar"}
           >
             {isCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
