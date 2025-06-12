@@ -51,17 +51,17 @@ const RightSidebar = ({ isCollapsed, isExpanded, onToggle, onToggleExpanded }: R
     }).format(amount);
   };
 
-  // Collapsed state - show minimal sidebar with icons only
+  // Completely collapsed state - show minimal sidebar with icons only
   if (isCollapsed) {
     return (
-      <div className="h-full flex flex-col w-full bg-sidebar border-r border-sidebar-border">
+      <div className="h-full flex flex-col bg-sidebar border-l border-sidebar-border" style={{ width: '60px' }}>
         {/* Collapsed Toggle Button */}
         <div className="p-2 border-b border-sidebar-border">
           <Button
             variant="ghost"
             size="icon"
             onClick={onToggle}
-            className="h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent"
+            className="h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent mx-auto"
             title="Utvid sidebar"
           >
             <ChevronLeft className="h-4 w-4" />
@@ -77,7 +77,7 @@ const RightSidebar = ({ isCollapsed, isExpanded, onToggle, onToggleExpanded }: R
               setActiveTab('revy');
               onToggle();
             }}
-            className="h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent"
+            className="h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent mx-auto"
             title="Revy"
           >
             <MessageSquare className="h-4 w-4" />
@@ -90,7 +90,7 @@ const RightSidebar = ({ isCollapsed, isExpanded, onToggle, onToggleExpanded }: R
               setActiveTab('analytics');
               onToggle();
             }}
-            className="h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent"
+            className="h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent mx-auto"
             title="Data"
           >
             <BarChart3 className="h-4 w-4" />
@@ -103,7 +103,7 @@ const RightSidebar = ({ isCollapsed, isExpanded, onToggle, onToggleExpanded }: R
               setActiveTab('activity');
               onToggle();
             }}
-            className="h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent"
+            className="h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent mx-auto"
             title="Aktivitet"
           >
             <Activity className="h-4 w-4" />

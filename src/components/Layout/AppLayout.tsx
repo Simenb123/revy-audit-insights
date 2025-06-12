@@ -29,6 +29,19 @@ const AppLayout = ({ children }: AppLayoutProps) => {
     }
   };
 
+  // Calculate panel sizes based on right sidebar state
+  const getMainPanelSize = () => {
+    if (isRightSidebarExpanded) return 15; // Very small when expanded
+    if (isRightSidebarCollapsed) return 85; // Larger when right sidebar is collapsed
+    return 70; // Default size
+  };
+
+  const getRightPanelSize = () => {
+    if (isRightSidebarExpanded) return 85; // Take most of the screen
+    if (isRightSidebarCollapsed) return 15; // Small when collapsed
+    return 30; // Default size
+  };
+
   return (
     <div className="min-h-screen w-full bg-background flex flex-col">
       <SidebarProvider>
@@ -47,8 +60,8 @@ const AppLayout = ({ children }: AppLayoutProps) => {
             <ResizablePanelGroup direction="horizontal" className="h-full">
               {/* Main Content Panel */}
               <ResizablePanel 
-                defaultSize={isRightSidebarExpanded ? 20 : 70} 
-                minSize={20}
+                defaultSize={getMainPanelSize()} 
+                minSize={15}
                 className={isRightSidebarExpanded ? "hidden lg:block" : ""}
               >
                 <main className="h-full overflow-auto bg-background">
@@ -56,17 +69,16 @@ const AppLayout = ({ children }: AppLayoutProps) => {
                 </main>
               </ResizablePanel>
               
-              {/* Resize Handle - only show when not collapsed and not expanded */}
+              {/* Resize Handle - only show when not collapsed and not fully expanded */}
               {!isRightSidebarCollapsed && !isRightSidebarExpanded && (
                 <ResizableHandle withHandle className="w-2 bg-border hover:bg-accent transition-colors" />
               )}
               
               {/* Right Sidebar Panel */}
               <ResizablePanel 
-                defaultSize={isRightSidebarExpanded ? 80 : 30} 
-                minSize={isRightSidebarCollapsed ? 4 : 20}
-                maxSize={isRightSidebarExpanded ? 80 : 50}
-                className={`${isRightSidebarCollapsed ? 'w-16' : ''} ${isRightSidebarExpanded ? 'w-full' : ''}`}
+                defaultSize={getRightPanelSize()}
+                minSize={isRightSidebarCollapsed ? 15 : 20}
+                maxSize={isRightSidebarExpanded ? 85 : 60}
               >
                 <div className="h-full bg-background border-l border-border">
                   <RightSidebar 

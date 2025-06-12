@@ -10,7 +10,7 @@ import {
   SidebarGroup,
   SidebarGroupLabel,
   SidebarGroupContent,
-  SidebarTrigger
+  useSidebar
 } from '@/components/ui/sidebar';
 import { 
   LayoutDashboard, 
@@ -23,12 +23,16 @@ import {
   FileText,
   BarChart3,
   Shield,
-  UserCheck
+  UserCheck,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { useLocation, Link } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
 
 const Sidebar = () => {
   const location = useLocation();
+  const { state, toggleSidebar } = useSidebar();
   
   const mainNavItems = [
     { 
@@ -106,7 +110,15 @@ const Sidebar = () => {
       <SidebarHeader className="border-b border-border p-4">
         <div className="flex items-center justify-between">
           <span className="font-semibold text-sidebar-foreground">Menu</span>
-          <SidebarTrigger className="h-8 w-8" />
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleSidebar}
+            className="h-8 w-8 hover:bg-accent"
+            title={state === "collapsed" ? "Utvid sidebar" : "Trekk inn sidebar"}
+          >
+            {state === "collapsed" ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+          </Button>
         </div>
       </SidebarHeader>
       
