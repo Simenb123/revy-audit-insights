@@ -162,7 +162,7 @@ export const useTeamEnrollments = () => {
           *,
           learning_paths (*),
           user_module_completions (*),
-          profiles!user_learning_enrollments_user_id_fkey (
+          profiles!user_id (
             first_name, 
             last_name, 
             email,
@@ -175,9 +175,9 @@ export const useTeamEnrollments = () => {
       if (error) throw error;
       
       // Filter based on user role and firm
-      return data.filter(enrollment => {
+      return data?.filter(enrollment => {
         const enrollmentProfile = enrollment.profiles;
-        if (!enrollmentProfile) return false;
+        if (!enrollmentProfile || Array.isArray(enrollmentProfile)) return false;
         
         if (profile.user_role === 'admin' || profile.user_role === 'partner') {
           return enrollmentProfile.audit_firm_id === profile.audit_firm_id;
@@ -185,7 +185,7 @@ export const useTeamEnrollments = () => {
           return enrollmentProfile.department_id === profile.department_id;
         }
         return false;
-      });
+      }) || [];
     }
   });
 };

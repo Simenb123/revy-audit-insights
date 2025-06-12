@@ -41,8 +41,10 @@ const ManagerDashboard = () => {
 
   const filteredEnrollments = teamEnrollments?.filter(enrollment => {
     const profile = enrollment.profiles;
-    const fullName = `${profile?.first_name || ''} ${profile?.last_name || ''}`.toLowerCase();
-    const email = profile?.email?.toLowerCase() || '';
+    if (!profile || Array.isArray(profile)) return false;
+    
+    const fullName = `${profile.first_name || ''} ${profile.last_name || ''}`.toLowerCase();
+    const email = profile.email?.toLowerCase() || '';
     const search = searchTerm.toLowerCase();
     
     return fullName.includes(search) || email.includes(search);
@@ -200,6 +202,8 @@ const ManagerDashboard = () => {
           <div className="space-y-4">
             {filteredEnrollments.map((enrollment) => {
               const profile = enrollment.profiles;
+              if (!profile || Array.isArray(profile)) return null;
+              
               const progress = calculateProgress(enrollment);
               const daysLeft = differenceInDays(new Date(enrollment.target_completion_date), new Date());
               const isOverdue = daysLeft < 0 && enrollment.status === 'active';
@@ -212,14 +216,14 @@ const ManagerDashboard = () => {
                   <div className="flex items-center gap-4">
                     <div className="w-10 h-10 bg-revio-100 rounded-full flex items-center justify-center">
                       <span className="text-revio-700 font-medium">
-                        {profile?.first_name?.[0]}{profile?.last_name?.[0]}
+                        {profile.first_name?.[0]}{profile.last_name?.[0]}
                       </span>
                     </div>
                     <div>
                       <h4 className="font-medium">
-                        {profile?.first_name} {profile?.last_name}
+                        {profile.first_name} {profile.last_name}
                       </h4>
-                      <p className="text-sm text-muted-foreground">{profile?.email}</p>
+                      <p className="text-sm text-muted-foreground">{profile.email}</p>
                       <p className="text-xs text-muted-foreground">
                         {enrollment.learning_paths?.name}
                       </p>
