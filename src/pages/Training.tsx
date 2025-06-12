@@ -11,13 +11,17 @@ import {
   TrendingUp,
   Users,
   Clock,
-  Star
+  Star,
+  Mic,
+  MessageSquare
 } from 'lucide-react';
 import { useTrainingProgress, useUserBadges, useTestScenarios } from '@/hooks/useTraining';
 import TrainingOverview from '@/components/Training/TrainingOverview';
 import UserProgress from '@/components/Training/UserProgress';
 import ScenarioSelection from '@/components/Training/ScenarioSelection';
 import RiskAssessmentModule from '@/components/Training/RiskAssessmentModule';
+import AICharacterSimulator from '@/components/Training/AICharacterSimulator';
+import VoiceTrainingModule from '@/components/Training/VoiceTrainingModule';
 
 const Training = () => {
   const [selectedScenario, setSelectedScenario] = useState<string | null>(null);
@@ -39,6 +43,24 @@ const Training = () => {
   const selectedScenarioData = scenarios?.find(s => s.id === selectedScenario);
 
   const modules = [
+    {
+      id: 'ai-character',
+      title: 'AI Oppstartsmøte',
+      description: 'Øv på oppstartsmøter med AI-drevne klientkarakter',
+      icon: MessageSquare,
+      difficulty: 'Middels',
+      estimatedTime: '20-30 min',
+      featured: true
+    },
+    {
+      id: 'voice-training',
+      title: 'Stemmetrening',
+      description: 'Tren kommunikasjon med stemmegjenkjenning',
+      icon: Mic,
+      difficulty: 'Alle nivåer',
+      estimatedTime: '10-15 min',
+      featured: true
+    },
     {
       id: 'risikovurdering',
       title: 'Risikovurdering',
@@ -90,19 +112,25 @@ const Training = () => {
             RevisionAkademiet
           </h1>
           <p className="text-gray-600 mt-2">
-            Interaktiv læring og kompetanseutvikling for revisorer
+            Interaktiv læring og kompetanseutvikling for revisorer - nå med AI stemmetrening!
           </p>
         </div>
-        <Badge className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-4 py-2 text-sm">
-          Beta-versjon
-        </Badge>
+        <div className="flex gap-2">
+          <Badge className="bg-gradient-to-r from-green-400 to-blue-500 text-white px-4 py-2 text-sm">
+            🎤 Ny: AI Voice Training
+          </Badge>
+          <Badge className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-4 py-2 text-sm">
+            Beta-versjon
+          </Badge>
+        </div>
       </div>
 
       {/* Main Content */}
       {!selectedScenario ? (
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="overview">Oversikt</TabsTrigger>
+            <TabsTrigger value="ai-training">🎤 AI Trening</TabsTrigger>
             <TabsTrigger value="scenarios">Velg scenario</TabsTrigger>
             <TabsTrigger value="progress">Min progresjon</TabsTrigger>
           </TabsList>
@@ -112,6 +140,10 @@ const Training = () => {
               userProgress={userProgress} 
               userBadges={userBadges}
             />
+          </TabsContent>
+          
+          <TabsContent value="ai-training">
+            <AICharacterSimulator />
           </TabsContent>
           
           <TabsContent value="scenarios">
@@ -166,18 +198,29 @@ const Training = () => {
                 <Card 
                   key={module.id} 
                   className={`cursor-pointer transition-all hover:shadow-lg border-2 ${
+                    module.featured ? 'border-gradient-to-r from-green-400 to-blue-500 shadow-lg' :
                     isCompleted ? 'border-green-200 bg-green-50' : 'border-gray-200 hover:border-blue-300'
                   }`}
                   onClick={() => handleModuleSelect(module.id)}
                 >
                   <CardHeader>
                     <div className="flex items-center justify-between">
-                      <Icon className={`h-8 w-8 ${isCompleted ? 'text-green-600' : 'text-blue-600'}`} />
-                      {isCompleted && (
-                        <Badge className="bg-green-100 text-green-800">
-                          Fullført
-                        </Badge>
-                      )}
+                      <Icon className={`h-8 w-8 ${
+                        module.featured ? 'text-blue-600' :
+                        isCompleted ? 'text-green-600' : 'text-blue-600'
+                      }`} />
+                      <div className="flex gap-1">
+                        {module.featured && (
+                          <Badge className="bg-gradient-to-r from-green-400 to-blue-500 text-white text-xs">
+                            Nytt!
+                          </Badge>
+                        )}
+                        {isCompleted && (
+                          <Badge className="bg-green-100 text-green-800">
+                            Fullført
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                     <CardTitle className="text-lg">{module.title}</CardTitle>
                     <p className="text-gray-600 text-sm">{module.description}</p>
@@ -214,6 +257,21 @@ const Training = () => {
           </div>
 
           {/* Active Module Content */}
+          {activeModule === 'ai-character' && (
+            <AICharacterSimulator />
+          )}
+          
+          {activeModule === 'voice-training' && selectedScenario && selectedScenarioData && (
+            <VoiceTrainingModule 
+              scenarioId={selectedScenario}
+              scenarioName={selectedScenarioData.name}
+              onComplete={(feedback) => {
+                console.log('Voice training completed:', feedback);
+                // Handle completion
+              }}
+            />
+          )}
+          
           {activeModule === 'risikovurdering' && selectedScenario && selectedScenarioData && (
             <RiskAssessmentModule 
               scenarioId={selectedScenario}
