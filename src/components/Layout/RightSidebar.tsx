@@ -8,8 +8,6 @@ import {
   MessageSquare, 
   BarChart3, 
   Activity, 
-  ChevronLeft,
-  ChevronRight,
   TrendingUp,
   Users,
   FileText,
@@ -56,7 +54,7 @@ const RightSidebar = ({ isCollapsed, isExpanded, onToggle, onToggleExpanded }: R
   // Completely collapsed state - show minimal sidebar with icons only
   if (isCollapsed) {
     return (
-      <div className="h-full flex flex-col bg-sidebar border-l border-sidebar-border w-[60px] flex-shrink-0">
+      <div className="h-full flex flex-col bg-sidebar border-l border-sidebar-border w-full">
         {/* Collapsed Toggle Button */}
         <div className="p-2 border-b border-sidebar-border">
           <Button
