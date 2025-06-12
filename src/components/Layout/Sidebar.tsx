@@ -24,8 +24,6 @@ import {
   BarChart3,
   Shield,
   UserCheck,
-  ChevronLeft,
-  ChevronRight,
   PanelLeftClose,
   PanelLeftOpen
 } from 'lucide-react';
