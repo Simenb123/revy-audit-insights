@@ -1254,6 +1254,205 @@ export type Database = {
           },
         ]
       }
+      learning_certifications: {
+        Row: {
+          certificate_data: Json | null
+          certificate_number: string
+          created_at: string
+          enrollment_id: string
+          final_score: number
+          id: string
+          issued_by: string | null
+          issued_date: string
+          learning_path_id: string
+          user_id: string
+          valid_until: string | null
+        }
+        Insert: {
+          certificate_data?: Json | null
+          certificate_number: string
+          created_at?: string
+          enrollment_id: string
+          final_score: number
+          id?: string
+          issued_by?: string | null
+          issued_date?: string
+          learning_path_id: string
+          user_id: string
+          valid_until?: string | null
+        }
+        Update: {
+          certificate_data?: Json | null
+          certificate_number?: string
+          created_at?: string
+          enrollment_id?: string
+          final_score?: number
+          id?: string
+          issued_by?: string | null
+          issued_date?: string
+          learning_path_id?: string
+          user_id?: string
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "learning_certifications_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "user_learning_enrollments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "learning_certifications_learning_path_id_fkey"
+            columns: ["learning_path_id"]
+            isOneToOne: false
+            referencedRelation: "learning_paths"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      learning_notifications: {
+        Row: {
+          created_at: string
+          enrollment_id: string | null
+          id: string
+          is_read: boolean | null
+          message: string
+          notification_type: string
+          read_at: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          enrollment_id?: string | null
+          id?: string
+          is_read?: boolean | null
+          message: string
+          notification_type: string
+          read_at?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          enrollment_id?: string | null
+          id?: string
+          is_read?: boolean | null
+          message?: string
+          notification_type?: string
+          read_at?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "learning_notifications_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "user_learning_enrollments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      learning_path_modules: {
+        Row: {
+          created_at: string
+          description: string | null
+          estimated_hours: number | null
+          id: string
+          is_mandatory: boolean | null
+          learning_path_id: string
+          name: string
+          sort_order: number | null
+          unlock_after_days: number | null
+          updated_at: string
+          week_number: number
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          estimated_hours?: number | null
+          id?: string
+          is_mandatory?: boolean | null
+          learning_path_id: string
+          name: string
+          sort_order?: number | null
+          unlock_after_days?: number | null
+          updated_at?: string
+          week_number: number
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          estimated_hours?: number | null
+          id?: string
+          is_mandatory?: boolean | null
+          learning_path_id?: string
+          name?: string
+          sort_order?: number | null
+          unlock_after_days?: number | null
+          updated_at?: string
+          week_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "learning_path_modules_learning_path_id_fkey"
+            columns: ["learning_path_id"]
+            isOneToOne: false
+            referencedRelation: "learning_paths"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      learning_paths: {
+        Row: {
+          audit_firm_id: string | null
+          certification_required: boolean | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          duration_weeks: number
+          id: string
+          is_active: boolean | null
+          is_mandatory: boolean | null
+          minimum_score: number | null
+          name: string
+          target_role: string | null
+          updated_at: string
+        }
+        Insert: {
+          audit_firm_id?: string | null
+          certification_required?: boolean | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          duration_weeks?: number
+          id?: string
+          is_active?: boolean | null
+          is_mandatory?: boolean | null
+          minimum_score?: number | null
+          name: string
+          target_role?: string | null
+          updated_at?: string
+        }
+        Update: {
+          audit_firm_id?: string | null
+          certification_required?: boolean | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          duration_weeks?: number
+          id?: string
+          is_active?: boolean | null
+          is_mandatory?: boolean | null
+          minimum_score?: number | null
+          name?: string
+          target_role?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           content: string
@@ -1606,7 +1805,9 @@ export type Database = {
           attempts: number | null
           completed_at: string | null
           created_at: string
+          enrollment_id: string | null
           id: string
+          learning_path_id: string | null
           max_score: number | null
           module_name: string
           scenario_id: string
@@ -1618,7 +1819,9 @@ export type Database = {
           attempts?: number | null
           completed_at?: string | null
           created_at?: string
+          enrollment_id?: string | null
           id?: string
+          learning_path_id?: string | null
           max_score?: number | null
           module_name: string
           scenario_id: string
@@ -1630,7 +1833,9 @@ export type Database = {
           attempts?: number | null
           completed_at?: string | null
           created_at?: string
+          enrollment_id?: string | null
           id?: string
+          learning_path_id?: string | null
           max_score?: number | null
           module_name?: string
           scenario_id?: string
@@ -1639,6 +1844,20 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "training_progress_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "user_learning_enrollments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_progress_learning_path_id_fkey"
+            columns: ["learning_path_id"]
+            isOneToOne: false
+            referencedRelation: "learning_paths"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "training_progress_scenario_id_fkey"
             columns: ["scenario_id"]
@@ -1802,6 +2021,122 @@ export type Database = {
           },
         ]
       }
+      user_learning_enrollments: {
+        Row: {
+          actual_completion_date: string | null
+          certification_date: string | null
+          certification_earned: boolean | null
+          created_at: string
+          current_week: number | null
+          enrolled_by: string | null
+          id: string
+          learning_path_id: string
+          overall_score: number | null
+          start_date: string
+          status: string | null
+          target_completion_date: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          actual_completion_date?: string | null
+          certification_date?: string | null
+          certification_earned?: boolean | null
+          created_at?: string
+          current_week?: number | null
+          enrolled_by?: string | null
+          id?: string
+          learning_path_id: string
+          overall_score?: number | null
+          start_date?: string
+          status?: string | null
+          target_completion_date?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          actual_completion_date?: string | null
+          certification_date?: string | null
+          certification_earned?: boolean | null
+          created_at?: string
+          current_week?: number | null
+          enrolled_by?: string | null
+          id?: string
+          learning_path_id?: string
+          overall_score?: number | null
+          start_date?: string
+          status?: string | null
+          target_completion_date?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_learning_enrollments_learning_path_id_fkey"
+            columns: ["learning_path_id"]
+            isOneToOne: false
+            referencedRelation: "learning_paths"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_module_completions: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          attempts: number | null
+          completed_at: string | null
+          created_at: string
+          enrollment_id: string
+          feedback: string | null
+          id: string
+          module_id: string
+          score: number | null
+          time_spent_minutes: number | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          attempts?: number | null
+          completed_at?: string | null
+          created_at?: string
+          enrollment_id: string
+          feedback?: string | null
+          id?: string
+          module_id: string
+          score?: number | null
+          time_spent_minutes?: number | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          attempts?: number | null
+          completed_at?: string | null
+          created_at?: string
+          enrollment_id?: string
+          feedback?: string | null
+          id?: string
+          module_id?: string
+          score?: number | null
+          time_spent_minutes?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_module_completions_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "user_learning_enrollments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_module_completions_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "learning_path_modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_presence: {
         Row: {
           current_room_id: string | null
@@ -1849,6 +2184,10 @@ export type Database = {
           completion_tokens: number
         }
         Returns: number
+      }
+      generate_certificate_number: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
       get_user_department: {
         Args: { user_uuid: string }

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,15 +13,20 @@ import {
   Clock,
   Star,
   Mic,
-  MessageSquare
+  MessageSquare,
+  GraduationCap,
+  Shield
 } from 'lucide-react';
 import { useTrainingProgress, useUserBadges, useTestScenarios } from '@/hooks/useTraining';
+import { useUserProfile } from '@/hooks/useUserProfile';
 import TrainingOverview from '@/components/Training/TrainingOverview';
 import UserProgress from '@/components/Training/UserProgress';
 import ScenarioSelection from '@/components/Training/ScenarioSelection';
 import RiskAssessmentModule from '@/components/Training/RiskAssessmentModule';
 import AICharacterSimulator from '@/components/Training/AICharacterSimulator';
 import VoiceTrainingModule from '@/components/Training/VoiceTrainingModule';
+import StructuredLearningPath from '@/components/Training/StructuredLearningPath';
+import ManagerDashboard from '@/components/Training/ManagerDashboard';
 
 const Training = () => {
   const [selectedScenario, setSelectedScenario] = useState<string | null>(null);
@@ -29,6 +35,7 @@ const Training = () => {
   const { data: userProgress, isLoading: progressLoading } = useTrainingProgress();
   const { data: userBadges, isLoading: badgesLoading } = useUserBadges();
   const { data: scenarios, isLoading: scenariosLoading } = useTestScenarios();
+  const { data: userProfile } = useUserProfile();
 
   const handleScenarioSelect = (scenarioId: string) => {
     setSelectedScenario(scenarioId);
@@ -86,6 +93,8 @@ const Training = () => {
     }
   ];
 
+  const isManager = userProfile?.userRole && ['admin', 'partner', 'manager'].includes(userProfile.userRole);
+
   if (progressLoading || badgesLoading || scenariosLoading) {
     return (
       <div className="h-full flex items-center justify-center">
@@ -110,15 +119,15 @@ const Training = () => {
               RevisionAkademiet
             </h1>
             <p className="text-muted-foreground mt-2">
-              Interaktiv læring og kompetanseutvikling for revisorer - nå med AI stemmetrening!
+              Strukturert opplæring og kompetanseutvikling for revisorer - nå med 4-ukers sertifiseringsprogram!
             </p>
           </div>
           <div className="flex gap-2">
             <Badge className="bg-gradient-to-r from-green-400 to-blue-500 text-white px-4 py-2 text-sm">
-              🎤 Ny: AI Voice Training
+              🎓 Ny: Strukturert Læringsbane
             </Badge>
             <Badge className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-4 py-2 text-sm">
-              Beta-versjon
+              🏆 Sertifisering
             </Badge>
           </div>
         </div>
@@ -127,13 +136,27 @@ const Training = () => {
       {/* Main Content */}
       <div className="p-4">
         {!selectedScenario ? (
-          <Tabs defaultValue="overview" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4">
+          <Tabs defaultValue="structured-learning" className="space-y-6">
+            <TabsList className={`grid w-full ${isManager ? 'grid-cols-6' : 'grid-cols-5'}`}>
+              <TabsTrigger value="structured-learning">
+                <GraduationCap className="w-4 h-4 mr-2" />
+                Strukturert Læring
+              </TabsTrigger>
               <TabsTrigger value="overview">Oversikt</TabsTrigger>
               <TabsTrigger value="ai-training">🎤 AI Trening</TabsTrigger>
               <TabsTrigger value="scenarios">Velg scenario</TabsTrigger>
               <TabsTrigger value="progress">Min progresjon</TabsTrigger>
+              {isManager && (
+                <TabsTrigger value="manager">
+                  <Shield className="w-4 h-4 mr-2" />
+                  Leder Dashboard
+                </TabsTrigger>
+              )}
             </TabsList>
+            
+            <TabsContent value="structured-learning">
+              <StructuredLearningPath />
+            </TabsContent>
             
             <TabsContent value="overview">
               <TrainingOverview 
@@ -159,6 +182,12 @@ const Training = () => {
                 userBadges={userBadges}
               />
             </TabsContent>
+            
+            {isManager && (
+              <TabsContent value="manager">
+                <ManagerDashboard />
+              </TabsContent>
+            )}
           </Tabs>
         ) : !activeModule ? (
           <div className="space-y-6">
