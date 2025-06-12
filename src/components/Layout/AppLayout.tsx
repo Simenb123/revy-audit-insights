@@ -44,15 +44,13 @@ const AppLayout = ({ children }: AppLayoutProps) => {
           <AppHeader />
         </div>
         
-        {/* Main Layout Container */}
+        {/* Main Layout Container - Using flex layout instead of fixed positioning */}
         <div className="flex flex-1 w-full pt-16">
-          {/* Left Sidebar - Fixed position under header with proper width */}
-          <div className="fixed left-0 top-16 h-[calc(100vh-64px)] z-40 w-[var(--sidebar-width)] group-data-[state=collapsed]:w-[var(--sidebar-width-collapsed)] transition-all duration-300">
-            <Sidebar />
-          </div>
+          {/* Left Sidebar - Using normal layout flow */}
+          <Sidebar />
           
-          {/* Main Content Area - Uses proper margins and transitions */}
-          <div className="flex-1 min-w-0 transition-all duration-300 ml-[var(--sidebar-width)] group-data-[state=collapsed]:ml-[var(--sidebar-width-collapsed)]">
+          {/* Main Content Area - Flex-1 to take remaining space */}
+          <div className="flex-1 min-w-0">
             <ResizablePanelGroup direction="horizontal" className="h-[calc(100vh-64px)]">
               {/* Main Content Panel */}
               <ResizablePanel 

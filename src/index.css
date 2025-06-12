@@ -47,7 +47,7 @@
     
     /* Sidebar width variables */
     --sidebar-width: 16rem;
-    --sidebar-width-collapsed: 3rem;
+    --sidebar-width-icon: 3rem;
     
     /* Revio specific colors */
     --revio-100: 174 57% 95%;
@@ -104,24 +104,6 @@
 
   body {
     @apply bg-background text-foreground;
-  }
-
-  /* Sidebar state classes - these work with the SidebarProvider context */
-  .group[data-state="collapsed"] .group-data-\[state\=collapsed\]\:ml-\[--sidebar-width-collapsed\] {
-    margin-left: var(--sidebar-width-collapsed);
-  }
-  
-  .group[data-state="expanded"] .ml-\[--sidebar-width\] {
-    margin-left: var(--sidebar-width);
-  }
-
-  /* Ensure sidebar transitions work properly */
-  .group[data-state="collapsed"] + * {
-    margin-left: var(--sidebar-width-collapsed);
-  }
-  
-  .group[data-state="expanded"] + * {
-    margin-left: var(--sidebar-width);
   }
 }
 

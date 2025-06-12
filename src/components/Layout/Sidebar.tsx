@@ -21,7 +21,7 @@ const Sidebar = () => {
   const isCollapsed = state === "collapsed";
   
   return (
-    <SidebarContainer className="h-full border-r border-border w-full">
+    <SidebarContainer className="h-[calc(100vh-64px)] border-r border-border">
       <SidebarHeader className="border-b border-border p-2">
         <div className="flex items-center justify-between w-full">
           {!isCollapsed && (
