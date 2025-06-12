@@ -4,7 +4,6 @@ import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import Sidebar from './Sidebar';
 import AppHeader from './AppHeader';
 import RightSidebar from './RightSidebar';
-import RevyAssistant from '../Revy/RevyAssistant';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -33,9 +32,6 @@ const AppLayout = ({ children }: AppLayoutProps) => {
             onToggle={toggleRightSidebar}
           />
         </div>
-        
-        {/* AI Assistant - floating mode */}
-        <RevyAssistant />
       </div>
     </SidebarProvider>
   );
