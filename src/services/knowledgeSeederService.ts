@@ -52,7 +52,7 @@ export const seedKnowledgeBase = async () => {
       return;
     }
 
-    // Create knowledge articles
+    // Create knowledge articles with proper typing
     const articles = [
       {
         category_id: appFuncCat?.id,
@@ -83,7 +83,7 @@ Revio er et moderne revisjonssystem designet for norske revisjonsfirmaer. Her er
 4. Utforsk kunnskapsbasen for mer informasjon
         `,
         tags: ['guide', 'kom-i-gang', 'navigering'],
-        status: 'published',
+        status: 'published' as const,
         author_id: user.id
       },
       {
@@ -120,7 +120,7 @@ Revio sporer automatisk:
 - Bruk søkefunksjonen for å finne klienter raskt
         `,
         tags: ['klienter', 'administrasjon', 'brønnøysund'],
-        status: 'published',
+        status: 'published' as const,
         author_id: user.id
       },
       {
@@ -155,7 +155,7 @@ Alle handlinger må dokumenteres i henhold til ISA 230:
 - Oppfølging av avvik
         `,
         tags: ['revisjon', 'ISA', 'prosedyrer', 'dokumentasjon'],
-        status: 'published',
+        status: 'published' as const,
         author_id: user.id
       },
       {
@@ -197,7 +197,7 @@ A: Revy kan hjelpe med revisjonsmetodikk, ISA-standarder, regnskapsanalyse og ap
 A: Ja, Revy er alltid tilgjengelig for å hjelpe deg.
         `,
         tags: ['faq', 'hjelp', 'support'],
-        status: 'published',
+        status: 'published' as const,
         author_id: user.id
       }
     ];

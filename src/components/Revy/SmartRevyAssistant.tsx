@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from "@/components/ui/button";
@@ -105,6 +106,8 @@ Noen eksempler på hva du kan spørre meg om:
       'collaboration': 'samarbeid',
       'communication': 'kommunikasjon',
       'team-management': 'teamledelse',
+      'drill-down': 'dataanalyse',
+      'mapping': 'kontomapping',
       'general': 'hovedområdet'
     };
     return names[context] || context;

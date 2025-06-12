@@ -139,6 +139,8 @@ const getBasicContextualTip = (context: RevyContext): string => {
     'collaboration': 'Jeg kan hjelpe med teamorganisering, kommunikasjon og oppgavefordeling i revisjonsprosjekter.',
     'communication': 'Her kan jeg hjelpe med meldinger, møtenotater eller klientkommunikasjon.',
     'team-management': 'Som teamleder kan jeg hjelpe med kapasitetsplanlegging, kompetanseutvikling og teamdynamikk.',
+    'drill-down': 'Jeg kan hjelpe deg med å analysere regnskapsdata og finne avvik eller mønstre som krever oppmerksomhet.',
+    'mapping': 'Jeg kan veilede deg gjennom kontomapping og forklare hvordan regnskapskonti skal klassifiseres.',
     'general': 'Jeg kan hjelpe deg med revisjonsmetodikk, ISA-standarder, regnskapsanalyse eller appfunksjonalitet. Hva lurer du på?'
   };
   
