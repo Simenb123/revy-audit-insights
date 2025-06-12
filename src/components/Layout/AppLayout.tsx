@@ -45,9 +45,9 @@ const AppLayout = ({ children }: AppLayoutProps) => {
         </div>
         
         {/* Main Layout Container */}
-        <div className="flex flex-1 w-full pt-16"> {/* Added pt-16 to account for header */}
-          {/* Left Sidebar - Fixed position under header */}
-          <div className="fixed left-0 top-16 h-[calc(100vh-64px)] z-40">
+        <div className="flex flex-1 w-full pt-16">
+          {/* Left Sidebar - Fixed position under header with proper width */}
+          <div className="fixed left-0 top-16 h-[calc(100vh-64px)] z-40 w-[var(--sidebar-width)] group-data-[state=collapsed]:w-[var(--sidebar-width-collapsed)] transition-all duration-300">
             <Sidebar />
           </div>
           
