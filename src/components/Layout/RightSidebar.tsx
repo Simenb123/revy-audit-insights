@@ -15,9 +15,10 @@ import {
   Maximize2,
   Minimize2,
   PanelRightClose,
-  PanelRightOpen
+  PanelRightOpen,
+  Sparkles
 } from 'lucide-react';
-import RevyAssistant from '../Revy/RevyAssistant';
+import SmartRevyAssistant from '../Revy/SmartRevyAssistant';
 import { useLocation } from 'react-router-dom';
 import { useAIUsage } from '@/hooks/useAIUsage';
 import { useRevyContext } from '../RevyContext/RevyContextProvider';
@@ -77,10 +78,14 @@ const RightSidebar = ({ isCollapsed, isExpanded, onToggle, onToggleExpanded }: R
               setActiveTab('revy');
               onToggle();
             }}
-            className="h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent mx-auto"
-            title="Revy"
+            className="h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent mx-auto relative"
+            title="Smart Revy AI"
           >
             <MessageSquare className="h-4 w-4" />
+            {/* Smart indicator */}
+            <div className="absolute -top-1 -right-1 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full p-0.5">
+              <Sparkles className="h-2 w-2 text-white" />
+            </div>
           </Button>
           
           <Button
@@ -118,7 +123,14 @@ const RightSidebar = ({ isCollapsed, isExpanded, onToggle, onToggleExpanded }: R
     <div className="h-full flex flex-col w-full overflow-hidden bg-background">
       {/* Header with toggle and expand controls */}
       <div className="p-4 border-b border-border flex items-center justify-between flex-shrink-0">
-        <h3 className="font-semibold text-base">Verktøy</h3>
+        <div className="flex items-center gap-2">
+          <h3 className="font-semibold text-base">Verktøy</h3>
+          {/* Smart upgrade indicator */}
+          <div className="flex items-center gap-1 bg-gradient-to-r from-blue-100 to-purple-100 px-2 py-1 rounded-full">
+            <Sparkles className="h-3 w-3 text-blue-600" />
+            <span className="text-xs text-blue-700 font-medium">AI Oppgradert</span>
+          </div>
+        </div>
         <div className="flex items-center gap-1">
           <Button
             variant="ghost"
@@ -145,9 +157,13 @@ const RightSidebar = ({ isCollapsed, isExpanded, onToggle, onToggleExpanded }: R
       <div className="flex-1 flex flex-col min-h-0">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
           <TabsList className="grid w-full grid-cols-3 mx-4 mt-3 flex-shrink-0">
-            <TabsTrigger value="revy" className="text-sm px-3 py-2">
+            <TabsTrigger value="revy" className="text-sm px-3 py-2 relative">
               <MessageSquare className="h-4 w-4 mr-2" />
               Revy
+              {/* Smart indicator */}
+              <div className="absolute -top-1 -right-1 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full p-0.5">
+                <Sparkles className="h-2 w-2 text-white" />
+              </div>
             </TabsTrigger>
             <TabsTrigger value="analytics" className="text-sm px-3 py-2">
               <BarChart3 className="h-4 w-4 mr-2" />
@@ -162,7 +178,7 @@ const RightSidebar = ({ isCollapsed, isExpanded, onToggle, onToggleExpanded }: R
           <div className="flex-1 min-h-0 px-2">
             <TabsContent value="revy" className="h-full m-0 p-2 data-[state=inactive]:hidden">
               <div className="h-full">
-                <RevyAssistant 
+                <SmartRevyAssistant 
                   embedded={true} 
                   clientData={currentClient}
                   userRole="employee"
@@ -277,11 +293,11 @@ const RightSidebar = ({ isCollapsed, isExpanded, onToggle, onToggleExpanded }: R
                   </div>
 
                   {personalStats && personalStats.summary.totalRequests > 0 && (
-                    <div className="flex items-start gap-3 p-3 bg-blue-50 dark:bg-blue-950 rounded text-sm">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                    <div className="flex items-start gap-3 p-3 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded text-sm">
+                      <div className="w-2 h-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full mt-2 flex-shrink-0"></div>
                       <div className="min-w-0 flex-1">
-                        <span className="truncate block font-medium">AI brukt {personalStats.summary.totalRequests} ganger</span>
-                        <span className="text-muted-foreground text-xs">i dag</span>
+                        <span className="truncate block font-medium">Smart AI brukt {personalStats.summary.totalRequests} ganger</span>
+                        <span className="text-muted-foreground text-xs">denne uken</span>
                       </div>
                     </div>
                   )}
