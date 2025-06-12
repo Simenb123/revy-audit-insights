@@ -6,9 +6,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FileUp, FileText, AlertCircle, Upload, X } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { usePDFConversions } from '@/hooks/usePDFConversions';
 
 interface PDFUploadManagerProps {
   onUploadComplete?: (conversionData: any) => void;
@@ -19,9 +19,8 @@ const PDFUploadManager = ({ onUploadComplete }: PDFUploadManagerProps) => {
   const [title, setTitle] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [conversionType, setConversionType] = useState<'full' | 'summary' | 'checklist'>('full');
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const { toast } = useToast();
+  
+  const { uploadAndCreateConversion } = usePDFConversions();
 
   // Fetch knowledge categories for the dropdown
   const { data: categories } = useQuery({
@@ -48,152 +47,41 @@ const PDFUploadManager = ({ onUploadComplete }: PDFUploadManagerProps) => {
           setTitle(fileName);
         }
       } else {
-        toast({
-          title: "Ugyldig filtype",
-          description: "Kun PDF-filer er støttet.",
-          variant: "destructive"
-        });
+        // Handle non-PDF files
+        alert('Kun PDF-filer er støttet.');
       }
     }
   };
 
   const handleRemoveFile = () => {
     setFile(null);
-    setUploadProgress(0);
-  };
-
-  const uploadFileToStorage = async (file: File, userId: string): Promise<string> => {
-    const fileExt = 'pdf';
-    const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-    const filePath = `${userId}/${fileName}`;
-
-    const { error } = await supabase.storage
-      .from('pdf-documents')
-      .upload(filePath, file, {
-        cacheControl: '3600',
-        upsert: false
-      });
-
-    if (error) {
-      throw new Error(`Upload failed: ${error.message}`);
-    }
-
-    return filePath;
-  };
-
-  const createConversionRecord = async (data: {
-    filePath: string;
-    fileName: string;
-    fileSize: number;
-    title: string;
-    categoryId: string;
-    conversionType: string;
-    userId: string;
-  }) => {
-    const { data: conversion, error } = await supabase
-      .from('pdf_conversions')
-      .insert({
-        user_id: data.userId,
-        file_name: data.fileName,
-        file_path: data.filePath,
-        file_size: data.fileSize,
-        title: data.title,
-        category_id: data.categoryId,
-        conversion_type: data.conversionType,
-        status: 'uploading'
-      })
-      .select('*')
-      .single();
-
-    if (error) {
-      throw new Error(`Failed to create conversion record: ${error.message}`);
-    }
-
-    return conversion;
-  };
-
-  const startConversionProcess = async (conversionId: string, filePath: string) => {
-    const { error } = await supabase.functions.invoke('pdf-converter', {
-      body: {
-        conversionId,
-        filePath,
-        conversionType,
-        title,
-        categoryId
-      }
-    });
-
-    if (error) {
-      throw new Error(`Conversion failed: ${error.message}`);
-    }
   };
 
   const handleUpload = async () => {
     if (!file || !title || !categoryId) {
-      toast({
-        title: "Manglende informasjon",
-        description: "Fyll ut alle påkrevde felt og velg en PDF-fil.",
-        variant: "destructive"
-      });
+      alert('Fyll ut alle påkrevde felt og velg en PDF-fil.');
       return;
     }
 
-    setIsUploading(true);
-    setUploadProgress(0);
-
     try {
-      // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        throw new Error('Du må være logget inn for å laste opp filer');
-      }
-
-      // Step 1: Upload file to storage
-      setUploadProgress(25);
-      const filePath = await uploadFileToStorage(file, user.id);
-
-      // Step 2: Create conversion record
-      setUploadProgress(50);
-      const conversion = await createConversionRecord({
-        filePath,
-        fileName: file.name,
-        fileSize: file.size,
+      const result = await uploadAndCreateConversion.mutateAsync({
+        file,
         title,
         categoryId,
-        conversionType,
-        userId: user.id
-      });
-
-      // Step 3: Start conversion process
-      setUploadProgress(75);
-      await startConversionProcess(conversion.id, filePath);
-
-      setUploadProgress(100);
-
-      toast({
-        title: "Upload fullført!",
-        description: `${title} er nå i konverteringskøen.`,
+        conversionType
       });
 
       // Notify parent component
-      onUploadComplete?.(conversion);
+      onUploadComplete?.(result);
 
       // Reset form
       setFile(null);
       setTitle('');
       setCategoryId('');
       setConversionType('full');
-      setUploadProgress(0);
 
     } catch (error) {
       console.error('Upload error:', error);
-      toast({
-        title: "Upload feilet",
-        description: error.message || "Det oppstod en feil under opplasting.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsUploading(false);
     }
   };
 
@@ -224,7 +112,7 @@ const PDFUploadManager = ({ onUploadComplete }: PDFUploadManagerProps) => {
                 type="file"
                 accept=".pdf"
                 onChange={handleFileChange}
-                disabled={isUploading}
+                disabled={uploadAndCreateConversion.isPending}
                 className="hidden"
               />
               <label htmlFor="pdf-upload" className="cursor-pointer">
@@ -251,22 +139,11 @@ const PDFUploadManager = ({ onUploadComplete }: PDFUploadManagerProps) => {
                   variant="ghost"
                   size="sm"
                   onClick={handleRemoveFile}
-                  disabled={isUploading}
+                  disabled={uploadAndCreateConversion.isPending}
                 >
                   <X className="h-4 w-4" />
                 </Button>
               </div>
-              {uploadProgress > 0 && uploadProgress < 100 && (
-                <div className="mt-3">
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div 
-                      className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${uploadProgress}%` }}
-                    ></div>
-                  </div>
-                  <p className="text-sm text-gray-600 mt-1">{uploadProgress}% lastet opp</p>
-                </div>
-              )}
             </div>
           )}
         </div>
@@ -279,14 +156,18 @@ const PDFUploadManager = ({ onUploadComplete }: PDFUploadManagerProps) => {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="F.eks: ISA 315 - Risikovurdering"
-            disabled={isUploading}
+            disabled={uploadAndCreateConversion.isPending}
           />
         </div>
 
         {/* Category Selection */}
         <div>
           <Label htmlFor="category">Kategori *</Label>
-          <Select value={categoryId} onValueChange={setCategoryId} disabled={isUploading}>
+          <Select 
+            value={categoryId} 
+            onValueChange={setCategoryId} 
+            disabled={uploadAndCreateConversion.isPending}
+          >
             <SelectTrigger>
               <SelectValue placeholder="Velg kategori" />
             </SelectTrigger>
@@ -303,7 +184,11 @@ const PDFUploadManager = ({ onUploadComplete }: PDFUploadManagerProps) => {
         {/* Conversion Type */}
         <div>
           <Label htmlFor="conversion-type">Konverteringstype</Label>
-          <Select value={conversionType} onValueChange={(value: any) => setConversionType(value)} disabled={isUploading}>
+          <Select 
+            value={conversionType} 
+            onValueChange={(value: any) => setConversionType(value)} 
+            disabled={uploadAndCreateConversion.isPending}
+          >
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
@@ -334,13 +219,13 @@ const PDFUploadManager = ({ onUploadComplete }: PDFUploadManagerProps) => {
         {/* Upload Button */}
         <Button 
           onClick={handleUpload} 
-          disabled={!file || !title || !categoryId || isUploading}
+          disabled={!file || !title || !categoryId || uploadAndCreateConversion.isPending}
           className="w-full"
         >
-          {isUploading ? (
+          {uploadAndCreateConversion.isPending ? (
             <>
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-              {uploadProgress < 100 ? `Laster opp... ${uploadProgress}%` : 'Starter konvertering...'}
+              Laster opp og starter konvertering...
             </>
           ) : (
             <>

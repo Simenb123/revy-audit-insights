@@ -53,26 +53,41 @@ export const usePDFConversions = () => {
     }
   });
 
-  // Create a new conversion
-  const createConversion = useMutation({
+  // Upload file to storage and create conversion record
+  const uploadAndCreateConversion = useMutation({
     mutationFn: async (data: {
-      filePath: string;
-      fileName: string;
-      fileSize: number;
+      file: File;
       title: string;
       categoryId: string;
-      conversionType: string;
+      conversionType: 'full' | 'summary' | 'checklist';
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
-      const { data: conversion, error } = await supabase
+      // Upload file to storage
+      const fileExt = 'pdf';
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const filePath = `${user.id}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('pdf-documents')
+        .upload(filePath, data.file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) {
+        throw new Error(`Upload failed: ${uploadError.message}`);
+      }
+
+      // Create conversion record
+      const { data: conversion, error: insertError } = await supabase
         .from('pdf_conversions')
         .insert({
           user_id: user.id,
-          file_name: data.fileName,
-          file_path: data.filePath,
-          file_size: data.fileSize,
+          file_name: data.file.name,
+          file_path: filePath,
+          file_size: data.file.size,
           title: data.title,
           category_id: data.categoryId,
           conversion_type: data.conversionType,
@@ -81,11 +96,54 @@ export const usePDFConversions = () => {
         .select('*')
         .single();
 
-      if (error) throw error;
+      if (insertError) {
+        // Clean up uploaded file if database insert fails
+        await supabase.storage
+          .from('pdf-documents')
+          .remove([filePath]);
+        throw new Error(`Failed to create conversion record: ${insertError.message}`);
+      }
+
+      // Start conversion process
+      const { error: functionError } = await supabase.functions.invoke('pdf-converter', {
+        body: {
+          conversionId: conversion.id,
+          filePath,
+          conversionType: data.conversionType,
+          title: data.title,
+          categoryId: data.categoryId
+        }
+      });
+
+      if (functionError) {
+        // Update status to failed if function invocation fails
+        await supabase
+          .from('pdf_conversions')
+          .update({ 
+            status: 'failed', 
+            error_message: functionError.message,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', conversion.id);
+        
+        throw new Error(`Conversion failed: ${functionError.message}`);
+      }
+
       return conversion;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pdf-conversions'] });
+      toast({
+        title: "Upload startet!",
+        description: "PDF-en er lastet opp og konverteringen har startet.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Upload feilet",
+        description: error.message,
+        variant: "destructive"
+      });
     }
   });
 
@@ -184,7 +242,7 @@ export const usePDFConversions = () => {
     conversions: conversionsQuery.data || [],
     isLoading: conversionsQuery.isLoading,
     error: conversionsQuery.error,
-    createConversion,
+    uploadAndCreateConversion,
     retryConversion,
     deleteConversion,
     refetch: conversionsQuery.refetch

@@ -16,8 +16,8 @@ const PDFConversionWorkflow = () => {
 
   const handlePreview = (jobId: string) => {
     console.log('Preview job:', jobId);
-    // In real implementation, this would open a preview of the converted article
-    // For now, we'll navigate to the article or show a preview modal
+    // TODO: Implement preview functionality
+    // This would navigate to the created article or show a preview modal
   };
 
   const handleRetry = (jobId: string) => {
