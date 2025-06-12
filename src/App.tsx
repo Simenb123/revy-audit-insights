@@ -1,5 +1,5 @@
 
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "@/components/Auth/AuthProvider";
@@ -53,6 +53,7 @@ function App() {
                     <Route path="communication" element={<Communication />} />
                     <Route path="teams" element={<TeamManagement />} />
                     <Route path="fag/*" element={<KnowledgeBase />} />
+                    <Route path="knowledge/*" element={<Navigate to="/fag" replace />} />
                     <Route path="audit-logs" element={<AuditLogs />} />
                     <Route path="user-admin" element={<UserAdmin />} />
                     <Route path="user-profile" element={<UserProfile />} />
