@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useRevyContext } from '@/components/RevyContext/RevyContextProvider';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -48,8 +49,6 @@ const ClientsOverview = () => {
   useEffect(() => {
     const fetchAnnouncements = async () => {
       try {
-        // In a real implementation, we would fetch from Supabase here
-        // For now, we'll use an empty array until the announcements table is created
         setAnnouncements([]);
       } catch (error) {
         console.error('Error fetching announcements:', error);
@@ -65,39 +64,50 @@ const ClientsOverview = () => {
   }, [setContext]);
 
   if (isLoading) {
-    return <div className="p-6">Laster klienter...</div>;
+    return <div className="p-4">Laster klienter...</div>;
   }
 
   if (error) {
-    return <div className="p-6">Feil ved lasting av klienter</div>;
+    return <div className="p-4">Feil ved lasting av klienter</div>;
   }
 
   return (
-    <div className="p-6">
-      <ClientsHeader 
-        title="Mine klienter"
-        subtitle="Oversikt over klienter og revisjonsstatus"
-        searchTerm={searchTerm}
-        onSearchChange={setSearchTerm}
-        departmentFilter={departmentFilter}
-        onDepartmentChange={setDepartmentFilter}
-        departments={departments}
-        onRefresh={handleRefreshBrregData}
-        isRefreshing={isRefreshing}
-        hasApiError={hasApiError}
-        refreshProgress={refreshProgress}
-        showTestData={showTestData}
-        onTestDataToggle={setShowTestData}
-      />
+    <div className="h-full overflow-auto">
+      {/* Header */}
+      <div className="p-4 border-b bg-background">
+        <ClientsHeader 
+          title="Mine klienter"
+          subtitle="Oversikt over klienter og revisjonsstatus"
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          departmentFilter={departmentFilter}
+          onDepartmentChange={setDepartmentFilter}
+          departments={departments}
+          onRefresh={handleRefreshBrregData}
+          isRefreshing={isRefreshing}
+          hasApiError={hasApiError}
+          refreshProgress={refreshProgress}
+          showTestData={showTestData}
+          onTestDataToggle={setShowTestData}
+        />
+      </div>
       
-      {/* Client Details - shown when a client is selected */}
-      {selectedClient && (
-        <ClientDetails client={selectedClient} />
-      )}
-      
-      <div className="w-full">
-        <ClientStatsGrid clients={clients} announcements={announcements} />
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mt-6">
+      {/* Main Content */}
+      <div className="p-4">
+        {/* Client Details - shown when a client is selected */}
+        {selectedClient && (
+          <div className="mb-6">
+            <ClientDetails client={selectedClient} />
+          </div>
+        )}
+        
+        {/* Stats Grid */}
+        <div className="mb-6">
+          <ClientStatsGrid clients={clients} announcements={announcements} />
+        </div>
+        
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           <div className="col-span-1 lg:col-span-3">
             <Card>
               <CardHeader>

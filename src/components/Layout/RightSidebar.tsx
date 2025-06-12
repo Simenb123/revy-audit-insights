@@ -12,8 +12,7 @@ import {
   TrendingUp,
   Users,
   FileText,
-  Brain,
-  DollarSign
+  Brain
 } from 'lucide-react';
 import RevyAssistant from '../Revy/RevyAssistant';
 import { useLocation } from 'react-router-dom';
@@ -31,7 +30,7 @@ const RightSidebar = ({ isCollapsed, onToggle }: RightSidebarProps) => {
   const { personalStats } = useAIUsage('week');
   const { currentClient } = useRevyContext();
 
-  // Mock analytics data - would be replaced with real data
+  // Mock analytics data
   const analyticsData = {
     clients: 24,
     activeProjects: 8,
@@ -39,7 +38,6 @@ const RightSidebar = ({ isCollapsed, onToggle }: RightSidebarProps) => {
     completionRate: 92
   };
 
-  // If completely collapsed, don't render the sidebar at all
   if (isCollapsed) {
     return null;
   }
@@ -53,7 +51,8 @@ const RightSidebar = ({ isCollapsed, onToggle }: RightSidebarProps) => {
   };
 
   return (
-    <div className="bg-white border-l border-border h-full flex flex-col w-full">
+    <div className="bg-background border-l border-border h-full flex flex-col w-full">
+      {/* Header */}
       <div className="p-3 border-b border-border flex items-center justify-between flex-shrink-0">
         <h3 className="font-semibold text-sm">Verktøy</h3>
         <Button
@@ -66,25 +65,26 @@ const RightSidebar = ({ isCollapsed, onToggle }: RightSidebarProps) => {
         </Button>
       </div>
       
+      {/* Content */}
       <div className="flex-1 flex flex-col min-h-0">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-          <TabsList className="grid w-full grid-cols-3 mx-3 mt-2 flex-shrink-0">
-            <TabsTrigger value="revy" className="text-xs p-1.5">
+          <TabsList className="grid w-full grid-cols-3 mx-2 mt-2 flex-shrink-0">
+            <TabsTrigger value="revy" className="text-xs p-1">
               <MessageSquare className="h-3 w-3 mr-1" />
               Revy
             </TabsTrigger>
-            <TabsTrigger value="analytics" className="text-xs p-1.5">
+            <TabsTrigger value="analytics" className="text-xs p-1">
               <BarChart3 className="h-3 w-3 mr-1" />
               Data
             </TabsTrigger>
-            <TabsTrigger value="activity" className="text-xs p-1.5">
+            <TabsTrigger value="activity" className="text-xs p-1">
               <Activity className="h-3 w-3 mr-1" />
               Aktivitet
             </TabsTrigger>
           </TabsList>
           
           <div className="flex-1 min-h-0">
-            <TabsContent value="revy" className="h-full m-0 p-3 data-[state=inactive]:hidden">
+            <TabsContent value="revy" className="h-full m-0 p-2 data-[state=inactive]:hidden">
               <div className="h-full">
                 <RevyAssistant 
                   embedded={true} 
@@ -96,17 +96,17 @@ const RightSidebar = ({ isCollapsed, onToggle }: RightSidebarProps) => {
             
             <TabsContent value="analytics" className="h-full m-0 data-[state=inactive]:hidden">
               <ScrollArea className="h-full">
-                <div className="p-3 space-y-3">
+                <div className="p-2 space-y-3">
                   {/* AI Usage Stats */}
                   {personalStats && (
                     <Card>
                       <CardHeader className="pb-2">
                         <CardTitle className="text-xs flex items-center gap-2">
                           <Brain className="h-3 w-3" />
-                          AI-bruk (uke)
+                          AI-bruk
                         </CardTitle>
                       </CardHeader>
-                      <CardContent className="space-y-2 p-3 pt-0">
+                      <CardContent className="space-y-2 p-2 pt-0">
                         <div className="flex justify-between text-xs">
                           <span>Kostnad</span>
                           <span className="font-medium text-xs">
@@ -114,7 +114,7 @@ const RightSidebar = ({ isCollapsed, onToggle }: RightSidebarProps) => {
                           </span>
                         </div>
                         <div className="flex justify-between text-xs">
-                          <span>Forespørsler</span>
+                          <span>Requests</span>
                           <span className="font-medium">{personalStats.summary.totalRequests}</span>
                         </div>
                         <div className="flex justify-between text-xs">
@@ -127,9 +127,10 @@ const RightSidebar = ({ isCollapsed, onToggle }: RightSidebarProps) => {
                     </Card>
                   )}
 
+                  {/* Quick Stats Grid */}
                   <div className="grid grid-cols-2 gap-2">
                     <Card className="p-2">
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-1">
                         <Users className="h-3 w-3 text-blue-500 flex-shrink-0" />
                         <div className="min-w-0">
                           <p className="text-xs text-muted-foreground truncate">Klienter</p>
@@ -139,7 +140,7 @@ const RightSidebar = ({ isCollapsed, onToggle }: RightSidebarProps) => {
                     </Card>
                     
                     <Card className="p-2">
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-1">
                         <FileText className="h-3 w-3 text-green-500 flex-shrink-0" />
                         <div className="min-w-0">
                           <p className="text-xs text-muted-foreground truncate">Prosjekter</p>
@@ -149,7 +150,7 @@ const RightSidebar = ({ isCollapsed, onToggle }: RightSidebarProps) => {
                     </Card>
                     
                     <Card className="p-2">
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-1">
                         <Activity className="h-3 w-3 text-orange-500 flex-shrink-0" />
                         <div className="min-w-0">
                           <p className="text-xs text-muted-foreground truncate">Ventende</p>
@@ -159,7 +160,7 @@ const RightSidebar = ({ isCollapsed, onToggle }: RightSidebarProps) => {
                     </Card>
                     
                     <Card className="p-2">
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-1">
                         <TrendingUp className="h-3 w-3 text-revio-500 flex-shrink-0" />
                         <div className="min-w-0">
                           <p className="text-xs text-muted-foreground truncate">Fullført</p>
@@ -168,70 +169,42 @@ const RightSidebar = ({ isCollapsed, onToggle }: RightSidebarProps) => {
                       </div>
                     </Card>
                   </div>
-                  
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-xs">Ukens aktivitet</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-2 p-3 pt-0">
-                      <div className="flex justify-between text-xs">
-                        <span className="truncate">Fullførte oppgaver</span>
-                        <span className="font-medium">12</span>
-                      </div>
-                      <div className="flex justify-between text-xs">
-                        <span className="truncate">Nye klienter</span>
-                        <span className="font-medium">3</span>
-                      </div>
-                      <div className="flex justify-between text-xs">
-                        <span className="truncate">Timer registrert</span>
-                        <span className="font-medium">38.5</span>
-                      </div>
-                    </CardContent>
-                  </Card>
                 </div>
               </ScrollArea>
             </TabsContent>
             
             <TabsContent value="activity" className="h-full m-0 data-[state=inactive]:hidden">
               <ScrollArea className="h-full">
-                <div className="p-3 space-y-2">
-                  <div className="flex items-start gap-2 p-2 bg-gray-50 rounded text-xs">
+                <div className="p-2 space-y-2">
+                  <div className="flex items-start gap-2 p-2 bg-muted rounded text-xs">
                     <div className="w-2 h-2 bg-green-500 rounded-full mt-1 flex-shrink-0"></div>
                     <div className="min-w-0 flex-1">
-                      <span className="truncate block">Regnskap oppdatert for Firma AS</span>
+                      <span className="truncate block">Regnskap oppdatert</span>
                       <span className="text-muted-foreground">10:30</span>
                     </div>
                   </div>
                   
-                  <div className="flex items-start gap-2 p-2 bg-gray-50 rounded text-xs">
+                  <div className="flex items-start gap-2 p-2 bg-muted rounded text-xs">
                     <div className="w-2 h-2 bg-blue-500 rounded-full mt-1 flex-shrink-0"></div>
                     <div className="min-w-0 flex-1">
-                      <span className="truncate block">Ny melding fra teamleder</span>
+                      <span className="truncate block">Ny melding</span>
                       <span className="text-muted-foreground">09:15</span>
                     </div>
                   </div>
                   
-                  <div className="flex items-start gap-2 p-2 bg-gray-50 rounded text-xs">
+                  <div className="flex items-start gap-2 p-2 bg-muted rounded text-xs">
                     <div className="w-2 h-2 bg-orange-500 rounded-full mt-1 flex-shrink-0"></div>
                     <div className="min-w-0 flex-1">
-                      <span className="truncate block">Revisjon klar for gjennomgang</span>
+                      <span className="truncate block">Revisjon klar</span>
                       <span className="text-muted-foreground">08:45</span>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-start gap-2 p-2 bg-gray-50 rounded text-xs">
-                    <div className="w-2 h-2 bg-purple-500 rounded-full mt-1 flex-shrink-0"></div>
-                    <div className="min-w-0 flex-1">
-                      <span className="truncate block">Dokument lastet opp</span>
-                      <span className="text-muted-foreground">07:30</span>
                     </div>
                   </div>
 
                   {personalStats && personalStats.summary.totalRequests > 0 && (
-                    <div className="flex items-start gap-2 p-2 bg-blue-50 rounded text-xs">
+                    <div className="flex items-start gap-2 p-2 bg-blue-50 dark:bg-blue-950 rounded text-xs">
                       <div className="w-2 h-2 bg-blue-500 rounded-full mt-1 flex-shrink-0"></div>
                       <div className="min-w-0 flex-1">
-                        <span className="truncate block">AI-assistent brukt {personalStats.summary.totalRequests} ganger</span>
+                        <span className="truncate block">AI brukt {personalStats.summary.totalRequests} ganger</span>
                         <span className="text-muted-foreground">i dag</span>
                       </div>
                     </div>
