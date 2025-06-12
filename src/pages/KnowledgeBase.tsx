@@ -8,7 +8,7 @@ import ArticleEditor from '@/components/Knowledge/ArticleEditor';
 import MyArticles from '@/components/Knowledge/MyArticles';
 import MyFavorites from '@/components/Knowledge/MyFavorites';
 import SearchResults from '@/components/Knowledge/SearchResults';
-import { Book } from 'lucide-react';
+import PDFConversionWorkflow from '@/components/Knowledge/PDFConversionWorkflow';
 
 const KnowledgeBase = () => {
   return (
@@ -22,6 +22,7 @@ const KnowledgeBase = () => {
         <Route path="mine-artikler" element={<MyArticles />} />
         <Route path="favoritter" element={<MyFavorites />} />
         <Route path="sok" element={<SearchResults />} />
+        <Route path="pdf-konvertering" element={<PDFConversionWorkflow />} />
       </Routes>
     </div>
   );

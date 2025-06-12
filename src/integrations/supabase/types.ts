@@ -1507,6 +1507,74 @@ export type Database = {
           },
         ]
       }
+      pdf_conversions: {
+        Row: {
+          category_id: string
+          completed_at: string | null
+          conversion_type: string
+          created_at: string
+          error_message: string | null
+          estimated_time: number | null
+          extracted_text: string | null
+          file_name: string
+          file_path: string
+          file_size: number
+          id: string
+          progress: number | null
+          status: string
+          structured_content: Json | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category_id: string
+          completed_at?: string | null
+          conversion_type: string
+          created_at?: string
+          error_message?: string | null
+          estimated_time?: number | null
+          extracted_text?: string | null
+          file_name: string
+          file_path: string
+          file_size: number
+          id?: string
+          progress?: number | null
+          status?: string
+          structured_content?: Json | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category_id?: string
+          completed_at?: string | null
+          conversion_type?: string
+          created_at?: string
+          error_message?: string | null
+          estimated_time?: number | null
+          extracted_text?: string | null
+          file_name?: string
+          file_path?: string
+          file_size?: number
+          id?: string
+          progress?: number | null
+          status?: string
+          structured_content?: Json | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pdf_conversions_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           audit_firm_id: string | null

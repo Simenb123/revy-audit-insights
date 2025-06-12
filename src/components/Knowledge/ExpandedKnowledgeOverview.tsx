@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
@@ -16,7 +17,8 @@ import {
   CheckSquare, 
   HelpCircle,
   Plus,
-  ArrowRight
+  ArrowRight,
+  Upload
 } from 'lucide-react';
 
 const ExpandedKnowledgeOverview = () => {
@@ -98,12 +100,20 @@ const ExpandedKnowledgeOverview = () => {
             Utforsk lover, standarder, prosedyrer og veiledninger for revisjon og regnskap
           </p>
         </div>
-        <Button asChild>
-          <Link to="/fag/ny-artikkel">
-            <Plus className="w-4 h-4 mr-2" />
-            Ny artikkel
-          </Link>
-        </Button>
+        <div className="flex gap-2">
+          <Button asChild variant="outline">
+            <Link to="/fag/pdf-konvertering">
+              <Upload className="w-4 h-4 mr-2" />
+              PDF-konvertering
+            </Link>
+          </Button>
+          <Button asChild>
+            <Link to="/fag/ny-artikkel">
+              <Plus className="w-4 h-4 mr-2" />
+              Ny artikkel
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {/* Main Categories Grid */}
@@ -195,7 +205,7 @@ const ExpandedKnowledgeOverview = () => {
       {/* Quick Access */}
       <div className="bg-muted/50 p-4 rounded-lg">
         <h3 className="font-medium mb-2">Hurtigtilgang</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
           <Button variant="outline" size="sm" asChild>
             <Link to="/fag/sok?q=ISA">ISA-standarder</Link>
           </Button>
@@ -207,6 +217,9 @@ const ExpandedKnowledgeOverview = () => {
           </Button>
           <Button variant="outline" size="sm" asChild>
             <Link to="/fag/sok?q=sjekkliste">Sjekklister</Link>
+          </Button>
+          <Button variant="outline" size="sm" asChild>
+            <Link to="/fag/pdf-konvertering">PDF-konvertering</Link>
           </Button>
         </div>
       </div>
