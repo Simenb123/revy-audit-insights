@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { SidebarProvider } from '@/components/ui/sidebar';
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import Sidebar from './Sidebar';
 import AppHeader from './AppHeader';
 import RightSidebar from './RightSidebar';
@@ -11,9 +12,21 @@ interface AppLayoutProps {
 
 const AppLayout = ({ children }: AppLayoutProps) => {
   const [isRightSidebarCollapsed, setIsRightSidebarCollapsed] = useState(false);
+  const [isRightSidebarExpanded, setIsRightSidebarExpanded] = useState(false);
 
   const toggleRightSidebar = () => {
-    setIsRightSidebarCollapsed(!isRightSidebarCollapsed);
+    if (isRightSidebarExpanded) {
+      setIsRightSidebarExpanded(false);
+    } else {
+      setIsRightSidebarCollapsed(!isRightSidebarCollapsed);
+    }
+  };
+
+  const toggleRightSidebarExpanded = () => {
+    setIsRightSidebarExpanded(!isRightSidebarExpanded);
+    if (!isRightSidebarExpanded) {
+      setIsRightSidebarCollapsed(false);
+    }
   };
 
   return (
@@ -24,28 +37,47 @@ const AppLayout = ({ children }: AppLayoutProps) => {
         
         {/* Main Layout Container */}
         <div className="flex flex-1 w-full" style={{ height: 'calc(100vh - 64px)', marginTop: '64px' }}>
-          {/* Left Sidebar - Enhanced with better collapse behavior */}
+          {/* Left Sidebar */}
           <div className="flex-shrink-0 relative">
             <Sidebar />
           </div>
           
-          {/* Main Content Area */}
-          <main className="flex-1 min-w-0 overflow-auto bg-background">
-            <div className="h-full">
-              {children}
-            </div>
-          </main>
-          
-          {/* Right Sidebar - Enhanced with partial visibility when collapsed */}
-          <div className={`flex-shrink-0 bg-background border-l border-border transition-all duration-300 ease-in-out relative ${
-            isRightSidebarCollapsed 
-              ? 'w-12' // Partial visibility when collapsed 
-              : 'w-80 lg:w-96'
-          }`}>
-            <RightSidebar 
-              isCollapsed={isRightSidebarCollapsed}
-              onToggle={toggleRightSidebar}
-            />
+          {/* Resizable Content Area */}
+          <div className="flex-1 min-w-0">
+            <ResizablePanelGroup direction="horizontal" className="h-full">
+              {/* Main Content Panel */}
+              <ResizablePanel 
+                defaultSize={isRightSidebarExpanded ? 20 : 70} 
+                minSize={20}
+                className={isRightSidebarExpanded ? "hidden lg:block" : ""}
+              >
+                <main className="h-full overflow-auto bg-background">
+                  {children}
+                </main>
+              </ResizablePanel>
+              
+              {/* Resize Handle - only show when not collapsed and not expanded */}
+              {!isRightSidebarCollapsed && !isRightSidebarExpanded && (
+                <ResizableHandle withHandle className="w-2 bg-border hover:bg-accent transition-colors" />
+              )}
+              
+              {/* Right Sidebar Panel */}
+              <ResizablePanel 
+                defaultSize={isRightSidebarExpanded ? 80 : 30} 
+                minSize={isRightSidebarCollapsed ? 4 : 20}
+                maxSize={isRightSidebarExpanded ? 80 : 50}
+                className={`${isRightSidebarCollapsed ? 'w-16' : ''} ${isRightSidebarExpanded ? 'w-full' : ''}`}
+              >
+                <div className="h-full bg-background border-l border-border">
+                  <RightSidebar 
+                    isCollapsed={isRightSidebarCollapsed}
+                    isExpanded={isRightSidebarExpanded}
+                    onToggle={toggleRightSidebar}
+                    onToggleExpanded={toggleRightSidebarExpanded}
+                  />
+                </div>
+              </ResizablePanel>
+            </ResizablePanelGroup>
           </div>
         </div>
       </SidebarProvider>

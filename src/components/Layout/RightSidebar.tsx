@@ -13,7 +13,9 @@ import {
   TrendingUp,
   Users,
   FileText,
-  Brain
+  Brain,
+  Maximize2,
+  Minimize2
 } from 'lucide-react';
 import RevyAssistant from '../Revy/RevyAssistant';
 import { useLocation } from 'react-router-dom';
@@ -22,10 +24,12 @@ import { useRevyContext } from '../RevyContext/RevyContextProvider';
 
 interface RightSidebarProps {
   isCollapsed: boolean;
+  isExpanded: boolean;
   onToggle: () => void;
+  onToggleExpanded: () => void;
 }
 
-const RightSidebar = ({ isCollapsed, onToggle }: RightSidebarProps) => {
+const RightSidebar = ({ isCollapsed, isExpanded, onToggle, onToggleExpanded }: RightSidebarProps) => {
   const location = useLocation();
   const [activeTab, setActiveTab] = useState('revy');
   const { personalStats } = useAIUsage('week');
@@ -58,6 +62,7 @@ const RightSidebar = ({ isCollapsed, onToggle }: RightSidebarProps) => {
             size="icon"
             onClick={onToggle}
             className="h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent"
+            title="Utvid sidebar"
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
@@ -111,17 +116,29 @@ const RightSidebar = ({ isCollapsed, onToggle }: RightSidebarProps) => {
   // Expanded state - show full sidebar
   return (
     <div className="h-full flex flex-col w-full overflow-hidden bg-background">
-      {/* Header with toggle */}
+      {/* Header with toggle and expand controls */}
       <div className="p-4 border-b border-border flex items-center justify-between flex-shrink-0">
         <h3 className="font-semibold text-base">Verktøy</h3>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onToggle}
-          className="h-8 w-8 hover:bg-accent"
-        >
-          <ChevronRight className="h-4 w-4" />
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onToggleExpanded}
+            className="h-8 w-8 hover:bg-accent"
+            title={isExpanded ? "Normaliser størrelse" : "Utvid over hele siden"}
+          >
+            {isExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onToggle}
+            className="h-8 w-8 hover:bg-accent"
+            title="Trekk inn sidebar"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
       
       {/* Content */}
