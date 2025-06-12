@@ -41,7 +41,7 @@ const ManagerDashboard = () => {
 
   const filteredEnrollments = teamEnrollments?.filter(enrollment => {
     const profile = enrollment.profiles;
-    if (!profile || Array.isArray(profile)) return false;
+    if (!profile) return false;
     
     const fullName = `${profile.first_name || ''} ${profile.last_name || ''}`.toLowerCase();
     const email = profile.email?.toLowerCase() || '';
@@ -202,7 +202,7 @@ const ManagerDashboard = () => {
           <div className="space-y-4">
             {filteredEnrollments.map((enrollment) => {
               const profile = enrollment.profiles;
-              if (!profile || Array.isArray(profile)) return null;
+              if (!profile) return null;
               
               const progress = calculateProgress(enrollment);
               const daysLeft = differenceInDays(new Date(enrollment.target_completion_date), new Date());

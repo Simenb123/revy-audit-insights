@@ -156,28 +156,44 @@ export const useTeamEnrollments = () => {
         return [];
       }
 
-      const { data, error } = await supabase
+      // First get enrollments, then get profiles separately to avoid relation issues
+      const { data: enrollments, error: enrollmentsError } = await supabase
         .from('user_learning_enrollments')
         .select(`
           *,
           learning_paths (*),
-          user_module_completions (*),
-          profiles!user_id (
-            first_name, 
-            last_name, 
-            email,
-            department_id,
-            audit_firm_id
-          )
+          user_module_completions (*)
         `)
         .order('created_at', { ascending: false });
       
-      if (error) throw error;
+      if (enrollmentsError) throw enrollmentsError;
+
+      if (!enrollments || enrollments.length === 0) {
+        return [];
+      }
+
+      // Get user profiles for all enrollments
+      const userIds = enrollments.map(e => e.user_id);
+      const { data: userProfiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name, email, department_id, audit_firm_id')
+        .in('id', userIds);
       
+      if (profilesError) throw profilesError;
+
+      // Combine enrollments with their user profiles
+      const enrollmentsWithProfiles = enrollments.map(enrollment => {
+        const userProfile = userProfiles?.find(p => p.id === enrollment.user_id);
+        return {
+          ...enrollment,
+          profiles: userProfile || null
+        };
+      });
+
       // Filter based on user role and firm
-      return data?.filter(enrollment => {
+      return enrollmentsWithProfiles.filter(enrollment => {
         const enrollmentProfile = enrollment.profiles;
-        if (!enrollmentProfile || Array.isArray(enrollmentProfile)) return false;
+        if (!enrollmentProfile) return false;
         
         if (profile.user_role === 'admin' || profile.user_role === 'partner') {
           return enrollmentProfile.audit_firm_id === profile.audit_firm_id;
@@ -185,7 +201,7 @@ export const useTeamEnrollments = () => {
           return enrollmentProfile.department_id === profile.department_id;
         }
         return false;
-      }) || [];
+      });
     }
   });
 };
