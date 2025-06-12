@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
@@ -34,7 +33,12 @@ const ExpandedKnowledgeOverview = () => {
         .order('display_order');
       
       if (error) throw error;
-      return data as (KnowledgeCategory & { children?: KnowledgeCategory[] })[];
+      
+      // Transform data to match TypeScript types
+      return data?.map(category => ({
+        ...category,
+        children: Array.isArray(category.children) ? category.children : []
+      })) as (KnowledgeCategory & { children?: KnowledgeCategory[] })[];
     }
   });
 
