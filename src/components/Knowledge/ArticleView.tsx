@@ -9,7 +9,7 @@ import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbP
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/Auth/AuthProvider';
 import { KnowledgeArticle } from '@/types/knowledge';
-import { Eye, Clock, Edit, Star, StarOff, FileText } from 'lucide-react';
+import { Eye, Clock, Edit, Star, StarOff, FileText, CheckCircle2, Square } from 'lucide-react';
 
 const ArticleView = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -90,19 +90,21 @@ const ArticleView = () => {
       
       if (structuredData.type === 'full_article' && structuredData.sections) {
         return (
-          <div className="space-y-6">
+          <div className="space-y-8">
             {structuredData.sections.map((section: any, index: number) => (
-              <div key={index} className="border-b border-gray-200 last:border-b-0 pb-6 last:pb-0">
-                <h3 className="text-xl font-semibold mb-3 text-gray-900">{section.title}</h3>
+              <div key={index} className="border-b border-border last:border-b-0 pb-6 last:pb-0">
+                <h3 className="text-xl font-semibold mb-4 text-foreground">{section.title}</h3>
                 <div className="prose prose-gray max-w-none">
-                  <p className="text-gray-700 leading-relaxed">{section.content}</p>
+                  <div className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                    {section.content}
+                  </div>
                 </div>
               </div>
             ))}
             {structuredData.metadata && (
-              <div className="mt-8 p-4 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-600">
-                  <strong>Metadata:</strong> {structuredData.metadata.wordCount} ord • {structuredData.metadata.processingType} konvertering
+              <div className="mt-8 p-4 bg-muted/50 rounded-lg">
+                <p className="text-sm text-muted-foreground">
+                  <strong>Metadata:</strong> {structuredData.metadata.wordCount} ord • {structuredData.metadata.sectionCount} seksjoner • {structuredData.metadata.processingType} konvertering
                 </p>
               </div>
             )}
@@ -114,23 +116,23 @@ const ArticleView = () => {
         return (
           <div className="space-y-6">
             <div>
-              <h3 className="text-xl font-semibold mb-3 text-gray-900">Sammendrag</h3>
-              <p className="text-gray-700 leading-relaxed mb-4">{structuredData.summary}</p>
+              <h3 className="text-xl font-semibold mb-3 text-foreground">Sammendrag</h3>
+              <p className="text-muted-foreground leading-relaxed mb-4">{structuredData.summary}</p>
             </div>
             
             <div>
-              <h3 className="text-xl font-semibold mb-3 text-gray-900">Nøkkelpunkter</h3>
+              <h3 className="text-xl font-semibold mb-3 text-foreground">Nøkkelpunkter</h3>
               <ul className="list-disc list-inside space-y-2">
                 {structuredData.keyPoints?.map((point: string, index: number) => (
-                  <li key={index} className="text-gray-700">{point}</li>
+                  <li key={index} className="text-muted-foreground">{point}</li>
                 ))}
               </ul>
             </div>
             
             {structuredData.metadata && (
-              <div className="mt-8 p-4 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-600">
-                  <strong>Sammendrag:</strong> {Math.round(structuredData.metadata.summaryRatio * 100)}% av original tekst • {structuredData.metadata.originalLength} tegn i original
+              <div className="mt-8 p-4 bg-muted/50 rounded-lg">
+                <p className="text-sm text-muted-foreground">
+                  <strong>Sammendrag:</strong> {Math.round(structuredData.metadata.summaryRatio * 100)}% av original tekst • {structuredData.metadata.originalLength} tegn i original • {structuredData.metadata.keyPointsCount} nøkkelpunkter
                 </p>
               </div>
             )}
@@ -142,19 +144,24 @@ const ArticleView = () => {
         return (
           <div className="space-y-6">
             <div>
-              <h3 className="text-xl font-semibold mb-4 text-gray-900">Sjekkliste</h3>
+              <h3 className="text-xl font-semibold mb-4 text-foreground">Sjekkliste</h3>
               <div className="space-y-3">
                 {structuredData.items?.map((item: any, index: number) => (
-                  <div key={index} className="flex items-start gap-3 p-3 border rounded-lg">
-                    <div className={`mt-1 w-4 h-4 rounded border-2 flex items-center justify-center ${
-                      item.required ? 'border-red-400 bg-red-50' : 'border-gray-300 bg-gray-50'
-                    }`}>
-                      {item.completed && <div className="w-2 h-2 bg-green-600 rounded-full"></div>}
+                  <div key={index} className="flex items-start gap-3 p-4 border rounded-lg bg-card">
+                    <div className="mt-1 flex-shrink-0">
+                      {item.completed ? (
+                        <CheckCircle2 className="w-5 h-5 text-green-600" />
+                      ) : (
+                        <Square className="w-5 h-5 text-muted-foreground" />
+                      )}
                     </div>
                     <div className="flex-1">
-                      <p className="text-gray-700">{item.text}</p>
+                      <p className="text-foreground font-medium">{item.text}</p>
+                      {item.reference && (
+                        <p className="text-sm text-muted-foreground mt-1">Referanse: {item.reference}</p>
+                      )}
                       {item.required && (
-                        <Badge variant="outline" className="mt-1 text-xs">Påkrevd</Badge>
+                        <Badge variant="outline" className="mt-2 text-xs">Påkrevd</Badge>
                       )}
                     </div>
                   </div>
@@ -163,9 +170,9 @@ const ArticleView = () => {
             </div>
             
             {structuredData.metadata && (
-              <div className="mt-8 p-4 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-600">
-                  <strong>Sjekkliste:</strong> {structuredData.metadata.totalItems} punkter • {structuredData.metadata.requiredItems} påkrevde
+              <div className="mt-8 p-4 bg-muted/50 rounded-lg">
+                <p className="text-sm text-muted-foreground">
+                  <strong>Sjekkliste:</strong> {structuredData.metadata.totalItems} punkter • {structuredData.metadata.requiredItems} påkrevde • {structuredData.metadata.standardReference}
                 </p>
               </div>
             )}

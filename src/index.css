@@ -105,6 +105,15 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /* Sidebar state classes for responsive margins */
+  .group[data-state="collapsed"] .ml-sidebar {
+    margin-left: var(--sidebar-width-collapsed);
+  }
+  
+  .group[data-state="expanded"] .ml-sidebar {
+    margin-left: var(--sidebar-width);
+  }
 }
 
 @layer utilities {

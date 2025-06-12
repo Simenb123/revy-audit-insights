@@ -51,18 +51,20 @@ const AppLayout = ({ children }: AppLayoutProps) => {
   return (
     <div className="min-h-screen w-full bg-background flex flex-col">
       <SidebarProvider defaultOpen={true}>
-        {/* Header - Fixed at top */}
-        <AppHeader />
+        {/* Header - Fixed at top with higher z-index */}
+        <div className="fixed top-0 left-0 right-0 z-50">
+          <AppHeader />
+        </div>
         
         {/* Main Layout Container */}
         <div className="flex flex-1 w-full relative" style={{ height: 'calc(100vh - 64px)', marginTop: '64px' }}>
-          {/* Left Sidebar */}
-          <div className="flex-shrink-0 relative z-10">
+          {/* Left Sidebar - positioned below header */}
+          <div className="flex-shrink-0 relative z-40 fixed left-0 top-16 h-[calc(100vh-64px)]">
             <Sidebar />
           </div>
           
-          {/* Main Content Area with Resizable Panels */}
-          <div className="flex-1 min-w-0 transition-all duration-300" style={getMainContentStyle()}>
+          {/* Main Content Area with proper margin for sidebar */}
+          <div className="flex-1 min-w-0 transition-all duration-300 ml-sidebar group-data-[state=collapsed]:ml-sidebar-collapsed" style={getMainContentStyle()}>
             <ResizablePanelGroup direction="horizontal" className="h-full">
               {/* Main Content Panel */}
               <ResizablePanel 
@@ -79,7 +81,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
 
           {/* Right Sidebar - Fixed position, outside ResizablePanelGroup */}
           <div 
-            className="fixed right-0 top-16 h-[calc(100vh-64px)] bg-background border-l border-border z-20 transition-all duration-300"
+            className="fixed right-0 top-16 h-[calc(100vh-64px)] bg-background border-l border-border z-30 transition-all duration-300"
             style={{ width: getRightSidebarWidth() }}
           >
             <RightSidebar 
