@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
@@ -17,7 +18,8 @@ import {
   HelpCircle,
   Plus,
   ArrowRight,
-  Upload
+  Upload,
+  Building
 } from 'lucide-react';
 
 const ExpandedKnowledgeOverview = () => {
@@ -63,28 +65,28 @@ const ExpandedKnowledgeOverview = () => {
 
   const getIconForCategory = (name: string) => {
     const iconMap: Record<string, React.ElementType> = {
-      'App Funksjonalitet': BookOpen,
-      'Klienthåndtering': Users,
-      'Revisjonshandlinger': FileCheck,
-      'Lover og Forskrifter': Scale,
-      'Revisjonsstandarder': Shield,
-      'Regnskapsstandarder': Calculator,
-      'Sjekklister og Prosedyrer': CheckSquare,
-      'FAQ': HelpCircle
+      'App': BookOpen,
+      'Klienter': Users,
+      'Revisjon': FileCheck,
+      'Jus': Scale,
+      'Kvalitetssikring': Shield,
+      'Regnskap': Calculator,
+      'FAQ': HelpCircle,
+      'Økonomi': Building
     };
     return iconMap[name] || BookOpen;
   };
 
   const getColorForCategory = (name: string) => {
     const colorMap: Record<string, string> = {
-      'App Funksjonalitet': 'bg-blue-50 border-blue-200 hover:bg-blue-100',
-      'Klienthåndtering': 'bg-green-50 border-green-200 hover:bg-green-100',
-      'Revisjonshandlinger': 'bg-purple-50 border-purple-200 hover:bg-purple-100',
-      'Lover og Forskrifter': 'bg-red-50 border-red-200 hover:bg-red-100',
-      'Revisjonsstandarder': 'bg-yellow-50 border-yellow-200 hover:bg-yellow-100',
-      'Regnskapsstandarder': 'bg-indigo-50 border-indigo-200 hover:bg-indigo-100',
-      'Sjekklister og Prosedyrer': 'bg-emerald-50 border-emerald-200 hover:bg-emerald-100',
-      'FAQ': 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+      'App': 'bg-blue-50 border-blue-200 hover:bg-blue-100',
+      'Klienter': 'bg-green-50 border-green-200 hover:bg-green-100',
+      'Revisjon': 'bg-purple-50 border-purple-200 hover:bg-purple-100',
+      'Jus': 'bg-red-50 border-red-200 hover:bg-red-100',
+      'Kvalitetssikring': 'bg-yellow-50 border-yellow-200 hover:bg-yellow-100',
+      'Regnskap': 'bg-indigo-50 border-indigo-200 hover:bg-indigo-100',
+      'FAQ': 'bg-gray-50 border-gray-200 hover:bg-gray-100',
+      'Økonomi': 'bg-emerald-50 border-emerald-200 hover:bg-emerald-100'
     };
     return colorMap[name] || 'bg-gray-50 border-gray-200 hover:bg-gray-100';
   };
