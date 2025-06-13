@@ -36,7 +36,7 @@ const PDFDocumentList = () => {
 
   const handleDownload = (document: PDFDocument) => {
     const url = getDocumentUrl(document.file_path);
-    const link = document.createElement('a');
+    const link = window.document.createElement('a');
     link.href = url;
     link.download = document.file_name;
     link.click();
