@@ -33,7 +33,7 @@ export const usePDFDocuments = () => {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data as PDFDocument[];
+      return (data || []) as PDFDocument[];
     }
   });
 
@@ -117,7 +117,7 @@ export const usePDFDocuments = () => {
 
       const { error } = await supabase
         .from('pdf_documents' as any)
-        .update({ is_favorite: !document.is_favorite })
+        .update({ is_favorite: !document.is_favorite } as any)
         .eq('id', documentId);
 
       if (error) throw error;
