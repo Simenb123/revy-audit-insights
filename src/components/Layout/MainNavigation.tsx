@@ -17,7 +17,8 @@ import {
   GraduationCap,
   Upload,
   UserCheck,
-  Briefcase
+  Briefcase,
+  FileStack
 } from 'lucide-react';
 
 const MainNavigation = () => {
@@ -30,6 +31,7 @@ const MainNavigation = () => {
     { name: 'Kommunikasjon', href: '/communication', icon: MessageSquare },
     { name: 'Regnskapsdata', href: '/accounting-data', icon: BarChart3 },
     { name: 'Dataimport', href: '/data-import', icon: Upload },
+    { name: 'PDF-dokumenter', href: '/pdf-documents', icon: FileStack, badge: 'NY' },
     { name: 'Kunnskap', href: '/knowledge', icon: BookOpen },
     { name: 'Opplæring', href: '/training', icon: GraduationCap },
     { name: 'Teams', href: '/teams', icon: Briefcase },
