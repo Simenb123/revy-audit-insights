@@ -28,7 +28,7 @@ export const usePDFDocuments = () => {
     queryKey: ['pdf-documents'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('pdf_documents')
+        .from('pdf_documents' as any)
         .select('*')
         .order('created_at', { ascending: false });
       
@@ -68,7 +68,7 @@ export const usePDFDocuments = () => {
 
       // Create document record
       const { data: document, error: insertError } = await supabase
-        .from('pdf_documents')
+        .from('pdf_documents' as any)
         .insert({
           user_id: user.id,
           file_name: data.file.name,
@@ -79,7 +79,7 @@ export const usePDFDocuments = () => {
           category: data.category,
           isa_number: data.isaNumber,
           tags: data.tags
-        })
+        } as any)
         .select('*')
         .single();
 
@@ -116,8 +116,8 @@ export const usePDFDocuments = () => {
       if (!document) throw new Error('Document not found');
 
       const { error } = await supabase
-        .from('pdf_documents')
-        .update({ is_favorite: !document.is_favorite })
+        .from('pdf_documents' as any)
+        .update({ is_favorite: !document.is_favorite } as any)
         .eq('id', documentId);
 
       if (error) throw error;
@@ -143,7 +143,7 @@ export const usePDFDocuments = () => {
 
       // Delete the document record
       const { error } = await supabase
-        .from('pdf_documents')
+        .from('pdf_documents' as any)
         .delete()
         .eq('id', documentId);
 
