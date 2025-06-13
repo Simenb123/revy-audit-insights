@@ -13,23 +13,34 @@ import { Plus, Clock, Eye } from 'lucide-react';
 const CategoryView = () => {
   const { categoryId } = useParams<{ categoryId: string }>();
 
-  const { data: category } = useQuery({
+  const { data: category, isLoading: categoryLoading } = useQuery({
     queryKey: ['knowledge-category', categoryId],
     queryFn: async () => {
+      if (!categoryId) throw new Error('Category ID is required');
+      
+      console.log('Fetching category:', categoryId);
       const { data, error } = await supabase
         .from('knowledge_categories')
         .select('*')
         .eq('id', categoryId)
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching category:', error);
+        throw error;
+      }
+      
+      console.log('Category fetched:', data);
       return data as KnowledgeCategory;
-    }
+    },
+    enabled: !!categoryId
   });
 
   const { data: subcategories } = useQuery({
     queryKey: ['knowledge-subcategories', categoryId],
     queryFn: async () => {
+      if (!categoryId) return [];
+      
       const { data, error } = await supabase
         .from('knowledge_categories')
         .select('*')
@@ -38,12 +49,15 @@ const CategoryView = () => {
       
       if (error) throw error;
       return data as KnowledgeCategory[];
-    }
+    },
+    enabled: !!categoryId
   });
 
   const { data: articles } = useQuery({
     queryKey: ['knowledge-articles', categoryId],
     queryFn: async () => {
+      if (!categoryId) return [];
+      
       const { data, error } = await supabase
         .from('knowledge_articles')
         .select('*')
@@ -53,10 +67,35 @@ const CategoryView = () => {
       
       if (error) throw error;
       return data as KnowledgeArticle[];
-    }
+    },
+    enabled: !!categoryId
   });
 
-  if (!category) return <div>Loading...</div>;
+  if (categoryLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="animate-pulse">
+          <div className="h-6 bg-muted rounded w-1/3 mb-4"></div>
+          <div className="h-8 bg-muted rounded w-1/2 mb-2"></div>
+          <div className="h-4 bg-muted rounded w-2/3"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!category) {
+    return (
+      <div className="space-y-6">
+        <div className="text-center py-8">
+          <h2 className="text-xl font-semibold">Kategori ikke funnet</h2>
+          <p className="text-muted-foreground mt-2">Kategorien du leter etter eksisterer ikke.</p>
+          <Button asChild className="mt-4">
+            <Link to="/fag">Tilbake til fagområder</Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -98,7 +137,7 @@ const CategoryView = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {subcategories.map((subcategory) => (
               <Link key={subcategory.id} to={`/fag/kategori/${subcategory.id}`}>
-                <Card className="hover:shadow-md transition-shadow cursor-pointer">
+                <Card className="hover:shadow-md transition-shadow cursor-pointer bg-card">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-base">{subcategory.name}</CardTitle>
                   </CardHeader>
@@ -120,7 +159,7 @@ const CategoryView = () => {
         {articles && articles.length > 0 ? (
           <div className="space-y-3">
             {articles.map((article) => (
-              <Card key={article.id} className="hover:shadow-sm transition-shadow">
+              <Card key={article.id} className="hover:shadow-sm transition-shadow bg-card">
                 <CardContent className="p-4">
                   <Link to={`/fag/artikkel/${article.slug}`} className="block">
                     <h3 className="font-medium hover:text-primary transition-colors">
@@ -158,7 +197,7 @@ const CategoryView = () => {
             ))}
           </div>
         ) : (
-          <Card>
+          <Card className="bg-card">
             <CardContent className="p-6 text-center">
               <p className="text-muted-foreground">Ingen artikler funnet i denne kategorien.</p>
               <Button asChild className="mt-3">

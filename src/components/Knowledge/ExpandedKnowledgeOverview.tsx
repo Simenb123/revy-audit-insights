@@ -23,9 +23,10 @@ import {
 } from 'lucide-react';
 
 const ExpandedKnowledgeOverview = () => {
-  const { data: categories } = useQuery({
+  const { data: categories, isLoading } = useQuery({
     queryKey: ['knowledge-categories-expanded'],
     queryFn: async () => {
+      console.log('Fetching categories...');
       const { data, error } = await supabase
         .from('knowledge_categories')
         .select(`
@@ -35,7 +36,12 @@ const ExpandedKnowledgeOverview = () => {
         .is('parent_category_id', null)
         .order('display_order');
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching categories:', error);
+        throw error;
+      }
+      
+      console.log('Categories fetched:', data);
       
       // Transform data to match TypeScript types
       return data?.map(category => ({
@@ -77,19 +83,53 @@ const ExpandedKnowledgeOverview = () => {
     return iconMap[name] || BookOpen;
   };
 
+  // Updated for dark theme - using darker card backgrounds
   const getColorForCategory = (name: string) => {
     const colorMap: Record<string, string> = {
-      'App': 'bg-blue-50 border-blue-200 hover:bg-blue-100',
-      'Klienter': 'bg-green-50 border-green-200 hover:bg-green-100',
-      'Revisjon': 'bg-purple-50 border-purple-200 hover:bg-purple-100',
-      'Jus': 'bg-red-50 border-red-200 hover:bg-red-100',
-      'Kvalitetssikring': 'bg-yellow-50 border-yellow-200 hover:bg-yellow-100',
-      'Regnskap': 'bg-indigo-50 border-indigo-200 hover:bg-indigo-100',
-      'FAQ': 'bg-gray-50 border-gray-200 hover:bg-gray-100',
-      'Økonomi': 'bg-emerald-50 border-emerald-200 hover:bg-emerald-100'
+      'App': 'bg-blue-900/20 border-blue-800/30 hover:bg-blue-900/30',
+      'Klienter': 'bg-green-900/20 border-green-800/30 hover:bg-green-900/30',
+      'Revisjon': 'bg-purple-900/20 border-purple-800/30 hover:bg-purple-900/30',
+      'Jus': 'bg-red-900/20 border-red-800/30 hover:bg-red-900/30',
+      'Kvalitetssikring': 'bg-yellow-900/20 border-yellow-800/30 hover:bg-yellow-900/30',
+      'Regnskap': 'bg-indigo-900/20 border-indigo-800/30 hover:bg-indigo-900/30',
+      'FAQ': 'bg-gray-800/20 border-gray-700/30 hover:bg-gray-800/30',
+      'Økonomi': 'bg-emerald-900/20 border-emerald-800/30 hover:bg-emerald-900/30'
     };
-    return colorMap[name] || 'bg-gray-50 border-gray-200 hover:bg-gray-100';
+    return colorMap[name] || 'bg-gray-800/20 border-gray-700/30 hover:bg-gray-800/30';
   };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">Fagområder</h1>
+            <p className="text-muted-foreground mt-1">Laster...</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {[...Array(8)].map((_, i) => (
+            <div key={i} className="h-32 bg-card border rounded-lg animate-pulse" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (!categories || categories.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">Fagområder</h1>
+            <p className="text-muted-foreground mt-1">
+              Ingen kategorier funnet. Kontakt administrator.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -119,7 +159,7 @@ const ExpandedKnowledgeOverview = () => {
 
       {/* Main Categories Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {categories?.map((category) => {
+        {categories.map((category) => {
           const Icon = getIconForCategory(category.name);
           const colorClass = getColorForCategory(category.name);
           
@@ -179,7 +219,7 @@ const ExpandedKnowledgeOverview = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {recentArticles.map((article) => (
               <Link key={article.id} to={`/fag/artikkel/${article.slug}`}>
-                <Card className="hover:shadow-md transition-shadow">
+                <Card className="hover:shadow-md transition-shadow bg-card">
                   <CardContent className="p-4">
                     <h3 className="font-medium text-sm mb-1">{article.title}</h3>
                     {article.summary && (
