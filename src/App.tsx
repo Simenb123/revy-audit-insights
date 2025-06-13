@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -55,6 +56,7 @@ const App = () => (
                         <Routes>
                           <Route path="/dashboard" element={<NavigationDashboard />} />
                           <Route path="/clients" element={<ClientsOverview />} />
+                          <Route path="/klienter" element={<ClientsOverview />} />
                           <Route path="/klienter/:orgNumber/*" element={<ClientDetail />} />
                           <Route path="/client-admin" element={<ClientAdmin />} />
                           <Route path="/communication" element={<Communication />} />
@@ -62,8 +64,8 @@ const App = () => (
                           <Route path="/accounting-data" element={<AccountingData />} />
                           <Route path="/data-import" element={<DataImport />} />
                           <Route path="/pdf-documents" element={<PDFDocuments />} />
-                          <Route path="/knowledge" element={<KnowledgeBase />} />
-                          <Route path="/fag" element={<KnowledgeBase />} />
+                          <Route path="/knowledge/*" element={<KnowledgeBase />} />
+                          <Route path="/fag/*" element={<KnowledgeBase />} />
                           <Route path="/training" element={<Training />} />
                           <Route path="/teams" element={<TeamManagement />} />
                           <Route path="/organization" element={<OrganizationOverview />} />

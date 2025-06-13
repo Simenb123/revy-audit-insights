@@ -61,6 +61,12 @@ const GlobalNav = () => {
     if (path === "/dashboard") {
       return location.pathname === "/" || location.pathname === "/dashboard";
     }
+    if (path === "/fag") {
+      return location.pathname.startsWith("/fag") || location.pathname.startsWith("/knowledge");
+    }
+    if (path === "/klienter") {
+      return location.pathname.startsWith("/klienter") || location.pathname.startsWith("/clients");
+    }
     return location.pathname.startsWith(path) && !location.pathname.includes('/klienter/');
   };
 

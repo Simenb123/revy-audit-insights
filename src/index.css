@@ -102,6 +102,11 @@
     @apply border-border;
   }
 
+  /* Force dark mode */
+  html {
+    @apply dark;
+  }
+
   body {
     @apply bg-background text-foreground;
   }
