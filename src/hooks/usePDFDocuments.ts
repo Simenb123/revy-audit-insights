@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -33,7 +32,7 @@ export const usePDFDocuments = () => {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return (data || []) as PDFDocument[];
+      return ((data || []) as unknown) as PDFDocument[];
     }
   });
 
