@@ -42,9 +42,13 @@ const Sidebar = () => {
         {/* Collapse/Expand button */}
         <button
           onClick={toggleSidebar}
-          className="flex h-8 w-8 items-center justify-center rounded-md text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
+          className="flex h-8 w-8 items-center justify-center rounded-md border border-sidebar-border bg-white text-revio-500 shadow transition-colors hover:bg-revio-100 hover:text-revio-700 focus-visible:outline-2 focus-visible:outline focus-visible:outline-revio-500"
           aria-label={isCollapsed ? "Utvid sidebar" : "Skjul sidebar"}
           type="button"
+          style={{
+            // Legg til en svak outline for å gjøre knappen lett å se
+            boxShadow: "0 0 0 2px hsl(var(--revio-100))",
+          }}
         >
           {isCollapsed 
             ? <ChevronsRight size={20} />
@@ -61,4 +65,3 @@ const Sidebar = () => {
 };
 
 export default Sidebar;
-
