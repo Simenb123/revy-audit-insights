@@ -34,8 +34,14 @@ const Sidebar = () => {
           height: '4rem',
         }}
       >
-        {/* Collapse/Expand knapp med standard shadcn styling */}
+        {/* Collapse/Expand knapp med forbedret synlighet */}
         <SidebarTrigger
+          className="
+            h-8 w-8 border border-border bg-background/80 backdrop-blur-sm
+            hover:bg-accent hover:text-accent-foreground
+            transition-all duration-200 shadow-sm
+            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
+          "
           aria-label={isCollapsed ? "Utvid sidebar" : "Skjul sidebar"}
         />
         {!isCollapsed && (
