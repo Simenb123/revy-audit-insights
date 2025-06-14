@@ -18,7 +18,13 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 
-const SidebarNav = () => {
+import { TooltipProvider, Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+
+interface SidebarNavProps {
+  collapsed?: boolean;
+}
+
+const SidebarNav = ({ collapsed = false }: SidebarNavProps) => {
   const location = useLocation();
   
   const navItems = [
@@ -70,40 +76,73 @@ const SidebarNav = () => {
     return location.pathname.startsWith(path) && !location.pathname.includes('/klienter/');
   };
 
+  // Helper to render an item (icon only + tooltip when collapsed)
+  const renderMenuItem = (item: { to: string, icon: any, label: string }) => {
+    if (collapsed) {
+      return (
+        <TooltipProvider delayDuration={0} key={item.to}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <SidebarMenuButton asChild isActive={isActive(item.to)} className="justify-center">
+                <Link to={item.to}>
+                  <item.icon />
+                  <span className="sr-only">{item.label}</span>
+                </Link>
+              </SidebarMenuButton>
+            </TooltipTrigger>
+            <TooltipContent side="right" className="capitalize">
+              {item.label}
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      );
+    }
+    // Expanded: icon + text label
+    return (
+      <SidebarMenuItem key={item.to}>
+        <SidebarMenuButton asChild isActive={isActive(item.to)}>
+          <Link to={item.to}>
+            <item.icon />
+            <span>{item.label}</span>
+          </Link>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+    );
+  };
+
   return (
     <>
       <SidebarGroup>
-        <SidebarGroupLabel>Hovedmeny</SidebarGroupLabel>
+        {!collapsed && <SidebarGroupLabel>Hovedmeny</SidebarGroupLabel>}
         <SidebarGroupContent>
           <SidebarMenu>
-            {navItems.map((item) => (
-              <SidebarMenuItem key={item.to}>
-                <SidebarMenuButton asChild isActive={isActive(item.to)}>
-                  <Link to={item.to}>
-                    <item.icon />
-                    <span>{item.label}</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            ))}
+            {navItems.map((item) =>
+              collapsed
+                ? (
+                  // Only render icon+tooltip; one per line
+                  <SidebarMenuItem key={item.to}>
+                    {renderMenuItem(item)}
+                  </SidebarMenuItem>
+                )
+                : renderMenuItem(item)
+            )}
           </SidebarMenu>
         </SidebarGroupContent>
       </SidebarGroup>
 
       <SidebarGroup>
-        <SidebarGroupLabel>System</SidebarGroupLabel>
+        {!collapsed && <SidebarGroupLabel>System</SidebarGroupLabel>}
         <SidebarGroupContent>
           <SidebarMenu>
-            {settingsItems.map((item) => (
-              <SidebarMenuItem key={item.to}>
-                <SidebarMenuButton asChild isActive={isActive(item.to)}>
-                  <Link to={item.to}>
-                    <item.icon />
-                    <span>{item.label}</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            ))}
+            {settingsItems.map((item) =>
+              collapsed
+                ? (
+                  <SidebarMenuItem key={item.to}>
+                    {renderMenuItem(item)}
+                  </SidebarMenuItem>
+                )
+                : renderMenuItem(item)
+            )}
           </SidebarMenu>
         </SidebarGroupContent>
       </SidebarGroup>
