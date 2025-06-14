@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { 
   Sidebar as SidebarContainer, 
@@ -33,9 +32,9 @@ const Sidebar = () => {
       data-collapsed={isCollapsed}
     >
       <SidebarHeader
-        className="flex items-center justify-between p-4 h-16 border-b border-sidebar-border bg-card" // endret til bg-card for kontrast
+        className="flex items-center justify-between p-4 h-16 border-b border-sidebar-border bg-card"
         style={{
-          background: 'hsl(var(--card))', // ekstra sikkerhet for kontrast
+          background: 'hsl(var(--card))'
         }}
       >
         {/* MENU LABEL – only when expanded */}
@@ -48,18 +47,15 @@ const Sidebar = () => {
         <button
           onClick={toggleSidebar}
           className="
-            flex h-8 w-8 items-center justify-center 
-            rounded-md border border-sidebar-border 
-            bg-white text-sidebar-foreground
-            shadow
-            hover:bg-sidebar-primary
+            flex h-8 w-8 items-center justify-center z-50
+            rounded-md border border-gray-400
+            bg-sidebar-primary text-sidebar-foreground
+            shadow-lg ring-2 ring-primary
+            hover:bg-sidebar-accent
             hover:text-sidebar-foreground
             transition-colors
-            focus-visible:outline-2 focus-visible:outline focus-visible:outline-primary
+            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary
           "
-          style={{
-            boxShadow: "0 0 2px rgba(0,0,0,0.10), 0 2px 8px rgba(0,0,0,0.02)",
-          }}
           aria-label={isCollapsed ? "Utvid sidebar" : "Skjul sidebar"}
           type="button"
         >
@@ -78,4 +74,3 @@ const Sidebar = () => {
 };
 
 export default Sidebar;
-
