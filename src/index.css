@@ -1,39 +1,29 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    /* LYS MODUS (standard) */
+    /* LYS MODUS (standard - tilbakestilt) */
     --background: 213 100% 97%;    /* Lys blå/hvit bakgrunn */
-    --foreground: 213 29% 18%;
-
+    --foreground: 213 29% 18%;     /* Mørk blå tekst */
     --card: 212 100% 99%;          /* Nesten hvit kort-bakgrunn */
     --card-foreground: 213 29% 18%;
-
     --popover: 0 0% 100%;
     --popover-foreground: 213 29% 18%;
-
     --primary: 175 80% 35%; /* Klar blågrønn hovedfarge */
     --primary-foreground: 0 0% 100%;
-
     --secondary: 215 30% 90%;
     --secondary-foreground: 213 29% 18%;
-
     --muted: 215 30% 95%;
     --muted-foreground: 213 15% 50%;
-
     --accent: 213 100% 92%;
     --accent-foreground: 213 29% 18%;
-
     --destructive: 0 78% 59%;
     --destructive-foreground: 0 0% 100%;
-
     --border: 215 23% 92%;
     --input: 215 23% 92%;
     --ring: 175 80% 35%;
-
     --radius: 0.5rem;
 
     /* Sidebar farger - lys variant */
@@ -46,11 +36,9 @@
     --sidebar-border: 175 20% 50%;
     --sidebar-ring: 174 57% 80%;
 
-    /* Sidebar width variables */
     --sidebar-width: 16rem;
     --sidebar-width-icon: 3rem;
 
-    /* Revio specific colors */
     --revio-100: 174 57% 95%;
     --revio-500: 173 49% 39%;
     --revio-600: 173 49% 35%;
@@ -101,4 +89,3 @@
     clip-path: polygon(100% 0, 0% 100%, 100% 100%);
   }
 }
-
