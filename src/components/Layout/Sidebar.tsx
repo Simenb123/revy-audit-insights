@@ -31,11 +31,7 @@ const Sidebar = () => {
       data-collapsed={isCollapsed}
     >
       <SidebarHeader 
-        className={`flex items-center gap-2 px-4 py-2 h-16 border-b border-sidebar-border ${isCollapsed ? 'justify-center' : 'justify-between'}`}
-        style={{
-          minHeight: '4rem',
-          height: '4rem',
-        }}
+        className={`flex flex-row items-center px-4 h-14 border-b border-sidebar-border ${isCollapsed ? 'justify-center' : 'justify-between'}`}
       >
         {!isCollapsed && (
           <span className="font-semibold text-sidebar-foreground text-base">
