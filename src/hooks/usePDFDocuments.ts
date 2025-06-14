@@ -92,12 +92,12 @@ export const usePDFDocuments = () => {
         .select('*')
         .single();
 
-      if (insertError) {
+      if (insertError || !document) {
         // Clean up uploaded file if database insert fails
         await supabase.storage
           .from('pdf-documents')
           .remove([filePath]);
-        throw new Error(`Failed to create document record: ${insertError.message}`);
+        throw new Error(`Failed to create document record: ${insertError?.message || 'Document data could not be retrieved after insert.'}`);
       }
 
       // Trigger the background text extraction function
