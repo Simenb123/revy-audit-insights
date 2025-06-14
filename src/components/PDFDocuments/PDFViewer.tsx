@@ -72,11 +72,22 @@ const PDFViewer = ({ document, isOpen, onClose, getDocumentUrl }: PDFViewerProps
           {isLoadingUrl ? (
             <p>Laster sikker PDF-visning...</p>
           ) : pdfUrl ? (
-            <iframe
-              src={`${pdfUrl}#toolbar=1&navpanes=1&scrollbar=1`}
+            <object
+              data={pdfUrl}
+              type="application/pdf"
               className="w-full h-full"
               title={document.title}
-            />
+            >
+              <div className="p-4 text-center flex flex-col items-center justify-center h-full">
+                <p className="mb-4">Nettleseren din kan ikke vise PDF-er direkte i dette vinduet.</p>
+                <Button asChild>
+                  <a href={pdfUrl} download={document.file_name}>
+                    <Download className="h-4 w-4 mr-2" />
+                    Last ned PDF-filen i stedet
+                  </a>
+                </Button>
+              </div>
+            </object>
           ) : (
             <p className="text-red-500">Kunne ikke laste PDF-filen.</p>
           )}
