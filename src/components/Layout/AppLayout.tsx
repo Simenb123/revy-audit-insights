@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import Sidebar from './Sidebar';
@@ -7,8 +8,6 @@ import RightSidebar from './RightSidebar';
 interface AppLayoutProps {
   children: React.ReactNode;
 }
-
-const HEADER_HEIGHT = 64; // 16 * 4px (h-16)
 
 const AppLayout = ({ children }: AppLayoutProps) => {
   const [isRightSidebarCollapsed, setIsRightSidebarCollapsed] = useState(false);
@@ -38,17 +37,17 @@ const AppLayout = ({ children }: AppLayoutProps) => {
 
   return (
     <SidebarProvider defaultOpen={true}>
-      {/* Header på toppen, alltid fixed */}
+      {/* Header på toppen, alltid fixed, høyest z-index */}
       <AppHeader onRightSidebarToggle={toggleRightSidebar} />
-      {/* Main content under header: flex row for sidebar/main/right-sidebar */}
+      {/* Flex main layout under header */}
       <div
-        className="min-h-screen w-full flex flex-row bg-background pt-16"
+        className="min-h-screen w-full flex flex-row bg-background pt-16 relative"
         style={{ minHeight: `100vh` }}
       >
-        {/* Venstre sidebar – sticky rett under header */}
+        {/* Venstre sidebar — flex-child, ikke fixed */}
         <Sidebar />
         {/* Hovedinnhold */}
-        <div className="flex-1 min-w-0 relative">
+        <div className="flex-1 min-w-0 relative z-10">
           <main className="h-full overflow-auto bg-background p-6">
             {children}
           </main>
