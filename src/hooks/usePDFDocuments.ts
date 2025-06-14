@@ -12,6 +12,7 @@ export interface PDFDocument {
   description?: string;
   category: string;
   isa_number?: string;
+  nrs_number?: string;
   tags?: string[];
   is_favorite: boolean;
   created_at: string;
@@ -54,6 +55,7 @@ export const usePDFDocuments = () => {
       description?: string;
       category: string;
       isaNumber?: string;
+      nrsNumber?: string;
       tags?: string[];
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -87,6 +89,7 @@ export const usePDFDocuments = () => {
           description: data.description,
           category: data.category,
           isa_number: data.isaNumber,
+          nrs_number: data.nrsNumber,
           tags: data.tags
         })
         .select('*')

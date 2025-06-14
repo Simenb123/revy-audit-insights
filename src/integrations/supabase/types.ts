@@ -1587,6 +1587,7 @@ export type Database = {
           id: string
           is_favorite: boolean
           isa_number: string | null
+          nrs_number: string | null
           tags: string[] | null
           text_extraction_status: string | null
           title: string
@@ -1604,6 +1605,7 @@ export type Database = {
           id?: string
           is_favorite?: boolean
           isa_number?: string | null
+          nrs_number?: string | null
           tags?: string[] | null
           text_extraction_status?: string | null
           title: string
@@ -1621,6 +1623,7 @@ export type Database = {
           id?: string
           is_favorite?: boolean
           isa_number?: string | null
+          nrs_number?: string | null
           tags?: string[] | null
           text_extraction_status?: string | null
           title?: string

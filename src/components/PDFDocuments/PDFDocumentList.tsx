@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -58,9 +59,11 @@ const PDFDocumentList = () => {
   const [selectedDocument, setSelectedDocument] = useState<PDFDocument | null>(null);
 
   const filteredDocuments = documents.filter(doc => {
-    const matchesSearch = doc.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         doc.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         doc.isa_number?.includes(searchTerm);
+    const searchTermLower = searchTerm.toLowerCase();
+    const matchesSearch = doc.title.toLowerCase().includes(searchTermLower) ||
+                         doc.description?.toLowerCase().includes(searchTermLower) ||
+                         doc.isa_number?.toLowerCase().includes(searchTermLower) ||
+                         doc.nrs_number?.toLowerCase().includes(searchTermLower);
     const matchesCategory = categoryFilter === 'all' || doc.category === categoryFilter;
     const matchesFavorites = !favoritesOnly || doc.is_favorite;
     
@@ -83,6 +86,7 @@ const PDFDocumentList = () => {
   const getCategoryLabel = (category: string) => {
     const labels: Record<string, string> = {
       isa: 'ISA',
+      regnskapsstandarder: 'NRS',
       laws: 'Lover',
       internal: 'Intern',
       other: 'Annet'
@@ -93,6 +97,7 @@ const PDFDocumentList = () => {
   const getCategoryColor = (category: string) => {
     const colors: Record<string, string> = {
       isa: 'bg-blue-100 text-blue-800',
+      regnskapsstandarder: 'bg-teal-100 text-teal-800',
       laws: 'bg-green-100 text-green-800',
       internal: 'bg-purple-100 text-purple-800',
       other: 'bg-gray-100 text-gray-800'
@@ -135,6 +140,7 @@ const PDFDocumentList = () => {
               <SelectContent>
                 <SelectItem value="all">Alle kategorier</SelectItem>
                 <SelectItem value="isa">ISA Standarder</SelectItem>
+                <SelectItem value="regnskapsstandarder">Regnskapsstandarder</SelectItem>
                 <SelectItem value="laws">Lover og forskrifter</SelectItem>
                 <SelectItem value="internal">Interne retningslinjer</SelectItem>
                 <SelectItem value="other">Andre dokumenter</SelectItem>
@@ -173,6 +179,11 @@ const PDFDocumentList = () => {
                           {document.isa_number && (
                             <Badge variant="outline" className="text-xs">
                               ISA {document.isa_number}
+                            </Badge>
+                          )}
+                          {document.nrs_number && (
+                            <Badge variant="outline" className="text-xs">
+                              NRS {document.nrs_number}
                             </Badge>
                           )}
                           <Badge className={`text-xs ${getCategoryColor(document.category)}`}>

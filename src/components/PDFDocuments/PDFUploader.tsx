@@ -15,6 +15,7 @@ const PDFUploader = () => {
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('isa');
   const [isaNumber, setIsaNumber] = useState('');
+  const [nrsNumber, setNrsNumber] = useState('');
   const [isDragging, setIsDragging] = useState(false);
   
   const { uploadDocument } = usePDFDocuments();
@@ -25,14 +26,20 @@ const PDFUploader = () => {
     const pdfFiles = Array.from(files).filter(file => file.type === 'application/pdf');
     setSelectedFiles(pdfFiles);
     
-    // Auto-detect ISA number from filename if it's an ISA document
+    // Auto-detect ISA or NRS number from filename if it's a single file
     if (pdfFiles.length === 1) {
       const fileName = pdfFiles[0].name;
       const isaMatch = fileName.match(/ISA\s*(\d+)/i);
+      const nrsMatch = fileName.match(/NRS\s*([\d\w\s()]+?)(?=\s-|\.pdf|_)/i);
+
       if (isaMatch) {
         setIsaNumber(isaMatch[1]);
         setTitle(fileName.replace(/\.pdf$/i, ''));
         setCategory('isa');
+      } else if (nrsMatch) {
+        setNrsNumber(nrsMatch[1].trim());
+        setTitle(fileName.replace(/\.pdf$/i, ''));
+        setCategory('regnskapsstandarder');
       } else {
         setTitle(fileName.replace(/\.pdf$/i, ''));
       }
@@ -58,13 +65,17 @@ const PDFUploader = () => {
     if (selectedFiles.length === 0 || !title.trim()) return;
 
     for (const file of selectedFiles) {
+      const isIsa = category === 'isa';
+      const isNrs = category === 'regnskapsstandarder';
+
       await uploadDocument.mutateAsync({
         file,
         title: selectedFiles.length === 1 ? title : file.name.replace(/\.pdf$/i, ''),
         description,
         category,
-        isaNumber: category === 'isa' ? isaNumber : undefined,
-        tags: category === 'isa' ? ['ISA', `ISA ${isaNumber}`] : undefined
+        isaNumber: isIsa ? isaNumber : undefined,
+        nrsNumber: isNrs ? nrsNumber : undefined,
+        tags: isIsa ? ['ISA', `ISA ${isaNumber}`] : (isNrs ? ['NRS', `NRS ${nrsNumber}`] : undefined)
       });
     }
 
@@ -73,6 +84,7 @@ const PDFUploader = () => {
     setTitle('');
     setDescription('');
     setIsaNumber('');
+    setNrsNumber('');
   };
 
   return (
@@ -162,6 +174,7 @@ const PDFUploader = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="isa">ISA Standarder</SelectItem>
+                  <SelectItem value="regnskapsstandarder">Regnskapsstandarder</SelectItem>
                   <SelectItem value="laws">Lover og forskrifter</SelectItem>
                   <SelectItem value="internal">Interne retningslinjer</SelectItem>
                   <SelectItem value="other">Andre dokumenter</SelectItem>
@@ -177,6 +190,18 @@ const PDFUploader = () => {
                   value={isaNumber}
                   onChange={(e) => setIsaNumber(e.target.value)}
                   placeholder="f.eks. 200, 210, 315"
+                />
+              </div>
+            )}
+            
+            {category === 'regnskapsstandarder' && (
+              <div>
+                <Label htmlFor="nrs-number">NRS Nummer</Label>
+                <Input
+                  id="nrs-number"
+                  value={nrsNumber}
+                  onChange={(e) => setNrsNumber(e.target.value)}
+                  placeholder="f.eks. 1, 8, (IFRS)"
                 />
               </div>
             )}
