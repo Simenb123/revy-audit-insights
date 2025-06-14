@@ -2,7 +2,6 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { SidebarTrigger } from '@/components/ui/sidebar';
 import { 
   Search, 
   Plus, 
@@ -18,30 +17,16 @@ interface AppHeaderProps {
 const AppHeader = ({ onRightSidebarToggle }: AppHeaderProps) => {
   return (
     <header className="fixed top-0 left-0 right-0 z-40 flex h-16 shrink-0 items-center justify-between bg-gradient-to-r from-revio-500 to-revio-600 text-white px-4 shadow-lg">
-      {/* Left Section - Now includes SidebarTrigger */}
-      <div className="flex items-center gap-4">
-        {/* Sidebar Toggle Button */}
-        <SidebarTrigger
-          className="
-            h-9 w-9 border border-white/30 bg-white/20 backdrop-blur-sm text-white
-            hover:bg-white/30 hover:text-white
-            transition-all duration-200 shadow-md
-            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50
-            flex-shrink-0
-          "
-          aria-label="Toggle sidebar"
-        />
-        
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <div className="w-9 h-9 bg-white/20 rounded-lg flex items-center justify-center">
-              <span className="text-sm font-bold">R</span>
-            </div>
-            <span className="font-bold text-xl">Revio</span>
+      {/* Left Section - SidebarTrigger removed */}
+      <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          <div className="w-9 h-9 bg-white/20 rounded-lg flex items-center justify-center">
+            <span className="text-sm font-bold">R</span>
           </div>
-          <div className="h-6 w-px bg-white/30"></div>
-          <h1 className="text-lg font-semibold">RevisionAkademiet</h1>
+          <span className="font-bold text-xl">Revio</span>
         </div>
+        <div className="h-6 w-px bg-white/30"></div>
+        <h1 className="text-lg font-semibold">RevisionAkademiet</h1>
       </div>
       
       {/* Center Section - Search */}
