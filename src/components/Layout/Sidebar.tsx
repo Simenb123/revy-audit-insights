@@ -23,16 +23,21 @@ const Sidebar = () => {
         isCollapsed
           ? {
               width: 'var(--sidebar-width-icon)',
-              minWidth: 0
+              minWidth: 0,
             }
           : {
               width: 'var(--sidebar-width)',
-              minWidth: 'var(--sidebar-width-icon)'
+              minWidth: 'var(--sidebar-width-icon)',
             }
       }
       data-collapsed={isCollapsed}
     >
-      <SidebarHeader className="flex items-center justify-between p-4 h-16 border-b border-border bg-sidebar">
+      <SidebarHeader
+        className="flex items-center justify-between p-4 h-16 border-b border-sidebar-border bg-card" // endret til bg-card for kontrast
+        style={{
+          background: 'hsl(var(--card))', // ekstra sikkerhet for kontrast
+        }}
+      >
         {/* MENU LABEL – only when expanded */}
         {!isCollapsed && (
           <span className="font-semibold text-sidebar-foreground text-base">
@@ -42,7 +47,19 @@ const Sidebar = () => {
         {/* Collapse/Expand button */}
         <button
           onClick={toggleSidebar}
-          className="flex h-8 w-8 items-center justify-center rounded-md border border-sidebar-border bg-sidebar-accent text-sidebar-foreground transition-colors hover:bg-sidebar-primary focus-visible:outline-2 focus-visible:outline focus-visible:outline-sidebar-ring"
+          className="
+            flex h-8 w-8 items-center justify-center 
+            rounded-md border border-sidebar-border 
+            bg-white text-sidebar-foreground
+            shadow
+            hover:bg-sidebar-primary
+            hover:text-sidebar-foreground
+            transition-colors
+            focus-visible:outline-2 focus-visible:outline focus-visible:outline-primary
+          "
+          style={{
+            boxShadow: "0 0 2px rgba(0,0,0,0.10), 0 2px 8px rgba(0,0,0,0.02)",
+          }}
           aria-label={isCollapsed ? "Utvid sidebar" : "Skjul sidebar"}
           type="button"
         >
@@ -61,3 +78,4 @@ const Sidebar = () => {
 };
 
 export default Sidebar;
+
