@@ -1,7 +1,4 @@
 
-// Remove incorrectly used @apply dark;
-//
-// Correct base Tailwind setup (no @apply dark; here)
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -106,3 +103,4 @@
     clip-path: polygon(100% 0, 0% 100%, 100% 100%);
   }
 }
+
