@@ -4,12 +4,6 @@ import {
   Sidebar as ShadcnSidebar,
   SidebarContent,
   SidebarHeader,
-  SidebarGroup,
-  SidebarGroupLabel,
-  SidebarGroupContent,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
   useSidebar,
   SidebarTrigger
 } from '@/components/ui/sidebar';
@@ -28,35 +22,20 @@ const Sidebar = () => {
       `}
       style={
         isCollapsed
-          ? {
-              width: 'var(--sidebar-width-icon)',
-              minWidth: 0,
-            }
-          : {
-              width: 'var(--sidebar-width)',
-              minWidth: 'var(--sidebar-width-icon)',
-            }
+          ? { width: 'var(--sidebar-width-icon)', minWidth: 0 }
+          : { width: 'var(--sidebar-width)', minWidth: 'var(--sidebar-width-icon)' }
       }
       data-collapsed={isCollapsed}
     >
-      <SidebarHeader className="flex items-center justify-between px-4 py-2 h-16 border-b border-sidebar-border bg-card"
+      <SidebarHeader className="flex items-center gap-2 px-4 py-2 h-16 border-b border-sidebar-border bg-card"
         style={{
           background: 'hsl(var(--card))',
           minHeight: '4rem',
           height: '4rem',
         }}
       >
-        {/* Collapse/Expand using shadcn SidebarTrigger */}
+        {/* Collapse/Expand knapp med standard shadcn styling */}
         <SidebarTrigger
-          className="
-            flex h-10 w-10 items-center justify-center
-            rounded-full border border-gray-300 shadow-xl
-            bg-white text-sidebar-primary
-            transition-colors transition-shadow duration-200
-            hover:bg-sidebar-primary hover:text-sidebar-foreground
-            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary
-            z-50 ml-1
-          "
           aria-label={isCollapsed ? "Utvid sidebar" : "Skjul sidebar"}
         />
         {!isCollapsed && (
