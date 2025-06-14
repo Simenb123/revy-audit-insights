@@ -1,4 +1,7 @@
 
+// Remove incorrectly used @apply dark;
+//
+// Correct base Tailwind setup (no @apply dark; here)
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -65,7 +68,8 @@
 
   /* Force dark mode consistently */
   html {
-    @apply dark;
+    /* Do not use @apply dark! */
+    @apply bg-background text-foreground;
     color-scheme: dark;
   }
 
@@ -75,7 +79,6 @@
     color: hsl(var(--foreground));
   }
 
-  /* Ensure all elements inherit dark theme */
   #root {
     @apply bg-background text-foreground;
     min-height: 100vh;
