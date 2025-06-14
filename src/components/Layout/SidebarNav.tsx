@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
@@ -32,6 +31,11 @@ const SidebarNav = ({ collapsed = false }: SidebarNavProps) => {
       to: "/dashboard",
       icon: Home,
       label: "Dashboard"
+    },
+    {
+      to: "/funksjoner",
+      icon: BarChart3,
+      label: "Funksjoner"
     },
     {
       to: "/klienter",

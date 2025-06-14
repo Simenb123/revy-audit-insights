@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -54,7 +53,10 @@ const App = () => (
                     <OnboardingCheck>
                       <AppLayout>
                         <Routes>
-                          <Route path="/dashboard" element={<NavigationDashboard />} />
+                          {/* Endret: dashboard viser hoveddashboardet */}
+                          <Route path="/dashboard" element={<Index />} />
+                          {/* Ny rute: funksjonsmeny */}
+                          <Route path="/funksjoner" element={<NavigationDashboard />} />
                           <Route path="/clients" element={<ClientsOverview />} />
                           <Route path="/klienter" element={<ClientsOverview />} />
                           <Route path="/klienter/:orgNumber/*" element={<ClientDetail />} />
