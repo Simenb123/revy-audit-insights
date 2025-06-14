@@ -5,44 +5,45 @@
 
 @layer base {
   :root {
-    --background: 222.2 84% 15%;
-    --foreground: 210 40% 98%;
+    /* LYS MODUS (standard) */
+    --background: 213 100% 97%;    /* Lys blå/hvit bakgrunn */
+    --foreground: 213 29% 18%;
 
-    --card: 222.2 84% 13%;
-    --card-foreground: 210 40% 98%;
+    --card: 212 100% 99%;          /* Nesten hvit kort-bakgrunn */
+    --card-foreground: 213 29% 18%;
 
-    --popover: 222.2 84% 14%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 213 29% 18%;
 
-    --primary: 173 49% 39%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 175 80% 35%; /* Klar blågrønn hovedfarge */
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 217.2 32.6% 21%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 215 30% 90%;
+    --secondary-foreground: 213 29% 18%;
 
-    --muted: 217.2 32.6% 21%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 215 30% 95%;
+    --muted-foreground: 213 15% 50%;
 
-    --accent: 173 49% 39%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 213 100% 92%;
+    --accent-foreground: 213 29% 18%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 78% 59%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 173 49% 39%;
+    --border: 215 23% 92%;
+    --input: 215 23% 92%;
+    --ring: 175 80% 35%;
 
     --radius: 0.5rem;
 
-    /* Updated sidebar colors to match teal design */
-    --sidebar-background: 173 49% 25%;
+    /* Sidebar farger - lys variant */
+    --sidebar-background: 175 64% 28%;
     --sidebar-foreground: 0 0% 100%;
     --sidebar-primary: 174 57% 80%;
-    --sidebar-primary-foreground: 173 49% 25%;
-    --sidebar-accent: 173 49% 35%;
+    --sidebar-primary-foreground: 175 64% 28%;
+    --sidebar-accent: 175 40% 22%;
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 173 49% 30%;
+    --sidebar-border: 175 20% 50%;
     --sidebar-ring: 174 57% 80%;
 
     /* Sidebar width variables */
@@ -64,7 +65,7 @@
   }
   html {
     @apply bg-background text-foreground;
-    color-scheme: dark;
+    color-scheme: light;
   }
 
   body {
