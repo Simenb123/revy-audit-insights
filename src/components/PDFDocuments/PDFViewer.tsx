@@ -2,11 +2,17 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Download, ExternalLink } from 'lucide-react';
-import { PDFDocument } from '@/hooks/usePDFDocuments';
+import { Download, ExternalLink, ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from 'lucide-react';
+import { PDFDocument as PDFDocumentType } from '@/hooks/usePDFDocuments';
+
+import { Document, Page, pdfjs } from 'react-pdf';
+import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
+import 'react-pdf/dist/esm/Page/TextLayer.css';
+
+pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 interface PDFViewerProps {
-  document: PDFDocument;
+  document: PDFDocumentType;
   isOpen: boolean;
   onClose: () => void;
   getDocumentUrl: (filePath: string) => Promise<string | null>;
@@ -15,11 +21,18 @@ interface PDFViewerProps {
 const PDFViewer = ({ document, isOpen, onClose, getDocumentUrl }: PDFViewerProps) => {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [isLoadingUrl, setIsLoadingUrl] = useState(false);
+  const [numPages, setNumPages] = useState<number | null>(null);
+  const [pageNumber, setPageNumber] = useState(1);
+  const [scale, setScale] = useState(1.0);
 
   useEffect(() => {
     if (isOpen && document) {
       setIsLoadingUrl(true);
       setPdfUrl(null);
+      setNumPages(null);
+      setPageNumber(1);
+      setScale(1.0);
+
       getDocumentUrl(document.file_path)
         .then(url => {
           setPdfUrl(url);
@@ -29,6 +42,10 @@ const PDFViewer = ({ document, isOpen, onClose, getDocumentUrl }: PDFViewerProps
         });
     }
   }, [isOpen, document, getDocumentUrl]);
+
+  function onDocumentLoadSuccess({ numPages: nextNumPages }: { numPages: number }) {
+    setNumPages(nextNumPages);
+  }
 
   const handleDownload = async () => {
     if (!pdfUrl) return;
@@ -44,10 +61,16 @@ const PDFViewer = ({ document, isOpen, onClose, getDocumentUrl }: PDFViewerProps
     }
   };
 
+  const goToPrevPage = () => setPageNumber(prev => Math.max(prev - 1, 1));
+  const goToNextPage = () => setPageNumber(prev => Math.min(prev + 1, numPages || 1));
+  
+  const zoomIn = () => setScale(prev => Math.min(prev + 0.2, 3));
+  const zoomOut = () => setScale(prev => Math.max(prev - 0.2, 0.5));
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl h-[90vh] flex flex-col">
-        <DialogHeader>
+      <DialogContent className="max-w-6xl h-[90vh] flex flex-col p-0">
+        <DialogHeader className="p-6 pb-0">
           <DialogTitle className="flex items-center justify-between">
             <div>
               <span>{document.title}</span>
@@ -68,28 +91,60 @@ const PDFViewer = ({ document, isOpen, onClose, getDocumentUrl }: PDFViewerProps
           </DialogTitle>
         </DialogHeader>
         
-        <div className="flex-1 border rounded-lg overflow-hidden flex items-center justify-center bg-gray-100">
+        {numPages && (
+          <div className="flex items-center justify-center gap-4 p-2 bg-background border-y mt-4">
+            <Button variant="ghost" size="sm" onClick={goToPrevPage} disabled={pageNumber <= 1}>
+              <ChevronLeft className="h-4 w-4 mr-1" /> Forrige
+            </Button>
+            <span className="text-sm">Side {pageNumber} av {numPages}</span>
+            <Button variant="ghost" size="sm" onClick={goToNextPage} disabled={pageNumber >= numPages}>
+              Neste <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+            <div className="flex items-center gap-2 ml-auto">
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={zoomOut} disabled={scale <= 0.5}>
+                <ZoomOut className="h-4 w-4" />
+              </Button>
+              <span className="min-w-[40px] text-center text-sm">{Math.round(scale * 100)}%</span>
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={zoomIn} disabled={scale >= 3}>
+                <ZoomIn className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
+
+        <div className="flex-1 overflow-auto flex items-start justify-center bg-gray-100 p-4">
           {isLoadingUrl ? (
-            <p>Laster sikker PDF-visning...</p>
+            <p className="m-auto text-muted-foreground">Laster sikker PDF-visning...</p>
           ) : pdfUrl ? (
-            <object
-              data={pdfUrl}
-              type="application/pdf"
-              className="w-full h-full"
-              title={document.title}
-            >
-              <div className="p-4 text-center flex flex-col items-center justify-center h-full">
-                <p className="mb-4">Nettleseren din kan ikke vise PDF-er direkte i dette vinduet.</p>
-                <Button asChild>
-                  <a href={pdfUrl} download={document.file_name}>
-                    <Download className="h-4 w-4 mr-2" />
-                    Last ned PDF-filen i stedet
-                  </a>
-                </Button>
-              </div>
-            </object>
+            <div className="relative">
+                <Document
+                    file={pdfUrl}
+                    onLoadSuccess={onDocumentLoadSuccess}
+                    onLoadError={(error) => console.error('Failed to load PDF:', error)}
+                    loading={<div className="m-auto text-muted-foreground">Laster PDF-dokument...</div>}
+                    error={
+                        <div className="p-4 text-center m-auto bg-card rounded-lg shadow-md">
+                        <h3 className="text-lg font-semibold text-destructive mb-2">Feil ved lasting av PDF</h3>
+                        <p className="mb-4 text-sm text-muted-foreground">Dette kan være fordi filen er korrupt, eller at visning i nettleser ikke er støttet for denne filen.</p>
+                        <Button asChild>
+                            <a href={pdfUrl} download={document.file_name}>
+                            <Download className="h-4 w-4 mr-2" />
+                            Prøv å laste ned i stedet
+                            </a>
+                        </Button>
+                        </div>
+                    }
+                    className="flex justify-center"
+                    >
+                    <Page 
+                        pageNumber={pageNumber} 
+                        scale={scale} 
+                        className="shadow-lg"
+                    />
+                </Document>
+            </div>
           ) : (
-            <p className="text-red-500">Kunne ikke laste PDF-filen.</p>
+            <p className="m-auto text-destructive">Kunne ikke hente URL for PDF-filen.</p>
           )}
         </div>
       </DialogContent>

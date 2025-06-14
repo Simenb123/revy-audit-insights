@@ -179,7 +179,7 @@ export const usePDFDocuments = () => {
   const getDocumentUrl = async (filePath: string): Promise<string | null> => {
     const { data, error } = await supabase.storage
       .from('pdf-documents')
-      .createSignedUrl(filePath, 60 * 5); // Signed URL valid for 5 minutes
+      .createSignedUrl(filePath, 60 * 15); // Signed URL valid for 15 minutes
 
     if (error) {
       console.error('Error creating signed URL:', error);
