@@ -15,6 +15,7 @@ const Sidebar = () => {
 
   return (
     <ShadcnSidebar
+      collapsible="icon"
       className={`
         flex flex-col transition-all duration-300
         shadow-lg border-r border-sidebar-border bg-sidebar z-20
@@ -30,9 +31,8 @@ const Sidebar = () => {
       data-collapsed={isCollapsed}
     >
       <SidebarHeader 
-        className={`flex items-center gap-2 px-4 py-2 h-16 border-b border-sidebar-border bg-card ${isCollapsed ? 'justify-center' : 'justify-between'}`}
+        className={`flex items-center gap-2 px-4 py-2 h-16 border-b border-sidebar-border ${isCollapsed ? 'justify-center' : 'justify-between'}`}
         style={{
-          background: 'hsl(var(--card))',
           minHeight: '4rem',
           height: '4rem',
         }}
@@ -43,7 +43,7 @@ const Sidebar = () => {
           </span>
         )}
         <SidebarTrigger
-          className="h-8 w-8"
+          className="h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent"
           aria-label={isCollapsed ? "Utvid sidebar" : "Skjul sidebar"}
         />
       </SidebarHeader>
