@@ -175,12 +175,22 @@ export const usePDFDocuments = () => {
     }
   });
 
-  // Get document URL for viewing/downloading
-  const getDocumentUrl = (filePath: string) => {
-    const { data } = supabase.storage
+  // Get document URL for viewing/downloading - now async for signed URLs
+  const getDocumentUrl = async (filePath: string): Promise<string | null> => {
+    const { data, error } = await supabase.storage
       .from('pdf-documents')
-      .getPublicUrl(filePath);
-    return data.publicUrl;
+      .createSignedUrl(filePath, 60 * 5); // Signed URL valid for 5 minutes
+
+    if (error) {
+      console.error('Error creating signed URL:', error);
+      toast({
+        title: "Kunne ikke hente fil",
+        description: "Klarte ikke å lage en sikker lenke til dokumentet.",
+        variant: "destructive"
+      });
+      return null;
+    }
+    return data.signedUrl;
   };
 
   return {

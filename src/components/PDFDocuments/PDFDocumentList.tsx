@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -34,8 +33,9 @@ const PDFDocumentList = () => {
     return matchesSearch && matchesCategory && matchesFavorites;
   });
 
-  const handleDownload = (document: PDFDocument) => {
-    const url = getDocumentUrl(document.file_path);
+  const handleDownload = async (document: PDFDocument) => {
+    const url = await getDocumentUrl(document.file_path);
+    if (!url) return; // Error is handled in the hook
     const link = window.document.createElement('a');
     link.href = url;
     link.download = document.file_name;
