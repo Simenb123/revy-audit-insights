@@ -15,10 +15,9 @@ const Sidebar = () => {
 
   return (
     <SidebarContainer
-      className={`h-full flex flex-col transition-all duration-300
-        sticky top-16
+      className={`fixed top-16 left-0 h-[calc(100vh-4rem)] flex flex-col transition-all duration-300
+        shadow-lg border-r border-sidebar-border bg-sidebar z-40
         ${isCollapsed ? 'w-[var(--sidebar-width-icon)] min-w-0' : 'w-[var(--sidebar-width)]'}
-        z-40
       `}
       style={
         isCollapsed
