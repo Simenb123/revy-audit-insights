@@ -16,8 +16,8 @@ const Sidebar = () => {
   return (
     <SidebarContainer
       className={`
-        h-[calc(100vh-4rem)] flex flex-col transition-all duration-300
-        shadow-lg border-r border-sidebar-border bg-sidebar z-40
+        h-full flex flex-col transition-all duration-300
+        shadow-lg border-r border-sidebar-border bg-sidebar z-20
         ${isCollapsed ? 'w-[var(--sidebar-width-icon)] min-w-0' : 'w-[var(--sidebar-width)]'}
       `}
       style={
@@ -75,3 +75,4 @@ const Sidebar = () => {
 };
 
 export default Sidebar;
+
