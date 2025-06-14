@@ -5,22 +5,22 @@
 
 @layer base {
   :root {
-    --background: 222.2 84% 4.9%;
+    --background: 222.2 84% 15%;
     --foreground: 210 40% 98%;
 
-    --card: 222.2 84% 4.9%;
+    --card: 222.2 84% 13%;
     --card-foreground: 210 40% 98%;
 
-    --popover: 222.2 84% 4.9%;
+    --popover: 222.2 84% 14%;
     --popover-foreground: 210 40% 98%;
 
     --primary: 173 49% 39%;
     --primary-foreground: 210 40% 98%;
 
-    --secondary: 217.2 32.6% 17.5%;
+    --secondary: 217.2 32.6% 21%;
     --secondary-foreground: 210 40% 98%;
 
-    --muted: 217.2 32.6% 17.5%;
+    --muted: 217.2 32.6% 21%;
     --muted-foreground: 215 20.2% 65.1%;
 
     --accent: 173 49% 39%;
@@ -44,11 +44,11 @@
     --sidebar-accent-foreground: 0 0% 100%;
     --sidebar-border: 173 49% 30%;
     --sidebar-ring: 174 57% 80%;
-    
+
     /* Sidebar width variables */
     --sidebar-width: 16rem;
     --sidebar-width-icon: 3rem;
-    
+
     /* Revio specific colors */
     --revio-100: 174 57% 95%;
     --revio-500: 173 49% 39%;
@@ -62,10 +62,7 @@
   * {
     @apply border-border;
   }
-
-  /* Force dark mode consistently */
   html {
-    /* Do not use @apply dark! */
     @apply bg-background text-foreground;
     color-scheme: dark;
   }
