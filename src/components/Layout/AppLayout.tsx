@@ -41,8 +41,11 @@ const AppLayout = ({ children }: AppLayoutProps) => {
       <AppHeader onRightSidebarToggle={toggleRightSidebar} />
       {/* Flex main layout under header */}
       <div
-        className="min-h-screen w-full flex flex-row bg-background pt-16 relative z-10"
-        style={{ minHeight: `100vh` }}
+        className="min-h-screen w-full flex flex-row bg-background relative z-10"
+        style={{ 
+          minHeight: `100vh`,
+          paddingTop: '4rem' // Gi plass til fixed header
+        }}
       >
         {/* Venstre sidebar — flex-child, ikke fixed, z-20 for å være under header */}
         <div className="relative z-20 h-full">
@@ -72,4 +75,3 @@ const AppLayout = ({ children }: AppLayoutProps) => {
 };
 
 export default AppLayout;
-
