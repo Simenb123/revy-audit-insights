@@ -4,7 +4,6 @@ import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
-  Home, 
   Users, 
   FileText, 
   Settings, 
@@ -25,7 +24,7 @@ const MainNavigation = () => {
   const location = useLocation();
   
   const navigationItems = [
-    { name: 'Dashboard', href: '/dashboard', icon: Home },
+    // Fjernet: { name: 'Dashboard', href: '/dashboard', icon: Home },
     { name: 'Klienter', href: '/clients', icon: Users },
     { name: 'Samarbeid', href: '/collaboration', icon: Video, badge: 'NY' },
     { name: 'Kommunikasjon', href: '/communication', icon: MessageSquare },
@@ -62,3 +61,4 @@ const MainNavigation = () => {
 };
 
 export default MainNavigation;
+
