@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { 
   FileText, 
   Star, 
@@ -11,10 +12,43 @@ import {
   Trash2, 
   Search,
   Filter,
-  Eye
+  Eye,
+  Loader2,
+  CheckCircle,
+  XCircle,
+  Clock
 } from 'lucide-react';
 import { usePDFDocuments, PDFDocument } from '@/hooks/usePDFDocuments';
 import PDFViewer from './PDFViewer';
+
+const ExtractionStatusIndicator = ({ status }: { status: PDFDocument['text_extraction_status'] }) => {
+  if (!status) return null;
+
+  const statusConfig = {
+    pending: { icon: Clock, color: 'text-gray-500', label: 'Venter på analyse' },
+    processing: { icon: Loader2, color: 'text-blue-500 animate-spin', label: 'Analyserer tekst...' },
+    completed: { icon: CheckCircle, color: 'text-green-500', label: 'Analyse fullført' },
+    failed: { icon: XCircle, color: 'text-red-500', label: 'Analyse feilet' },
+  };
+
+  const config = statusConfig[status];
+  if (!config) return null;
+
+  const Icon = config.icon;
+
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Icon className={`h-4 w-4 ${config.color}`} />
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>{config.label}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+};
 
 const PDFDocumentList = () => {
   const { documents, isLoading, toggleFavorite, deleteDocument, getDocumentUrl } = usePDFDocuments();
@@ -132,19 +166,22 @@ const PDFDocumentList = () => {
                 <div key={document.id} className="border rounded-lg p-4 hover:bg-gray-50">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
+                      <div className="flex items-center gap-3 mb-2">
+                        <ExtractionStatusIndicator status={document.text_extraction_status} />
                         <h3 className="font-medium text-lg">{document.title}</h3>
-                        {document.isa_number && (
-                          <Badge variant="outline" className="text-xs">
-                            ISA {document.isa_number}
+                        <div className="flex items-center gap-2">
+                          {document.isa_number && (
+                            <Badge variant="outline" className="text-xs">
+                              ISA {document.isa_number}
+                            </Badge>
+                          )}
+                          <Badge className={`text-xs ${getCategoryColor(document.category)}`}>
+                            {getCategoryLabel(document.category)}
                           </Badge>
-                        )}
-                        <Badge className={`text-xs ${getCategoryColor(document.category)}`}>
-                          {getCategoryLabel(document.category)}
-                        </Badge>
-                        {document.is_favorite && (
-                          <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                        )}
+                          {document.is_favorite && (
+                            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                          )}
+                        </div>
                       </div>
                       
                       {document.description && (

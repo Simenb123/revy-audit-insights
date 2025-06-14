@@ -16,6 +16,8 @@ export interface PDFDocument {
   is_favorite: boolean;
   created_at: string;
   updated_at: string;
+  extracted_text?: { page: number; content: string }[];
+  text_extraction_status?: 'pending' | 'processing' | 'completed' | 'failed' | null;
 }
 
 export const usePDFDocuments = () => {
@@ -33,6 +35,14 @@ export const usePDFDocuments = () => {
       
       if (error) throw error;
       return ((data || []) as unknown) as PDFDocument[];
+    },
+    refetchInterval: (query) => {
+      const data = query.state.data as PDFDocument[] | undefined;
+      const hasProcessing = data?.some(doc => 
+        doc.text_extraction_status === 'processing' || doc.text_extraction_status === 'pending'
+      );
+      // Refetch every 5 seconds if there are processing jobs
+      return hasProcessing ? 5000 : false;
     }
   });
 
@@ -90,13 +100,21 @@ export const usePDFDocuments = () => {
         throw new Error(`Failed to create document record: ${insertError.message}`);
       }
 
+      // Trigger the background text extraction function
+      supabase.functions.invoke('pdf-text-extractor', {
+        body: { documentId: document.id },
+      }).catch(err => {
+        // Log if the function invocation itself fails, but don't block the user
+        console.error("Failed to invoke text extractor function:", err);
+      });
+
       return document;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pdf-documents'] });
       toast({
         title: "Dokument lastet opp!",
-        description: "PDF-en er lastet opp og lagret.",
+        description: "PDF-en er lagret og tekstanalyse har startet.",
       });
     },
     onError: (error) => {

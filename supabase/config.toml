@@ -1,4 +1,3 @@
-
 project_id = "fxelhfwaoizqyecikscu"
 
 [api]
@@ -31,6 +30,18 @@ enabled = true
 [functions.brreg]
 verify_jwt = false
 
+[functions.revy-ai-chat]
+verify_jwt = false
+
 [functions.syncKunngjoring]
 verify_jwt = false
 schedule = "*/30 * * * *"  # Run every 30 minutes
+
+[functions.text-to-speech]
+verify_jwt = false
+
+[functions.voice-to-text]
+verify_jwt = false
+
+[functions.pdf-text-extractor]
+verify_jwt = true

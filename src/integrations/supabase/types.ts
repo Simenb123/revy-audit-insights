@@ -1580,6 +1580,7 @@ export type Database = {
           category: string
           created_at: string
           description: string | null
+          extracted_text: Json | null
           file_name: string
           file_path: string
           file_size: number
@@ -1587,6 +1588,7 @@ export type Database = {
           is_favorite: boolean
           isa_number: string | null
           tags: string[] | null
+          text_extraction_status: string | null
           title: string
           updated_at: string
           user_id: string
@@ -1595,6 +1597,7 @@ export type Database = {
           category: string
           created_at?: string
           description?: string | null
+          extracted_text?: Json | null
           file_name: string
           file_path: string
           file_size: number
@@ -1602,6 +1605,7 @@ export type Database = {
           is_favorite?: boolean
           isa_number?: string | null
           tags?: string[] | null
+          text_extraction_status?: string | null
           title: string
           updated_at?: string
           user_id: string
@@ -1610,6 +1614,7 @@ export type Database = {
           category?: string
           created_at?: string
           description?: string | null
+          extracted_text?: Json | null
           file_name?: string
           file_path?: string
           file_size?: number
@@ -1617,6 +1622,7 @@ export type Database = {
           is_favorite?: boolean
           isa_number?: string | null
           tags?: string[] | null
+          text_extraction_status?: string | null
           title?: string
           updated_at?: string
           user_id?: string
