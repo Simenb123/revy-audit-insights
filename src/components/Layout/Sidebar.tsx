@@ -3,7 +3,6 @@ import React from 'react';
 import { 
   Sidebar as SidebarContainer, 
   SidebarContent, 
-  SidebarHeader, 
   useSidebar
 } from '@/components/ui/sidebar';
 import SidebarNav from './SidebarNav';
@@ -33,10 +32,13 @@ const Sidebar = () => {
       }
       data-collapsed={isCollapsed}
     >
-      <SidebarHeader
+      {/* Custom header at top */}
+      <div
         className="flex items-center justify-between p-4 h-16 border-b border-sidebar-border bg-card"
         style={{
-          background: 'hsl(var(--card))'
+          background: 'hsl(var(--card))',
+          minHeight: '4rem', // same as header for consistency
+          height: '4rem',
         }}
       >
         {!isCollapsed && (
@@ -48,7 +50,7 @@ const Sidebar = () => {
         <button
           onClick={toggleSidebar}
           className="
-            flex h-8 w-8 items-center justify-center z-50
+            flex h-8 w-8 items-center justify-center z-40
             rounded-md border border-gray-400
             bg-sidebar-primary text-sidebar-foreground
             shadow-lg ring-2 ring-primary
@@ -59,14 +61,16 @@ const Sidebar = () => {
           "
           aria-label={isCollapsed ? "Utvid sidebar" : "Skjul sidebar"}
           type="button"
+          style={{
+            marginLeft: isCollapsed ? 0 : '0.5rem',
+          }}
         >
           {isCollapsed 
             ? <ChevronsRight size={20} />
             : <ChevronsLeft size={20} />
           }
         </button>
-      </SidebarHeader>
-
+      </div>
       <SidebarContent className="flex-1 p-0">
         <SidebarNav collapsed={isCollapsed} />
       </SidebarContent>
@@ -75,4 +79,3 @@ const Sidebar = () => {
 };
 
 export default Sidebar;
-
