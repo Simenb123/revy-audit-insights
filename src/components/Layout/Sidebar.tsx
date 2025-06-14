@@ -32,17 +32,17 @@ const Sidebar = () => {
       }
       data-collapsed={isCollapsed}
     >
-      <SidebarHeader className="relative border-b border-border px-2 h-14 flex items-center">
+      <SidebarHeader className="flex items-center justify-between p-4 h-16 border-b border-border bg-sidebar">
         {/* MENU LABEL – only when expanded */}
         {!isCollapsed && (
-          <span className="font-semibold text-sidebar-foreground ml-2">
+          <span className="font-semibold text-sidebar-foreground text-base">
             Menu
           </span>
         )}
-        {/* Collapse/Expand button (always rendered, always visible, at top right of SIDEBAR-header, not "over" main app header) */}
+        {/* Collapse/Expand button */}
         <button
           onClick={toggleSidebar}
-          className="absolute top-2 right-2 flex h-8 w-8 items-center justify-center rounded-md text-sidebar-foreground hover:bg-sidebar-accent transition-colors z-50"
+          className="flex h-8 w-8 items-center justify-center rounded-md text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
           aria-label={isCollapsed ? "Utvid sidebar" : "Skjul sidebar"}
           type="button"
         >
@@ -61,3 +61,4 @@ const Sidebar = () => {
 };
 
 export default Sidebar;
+
