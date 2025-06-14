@@ -16,15 +16,17 @@ const Sidebar = () => {
   return (
     <ShadcnSidebar
       className={`
-        h-full flex flex-col transition-all duration-300
+        flex flex-col transition-all duration-300
         shadow-lg border-r border-sidebar-border bg-sidebar z-20
         ${isCollapsed ? 'w-[var(--sidebar-width-icon)] min-w-0' : 'w-[var(--sidebar-width)]'}
       `}
-      style={
-        isCollapsed
+      style={{
+        top: '4rem',
+        height: 'calc(100vh - 4rem)',
+        ...(isCollapsed
           ? { width: 'var(--sidebar-width-icon)', minWidth: 0 }
-          : { width: 'var(--sidebar-width)', minWidth: 'var(--sidebar-width-icon)' }
-      }
+          : { width: 'var(--sidebar-width)', minWidth: 'var(--sidebar-width-icon)' }),
+      }}
       data-collapsed={isCollapsed}
     >
       <SidebarHeader 
