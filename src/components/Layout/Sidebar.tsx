@@ -34,10 +34,10 @@ const Sidebar = () => {
     >
       {/* Custom header at top */}
       <div
-        className="flex items-center justify-between p-4 h-16 border-b border-sidebar-border bg-card"
+        className="flex items-center justify-between p-4 h-16 border-b border-sidebar-border bg-card relative"
         style={{
           background: 'hsl(var(--card))',
-          minHeight: '4rem', // same as header for consistency
+          minHeight: '4rem',
           height: '4rem',
         }}
       >
@@ -49,25 +49,29 @@ const Sidebar = () => {
         {/* Collapse/Expand button */}
         <button
           onClick={toggleSidebar}
-          className="
-            flex h-8 w-8 items-center justify-center z-40
-            rounded-md border border-gray-400
-            bg-sidebar-primary text-sidebar-foreground
-            shadow-lg ring-2 ring-primary
-            hover:bg-sidebar-accent
-            hover:text-sidebar-foreground
-            transition-colors
+          className={`
+            flex h-10 w-10 items-center justify-center
+            absolute right-[-18px] top-1/2 -translate-y-1/2
+            rounded-full border border-gray-300 shadow-xl
+            bg-white text-sidebar-primary
+            transition-colors transition-shadow duration-200
+            hover:bg-sidebar-primary hover:text-sidebar-foreground
             focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary
-          "
+            z-50
+            animate-fade-in
+          `}
           aria-label={isCollapsed ? "Utvid sidebar" : "Skjul sidebar"}
           type="button"
+          tabIndex={0}
           style={{
             marginLeft: isCollapsed ? 0 : '0.5rem',
+            borderWidth: 2,
+            borderColor: 'hsl(var(--sidebar-border))',
           }}
         >
           {isCollapsed 
-            ? <ChevronsRight size={20} />
-            : <ChevronsLeft size={20} />
+            ? <ChevronsRight size={22} strokeWidth={2.2} />
+            : <ChevronsLeft size={22} strokeWidth={2.2} />
           }
         </button>
       </div>
@@ -79,3 +83,4 @@ const Sidebar = () => {
 };
 
 export default Sidebar;
+
