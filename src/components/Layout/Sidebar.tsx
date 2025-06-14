@@ -17,6 +17,7 @@ const Sidebar = () => {
     <SidebarContainer
       className={`h-full flex flex-col transition-all duration-300
         ${isCollapsed ? 'w-[var(--sidebar-width-icon)] min-w-0' : 'w-[var(--sidebar-width)]'}
+        z-40
       `}
       style={
         isCollapsed
@@ -31,25 +32,27 @@ const Sidebar = () => {
       }
       data-collapsed={isCollapsed}
     >
-      <SidebarHeader className="border-b border-border p-2 flex items-center justify-between">
-        <div className="flex items-center w-full">
-          {/* Main menu icon (aligned left always) */}
-          {/* Removed SidebarTrigger as it's redundant */}
-          {!isCollapsed && (
-            <span className="font-semibold text-sidebar-foreground ml-2">Menu</span>
-          )}
-        </div>
-        {/* Collapse/Expand button (always rendered in header, top right) */}
+      <SidebarHeader className="relative border-b border-border px-2 h-14 flex items-center">
+        {/* MENU LABEL – only when expanded */}
+        {!isCollapsed && (
+          <span className="font-semibold text-sidebar-foreground ml-2">
+            Menu
+          </span>
+        )}
+        {/* Collapse/Expand button (always rendered, always visible, at top right of SIDEBAR-header, not "over" main app header) */}
         <button
           onClick={toggleSidebar}
-          className="ml-auto flex h-8 w-8 items-center justify-center rounded-md text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
-          aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          className="absolute top-2 right-2 flex h-8 w-8 items-center justify-center rounded-md text-sidebar-foreground hover:bg-sidebar-accent transition-colors z-50"
+          aria-label={isCollapsed ? "Utvid sidebar" : "Skjul sidebar"}
           type="button"
         >
-          {isCollapsed ? <ChevronsRight size={20} /> : <ChevronsLeft size={20} />}
+          {isCollapsed 
+            ? <ChevronsRight size={20} />
+            : <ChevronsLeft size={20} />
+          }
         </button>
       </SidebarHeader>
-      
+
       <SidebarContent className="flex-1 p-0">
         <SidebarNav collapsed={isCollapsed} />
       </SidebarContent>
