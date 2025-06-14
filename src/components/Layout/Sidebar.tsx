@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { 
   Sidebar as SidebarContainer, 
@@ -15,6 +16,7 @@ const Sidebar = () => {
   return (
     <SidebarContainer
       className={`h-full flex flex-col transition-all duration-300
+        sticky top-16
         ${isCollapsed ? 'w-[var(--sidebar-width-icon)] min-w-0' : 'w-[var(--sidebar-width)]'}
         z-40
       `}
@@ -37,7 +39,6 @@ const Sidebar = () => {
           background: 'hsl(var(--card))'
         }}
       >
-        {/* MENU LABEL – only when expanded */}
         {!isCollapsed && (
           <span className="font-semibold text-sidebar-foreground text-base">
             Menu
@@ -74,3 +75,4 @@ const Sidebar = () => {
 };
 
 export default Sidebar;
+
