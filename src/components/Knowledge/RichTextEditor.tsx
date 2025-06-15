@@ -3,6 +3,10 @@ import React, { useState } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
+import Table from '@tiptap/extension-table';
+import TableCell from '@tiptap/extension-table-cell';
+import TableHeader from '@tiptap/extension-table-header';
+import TableRow from '@tiptap/extension-table-row';
 import { Image as ImageIcon } from 'lucide-react';
 import { useArticleMedia } from '@/hooks/knowledge/useArticleMedia';
 import { MediaLibraryDialog } from './MediaLibraryDialog';
@@ -26,6 +30,12 @@ const RichTextEditor = ({ content, onChange }: RichTextEditorProps) => {
         },
       }),
       Image,
+      Table.configure({
+        resizable: true,
+      }),
+      TableRow,
+      TableHeader,
+      TableCell,
     ],
     content: content,
     onUpdate: ({ editor }) => {

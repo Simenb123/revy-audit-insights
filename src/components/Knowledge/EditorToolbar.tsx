@@ -1,7 +1,7 @@
 
 import React, { useRef } from 'react';
 import { Editor } from '@tiptap/react';
-import { Bold, Italic, Strikethrough, Heading2, Heading3, List, ListOrdered, Quote, Image as ImageIcon } from 'lucide-react';
+import { Bold, Italic, Strikethrough, Heading2, Heading3, List, ListOrdered, Quote, Image as ImageIcon, Table as TableIcon } from 'lucide-react';
 import { Toggle } from '@/components/ui/toggle';
 import { Separator } from '@/components/ui/separator';
 import {
@@ -105,6 +105,43 @@ export const EditorToolbar = ({ editor, onImageUpload, isUploading, onOpenMediaL
       >
         <Quote className="h-4 w-4" />
       </Toggle>
+      <Separator orientation="vertical" className="h-8 mx-1" />
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="sm" className="w-9 h-9 p-0">
+            <TableIcon className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start">
+          <DropdownMenuItem onSelect={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}>
+            Sett inn tabell
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => editor.chain().focus().addColumnBefore().run()} disabled={!editor.can().addColumnBefore()}>
+            Legg til kolonne før
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => editor.chain().focus().addColumnAfter().run()} disabled={!editor.can().addColumnAfter()}>
+            Legg til kolonne etter
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => editor.chain().focus().deleteColumn().run()} disabled={!editor.can().deleteColumn()}>
+            Slett kolonne
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => editor.chain().focus().addRowBefore().run()} disabled={!editor.can().addRowBefore()}>
+            Legg til rad før
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => editor.chain().focus().addRowAfter().run()} disabled={!editor.can().addRowAfter()}>
+            Legg til rad etter
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => editor.chain().focus().deleteRow().run()} disabled={!editor.can().deleteRow()}>
+            Slett rad
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => editor.chain().focus().toggleHeaderRow().run()} disabled={!editor.can().toggleHeaderRow()}>
+            Veksle overskriftsrad
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => editor.chain().focus().deleteTable().run()} disabled={!editor.can().deleteTable()}>
+            Slett tabell
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
       <Separator orientation="vertical" className="h-8 mx-1" />
       <input
         type="file"
