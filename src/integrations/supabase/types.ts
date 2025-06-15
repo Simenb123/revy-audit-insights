@@ -1706,6 +1706,135 @@ export type Database = {
         }
         Relationships: []
       }
+      planning_fraud_risks: {
+        Row: {
+          client_id: string
+          created_at: string
+          id: string
+          management_override_risk_assessment: string | null
+          other_risks: Json | null
+          related_parties_risk_assessment: string | null
+          revenue_manipulation_risk_assessment: string | null
+          team_discussion_summary: string | null
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          id?: string
+          management_override_risk_assessment?: string | null
+          other_risks?: Json | null
+          related_parties_risk_assessment?: string | null
+          revenue_manipulation_risk_assessment?: string | null
+          team_discussion_summary?: string | null
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          id?: string
+          management_override_risk_assessment?: string | null
+          other_risks?: Json | null
+          related_parties_risk_assessment?: string | null
+          revenue_manipulation_risk_assessment?: string | null
+          team_discussion_summary?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "planning_fraud_risks_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: true
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      planning_materiality: {
+        Row: {
+          benchmark_amount: number | null
+          benchmark_basis: string | null
+          client_id: string
+          created_at: string
+          id: string
+          justification: string | null
+          materiality_percentage: number | null
+          overall_materiality: number | null
+          performance_materiality: number | null
+          performance_materiality_percentage: number | null
+          trivial_threshold: number | null
+          updated_at: string
+        }
+        Insert: {
+          benchmark_amount?: number | null
+          benchmark_basis?: string | null
+          client_id: string
+          created_at?: string
+          id?: string
+          justification?: string | null
+          materiality_percentage?: number | null
+          overall_materiality?: number | null
+          performance_materiality?: number | null
+          performance_materiality_percentage?: number | null
+          trivial_threshold?: number | null
+          updated_at?: string
+        }
+        Update: {
+          benchmark_amount?: number | null
+          benchmark_basis?: string | null
+          client_id?: string
+          created_at?: string
+          id?: string
+          justification?: string | null
+          materiality_percentage?: number | null
+          overall_materiality?: number | null
+          performance_materiality?: number | null
+          performance_materiality_percentage?: number | null
+          trivial_threshold?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "planning_materiality_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: true
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      planning_module_statuses: {
+        Row: {
+          client_id: string
+          id: string
+          module_key: Database["public"]["Enums"]["planning_module_key"]
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          id?: string
+          module_key: Database["public"]["Enums"]["planning_module_key"]
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          id?: string
+          module_key?: Database["public"]["Enums"]["planning_module_key"]
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "planning_module_statuses_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           audit_firm_id: string | null
@@ -2451,6 +2580,17 @@ export type Database = {
       communication_type: "team" | "department" | "firm"
       document_status: "pending" | "submitted" | "accepted" | "rejected"
       document_type: "shareholder_report" | "tax_return" | "annual_report"
+      planning_module_key:
+        | "ANALYTICAL_REVIEW"
+        | "TEAM_DISCUSSION"
+        | "MANAGEMENT_INQUIRY"
+        | "OBSERVATION_INSPECTION"
+        | "GOING_CONCERN"
+        | "OPENING_BALANCE"
+        | "FRAUD_RISK"
+        | "ESTIMATES_PROFILE"
+        | "MATERIALITY"
+        | "RISK_MATRIX"
       risk_level: "low" | "medium" | "high"
       user_role_type: "admin" | "partner" | "manager" | "employee"
     }
@@ -2618,6 +2758,18 @@ export const Constants = {
       communication_type: ["team", "department", "firm"],
       document_status: ["pending", "submitted", "accepted", "rejected"],
       document_type: ["shareholder_report", "tax_return", "annual_report"],
+      planning_module_key: [
+        "ANALYTICAL_REVIEW",
+        "TEAM_DISCUSSION",
+        "MANAGEMENT_INQUIRY",
+        "OBSERVATION_INSPECTION",
+        "GOING_CONCERN",
+        "OPENING_BALANCE",
+        "FRAUD_RISK",
+        "ESTIMATES_PROFILE",
+        "MATERIALITY",
+        "RISK_MATRIX",
+      ],
       risk_level: ["low", "medium", "high"],
       user_role_type: ["admin", "partner", "manager", "employee"],
     },
