@@ -1,23 +1,26 @@
 
-import React, { useState } from 'react';
-import { useUserProfile } from '@/hooks/useUserProfile';
-import { useClientTeams } from '@/hooks/useClientTeams';
-import { useDepartments } from '@/hooks/useDepartments';
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { Plus } from 'lucide-react';
 import TeamList from '@/components/Teams/TeamList';
 import CreateTeamDialog from '@/components/Teams/CreateTeamDialog';
 import TeamDetails from '@/components/Teams/TeamDetails';
-import { ClientTeam } from '@/types/organization';
+import { useTeamManagement } from '@/hooks/useTeamManagement';
+import TeamManagementHeader from '@/components/Teams/TeamManagementHeader';
+import TeamOverview from '@/components/Teams/TeamOverview';
 
 const TeamManagement = () => {
-  const { data: userProfile } = useUserProfile();
-  const { data: teams = [], isLoading, refetch } = useClientTeams();
-  const { data: departments = [] } = useDepartments();
-  const [selectedTeam, setSelectedTeam] = useState<ClientTeam | null>(null);
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const {
+    teams,
+    isLoading,
+    departments,
+    selectedTeam,
+    setSelectedTeam,
+    isCreateDialogOpen,
+    setIsCreateDialogOpen,
+    canCreateTeams,
+    refetchTeams,
+  } = useTeamManagement();
 
   if (isLoading) {
     return (
@@ -30,24 +33,12 @@ const TeamManagement = () => {
     );
   }
 
-  const canCreateTeams = userProfile?.userRole === 'admin' || userProfile?.userRole === 'partner' || userProfile?.userRole === 'manager';
-
   return (
     <div className="w-full px-4 py-6 md:px-6 lg:px-8">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-3xl font-bold">Team Management</h1>
-          <p className="text-muted-foreground mt-1">
-            Administrer team og tildel medlemmer til klientprosjekter
-          </p>
-        </div>
-        {canCreateTeams && (
-          <Button onClick={() => setIsCreateDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Opprett team
-          </Button>
-        )}
-      </div>
+      <TeamManagementHeader 
+        canCreateTeams={canCreateTeams}
+        onCreateTeam={() => setIsCreateDialogOpen(true)}
+      />
 
       <Tabs defaultValue="teams" className="space-y-6">
         <TabsList>
@@ -74,7 +65,7 @@ const TeamManagement = () => {
             
             <div className="lg:col-span-2">
               {selectedTeam ? (
-                <TeamDetails team={selectedTeam} onUpdate={refetch} />
+                <TeamDetails team={selectedTeam} onUpdate={refetchTeams} />
               ) : (
                 <Card>
                   <CardContent className="flex items-center justify-center h-64">
@@ -87,34 +78,14 @@ const TeamManagement = () => {
         </TabsContent>
 
         <TabsContent value="overview">
-          <Card>
-            <CardHeader>
-              <CardTitle>Team oversikt</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="text-center p-4 bg-muted rounded-lg">
-                  <h3 className="text-2xl font-bold">{teams.length}</h3>
-                  <p className="text-sm text-muted-foreground">Totalt antall team</p>
-                </div>
-                <div className="text-center p-4 bg-muted rounded-lg">
-                  <h3 className="text-2xl font-bold">{teams.filter(t => t.isActive).length}</h3>
-                  <p className="text-sm text-muted-foreground">Aktive team</p>
-                </div>
-                <div className="text-center p-4 bg-muted rounded-lg">
-                  <h3 className="text-2xl font-bold">{departments.length}</h3>
-                  <p className="text-sm text-muted-foreground">Avdelinger</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <TeamOverview teams={teams} departments={departments} />
         </TabsContent>
       </Tabs>
 
       <CreateTeamDialog 
         open={isCreateDialogOpen}
         onOpenChange={setIsCreateDialogOpen}
-        onTeamCreated={refetch}
+        onTeamCreated={refetchTeams}
       />
     </div>
   );
