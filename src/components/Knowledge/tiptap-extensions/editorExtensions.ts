@@ -16,8 +16,8 @@ import Superscript from '@tiptap/extension-superscript';
 import CharacterCount from '@tiptap/extension-character-count';
 import { LineHeight } from './LineHeight';
 import FontSize from '@tiptap/extension-font-size';
-import TaskList from '@tiptap/extension-task-list';
-import TaskItem from '@tiptap/extension-task-item';
+// import TaskList from '@tiptap/extension-task-list';
+// import TaskItem from '@tiptap/extension-task-item';
 
 // Extend Tiptap extensions to add keyboard shortcuts
 const CustomSubscript = Subscript.extend({
@@ -73,10 +73,10 @@ export const editorExtensions = [
   }),
   CustomSubscript,
   CustomSuperscript,
-  TaskList,
-  TaskItem.configure({
-    nested: true,
-  }),
+  // TaskList,
+  // TaskItem.configure({
+  //   nested: true,
+  // }),
   CharacterCount,
   LineHeight,
 ];
