@@ -1,47 +1,18 @@
-project_id = "fxelhfwaoizqyecikscu"
 
-[api]
-enabled = true
-port = 54321
-schemas = ["public", "storage", "graphql_public"]
-
-[db]
-port = 54322
-
-[studio]
-enabled = true
-port = 54323
-api_url = "http://localhost"
-
-[inbucket]
-enabled = true
-port = 54324
-
-[storage]
-enabled = true
-
-[auth]
-enabled = true
-site_url = "http://localhost:3000"
-
-[realtime]
-enabled = true
-
-[functions.brreg]
-verify_jwt = false
-
-[functions.revy-ai-chat]
-verify_jwt = false
-
-[functions.syncKunngjoring]
-verify_jwt = false
-schedule = "*/30 * * * *"  # Run every 30 minutes
-
-[functions.text-to-speech]
-verify_jwt = false
-
-[functions.voice-to-text]
-verify_jwt = false
-
-[functions.pdf-text-extractor]
-verify_jwt = true
+[functions]
+  [functions.brreg]
+    verify_jwt = true
+  [functions.pdf-converter]
+    verify_jwt = true
+  [functions.pdf-text-extractor]
+    verify_jwt = true
+  [functions.revy-ai-chat]
+    verify_jwt = false
+  [functions.syncKunngjoring]
+    verify_jwt = false
+  [functions.text-to-speech]
+    verify_jwt = true
+  [functions.voice-to-text]
+    verify_jwt = true
+  [functions.knowledge-search]
+    verify_jwt = true

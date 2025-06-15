@@ -1179,6 +1179,7 @@ export type Database = {
           category_id: string
           content: string
           created_at: string
+          embedding: string | null
           id: string
           published_at: string | null
           slug: string
@@ -1194,6 +1195,7 @@ export type Database = {
           category_id: string
           content: string
           created_at?: string
+          embedding?: string | null
           id?: string
           published_at?: string | null
           slug: string
@@ -1209,6 +1211,7 @@ export type Database = {
           category_id?: string
           content?: string
           created_at?: string
+          embedding?: string | null
           id?: string
           published_at?: string | null
           slug?: string
@@ -2601,6 +2604,30 @@ export type Database = {
       get_user_role: {
         Args: { user_uuid: string }
         Returns: Database["public"]["Enums"]["user_role_type"]
+      }
+      match_knowledge_articles: {
+        Args: {
+          p_query_embedding: string
+          p_match_threshold: number
+          p_match_count: number
+        }
+        Returns: {
+          id: string
+          title: string
+          slug: string
+          summary: string
+          content: string
+          category_id: string
+          status: Database["public"]["Enums"]["article_status"]
+          author_id: string
+          tags: string[]
+          view_count: number
+          created_at: string
+          updated_at: string
+          published_at: string
+          category: Json
+          similarity: number
+        }[]
       }
       user_owns_client: {
         Args: { client_uuid: string }

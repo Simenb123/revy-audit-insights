@@ -1,5 +1,32 @@
-
 import { supabase } from './supabase.ts';
+
+async function getEmbedding(text: string, openAIApiKey: string) {
+  try {
+    const response = await fetch('https://api.openai.com/v1/embeddings', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openAIApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'text-embedding-3-small',
+        input: text.replace(/\n/g, ' '),
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('OpenAI embedding API error:', errorText);
+      throw new Error(`OpenAI API error: ${response.status} ${errorText}`);
+    }
+
+    const data = await response.json();
+    return data.data[0].embedding;
+  } catch (error) {
+    console.error('Error getting embedding:', error);
+    throw error;
+  }
+}
 
 // --- Knowledge search logic ---
 
@@ -77,10 +104,46 @@ export const scoreArticleRelevance = (articles: any[], searchTerms: string[]): a
 
 export async function searchRelevantKnowledge(message: string, context: string) {
   try {
+    const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+    if (!openAIApiKey) {
+      console.warn('OPENAI_API_KEY not set, falling back to keyword search.');
+      return keywordSearch(message, context);
+    }
+
+    console.log(`🔎 Performing semantic knowledge search for: "${message}"`);
+    
+    const queryEmbedding = await getEmbedding(message, openAIApiKey);
+
+    const { data: articles, error } = await supabase.rpc('match_knowledge_articles', {
+      p_query_embedding: queryEmbedding,
+      p_match_threshold: 0.7,
+      p_match_count: 5,
+    });
+
+    if (error) {
+      console.error('Error calling match_knowledge_articles:', error);
+      return keywordSearch(message, context);
+    }
+    
+    if (articles && articles.length > 0) {
+      console.log(`✅ Found ${articles.length} relevant articles via semantic search.`);
+      return articles.map(a => ({...a, content: a.content.substring(0, 1500)}));
+    }
+    
+    console.log('🧐 No strong semantic matches found, falling back to keyword search.');
+    return keywordSearch(message, context);
+
+  } catch (error) {
+    console.error('Semantic knowledge search error:', error);
+    return keywordSearch(message, context);
+  }
+}
+
+async function keywordSearch(message: string, context: string) {
     const searchTerms = extractSearchTerms(message, context);
     if (searchTerms.length === 0) return null;
 
-    console.log(`🔎 Knowledge search terms: ${searchTerms.join(', ')}`);
+    console.log(`🔑 Keyword search terms: ${searchTerms.join(', ')}`);
     
     const orFilter = searchTerms.flatMap(term => [
         `title.ilike.%${term}%`,
@@ -97,22 +160,19 @@ export async function searchRelevantKnowledge(message: string, context: string) 
       .limit(15);
 
     if (error) {
-      console.error('Error fetching knowledge articles:', error);
+      console.error('Error fetching knowledge articles (keyword):', error);
       return null;
     }
     
     if (!articles || articles.length === 0) {
-        console.log('🧐 No initial articles found for terms.');
+        console.log('🧐 No keyword-based articles found.');
         return null;
     }
 
     const scoredArticles = scoreArticleRelevance(articles, searchTerms);
     
-    console.log(`✅ Found ${scoredArticles.length} relevant articles after scoring.`);
+    console.log(`✅ Found ${scoredArticles.length} relevant articles after keyword scoring.`);
 
-    return scoredArticles.length > 0 ? scoredArticles.slice(0, 5) : null;
-  } catch (error) {
-    console.error('Knowledge search error:', error);
-    return null;
-  }
+    const results = scoredArticles.length > 0 ? scoredArticles.slice(0, 5) : null;
+    return results ? results.map(a => ({...a, content: a.content.substring(0, 1500)})) : null;
 }
