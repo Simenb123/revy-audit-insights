@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { RevyContext } from '@/types/revio';
+import { getBasicContextualTip } from './revy/contextualTipService';
 
 // The `detectEnhancedContext` function has been removed.
 // This logic is now centralized in `RevyContextProvider` for a single source of truth.

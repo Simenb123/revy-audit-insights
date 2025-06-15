@@ -1,8 +1,9 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useRevyContext } from '@/components/RevyContext/RevyContextProvider';
-import { generateAIResponse } from '@/services/revyService';
+import { generateAIResponse } from '@/services/revy/aiInteractionService';
 import { getEnhancedContextualTips } from '@/services/enhancedRevyService';
 import { useRevyChatSessions } from './useRevyChatSessions';
 import { useRevyChatMessages } from './useRevyChatMessages';
