@@ -1,13 +1,13 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { RevyContext, RevyChatMessage } from '@/types/revio';
+import { RevyContext } from '@/types/revio';
 import { generateEmbeddingsForExistingArticles } from './generateEmbeddingsService';
 
 // Enhanced AI response generation with automatic embedding generation
 export const generateEnhancedAIResponse = async (
   message: string, 
   context: RevyContext,
-  history: RevyChatMessage[],
+  history: Array<{ sender: string; content: string }>,
   clientData?: any,
   userRole?: string,
   sessionId?: string
@@ -58,12 +58,10 @@ export const generateEnhancedAIResponse = async (
 
     console.log('✅ User authenticated for AI call:', user.id);
 
-    const simplifiedHistory = history.map(msg => ({ sender: msg.sender, content: msg.content }));
-
     const requestBody = {
       message,
       context,
-      history: simplifiedHistory,
+      history,
       clientData,
       userRole,
       sessionId,

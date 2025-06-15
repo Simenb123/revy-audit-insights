@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -10,20 +11,32 @@ import { cn } from "@/lib/utils"
 import { useToast } from "@/components/ui/use-toast"
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '@/integrations/supabase/client';
-import { useUser } from '@/providers/UserProvider';
-import { useClient } from '@/providers/ClientProvider';
+import { useAuth } from '@/components/Auth/AuthProvider';
 import { RevyContext, RevyChatMessage } from '@/types/revio';
 import KnowledgeStatusIndicator from './KnowledgeStatusIndicator';
 import { generateEnhancedAIResponse } from '@/services/revy/enhancedAiInteractionService';
 
-const SmartRevyAssistant = ({ embedded = false }: { embedded?: boolean }) => {
-  const [messages, setMessages] = useState<RevyChatMessage[]>([]);
+// Internal message type for UI display
+interface UIMessage {
+  id: string;
+  sender: 'user' | 'revy';
+  content: string;
+  timestamp: Date;
+}
+
+interface SmartRevyAssistantProps {
+  embedded?: boolean;
+  clientData?: any;
+  userRole?: string;
+}
+
+const SmartRevyAssistant = ({ embedded = false, clientData, userRole }: SmartRevyAssistantProps) => {
+  const [messages, setMessages] = useState<UIMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
-  const { userRole } = useUser();
-  const { clientData } = useClient();
+  const { session } = useAuth();
   const [sessionId, setSessionId] = useState<string | null>(null);
   const context: RevyContext = 'general';
 
@@ -42,7 +55,7 @@ const SmartRevyAssistant = ({ embedded = false }: { embedded?: boolean }) => {
   useEffect(() => {
     // Load previous messages from session
     const loadPreviousMessages = async () => {
-      if (sessionId) {
+      if (sessionId && session?.user?.id) {
         try {
           const { data, error } = await supabase
             .from('revy_chat_messages')
@@ -53,9 +66,9 @@ const SmartRevyAssistant = ({ embedded = false }: { embedded?: boolean }) => {
           if (error) {
             console.error('Error loading messages:', error);
           } else if (data) {
-            const loadedMessages: RevyChatMessage[] = data.map(msg => ({
-              id: crypto.randomUUID(),
-              sender: msg.sender,
+            const loadedMessages: UIMessage[] = data.map(msg => ({
+              id: msg.id,
+              sender: msg.sender as 'user' | 'revy',
               content: msg.content,
               timestamp: new Date(msg.created_at),
             }));
@@ -69,7 +82,7 @@ const SmartRevyAssistant = ({ embedded = false }: { embedded?: boolean }) => {
     };
 
     loadPreviousMessages();
-  }, [sessionId]);
+  }, [sessionId, session?.user?.id]);
 
   useEffect(() => {
     // Scroll to bottom on new messages
@@ -83,14 +96,14 @@ const SmartRevyAssistant = ({ embedded = false }: { embedded?: boolean }) => {
   };
 
   const handleSendMessage = async () => {
-    if (!input.trim() || isLoading) return;
+    if (!input.trim() || isLoading || !session?.user?.id) return;
 
     const userMessage = input.trim();
     setInput('');
     setIsLoading(true);
 
     // Add user message to chat
-    const newUserMessage: RevyChatMessage = {
+    const newUserMessage: UIMessage = {
       id: crypto.randomUUID(),
       sender: 'user',
       content: userMessage,
@@ -103,19 +116,25 @@ const SmartRevyAssistant = ({ embedded = false }: { embedded?: boolean }) => {
     try {
       console.log('🤖 Generating AI response with enhanced knowledge access...');
       
+      // Convert UI messages to chat history format
+      const chatHistory = updatedMessages.map(msg => ({
+        sender: msg.sender,
+        content: msg.content
+      }));
+
       // Use enhanced AI service for better knowledge base access
       const aiResponse = await generateEnhancedAIResponse(
         userMessage,
         context,
-        updatedMessages,
+        chatHistory,
         clientData,
         userRole,
         sessionId
       );
 
-      const aiMessage: RevyChatMessage = {
+      const aiMessage: UIMessage = {
         id: crypto.randomUUID(),
-        sender: 'assistant',
+        sender: 'revy',
         content: aiResponse,
         timestamp: new Date(),
       };
@@ -127,7 +146,7 @@ const SmartRevyAssistant = ({ embedded = false }: { embedded?: boolean }) => {
         try {
           await supabase.from('revy_chat_messages').insert([
             { session_id: sessionId, sender: 'user', content: userMessage },
-            { session_id: sessionId, sender: 'assistant', content: aiResponse }
+            { session_id: sessionId, sender: 'revy', content: aiResponse }
           ]);
         } catch (error) {
           console.error('Error saving messages:', error);
@@ -137,9 +156,9 @@ const SmartRevyAssistant = ({ embedded = false }: { embedded?: boolean }) => {
     } catch (error) {
       console.error('Error getting AI response:', error);
       
-      const errorMessage: RevyChatMessage = {
+      const errorMessage: UIMessage = {
         id: crypto.randomUUID(),
-        sender: 'assistant',
+        sender: 'revy',
         content: 'Beklager, jeg kunne ikke behandle forespørselen din akkurat nå. Vennligst prøv igjen senere.',
         timestamp: new Date(),
       };
@@ -178,10 +197,9 @@ const SmartRevyAssistant = ({ embedded = false }: { embedded?: boolean }) => {
         <div ref={chatContainerRef} className="chat-container overflow-y-auto h-[400px] pr-2">
           {messages.map((msg, index) => (
             <div key={index} className={`chat-message ${msg.sender === 'user' ? 'user-message' : 'ai-message'}`}>
-              {msg.sender === 'assistant' && <RevyAvatar className="mr-2" />}
+              {msg.sender === 'revy' && <RevyAvatar className="mr-2" />}
               <div className="message-content">
                 <p className="text-sm break-words">{msg.content}</p>
-                {/* <span className="message-time">{format(msg.timestamp, 'HH:mm')}</span> */}
               </div>
             </div>
           ))}
