@@ -14,7 +14,9 @@ const fetchCategories = async () => {
   return data as KnowledgeCategory[];
 };
 
-type CategoryTreeNode = KnowledgeCategory & { children: CategoryTreeNode[] };
+type CategoryTreeNode = Omit<KnowledgeCategory, 'children'> & {
+  children: CategoryTreeNode[];
+};
 
 const buildCategoryTree = (categories: KnowledgeCategory[]): CategoryTreeNode[] => {
   const categoryMap = new Map<string, CategoryTreeNode>();
