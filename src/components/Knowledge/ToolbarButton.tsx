@@ -1,0 +1,32 @@
+
+import React from 'react';
+import { Toggle } from '@/components/ui/toggle';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { type ToggleProps } from "@radix-ui/react-toggle"
+import { type VariantProps } from "class-variance-authority"
+import { buttonVariants } from '../ui/button';
+
+type ToolbarButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> &
+  VariantProps<typeof buttonVariants> & {
+  tooltip: string;
+  children: React.ReactNode;
+} & ToggleProps;
+
+const ToolbarButton = ({ tooltip, children, ...props }: ToolbarButtonProps) => {
+  return (
+    <TooltipProvider delayDuration={100}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Toggle size="sm" {...props}>
+            {children}
+          </Toggle>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>{tooltip}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+};
+
+export default ToolbarButton;
