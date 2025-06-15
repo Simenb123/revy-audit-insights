@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Editor } from '@tiptap/react';
-import { Heading2, Heading3 } from 'lucide-react';
+import { Heading1, Heading2, Heading3 } from 'lucide-react';
 import ToolbarButton from '../ToolbarButton';
 
 type Props = {
@@ -11,6 +11,13 @@ type Props = {
 const HeadingGroup = ({ editor }: Props) => {
   return (
     <>
+      <ToolbarButton
+        tooltip="Overskrift 1 (Ctrl+Alt+1)"
+        pressed={editor.isActive('heading', { level: 1 })}
+        onPressedChange={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+      >
+        <Heading1 className="h-4 w-4" />
+      </ToolbarButton>
       <ToolbarButton
         tooltip="Overskrift 2 (Ctrl+Alt+2)"
         pressed={editor.isActive('heading', { level: 2 })}

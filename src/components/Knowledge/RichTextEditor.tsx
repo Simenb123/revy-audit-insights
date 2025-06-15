@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -22,6 +23,7 @@ import { MediaLibraryDialog } from './MediaLibraryDialog';
 import { EditorToolbar } from './EditorToolbar';
 import { Client } from '@/types/revio';
 import { ClientAuditAction } from '@/types/audit-actions';
+import { LineHeight } from './tiptap-extensions/LineHeight';
 
 // Extend Tiptap extensions to add keyboard shortcuts
 const CustomSubscript = Subscript.extend({
@@ -59,7 +61,12 @@ const RichTextEditor = ({ content, onChange, context = 'knowledge', contextData 
     extensions: [
       StarterKit.configure({
         heading: {
-          levels: [2, 3],
+          levels: [1, 2, 3],
+        },
+        blockquote: {
+          HTMLAttributes: {
+            class: 'border-l-4 border-primary pl-4 italic my-4 p-4 bg-primary/10 rounded-r-md',
+          },
         },
       }),
       Underline,
@@ -86,6 +93,7 @@ const RichTextEditor = ({ content, onChange, context = 'knowledge', contextData 
       CustomSubscript,
       CustomSuperscript,
       CharacterCount,
+      LineHeight,
     ],
     content: content,
     onUpdate: ({ editor }) => {
