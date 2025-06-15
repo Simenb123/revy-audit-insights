@@ -26,7 +26,8 @@ export const generateContextualRecommendations = async (
     const aiResult = await generateAIResponse(
       recommendationQuery,
       'audit-actions', // context
-      client,
+      [], // history
+      client, // clientData
       userRole,
       null // session ID
     );

@@ -60,8 +60,9 @@ const RevyAIGroup = ({ editor, client, action }: Props) => {
       const response = await generateAIResponse(
         prompt,
         'audit-actions',
-        { client, action },
-        'employee'
+        [], // history
+        { client, action }, // clientData
+        'employee' // userRole
       );
       
       setAiSuggestion(response);
