@@ -9,6 +9,7 @@ import MyArticles from '@/components/Knowledge/MyArticles';
 import MyFavorites from '@/components/Knowledge/MyFavorites';
 import SearchResults from '@/components/Knowledge/SearchResults';
 import PDFConversionWorkflow from '@/components/Knowledge/PDFConversionWorkflow';
+import { KnowledgeCategoryTree } from '@/components/Knowledge/KnowledgeCategoryTree';
 
 // Updated legacy route mappings to correct database UUIDs
 const legacyRouteMap: Record<string, string> = {
@@ -32,30 +33,35 @@ const legacyRouteMap: Record<string, string> = {
 
 const KnowledgeBase = () => {
   return (
-    <div className="space-y-6 p-6 bg-background min-h-screen">
-      <Routes>
-        <Route index element={<ExpandedKnowledgeOverview />} />
-        <Route path="kategori/:categoryId" element={<CategoryView />} />
-        <Route path="artikkel/:slug" element={<ArticleView />} />
-        <Route path="ny-artikkel" element={<ArticleEditor />} />
-        <Route path="rediger/:articleId" element={<ArticleEditor />} />
-        <Route path="mine-artikler" element={<MyArticles />} />
-        <Route path="favoritter" element={<MyFavorites />} />
-        <Route path="sok" element={<SearchResults />} />
-        <Route path="pdf-konvertering" element={<PDFConversionWorkflow />} />
-        
-        {/* Legacy route handlers with correct UUIDs */}
-        {Object.entries(legacyRouteMap).map(([oldPath, categoryId]) => (
-          <Route 
-            key={oldPath}
-            path={oldPath} 
-            element={<Navigate to={`/fag/kategori/${categoryId}`} replace />} 
-          />
-        ))}
-        
-        {/* Fallback for any unmatched routes */}
-        <Route path="*" element={<Navigate to="/fag" replace />} />
-      </Routes>
+    <div className="flex flex-col md:flex-row gap-6 p-6 bg-background min-h-screen">
+      <aside className="w-full md:w-1/4 md:max-w-xs flex-shrink-0">
+        <KnowledgeCategoryTree />
+      </aside>
+      <main className="flex-1 overflow-auto">
+        <Routes>
+          <Route index element={<ExpandedKnowledgeOverview />} />
+          <Route path="kategori/:categoryId" element={<CategoryView />} />
+          <Route path="artikkel/:slug" element={<ArticleView />} />
+          <Route path="ny-artikkel" element={<ArticleEditor />} />
+          <Route path="rediger/:articleId" element={<ArticleEditor />} />
+          <Route path="mine-artikler" element={<MyArticles />} />
+          <Route path="favoritter" element={<MyFavorites />} />
+          <Route path="sok" element={<SearchResults />} />
+          <Route path="pdf-konvertering" element={<PDFConversionWorkflow />} />
+          
+          {/* Legacy route handlers with correct UUIDs */}
+          {Object.entries(legacyRouteMap).map(([oldPath, categoryId]) => (
+            <Route 
+              key={oldPath}
+              path={oldPath} 
+              element={<Navigate to={`/fag/kategori/${categoryId}`} replace />} 
+            />
+          ))}
+          
+          {/* Fallback for any unmatched routes */}
+          <Route path="*" element={<Navigate to="/fag" replace />} />
+        </Routes>
+      </main>
     </div>
   );
 };

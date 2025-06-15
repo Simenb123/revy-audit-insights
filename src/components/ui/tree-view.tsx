@@ -52,7 +52,9 @@ const TreeViewTrigger = React.forwardRef<
   const { id } = React.useContext(TreeItemContext);
   const isOpen = openItems.includes(id);
 
-  const handleToggle = () => {
+  const handleToggle = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
     setOpenItems((prev) =>
       isOpen ? prev.filter((item) => item !== id) : [...prev, id]
     );
