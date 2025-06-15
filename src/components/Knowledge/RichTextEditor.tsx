@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
@@ -90,6 +90,21 @@ const RichTextEditor = ({ content, onChange }: RichTextEditorProps) => {
       },
     },
   });
+
+  useEffect(() => {
+    if (editor && content) {
+      const isSame = editor.getHTML() === content;
+
+      if (isSame) {
+        return;
+      }
+      
+      // Bruker `setContent` for å oppdatere editorens innhold når `content`-prop endres.
+      // Det andre argumentet `false` forhindrer at denne handlingen utløser `onUpdate`-callbacken,
+      // som unngår en uendelig løkke.
+      editor.commands.setContent(content, false);
+    }
+  }, [editor, content]);
 
   const handleSelectImageFromLibrary = (url: string) => {
     if (editor) {
