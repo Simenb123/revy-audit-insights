@@ -88,6 +88,10 @@
     background-color: theme('colors.revio.100');
     clip-path: polygon(100% 0, 0% 100%, 100% 100%);
   }
+
+  .revy-assistant-container [role="alert"] {
+    display: none;
+  }
 }
 
 @layer base {
