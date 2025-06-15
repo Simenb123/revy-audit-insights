@@ -50,7 +50,7 @@ serve(async (req) => {
       isGuestMode ? null : clientData
     );
     console.log('🧠 Enhanced context built:', { 
-      hasKnowledge: !!enhancedContext.knowledge,
+      knowledgeArticleCount: enhancedContext.knowledge?.length || 0,
       hasClientContext: !!enhancedContext.clientContext,
       isGuestMode
     });
@@ -143,7 +143,7 @@ serve(async (req) => {
     
     // Enhanced error logging for authenticated users
     try {
-      const { userId, sessionId, context, clientData } = await req.json();
+      const { userId, sessionId, context, clientData } = await req.json().catch(() => ({}));
       if (userId) {
         await logAIUsageEnhanced({
           userId,
@@ -177,50 +177,118 @@ serve(async (req) => {
   }
 });
 
-// Enhanced context building with better knowledge integration
-async function buildEnhancedContext(message: string, context: string, clientData?: any) {
-  const enhancedContext: any = {};
+// --- New knowledge search logic ---
 
-  try {
-    // Fetch relevant knowledge with better search
-    enhancedContext.knowledge = await fetchEnhancedKnowledge(message, context);
-    
-    // Fetch comprehensive client context
-    if (clientData?.id) {
-      enhancedContext.clientContext = await fetchEnhancedClientContext(clientData.id);
-    }
-  } catch (error) {
-    console.error('Error building enhanced context:', error);
+const extractSearchTerms = (query: string, context: string): string[] => {
+  const terms = new Set<string>();
+
+  // Add query terms, filtering out small words
+  query.toLowerCase().split(/\s+/).filter(term => term.length > 2).forEach(term => terms.add(term));
+
+  // Extract ISA standards
+  const isaPattern = /isa\s*\d{3}/gi;
+  const isaMatches = query.match(isaPattern);
+  if (isaMatches) {
+    isaMatches.forEach(match => terms.add(match.toUpperCase().replace(/\s+/g, ' ')));
   }
 
-  return enhancedContext;
-}
+  // Add context-specific terms
+  const contextTerms: Record<string, string[]> = {
+    'risk-assessment': ['risiko', 'vurdering', 'materialitet', 'vesentlighet', 'kontrollmiljø'],
+    'client-detail': ['klient', 'selskap', 'bransje', 'regnskap', 'nøkkeltall'],
+    'documentation': ['dokumentasjon', 'arbeidspapir', 'bevis', 'ISA 230', 'konklusjon'],
+    'audit-actions': ['handlinger', 'prosedyrer', 'testing', 'kontroll', 'substans'],
+  };
 
-// Smarter knowledge fetching with semantic search
-async function fetchEnhancedKnowledge(message: string, context: string) {
+  if (contextTerms[context]) {
+    contextTerms[context].forEach(term => terms.add(term));
+  }
+
+  return [...terms];
+};
+
+const scoreArticleRelevance = (articles: any[], searchTerms: string[]): any[] => {
+  return articles
+    .map(article => {
+      let score = 0;
+      const matchedTerms = new Set<string>();
+      const searchText = `${article.title} ${article.summary || ''} ${article.content} ${(article.tags || []).join(' ')}`.toLowerCase();
+
+      searchTerms.forEach(term => {
+        const termPattern = new RegExp(term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+        const termCount = (searchText.match(termPattern) || []).length;
+        if (termCount > 0) {
+          let weight = term.length > 4 ? 2 : 1;
+          if (term.toLowerCase().startsWith('isa')) weight = 10;
+          score += termCount * weight;
+          matchedTerms.add(term);
+        }
+      });
+
+      searchTerms.forEach(term => {
+        if (article.title.toLowerCase().includes(term.toLowerCase())) {
+          score += 15;
+        }
+      });
+      
+      if (article.tags && Array.isArray(article.tags)) {
+        searchTerms.forEach(term => {
+            if (article.tags.some((tag: string) => typeof tag === 'string' && tag.toLowerCase().includes(term.toLowerCase()))) {
+                score += 5;
+            }
+        });
+      }
+
+      score += Math.log1p(article.view_count || 0);
+
+      return {
+        ...article,
+        relevanceScore: score,
+        matchedTerms: [...matchedTerms]
+      };
+    })
+    .filter(result => result.relevanceScore > 2)
+    .sort((a, b) => b.relevanceScore - a.relevanceScore);
+};
+
+async function searchRelevantKnowledge(message: string, context: string) {
   try {
-    const keywords = extractIntelligentKeywords(message, context);
+    const searchTerms = extractSearchTerms(message, context);
+    if (searchTerms.length === 0) return null;
+
+    console.log(`🔎 Knowledge search terms: ${searchTerms.join(', ')}`);
     
+    const orFilter = searchTerms.flatMap(term => [
+        `title.ilike.%${term}%`,
+        `content.ilike.%${term}%`,
+        `summary.ilike.%${term}%`,
+        `tags.cs.{${term}}`
+    ]).join(',');
+
     const { data: articles, error } = await supabase
       .from('knowledge_articles')
-      .select(`
-        title,
-        content,
-        summary,
-        tags
-      `)
+      .select('title, content, summary, tags, view_count, slug, published_at, created_at')
       .eq('status', 'published')
-      .or(keywords.map(keyword => `content.ilike.%${keyword}%`).join(','))
-      .limit(5);
+      .or(orFilter)
+      .limit(15);
 
     if (error) {
-      console.error('Error fetching knowledge:', error);
+      console.error('Error fetching knowledge articles:', error);
       return null;
     }
+    
+    if (!articles || articles.length === 0) {
+        console.log('🧐 No initial articles found for terms.');
+        return null;
+    }
 
-    return articles?.length > 0 ? articles : null;
+    const scoredArticles = scoreArticleRelevance(articles, searchTerms);
+    
+    console.log(`✅ Found ${scoredArticles.length} relevant articles after scoring.`);
+
+    return scoredArticles.length > 0 ? scoredArticles.slice(0, 5) : null;
   } catch (error) {
-    console.error('Knowledge fetch error:', error);
+    console.error('Knowledge search error:', error);
     return null;
   }
 }
@@ -430,11 +498,15 @@ Du kommuniserer alltid på norsk og er vennlig, profesjonell og præsis. Dine sv
 
   // Add enhanced knowledge context
   if (enhancedContext.knowledge && enhancedContext.knowledge.length > 0) {
-    knowledgePrompt = `\n\nRelevant fagstoff fra kunnskapsbasen:\n`;
+    knowledgePrompt = `\n\nHER ER RELEVANT FAGSTOFF FRA KUNNSKAPSBASEN. BRUK DETTE AKTIVT I SVARET DITT OG HENVIS TIL ARTIKLENE NÅR DET ER PASSENDE:\n\n`;
     enhancedContext.knowledge.forEach((article: any, index: number) => {
-      knowledgePrompt += `${index + 1}. ${article.title}\n${article.summary || article.content.substring(0, 200)}...\n\n`;
+      knowledgePrompt += `ARTIKKEL ${index + 1}: "${article.title}"\n`;
+      knowledgePrompt += `SAMMENDRAG: ${article.summary || (article.content || '').substring(0, 300) + '...'}\n`;
+      knowledgePrompt += `SLUG (for linking): /fag/artikkel/${article.slug}\n\n`;
     });
-    knowledgePrompt += `Bruk dette fagstoffet som referanse og gi spesifikke henvisninger når relevant.`;
+    knowledgePrompt += `VIKTIG: Du MÅ basere svaret ditt på disse artiklene hvis de er relevante. Ikke si "Jeg har funnet noen artikler", men referer til dem direkte, f.eks. "I artikkelen 'Tittel på artikkel' står det at...".`;
+  } else {
+    knowledgePrompt = `\n\nINFO: Jeg fant ingen direkte relevante artikler i kunnskapsbasen for dette spørsmålet, men jeg kan fortsatt gi generell veiledning basert på min opplæring. Kunnskapsbasen eksisterer og kan søkes i.`;
   }
 
   // Enhanced client context with proactive insights
@@ -506,7 +578,7 @@ Du kommuniserer alltid på norsk og er vennlig, profesjonell og præsis. Dine sv
 
   return `${basePrompt}${knowledgePrompt}${clientPrompt}${proactivePrompt}${contextPrompt}${roleContext}
 
-VIKTIG: Gi alltid konkrete, handlingsrettede råd. Referer til relevante ISA-standarder når det er aktuelt. Hold svarene fokuserte og praktiske. ${isGuestMode ? 'Nevn gjerne at innlogging gir tilgang til mer avanserte funksjoner.' : 'Vær proaktiv med forslag basert på klientdata og kontekst.'}`;
+VIKTIG: Gi alltid konkrete, handlingsrettede råd. Referer til relevante ISA-standarder når det er aktuelt. Hold svarene fokuserte og praktiske. ${isGuestMode ? 'Nevn gjerne at innlogging gir tilgang til mer avanserte funksjoner.' : 'Vær proaktiv med forslag basert på klientdata og kontekst. Hvis du bruker kunnskap fra kunnskapsbasen, si ifra om det.'}`;
 }
 
 // Proactive insights based on client data
