@@ -12,7 +12,7 @@ type ToolbarButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> &
   children: React.ReactNode;
 } & ToggleProps;
 
-const ToolbarButton = ({ tooltip, children, ...props }: ToolbarButtonProps) => {
+const ToolbarButton = ({ tooltip, children, size, ...props }: ToolbarButtonProps) => {
   return (
     <TooltipProvider delayDuration={100}>
       <Tooltip>
