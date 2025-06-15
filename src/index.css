@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -45,39 +46,6 @@
     --revio-700: 173 49% 30%;
     --revio-900: 173 49% 15%;
   }
-
-  .dark {
-    --background: 213 30% 15%;
-    --foreground: 213 30% 90%;
-    --card: 213 30% 20%;
-    --card-foreground: 213 30% 90%;
-    --popover: 213 30% 12%;
-    --popover-foreground: 213 30% 90%;
-    --primary: 175 80% 45%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 215 30% 25%;
-    --secondary-foreground: 213 30% 90%;
-    --muted: 215 30% 22%;
-    --muted-foreground: 213 15% 60%;
-    --accent: 215 30% 25%;
-    --accent-foreground: 213 30% 95%;
-    --destructive: 0 70% 50%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 215 23% 30%;
-    --input: 215 23% 30%;
-    --ring: 175 80% 45%;
-    --radius: 0.5rem;
-
-    /* Sidebar farger - mørk variant */
-    --sidebar-background: 175 40% 18%;
-    --sidebar-foreground: 0 0% 100%;
-    --sidebar-primary: 174 57% 70%;
-    --sidebar-primary-foreground: 175 40% 18%;
-    --sidebar-accent: 175 30% 12%;
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 175 20% 30%;
-    --sidebar-ring: 174 57% 70%;
-  }
 }
 
 @layer base {
@@ -87,9 +55,6 @@
   html {
     @apply bg-background text-foreground;
     color-scheme: light;
-  }
-  html.dark {
-    color-scheme: dark;
   }
 
   body {
