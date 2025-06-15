@@ -17,6 +17,17 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  let body;
+  try {
+    body = await req.json();
+  } catch (e) {
+    console.error('❌ Invalid JSON body:', e.message);
+    return new Response(JSON.stringify({ error: 'Invalid JSON body' }), {
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
   try {
     console.log('🤖 Revy AI Chat function started');
     
@@ -26,7 +37,7 @@ serve(async (req) => {
       throw new Error('OpenAI API key not configured');
     }
 
-    const { message, context, clientData, userRole, userId, sessionId } = await req.json();
+    const { message, context, clientData, userRole, userId, sessionId } = body;
     console.log('📝 Request received:', { 
       message: message.substring(0, 50) + '...', 
       context, 
@@ -143,7 +154,7 @@ serve(async (req) => {
     
     // Enhanced error logging for authenticated users
     try {
-      const { userId, sessionId, context, clientData } = await req.json().catch(() => ({}));
+      const { userId, sessionId, context, clientData } = body;
       if (userId) {
         await logAIUsageEnhanced({
           userId,
@@ -164,7 +175,7 @@ serve(async (req) => {
     }
 
     // Intelligent fallback responses based on context and authentication
-    const fallbackResponse = getIntelligentFallback(await req.json().catch(() => ({})));
+    const fallbackResponse = getIntelligentFallback(body);
 
     return new Response(JSON.stringify({ 
       error: error.message,
@@ -623,4 +634,31 @@ function buildProactiveInsights(client: any): string {
   }
   
   return insights;
+}
+
+async function buildEnhancedContext(message: string, context: string, clientData: any | null) {
+  console.log('🏗️ Building enhanced context...');
+  try {
+    const knowledgePromise = searchRelevantKnowledge(message, context);
+    
+    const clientContextPromise = (clientData && clientData.id) 
+      ? fetchEnhancedClientContext(clientData.id) 
+      : Promise.resolve(null);
+    
+    const [knowledge, clientContext] = await Promise.all([
+      knowledgePromise,
+      clientContextPromise
+    ]);
+    
+    console.log('✅ Enhanced context built.', { 
+      hasKnowledge: !!knowledge && knowledge.length > 0,
+      hasClientContext: !!clientContext 
+    });
+
+    return { knowledge, clientContext };
+  } catch (err) {
+    console.error("Error building enhanced context:", err);
+    // Return a default object so the main flow doesn't crash
+    return { knowledge: null, clientContext: null };
+  }
 }
