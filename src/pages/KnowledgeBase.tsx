@@ -10,14 +10,15 @@ import MyFavorites from '@/components/Knowledge/MyFavorites';
 import SearchResults from '@/components/Knowledge/SearchResults';
 import PDFConversionWorkflow from '@/components/Knowledge/PDFConversionWorkflow';
 import { KnowledgeCategoryTree } from '@/components/Knowledge/KnowledgeCategoryTree';
+import SmartRevyAssistant from '@/components/Revy/SmartRevyAssistant';
 
 const KnowledgeBase = () => {
   return (
-    <div className="flex flex-col md:flex-row gap-6 p-6 bg-background min-h-screen">
-      <aside className="w-full md:w-1/4 md:max-w-xs flex-shrink-0">
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 p-6 bg-background min-h-screen">
+      <aside className="lg:col-span-4 xl:col-span-3 flex-shrink-0">
         <KnowledgeCategoryTree />
       </aside>
-      <main className="flex-1 overflow-auto">
+      <main className="lg:col-span-8 xl:col-span-6 overflow-auto">
         <Routes>
           <Route index element={<ExpandedKnowledgeOverview />} />
           <Route path="kategori/:categoryId" element={<CategoryView />} />
@@ -33,6 +34,11 @@ const KnowledgeBase = () => {
           <Route path="*" element={<Navigate to="/fag" replace />} />
         </Routes>
       </main>
+      <aside className="hidden xl:block xl:col-span-3 flex-shrink-0">
+        <div className="sticky top-24 h-[calc(100vh-8rem)]">
+          <SmartRevyAssistant embedded />
+        </div>
+      </aside>
     </div>
   );
 };
