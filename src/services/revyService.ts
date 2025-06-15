@@ -191,6 +191,10 @@ export const getContextualTip = (context: RevyContext): string => {
     'communication': 'Trenger du hjelp med meldinger, møtenotater eller klientkommunikasjon?',
     'audit-actions': 'Jeg kan forklare revisjonshandlinger, hjelpe med planlegging eller statusoppfølging.',
     'team-management': 'Spør meg om teamorganisering, kapasitetsplanlegging eller kompetanseutvikling.',
+    'accounting-data': 'Her kan du spørre om analyse av kontoer, transaksjoner eller periodesammenligninger.',
+    'analysis': 'Spør meg om å tolke grafer, beregne nøkkeltall eller identifisere trender.',
+    'data-upload': 'Trenger du hjelp med å laste opp regnskapsdata eller filformater?',
+    'knowledge-base': 'Søk etter faglige temaer, ISA-standarder eller spør meg direkte.',
     'general': 'Jeg kan hjelpe deg med revisjonsfaglige spørsmål, prosedyrer eller faglige retningslinjer.'
   };
   
