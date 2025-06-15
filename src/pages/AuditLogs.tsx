@@ -13,6 +13,7 @@ import { Calendar, Search, Filter, FileText, Eye, CheckCircle } from 'lucide-rea
 import { format } from 'date-fns';
 import { nb } from 'date-fns/locale';
 import AuditLogStats from '@/components/AuditLogs/AuditLogStats';
+import { AuditLogAction } from '@/types/organization';
 
 const AuditLogs = () => {
   const { data: userProfile } = useUserProfile();
@@ -29,22 +30,28 @@ const AuditLogs = () => {
   const reviewAuditLog = useReviewAuditLog();
   const createAuditLog = useCreateAuditLog();
 
-  const getActionTypeColor = (actionType: string) => {
+  const getActionTypeColor = (actionType: AuditLogAction) => {
     switch (actionType) {
       case 'task_assigned': return 'bg-green-100 text-green-800';
       case 'document_uploaded': return 'bg-blue-100 text-blue-800';
       case 'analysis_performed': return 'bg-purple-100 text-purple-800';
       case 'review_completed': return 'bg-orange-100 text-orange-800';
+      case 'ai_content_generated': return 'bg-indigo-100 text-indigo-800';
+      case 'document_version_restored': return 'bg-yellow-100 text-yellow-800';
+      case 'document_version_created': return 'bg-cyan-100 text-cyan-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
 
-  const getActionTypeLabel = (actionType: string) => {
+  const getActionTypeLabel = (actionType: AuditLogAction) => {
     switch (actionType) {
       case 'task_assigned': return 'Oppgave tildelt';
       case 'document_uploaded': return 'Dokument lastet opp';
       case 'analysis_performed': return 'Analyse utført';
       case 'review_completed': return 'Gjennomgang fullført';
+      case 'ai_content_generated': return 'AI-innhold generert';
+      case 'document_version_restored': return 'Versjon gjenopprettet';
+      case 'document_version_created': return 'Versjon opprettet';
       default: return actionType;
     }
   };
@@ -135,6 +142,9 @@ const AuditLogs = () => {
                   <SelectItem value="document_uploaded">Dokument lastet opp</SelectItem>
                   <SelectItem value="analysis_performed">Analyse utført</SelectItem>
                   <SelectItem value="review_completed">Gjennomgang fullført</SelectItem>
+                  <SelectItem value="ai_content_generated">AI-innhold generert</SelectItem>
+                  <SelectItem value="document_version_restored">Versjon gjenopprettet</SelectItem>
+                  <SelectItem value="document_version_created">Versjon opprettet</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -171,7 +181,7 @@ const AuditLogs = () => {
                 <div key={log.id} className="border rounded-lg p-4">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
+                      <div className="flex items-center gap-2 mb-2 flex-wrap">
                         <Badge className={getActionTypeColor(log.actionType)}>
                           {getActionTypeLabel(log.actionType)}
                         </Badge>

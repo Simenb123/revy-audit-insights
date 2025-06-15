@@ -1,6 +1,6 @@
 export type UserRole = 'admin' | 'partner' | 'manager' | 'employee';
 export type CommunicationType = 'team' | 'department' | 'firm';
-export type AuditLogAction = 'review_completed' | 'task_assigned' | 'document_uploaded' | 'analysis_performed' | 'ai_content_generated' | 'document_version_restored';
+export type AuditLogAction = 'review_completed' | 'task_assigned' | 'document_uploaded' | 'analysis_performed' | 'ai_content_generated' | 'document_version_restored' | 'document_version_created';
 
 export interface AuditFirm {
   id: string;

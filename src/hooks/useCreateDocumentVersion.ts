@@ -2,6 +2,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/Auth/AuthProvider';
+import { useCreateAuditLog } from './useCreateAuditLog';
 
 interface CreateVersionParams {
   clientAuditActionId: string;
@@ -9,11 +10,16 @@ interface CreateVersionParams {
   versionName: string;
   changeSource: 'user' | 'ai';
   changeDescription?: string;
+  // For logging
+  clientId: string;
+  subjectArea: string;
+  actionName: string;
 }
 
 export function useCreateDocumentVersion() {
   const { session } = useAuth();
   const queryClient = useQueryClient();
+  const createAuditLog = useCreateAuditLog();
 
   return useMutation({
     mutationFn: async (params: CreateVersionParams) => {
@@ -35,8 +41,19 @@ export function useCreateDocumentVersion() {
       if (error) throw error;
       return data;
     },
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['documentVersions', data.client_audit_action_id] });
+
+      createAuditLog.mutate({
+        clientId: variables.clientId,
+        actionType: 'document_version_created',
+        areaName: variables.subjectArea,
+        description: `Opprettet versjon '${variables.versionName}' for handling "${variables.actionName}". Kilde: ${variables.changeSource}.`,
+        metadata: { 
+          client_audit_action_id: variables.clientAuditActionId,
+          document_version_id: data.id 
+        }
+      });
     },
   });
 }

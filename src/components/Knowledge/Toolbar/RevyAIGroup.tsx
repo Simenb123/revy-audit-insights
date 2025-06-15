@@ -37,7 +37,10 @@ const RevyAIGroup = ({ editor, client, action }: Props) => {
         content: currentContent,
         versionName: `Før AI-forbedring ${new Date().toLocaleTimeString()}`,
         changeSource: 'user',
-        changeDescription: 'Automatisk lagret versjon før Revy AI ble kjørt.'
+        changeDescription: 'Automatisk lagret versjon før Revy AI ble kjørt.',
+        clientId: client.id,
+        subjectArea: action.subject_area,
+        actionName: action.name,
       });
     } catch (versionError) {
        console.error("Could not save pre-AI version:", versionError);
@@ -61,7 +64,10 @@ const RevyAIGroup = ({ editor, client, action }: Props) => {
         content: response,
         versionName: `AI-forbedring ${new Date().toLocaleTimeString()}`,
         changeSource: 'ai',
-        changeDescription: 'Innhold generert av Revy AI.'
+        changeDescription: 'Innhold generert av Revy AI.',
+        clientId: client.id,
+        subjectArea: action.subject_area,
+        actionName: action.name,
       });
       
       editor.chain().focus().setContent('').run();

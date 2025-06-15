@@ -2429,6 +2429,7 @@ export type Database = {
         | "analysis_performed"
         | "ai_content_generated"
         | "document_version_restored"
+        | "document_version_created"
       audit_log_action:
         | "review_completed"
         | "task_assigned"
@@ -2592,6 +2593,7 @@ export const Constants = {
         "analysis_performed",
         "ai_content_generated",
         "document_version_restored",
+        "document_version_created",
       ],
       audit_log_action: [
         "review_completed",
