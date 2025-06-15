@@ -146,6 +146,25 @@ export const getPhaseGuidance = async (
         'Kvalitetskontroll av erfaren revisor',
         'Tidlig utarbeidelse av utkast til beretning'
       ]
+    },
+    'reporting': {
+      phaseDescription: 'Utforming og levering av revisjonsrapporter',
+      keyObjectives: [
+        'Utarbeide endelig revisjonsberetning',
+        'Kommunisere funn til ledelse og styre',
+        'Arkivere revisjonsdokumentasjon'
+      ],
+      commonPitfalls: [
+        'Uklare formuleringer i beretningen',
+        'Forsinket kommunikasjon av vesentlige funn',
+        'Mangelfull arkivering'
+      ],
+      isaReferences: ['ISA 700', 'ISA 701', 'ISA 260'],
+      bestPractices: [
+        'Sikre at beretningen er i tråd med ISA-standardene',
+        'Avhold møte med styret for å gjennomgå funn',
+        'Følg firmaets retningslinjer for arkivering'
+      ]
     }
   };
 

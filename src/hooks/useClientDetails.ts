@@ -28,7 +28,7 @@ export function useClientDetails(orgNumber: string) {
 
       // Map database phase values to our AuditPhase type
       let mappedPhase: AuditPhase;
-      switch (clientData.phase) {
+      switch (clientData.phase as any) {
         case 'conclusion':
           mappedPhase = 'completion';
           break;
