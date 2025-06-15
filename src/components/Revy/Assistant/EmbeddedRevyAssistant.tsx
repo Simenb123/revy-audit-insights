@@ -1,13 +1,11 @@
-
 import React from 'react';
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, AlertCircle } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import { RevyMessageList } from './RevyMessageList';
 import { RevyInput } from './RevyInput';
 import { RevyMessage } from '@/types/revio';
 
 interface EmbeddedRevyAssistantProps {
-  currentTip: string;
   messages: RevyMessage[];
   isTyping: boolean;
   message: string;
@@ -40,7 +38,7 @@ const RevySuggestions = ({ onSuggestionClick }: { onSuggestionClick: (suggestion
   );
 };
 
-export const EmbeddedRevyAssistant = ({ currentTip, messages, isTyping, message, setMessage, handleSendMessage }: EmbeddedRevyAssistantProps) => {
+export const EmbeddedRevyAssistant = ({ messages, isTyping, message, setMessage, handleSendMessage }: EmbeddedRevyAssistantProps) => {
   const inputProps = { message, setMessage, handleSendMessage, isTyping, isEmbedded: true };
 
   return (
@@ -52,15 +50,6 @@ export const EmbeddedRevyAssistant = ({ currentTip, messages, isTyping, message,
           <Badge variant="secondary" className="text-xs font-medium bg-white">Smart</Badge>
         </div>
       </div>
-
-      {currentTip && (
-        <div className="p-3 bg-blue-50/80 border-b flex-shrink-0">
-          <div className="flex items-start gap-2.5">
-            <AlertCircle className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
-            <p className="text-sm text-blue-800 leading-relaxed">{currentTip}</p>
-          </div>
-        </div>
-      )}
 
       <div className="flex-1 min-h-0">
         <RevyMessageList messages={messages} isTyping={isTyping} isEmbedded />

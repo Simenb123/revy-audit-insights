@@ -14,8 +14,8 @@ const SmartRevyAssistant = ({ embedded = false, clientData, userRole }: SmartRev
   const hookProps = useSmartRevyAssistant({ clientData, userRole, embedded });
   
   if (embedded) {
-    // We don't pass session management props to the embedded view
-    const { sessions, activeSessionId, setActiveSessionId, handleCreateSession, ...chatProps } = hookProps;
+    // We don't pass session management props or the tip to the embedded view
+    const { sessions, activeSessionId, setActiveSessionId, handleCreateSession, currentTip, ...chatProps } = hookProps;
     return <EmbeddedRevyAssistant {...chatProps} />;
   }
 
