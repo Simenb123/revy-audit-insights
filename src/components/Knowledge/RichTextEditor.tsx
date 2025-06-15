@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -10,6 +9,9 @@ import Table from '@tiptap/extension-table';
 import TableCell from '@tiptap/extension-table-cell';
 import TableHeader from '@tiptap/extension-table-header';
 import TableRow from '@tiptap/extension-table-row';
+import TextAlign from '@tiptap/extension-text-align';
+import Highlight from '@tiptap/extension-highlight';
+import Link from '@tiptap/extension-link';
 import { Image as ImageIcon } from 'lucide-react';
 import { useArticleMedia } from '@/hooks/knowledge/useArticleMedia';
 import { MediaLibraryDialog } from './MediaLibraryDialog';
@@ -42,6 +44,14 @@ const RichTextEditor = ({ content, onChange }: RichTextEditorProps) => {
       TableRow,
       TableHeader,
       TableCell,
+      TextAlign.configure({
+        types: ['heading', 'paragraph'],
+      }),
+      Highlight,
+      Link.configure({
+        openOnClick: false,
+        autolink: true,
+      }),
     ],
     content: content,
     onUpdate: ({ editor }) => {

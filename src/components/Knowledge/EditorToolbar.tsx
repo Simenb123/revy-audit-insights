@@ -1,6 +1,10 @@
-import React, { useRef } from 'react';
+import React, { useRef, useCallback } from 'react';
 import { Editor } from '@tiptap/react';
-import { Bold, Italic, Strikethrough, Heading2, Heading3, List, ListOrdered, Quote, Image as ImageIcon, Table as TableIcon, Underline } from 'lucide-react';
+import { 
+  Bold, Italic, Strikethrough, Heading2, Heading3, List, ListOrdered, Quote, 
+  Image as ImageIcon, Table as TableIcon, Underline, AlignLeft, AlignCenter, 
+  AlignRight, Highlighter, Link as LinkIcon 
+} from 'lucide-react';
 import { Toggle } from '@/components/ui/toggle';
 import { Separator } from '@/components/ui/separator';
 import {
@@ -24,6 +28,23 @@ export const EditorToolbar = ({ editor, onImageUpload, isUploading, onOpenMediaL
   if (!editor) {
     return null;
   }
+
+  const handleSetLink = useCallback(() => {
+    if (!editor) return;
+    const previousUrl = editor.getAttributes('link').href;
+    const url = window.prompt('URL', previousUrl);
+
+    if (url === null) {
+      return;
+    }
+
+    if (url === '') {
+      editor.chain().focus().extendMarkRange('link').unsetLink().run();
+      return;
+    }
+
+    editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
+  }, [editor]);
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -75,6 +96,20 @@ export const EditorToolbar = ({ editor, onImageUpload, isUploading, onOpenMediaL
       >
         <Underline className="h-4 w-4" />
       </Toggle>
+       <Toggle
+        size="sm"
+        pressed={editor.isActive('highlight')}
+        onPressedChange={() => editor.chain().focus().toggleHighlight().run()}
+      >
+        <Highlighter className="h-4 w-4" />
+      </Toggle>
+       <Toggle
+        size="sm"
+        pressed={editor.isActive('link')}
+        onPressedChange={handleSetLink}
+      >
+        <LinkIcon className="h-4 w-4" />
+      </Toggle>
       <Separator orientation="vertical" className="h-8 mx-1" />
       <input
         type="color"
@@ -83,6 +118,28 @@ export const EditorToolbar = ({ editor, onImageUpload, isUploading, onOpenMediaL
         className="w-8 h-8 p-1 bg-transparent border-0 rounded-md cursor-pointer focus:ring-0 focus:outline-none"
         title="Tekstfarge"
       />
+      <Separator orientation="vertical" className="h-8 mx-1" />
+       <Toggle
+        size="sm"
+        pressed={editor.isActive({ textAlign: 'left' })}
+        onPressedChange={() => editor.chain().focus().setTextAlign('left').run()}
+      >
+        <AlignLeft className="h-4 w-4" />
+      </Toggle>
+      <Toggle
+        size="sm"
+        pressed={editor.isActive({ textAlign: 'center' })}
+        onPressedChange={() => editor.chain().focus().setTextAlign('center').run()}
+      >
+        <AlignCenter className="h-4 w-4" />
+      </Toggle>
+      <Toggle
+        size="sm"
+        pressed={editor.isActive({ textAlign: 'right' })}
+        onPressedChange={() => editor.chain().focus().setTextAlign('right').run()}
+      >
+        <AlignRight className="h-4 w-4" />
+      </Toggle>
       <Separator orientation="vertical" className="h-8 mx-1" />
       <Toggle
         size="sm"

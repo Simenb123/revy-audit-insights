@@ -96,6 +96,12 @@
   .prose u {
     @apply underline;
   }
+  .prose a {
+    @apply text-primary underline hover:text-primary/90 cursor-pointer;
+  }
+  .prose mark {
+    @apply bg-primary/20 px-1 py-0.5 rounded-sm;
+  }
   .prose table {
     @apply w-full my-4 border-collapse border border-border;
   }
