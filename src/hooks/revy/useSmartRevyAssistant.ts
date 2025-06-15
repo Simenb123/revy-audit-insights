@@ -6,8 +6,8 @@ import { useRevyContext } from '@/components/RevyContext/RevyContextProvider';
 import { generateAIResponse } from '@/services/revyService';
 import { detectEnhancedContext, getEnhancedContextualTips, buildEnhancedMessage } from '@/services/enhancedRevyService';
 import { useRevyChatSessions } from './useRevyChatSessions';
-import { useRevyChatMessages, RevyChatMessage } from './useRevyChatMessages';
-import { RevyMessage } from '@/types/revio';
+import { useRevyChatMessages } from './useRevyChatMessages';
+import { RevyMessage, RevyChatMessage } from '@/types/revio';
 
 interface UseSmartRevyAssistantProps {
   clientData?: any;
@@ -83,8 +83,17 @@ export const useSmartRevyAssistant = ({ clientData, userRole, embedded = false }
   }, [sessions, sessionsLoading, embedded, enhancedContext, clientData?.id, activeSessionId, handleCreateSession]);
 
   useEffect(() => {
-    const tip = getEnhancedContextualTips(enhancedContext, clientData, userRole);
-    setCurrentTip(tip);
+    const fetchTip = async () => {
+      try {
+        // Assuming getEnhancedContextualTips might be async and needs to be awaited.
+        const tip = await getEnhancedContextualTips(enhancedContext, clientData, userRole);
+        setCurrentTip(tip || '');
+      } catch (e) {
+        console.error("Failed to get contextual tip", e);
+        setCurrentTip('');
+      }
+    };
+    fetchTip();
   }, [enhancedContext, clientData, userRole]);
 
   const handleSendMessage = async () => {

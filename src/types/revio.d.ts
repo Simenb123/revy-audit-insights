@@ -1,3 +1,4 @@
+
 import { Database } from "@/integrations/supabase/types";
 
 export type RevyMessage = {
@@ -5,9 +6,31 @@ export type RevyMessage = {
   sender: 'revy' | 'user';
   content: string | React.ReactNode;
   timestamp: string;
+  metadata?: any;
 };
 
 export type RevyContext = 'dashboard' | 'client-overview' | 'client-detail' | 'audit-actions' | 'risk-assessment' | 'documentation' | 'collaboration' | 'communication' | 'team-management' | 'drill-down' | 'mapping' | 'general';
+
+// Adding session and message types for Revy Chat
+export type RevyChatSession = {
+  id: string;
+  user_id: string;
+  client_id: string | null;
+  created_at: string;
+  updated_at: string;
+  title: string | null;
+  context: string | null;
+};
+
+export type RevyChatMessage = {
+  id: string;
+  session_id: string;
+  sender: 'user' | 'revy';
+  content: string;
+  metadata?: any;
+  created_at: string;
+};
+
 
 // Re-added missing types to resolve build errors
 export type BrregSearchResult = {

@@ -1,17 +1,8 @@
-
 import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/Auth/AuthProvider';
-
-export interface RevyChatMessage {
-  id: string;
-  session_id: string;
-  sender: 'user' | 'revy';
-  content: string;
-  metadata?: any;
-  created_at: string;
-}
+import { RevyChatMessage } from '@/types/revio';
 
 export const useRevyChatMessages = (sessionId: string | null) => {
   const { session } = useAuth();
