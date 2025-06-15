@@ -80,7 +80,7 @@ Du kommuniserer alltid på norsk og er vennlig, profesjonell og præsis. Dine sv
     });
     knowledgePrompt += `VIKTIG: Du MÅ basere svaret ditt på disse artiklene hvis de er relevante. Ikke si "Jeg har funnet noen artikler", men referer til dem direkte, f.eks. "I artikkelen 'Tittel på artikkel' står det at...".`;
   } else {
-    knowledgePrompt = `\n\nINFO: Jeg fant ingen direkte relevante artikler i kunnskapsbasen for dette spørsmålet, men jeg kan fortsatt gi generell veiledning basert på min opplæring. Kunnskapsbasen eksisterer og kan søkes i.`;
+    knowledgePrompt = `\n\nINFO: Ingen spesifikke artikler ble funnet i kunnskapsbasen for dette spørsmålet. Svaret nedenfor er basert på min generelle revisjonskunnskap.`;
   }
 
   // Enhanced client context with proactive insights

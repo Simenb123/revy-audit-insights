@@ -116,7 +116,7 @@ export async function searchRelevantKnowledge(message: string, context: string) 
 
     const { data: articles, error } = await supabase.rpc('match_knowledge_articles', {
       p_query_embedding: queryEmbedding,
-      p_match_threshold: 0.7,
+      p_match_threshold: 0.65, // Lowered from 0.7 to find more matches
       p_match_count: 5,
     });
 
@@ -148,8 +148,8 @@ async function keywordSearch(message: string, context: string) {
     const orFilter = searchTerms.flatMap(term => [
         `title.ilike.%${term}%`,
         `content.ilike.%${term}%`,
-        `summary.ilike.%${term}%`,
-        `tags.cs.{${term}}`
+        `summary.ilike.%${term}%`
+        // `tags.cs.{${term}}` // Temporarily removed to prevent a potential database error. Tags are still used for scoring relevance.
     ]).join(',');
 
     const { data: articles, error } = await supabase
