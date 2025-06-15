@@ -2,19 +2,19 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/Auth/AuthProvider';
 import { KnowledgeCategory, KnowledgeArticle, ArticleStatus } from '@/types/knowledge';
 import { Save, X } from 'lucide-react';
 import { toast } from 'sonner';
+import RichTextEditor from './RichTextEditor';
 
 interface ArticleFormData {
   title: string;
@@ -31,7 +31,6 @@ const ArticleEditor = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { session } = useAuth();
-  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const initialCategoryId = location.state?.categoryId;
   const isEditing = !!articleId;
@@ -265,16 +264,24 @@ const ArticleEditor = () => {
           <CardContent>
             <div className="space-y-2">
               <Label htmlFor="content">Artikkelinnhold *</Label>
-              <Textarea
-                id="content"
-                {...form.register('content', { required: true })}
-                rows={20}
-                placeholder="Skriv artikkelinnholdet her..."
-                className="font-mono"
+              <Controller
+                name="content"
+                control={form.control}
+                rules={{ required: 'Artikkelinnhold kan ikke være tomt.' }}
+                render={({ field, fieldState }) => (
+                  <>
+                    <RichTextEditor
+                      content={field.value}
+                      onChange={field.onChange}
+                    />
+                    {fieldState.error && (
+                      <p className="text-sm font-medium text-destructive mt-1">
+                        {fieldState.error.message}
+                      </p>
+                    )}
+                  </>
+                )}
               />
-              <p className="text-xs text-muted-foreground">
-                Du kan bruke HTML-tags for formatering.
-              </p>
             </div>
           </CardContent>
         </Card>
