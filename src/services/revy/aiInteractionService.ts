@@ -1,11 +1,12 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { RevyContext } from '@/types/revio';
+import { RevyContext, RevyChatMessage } from '@/types/revio';
 
 // Generate AI response using Supabase Edge Function with enhanced context and knowledge integration
 export const generateAIResponse = async (
   message: string, 
   context: RevyContext,
+  history: RevyChatMessage[],
   clientData?: any,
   userRole?: string,
   sessionId?: string
@@ -14,7 +15,8 @@ export const generateAIResponse = async (
     context,
     hasClientData: !!clientData,
     userRole,
-    messageLength: message.length
+    messageLength: message.length,
+    historyLength: history.length,
   });
 
   try {
@@ -27,9 +29,12 @@ export const generateAIResponse = async (
 
     console.log('✅ User authenticated for AI call:', user.id);
 
+    const simplifiedHistory = history.map(msg => ({ sender: msg.sender, content: msg.content }));
+
     const requestBody = {
       message,
       context,
+      history: simplifiedHistory,
       clientData,
       userRole,
       sessionId,

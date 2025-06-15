@@ -1,4 +1,3 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { supabase } from './lib/supabase.ts';
@@ -79,13 +78,14 @@ serve(async (req) => {
       throw new Error('OpenAI API key not configured');
     }
 
-    const { message, context, clientData, userRole, userId, sessionId } = body;
+    const { message, context, clientData, userRole, userId, sessionId, history } = body;
     console.log('📝 Request received:', { 
       message: message.substring(0, 50) + '...', 
       context, 
       userRole, 
       userId: userId?.substring(0, 8) + '...' || 'guest',
-      hasClientData: !!clientData 
+      hasClientData: !!clientData,
+      historyLength: history?.length || 0
     });
 
     // Handle guest mode gracefully
@@ -99,6 +99,7 @@ serve(async (req) => {
       try {
         const cachePayload = {
           message,
+          history: history || [],
           context,
           client_id: clientData?.id || null,
           userRole: userRole || null,
@@ -181,6 +182,11 @@ serve(async (req) => {
       isGuestMode
     );
 
+    const conversationMessages = (history || []).map((msg: { sender: string, content: string }) => ({
+      role: msg.sender === 'revy' ? 'assistant' : 'user',
+      content: msg.content
+    }));
+
     console.log('🚀 Calling OpenAI API...');
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -192,6 +198,7 @@ serve(async (req) => {
         model,
         messages: [
           { role: 'system', content: systemPrompt },
+          ...conversationMessages,
           { role: 'user', content: message }
         ],
         temperature: isGuestMode ? 0.5 : 0.7, // More consistent responses for guests
@@ -238,6 +245,7 @@ serve(async (req) => {
         // After successful generation and logging, store in cache
         const cachePayload = {
           message,
+          history: history || [],
           context,
           client_id: clientData?.id || null,
           userRole: userRole || null,

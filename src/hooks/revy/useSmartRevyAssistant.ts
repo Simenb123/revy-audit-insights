@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
@@ -101,6 +100,8 @@ export const useSmartRevyAssistant = ({ clientData, userRole, embedded = false }
     const userMessageContent = message;
     setMessage('');
     
+    const historyBeforeSend = dbMessages;
+
     await sendMessage({
       content: userMessageContent,
       sender: 'user'
@@ -114,6 +115,7 @@ export const useSmartRevyAssistant = ({ clientData, userRole, embedded = false }
       const responseText = await generateAIResponse(
         userMessageContent, 
         enhancedContext,
+        historyBeforeSend,
         clientData, // This is the actual client data object
         userRole,
         activeSessionId
