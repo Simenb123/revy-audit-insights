@@ -1,10 +1,11 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import * as pdfjs from 'https://unpkg.com/pdfjs-dist@4.4.168/build/pdf.mjs';
+// Use the legacy build which is often more compatible with server-side environments
+import * as pdfjs from 'https://unpkg.com/pdfjs-dist@4.4.168/legacy/build/pdf.mjs';
 
-// Set up the PDF.js worker.
-pdfjs.GlobalWorkerOptions.workerSrc = 'https://unpkg.com/pdfjs-dist@4.4.168/build/pdf.worker.mjs';
+// Set up the PDF.js worker from the legacy build.
+pdfjs.GlobalWorkerOptions.workerSrc = 'https://unpkg.com/pdfjs-dist@4.4.168/legacy/build/pdf.worker.mjs';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -16,8 +17,13 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders });
   }
 
+  let documentId: string | null = null;
+  
   try {
-    const { documentId } = await req.json();
+    // Parse body once to avoid "Body already consumed" error
+    const body = await req.json();
+    documentId = body.documentId;
+
     if (!documentId) {
       throw new Error('documentId is required');
     }
@@ -82,11 +88,11 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('Error in pdf-text-extractor:', error);
-    // Attempt to update the status to 'failed' if possible
-    try {
-        const { documentId } = await req.json();
-        if (documentId) {
+    console.error(`Error in pdf-text-extractor for document ${documentId}:`, error);
+    
+    // Attempt to update the status to 'failed' if a documentId was parsed
+    if (documentId) {
+        try {
             const supabaseAdmin = createClient(
                 Deno.env.get('SUPABASE_URL') ?? '',
                 Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -95,9 +101,9 @@ serve(async (req) => {
                 text_extraction_status: 'failed',
                 extracted_text: { error: error.message } // Store error message
             }).eq('id', documentId);
+        } catch (e) {
+            console.error(`Failed to update status to failed for document ${documentId}:`, e);
         }
-    } catch (e) {
-        console.error('Failed to update status to failed:', e);
     }
     
     return new Response(JSON.stringify({ error: error.message }), {
@@ -106,3 +112,4 @@ serve(async (req) => {
     });
   }
 });
+
