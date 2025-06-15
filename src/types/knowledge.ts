@@ -1,4 +1,3 @@
-
 export type ArticleStatus = 'draft' | 'published' | 'archived';
 
 export interface KnowledgeCategory {
@@ -11,6 +10,7 @@ export interface KnowledgeCategory {
   created_at: string;
   updated_at: string;
   children?: KnowledgeCategory[];
+  applicable_phases?: string[];
 }
 
 export interface KnowledgeArticle {
@@ -29,6 +29,9 @@ export interface KnowledgeArticle {
   published_at?: string;
   category?: Partial<KnowledgeCategory>;
   embedding?: any;
+  reference_code?: string;
+  valid_from?: string;
+  valid_until?: string;
 }
 
 export interface KnowledgeFavorite {

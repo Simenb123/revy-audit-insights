@@ -154,7 +154,7 @@ async function keywordSearch(message: string, context: string) {
 
     const { data: articles, error } = await supabase
       .from('knowledge_articles')
-      .select('title, content, summary, tags, view_count, slug, published_at, created_at')
+      .select('title, content, summary, tags, view_count, slug, published_at, created_at, reference_code, valid_from, valid_until')
       .eq('status', 'published')
       .or(orFilter)
       .limit(15);

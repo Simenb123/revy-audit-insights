@@ -1182,12 +1182,15 @@ export type Database = {
           embedding: string | null
           id: string
           published_at: string | null
+          reference_code: string | null
           slug: string
           status: Database["public"]["Enums"]["article_status"]
           summary: string | null
           tags: string[] | null
           title: string
           updated_at: string
+          valid_from: string | null
+          valid_until: string | null
           view_count: number
         }
         Insert: {
@@ -1198,12 +1201,15 @@ export type Database = {
           embedding?: string | null
           id?: string
           published_at?: string | null
+          reference_code?: string | null
           slug: string
           status?: Database["public"]["Enums"]["article_status"]
           summary?: string | null
           tags?: string[] | null
           title: string
           updated_at?: string
+          valid_from?: string | null
+          valid_until?: string | null
           view_count?: number
         }
         Update: {
@@ -1214,12 +1220,15 @@ export type Database = {
           embedding?: string | null
           id?: string
           published_at?: string | null
+          reference_code?: string | null
           slug?: string
           status?: Database["public"]["Enums"]["article_status"]
           summary?: string | null
           tags?: string[] | null
           title?: string
           updated_at?: string
+          valid_from?: string | null
+          valid_until?: string | null
           view_count?: number
         }
         Relationships: [
@@ -1234,6 +1243,7 @@ export type Database = {
       }
       knowledge_categories: {
         Row: {
+          applicable_phases: Database["public"]["Enums"]["audit_phase"][] | null
           created_at: string
           description: string | null
           display_order: number
@@ -1244,6 +1254,9 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          applicable_phases?:
+            | Database["public"]["Enums"]["audit_phase"][]
+            | null
           created_at?: string
           description?: string | null
           display_order?: number
@@ -1254,6 +1267,9 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          applicable_phases?:
+            | Database["public"]["Enums"]["audit_phase"][]
+            | null
           created_at?: string
           description?: string | null
           display_order?: number
@@ -2627,6 +2643,9 @@ export type Database = {
           published_at: string
           category: Json
           similarity: number
+          reference_code: string
+          valid_from: string
+          valid_until: string
         }[]
       }
       user_owns_client: {

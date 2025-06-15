@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -7,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { KnowledgeArticle } from '@/types/knowledge';
-import { Search, Clock, Eye, Sparkles } from 'lucide-react';
+import { Search, Clock, Eye, Sparkles, FileCode } from 'lucide-react';
 
 type ArticleWithCategoryAndSimilarity = KnowledgeArticle & { 
   category: { name: string } | null, 
@@ -86,6 +85,12 @@ const SearchResults = () => {
                             <Badge variant="secondary" className="text-xs">
                               {article.category.name}
                             </Badge>
+                          )}
+                          {article.reference_code && (
+                             <Badge variant="outline" className="text-xs font-mono">
+                               <FileCode className="w-3 h-3 mr-1.5" />
+                               {article.reference_code}
+                             </Badge>
                           )}
                            {article.similarity && article.similarity > 0.72 && (
                              <Badge variant="default" className="text-xs bg-green-100 text-green-800 hover:bg-green-200 border-green-200">
