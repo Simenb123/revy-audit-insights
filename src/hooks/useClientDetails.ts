@@ -1,3 +1,4 @@
+
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Client, AuditPhase } from '@/types/revio';
@@ -32,7 +33,7 @@ export function useClientDetails(orgNumber: string) {
           mappedPhase = 'completion';
           break;
         case 'reporting': // Map reporting to a valid phase or handle it
-          mappedPhase = 'completion';
+          mappedPhase = 'reporting';
           break;
         default:
           mappedPhase = clientData.phase as AuditPhase;

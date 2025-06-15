@@ -1,5 +1,3 @@
-import { AuditSubjectArea } from '@/types/revio';
-
 export type AuditSubjectArea = 
   | 'sales'
   | 'payroll'

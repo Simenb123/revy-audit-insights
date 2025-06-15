@@ -1,4 +1,3 @@
-
 import { Database } from "@/integrations/supabase/types";
 
 export type RevyMessage = {
@@ -49,7 +48,7 @@ export type Account = {
 export type AccountGroup = { id: string; name: string; accounts: Account[]; balance: number; };
 
 // Unified audit phase type for frontend consistency
-export type AuditPhase = 'overview' | 'engagement' | 'planning' | 'risk_assessment' | 'execution' | 'completion';
+export type AuditPhase = 'overview' | 'engagement' | 'planning' | 'risk_assessment' | 'execution' | 'completion' | 'reporting';
 
 // Extended client type for frontend use. It includes related data not on the client table itself.
 type DbClient = Database['public']['Tables']['clients']['Row'];

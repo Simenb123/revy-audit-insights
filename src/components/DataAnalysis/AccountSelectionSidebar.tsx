@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -5,9 +6,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { TreeView, TreeItem, TreeViewContent, TreeViewTrigger } from '@/components/ui/tree-view';
 import { formatCurrency } from '@/lib/formatters';
 import { Account, AccountGroup } from '@/types/revio';
-import { Search, ChevronRight, ChevronDown } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
-import { cn } from '@/lib/utils';
 import { Button } from '../ui/button';
 
 // Mock data
@@ -87,11 +87,11 @@ const AccountSelectionSidebar = () => {
         <ScrollArea className="h-[calc(100vh-250px)] w-full rounded-md border">
           <TreeView>
             {filteredAccountGroups.map(group => (
-              <TreeItem key={group.id}>
+              <TreeItem key={group.id} value={group.id}>
                 <TreeViewTrigger className="font-bold">{group.name} ({formatCurrency(group.balance)})</TreeViewTrigger>
                 <TreeViewContent>
                   {group.accounts.map(account => (
-                    <TreeItem key={account.id}>
+                    <TreeItem key={account.id} value={account.id}>
                       <label
                         className="group flex w-full items-center space-x-2 rounded-sm p-2 text-sm transition-colors hover:bg-accent hover:text-accent-foreground"
                         htmlFor={account.id}
