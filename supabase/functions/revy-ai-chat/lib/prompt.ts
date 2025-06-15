@@ -59,7 +59,9 @@ export function buildIntelligentSystemPrompt(
 - Revisorlovgivning og etiske regler
 - Praktisk revisjonsarbeid og dokumentasjon
 
-Du kommuniserer alltid på norsk og er vennlig, profesjonell og præsis. Dine svar skal være konkrete og handlingsrettede.`;
+Du kommuniserer alltid på norsk og er vennlig, profesjonell og præsis. Dine svar skal være konkrete og handlingsrettede.
+
+VIKTIG: Du har tilgang til en omfattende kunnskapsbase med artikler om revisjon, ISA-standarder, regnskapslovgivning og praksis. Når brukere spør om faglige temaer, søk aktivt i kunnskapsbasen og referer til relevante artikler.`;
 
   if (isGuestMode) {
     basePrompt += `\n\nVIKTIG: Brukeren er i gjestmodus og har begrenset tilgang. Gi generelle råd og veiledning, men nevn at full funksjonalitet krever innlogging. Hold svarene enkle og praktiske.`;
@@ -78,9 +80,9 @@ Du kommuniserer alltid på norsk og er vennlig, profesjonell og præsis. Dine sv
       knowledgePrompt += `SAMMENDRAG: ${article.summary || (article.content || '').substring(0, 300) + '...'}\n`;
       knowledgePrompt += `SLUG (for linking): /fag/artikkel/${article.slug}\n\n`;
     });
-    knowledgePrompt += `VIKTIG: Du MÅ basere svaret ditt på disse artiklene hvis de er relevante. Ikke si "Jeg har funnet noen artikler", men referer til dem direkte, f.eks. "I artikkelen 'Tittel på artikkel' står det at...".`;
+    knowledgePrompt += `VIKTIG: Du MÅ basere svaret ditt på disse artiklene hvis de er relevante. Ikke si "Jeg har funnet noen artikler", men referer til dem direkte, f.eks. "I artikkelen 'Tittel på artikkel' står det at...". Hvis brukeren spør om ISA-standarder eller andre faglige temaer, let etter relevante artikler.`;
   } else {
-    knowledgePrompt = `\n\nINFO: Ingen spesifikke artikler ble funnet i kunnskapsbasen for dette spørsmålet. Svaret nedenfor er basert på min generelle revisjonskunnskap.`;
+    knowledgePrompt = `\n\nINFO: Ingen spesifikke artikler ble funnet i kunnskapsbasen for dette spørsmålet, men jeg har tilgang til en omfattende samling med revisjonsfaglige artikler og ISA-standarder. Svaret nedenfor er basert på min generelle revisjonskunnskap.`;
   }
 
   // Enhanced client context with proactive insights
@@ -152,5 +154,5 @@ Du kommuniserer alltid på norsk og er vennlig, profesjonell og præsis. Dine sv
 
   return `${basePrompt}${knowledgePrompt}${clientPrompt}${proactivePrompt}${contextPrompt}${roleContext}
 
-VIKTIG: Gi alltid konkrete, handlingsrettede råd. Referer til relevante ISA-standarder når det er aktuelt. Hold svarene fokuserte og praktiske. ${isGuestMode ? 'Nevn gjerne at innlogging gir tilgang til mer avanserte funksjoner.' : 'Vær proaktiv med forslag basert på klientdata og kontekst. Hvis du bruker kunnskap fra kunnskapsbasen, si ifra om det.'}`;
+VIKTIG: Gi alltid konkrete, handlingsrettede råd. Referer til relevante ISA-standarder når det er aktuelt. Hold svarene fokuserte og praktiske. ${isGuestMode ? 'Nevn gjerne at innlogging gir tilgang til mer avanserte funksjoner.' : 'Vær proaktiv med forslag basert på klientdata og kontekst. Hvis du bruker kunnskap fra kunnskapsbasen, si ifra om det og referer til spesifikke artikler når det er relevant.'}`;
 }
