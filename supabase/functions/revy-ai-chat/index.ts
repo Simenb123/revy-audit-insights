@@ -1,3 +1,4 @@
+
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { supabase } from './lib/supabase.ts';
@@ -70,7 +71,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log('🤖 Revy AI Chat function started');
+    console.log('🤖 AI-Revy Chat function started');
     
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openAIApiKey) {

@@ -1,4 +1,3 @@
-
 // Proactive insights based on client data
 function buildProactiveInsights(client: any): string {
   let insights = '\n\nProaktive innsikter:\n';
@@ -51,7 +50,7 @@ export function buildIntelligentSystemPrompt(
   enhancedContext: any,
   isGuestMode = false
 ): string {
-  let basePrompt = `Du er Revy, en ekspert AI-revisjonsassistent for norske revisorer. Du har dyp kunnskap om:
+  let basePrompt = `Du er AI-Revy, en ekspert AI-revisjonsassistent for norske revisorer. Du har dyp kunnskap om:
 - Norsk regnskapslovgivning og standarder (Regnskapsloven, NGRS, IFRS)
 - ISA (International Standards on Auditing) - alle standarder
 - Risikovurdering og revisjonsmetodikk

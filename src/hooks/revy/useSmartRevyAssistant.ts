@@ -47,7 +47,7 @@ export const useSmartRevyAssistant = ({ clientData, userRole, embedded = false }
       
       // Add welcome message to new session
       await sendMessage({
-        content: `Hei! Jeg er Revy, din AI-drevne revisjonsassistent. Hvordan kan jeg hjelpe deg i dag?`,
+        content: `Hei! Jeg er AI-Revy, din AI-drevne revisjonsassistent. Hvordan kan jeg hjelpe deg i dag?`,
         sender: 'revy',
       });
     } catch (error) {
