@@ -68,6 +68,7 @@ export const Sidebar = React.forwardRef<
         data-collapsible={state === "collapsed" ? collapsible : ""}
         data-variant={variant}
         data-side={side}
+        {...props}
       >
         <div
           className={cn(
@@ -87,10 +88,8 @@ export const Sidebar = React.forwardRef<
               : "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]",
             variant === "floating" || variant === "inset"
               ? "p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4)_+2px)]"
-              : "group-data-[collapsible=icon]:w-[var(--sidebar-width-icon)] group-data-[side=left]:border-r group-data-[side=right]:border-l",
-            className
+              : "group-data-[collapsible=icon]:w-[var(--sidebar-width-icon)] group-data-[side=left]:border-r group-data-[side=right]:border-l"
           )}
-          {...props}
         >
           <div
             data-sidebar="sidebar"
@@ -106,4 +105,3 @@ export const Sidebar = React.forwardRef<
 Sidebar.displayName = "Sidebar"
 
 const SIDEBAR_WIDTH_MOBILE = "18rem"
-

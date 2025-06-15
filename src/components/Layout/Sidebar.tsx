@@ -23,7 +23,6 @@ const Sidebar = () => {
       style={{
         top: '4rem',
         height: 'calc(100vh - 4rem)',
-        minWidth: isCollapsed ? 0 : 'var(--sidebar-width-icon)',
       }}
       data-collapsed={isCollapsed}
     >
@@ -48,4 +47,3 @@ const Sidebar = () => {
 };
 
 export default Sidebar;
-
