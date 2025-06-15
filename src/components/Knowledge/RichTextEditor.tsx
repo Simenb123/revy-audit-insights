@@ -20,6 +20,23 @@ import { useArticleMedia } from '@/hooks/knowledge/useArticleMedia';
 import { MediaLibraryDialog } from './MediaLibraryDialog';
 import { EditorToolbar } from './EditorToolbar';
 
+// Extend Tiptap extensions to add keyboard shortcuts
+const CustomSubscript = Subscript.extend({
+  addKeyboardShortcuts() {
+    return {
+      'Mod-,': () => this.editor.commands.toggleSubscript(),
+    };
+  },
+});
+
+const CustomSuperscript = Superscript.extend({
+  addKeyboardShortcuts() {
+    return {
+      'Mod-.': () => this.editor.commands.toggleSuperscript(),
+    };
+  },
+});
+
 type RichTextEditorProps = {
   content: string;
   onChange: (richText: string) => void;
@@ -55,8 +72,8 @@ const RichTextEditor = ({ content, onChange }: RichTextEditorProps) => {
         openOnClick: false,
         autolink: true,
       }),
-      Subscript,
-      Superscript,
+      CustomSubscript,
+      CustomSuperscript,
     ],
     content: content,
     onUpdate: ({ editor }) => {
