@@ -1,157 +1,129 @@
-import React, { useState, useEffect } from 'react';
+
+import { useState, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useRevyContext } from '@/components/RevyContext/RevyContextProvider';
 import { generateAIResponse } from '@/services/revyService';
 import { detectEnhancedContext, getEnhancedContextualTips, buildEnhancedMessage } from '@/services/enhancedRevyService';
-import { seedKnowledgeBase } from '@/services/knowledgeSeederService';
-import { RevyMessage, RevyContext } from '@/types/revio';
+import { useRevyChatSessions } from './useRevyChatSessions';
+import { useRevyChatMessages, RevyChatMessage } from './useRevyChatMessages';
+import { RevyMessage } from '@/types/revio';
 
 interface UseSmartRevyAssistantProps {
   clientData?: any;
   userRole?: string;
+  embedded?: boolean;
 }
 
-const getContextDisplayName = (context: RevyContext): string => {
-  const names: Record<RevyContext, string> = {
-    'dashboard': 'dashboard',
-    'client-overview': 'klientoversikt',
-    'client-detail': 'klientdetaljer',
-    'audit-actions': 'revisjonshandlinger',
-    'risk-assessment': 'risikovurdering',
-    'documentation': 'dokumentasjon',
-    'collaboration': 'samarbeid',
-    'communication': 'kommunikasjon',
-    'team-management': 'teamledelse',
-    'drill-down': 'dataanalyse',
-    'mapping': 'kontomapping',
-    'general': 'hovedområdet'
-  };
-  return names[context] || context;
-};
+// Map DB message to UI message
+const mapMessageToUIMessage = (msg: RevyChatMessage): RevyMessage => ({
+    id: msg.id,
+    content: msg.content,
+    timestamp: msg.created_at,
+    sender: msg.sender,
+    metadata: msg.metadata
+});
 
-export const useSmartRevyAssistant = ({ clientData, userRole }: UseSmartRevyAssistantProps) => {
-  const [messages, setMessages] = useState<RevyMessage[]>([]);
+export const useSmartRevyAssistant = ({ clientData, userRole, embedded = false }: UseSmartRevyAssistantProps) => {
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const { sessions, isLoading: sessionsLoading, createSession } = useRevyChatSessions();
+  const { messages: dbMessages, isLoading: messagesLoading, sendMessage } = useRevyChatMessages(activeSessionId);
+  
   const [message, setMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [sessionId] = useState(() => crypto.randomUUID());
   const [currentTip, setCurrentTip] = useState('');
-  const [knowledgeSeeded, setKnowledgeSeeded] = useState(false);
   const { toast } = useToast();
   const { currentContext } = useRevyContext();
   const location = useLocation();
 
   const enhancedContext = detectEnhancedContext(location.pathname, clientData);
 
+  const handleCreateSession = useCallback(async (title?: string) => {
+    try {
+      const newSession = await createSession({
+        title: title || `Ny samtale ${new Date().toLocaleDateString()}`,
+        context: enhancedContext,
+        clientId: clientData?.id,
+      });
+      setActiveSessionId(newSession.id);
+      
+      // Add welcome message to new session
+      await sendMessage({
+        content: `Hei! Jeg er Revy, din AI-drevne revisjonsassistent. Hvordan kan jeg hjelpe deg i dag?`,
+        sender: 'revy',
+      });
+    } catch (error) {
+      toast({ title: "Feil", description: "Kunne ikke opprette en ny samtale.", variant: "destructive" });
+    }
+  }, [createSession, enhancedContext, clientData?.id, sendMessage, toast]);
+  
+  // Effect to manage sessions
   useEffect(() => {
-    const initializeAssistant = async () => {
-      if (messages.length === 0) {
-        if (!knowledgeSeeded) {
-          await seedKnowledgeBase();
-          setKnowledgeSeeded(true);
+    if (sessionsLoading) return;
+
+    if (embedded) {
+      // For embedded, we want one session per context
+      const contextTitle = `Embedded: ${enhancedContext} ${clientData?.id || ''}`;
+      const existingSession = sessions.find(s => s.title === contextTitle);
+      if (existingSession) {
+        if (activeSessionId !== existingSession.id) {
+          setActiveSessionId(existingSession.id);
         }
-
-        const tip = await getEnhancedContextualTips(enhancedContext, clientData, userRole);
-        setCurrentTip(tip);
-
-        const welcomeMessage: RevyMessage = {
-          id: '1',
-          content: `Hei! Jeg er Revy, din AI-drevne revisjonsassistent. Jeg er nå oppgradert med tilgang til appens kunnskapsbase og kan gi deg mye bedre veiledning!\n\n${tip}\n\nNoen eksempler på hva du kan spørre meg om:\n• "Hvordan kommer jeg i gang med Revio?"\n• "Hvordan legger jeg til en ny klient?"\n• "Hva er ISA 315 og hvordan bruker jeg den?"\n• "Hvilke revisjonshandlinger bør jeg utføre for denne klienten?"`,
-          timestamp: new Date().toISOString(),
-          sender: 'revy'
-        };
-        
-        setMessages([welcomeMessage]);
+      } else {
+        handleCreateSession(contextTitle);
       }
-    };
-
-    initializeAssistant();
-  }, [enhancedContext, clientData, userRole, messages.length, knowledgeSeeded]);
+    } else {
+      // For floating, pick the most recent one or create a new one
+      if (sessions.length > 0 && !activeSessionId) {
+        setActiveSessionId(sessions[0].id);
+      } else if (sessions.length === 0) {
+        handleCreateSession();
+      }
+    }
+  }, [sessions, sessionsLoading, embedded, enhancedContext, clientData?.id, activeSessionId, handleCreateSession]);
 
   useEffect(() => {
-    const updateTip = async () => {
-      if (messages.length > 0) {
-        const tip = await getEnhancedContextualTips(enhancedContext, clientData, userRole);
-        setCurrentTip(tip);
-        
-        const contextMessage: RevyMessage = {
-          id: Date.now().toString(),
-          content: `💡 Jeg ser at du har byttet til ${getContextDisplayName(enhancedContext)}. ${tip}`,
-          timestamp: new Date().toISOString(),
-          sender: 'revy'
-        };
-        
-        setMessages(prev => [...prev, contextMessage]);
-      }
-    };
-
-    if(clientData?.id) updateTip();
-  }, [enhancedContext, clientData?.id]);
+    const tip = getEnhancedContextualTips(enhancedContext, clientData, userRole);
+    setCurrentTip(tip);
+  }, [enhancedContext, clientData, userRole]);
 
   const handleSendMessage = async () => {
-    if (!message.trim() || isTyping) return;
+    if (!message.trim() || isTyping || !activeSessionId) return;
     
-    const userMessage: RevyMessage = { 
-      id: Date.now().toString(), 
-      content: message,
-      timestamp: new Date().toISOString(),
-      sender: 'user'
-    };
-    
-    const newMessages = [...messages, userMessage];
-    setMessages(newMessages);
+    const userMessageContent = message;
     setMessage('');
+    
+    await sendMessage({
+      content: userMessageContent,
+      sender: 'user'
+    });
+
     setIsTyping(true);
     
     try {
       const { message: enhancedMessage, enhancedContext: fullContext } = await buildEnhancedMessage(
-        userMessage.content as string,
+        userMessageContent,
         enhancedContext,
         clientData,
         userRole
       );
 
-      console.log('🧠 Sending enhanced message with context:', fullContext);
-      
       const responseText = await generateAIResponse(
         enhancedMessage, 
         enhancedContext,
         fullContext,
         userRole,
-        sessionId
+        activeSessionId
       );
       
-      const revyMessageId = (Date.now() + 1).toString();
-      const initialRevyResponse: RevyMessage = {
-        id: revyMessageId,
-        content: '',
-        timestamp: new Date().toISOString(),
+      await sendMessage({
+        content: responseText,
         sender: 'revy'
-      };
-      
-      setMessages(prev => [...prev, initialRevyResponse]);
+      });
 
-      const words = responseText.split(' ');
-      for (let i = 0; i < words.length; i++) {
-        await new Promise(r => setTimeout(r, 50));
-        setMessages(prev => prev.map(msg => 
-          msg.id === revyMessageId 
-            ? { ...msg, content: words.slice(0, i + 1).join(' ') }
-            : msg
-        ));
-      }
     } catch (error) {
-      console.error('Error getting AI response:', error);
-      
-      const fallbackResponse: RevyMessage = {
-        id: (Date.now() + 1).toString(),
-        content: 'Beklager, jeg opplever tekniske problemer akkurat nå. Men jeg kan fortsatt hjelpe deg med grunnleggende spørsmål om Revio og revisjonsmetodikk. Prøv å spørre meg om ISA-standarder, klientadministrasjon eller appfunksjonalitet.',
-        timestamp: new Date().toISOString(),
-        sender: 'revy'
-      };
-      
-      setMessages(prev => [...prev, fallbackResponse]);
-      
+      const fallbackContent = 'Beklager, jeg opplever tekniske problemer akkurat nå. Prøv igjen om litt.';
+      await sendMessage({ content: fallbackContent, sender: 'revy' });
       toast({
         title: "AI-feil",
         description: "Kunne ikke få svar fra AI-assistenten",
@@ -163,10 +135,14 @@ export const useSmartRevyAssistant = ({ clientData, userRole }: UseSmartRevyAssi
   };
 
   return {
-    messages,
+    sessions,
+    activeSessionId,
+    setActiveSessionId,
+    handleCreateSession,
+    messages: dbMessages.map(mapMessageToUIMessage),
     message,
     setMessage,
-    isTyping,
+    isTyping: isTyping || messagesLoading || sessionsLoading,
     currentTip,
     handleSendMessage,
   };

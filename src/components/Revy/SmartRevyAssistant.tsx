@@ -11,10 +11,12 @@ interface SmartRevyAssistantProps {
 }
 
 const SmartRevyAssistant = ({ embedded = false, clientData, userRole }: SmartRevyAssistantProps) => {
-  const hookProps = useSmartRevyAssistant({ clientData, userRole });
+  const hookProps = useSmartRevyAssistant({ clientData, userRole, embedded });
   
   if (embedded) {
-    return <EmbeddedRevyAssistant {...hookProps} />;
+    // We don't pass session management props to the embedded view
+    const { sessions, activeSessionId, setActiveSessionId, handleCreateSession, ...chatProps } = hookProps;
+    return <EmbeddedRevyAssistant {...chatProps} />;
   }
 
   return <FloatingRevyAssistant {...hookProps} />;

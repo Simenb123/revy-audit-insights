@@ -6,9 +6,14 @@ import { MinusCircle, X, Sparkles, BookOpen } from 'lucide-react';
 import RevyAvatar from '../RevyAvatar';
 import { RevyMessageList } from './RevyMessageList';
 import { RevyInput } from './RevyInput';
-import { RevyMessage } from '@/types/revio';
+import { RevyMessage, RevyChatSession } from '@/types/revio';
+import { RevyChatSidebar } from './RevyChatSidebar';
 
 interface FloatingRevyAssistantProps {
+  sessions: RevyChatSession[];
+  activeSessionId: string | null;
+  setActiveSessionId: (id: string) => void;
+  handleCreateSession: () => void;
   currentTip: string;
   messages: RevyMessage[];
   isTyping: boolean;
@@ -52,7 +57,8 @@ export const FloatingRevyAssistant = (props: FloatingRevyAssistantProps) => {
     }
   };
 
-  const inputProps = { ...props, isEmbedded: false };
+  const { sessions, activeSessionId, setActiveSessionId, handleCreateSession, ...chatProps } = props;
+  const inputProps = { ...chatProps, isEmbedded: false };
 
   return (
     <>
@@ -76,30 +82,39 @@ export const FloatingRevyAssistant = (props: FloatingRevyAssistantProps) => {
       <AnimatePresence>
         {isOpen && (
           <motion.div 
-            className="fixed bottom-0 right-0 z-50 w-96 bg-gray-50 shadow-xl rounded-tl-2xl overflow-hidden flex flex-col border-t-2 border-l-2 border-purple-200"
-            style={{ height: isMinimized ? '48px' : '550px', maxHeight: '80vh' }}
-            initial={{ y: 400, opacity: 0 }}
+            className="fixed bottom-0 right-0 z-50 w-[768px] bg-gray-50 shadow-xl rounded-tl-2xl overflow-hidden flex flex-col border-t-2 border-l-2 border-purple-200"
+            style={{ height: isMinimized ? '48px' : '600px', maxHeight: '80vh' }}
+            initial={{ y: 600, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 400, opacity: 0 }}
+            exit={{ y: 600, opacity: 0 }}
             transition={{ type: 'spring', stiffness: 400, damping: 40 }}
           >
             <FloatingRevyHeader toggleMinimize={toggleMinimize} toggleOpen={toggleOpen} />
             
             {!isMinimized && (
-              <>
-                {props.currentTip && (
-                  <div className="p-3 bg-blue-50 border-b border-blue-100 text-sm text-blue-800">
-                    <div className="flex items-start gap-2.5">
-                      <BookOpen className="h-4 w-4 mt-0.5 flex-shrink-0 text-blue-500" />
-                      <span className="leading-relaxed">{props.currentTip}</span>
+              <div className="flex flex-1 overflow-hidden">
+                <RevyChatSidebar
+                  sessions={sessions}
+                  activeSessionId={activeSessionId}
+                  onSessionSelect={setActiveSessionId}
+                  onCreateSession={handleCreateSession}
+                  isLoading={props.isTyping}
+                />
+                <main className="flex-1 flex flex-col bg-white">
+                  {props.currentTip && (
+                    <div className="p-3 bg-blue-50 border-b border-blue-100 text-sm text-blue-800">
+                      <div className="flex items-start gap-2.5">
+                        <BookOpen className="h-4 w-4 mt-0.5 flex-shrink-0 text-blue-500" />
+                        <span className="leading-relaxed">{props.currentTip}</span>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                <RevyMessageList messages={props.messages} isTyping={props.isTyping} />
-                
-                <RevyInput {...inputProps} />
-              </>
+                  <RevyMessageList messages={props.messages} isTyping={props.isTyping} />
+                  
+                  <RevyInput {...inputProps} />
+                </main>
+              </div>
             )}
           </motion.div>
         )}
