@@ -1,7 +1,7 @@
 
 import { AuditPhase, Client } from '@/types/revio';
 import { getPhaseGuidance } from './phaseGuidance';
-import { generateAIResponse } from '@/services/revyService';
+import { generateAIResponse } from '@/services/revy/aiInteractionService';
 
 // Generate contextual recommendations based on audit progress
 export const generateContextualRecommendations = async (

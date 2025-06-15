@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Editor } from '@tiptap/react';
 import { Bot, Loader2 } from 'lucide-react';
 import ToolbarButton from '../ToolbarButton';
-import { generateAIResponse } from '@/services/revyService';
+import { generateAIResponse } from '@/services/revy/aiInteractionService';
 import { toast } from '@/components/ui/use-toast';
 import { Client } from '@/types/revio';
 import { ClientAuditAction } from '@/types/audit-actions';

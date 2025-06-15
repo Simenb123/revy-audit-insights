@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { getAIUsageStats, getFirmAIUsageStats } from '@/services/revyService';
+import { getAIUsageStats, getFirmAIUsageStats } from '@/services/revy/usageStatsService';
 
 interface AIUsageLog {
   id: string;
