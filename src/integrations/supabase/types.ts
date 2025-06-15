@@ -114,6 +114,50 @@ export type Database = {
           },
         ]
       }
+      ai_cache: {
+        Row: {
+          client_id: string | null
+          created_at: string
+          hits: number
+          id: string
+          last_hit_at: string
+          model: string
+          request_hash: string
+          response: Json
+          user_id: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string
+          hits?: number
+          id?: string
+          last_hit_at?: string
+          model: string
+          request_hash: string
+          response: Json
+          user_id?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string
+          hits?: number
+          id?: string
+          last_hit_at?: string
+          model?: string
+          request_hash?: string
+          response?: Json
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_cache_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_usage_logs: {
         Row: {
           client_id: string | null
@@ -2620,6 +2664,10 @@ export type Database = {
       get_user_role: {
         Args: { user_uuid: string }
         Returns: Database["public"]["Enums"]["user_role_type"]
+      }
+      increment_cache_hit: {
+        Args: { hash_to_update: string }
+        Returns: undefined
       }
       match_knowledge_articles: {
         Args: {
