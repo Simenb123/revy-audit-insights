@@ -1,10 +1,9 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useRevyContext } from '@/components/RevyContext/RevyContextProvider';
 import { generateAIResponse } from '@/services/revyService';
-import { detectEnhancedContext, getEnhancedContextualTips, buildEnhancedMessage } from '@/services/enhancedRevyService';
+import { detectEnhancedContext, getEnhancedContextualTips } from '@/services/enhancedRevyService';
 import { useRevyChatSessions } from './useRevyChatSessions';
 import { useRevyChatMessages } from './useRevyChatMessages';
 import { RevyMessage, RevyChatMessage } from '@/types/revio';
@@ -110,17 +109,12 @@ export const useSmartRevyAssistant = ({ clientData, userRole, embedded = false }
     setIsTyping(true);
     
     try {
-      const { message: enhancedMessage, enhancedContext: fullContext } = await buildEnhancedMessage(
-        userMessageContent,
-        enhancedContext,
-        clientData,
-        userRole
-      );
-
+      // The logic for building an "enhanced message" has been moved to the revy-ai-chat edge function.
+      // We can now call generateAIResponse directly with the context we have on the client.
       const responseText = await generateAIResponse(
-        enhancedMessage, 
+        userMessageContent, 
         enhancedContext,
-        fullContext,
+        clientData, // This is the actual client data object
         userRole,
         activeSessionId
       );

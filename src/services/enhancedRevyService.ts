@@ -1,7 +1,5 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { RevyContext } from '@/types/revio';
-import { searchRelevantKnowledge } from './knowledgeIntegrationService';
 
 // Enhanced context detection based on URL and app state
 export const detectEnhancedContext = (pathname: string, clientData?: any): RevyContext => {
@@ -147,37 +145,7 @@ const getBasicContextualTip = (context: RevyContext): string => {
   return tips[context] || tips.general;
 };
 
-// Enhanced message building with better context
-export const buildEnhancedMessage = async (
-  userMessage: string,
-  context: RevyContext,
-  clientData?: any,
-  userRole?: string
-): Promise<{ message: string; enhancedContext: any }> => {
-  try {
-    // Search for relevant knowledge
-    const knowledge = await searchRelevantKnowledge(userMessage, context);
-    
-    // Get enhanced context
-    const enhancedContext = {
-      context,
-      clientData,
-      userRole,
-      knowledge: knowledge.articles.slice(0, 3), // Top 3 relevant articles
-      procedures: knowledge.procedures,
-      isaStandards: knowledge.isaStandards,
-      riskFactors: knowledge.riskFactors
-    };
-
-    return {
-      message: userMessage,
-      enhancedContext
-    };
-  } catch (error) {
-    console.error('Error building enhanced message:', error);
-    return {
-      message: userMessage,
-      enhancedContext: { context, clientData, userRole }
-    };
-  }
-};
+// The 'buildEnhancedMessage' function was previously here. It has been removed
+// because its logic (searching for knowledge articles and building a complex context object)
+// has been moved into the 'revy-ai-chat' edge function. This simplifies the client-side
+// code and centralizes the AI logic on the server.
