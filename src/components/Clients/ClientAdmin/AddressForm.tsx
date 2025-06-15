@@ -17,7 +17,7 @@ const AddressForm = ({ form }: AddressFormProps) => {
           <Input placeholder="Adresse" />
         </FormFieldWrapper>
 
-        <FormFieldWrapper form={form} name="postalCode" label="Postnummer">
+        <FormFieldWrapper form={form} name="postal_code" label="Postnummer">
           <Input placeholder="Postnummer" />
         </FormFieldWrapper>
 
@@ -26,7 +26,7 @@ const AddressForm = ({ form }: AddressFormProps) => {
         </FormFieldWrapper>
       </div>
 
-      <FormFieldWrapper form={form} name="bankAccount" label="Bankkontonummer">
+      <FormFieldWrapper form={form} name="bank_account" label="Bankkontonummer">
         <Input placeholder="Bankkontonummer" />
       </FormFieldWrapper>
 

@@ -28,7 +28,7 @@ const phaseOptions: { value: AuditPhase; label: string }[] = [
 const ClientDetailsForm = ({ form }: ClientDetailsFormProps) => {
   return (
     <div className="space-y-6">
-      <FormFieldWrapper form={form} name="companyName" label="Firmanavn" required>
+      <FormFieldWrapper form={form} name="company_name" label="Firmanavn" required>
         <Input placeholder="Firmanavn" />
       </FormFieldWrapper>
 
@@ -36,7 +36,7 @@ const ClientDetailsForm = ({ form }: ClientDetailsFormProps) => {
         <Input placeholder="Selskapsnavn" />
       </FormFieldWrapper>
 
-      <FormFieldWrapper form={form} name="orgNumber" label="Organisasjonsnummer" required>
+      <FormFieldWrapper form={form} name="org_number" label="Organisasjonsnummer" required>
         <Input placeholder="Organisasjonsnummer (9 siffer)" />
       </FormFieldWrapper>
 
@@ -44,7 +44,7 @@ const ClientDetailsForm = ({ form }: ClientDetailsFormProps) => {
         <Input placeholder="Bransje" />
       </FormFieldWrapper>
 
-      <FormFieldWrapper form={form} name="registrationDate" label="Stiftelsesdato">
+      <FormFieldWrapper form={form} name="registration_date" label="Stiftelsesdato">
         <Input type="date" />
       </FormFieldWrapper>
 

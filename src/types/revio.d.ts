@@ -75,6 +75,9 @@ export interface Client {
   risk_assessment: string;
   // Test data flag
   is_test_data?: boolean;
+  // Timestamps
+  created_at: string;
+  updated_at: string;
   // Relationships
   riskAreas: RiskArea[];
   documents: ClientDocument[];

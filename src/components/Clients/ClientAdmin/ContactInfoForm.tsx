@@ -11,7 +11,7 @@ interface ContactInfoFormProps {
 const ContactInfoForm = ({ form }: ContactInfoFormProps) => {
   return (
     <div className="space-y-6">
-      <FormFieldWrapper form={form} name="contactPerson" label="Kontaktperson">
+      <FormFieldWrapper form={form} name="contact_person" label="Kontaktperson">
         <Input placeholder="Kontaktperson" />
       </FormFieldWrapper>
 

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -58,19 +57,19 @@ const ClientInfoForm = ({ client }: ClientInfoFormProps) => {
   useEffect(() => {
     // Initialize form data with client data
     setFormData({
-      accounting_system: client.accountingSystem || '',
-      previous_auditor: client.previousAuditor || '',
-      audit_fee: client.auditFee?.toString() || '',
-      year_end_date: client.yearEndDate || '',
-      board_meetings_per_year: client.boardMeetingsPerYear?.toString() || '',
-      internal_controls: client.internalControls || '',
-      risk_assessment: client.riskAssessment || '',
+      accounting_system: client.accounting_system || '',
+      previous_auditor: client.previous_auditor || '',
+      audit_fee: client.audit_fee?.toString() || '',
+      year_end_date: client.year_end_date || '',
+      board_meetings_per_year: client.board_meetings_per_year?.toString() || '',
+      internal_controls: client.internal_controls || '',
+      risk_assessment: client.risk_assessment || '',
     });
 
     // Check if current accounting system is in predefined list
-    const isCustomSystem = client.accountingSystem && 
-      !accountingSystems.includes(client.accountingSystem) && 
-      client.accountingSystem !== '';
+    const isCustomSystem = client.accounting_system && 
+      !accountingSystems.includes(client.accounting_system) && 
+      client.accounting_system !== '';
     setShowCustomAccountingSystem(isCustomSystem);
   }, [client]);
 

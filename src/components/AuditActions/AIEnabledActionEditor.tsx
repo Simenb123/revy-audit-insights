@@ -43,7 +43,13 @@ const fetchClient = async (clientId: string): Promise<Client | null> => {
         if (error.code === 'PGRST116') return null;
         throw error;
     }
-    return data;
+    return { 
+      ...data, 
+      riskAreas: [], 
+      documents: [], 
+      roles: [],
+      announcements: []
+    } as Client;
 }
 
 const AIEnabledActionEditor: React.FC<AIEnabledActionEditorProps> = ({ clientId }) => {

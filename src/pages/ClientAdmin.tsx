@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useRevyContext } from '@/components/RevyContext/RevyContextProvider';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -25,33 +26,32 @@ const ClientAdmin = () => {
     const newClient: Partial<Client> = {
       id: Math.random().toString(36).substring(2, 9),
       name: result.navn,
-      companyName: result.navn,
-      orgNumber: result.organisasjonsnummer,
+      company_name: result.navn,
+      org_number: result.organisasjonsnummer,
       phase: 'engagement',
       progress: 0,
-      registrationDate: result.registreringsdatoEnhetsregisteret?.substring(0, 10),
+      registration_date: result.registreringsdatoEnhetsregisteret?.substring(0, 10),
       industry: result.organisasjonsform.beskrivelse,
       riskAreas: [],
       documents: [],
-      // Adding required fields with default values
-      orgFormCode: result.organisasjonsform.kode,
-      orgFormDescription: result.organisasjonsform.beskrivelse,
+      org_form_code: result.organisasjonsform.kode,
+      org_form_description: result.organisasjonsform.beskrivelse,
       homepage: result.hjemmeside || '',
       status: 'ACTIVE',
-      naceCode: '',
-      naceDescription: '',
-      municipalityCode: '',
-      municipalityName: '',
+      nace_code: '',
+      nace_description: '',
+      municipality_code: '',
+      municipality_name: '',
       department: '',
-      contactPerson: '',
+      contact_person: '',
       chair: '',
       ceo: '',
       address: '',
-      postalCode: '',
+      postal_code: '',
       city: '',
       email: '',
       phone: '',
-      bankAccount: '',
+      bank_account: '',
       notes: '',
       roles: []
     };

@@ -1,4 +1,3 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -131,70 +130,70 @@ export function useClientData() {
         const transformedClient: Client = {
           id: client.id,
           name: client.name,
-          companyName: client.company_name,
-          orgNumber: client.org_number,
+          company_name: client.company_name,
+          org_number: client.org_number,
           phase: mappedPhase,
           progress: client.progress,
           department: client.department || '',
-          contactPerson: client.contact_person || '',
+          contact_person: client.contact_person || '',
           chair: client.chair || '',
           ceo: client.ceo || '',
           industry: client.industry || '',
-          registrationDate: client.registration_date || '',
+          registration_date: client.registration_date || '',
           address: client.address || '',
-          postalCode: client.postal_code || '',
+          postal_code: client.postal_code || '',
           city: client.city || '',
           email: client.email || '',
           phone: client.phone || '',
-          bankAccount: client.bank_account || '',
+          bank_account: client.bank_account || '',
           notes: client.notes || '',
-          orgFormCode: client.org_form_code || '',
-          orgFormDescription: client.org_form_description || '',
+          org_form_code: client.org_form_code || '',
+          org_form_description: client.org_form_description || '',
           homepage: client.homepage || '',
           status: client.status || '',
-          naceCode: client.nace_code || '',
-          naceDescription: client.nace_description || '',
-          municipalityCode: client.municipality_code || '',
-          municipalityName: client.municipality_name || '',
-          equityCapital: client.equity_capital != null ? Number(client.equity_capital) : undefined,
-          shareCapital: client.share_capital != null ? Number(client.share_capital) : undefined,
-          accountingSystem: client.accounting_system || '',
-          previousAuditor: client.previous_auditor || '',
-          auditFee: client.audit_fee != null ? Number(client.audit_fee) : undefined,
-          yearEndDate: client.year_end_date || '',
-          boardMeetingsPerYear: client.board_meetings_per_year != null ? Number(client.board_meetings_per_year) : undefined,
-          internalControls: client.internal_controls || '',
-          riskAssessment: client.risk_assessment || '',
-          isTestData: isTestData,
-          createdAt: client.created_at,
-          updatedAt: client.updated_at,
+          nace_code: client.nace_code || '',
+          nace_description: client.nace_description || '',
+          municipality_code: client.municipality_code || '',
+          municipality_name: client.municipality_name || '',
+          equity_capital: client.equity_capital != null ? Number(client.equity_capital) : null,
+          share_capital: client.share_capital != null ? Number(client.share_capital) : null,
+          accounting_system: client.accounting_system || '',
+          previous_auditor: client.previous_auditor || '',
+          audit_fee: client.audit_fee != null ? Number(client.audit_fee) : null,
+          year_end_date: client.year_end_date || '',
+          board_meetings_per_year: client.board_meetings_per_year != null ? Number(client.board_meetings_per_year) : null,
+          internal_controls: client.internal_controls || '',
+          risk_assessment: client.risk_assessment || '',
+          is_test_data: isTestData,
+          created_at: client.created_at,
+          updated_at: client.updated_at,
           riskAreas: clientRiskAreas,
           documents: clientDocuments,
           roles: clientRoles
         };
 
-        if (transformedClient.isTestData) {
+        if (transformedClient.is_test_data) {
           console.log('Successfully transformed test client:', {
             name: transformedClient.name,
-            isTestData: transformedClient.isTestData,
+            is_test_data: transformedClient.is_test_data,
             originalValue: client.is_test_data
           });
         }
 
-        console.log(`=== FINISHED TRANSFORMING CLIENT: ${client.name} (isTestData: ${transformedClient.isTestData}) ===`);
+        console.log(`=== FINISHED TRANSFORMING CLIENT: ${client.name} (is_test_data: ${transformedClient.is_test_data}) ===`);
 
         return transformedClient;
       });
 
       console.log('=== TRANSFORMATION COMPLETE ===');
       console.log('Final transformed clients:', transformedClients.length);
-      const testClientsInResult = transformedClients.filter(c => c.isTestData);
+      const testClientsInResult = transformedClients.filter(c => c.is_test_data);
       console.log('Test clients in final result:', testClientsInResult.length);
       if (testClientsInResult.length > 0) {
-        console.log('Test clients found with NEW RLS policy:', testClientsInResult.map(c => ({ name: c.name, isTestData: c.isTestData })));
+        console.log('Test clients found with NEW RLS policy:', testClientsInResult.map(c => ({ name: c.name, is_test_data: c.is_test_data })));
       } else {
         console.log('NO TEST CLIENTS FOUND IN FINAL RESULT - Check if test data exists in database');
-        console.log('All clients isTestData values:', transformedClients.map(c => ({ name: c.name, isTestData: c.isTestData })));
+        console.log('All clients is_test_data values:', transformedClients.map(c => ({ name: c.name, is_test_data: c.is_test_data })));
       }
 
       return transformedClients;

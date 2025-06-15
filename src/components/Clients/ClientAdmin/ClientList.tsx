@@ -24,7 +24,7 @@ const ClientList: React.FC<ClientListProps> = ({ clients, onEdit, onDelete }) =>
   const navigate = useNavigate();
 
   const navigateToClientDetails = (client: Client) => {
-    navigate(`/klienter/${client.orgNumber}`);
+    navigate(`/klienter/${client.org_number}`);
   };
 
   return (
@@ -58,10 +58,10 @@ const ClientList: React.FC<ClientListProps> = ({ clients, onEdit, onDelete }) =>
                   className="cursor-pointer hover:bg-muted/50"
                   onClick={() => navigateToClientDetails(client)}
                 >
-                  <TableCell className="font-medium">{client.companyName}</TableCell>
+                  <TableCell className="font-medium">{client.company_name}</TableCell>
                   <TableCell>{client.name}</TableCell>
-                  <TableCell>{client.orgNumber}</TableCell>
-                  <TableCell>{client.contactPerson || '-'}</TableCell>
+                  <TableCell>{client.org_number}</TableCell>
+                  <TableCell>{client.contact_person || '-'}</TableCell>
                   <TableCell>{client.ceo || '-'}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
@@ -90,7 +90,7 @@ const ClientList: React.FC<ClientListProps> = ({ clients, onEdit, onDelete }) =>
                         size="icon"
                         onClick={(e) => {
                           e.stopPropagation();
-                          if (confirm(`Er du sikker på at du vil slette ${client.companyName}?`)) {
+                          if (confirm(`Er du sikker på at du vil slette ${client.company_name}?`)) {
                             onDelete(client.id);
                           }
                         }}
