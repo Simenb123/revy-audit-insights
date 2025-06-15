@@ -1,4 +1,3 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Client, AuditPhase } from '@/types/revio';
@@ -32,6 +31,9 @@ export function useClientDetails(orgNumber: string) {
         case 'conclusion':
           mappedPhase = 'completion';
           break;
+        case 'reporting': // Map reporting to a valid phase or handle it
+          mappedPhase = 'completion';
+          break;
         default:
           mappedPhase = clientData.phase as AuditPhase;
           break;
@@ -39,6 +41,7 @@ export function useClientDetails(orgNumber: string) {
 
       // Transform data to match our Client type
       const client: Client = {
+        ...clientData,
         id: clientData.id,
         name: clientData.name,
         company_name: clientData.company_name,
@@ -80,7 +83,8 @@ export function useClientDetails(orgNumber: string) {
         updated_at: clientData.updated_at,
         riskAreas: [],
         documents: [],
-        roles: []
+        roles: [],
+        announcements: [],
       };
 
       // Fetch risk areas, documents and roles if needed

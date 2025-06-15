@@ -38,16 +38,16 @@ const VersionSelector: React.FC<VersionSelectorProps> = ({
         <Clock size={16} className="text-muted-foreground" />
         <span className="text-sm font-medium">Versjon:</span>
         <Select value={selectedVersion.id} onValueChange={handleSelectVersion}>
-          <SelectTrigger className="w-[220px]">
+          <SelectTrigger className="w-[280px]">
             <SelectValue placeholder="Velg versjon" />
           </SelectTrigger>
           <SelectContent>
             {versions.map(version => (
               <SelectItem key={version.id} value={version.id} className="flex gap-2 items-center">
                 <FileText size={14} className="mr-2" />
-                <span>{version.name}</span>
+                <span>{version.version_name}</span>
                 <span className="text-xs text-muted-foreground ml-2">
-                  {format(new Date(version.date), 'dd.MM.yyyy')}
+                  {format(new Date(version.created_at), 'dd.MM.yyyy HH:mm')}
                 </span>
               </SelectItem>
             ))}
@@ -63,23 +63,12 @@ const VersionSelector: React.FC<VersionSelectorProps> = ({
             </TooltipTrigger>
             <TooltipContent>
               <p className="max-w-xs">
-                Du ser på versjon <strong>{selectedVersion.name}</strong> fra {format(new Date(selectedVersion.date), 'dd. MMMM yyyy')}. 
+                Du ser på versjon <strong>{selectedVersion.version_name}</strong> fra {format(new Date(selectedVersion.created_at), 'dd. MMMM yyyy')}. 
                 Du kan velge en tidligere versjon fra nedtrekksmenyen.
               </p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
-      </div>
-      
-      <div className="flex items-center gap-1 bg-muted/40 rounded px-2 py-1 text-xs">
-        <span className={`w-2 h-2 rounded-full ${
-          selectedVersion.status === 'draft' ? 'bg-yellow-500' : 
-          selectedVersion.status === 'final' ? 'bg-green-500' : 'bg-blue-500'
-        }`} />
-        <span>
-          {selectedVersion.status === 'draft' ? 'Utkast' : 
-           selectedVersion.status === 'final' ? 'Endelig' : 'Revidert'}
-        </span>
       </div>
     </div>
   );

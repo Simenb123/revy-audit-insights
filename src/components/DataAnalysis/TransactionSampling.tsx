@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -60,7 +59,7 @@ const TransactionSampling = ({ selectedAccount }: TransactionSamplingProps) => {
           sampledCount: sampledTransactions.length,
           totalAmount,
           sampledAmount,
-          coverage: (sampledAmount / totalAmount) * 100
+          coverage: totalAmount > 0 ? (sampledAmount / totalAmount) * 100 : 0,
         }
       });
       

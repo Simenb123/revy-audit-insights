@@ -5,7 +5,10 @@ export type RevyMessage = {
   id: string;
   sender: 'revy' | 'user';
   content: string | React.ReactNode;
+  timestamp: string;
 };
+
+export type RevyContext = 'dashboard' | 'client-overview' | 'client-detail' | 'audit-actions' | 'risk-assessment' | 'documentation' | 'collaboration' | 'communication' | 'team-management' | 'drill-down' | 'mapping' | 'general';
 
 // Re-added missing types to resolve build errors
 export type BrregSearchResult = {
@@ -36,11 +39,17 @@ export type ClientDocument = {
 export type ClientRole = Database['public']['Tables']['client_roles']['Row'];
 export type Announcement = Database['public']['Tables']['announcements']['Row'] & { isRead: boolean };
 
-export type Account = { id: string; name: string; number: string; balance: number; type: string; };
+export type Account = {
+  id: string;
+  name: string;
+  number: string;
+  balance: number;
+  type: 'asset' | 'liability' | 'equity';
+};
 export type AccountGroup = { id: string; name: string; accounts: Account[]; balance: number; };
 
 // Unified audit phase type for frontend consistency
-export type AuditPhase = 'overview' | 'engagement' | 'planning' | 'risk_assessment' | 'execution' | 'completion' | 'reporting';
+export type AuditPhase = 'overview' | 'engagement' | 'planning' | 'risk_assessment' | 'execution' | 'completion';
 
 // Extended client type for frontend use. It includes related data not on the client table itself.
 type DbClient = Database['public']['Tables']['clients']['Row'];
@@ -86,11 +95,30 @@ export type Transaction = {
   description: string;
   amount: number;
   account: string;
+  voucher: string;
+  isTested?: boolean;
 };
 
 export type SamplingResult = {
-  sampleSize: number;
-  populationSize: number;
-  sampledItems: Transaction[];
-  evaluation: string;
+  transactions: Transaction[];
+  summary: {
+    totalCount: number;
+    sampledCount: number;
+    totalAmount: number;
+    sampledAmount: number;
+    coverage: number;
+  };
 };
+
+export type AuditSubjectArea =
+  | 'sales'
+  | 'payroll'
+  | 'operating_expenses'
+  | 'inventory'
+  | 'finance'
+  | 'banking'
+  | 'fixed_assets'
+  | 'receivables'
+  | 'payables'
+  | 'equity'
+  | 'other';

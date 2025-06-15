@@ -11,7 +11,7 @@ import AddressForm from './AddressForm';
 
 interface ClientFormProps {
   initialData?: Partial<Client>;
-  onSubmit: (data: Client) => void;
+  onSubmit: (data: Partial<Client>) => void;
   submitLabel: string;
 }
 
@@ -20,7 +20,7 @@ const clientSchema = z.object({
   name: z.string().min(2, { message: 'Selskapsnavn må ha minst 2 tegn' }),
   company_name: z.string().min(2, { message: 'Firmanavn må ha minst 2 tegn' }),
   org_number: z.string().regex(/^\d{9}$/, { message: 'Organisasjonsnummer må være 9 siffer' }),
-  phase: z.enum(['overview', 'engagement', 'planning', 'risk_assessment', 'execution', 'completion', 'reporting']),
+  phase: z.enum(['overview', 'engagement', 'planning', 'risk_assessment', 'execution', 'completion']),
   progress: z.coerce.number().min(0).max(100),
   department: z.string().optional(),
   contact_person: z.string().optional(),
@@ -102,24 +102,15 @@ const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, submitLa
   const handleSubmit = (data: FormData) => {
     const now = new Date().toISOString();
     
-    const fullClient: Client = {
-      // Cast initialData to Client to satisfy spread, assuming it's a valid partial Client
-      ...(initialData as Omit<Client, keyof FormData>),
+    const submittedClientData: Partial<Client> = {
+      ...initialData,
       ...data,
-      id: initialData?.id || Math.random().toString(36).substring(2, 9),
-      created_at: initialData?.created_at || now,
+      id: initialData?.id || undefined,
       updated_at: now,
-      user_id: initialData?.user_id || '', // Ensure user_id is carried over
-      riskAreas: initialData?.riskAreas || [],
-      documents: initialData?.documents || [],
-      roles: initialData?.roles || [],
-      announcements: initialData?.announcements || [],
-      is_test_data: initialData?.is_test_data || false,
-      department_id: initialData?.department_id || null,
-      address_line: initialData?.address_line || null
+      created_at: initialData?.created_at || now,
     };
     
-    onSubmit(fullClient);
+    onSubmit(submittedClientData);
   };
 
   return (

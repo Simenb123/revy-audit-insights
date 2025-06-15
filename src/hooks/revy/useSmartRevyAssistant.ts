@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
@@ -106,7 +105,7 @@ export const useSmartRevyAssistant = ({ clientData, userRole }: UseSmartRevyAssi
     
     try {
       const { message: enhancedMessage, enhancedContext: fullContext } = await buildEnhancedMessage(
-        userMessage.content,
+        userMessage.content as string,
         enhancedContext,
         clientData,
         userRole

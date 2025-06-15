@@ -1,3 +1,4 @@
+import { AuditSubjectArea } from '@/types/revio';
 
 export type AuditSubjectArea = 
   | 'sales'
@@ -84,6 +85,8 @@ export interface ClientAuditAction {
   work_notes?: string;
   created_at: string;
   updated_at: string;
+  copied_from_client_id?: string | null;
+  copied_from_action_id?: string | null;
 }
 
 export interface ActionGroup {

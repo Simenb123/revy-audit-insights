@@ -138,11 +138,11 @@ const AIEnabledActionEditor: React.FC<AIEnabledActionEditorProps> = ({ clientId 
                         content={procedures}
                         onChange={setProcedures}
                         context="audit"
-                        contextData={{ client: client, action: action }}
+                        contextData={{ client: client, action: action as any }}
                     />
                 </div>
                 
-                <VersionHistory client={client} action={action} onRestore={handleRestore} />
+                <VersionHistory client={client} action={action as any} onRestore={handleRestore} />
                 
                 <div className="flex justify-end">
                     <Button onClick={handleSave}>Lagre endringer (Demo)</Button>
