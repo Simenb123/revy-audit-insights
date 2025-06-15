@@ -14,7 +14,7 @@ const ListActionsGroup = ({ editor }: Props) => {
       <ToolbarButton
         tooltip="Sjekkliste"
         pressed={editor.isActive('taskList')}
-        onPressedChange={() => editor.chain().focus().toggleTaskList().run()}
+        onPressedChange={() => editor.chain().focus().toggleList('taskList', 'taskItem').run()}
       >
         <ListTodo className="h-4 w-4" />
       </ToolbarButton>
