@@ -2696,6 +2696,14 @@ export type Database = {
           valid_until: string
         }[]
       }
+      queue_articles_for_embedding: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          title: string
+          content: string
+        }[]
+      }
       user_owns_client: {
         Args: { client_uuid: string }
         Returns: boolean
