@@ -1,3 +1,4 @@
+
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -198,8 +199,8 @@ export function useClientData() {
 
       return transformedClients;
     },
-    // Force fresh data by setting staleTime to 0
-    staleTime: 0,
+    // Cache data for 5 minutes to improve performance
+    staleTime: 1000 * 60 * 5,
     // Refetch when window regains focus
     refetchOnWindowFocus: true
   });
