@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -129,5 +128,30 @@
   }
   .prose th {
     @apply font-medium;
+  }
+
+  /* Fix for paragraphs and lists in Tiptap editor */
+  .prose p {
+    @apply my-4; /* Add vertical space between paragraphs */
+  }
+
+  .prose ul {
+    @apply list-disc list-outside pl-5 my-4;
+  }
+
+  .prose ol {
+    @apply list-decimal list-outside pl-5 my-4;
+  }
+
+  .prose li {
+    @apply mb-2;
+  }
+  
+  .prose li > p {
+    @apply my-0; /* Remove paragraph margins inside list items */
+  }
+
+  .prose ul ul, .prose ul ol, .prose ol ul, .prose ol ol {
+    @apply my-2 ml-5; /* Indent nested lists */
   }
 }
