@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Editor } from '@tiptap/react';
-import { Bold, Italic, Strikethrough, Underline, Code, Subscript as SubscriptIcon, Superscript as SuperscriptIcon } from 'lucide-react';
+import { Bold, Italic, Strikethrough, Underline, Code, Subscript as SubscriptIcon, Superscript as SuperscriptIcon, CaseSensitive } from 'lucide-react';
 import ToolbarButton from '../ToolbarButton';
 
 type Props = {
@@ -9,6 +9,16 @@ type Props = {
 };
 
 const BasicFormattingGroup = ({ editor }: Props) => {
+  const toggleUppercase = () => {
+    const { textTransform, ...otherAttributes } = editor.getAttributes('textStyle');
+
+    if (textTransform === 'uppercase') {
+      editor.chain().focus().setMark('textStyle', otherAttributes).removeEmptyTextStyle().run();
+    } else {
+      editor.chain().focus().setMark('textStyle', { ...otherAttributes, textTransform: 'uppercase' }).run();
+    }
+  };
+
   return (
     <>
       <ToolbarButton
@@ -59,6 +69,14 @@ const BasicFormattingGroup = ({ editor }: Props) => {
         onPressedChange={() => editor.chain().focus().toggleSuperscript().run()}
       >
         <SuperscriptIcon className="h-4 w-4" />
+      </ToolbarButton>
+      <ToolbarButton
+        tooltip="Store bokstaver"
+        pressed={editor.isActive('textStyle', { textTransform: 'uppercase' })}
+        onPressedChange={toggleUppercase}
+        aria-label="Store bokstaver"
+      >
+        <CaseSensitive className="h-4 w-4" />
       </ToolbarButton>
     </>
   );

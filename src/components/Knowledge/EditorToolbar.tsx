@@ -13,6 +13,7 @@ import HistoryGroup from './Toolbar/HistoryGroup';
 import RevyAIGroup from './Toolbar/RevyAIGroup';
 import { Client } from '@/types/revio';
 import { ClientAuditAction } from '@/types/audit-actions';
+import FontSizeGroup from './Toolbar/FontSizeGroup';
 
 type EditorToolbarProps = {
   editor: Editor | null;
@@ -38,13 +39,15 @@ export const EditorToolbar = ({ editor, onImageUpload, isUploading, onOpenMediaL
     <div className="border-b border-input bg-transparent rounded-t-md p-2 flex flex-wrap items-center gap-1">
       <HistoryGroup editor={editor} />
       <Separator orientation="vertical" className="h-8 mx-1" />
+      <HeadingGroup editor={editor} />
+      <Separator orientation="vertical" className="h-8 mx-1" />
+      <FontSizeGroup editor={editor} />
+      <Separator orientation="vertical" className="h-8 mx-1" />
       <BasicFormattingGroup editor={editor} />
       <Separator orientation="vertical" className="h-8 mx-1" />
       <HighlightLinkGroup editor={editor} />
       <Separator orientation="vertical" className="h-8 mx-1" />
       <AlignmentGroup editor={editor} />
-      <Separator orientation="vertical" className="h-8 mx-1" />
-      <HeadingGroup editor={editor} />
       <Separator orientation="vertical" className="h-8 mx-1" />
       <ListGroup editor={editor} />
       <Separator orientation="vertical" className="h-8 mx-1" />
