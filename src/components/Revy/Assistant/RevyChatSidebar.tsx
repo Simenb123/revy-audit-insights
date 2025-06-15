@@ -3,7 +3,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, MessageSquare, Loader2 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { RevyChatSession } from '@/hooks/revy/useRevyChatSessions';
+import { RevyChatSession } from '@/types/revio';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { nb } from 'date-fns/locale';
@@ -63,3 +63,4 @@ export const RevyChatSidebar = ({
     </div>
   );
 };
+
