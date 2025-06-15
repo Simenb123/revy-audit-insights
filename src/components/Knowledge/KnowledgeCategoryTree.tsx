@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router-dom';
@@ -15,11 +14,13 @@ const fetchCategories = async () => {
   return data as KnowledgeCategory[];
 };
 
-const buildCategoryTree = (categories: KnowledgeCategory[]): (KnowledgeCategory & { children: KnowledgeCategory[] })[] => {
-  const categoryMap = new Map<string, KnowledgeCategory & { children: KnowledgeCategory[] }>();
+type CategoryTreeNode = KnowledgeCategory & { children: CategoryTreeNode[] };
+
+const buildCategoryTree = (categories: KnowledgeCategory[]): CategoryTreeNode[] => {
+  const categoryMap = new Map<string, CategoryTreeNode>();
   categories.forEach(cat => categoryMap.set(cat.id, { ...cat, children: [] }));
 
-  const tree: (KnowledgeCategory & { children: KnowledgeCategory[] })[] = [];
+  const tree: CategoryTreeNode[] = [];
   categories.forEach(cat => {
     if (cat.parent_category_id && categoryMap.has(cat.parent_category_id)) {
       const parent = categoryMap.get(cat.parent_category_id)!;
@@ -36,7 +37,7 @@ const buildCategoryTree = (categories: KnowledgeCategory[]): (KnowledgeCategory 
   return tree.sort((a,b) => a.display_order - b.display_order);
 };
 
-const CategoryTreeItem = ({ category }: { category: KnowledgeCategory & { children: KnowledgeCategory[] } }) => {
+const CategoryTreeItem = ({ category }: { category: CategoryTreeNode }) => {
   const { categoryId } = useParams<{ categoryId?: string }>();
   const isSelected = category.id === categoryId;
   const hasChildren = category.children && category.children.length > 0;
