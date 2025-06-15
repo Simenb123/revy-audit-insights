@@ -21,9 +21,9 @@ const CommunicationTab = ({ client }: CommunicationTabProps) => {
   const { presenceData: onlineUsers = [] } = useUserPresence();
   
   // Find or create client-specific room
-  const clientRoom = chatRooms.find(room => room.name.includes(client.companyName));
+  const clientRoom = chatRooms.find(room => room.name.includes(client.company_name));
   const roomId = clientRoom?.id || `client-${client.id}`;
-  const roomName = clientRoom?.name || `${client.companyName} - Kommunikasjon`;
+  const roomName = clientRoom?.name || `${client.company_name} - Kommunikasjon`;
 
   useEffect(() => {
     if (clientRoom) {
@@ -35,7 +35,7 @@ const CommunicationTab = ({ client }: CommunicationTabProps) => {
     // Create a new room for this client
     try {
       // This would typically call a create room mutation
-      console.log('Creating room for client:', client.companyName);
+      console.log('Creating room for client:', client.company_name);
       refetchRooms();
     } catch (error) {
       console.error('Failed to create room:', error);
@@ -48,7 +48,7 @@ const CommunicationTab = ({ client }: CommunicationTabProps) => {
         <div>
           <h2 className="text-2xl font-bold">Kommunikasjon</h2>
           <p className="text-muted-foreground">
-            Chat og samarbeid med teamet for {client.companyName}
+            Chat og samarbeid med teamet for {client.company_name}
           </p>
         </div>
         <div className="flex gap-2">

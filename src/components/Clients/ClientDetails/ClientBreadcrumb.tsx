@@ -22,7 +22,7 @@ const ClientBreadcrumb = ({ client }: ClientBreadcrumbProps) => {
         </BreadcrumbItem>
         <BreadcrumbSeparator />
         <BreadcrumbItem>
-          <BreadcrumbPage>{client.companyName}</BreadcrumbPage>
+          <BreadcrumbPage>{client.company_name}</BreadcrumbPage>
         </BreadcrumbItem>
       </BreadcrumbList>
     </Breadcrumb>

@@ -30,15 +30,15 @@ const ClientsTable = ({ clients, onRowSelect, selectedClientId }: ClientsTablePr
   };
 
   const getMunicipality = (client: Client) =>
-    client.municipalityName?.trim()?.length
-      ? client.municipalityName
-      : client.municipalityCode?.trim()?.length
-        ? client.municipalityCode
+    client.municipality_name?.trim()?.length
+      ? client.municipality_name
+      : client.municipality_code?.trim()?.length
+        ? client.municipality_code
         : "—";
 
   const handleRowClick = (client: Client) => {
     onRowSelect?.(client);
-    navigate(`/klienter/${client.orgNumber}`);
+    navigate(`/klienter/${client.org_number}`);
   };
 
   return (
@@ -72,7 +72,7 @@ const ClientsTable = ({ clients, onRowSelect, selectedClientId }: ClientsTablePr
                 <TableCell className="font-medium">
                   <div className="flex items-center gap-2">
                     <span>{(client.name && client.name.trim()) ? client.name : "—"}</span>
-                    <TestDataBadge isTestData={client.isTestData} />
+                    <TestDataBadge isTestData={client.is_test_data} />
                   </div>
                 </TableCell>
                 <TableCell>
@@ -89,16 +89,16 @@ const ClientsTable = ({ clients, onRowSelect, selectedClientId }: ClientsTablePr
                   </div>
                   <span className="text-xs text-gray-500">{client.progress ?? 0}%</span>
                 </TableCell>
-                <TableCell>{(client.orgNumber && client.orgNumber.trim()) ? client.orgNumber : "—"}</TableCell>
+                <TableCell>{(client.org_number && client.org_number.trim()) ? client.org_number : "—"}</TableCell>
                 <TableCell>
-                  {client.municipalityName?.trim() 
-                    ? client.municipalityName
-                    : client.municipalityCode?.trim()
-                      ? client.municipalityCode 
+                  {client.municipality_name?.trim() 
+                    ? client.municipality_name
+                    : client.municipality_code?.trim()
+                      ? client.municipality_code 
                       : "—"}
                 </TableCell>
                 <TableCell>
-                  <EquityBadge equityCapital={client.equityCapital} shareCapital={client.shareCapital} />
+                  <EquityBadge equityCapital={client.equity_capital} shareCapital={client.share_capital} />
                 </TableCell>
                 <TableCell>{client.department?.trim() || "—"}</TableCell>
               </TableRow>

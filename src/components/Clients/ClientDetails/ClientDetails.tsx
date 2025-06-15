@@ -37,7 +37,7 @@ const ClientDetails = ({ client }: ClientDetailsProps) => {
                 </div>
                 <div>
                   <h4 className="text-sm font-medium text-gray-500">Organisasjonsnummer</h4>
-                  <p className="text-lg">{client.orgNumber}</p>
+                  <p className="text-lg">{client.org_number}</p>
                 </div>
               </div>
             </CardContent>

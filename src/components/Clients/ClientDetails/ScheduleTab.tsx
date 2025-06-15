@@ -130,7 +130,7 @@ const ScheduleTab = ({ client }: ScheduleTabProps) => {
         <div>
           <h2 className="text-2xl font-bold">Tidsplan & Milepæler</h2>
           <p className="text-muted-foreground">
-            Revisjonsfremdrift og viktige datoer for {client.companyName}
+            Revisjonsfremdrift og viktige datoer for {client.company_name}
           </p>
         </div>
         <div className="flex gap-2">

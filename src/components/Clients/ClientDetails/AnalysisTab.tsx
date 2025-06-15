@@ -23,7 +23,7 @@ const AnalysisTab = ({ client }: AnalysisTabProps) => {
         <div>
           <h2 className="text-2xl font-bold">AI-Drevet Analyse</h2>
           <p className="text-muted-foreground">
-            Avansert analyse og intelligente innsikter for {client.companyName}
+            Avansert analyse og intelligente innsikter for {client.company_name}
           </p>
         </div>
         <div className="flex gap-2">

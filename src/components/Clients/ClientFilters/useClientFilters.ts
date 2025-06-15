@@ -1,4 +1,3 @@
-
 import { useState, useMemo } from 'react';
 import { Client } from '@/types/revio';
 
@@ -30,35 +29,35 @@ export function useClientFilters(clients: Client[]) {
     });
     
     // Count test clients in input
-    const testClientsInput = clients.filter(c => c.isTestData);
+    const testClientsInput = clients.filter(c => c.is_test_data);
     console.log('Test clients in input to filter:', testClientsInput.length);
     if (testClientsInput.length > 0) {
-      console.log('Test clients details:', testClientsInput.map(c => ({ name: c.name, isTestData: c.isTestData })));
+      console.log('Test clients details:', testClientsInput.map(c => ({ name: c.name, isTestData: c.is_test_data })));
     }
     
     const result = clients.filter(client => {
       // Search filter
       const matchesSearch = !searchTerm || 
         client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        client.companyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        client.orgNumber.includes(searchTerm);
+        client.company_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        client.org_number.includes(searchTerm);
 
       // Department filter
       const matchesDepartment = departmentFilter === 'all' || 
         client.department === departmentFilter;
 
       // Test data filter - FIXED: Now correctly shows/hides test data based on toggle
-      const matchesTestDataPreference = showTestData ? true : !client.isTestData;
+      const matchesTestDataPreference = showTestData ? true : !client.is_test_data;
 
       const shouldShow = matchesSearch && matchesDepartment && matchesTestDataPreference;
       
-      if (client.isTestData) {
+      if (client.is_test_data) {
         console.log(`Test client ${client.name}:`, {
           matchesSearch,
           matchesDepartment,
           matchesTestDataPreference,
           shouldShow,
-          isTestData: client.isTestData,
+          isTestData: client.is_test_data,
           showTestData
         });
       }
@@ -66,7 +65,7 @@ export function useClientFilters(clients: Client[]) {
       return shouldShow;
     });
 
-    const testClientsInResult = result.filter(c => c.isTestData);
+    const testClientsInResult = result.filter(c => c.is_test_data);
     console.log('=== FILTER RESULT ===');
     console.log('Filtered clients result:', {
       total: clients.length,

@@ -36,7 +36,7 @@ const TeamTab = ({ client }: TeamTabProps) => {
         <div>
           <h2 className="text-2xl font-bold">Team Management</h2>
           <p className="text-muted-foreground">
-            Administrer team og medlemmer for {client.companyName}
+            Administrer team og medlemmer for {client.company_name}
           </p>
         </div>
         <Button onClick={() => setIsCreateDialogOpen(true)}>

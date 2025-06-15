@@ -1,15 +1,14 @@
-
 import { Badge } from "@/components/ui/badge";
 import { Building2, Calendar, MapPin, Globe, Phone, Mail } from "lucide-react";
 
 interface ClientHeaderProps {
   client: {
-    companyName: string;
-    orgNumber: string;
+    company_name: string;
+    org_number: string;
     status: string;
     industry?: string;
     city?: string;
-    registrationDate?: string;
+    registration_date?: string;
     phone?: string;
     email?: string;
     homepage?: string;
@@ -50,7 +49,7 @@ const ClientHeader = ({ client }: ClientHeaderProps) => {
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2 text-lg text-gray-600">
                 <span className="font-medium">Org.nr:</span>
-                <span className="font-mono bg-gray-100 px-3 py-1 rounded-md">{client.orgNumber}</span>
+                <span className="font-mono bg-gray-100 px-3 py-1 rounded-md">{client.org_number}</span>
               </div>
             </div>
             <Badge 
@@ -76,11 +75,11 @@ const ClientHeader = ({ client }: ClientHeaderProps) => {
                     <span className="font-medium">{client.industry}</span>
                   </div>
                 )}
-                {client.registrationDate && (
+                {client.registration_date && (
                   <div className="flex items-center gap-2 text-gray-600">
                     <Calendar className="w-4 h-4 text-gray-400" />
                     <span className="w-16 text-gray-500">Reg.dato:</span>
-                    <span>{client.registrationDate}</span>
+                    <span>{client.registration_date}</span>
                   </div>
                 )}
               </div>
