@@ -9,8 +9,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Client } from '@/types/revio';
 import { ClientAuditAction } from '@/types/audit-actions';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import VersionDiffDialog from './VersionDiffDialog';
+import { Checkbox } from "@/components/ui/checkbox";
+import { useToast } from '@/hooks/use-toast';
 
 interface VersionHistoryProps {
   client: Client;
@@ -23,6 +24,8 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({ client, action, onResto
   const { mutate: restoreVersion, isPending: isRestoring } = useRestoreDocumentVersion(onRestore);
   const [isDiffOpen, setIsDiffOpen] = useState(false);
   const [versionsToCompare, setVersionsToCompare] = useState<{ older: DocumentVersion | null; newer: DocumentVersion | null }>({ older: null, newer: null });
+  const [selectedVersions, setSelectedVersions] = useState<DocumentVersion[]>([]);
+  const { toast } = useToast();
 
   const handleRestore = (version: DocumentVersion) => {
     restoreVersion({ version, client, action });
@@ -31,7 +34,31 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({ client, action, onResto
   const handleOpenDiff = (olderVersion: DocumentVersion, newerVersion: DocumentVersion) => {
     setVersionsToCompare({ older: olderVersion, newer: newerVersion });
     setIsDiffOpen(true);
+    setSelectedVersions([]); // Reset selection
   };
+
+  const handleVersionSelect = (version: DocumentVersion, isChecked: boolean) => {
+    if (isChecked) {
+      setSelectedVersions(currentSelected => {
+        if (currentSelected.length >= 2) {
+          toast({
+            description: "Du kan bare sammenligne to versjoner om gangen.",
+          });
+          return currentSelected;
+        }
+        return [...currentSelected, version];
+      });
+    } else {
+      setSelectedVersions(currentSelected => currentSelected.filter(v => v.id !== version.id));
+    }
+  };
+
+  const handleCompareSelected = () => {
+    if (selectedVersions.length !== 2) return;
+    const sorted = [...selectedVersions].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+    handleOpenDiff(sorted[0], sorted[1]);
+  };
+
 
   if (isLoading) {
     return (
@@ -59,53 +86,66 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({ client, action, onResto
       {versions && versions.length > 0 ? (
         <>
           <ul className="space-y-2 max-h-48 overflow-y-auto pr-2 border rounded-md p-2 bg-muted/20">
-            {versions.map((version, index) => (
-              <li key={version.id} className="flex items-center justify-between gap-2 p-2 rounded-md border bg-background shadow-sm">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 font-medium text-sm truncate">
-                    {version.change_source === 'ai' ? <Bot size={14} className="text-purple-600 flex-shrink-0" /> : <User size={14} className="text-blue-600 flex-shrink-0" />}
-                    <span className="truncate" title={version.version_name}>{version.version_name}</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                    <Clock size={12} />
-                    {format(new Date(version.created_at), 'dd.MM.yyyy HH:mm:ss')}
-                  </p>
-                </div>
-                <div className="flex items-center gap-1 flex-shrink-0">
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleOpenDiff(versions[index + 1], version)}
-                            disabled={index >= versions.length - 1}
-                            className="p-2 h-auto"
-                        >
-                            <FileDiff size={16} />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>{index >= versions.length - 1 ? "Kan ikke sammenlignes med en eldre versjon" : "Sammenlign med den forrige versjonen"}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+            {versions.map((version) => {
+              const isSelected = selectedVersions.some(v => v.id === version.id);
+              const canSelect = selectedVersions.length < 2 || isSelected;
 
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    onClick={() => handleRestore(version)}
-                    disabled={isRestoring}
-                  >
-                    {isRestoring ? <Loader2 size={16} className="animate-spin" /> : 'Gjenopprett'}
-                  </Button>
-                </div>
-              </li>
-            ))}
+              return (
+                <li key={version.id} className="flex items-center justify-between gap-2 p-2 rounded-md border bg-background shadow-sm">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <Checkbox
+                      id={`version-${version.id}`}
+                      checked={isSelected}
+                      onCheckedChange={(checked) => handleVersionSelect(version, !!checked)}
+                      disabled={!canSelect}
+                      aria-label={`Velg versjon ${version.version_name}`}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 font-medium text-sm truncate">
+                        {version.change_source === 'ai' ? <Bot size={14} className="text-purple-600 flex-shrink-0" /> : <User size={14} className="text-blue-600 flex-shrink-0" />}
+                        <span className="truncate" title={version.version_name}>{version.version_name}</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                        <Clock size={12} />
+                        {format(new Date(version.created_at), 'dd.MM.yyyy HH:mm:ss')}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => handleRestore(version)}
+                      disabled={isRestoring}
+                    >
+                      {isRestoring ? <Loader2 size={16} className="animate-spin" /> : 'Gjenopprett'}
+                    </Button>
+                  </div>
+                </li>
+              )
+            })}
           </ul>
+
+          {versions && versions.length > 1 && (
+            <div className="mt-4 flex justify-end">
+              <Button
+                onClick={handleCompareSelected}
+                disabled={selectedVersions.length !== 2}
+              >
+                <FileDiff size={16} className="mr-2" />
+                Sammenlign ({selectedVersions.length}/2)
+              </Button>
+            </div>
+          )}
+
           <VersionDiffDialog
             isOpen={isDiffOpen}
-            onOpenChange={setIsDiffOpen}
+            onOpenChange={(isOpen) => {
+                if (!isOpen) {
+                    setVersionsToCompare({ older: null, newer: null });
+                }
+                setIsDiffOpen(isOpen)
+            }}
             olderVersion={versionsToCompare.older}
             newerVersion={versionsToCompare.newer}
           />
