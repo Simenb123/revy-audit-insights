@@ -1,7 +1,6 @@
-
 import React, { useRef } from 'react';
 import { Editor } from '@tiptap/react';
-import { Bold, Italic, Strikethrough, Heading2, Heading3, List, ListOrdered, Quote, Image as ImageIcon, Table as TableIcon } from 'lucide-react';
+import { Bold, Italic, Strikethrough, Heading2, Heading3, List, ListOrdered, Quote, Image as ImageIcon, Table as TableIcon, Underline } from 'lucide-react';
 import { Toggle } from '@/components/ui/toggle';
 import { Separator } from '@/components/ui/separator';
 import {
@@ -68,6 +67,22 @@ export const EditorToolbar = ({ editor, onImageUpload, isUploading, onOpenMediaL
       >
         <Strikethrough className="h-4 w-4" />
       </Toggle>
+      <Toggle
+        size="sm"
+        pressed={editor.isActive('underline')}
+        onPressedChange={() => editor.chain().focus().toggleUnderline().run()}
+        disabled={!editor.can().toggleUnderline()}
+      >
+        <Underline className="h-4 w-4" />
+      </Toggle>
+      <Separator orientation="vertical" className="h-8 mx-1" />
+      <input
+        type="color"
+        onInput={(event: React.ChangeEvent<HTMLInputElement>) => editor.chain().focus().setColor(event.target.value).run()}
+        value={editor.getAttributes('textStyle').color || '#000000'}
+        className="w-8 h-8 p-1 bg-transparent border-0 rounded-md cursor-pointer focus:ring-0 focus:outline-none"
+        title="Tekstfarge"
+      />
       <Separator orientation="vertical" className="h-8 mx-1" />
       <Toggle
         size="sm"

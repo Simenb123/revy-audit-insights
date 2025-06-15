@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -92,6 +93,9 @@
 
 @layer base {
   /* Custom styles for Tiptap editor content */
+  .prose u {
+    @apply underline;
+  }
   .prose table {
     @apply w-full my-4 border-collapse border border-border;
   }

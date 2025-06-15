@@ -1,7 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
+import Underline from '@tiptap/extension-underline';
+import { Color } from '@tiptap/extension-color';
+import TextStyle from '@tiptap/extension-text-style';
 import Table from '@tiptap/extension-table';
 import TableCell from '@tiptap/extension-table-cell';
 import TableHeader from '@tiptap/extension-table-header';
@@ -28,6 +32,9 @@ const RichTextEditor = ({ content, onChange }: RichTextEditorProps) => {
           levels: [2, 3],
         },
       }),
+      Underline,
+      TextStyle,
+      Color,
       Image,
       Table.configure({
         resizable: true,
