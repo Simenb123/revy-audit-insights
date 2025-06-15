@@ -36,7 +36,15 @@ const RevyAIGroup = ({ editor, client, action }: Props) => {
         'employee'
       );
       
-      editor.chain().focus().setContent(response).run();
+      // Simulate streaming into the editor by progressively adding content
+      editor.chain().focus().setContent('').run();
+      const chunks = response.match(/.{1,10}/g) || []; // Split into small chunks
+      
+      for (const chunk of chunks) {
+          editor.chain().focus().insertContent(chunk).run();
+          await new Promise(r => setTimeout(r, 20)); // A short delay for effect
+      }
+      
       toast({ title: "Revy hjalp til!", description: "Innholdet i editoren ble oppdatert." });
 
     } catch (error) {

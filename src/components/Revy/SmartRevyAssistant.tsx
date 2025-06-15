@@ -148,14 +148,27 @@ Noen eksempler på hva du kan spørre meg om:
         sessionId
       );
       
-      const revyResponse: RevyMessage = {
-        id: (Date.now() + 1).toString(),
-        content: responseText,
+      // Simulate streaming response
+      const revyMessageId = (Date.now() + 1).toString();
+      const initialRevyResponse: RevyMessage = {
+        id: revyMessageId,
+        content: '',
         timestamp: new Date().toISOString(),
         sender: 'revy'
       };
       
-      setMessages(prev => [...prev, revyResponse]);
+      setMessages(prev => [...prev, initialRevyResponse]);
+
+      const words = responseText.split(' ');
+      for (let i = 0; i < words.length; i++) {
+        // A short delay to simulate typing
+        await new Promise(r => setTimeout(r, 50));
+        setMessages(prev => prev.map(msg => 
+          msg.id === revyMessageId 
+            ? { ...msg, content: words.slice(0, i + 1).join(' ') }
+            : msg
+        ));
+      }
     } catch (error) {
       console.error('Error getting AI response:', error);
       
