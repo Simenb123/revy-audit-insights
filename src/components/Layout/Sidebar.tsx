@@ -8,7 +8,6 @@ import {
   SidebarTrigger,
   SidebarRail
 } from '@/components/ui/sidebar';
-import SidebarNav from './SidebarNav';
 
 const Sidebar = () => {
   const { state } = useSidebar();
@@ -42,7 +41,7 @@ const Sidebar = () => {
         )}
       </SidebarHeader>
       <SidebarContent className="flex-1 p-0">
-        <SidebarNav collapsed={isCollapsed} />
+        {/* Main navigation removed as requested */}
       </SidebarContent>
     </ShadcnSidebar>
   );
