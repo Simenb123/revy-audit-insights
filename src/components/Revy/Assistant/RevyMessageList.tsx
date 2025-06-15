@@ -21,7 +21,7 @@ export const RevyMessageList = ({ messages, isTyping, isEmbedded = false }: Revy
     : "bg-white border border-gray-200 p-3 rounded-2xl rounded-bl-none max-w-[85%] shadow-sm";
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50/50">
+    <div className="h-full overflow-y-auto p-4 space-y-4 bg-gray-50/50">
       {messages.map((msg) => (
         <div 
           key={msg.id} 

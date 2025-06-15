@@ -51,7 +51,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
           marginTop: '4rem'
         }}
       >
-        <div className="relative z-20 h-full">
+        <div className="relative z-20 h-full flex-shrink-0">
           <Sidebar />
         </div>
         
