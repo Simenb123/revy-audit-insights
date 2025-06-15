@@ -1,4 +1,3 @@
-
 export type ArticleStatus = 'draft' | 'published' | 'archived';
 
 export interface KnowledgeCategory {
@@ -44,4 +43,15 @@ export interface KnowledgeReadingHistory {
   article_id: string;
   read_at: string;
   article?: KnowledgeArticle;
+}
+
+export interface ArticleMedia {
+  id: string;
+  user_id: string;
+  file_path: string;
+  file_name: string;
+  file_size: number;
+  mime_type: string;
+  alt_text?: string;
+  created_at: string;
 }

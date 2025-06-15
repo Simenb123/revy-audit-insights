@@ -1,19 +1,44 @@
 
-import React from 'react';
+import React, { useRef } from 'react';
 import { useEditor, EditorContent, Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import { Bold, Italic, Strikethrough, Heading2, Heading3, List, ListOrdered, Quote } from 'lucide-react';
+import Image from '@tiptap/extension-image';
+import { Bold, Italic, Strikethrough, Heading2, Heading3, List, ListOrdered, Quote, Image as ImageIcon } from 'lucide-react';
 import { Toggle } from '@/components/ui/toggle';
 import { Separator } from '@/components/ui/separator';
+import { useArticleMedia } from '@/hooks/knowledge/useArticleMedia';
 
 type ToolbarProps = {
   editor: Editor | null;
+  onImageUpload: (file: File) => Promise<string | undefined>;
+  isUploading: boolean;
 };
 
-const Toolbar = ({ editor }: ToolbarProps) => {
+const Toolbar = ({ editor, onImageUpload, isUploading }: ToolbarProps) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   if (!editor) {
     return null;
   }
+
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      try {
+        const url = await onImageUpload(file);
+        if (url) {
+          editor.chain().focus().setImage({ src: url }).run();
+        }
+      } catch (error) {
+        // Error is handled by the mutation's onError toast
+        console.error("Upload failed in component:", error);
+      }
+    }
+  };
+
+  const triggerFileInput = () => {
+    fileInputRef.current?.click();
+  };
 
   return (
     <div className="border border-input bg-transparent rounded-t-md p-2 flex flex-wrap items-center gap-1">
@@ -75,6 +100,21 @@ const Toolbar = ({ editor }: ToolbarProps) => {
       >
         <Quote className="h-4 w-4" />
       </Toggle>
+      <Separator orientation="vertical" className="h-8 mx-1" />
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleImageUpload}
+        className="hidden"
+        accept="image/jpeg,image/png,image/gif,image/webp"
+      />
+      <Toggle
+        size="sm"
+        onPressedChange={triggerFileInput}
+        disabled={isUploading}
+      >
+        <ImageIcon className="h-4 w-4" />
+      </Toggle>
     </div>
   );
 };
@@ -86,6 +126,8 @@ type RichTextEditorProps = {
 };
 
 const RichTextEditor = ({ content, onChange }: RichTextEditorProps) => {
+  const { uploadImage, isUploading } = useArticleMedia();
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -93,6 +135,7 @@ const RichTextEditor = ({ content, onChange }: RichTextEditorProps) => {
           levels: [2, 3],
         },
       }),
+      Image,
     ],
     content: content,
     onUpdate: ({ editor }) => {
@@ -107,7 +150,7 @@ const RichTextEditor = ({ content, onChange }: RichTextEditorProps) => {
 
   return (
     <div className="border border-input rounded-md">
-      <Toolbar editor={editor} />
+      <Toolbar editor={editor} onImageUpload={uploadImage} isUploading={isUploading} />
       <EditorContent editor={editor} />
     </div>
   );

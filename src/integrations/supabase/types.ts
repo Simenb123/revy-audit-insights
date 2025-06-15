@@ -295,6 +295,39 @@ export type Database = {
           },
         ]
       }
+      article_media: {
+        Row: {
+          alt_text: string | null
+          created_at: string
+          file_name: string
+          file_path: string
+          file_size: number
+          id: string
+          mime_type: string
+          user_id: string
+        }
+        Insert: {
+          alt_text?: string | null
+          created_at?: string
+          file_name: string
+          file_path: string
+          file_size: number
+          id?: string
+          mime_type: string
+          user_id: string
+        }
+        Update: {
+          alt_text?: string | null
+          created_at?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number
+          id?: string
+          mime_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       audit_action_templates: {
         Row: {
           action_type: Database["public"]["Enums"]["action_type"]
