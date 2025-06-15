@@ -15,6 +15,7 @@ import Highlight from '@tiptap/extension-highlight';
 import Link from '@tiptap/extension-link';
 import Subscript from '@tiptap/extension-subscript';
 import Superscript from '@tiptap/extension-superscript';
+import CharacterCount from '@tiptap/extension-character-count';
 import { Image as ImageIcon } from 'lucide-react';
 import { useArticleMedia } from '@/hooks/knowledge/useArticleMedia';
 import { MediaLibraryDialog } from './MediaLibraryDialog';
@@ -74,6 +75,7 @@ const RichTextEditor = ({ content, onChange }: RichTextEditorProps) => {
       }),
       CustomSubscript,
       CustomSuperscript,
+      CharacterCount,
     ],
     content: content,
     onUpdate: ({ editor }) => {
@@ -159,6 +161,11 @@ const RichTextEditor = ({ content, onChange }: RichTextEditorProps) => {
         onOpenMediaLibrary={() => setIsMediaLibraryOpen(true)}
       />
       <EditorContent editor={editor} />
+      {editor && (
+        <div className="text-xs text-muted-foreground p-2 border-t border-input text-right">
+          {editor.storage.characterCount.words()} ord
+        </div>
+      )}
       {isDragging && (
         <div className="absolute inset-0 bg-gray-900/50 flex items-center justify-center pointer-events-none rounded-b-md z-10">
           <div className="text-center text-white p-6 bg-black/70 rounded-xl shadow-lg">

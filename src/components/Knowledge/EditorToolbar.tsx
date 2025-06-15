@@ -9,6 +9,7 @@ import AlignmentGroup from './Toolbar/AlignmentGroup';
 import HeadingGroup from './Toolbar/HeadingGroup';
 import ListGroup from './Toolbar/ListGroup';
 import InsertGroup from './Toolbar/InsertGroup';
+import HistoryGroup from './Toolbar/HistoryGroup';
 
 type EditorToolbarProps = {
   editor: Editor | null;
@@ -25,6 +26,8 @@ export const EditorToolbar = ({ editor, onImageUpload, isUploading, onOpenMediaL
 
   return (
     <div className="border-b border-input bg-transparent rounded-t-md p-2 flex flex-wrap items-center gap-1">
+      <HistoryGroup editor={editor} />
+      <Separator orientation="vertical" className="h-8 mx-1" />
       <BasicFormattingGroup editor={editor} />
       <Separator orientation="vertical" className="h-8 mx-1" />
       <HighlightLinkGroup editor={editor} />
