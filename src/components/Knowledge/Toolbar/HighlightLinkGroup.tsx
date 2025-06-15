@@ -27,11 +27,11 @@ const HighlightLinkGroup = ({ editor }: Props) => {
   }, [editor]);
 
   return (
-    <>
+    <TooltipProvider delayDuration={100}>
        <ToolbarButton
         tooltip="Uthev (Ctrl+Shift+H)"
         pressed={editor.isActive('highlight')}
-        onPressedChange={() => editor.chain().focus().toggleHighlight().run()}
+        onPressedChange={() => editor.chain().focus().toggleHighlight({ color: '#FFFFA0' }).run()}
       >
         <Highlighter className="h-4 w-4" />
       </ToolbarButton>
@@ -42,24 +42,37 @@ const HighlightLinkGroup = ({ editor }: Props) => {
       >
         <LinkIcon className="h-4 w-4" />
       </ToolbarButton>
-      <TooltipProvider delayDuration={100}>
-        <Tooltip>
-          <TooltipTrigger asChild>
-             <input
-              type="color"
-              onInput={(event: React.ChangeEvent<HTMLInputElement>) => editor.chain().focus().setColor(event.target.value).run()}
-              value={editor.getAttributes('textStyle').color || '#000000'}
-              className="w-9 h-9 p-1 bg-transparent border border-input rounded-md cursor-pointer focus:ring-0 focus:outline-none"
-              title="Tekstfarge"
-              aria-label="Tekstfarge"
-            />
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Tekstfarge</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-    </>
+      <Tooltip>
+        <TooltipTrigger asChild>
+           <input
+            type="color"
+            onInput={(event: React.ChangeEvent<HTMLInputElement>) => editor.chain().focus().setColor(event.target.value).run()}
+            value={editor.getAttributes('textStyle').color || '#000000'}
+            className="w-9 h-9 p-1 bg-transparent border border-input rounded-md cursor-pointer focus:ring-0 focus:outline-none"
+            title="Tekstfarge"
+            aria-label="Tekstfarge"
+          />
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>Tekstfarge</p>
+        </TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+            <input
+            type="color"
+            onInput={(event: React.ChangeEvent<HTMLInputElement>) => editor.chain().focus().toggleHighlight({ color: event.target.value }).run()}
+            value={editor.getAttributes('highlight').color || '#ffffff'}
+            className="w-9 h-9 p-1 bg-transparent border border-input rounded-md cursor-pointer focus:ring-0 focus:outline-none"
+            title="Uthevingsfarge"
+            aria-label="Uthevingsfarge"
+          />
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>Uthevingsfarge</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 };
 

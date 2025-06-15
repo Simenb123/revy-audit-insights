@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -79,7 +78,7 @@ const RichTextEditor = ({ content, onChange, context = 'knowledge', contextData 
       TextAlign.configure({
         types: ['heading', 'paragraph'],
       }),
-      Highlight,
+      Highlight.configure({ multicolor: true }),
       Link.configure({
         openOnClick: false,
         autolink: true,
