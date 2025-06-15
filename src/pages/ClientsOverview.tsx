@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useRevyContext } from '@/components/RevyContext/RevyContextProvider';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,7 +6,6 @@ import ClientStatsGrid from '@/components/Clients/ClientStats/ClientStatsGrid';
 import ClientsTable from '@/components/Clients/ClientsTable/ClientsTable';
 import AnnouncementsList from '@/components/Clients/Announcements/AnnouncementsList';
 import ClientsHeader from '@/components/Clients/ClientsHeader/ClientsHeader';
-import ClientDetails from '@/components/Clients/ClientDetails/ClientDetails';
 import { useClientData } from '@/components/Clients/ClientFetcher/useClientData';
 import { useClientFilters } from '@/components/Clients/ClientFilters/useClientFilters';
 import { useBrregRefresh } from '@/hooks/useBrregRefresh';
@@ -34,11 +32,6 @@ const ClientsOverview = () => {
     showTestData,
     setShowTestData
   } = useClientFilters(clients);
-
-  // Get the selected client
-  const selectedClient = selectedClientId 
-    ? clients.find(client => client.id === selectedClientId) 
-    : clients.length > 0 ? clients[0] : null;
 
   // Handle row selection
   const handleRowSelect = (client: Client) => {
@@ -94,13 +87,6 @@ const ClientsOverview = () => {
       
       {/* Main Content */}
       <div className="p-4">
-        {/* Client Details - shown when a client is selected */}
-        {selectedClient && (
-          <div className="mb-6">
-            <ClientDetails client={selectedClient} />
-          </div>
-        )}
-        
         {/* Stats Grid */}
         <div className="mb-6">
           <ClientStatsGrid clients={clients} announcements={announcements} />
