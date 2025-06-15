@@ -360,8 +360,8 @@ const generateDeadlines = (phase: AuditPhase, actions: any[], client: Client): a
     });
   
   // Add phase-specific deadlines
-  if (client.yearEndDate) {
-    const yearEnd = new Date(client.yearEndDate);
+  if (client.year_end_date) {
+    const yearEnd = new Date(client.year_end_date);
     deadlines.push({
       task: 'Ferdigstill revisjon',
       date: new Date(yearEnd.getTime() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 90 days after year end
