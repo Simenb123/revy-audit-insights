@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -153,7 +152,7 @@ const RichTextEditor = ({ content, onChange }: RichTextEditorProps) => {
   };
 
   return (
-    <div className="border border-input rounded-md relative">
+    <div className={`border border-input rounded-md relative transition-all ${isDragging ? 'border-2 border-dashed border-primary ring-2 ring-primary ring-offset-2 ring-offset-background' : ''}`}>
       <EditorToolbar 
         editor={editor} 
         onImageUpload={uploadImage} 

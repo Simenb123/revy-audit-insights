@@ -1,4 +1,3 @@
-
 import React, { useCallback } from 'react';
 import { Editor } from '@tiptap/react';
 import { Highlighter, Link as LinkIcon } from 'lucide-react';
@@ -49,7 +48,7 @@ const HighlightLinkGroup = ({ editor }: Props) => {
               type="color"
               onInput={(event: React.ChangeEvent<HTMLInputElement>) => editor.chain().focus().setColor(event.target.value).run()}
               value={editor.getAttributes('textStyle').color || '#000000'}
-              className="w-8 h-8 p-1 bg-transparent border border-input rounded-md cursor-pointer focus:ring-0 focus:outline-none"
+              className="w-9 h-9 p-1 bg-transparent border border-input rounded-md cursor-pointer focus:ring-0 focus:outline-none"
               title="Tekstfarge"
             />
           </TooltipTrigger>

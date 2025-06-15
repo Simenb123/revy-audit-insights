@@ -1,7 +1,6 @@
-
 import React, { useRef } from 'react';
 import { Editor } from '@tiptap/react';
-import { Image as ImageIcon, Table as TableIcon, Minus } from 'lucide-react';
+import { Image as ImageIcon, Table as TableIcon, Minus, Loader2 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -108,7 +107,11 @@ const InsertGroup = ({ editor, onImageUpload, isUploading, onOpenMediaLibrary }:
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="w-9 h-9 p-0" disabled={isUploading}>
-                  <ImageIcon className="h-4 w-4" />
+                  {isUploading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <ImageIcon className="h-4 w-4" />
+                  )}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start">
