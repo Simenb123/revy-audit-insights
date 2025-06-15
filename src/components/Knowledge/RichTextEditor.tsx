@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -102,8 +103,9 @@ const RichTextEditor = ({ content, onChange }: RichTextEditorProps) => {
           try {
             const url = await uploadImage(file);
             if (url && editor) {
+              const alt = window.prompt("Alternativ tekst (for skjermlesere)", file.name);
               const position = coordinates ? coordinates.pos : editor.state.selection.from;
-              editor.chain().focus().insertContentAt(position, { type: 'image', attrs: { src: url } }).run();
+              editor.chain().focus().insertContentAt(position, { type: 'image', attrs: { src: url, alt: alt || '' } }).run();
             }
           } catch (error) {
             console.error("Upload failed on drop:", error);
@@ -147,7 +149,8 @@ const RichTextEditor = ({ content, onChange }: RichTextEditorProps) => {
 
   const handleSelectImageFromLibrary = (url: string) => {
     if (editor) {
-      editor.chain().focus().setImage({ src: url }).run();
+      const alt = window.prompt("Alternativ tekst (for skjermlesere)", "");
+      editor.chain().focus().setImage({ src: url, alt: alt || '' }).run();
     }
   };
 

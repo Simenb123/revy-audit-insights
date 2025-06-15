@@ -12,21 +12,21 @@ const AlignmentGroup = ({ editor }: Props) => {
   return (
     <>
        <ToolbarButton
-        tooltip="Align Left"
+        tooltip="Venstrejuster"
         pressed={editor.isActive({ textAlign: 'left' })}
         onPressedChange={() => editor.chain().focus().setTextAlign('left').run()}
       >
         <AlignLeft className="h-4 w-4" />
       </ToolbarButton>
       <ToolbarButton
-        tooltip="Align Center"
+        tooltip="Midtstill"
         pressed={editor.isActive({ textAlign: 'center' })}
         onPressedChange={() => editor.chain().focus().setTextAlign('center').run()}
       >
         <AlignCenter className="h-4 w-4" />
       </ToolbarButton>
       <ToolbarButton
-        tooltip="Align Right"
+        tooltip="Høyrejuster"
         pressed={editor.isActive({ textAlign: 'right' })}
         onPressedChange={() => editor.chain().focus().setTextAlign('right').run()}
       >

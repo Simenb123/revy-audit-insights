@@ -12,21 +12,21 @@ const ListGroup = ({ editor }: Props) => {
   return (
     <>
        <ToolbarButton
-        tooltip="Bullet List"
+        tooltip="Punktliste (Ctrl+Shift+8)"
         pressed={editor.isActive('bulletList')}
         onPressedChange={() => editor.chain().focus().toggleBulletList().run()}
       >
         <List className="h-4 w-4" />
       </ToolbarButton>
        <ToolbarButton
-        tooltip="Ordered List"
+        tooltip="Nummerert liste (Ctrl+Shift+7)"
         pressed={editor.isActive('orderedList')}
         onPressedChange={() => editor.chain().focus().toggleOrderedList().run()}
       >
         <ListOrdered className="h-4 w-4" />
       </ToolbarButton>
        <ToolbarButton
-        tooltip="Blockquote"
+        tooltip="Sitatblokk (Ctrl+Shift+B)"
         pressed={editor.isActive('blockquote')}
         onPressedChange={() => editor.chain().focus().toggleBlockquote().run()}
       >

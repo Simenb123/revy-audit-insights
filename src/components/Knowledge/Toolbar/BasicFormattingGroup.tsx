@@ -12,49 +12,49 @@ const BasicFormattingGroup = ({ editor }: Props) => {
   return (
     <>
       <ToolbarButton
-        tooltip="Bold"
+        tooltip="Fet (Ctrl+B)"
         pressed={editor.isActive('bold')}
         onPressedChange={() => editor.chain().focus().toggleBold().run()}
       >
         <Bold className="h-4 w-4" />
       </ToolbarButton>
       <ToolbarButton
-        tooltip="Italic"
+        tooltip="Kursiv (Ctrl+I)"
         pressed={editor.isActive('italic')}
         onPressedChange={() => editor.chain().focus().toggleItalic().run()}
       >
         <Italic className="h-4 w-4" />
       </ToolbarButton>
       <ToolbarButton
-        tooltip="Strikethrough"
+        tooltip="Gjennomstreking (Ctrl+Shift+X)"
         pressed={editor.isActive('strike')}
         onPressedChange={() => editor.chain().focus().toggleStrike().run()}
       >
         <Strikethrough className="h-4 w-4" />
       </ToolbarButton>
       <ToolbarButton
-        tooltip="Underline"
+        tooltip="Understreking (Ctrl+U)"
         pressed={editor.isActive('underline')}
         onPressedChange={() => editor.chain().focus().toggleUnderline().run()}
       >
         <Underline className="h-4 w-4" />
       </ToolbarButton>
       <ToolbarButton
-        tooltip="Code"
+        tooltip="Kode (Ctrl+E)"
         pressed={editor.isActive('code')}
         onPressedChange={() => editor.chain().focus().toggleCode().run()}
       >
         <Code className="h-4 w-4" />
       </ToolbarButton>
        <ToolbarButton
-        tooltip="Subscript"
+        tooltip="Senket skrift (Ctrl+,)"
         pressed={editor.isActive('subscript')}
         onPressedChange={() => editor.chain().focus().toggleSubscript().run()}
       >
         <SubscriptIcon className="h-4 w-4" />
       </ToolbarButton>
        <ToolbarButton
-        tooltip="Superscript"
+        tooltip="Hevet skrift (Ctrl+.)"
         pressed={editor.isActive('superscript')}
         onPressedChange={() => editor.chain().focus().toggleSuperscript().run()}
       >

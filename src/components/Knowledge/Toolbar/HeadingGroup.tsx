@@ -12,14 +12,14 @@ const HeadingGroup = ({ editor }: Props) => {
   return (
     <>
       <ToolbarButton
-        tooltip="Heading 2"
+        tooltip="Overskrift 2 (Ctrl+Alt+2)"
         pressed={editor.isActive('heading', { level: 2 })}
         onPressedChange={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
       >
         <Heading2 className="h-4 w-4" />
       </ToolbarButton>
       <ToolbarButton
-        tooltip="Heading 3"
+        tooltip="Overskrift 3 (Ctrl+Alt+3)"
         pressed={editor.isActive('heading', { level: 3 })}
         onPressedChange={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
       >

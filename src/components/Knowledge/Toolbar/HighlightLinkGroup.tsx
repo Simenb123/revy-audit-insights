@@ -1,3 +1,4 @@
+
 import React, { useCallback } from 'react';
 import { Editor } from '@tiptap/react';
 import { Highlighter, Link as LinkIcon } from 'lucide-react';
@@ -28,14 +29,14 @@ const HighlightLinkGroup = ({ editor }: Props) => {
   return (
     <>
        <ToolbarButton
-        tooltip="Highlight"
+        tooltip="Uthev (Ctrl+Shift+H)"
         pressed={editor.isActive('highlight')}
         onPressedChange={() => editor.chain().focus().toggleHighlight().run()}
       >
         <Highlighter className="h-4 w-4" />
       </ToolbarButton>
        <ToolbarButton
-        tooltip="Link"
+        tooltip="Lenke (Ctrl+K)"
         pressed={editor.isActive('link')}
         onPressedChange={handleSetLink}
       >
@@ -50,10 +51,11 @@ const HighlightLinkGroup = ({ editor }: Props) => {
               value={editor.getAttributes('textStyle').color || '#000000'}
               className="w-9 h-9 p-1 bg-transparent border border-input rounded-md cursor-pointer focus:ring-0 focus:outline-none"
               title="Tekstfarge"
+              aria-label="Tekstfarge"
             />
           </TooltipTrigger>
           <TooltipContent>
-            <p>Text color</p>
+            <p>Tekstfarge</p>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>

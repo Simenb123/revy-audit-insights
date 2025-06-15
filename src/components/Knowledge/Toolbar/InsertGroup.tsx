@@ -1,6 +1,7 @@
-import React, { useRef } from 'react';
+
+import React, { useRef, useCallback } from 'react';
 import { Editor } from '@tiptap/react';
-import { Image as ImageIcon, Table as TableIcon, Minus, Loader2 } from 'lucide-react';
+import { Image as ImageIcon, Table as TableIcon, Minus, Loader2, FileText } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,7 +28,8 @@ const InsertGroup = ({ editor, onImageUpload, isUploading, onOpenMediaLibrary }:
       try {
         const url = await onImageUpload(file);
         if (url) {
-          editor.chain().focus().setImage({ src: url }).run();
+          const alt = window.prompt("Alternativ tekst (for skjermlesere)", file.name);
+          editor.chain().focus().setImage({ src: url, alt: alt || '' }).run();
         }
       } catch (error) {
         // Error is handled by the mutation's onError toast
@@ -39,11 +41,21 @@ const InsertGroup = ({ editor, onImageUpload, isUploading, onOpenMediaLibrary }:
   const triggerFileInput = () => {
     fileInputRef.current?.click();
   };
+  
+  const setAltText = useCallback(() => {
+    if (!editor.isActive('image')) return;
+    const oldAlt = editor.getAttributes('image').alt || '';
+    const newAlt = window.prompt('Alternativ tekst for bilde', oldAlt);
+
+    if (newAlt !== null) {
+      editor.chain().focus().updateAttributes('image', { alt: newAlt }).run();
+    }
+  }, [editor]);
 
   return (
     <>
       <ToolbarButton
-        tooltip="Horizontal Rule"
+        tooltip="Horisontal linje"
         onPressedChange={() => editor.chain().focus().setHorizontalRule().run()}
       >
         <Minus className="h-4 w-4" />
@@ -89,7 +101,7 @@ const InsertGroup = ({ editor, onImageUpload, isUploading, onOpenMediaLibrary }:
             </DropdownMenu>
           </TooltipTrigger>
           <TooltipContent>
-            <p>Table</p>
+            <p>Tabell</p>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
@@ -125,10 +137,17 @@ const InsertGroup = ({ editor, onImageUpload, isUploading, onOpenMediaLibrary }:
             </DropdownMenu>
           </TooltipTrigger>
           <TooltipContent>
-            <p>Image</p>
+            <p>Bilde</p>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
+      <ToolbarButton
+        tooltip="Rediger alternativ tekst for bilde"
+        onPressedChange={setAltText}
+        disabled={!editor.isActive('image')}
+      >
+        <FileText className="h-4 w-4" />
+      </ToolbarButton>
     </>
   );
 };

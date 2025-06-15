@@ -16,7 +16,7 @@ const ToolbarButton = ({ tooltip, children, ...props }: ToolbarButtonProps) => {
     <TooltipProvider delayDuration={100}>
       <Tooltip>
         <TooltipTrigger asChild>
-          <Toggle size="sm" {...props}>
+          <Toggle size="sm" {...props} aria-label={tooltip}>
             {children}
           </Toggle>
         </TooltipTrigger>
