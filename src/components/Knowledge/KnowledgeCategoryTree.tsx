@@ -1,12 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { KnowledgeCategory } from '@/types/knowledge';
 import { TreeView, TreeItem, TreeViewTrigger, TreeViewContent } from '@/components/ui/tree-view';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import { Folder, FileText } from 'lucide-react';
+import { Folder, FileText, Search } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 
 const fetchCategories = async () => {
   const { data, error } = await supabase.from('knowledge_categories').select('*').order('display_order');
@@ -85,6 +86,16 @@ export const KnowledgeCategoryTree = () => {
     queryKey: ['knowledge-categories-all'],
     queryFn: fetchCategories,
   });
+  const navigate = useNavigate();
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (searchTerm.trim()) {
+      navigate(`/fag/sok?q=${encodeURIComponent(searchTerm.trim())}`);
+      setSearchTerm('');
+    }
+  };
 
   if (isLoading) {
     return (
@@ -104,6 +115,17 @@ export const KnowledgeCategoryTree = () => {
   return (
     <div>
         <h2 className="text-lg font-semibold mb-2 p-2">Fagområder</h2>
+        <form onSubmit={handleSearch} className="px-2 mb-4">
+          <div className="relative">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Søk i fagartikler..."
+              className="pl-8"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+        </form>
         <TreeView>
           {categoryTree.map(category => (
             <CategoryTreeItem key={category.id} category={category} />
