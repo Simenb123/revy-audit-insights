@@ -45,10 +45,10 @@ const AppLayout = ({ children }: AppLayoutProps) => {
     <SidebarProvider defaultOpen={true}>
       <AppHeader onRightSidebarToggle={toggleRightSidebar} />
       <div
-        className="min-h-screen w-full flex flex-row bg-background relative z-10"
+        className="w-full flex flex-row bg-background relative z-10"
         style={{ 
-          minHeight: `100vh`,
-          paddingTop: '4rem' // Gi plass til fixed header
+          height: `calc(100vh - 4rem)`,
+          marginTop: '4rem'
         }}
       >
         <div className="relative z-20 h-full">

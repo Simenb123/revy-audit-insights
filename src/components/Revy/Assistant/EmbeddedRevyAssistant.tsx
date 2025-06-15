@@ -45,7 +45,7 @@ export const EmbeddedRevyAssistant = ({ currentTip, messages, isTyping, message,
 
   return (
     <div className="h-full flex flex-col bg-white border rounded-lg overflow-hidden shadow-sm">
-      <div className="p-3 bg-gradient-to-r from-blue-50 to-purple-50 border-b">
+      <div className="p-3 bg-gradient-to-r from-blue-50 to-purple-50 border-b flex-shrink-0">
         <div className="flex items-center gap-2 text-sm">
           <Sparkles className="h-4 w-4 text-purple-500" />
           <span className="text-gray-800 font-semibold">Revy Assistent</span>
@@ -54,7 +54,7 @@ export const EmbeddedRevyAssistant = ({ currentTip, messages, isTyping, message,
       </div>
 
       {currentTip && (
-        <div className="p-3 bg-blue-50/80 border-b">
+        <div className="p-3 bg-blue-50/80 border-b flex-shrink-0">
           <div className="flex items-start gap-2.5">
             <AlertCircle className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
             <p className="text-sm text-blue-800 leading-relaxed">{currentTip}</p>
@@ -62,13 +62,16 @@ export const EmbeddedRevyAssistant = ({ currentTip, messages, isTyping, message,
         </div>
       )}
 
-      <RevyMessageList messages={messages} isTyping={isTyping} isEmbedded />
+      <div className="flex-1 min-h-0">
+        <RevyMessageList messages={messages} isTyping={isTyping} isEmbedded />
+      </div>
       
-      {messages.length <= 2 && (
-        <RevySuggestions onSuggestionClick={setMessage} />
-      )}
-      
-      <RevyInput {...inputProps} />
+      <div className="flex-shrink-0">
+        {messages.length <= 2 && (
+          <RevySuggestions onSuggestionClick={setMessage} />
+        )}
+        <RevyInput {...inputProps} />
+      </div>
     </div>
   );
 };
