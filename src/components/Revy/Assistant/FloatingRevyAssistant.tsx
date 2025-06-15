@@ -76,22 +76,22 @@ export const FloatingRevyAssistant = (props: FloatingRevyAssistantProps) => {
       <AnimatePresence>
         {isOpen && (
           <motion.div 
-            className="fixed bottom-0 right-0 z-50 w-96 bg-white shadow-xl rounded-tl-2xl overflow-hidden flex flex-col border-2 border-gradient-to-r from-blue-200 to-purple-200"
-            style={{ height: isMinimized ? '48px' : '500px' }}
+            className="fixed bottom-0 right-0 z-50 w-96 bg-gray-50 shadow-xl rounded-tl-2xl overflow-hidden flex flex-col border-t-2 border-l-2 border-purple-200"
+            style={{ height: isMinimized ? '48px' : '550px', maxHeight: '80vh' }}
             initial={{ y: 400, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 400, opacity: 0 }}
-            transition={{ duration: 0.3 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 40 }}
           >
             <FloatingRevyHeader toggleMinimize={toggleMinimize} toggleOpen={toggleOpen} />
             
             {!isMinimized && (
               <>
                 {props.currentTip && (
-                  <div className="p-2 bg-blue-50 border-b text-xs text-blue-700">
-                    <div className="flex items-center gap-1">
-                      <BookOpen className="h-3 w-3" />
-                      <span>{props.currentTip}</span>
+                  <div className="p-3 bg-blue-50 border-b border-blue-100 text-sm text-blue-800">
+                    <div className="flex items-start gap-2.5">
+                      <BookOpen className="h-4 w-4 mt-0.5 flex-shrink-0 text-blue-500" />
+                      <span className="leading-relaxed">{props.currentTip}</span>
                     </div>
                   </div>
                 )}

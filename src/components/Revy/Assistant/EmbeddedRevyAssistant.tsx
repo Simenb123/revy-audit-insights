@@ -44,20 +44,20 @@ export const EmbeddedRevyAssistant = ({ currentTip, messages, isTyping, message,
   const inputProps = { message, setMessage, handleSendMessage, isTyping, isEmbedded: true };
 
   return (
-    <div className="h-full flex flex-col bg-white">
-      <div className="p-2 bg-gradient-to-r from-blue-50 to-purple-50 border-b">
-        <div className="flex items-center gap-2 text-xs">
-          <Sparkles className="h-3 w-3 text-blue-500" />
-          <span className="text-blue-700 font-medium">AI Oppgradert</span>
-          <Badge variant="secondary" className="text-xs">Smart kontekst</Badge>
+    <div className="h-full flex flex-col bg-white border rounded-lg overflow-hidden shadow-sm">
+      <div className="p-3 bg-gradient-to-r from-blue-50 to-purple-50 border-b">
+        <div className="flex items-center gap-2 text-sm">
+          <Sparkles className="h-4 w-4 text-purple-500" />
+          <span className="text-gray-800 font-semibold">Revy Assistent</span>
+          <Badge variant="secondary" className="text-xs font-medium bg-white">Smart</Badge>
         </div>
       </div>
 
       {currentTip && (
-        <div className="p-2 bg-blue-50 border-b">
-          <div className="flex items-start gap-2">
-            <AlertCircle className="h-3 w-3 text-blue-500 mt-0.5 flex-shrink-0" />
-            <p className="text-xs text-blue-700">{currentTip}</p>
+        <div className="p-3 bg-blue-50/80 border-b">
+          <div className="flex items-start gap-2.5">
+            <AlertCircle className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
+            <p className="text-sm text-blue-800 leading-relaxed">{currentTip}</p>
           </div>
         </div>
       )}
