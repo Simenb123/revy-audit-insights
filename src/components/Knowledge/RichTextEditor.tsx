@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -19,7 +20,8 @@ import { Image as ImageIcon } from 'lucide-react';
 import { useArticleMedia } from '@/hooks/knowledge/useArticleMedia';
 import { MediaLibraryDialog } from './MediaLibraryDialog';
 import { EditorToolbar } from './EditorToolbar';
-import { Client, ClientAuditAction } from '@/types/revio';
+import { Client } from '@/types/revio';
+import { ClientAuditAction } from '@/types/audit-actions';
 
 // Extend Tiptap extensions to add keyboard shortcuts
 const CustomSubscript = Subscript.extend({

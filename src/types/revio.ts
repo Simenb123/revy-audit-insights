@@ -1,3 +1,4 @@
+
 export type AuditPhase = 'overview' | 'engagement' | 'planning' | 'risk_assessment' | 'execution' | 'completion';
 
 // Update AuditSubjectArea to match what the database/components expect
@@ -36,47 +37,47 @@ export interface Announcement {
 export interface Client {
   id: string;
   name: string;
-  companyName: string;
-  orgNumber: string;
+  company_name: string;
+  org_number: string;
   department: string;
-  contactPerson: string;
+  contact_person: string;
   chair: string;
   ceo: string;
   industry: string;
-  registrationDate: string;
+  registration_date: string;
   address: string;
-  postalCode: string;
+  postal_code: string;
   city: string;
   email: string;
   phone: string;
-  bankAccount: string;
+  bank_account: string;
   notes: string;
   phase: AuditPhase;
   progress: number;
   // Enhanced Brønnøysund data
-  orgFormCode: string;
-  orgFormDescription: string;
+  org_form_code: string;
+  org_form_description: string;
   homepage: string;
   status: string;
-  naceCode: string;
-  naceDescription: string;
-  municipalityCode: string;
-  municipalityName: string;
-  equityCapital?: number | null;
-  shareCapital?: number | null;
+  nace_code: string;
+  nace_description: string;
+  municipality_code: string;
+  municipality_name: string;
+  equity_capital?: number | null;
+  share_capital?: number | null;
   // New extended fields
-  accountingSystem: string;
-  previousAuditor: string;
-  auditFee?: number | null;
-  yearEndDate: string;
-  boardMeetingsPerYear?: number | null;
-  internalControls: string;
-  riskAssessment: string;
+  accounting_system: string;
+  previous_auditor: string;
+  audit_fee?: number | null;
+  year_end_date: string;
+  board_meetings_per_year?: number | null;
+  internal_controls: string;
+  risk_assessment: string;
   // Test data flag
-  isTestData?: boolean;
+  is_test_data?: boolean;
   // Timestamps
-  createdAt: string;
-  updatedAt: string;
+  created_at: string;
+  updated_at: string;
   // Relationships
   riskAreas: RiskArea[];
   documents: ClientDocument[];

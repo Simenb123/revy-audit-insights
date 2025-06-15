@@ -11,7 +11,8 @@ import ListGroup from './Toolbar/ListGroup';
 import InsertGroup from './Toolbar/InsertGroup';
 import HistoryGroup from './Toolbar/HistoryGroup';
 import RevyAIGroup from './Toolbar/RevyAIGroup';
-import { Client, ClientAuditAction } from '@/types/revio';
+import { Client } from '@/types/revio';
+import { ClientAuditAction } from '@/types/audit-actions';
 
 type EditorToolbarProps = {
   editor: Editor | null;

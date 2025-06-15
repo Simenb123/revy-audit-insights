@@ -9,7 +9,8 @@ import { AlertCircle, FileText } from 'lucide-react';
 import RichTextEditor from '@/components/Knowledge/RichTextEditor';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
-import { Client, ClientAuditAction } from '@/types/revio';
+import { Client } from '@/types/revio';
+import { ClientAuditAction } from '@/types/audit-actions';
 
 interface AIEnabledActionEditorProps {
   clientId: string;
