@@ -5,6 +5,7 @@ import Sidebar from './Sidebar';
 import AppHeader from './AppHeader';
 import RightSidebar from './RightSidebar';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -13,6 +14,7 @@ interface AppLayoutProps {
 const AppLayout = ({ children }: AppLayoutProps) => {
   const [isRightSidebarCollapsed, setIsRightSidebarCollapsed] = useState(false);
   const [isRightSidebarExpanded, setIsRightSidebarExpanded] = useState(false);
+  const isMobile = useIsMobile();
 
   const toggleRightSidebar = () => {
     const willBeCollapsed = !isRightSidebarCollapsed;
@@ -53,7 +55,13 @@ const AppLayout = ({ children }: AppLayoutProps) => {
           <Sidebar />
         </div>
         
-        {isRightSidebarCollapsed ? (
+        {isMobile ? (
+          <div className="flex-1 min-w-0">
+            <main className="h-full overflow-auto bg-background p-6">
+              {children}
+            </main>
+          </div>
+        ) : isRightSidebarCollapsed ? (
           <>
             <div className="flex-1 min-w-0 relative z-10">
               <main className="h-full overflow-auto bg-background p-6">

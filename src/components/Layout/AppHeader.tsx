@@ -7,26 +7,42 @@ import {
   Plus, 
   Bell, 
   Settings,
-  User
+  User,
+  Menu,
 } from 'lucide-react';
+import { useSidebar } from '@/components/ui/sidebar';
 
 interface AppHeaderProps {
   onRightSidebarToggle?: () => void;
 }
 
 const AppHeader = ({ onRightSidebarToggle }: AppHeaderProps) => {
+  const { toggleSidebar } = useSidebar();
+
   return (
     <header className="fixed top-0 left-0 right-0 z-40 flex h-16 shrink-0 items-center justify-between bg-gradient-to-r from-revio-500 to-revio-600 text-white px-4 shadow-lg">
-      {/* Left Section - SidebarTrigger removed */}
+      {/* Left Section */}
       <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2">
+        {/* Mobile sidebar toggle */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-9 w-9 text-white hover:bg-white/20 md:hidden"
+          onClick={toggleSidebar}
+          aria-label="Toggle sidebar"
+        >
+          <Menu className="h-6 w-6" />
+        </Button>
+        
+        {/* Desktop Logo and Title */}
+        <div className="hidden md:flex items-center gap-2">
           <div className="w-9 h-9 bg-white/20 rounded-lg flex items-center justify-center">
             <span className="text-sm font-bold">R</span>
           </div>
           <span className="font-bold text-xl">Revio</span>
         </div>
-        <div className="h-6 w-px bg-white/30"></div>
-        <h1 className="text-lg font-semibold">RevisionAkademiet</h1>
+        <div className="hidden md:block h-6 w-px bg-white/30"></div>
+        <h1 className="hidden md:block text-lg font-semibold">RevisionAkademiet</h1>
       </div>
       
       {/* Center Section - Search */}
