@@ -78,15 +78,15 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({ client, action, onResto
                         <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() => handleOpenDiff(version, versions[index - 1])}
-                            disabled={index === 0}
+                            onClick={() => handleOpenDiff(versions[index + 1], version)}
+                            disabled={index >= versions.length - 1}
                             className="p-2 h-auto"
                         >
                             <FileDiff size={16} />
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p>{index === 0 ? "Kan ikke sammenlignes med en nyere versjon" : "Sammenlign med den nyere versjonen"}</p>
+                        <p>{index >= versions.length - 1 ? "Kan ikke sammenlignes med en eldre versjon" : "Sammenlign med den forrige versjonen"}</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
