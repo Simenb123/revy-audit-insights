@@ -6,6 +6,7 @@ import Image from '@tiptap/extension-image';
 import Underline from '@tiptap/extension-underline';
 import { Color } from '@tiptap/extension-color';
 import TextStyle from '@tiptap/extension-text-style';
+import FontFamily from '@tiptap/extension-font-family';
 import Table from '@tiptap/extension-table';
 import TableCell from '@tiptap/extension-table-cell';
 import TableHeader from '@tiptap/extension-table-header';
@@ -64,6 +65,9 @@ const RichTextEditor = ({ content, onChange, context = 'knowledge', contextData 
       }),
       Underline,
       TextStyle,
+      FontFamily.configure({
+        types: ['textStyle'],
+      }),
       Color,
       Image,
       Table.configure({
