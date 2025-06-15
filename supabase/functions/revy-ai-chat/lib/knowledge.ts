@@ -32,40 +32,57 @@ async function getEmbedding(text: string, openAIApiKey: string) {
 // --- Knowledge search logic ---
 
 export const extractSearchTerms = (query: string, context: string): string[] => {
+  console.log(`🔍 Extracting search terms from: "${query}"`);
   const terms = new Set<string>();
 
-  // Add query terms - removed length filter to allow important short terms like "ISA"
-  query.toLowerCase().split(/\s+/).filter(term => term.length > 1).forEach(term => terms.add(term));
+  // Split query into words and add all meaningful terms (no minimum length filter)
+  const words = query.toLowerCase()
+    .replace(/[^\w\såæøäöü]/g, ' ') // Replace punctuation with spaces, keep Nordic chars
+    .split(/\s+/)
+    .filter(term => term.length > 0); // Only filter out empty strings
+    
+  words.forEach(word => {
+    terms.add(word);
+    console.log(`📝 Added search term: "${word}"`);
+  });
 
-  // Enhanced ISA standards extraction - now includes "ISA" as a term
-  const isaPattern = /isa\s*\d{3}/gi;
-  const isaMatches = query.match(isaPattern);
-  if (isaMatches) {
-    isaMatches.forEach(match => {
-      terms.add(match.toUpperCase().replace(/\s+/g, ' '));
-      terms.add('ISA'); // Add ISA as a separate term
-    });
-  }
+  // Enhanced ISA standards extraction
+  const isaPatterns = [
+    /isa\s*\d{3}/gi,  // ISA 200, ISA200, etc.
+    /isa\s+\d{3}/gi,  // ISA 200 with space
+    /\bisa\b/gi       // Just "ISA" as standalone word
+  ];
   
-  // Also add "ISA" if mentioned without numbers
-  if (query.toLowerCase().includes('isa')) {
-    terms.add('ISA');
-  }
+  isaPatterns.forEach(pattern => {
+    const matches = query.match(pattern);
+    if (matches) {
+      matches.forEach(match => {
+        const cleanMatch = match.replace(/\s+/g, ' ').trim().toUpperCase();
+        terms.add(cleanMatch);
+        terms.add('ISA'); // Always add ISA as a separate term
+        console.log(`📋 Added ISA term: "${cleanMatch}"`);
+      });
+    }
+  });
 
-  // Add context-specific terms
+  // Add context-specific terms for better targeting
   const contextTerms: Record<string, string[]> = {
-    'risk-assessment': ['risiko', 'vurdering', 'materialitet', 'vesentlighet', 'kontrollmiljø'],
-    'client-detail': ['klient', 'selskap', 'bransje', 'regnskap', 'nøkkeltall'],
-    'documentation': ['dokumentasjon', 'arbeidspapir', 'bevis', 'ISA 230', 'konklusjon'],
-    'audit-actions': ['handlinger', 'prosedyrer', 'testing', 'kontroll', 'substans'],
+    'risk-assessment': ['risiko', 'vurdering', 'materialitet'],
+    'client-detail': ['klient', 'selskap', 'regnskap'],
+    'documentation': ['dokumentasjon', 'arbeidspapir', 'bevis'],
+    'audit-actions': ['handlinger', 'prosedyrer', 'testing'],
   };
 
   if (contextTerms[context]) {
-    contextTerms[context].forEach(term => terms.add(term));
+    contextTerms[context].forEach(term => {
+      terms.add(term);
+      console.log(`🎯 Added context term for ${context}: "${term}"`);
+    });
   }
 
-  console.log(`🔍 Extracted search terms: ${[...terms].join(', ')}`);
-  return [...terms];
+  const finalTerms = [...terms];
+  console.log(`✅ Final search terms (${finalTerms.length}): ${finalTerms.join(', ')}`);
+  return finalTerms;
 };
 
 export const scoreArticleRelevance = (articles: any[], searchTerms: string[]): any[] => {
@@ -77,32 +94,48 @@ export const scoreArticleRelevance = (articles: any[], searchTerms: string[]): a
       const matchedTerms = new Set<string>();
       const searchText = `${article.title} ${article.summary || ''} ${article.content} ${(article.tags || []).join(' ')}`.toLowerCase();
 
+      // Score each search term
       searchTerms.forEach(term => {
-        const termPattern = new RegExp(term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+        const termLower = term.toLowerCase();
+        const termPattern = new RegExp(termLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
         const termCount = (searchText.match(termPattern) || []).length;
+        
         if (termCount > 0) {
-          let weight = term.length > 4 ? 2 : 1;
-          if (term.toLowerCase().startsWith('isa')) weight = 10;
+          let weight = 1;
+          
+          // Higher weight for ISA terms
+          if (termLower.includes('isa')) weight = 5;
+          // Higher weight for longer, more specific terms
+          if (term.length > 4) weight = Math.max(weight, 2);
+          
           score += termCount * weight;
           matchedTerms.add(term);
+          console.log(`  📈 "${article.title}": term "${term}" matched ${termCount} times (weight: ${weight})`);
         }
       });
 
+      // Extra points for title matches
       searchTerms.forEach(term => {
         if (article.title.toLowerCase().includes(term.toLowerCase())) {
-          score += 15;
+          score += 10;
+          console.log(`  🎯 "${article.title}": bonus for title match with "${term}"`);
         }
       });
       
+      // Extra points for tag matches
       if (article.tags && Array.isArray(article.tags)) {
         searchTerms.forEach(term => {
-            if (article.tags.some((tag: string) => typeof tag === 'string' && tag.toLowerCase().includes(term.toLowerCase()))) {
-                score += 5;
-            }
+          if (article.tags.some((tag: string) => typeof tag === 'string' && tag.toLowerCase().includes(term.toLowerCase()))) {
+            score += 3;
+            console.log(`  🏷️ "${article.title}": bonus for tag match with "${term}"`);
+          }
         });
       }
 
-      score += Math.log1p(article.view_count || 0);
+      // Small boost for popular articles
+      score += Math.log1p(article.view_count || 0) * 0.1;
+
+      console.log(`  ⭐ "${article.title}": final score ${score.toFixed(2)} (matched: ${[...matchedTerms].join(', ')})`);
 
       return {
         ...article,
@@ -110,100 +143,123 @@ export const scoreArticleRelevance = (articles: any[], searchTerms: string[]): a
         matchedTerms: [...matchedTerms]
       };
     })
-    .filter(result => result.relevanceScore > 0) // Lowered threshold from 2 to 0
+    .filter(result => result.relevanceScore > 0)
     .sort((a, b) => b.relevanceScore - a.relevanceScore);
 };
 
 export async function searchRelevantKnowledge(message: string, context: string) {
   try {
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!openAIApiKey) {
-      console.warn('OPENAI_API_KEY not set, falling back to keyword search.');
-      return keywordSearch(message, context);
-    }
-
-    console.log(`🔎 Performing semantic knowledge search for: "${message}"`);
     
-    const queryEmbedding = await getEmbedding(message, openAIApiKey);
+    console.log(`🔎 Starting knowledge search for: "${message}" in context: "${context}"`);
+    
+    // Try semantic search first if we have OpenAI API key
+    if (openAIApiKey) {
+      console.log(`🧠 Attempting semantic search...`);
+      
+      try {
+        const queryEmbedding = await getEmbedding(message, openAIApiKey);
 
-    const { data: articles, error } = await supabase.rpc('match_knowledge_articles', {
-      p_query_embedding: queryEmbedding,
-      p_match_threshold: 0.65,
-      p_match_count: 5,
-    });
+        const { data: articles, error } = await supabase.rpc('match_knowledge_articles', {
+          p_query_embedding: queryEmbedding,
+          p_match_threshold: 0.6, // Lowered threshold for more matches
+          p_match_count: 8,
+        });
 
-    if (error) {
-      console.error('Error calling match_knowledge_articles:', error);
-      console.log('🔄 Falling back to keyword search due to semantic search error');
-      return keywordSearch(message, context);
+        if (error) {
+          console.error('❌ Error calling match_knowledge_articles:', error);
+        } else if (articles && articles.length > 0) {
+          console.log(`✅ Semantic search found ${articles.length} articles`);
+          return articles.map(a => ({...a, content: a.content.substring(0, 1500)}));
+        } else {
+          console.log('ℹ️ Semantic search returned no results');
+        }
+      } catch (semanticError) {
+        console.error('⚠️ Semantic search failed:', semanticError);
+      }
+    } else {
+      console.log('⚠️ No OpenAI API key found, skipping semantic search');
     }
     
-    if (articles && articles.length > 0) {
-      console.log(`✅ Found ${articles.length} relevant articles via semantic search.`);
-      return articles.map(a => ({...a, content: a.content.substring(0, 1500)}));
-    }
-    
-    console.log('🔄 No strong semantic matches found, falling back to keyword search.');
+    // Fallback to keyword search
+    console.log('🔄 Falling back to keyword search');
     return keywordSearch(message, context);
 
   } catch (error) {
-    console.error('Semantic knowledge search error:', error);
-    console.log('🔄 Falling back to keyword search due to error');
+    console.error('💥 Error in searchRelevantKnowledge:', error);
     return keywordSearch(message, context);
   }
 }
 
 async function keywordSearch(message: string, context: string) {
-    const searchTerms = extractSearchTerms(message, context);
-    if (searchTerms.length === 0) {
-        console.log('❌ No search terms extracted');
-        return null;
-    }
+  console.log(`🔑 Starting keyword search for: "${message}"`);
+  
+  const searchTerms = extractSearchTerms(message, context);
+  if (searchTerms.length === 0) {
+    console.log('❌ No search terms extracted');
+    return null;
+  }
 
-    console.log(`🔑 Keyword search with ${searchTerms.length} terms: ${searchTerms.join(', ')}`);
+  // Create simpler, more inclusive search conditions
+  console.log(`🔍 Creating database query for ${searchTerms.length} terms`);
+  
+  // Build OR conditions for each field
+  const conditions = searchTerms.flatMap(term => [
+    `title.ilike.%${term}%`,
+    `content.ilike.%${term}%`,
+    `summary.ilike.%${term}%`,
+    `tags.cs.{${term}}` // Contains search for tags array
+  ]);
+
+  console.log(`📝 Database query with ${conditions.length} OR conditions`);
+
+  const { data: articles, error } = await supabase
+    .from('knowledge_articles')
+    .select('id, title, content, summary, tags, view_count, slug, published_at, created_at, reference_code, valid_from, valid_until')
+    .eq('status', 'published')
+    .or(conditions.join(','))
+    .limit(20);
+
+  if (error) {
+    console.error('❌ Database query error:', error);
+    return null;
+  }
+  
+  console.log(`📄 Raw database results: ${articles?.length || 0} articles found`);
+  
+  if (!articles || articles.length === 0) {
+    console.log('❌ No articles found in database');
     
-    // Create a more flexible search query that searches across multiple fields
-    const orConditions = searchTerms.flatMap(term => [
-        `title.ilike.%${term}%`,
-        `content.ilike.%${term}%`,
-        `summary.ilike.%${term}%`
-    ]);
-
-    console.log(`🔍 Database query conditions: ${orConditions.length} OR conditions`);
-
-    const { data: articles, error } = await supabase
+    // Let's also try a simple count to see if there are any published articles at all
+    const { count } = await supabase
       .from('knowledge_articles')
-      .select('title, content, summary, tags, view_count, slug, published_at, created_at, reference_code, valid_from, valid_until')
-      .eq('status', 'published')
-      .or(orConditions.join(','))
-      .limit(20); // Increased limit to get more potential matches
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'published');
+    
+    console.log(`📊 Total published articles in database: ${count}`);
+    return null;
+  }
 
-    if (error) {
-      console.error('❌ Error fetching knowledge articles (keyword):', error);
-      return null;
-    }
-    
-    console.log(`📄 Raw database results: ${articles?.length || 0} articles found`);
-    
-    if (!articles || articles.length === 0) {
-        console.log('❌ No articles found in database with keyword search');
-        return null;
-    }
+  // Score and rank the results
+  const scoredArticles = scoreArticleRelevance(articles, searchTerms);
+  
+  console.log(`📊 After scoring: ${scoredArticles.length} relevant articles`);
+  
+  if (scoredArticles.length === 0) {
+    console.log('❌ No articles passed relevance scoring');
+    return null;
+  }
 
-    const scoredArticles = scoreArticleRelevance(articles, searchTerms);
-    
-    console.log(`📊 After scoring: ${scoredArticles.length} relevant articles (scores > 0)`);
-    scoredArticles.forEach((article, index) => {
-        console.log(`  ${index + 1}. "${article.title}" (score: ${article.relevanceScore.toFixed(2)}, matched: ${article.matchedTerms.join(', ')})`);
-    });
+  // Return top results with truncated content
+  const results = scoredArticles.slice(0, 6).map(article => ({
+    ...article,
+    content: article.content.substring(0, 1500)
+  }));
+  
+  console.log(`✅ Returning ${results.length} top-scored articles:`);
+  results.forEach((article, index) => {
+    console.log(`  ${index + 1}. "${article.title}" (score: ${article.relevanceScore.toFixed(2)})`);
+  });
 
-    const results = scoredArticles.length > 0 ? scoredArticles.slice(0, 5) : null;
-    
-    if (results) {
-        console.log(`✅ Returning ${results.length} top-scored articles`);
-        return results.map(a => ({...a, content: a.content.substring(0, 1500)}));
-    } else {
-        console.log('❌ No articles passed relevance scoring');
-        return null;
-    }
+  return results;
 }
