@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Client } from '@/types/revio';
-import { AuditActionsManager } from '@/components/AuditActions/AuditActionsManager';
+import AuditActionsManager from '@/components/AuditActions/AuditActionsManager';
 import { PlanningContainer } from './Planning/PlanningContainer';
 
 type Phase = 'engagement' | 'planning' | 'execution' | 'completion' | 'reporting';

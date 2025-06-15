@@ -1,3 +1,4 @@
+
 import { Database } from "@/integrations/supabase/types";
 
 export type RevyMessage = {
@@ -6,7 +7,51 @@ export type RevyMessage = {
   content: string | React.ReactNode;
 };
 
-export type Client = Database['public']['Tables']['clients']['Row'];
+// Re-added missing types to resolve build errors
+export type BrregSearchResult = {
+  organisasjonsnummer: string;
+  navn: string;
+  organisasjonsform: {
+    kode: string;
+    beskrivelse: string;
+  };
+  registreringsdatoEnhetsregisteret?: string;
+  hjemmeside?: string;
+  registrertIForetaksregisteret: boolean;
+  registrertIStiftelsesregisteret: boolean;
+  registrertIFrivillighetsregisteret: boolean;
+};
+
+export type RiskArea = {
+  name: string;
+  risk: 'low' | 'medium' | 'high';
+};
+
+export type ClientDocument = {
+  type: string;
+  status: string;
+  dueDate: string;
+};
+
+export type ClientRole = Database['public']['Tables']['client_roles']['Row'];
+export type Announcement = Database['public']['Tables']['announcements']['Row'] & { isRead: boolean };
+
+export type Account = { id: string; name: string };
+export type AccountGroup = { id: string; name: string; accounts: Account[] };
+
+// Unified audit phase type for frontend consistency
+export type AuditPhase = 'overview' | 'engagement' | 'planning' | 'risk_assessment' | 'execution' | 'completion' | 'reporting';
+
+// Extended client type for frontend use. It includes related data not on the client table itself.
+type DbClient = Omit<Database['public']['Tables']['clients']['Row'], 'phase'>;
+export type Client = DbClient & {
+  phase: AuditPhase;
+  riskAreas: RiskArea[];
+  documents: ClientDocument[];
+  roles: ClientRole[];
+  announcements: Announcement[];
+};
+
 export type AuditLog = Database['public']['Tables']['audit_logs']['Row'];
 export type ClientAuditAction = Database['public']['Tables']['client_audit_actions']['Row'];
 export type DocumentVersion = Database['public']['Tables']['document_versions']['Row'];

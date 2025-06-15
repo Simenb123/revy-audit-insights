@@ -1,9 +1,8 @@
-
 import React from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
-import { Client } from '@/types/revio';
+import { Client, AuditPhase } from '@/types/revio';
 import { Button } from '@/components/ui/button';
 import { Form } from '@/components/ui/form';
 import ClientDetailsForm from './ClientDetailsForm';
@@ -21,7 +20,7 @@ const clientSchema = z.object({
   name: z.string().min(2, { message: 'Selskapsnavn må ha minst 2 tegn' }),
   company_name: z.string().min(2, { message: 'Firmanavn må ha minst 2 tegn' }),
   org_number: z.string().regex(/^\d{9}$/, { message: 'Organisasjonsnummer må være 9 siffer' }),
-  phase: z.enum(['overview', 'engagement', 'planning', 'risk_assessment', 'execution', 'completion']),
+  phase: z.enum(['overview', 'engagement', 'planning', 'risk_assessment', 'execution', 'completion', 'reporting']),
   progress: z.number().min(0).max(100),
   department: z.string().optional(),
   contact_person: z.string().optional(),
@@ -93,6 +92,18 @@ const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, submitLa
       year_end_date: initialData?.year_end_date || '',
       internal_controls: initialData?.internal_controls || '',
       risk_assessment: initialData?.risk_assessment || '',
+      audit_fee: initialData?.audit_fee || null,
+      board_meetings_per_year: initialData?.board_meetings_per_year || null,
+      riskAreas: initialData?.riskAreas || [],
+      documents: initialData?.documents || [],
+      roles: initialData?.roles || [],
+      announcements: initialData?.announcements || [],
+      created_at: initialData?.created_at || new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      user_id: initialData?.user_id || '', // Assuming user_id is needed
+      department_id: initialData?.department_id || null,
+      address_line: initialData?.address_line || null,
+      is_test_data: initialData?.is_test_data || false,
     },
   });
 
@@ -142,6 +153,10 @@ const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, submitLa
       announcements: initialData?.announcements || [],
       created_at: initialData?.created_at || now,
       updated_at: now,
+      user_id: initialData?.user_id || '', // Assuming user_id is needed
+      department_id: initialData?.department_id || null,
+      address_line: initialData?.address_line || null,
+      is_test_data: initialData?.is_test_data || false,
     };
     
     onSubmit(fullClient);

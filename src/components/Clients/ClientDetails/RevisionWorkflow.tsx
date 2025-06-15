@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, Circle, Clock, TrendingUp, ArrowRight, Info } from 'lucide-react';
@@ -37,7 +36,7 @@ const phases = [
     number: 3
   },
   { 
-    key: 'conclusion' as AuditPhase, 
+    key: 'completion' as AuditPhase, 
     label: 'Avslutning', 
     description: 'Rapporter og konklusjon',
     number: 4

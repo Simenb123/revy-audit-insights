@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { Input } from '@/components/ui/input';
@@ -23,6 +22,7 @@ const phaseOptions: { value: AuditPhase; label: string }[] = [
   { value: 'risk_assessment', label: 'Risikovurdering' },
   { value: 'execution', label: 'Utførelse' },
   { value: 'completion', label: 'Avslutning' },
+  { value: 'reporting', label: 'Rapportering' },
 ];
 
 const ClientDetailsForm = ({ form }: ClientDetailsFormProps) => {

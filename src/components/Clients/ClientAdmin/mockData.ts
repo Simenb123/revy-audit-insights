@@ -4,6 +4,10 @@ import { Client } from '@/types/revio';
 export const mockClients: Client[] = [
   {
     id: '1',
+    user_id: '1',
+    department_id: null,
+    address_line: null,
+    is_test_data: false,
     name: 'Nordheim AS',
     company_name: 'Nordheim Konsern',
     org_number: '912345678',
@@ -51,10 +55,15 @@ export const mockClients: Client[] = [
     risk_assessment: 'Middels risiko',
     created_at: '2023-01-01T00:00:00Z',
     updated_at: '2023-01-01T00:00:00Z',
-    roles: []
+    roles: [],
+    announcements: []
   },
   {
     id: '2',
+    user_id: '1',
+    department_id: null,
+    address_line: null,
+    is_test_data: false,
     name: 'Sørland Byggverk AS',
     company_name: 'Sørland Gruppe',
     org_number: '921234567',
@@ -102,6 +111,7 @@ export const mockClients: Client[] = [
     risk_assessment: 'Lav risiko',
     created_at: '2023-01-01T00:00:00Z',
     updated_at: '2023-01-01T00:00:00Z',
-    roles: []
+    roles: [],
+    announcements: []
   }
 ];
