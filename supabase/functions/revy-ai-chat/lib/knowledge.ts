@@ -1,4 +1,3 @@
-
 import { supabase } from './supabase.ts';
 
 async function getEmbedding(text: string, openAIApiKey: string) {
@@ -29,13 +28,12 @@ async function getEmbedding(text: string, openAIApiKey: string) {
   }
 }
 
-// --- Knowledge search logic ---
-
+// Enhanced search terms extraction with better ISA handling
 export const extractSearchTerms = (query: string, context: string): string[] => {
   console.log(`🔍 Extracting search terms from: "${query}"`);
   const terms = new Set<string>();
 
-  // Split query into words and add all meaningful terms (no minimum length filter)
+  // Split query into words - keep all meaningful terms
   const words = query.toLowerCase()
     .replace(/[^\w\såæøäöü]/g, ' ') // Replace punctuation with spaces, keep Nordic chars
     .split(/\s+/)
@@ -46,7 +44,7 @@ export const extractSearchTerms = (query: string, context: string): string[] => 
     console.log(`📝 Added search term: "${word}"`);
   });
 
-  // Enhanced ISA standards extraction
+  // Enhanced ISA standards extraction with multiple patterns
   const isaPatterns = [
     /isa\s*\d{3}/gi,  // ISA 200, ISA200, etc.
     /isa\s+\d{3}/gi,  // ISA 200 with space
@@ -71,14 +69,14 @@ export const extractSearchTerms = (query: string, context: string): string[] => 
     'client-detail': ['klient', 'selskap', 'regnskap'],
     'documentation': ['dokumentasjon', 'arbeidspapir', 'bevis'],
     'audit-actions': ['handlinger', 'prosedyrer', 'testing'],
+    'general': ['revisjon', 'fagstoff', 'standard']
   };
 
-  if (contextTerms[context]) {
-    contextTerms[context].forEach(term => {
-      terms.add(term);
-      console.log(`🎯 Added context term for ${context}: "${term}"`);
-    });
-  }
+  const contextSpecific = contextTerms[context] || contextTerms['general'];
+  contextSpecific.forEach(term => {
+    terms.add(term);
+    console.log(`🎯 Added context term for ${context}: "${term}"`);
+  });
 
   const finalTerms = [...terms];
   console.log(`✅ Final search terms (${finalTerms.length}): ${finalTerms.join(', ')}`);
@@ -162,7 +160,7 @@ export async function searchRelevantKnowledge(message: string, context: string) 
 
         const { data: articles, error } = await supabase.rpc('match_knowledge_articles', {
           p_query_embedding: queryEmbedding,
-          p_match_threshold: 0.6, // Lowered threshold for more matches
+          p_match_threshold: 0.5, // Lower threshold for more matches
           p_match_count: 8,
         });
 
@@ -170,7 +168,7 @@ export async function searchRelevantKnowledge(message: string, context: string) 
           console.error('❌ Error calling match_knowledge_articles:', error);
         } else if (articles && articles.length > 0) {
           console.log(`✅ Semantic search found ${articles.length} articles`);
-          return articles.map(a => ({...a, content: a.content.substring(0, 1500)}));
+          return articles.map((a: any) => ({...a, content: a.content.substring(0, 1500)}));
         } else {
           console.log('ℹ️ Semantic search returned no results');
         }
@@ -200,7 +198,7 @@ async function keywordSearch(message: string, context: string) {
     return null;
   }
 
-  // Create simpler, more inclusive search conditions
+  // Create more inclusive search conditions
   console.log(`🔍 Creating database query for ${searchTerms.length} terms`);
   
   // Build OR conditions for each field
