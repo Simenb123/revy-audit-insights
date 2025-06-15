@@ -12,6 +12,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import VersionDiffDialog from './VersionDiffDialog';
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from '@/hooks/use-toast';
+import { cn } from "@/lib/utils";
 
 interface VersionHistoryProps {
   client: Client;
@@ -34,7 +35,6 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({ client, action, onResto
   const handleOpenDiff = (olderVersion: DocumentVersion, newerVersion: DocumentVersion) => {
     setVersionsToCompare({ older: olderVersion, newer: newerVersion });
     setIsDiffOpen(true);
-    setSelectedVersions([]); // Reset selection
   };
 
   const handleVersionSelect = (version: DocumentVersion, isChecked: boolean) => {
@@ -91,7 +91,10 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({ client, action, onResto
               const canSelect = selectedVersions.length < 2 || isSelected;
 
               return (
-                <li key={version.id} className="flex items-center justify-between gap-2 p-2 rounded-md border bg-background shadow-sm">
+                <li key={version.id} className={cn(
+                  "flex items-center justify-between gap-2 p-2 rounded-md border bg-background shadow-sm transition-colors hover:bg-accent",
+                  isSelected && "bg-primary/10 border-primary/50"
+                )}>
                   <div className="flex items-center gap-3 flex-1 min-w-0">
                     <Checkbox
                       id={`version-${version.id}`}
@@ -143,6 +146,7 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({ client, action, onResto
             onOpenChange={(isOpen) => {
                 if (!isOpen) {
                     setVersionsToCompare({ older: null, newer: null });
+                    setSelectedVersions([]);
                 }
                 setIsDiffOpen(isOpen)
             }}
