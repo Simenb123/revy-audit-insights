@@ -5,7 +5,8 @@ import {
   SidebarContent,
   SidebarHeader,
   useSidebar,
-  SidebarTrigger
+  SidebarTrigger,
+  SidebarRail
 } from '@/components/ui/sidebar';
 import SidebarNav from './SidebarNav';
 
@@ -26,6 +27,7 @@ const Sidebar = () => {
       }}
       data-collapsed={isCollapsed}
     >
+      <SidebarRail />
       <SidebarHeader 
         className={`flex flex-row items-center px-4 h-14 border-b border-sidebar-border ${isCollapsed ? 'justify-center' : 'justify-between'}`}
       >
