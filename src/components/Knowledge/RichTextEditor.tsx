@@ -7,14 +7,23 @@ import { Bold, Italic, Strikethrough, Heading2, Heading3, List, ListOrdered, Quo
 import { Toggle } from '@/components/ui/toggle';
 import { Separator } from '@/components/ui/separator';
 import { useArticleMedia } from '@/hooks/knowledge/useArticleMedia';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { MediaLibraryDialog } from './MediaLibraryDialog';
 
 type ToolbarProps = {
   editor: Editor | null;
   onImageUpload: (file: File) => Promise<string | undefined>;
   isUploading: boolean;
+  onOpenMediaLibrary: () => void;
 };
 
-const Toolbar = ({ editor, onImageUpload, isUploading }: ToolbarProps) => {
+const Toolbar = ({ editor, onImageUpload, isUploading, onOpenMediaLibrary }: ToolbarProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!editor) {
@@ -108,13 +117,21 @@ const Toolbar = ({ editor, onImageUpload, isUploading }: ToolbarProps) => {
         className="hidden"
         accept="image/jpeg,image/png,image/gif,image/webp"
       />
-      <Toggle
-        size="sm"
-        onPressedChange={triggerFileInput}
-        disabled={isUploading}
-      >
-        <ImageIcon className="h-4 w-4" />
-      </Toggle>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="sm" className="w-9 h-9 p-0" disabled={isUploading}>
+            <ImageIcon className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start">
+          <DropdownMenuItem onSelect={triggerFileInput}>
+            Last opp nytt bilde
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={onOpenMediaLibrary}>
+            Velg fra bibliotek
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 };
@@ -128,6 +145,7 @@ type RichTextEditorProps = {
 const RichTextEditor = ({ content, onChange }: RichTextEditorProps) => {
   const { uploadImage, isUploading } = useArticleMedia();
   const [isDragging, setIsDragging] = useState(false);
+  const [isMediaLibraryOpen, setIsMediaLibraryOpen] = useState(false);
 
   const editor = useEditor({
     extensions: [
@@ -192,9 +210,20 @@ const RichTextEditor = ({ content, onChange }: RichTextEditorProps) => {
     },
   });
 
+  const handleSelectImageFromLibrary = (url: string) => {
+    if (editor) {
+      editor.chain().focus().setImage({ src: url }).run();
+    }
+  };
+
   return (
     <div className="border border-input rounded-md relative">
-      <Toolbar editor={editor} onImageUpload={uploadImage} isUploading={isUploading} />
+      <Toolbar 
+        editor={editor} 
+        onImageUpload={uploadImage} 
+        isUploading={isUploading} 
+        onOpenMediaLibrary={() => setIsMediaLibraryOpen(true)}
+      />
       <EditorContent editor={editor} />
       {isDragging && (
         <div className="absolute inset-0 bg-gray-900/50 flex items-center justify-center pointer-events-none rounded-b-md z-10">
@@ -205,6 +234,11 @@ const RichTextEditor = ({ content, onChange }: RichTextEditorProps) => {
           </div>
         </div>
       )}
+       <MediaLibraryDialog
+        open={isMediaLibraryOpen}
+        onOpenChange={setIsMediaLibraryOpen}
+        onSelectImage={handleSelectImageFromLibrary}
+      />
     </div>
   );
 };
