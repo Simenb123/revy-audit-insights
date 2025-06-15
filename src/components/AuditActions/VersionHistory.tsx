@@ -86,7 +86,7 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({ client, action, onResto
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p>{index === 0 ? "Kan ikke sammenligne den nyeste versjonen" : "Sammenlign med påfølgende versjon"}</p>
+                        <p>{index === 0 ? "Kan ikke sammenlignes med en nyere versjon" : "Sammenlign med den nyere versjonen"}</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
