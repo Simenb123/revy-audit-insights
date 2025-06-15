@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import ReactDiffViewer from 'react-diff-viewer';
+import ReactDiffViewer, { DiffMethod } from 'react-diff-viewer';
 
 interface VersionDiffViewerProps {
   oldContent: string;
@@ -52,7 +52,7 @@ const VersionDiffViewer: React.FC<VersionDiffViewerProps> = ({ oldContent, newCo
         newValue={newText} 
         splitView={true} 
         useDarkTheme={isDarkMode}
-        compareMethod="diffWords"
+        compareMethod={DiffMethod.WORDS}
       />
     </div>
   );
