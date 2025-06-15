@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
 import { Client } from '@/types/revio';
 import { ClientAuditAction } from '@/types/audit-actions';
+import VersionHistory from './VersionHistory';
 
 interface AIEnabledActionEditorProps {
   clientId: string;
@@ -66,12 +66,18 @@ const AIEnabledActionEditor: React.FC<AIEnabledActionEditorProps> = ({ clientId 
     });
 
     const [procedures, setProcedures] = useState('');
+    const [editorKey, setEditorKey] = useState(Date.now());
 
     useEffect(() => {
         if (action?.procedures) {
             setProcedures(action.procedures);
         }
     }, [action]);
+
+    const handleRestore = (content: string) => {
+        setProcedures(content);
+        setEditorKey(Date.now()); // Force re-render of RichTextEditor
+    };
 
     const handleSave = () => {
         console.log("Saving procedures:", procedures);
@@ -106,12 +112,12 @@ const AIEnabledActionEditor: React.FC<AIEnabledActionEditorProps> = ({ clientId 
         );
     }
 
-    if (!action) {
+    if (!action || !client) {
         return (
             <Alert>
                 <FileText className="h-4 w-4" />
                 <AlertTitle>Ingen handling funnet</AlertTitle>
-                <AlertDescription>Fant ingen revisjonshandling for denne klienten å demonstrere på.</AlertDescription>
+                <AlertDescription>Fant ingen revisjonshandling eller klientdata for denne klienten å demonstrere på.</AlertDescription>
             </Alert>
         );
     }
@@ -124,16 +130,20 @@ const AIEnabledActionEditor: React.FC<AIEnabledActionEditorProps> = ({ clientId 
                     Her er et eksempel på hvordan du kan redigere revisjonshandlingen '{action.name}' med hjelp fra Revy.
                 </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
                 <div>
                     <h3 className="font-semibold mb-2">Prosedyrer</h3>
                     <RichTextEditor
+                        key={editorKey}
                         content={procedures}
                         onChange={setProcedures}
                         context="audit"
-                        contextData={{ client: client || undefined, action: action || undefined }}
+                        contextData={{ client: client, action: action }}
                     />
                 </div>
+                
+                <VersionHistory client={client} action={action} onRestore={handleRestore} />
+                
                 <div className="flex justify-end">
                     <Button onClick={handleSave}>Lagre endringer (Demo)</Button>
                 </div>

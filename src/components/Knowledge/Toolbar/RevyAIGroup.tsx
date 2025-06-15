@@ -7,6 +7,8 @@ import { generateAIResponse } from '@/services/revyService';
 import { toast } from '@/components/ui/use-toast';
 import { Client } from '@/types/revio';
 import { ClientAuditAction } from '@/types/audit-actions';
+import { useCreateDocumentVersion } from '@/hooks/useCreateDocumentVersion';
+import { useCreateAuditLog } from '@/hooks/useCreateAuditLog';
 
 type Props = {
   editor: Editor;
@@ -16,6 +18,8 @@ type Props = {
 
 const RevyAIGroup = ({ editor, client, action }: Props) => {
   const [isLoading, setIsLoading] = useState(false);
+  const createVersion = useCreateDocumentVersion();
+  const createAuditLog = useCreateAuditLog();
 
   const handleRevyHelp = async () => {
     if (!editor || !action || !client) {
@@ -26,6 +30,22 @@ const RevyAIGroup = ({ editor, client, action }: Props) => {
     setIsLoading(true);
 
     const currentContent = editor.getHTML();
+    
+    try {
+      await createVersion.mutateAsync({
+        clientAuditActionId: action.id,
+        content: currentContent,
+        versionName: `Før AI-forbedring ${new Date().toLocaleTimeString()}`,
+        changeSource: 'user',
+        changeDescription: 'Automatisk lagret versjon før Revy AI ble kjørt.'
+      });
+    } catch (versionError) {
+       console.error("Could not save pre-AI version:", versionError);
+       toast({ title: "Feil", description: "Kunne ikke lagre nåværende versjon før AI-kjøring. Handlingen ble avbrutt.", variant: "destructive" });
+       setIsLoading(false);
+       return;
+    }
+    
     const prompt = `Du er en erfaren revisor. Forbedre og utdyp følgende dokumentasjon for revisjonshandlingen "${action.name}". Svar kun med den oppdaterte HTML-formaterte teksten, uten ekstra kommentarer eller introduksjoner. Eksisterende tekst:\n\n${currentContent}`;
 
     try {
@@ -36,16 +56,31 @@ const RevyAIGroup = ({ editor, client, action }: Props) => {
         'employee'
       );
       
-      // Simulate streaming into the editor by progressively adding content
+      await createVersion.mutateAsync({
+        clientAuditActionId: action.id,
+        content: response,
+        versionName: `AI-forbedring ${new Date().toLocaleTimeString()}`,
+        changeSource: 'ai',
+        changeDescription: 'Innhold generert av Revy AI.'
+      });
+      
       editor.chain().focus().setContent('').run();
-      const chunks = response.match(/.{1,10}/g) || []; // Split into small chunks
+      const chunks = response.match(/.{1,10}/g) || [];
       
       for (const chunk of chunks) {
           editor.chain().focus().insertContent(chunk).run();
-          await new Promise(r => setTimeout(r, 20)); // A short delay for effect
+          await new Promise(r => setTimeout(r, 20));
       }
       
       toast({ title: "Revy hjalp til!", description: "Innholdet i editoren ble oppdatert." });
+
+      createAuditLog.mutate({
+        clientId: client.id,
+        actionType: 'ai_content_generated',
+        areaName: action.subject_area,
+        description: `Revy AI forbedret innhold for revisjonshandling: "${action.name}".`,
+        metadata: { client_audit_action_id: action.id }
+      });
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Ukjent feil";

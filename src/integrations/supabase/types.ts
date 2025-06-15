@@ -457,7 +457,7 @@ export type Database = {
       }
       audit_logs: {
         Row: {
-          action_type: Database["public"]["Enums"]["audit_log_action"]
+          action_type: Database["public"]["Enums"]["audit_action_type"]
           area_name: string
           client_id: string
           created_at: string
@@ -470,7 +470,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          action_type: Database["public"]["Enums"]["audit_log_action"]
+          action_type: Database["public"]["Enums"]["audit_action_type"]
           area_name: string
           client_id: string
           created_at?: string
@@ -483,7 +483,7 @@ export type Database = {
           user_id: string
         }
         Update: {
-          action_type?: Database["public"]["Enums"]["audit_log_action"]
+          action_type?: Database["public"]["Enums"]["audit_action_type"]
           area_name?: string
           client_id?: string
           created_at?: string
@@ -1062,6 +1062,47 @@ export type Database = {
             columns: ["audit_firm_id"]
             isOneToOne: false
             referencedRelation: "audit_firms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_versions: {
+        Row: {
+          change_description: string | null
+          change_source: string
+          client_audit_action_id: string
+          content: string
+          created_at: string
+          created_by_user_id: string | null
+          id: string
+          version_name: string
+        }
+        Insert: {
+          change_description?: string | null
+          change_source: string
+          client_audit_action_id: string
+          content: string
+          created_at?: string
+          created_by_user_id?: string | null
+          id?: string
+          version_name: string
+        }
+        Update: {
+          change_description?: string | null
+          change_source?: string
+          client_audit_action_id?: string
+          content?: string
+          created_at?: string
+          created_by_user_id?: string | null
+          id?: string
+          version_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_versions_client_audit_action_id_fkey"
+            columns: ["client_audit_action_id"]
+            isOneToOne: false
+            referencedRelation: "client_audit_actions"
             referencedColumns: ["id"]
           },
         ]
@@ -2381,6 +2422,13 @@ export type Database = {
         | "recalculation"
         | "confirmation"
       article_status: "draft" | "published" | "archived"
+      audit_action_type:
+        | "review_completed"
+        | "task_assigned"
+        | "document_uploaded"
+        | "analysis_performed"
+        | "ai_content_generated"
+        | "document_version_restored"
       audit_log_action:
         | "review_completed"
         | "task_assigned"
@@ -2537,6 +2585,14 @@ export const Constants = {
         "confirmation",
       ],
       article_status: ["draft", "published", "archived"],
+      audit_action_type: [
+        "review_completed",
+        "task_assigned",
+        "document_uploaded",
+        "analysis_performed",
+        "ai_content_generated",
+        "document_version_restored",
+      ],
       audit_log_action: [
         "review_completed",
         "task_assigned",

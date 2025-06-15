@@ -3,10 +3,11 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/Auth/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
+import { AuditLogAction } from '@/types/organization';
 
 interface CreateAuditLogParams {
   clientId: string;
-  actionType: 'review_completed' | 'task_assigned' | 'document_uploaded' | 'analysis_performed';
+  actionType: AuditLogAction;
   areaName: string;
   description?: string;
   metadata?: any;
