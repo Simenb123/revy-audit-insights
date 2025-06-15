@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
@@ -125,11 +126,12 @@ export const useSmartRevyAssistant = ({ clientData, userRole, embedded = false }
       });
 
     } catch (error) {
-      const fallbackContent = 'Beklager, jeg opplever tekniske problemer akkurat nå. Prøv igjen om litt.';
+      const errorMessage = error instanceof Error ? error.message : 'En ukjent feil oppstod.';
+      const fallbackContent = `Beklager, jeg opplever tekniske problemer akkurat nå. Prøv igjen om litt. (Feil: ${errorMessage})`;
       await sendMessage({ content: fallbackContent, sender: 'revy' });
       toast({
         title: "AI-feil",
-        description: "Kunne ikke få svar fra AI-assistenten",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {

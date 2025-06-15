@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { RevyContext } from '@/types/revio';
 
@@ -10,7 +9,7 @@ export const generateAIResponse = async (
   userRole?: string,
   sessionId?: string
 ): Promise<string> => {
-  console.log('🔍 Generating enhanced AI response with knowledge integration', {
+  console.log('🚀 Calling generateAIResponse service', {
     context,
     hasClientData: !!clientData,
     userRole,
@@ -20,17 +19,12 @@ export const generateAIResponse = async (
   try {
     // Get current user
     const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError) {
-      console.error('❌ Error getting user:', userError);
+    if (userError || !user) {
+      console.error('❌ Authentication error in generateAIResponse:', userError?.message || 'No user found');
       throw new Error('Authentication required');
     }
 
-    if (!user) {
-      console.error('❌ No authenticated user found');
-      throw new Error('User not authenticated');
-    }
-
-    console.log('✅ User authenticated:', user.id);
+    console.log('✅ User authenticated for AI call:', user.id);
 
     const requestBody = {
       message,
@@ -41,32 +35,34 @@ export const generateAIResponse = async (
       userId: user.id // Ensure userId is properly set as string
     };
 
-    console.log('📤 Sending request to edge function:', {
-      ...requestBody,
-      userId: user.id,
-      messagePreview: message.substring(0, 50) + '...'
-    });
+    console.log('📤 Sending request to revy-ai-chat edge function with body:', requestBody);
 
     const { data, error } = await supabase.functions.invoke('revy-ai-chat', {
       body: requestBody
     });
 
     if (error) {
-      console.error('❌ Supabase function error:', error);
-      throw error;
+      console.error('❌ Supabase function invocation error:', error);
+      const errorMessage = error.context?.msg || error.message || 'Unknown function error';
+      throw new Error(errorMessage);
+    }
+
+    if (data.isError) {
+        console.error('❌ Error response from AI function:', data.error);
+        throw new Error(data.response || data.error || 'The AI assistant encountered an error.');
     }
 
     if (!data || !data.response) {
-      console.error('❌ Invalid response from AI function:', data);
+      console.error('❌ Invalid response structure from AI function:', data);
       throw new Error('Invalid response from AI service');
     }
 
-    console.log('✅ AI response received successfully');
+    console.log('✅ AI response received successfully', { responseLength: data.response.length });
     return data.response;
 
   } catch (error) {
-    console.error('💥 Error in generateAIResponse:', error);
-    throw new Error(error instanceof Error ? error.message : 'Unknown error occurred');
+    console.error('💥 Final catch block in generateAIResponse:', error);
+    throw new Error(error instanceof Error ? error.message : 'An unknown error occurred while contacting the AI assistant.');
   }
 };
 
