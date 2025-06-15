@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
@@ -19,20 +18,20 @@ const roleLabels: Record<string, string> = {
 const BoardAccordion: React.FC<BoardAccordionProps> = ({ roles }) => {
   if (!roles || roles.length === 0) return null;
 
-  const grouped = {
-    CEO: [] as ClientRole[],
-    CHAIR: [] as ClientRole[],
-    MEMBER: [] as ClientRole[],
-    SIGNATORY: [] as ClientRole[]
+  const grouped: Record<string, ClientRole[]> = {
+    CEO: [],
+    CHAIR: [],
+    MEMBER: [],
+    SIGNATORY: []
   };
   
   for (const role of roles) {
-    if (role.roleType in grouped) {
-      grouped[role.roleType as keyof typeof grouped].push(role);
+    if (role.role_type && role.role_type in grouped) {
+      grouped[role.role_type].push(role);
     }
   }
 
-  const rolePeriod = (from?: string, to?: string) => {
+  const rolePeriod = (from?: string | null, to?: string | null) => {
     if (!from && !to) return null;
     if (from && !to) return (
       <span className="text-xs text-muted-foreground ml-3">(fra: {formatDate(from)} – pågående)</span>
@@ -58,7 +57,7 @@ const BoardAccordion: React.FC<BoardAccordionProps> = ({ roles }) => {
         <span className="ml-2 text-xs text-muted-foreground">
           {roleLabels[type] || type}
         </span>
-        {rolePeriod(role.fromDate, role.toDate)}
+        {rolePeriod(role.from_date, role.to_date)}
       </div>
     </div>
   );

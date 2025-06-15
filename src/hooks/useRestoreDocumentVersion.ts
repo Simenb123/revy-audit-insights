@@ -1,12 +1,10 @@
-
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/Auth/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
 import { useCreateAuditLog } from '@/hooks/useCreateAuditLog';
 import { DocumentVersion } from '@/hooks/useDocumentVersions';
-import { Client } from '@/types/revio';
-import { ClientAuditAction } from '@/types/audit-actions';
+import { Client, ClientAuditAction } from '@/types/revio';
 
 interface RestoreVersionParams {
   version: DocumentVersion;

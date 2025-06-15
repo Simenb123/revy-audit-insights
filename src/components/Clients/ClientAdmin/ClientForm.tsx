@@ -1,8 +1,9 @@
+
 import React from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
-import { Client, AuditPhase } from '@/types/revio';
+import { Client } from '@/types/revio';
 import { Button } from '@/components/ui/button';
 import { Form } from '@/components/ui/form';
 import ClientDetailsForm from './ClientDetailsForm';
@@ -21,7 +22,7 @@ const clientSchema = z.object({
   company_name: z.string().min(2, { message: 'Firmanavn må ha minst 2 tegn' }),
   org_number: z.string().regex(/^\d{9}$/, { message: 'Organisasjonsnummer må være 9 siffer' }),
   phase: z.enum(['overview', 'engagement', 'planning', 'risk_assessment', 'execution', 'completion', 'reporting']),
-  progress: z.number().min(0).max(100),
+  progress: z.coerce.number().min(0).max(100),
   department: z.string().optional(),
   contact_person: z.string().optional(),
   chair: z.string().optional(),
@@ -50,6 +51,8 @@ const clientSchema = z.object({
   year_end_date: z.string().optional(),
   internal_controls: z.string().optional(),
   risk_assessment: z.string().optional(),
+  audit_fee: z.number().optional().nullable(),
+  board_meetings_per_year: z.number().optional().nullable(),
 });
 
 type FormData = z.infer<typeof clientSchema>;
@@ -58,7 +61,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, submitLa
   const form = useForm<FormData>({
     resolver: zodResolver(clientSchema),
     defaultValues: {
-      id: initialData?.id || Math.random().toString(36).substring(2, 9),
+      id: initialData?.id || undefined,
       name: initialData?.name || '',
       company_name: initialData?.company_name || '',
       org_number: initialData?.org_number || '',
@@ -85,8 +88,8 @@ const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, submitLa
       nace_description: initialData?.nace_description || '',
       municipality_code: initialData?.municipality_code || '',
       municipality_name: initialData?.municipality_name || '',
-      equity_capital: initialData?.equity_capital || 0,
-      share_capital: initialData?.share_capital || 0,
+      equity_capital: initialData?.equity_capital || null,
+      share_capital: initialData?.share_capital || null,
       accounting_system: initialData?.accounting_system || '',
       previous_auditor: initialData?.previous_auditor || '',
       year_end_date: initialData?.year_end_date || '',
@@ -94,16 +97,6 @@ const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, submitLa
       risk_assessment: initialData?.risk_assessment || '',
       audit_fee: initialData?.audit_fee || null,
       board_meetings_per_year: initialData?.board_meetings_per_year || null,
-      riskAreas: initialData?.riskAreas || [],
-      documents: initialData?.documents || [],
-      roles: initialData?.roles || [],
-      announcements: initialData?.announcements || [],
-      created_at: initialData?.created_at || new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      user_id: initialData?.user_id || '', // Assuming user_id is needed
-      department_id: initialData?.department_id || null,
-      address_line: initialData?.address_line || null,
-      is_test_data: initialData?.is_test_data || false,
     },
   });
 
@@ -111,52 +104,17 @@ const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, submitLa
     const now = new Date().toISOString();
     
     const fullClient: Client = {
-      id: data.id || Math.random().toString(36).substring(2, 9),
-      name: data.name,
-      company_name: data.company_name,
-      org_number: data.org_number,
-      phase: data.phase,
-      progress: data.progress,
-      department: data.department || '',
-      contact_person: data.contact_person || '',
-      chair: data.chair || '',
-      ceo: data.ceo || '',
-      industry: data.industry || '',
-      registration_date: data.registration_date || '',
-      address: data.address || '',
-      postal_code: data.postal_code || '',
-      city: data.city || '',
-      email: data.email || '',
-      phone: data.phone || '',
-      bank_account: data.bank_account || '',
-      notes: data.notes || '',
-      org_form_code: data.org_form_code || '',
-      org_form_description: data.org_form_description || '',
-      homepage: data.homepage || '',
-      status: data.status || 'ACTIVE',
-      nace_code: data.nace_code || '',
-      nace_description: data.nace_description || '',
-      municipality_code: data.municipality_code || '',
-      municipality_name: data.municipality_name || '',
-      equity_capital: data.equity_capital || null,
-      share_capital: data.share_capital || null,
-      accounting_system: data.accounting_system || '',
-      previous_auditor: data.previous_auditor || '',
-      year_end_date: data.year_end_date || '',
-      internal_controls: data.internal_controls || '',
-      risk_assessment: data.risk_assessment || '',
-      audit_fee: initialData?.audit_fee || null,
-      board_meetings_per_year: initialData?.board_meetings_per_year || null,
+      // Cast initialData to Client to satisfy spread, assuming it's a valid partial Client
+      ...(initialData as Omit<Client, keyof FormData>),
+      ...data,
+      id: initialData?.id || Math.random().toString(36).substring(2, 9),
+      created_at: initialData?.created_at || now,
+      updated_at: now,
+      user_id: initialData?.user_id || '', // Ensure user_id is carried over
       riskAreas: initialData?.riskAreas || [],
       documents: initialData?.documents || [],
       roles: initialData?.roles || [],
       announcements: initialData?.announcements || [],
-      created_at: initialData?.created_at || now,
-      updated_at: now,
-      user_id: initialData?.user_id || '', // Assuming user_id is needed
-      department_id: initialData?.department_id || null,
-      address_line: initialData?.address_line || null,
-      is_test_data: initialData?.is_test_data || false,
     };
     
     onSubmit(fullClient);

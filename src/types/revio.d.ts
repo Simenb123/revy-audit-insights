@@ -36,14 +36,14 @@ export type ClientDocument = {
 export type ClientRole = Database['public']['Tables']['client_roles']['Row'];
 export type Announcement = Database['public']['Tables']['announcements']['Row'] & { isRead: boolean };
 
-export type Account = { id: string; name: string };
-export type AccountGroup = { id: string; name: string; accounts: Account[] };
+export type Account = { id: string; name: string; number: string; balance: number; };
+export type AccountGroup = { id: string; name: string; accounts: Account[]; balance: number; };
 
 // Unified audit phase type for frontend consistency
 export type AuditPhase = 'overview' | 'engagement' | 'planning' | 'risk_assessment' | 'execution' | 'completion' | 'reporting';
 
 // Extended client type for frontend use. It includes related data not on the client table itself.
-type DbClient = Omit<Database['public']['Tables']['clients']['Row'], 'phase'>;
+type DbClient = Database['public']['Tables']['clients']['Row'];
 export type Client = DbClient & {
   phase: AuditPhase;
   riskAreas: RiskArea[];

@@ -4,7 +4,7 @@ import { Client } from '@/types/revio';
 import AuditActionsManager from '@/components/AuditActions/AuditActionsManager';
 import { PlanningContainer } from './Planning/PlanningContainer';
 
-type Phase = 'engagement' | 'planning' | 'execution' | 'completion' | 'reporting';
+type Phase = 'engagement' | 'planning' | 'execution' | 'completion' | 'reporting' | 'overview' | 'risk_assessment';
 
 interface PhaseContentProps {
   phase: Phase;
@@ -22,9 +22,9 @@ export const PhaseContent: React.FC<PhaseContentProps> = ({ phase, client }) => 
       case 'planning':
         return <PlanningContainer client={client} />;
       case 'execution':
-        return <AuditActionsManager client={client} phase="execution" />;
+        return <AuditActionsManager clientId={client.id} phase="execution" />;
       case 'completion':
-        return <AuditActionsManager client={client} phase="completion" />;
+        return <AuditActionsManager clientId={client.id} phase="completion" />;
       default:
         return (
           <div className="p-8">
