@@ -36,30 +36,39 @@ export const RevyContextProvider: React.FC<{ children: React.ReactNode }> = ({ c
   // Determine context based on current route
   useEffect(() => {
     const path = location.pathname;
-    
+    let newContext: RevyContext = 'general';
+
     if (path.includes('/klienter/') && orgNumber) {
       if (path.includes('/regnskap')) {
-        setCurrentContext('general' as RevyContext); // accounting-data doesn't exist in RevyContext
+        newContext = 'accounting-data';
       } else if (path.includes('/analyser')) {
-        setCurrentContext('general' as RevyContext); // analysis doesn't exist in RevyContext  
+        newContext = 'analysis';
       } else if (path.includes('/regnskapsdata')) {
-        setCurrentContext('general' as RevyContext); // data-upload doesn't exist in RevyContext
+        newContext = 'data-upload';
+      } else if (path.includes('/revisjonshandlinger') || path.includes('/actions')) {
+        newContext = 'audit-actions';
+      } else if (path.includes('/risikovurdering') || path.includes('/risk')) {
+        newContext = 'risk-assessment';
+      } else if (path.includes('/dokumentasjon') || path.includes('/documents')) {
+        newContext = 'documentation';
+      } else if (path.includes('/team') || path.includes('/samarbeid')) {
+        newContext = 'collaboration';
       } else {
-        setCurrentContext('client-detail');
+        newContext = 'client-detail';
       }
     } else if (path.includes('/klienter')) {
-      setCurrentContext('client-overview');
+      newContext = 'client-overview';
     } else if (path.includes('/dashboard')) {
-      setCurrentContext('dashboard');
+      newContext = 'dashboard';
     } else if (path.includes('/knowledge')) {
-      setCurrentContext('general'); // knowledge-base doesn't exist in RevyContext
+      newContext = 'knowledge-base';
     } else if (path.includes('/teams')) {
-      setCurrentContext('team-management');
+      newContext = 'team-management';
     } else if (path.includes('/communication')) {
-      setCurrentContext('communication');
-    } else {
-      setCurrentContext('general');
+      newContext = 'communication';
     }
+    
+    setCurrentContext(newContext);
 
     // Update contextual data based on client
     if (client) {

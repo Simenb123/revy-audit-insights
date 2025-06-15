@@ -1,10 +1,9 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useRevyContext } from '@/components/RevyContext/RevyContextProvider';
 import { generateAIResponse } from '@/services/revyService';
-import { detectEnhancedContext, getEnhancedContextualTips } from '@/services/enhancedRevyService';
+import { getEnhancedContextualTips } from '@/services/enhancedRevyService';
 import { useRevyChatSessions } from './useRevyChatSessions';
 import { useRevyChatMessages } from './useRevyChatMessages';
 import { RevyMessage, RevyChatMessage } from '@/types/revio';
@@ -34,9 +33,8 @@ export const useSmartRevyAssistant = ({ clientData, userRole, embedded = false }
   const [currentTip, setCurrentTip] = useState('');
   const { toast } = useToast();
   const { currentContext } = useRevyContext();
-  const location = useLocation();
 
-  const enhancedContext = detectEnhancedContext(location.pathname, clientData);
+  const enhancedContext = currentContext;
 
   const handleCreateSession = useCallback(async (title?: string) => {
     try {

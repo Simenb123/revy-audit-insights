@@ -9,7 +9,7 @@ export type RevyMessage = {
   metadata?: any;
 };
 
-export type RevyContext = 'dashboard' | 'client-overview' | 'client-detail' | 'audit-actions' | 'risk-assessment' | 'documentation' | 'collaboration' | 'communication' | 'team-management' | 'drill-down' | 'mapping' | 'general';
+export type RevyContext = 'dashboard' | 'client-overview' | 'client-detail' | 'audit-actions' | 'risk-assessment' | 'documentation' | 'collaboration' | 'communication' | 'team-management' | 'drill-down' | 'mapping' | 'general' | 'accounting-data' | 'analysis' | 'data-upload' | 'knowledge-base';
 
 // Adding session and message types for Revy Chat
 export type RevyChatSession = {

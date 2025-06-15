@@ -1,45 +1,8 @@
 import { supabase } from '@/integrations/supabase/client';
 import { RevyContext } from '@/types/revio';
 
-// Enhanced context detection based on URL and app state
-export const detectEnhancedContext = (pathname: string, clientData?: any): RevyContext => {
-  console.log('🔍 Detecting context from pathname:', pathname);
-  
-  // More specific context detection
-  if (pathname.includes('/klienter/')) {
-    if (pathname.includes('/revisjonshandlinger') || pathname.includes('/actions')) {
-      return 'audit-actions';
-    }
-    if (pathname.includes('/risikovurdering') || pathname.includes('/risk')) {
-      return 'risk-assessment';
-    }
-    if (pathname.includes('/dokumentasjon') || pathname.includes('/documents')) {
-      return 'documentation';
-    }
-    if (pathname.includes('/team') || pathname.includes('/samarbeid')) {
-      return 'collaboration';
-    }
-    return 'client-detail';
-  }
-  
-  if (pathname.includes('/klienter')) {
-    return 'client-overview';
-  }
-  
-  if (pathname.includes('/dashboard')) {
-    return 'dashboard';
-  }
-  
-  if (pathname.includes('/teams')) {
-    return 'team-management';
-  }
-  
-  if (pathname.includes('/communication')) {
-    return 'communication';
-  }
-  
-  return 'general';
-};
+// The `detectEnhancedContext` function has been removed.
+// This logic is now centralized in `RevyContextProvider` for a single source of truth.
 
 // Get contextual suggestions based on current app state
 export const getEnhancedContextualTips = async (
@@ -139,6 +102,10 @@ const getBasicContextualTip = (context: RevyContext): string => {
     'team-management': 'Som teamleder kan jeg hjelpe med kapasitetsplanlegging, kompetanseutvikling og teamdynamikk.',
     'drill-down': 'Jeg kan hjelpe deg med å analysere regnskapsdata og finne avvik eller mønstre som krever oppmerksomhet.',
     'mapping': 'Jeg kan veilede deg gjennom kontomapping og forklare hvordan regnskapskonti skal klassifiseres.',
+    'accounting-data': 'Nå ser du på regnskapsdata. Spør meg om å analysere kontoer, finne transaksjoner eller sammenligne perioder.',
+    'analysis': 'Analyse-siden er aktiv. Jeg kan hjelpe deg med å tolke grafer, beregne nøkkeltall eller identifisere trender.',
+    'data-upload': 'Her kan du laste opp regnskapsdata. Jeg kan veilede deg gjennom prosessen eller hjelpe deg med filformater.',
+    'knowledge-base': 'Du er i kunnskapsbasen. Søk etter artikler, ISA-standarder, eller spør meg om faglige temaer.',
     'general': 'Jeg kan hjelpe deg med revisjonsmetodikk, ISA-standarder, regnskapsanalyse eller appfunksjonalitet. Hva lurer du på?'
   };
   
