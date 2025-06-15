@@ -89,3 +89,20 @@
     clip-path: polygon(100% 0, 0% 100%, 100% 100%);
   }
 }
+
+@layer base {
+  /* Custom styles for Tiptap editor content */
+  .prose table {
+    @apply w-full my-4 border-collapse border border-border;
+  }
+  .prose th,
+  .prose td {
+    @apply border border-border px-4 py-2 text-left;
+  }
+  .prose thead {
+    @apply bg-muted;
+  }
+  .prose th {
+    @apply font-medium;
+  }
+}
