@@ -5,6 +5,7 @@ import { useFetchDocuments } from './pdf/useFetchDocuments';
 import { useUploadDocument } from './pdf/useUploadDocument';
 import { useToggleFavorite } from './pdf/useToggleFavorite';
 import { useDeleteDocument } from './pdf/useDeleteDocument';
+import { useRetryTextExtraction } from './pdf/useRetryTextExtraction';
 export type { PDFDocument } from '@/types/pdf';
 
 export const usePDFDocuments = () => {
@@ -13,6 +14,7 @@ export const usePDFDocuments = () => {
   const uploadDocument = useUploadDocument();
   const toggleFavorite = useToggleFavorite();
   const deleteDocument = useDeleteDocument();
+  const retryTextExtraction = useRetryTextExtraction();
 
   const getDocumentUrl = async (filePath: string): Promise<string | null> => {
     const { data, error } = await supabase.storage
@@ -39,6 +41,7 @@ export const usePDFDocuments = () => {
     toggleFavorite,
     deleteDocument,
     getDocumentUrl,
-    refetch
+    refetch,
+    retryTextExtraction,
   };
 };

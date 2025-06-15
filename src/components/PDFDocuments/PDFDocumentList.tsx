@@ -9,7 +9,7 @@ import PDFDocumentFilters from './PDFDocumentFilters';
 import PDFDocumentItem from './PDFDocumentItem';
 
 const PDFDocumentList = () => {
-  const { documents, isLoading, toggleFavorite, deleteDocument, getDocumentUrl } = usePDFDocuments();
+  const { documents, isLoading, toggleFavorite, deleteDocument, getDocumentUrl, retryTextExtraction } = usePDFDocuments();
   const [selectedDocument, setSelectedDocument] = useState<PDFDocument | null>(null);
 
   const {
@@ -78,6 +78,7 @@ const PDFDocumentList = () => {
                   onToggleFavorite={toggleFavorite.mutate}
                   onDownload={handleDownload}
                   onDelete={deleteDocument.mutate}
+                  onRetryExtraction={retryTextExtraction.mutate}
                 />
               ))}
             </div>

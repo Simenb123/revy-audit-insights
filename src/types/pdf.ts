@@ -14,6 +14,6 @@ export interface PDFDocument {
   is_favorite: boolean;
   created_at: string;
   updated_at: string;
-  extracted_text?: { page: number; content: string }[];
+  extracted_text?: { page: number; content: string }[] | { error: string };
   text_extraction_status?: 'pending' | 'processing' | 'completed' | 'failed' | null;
 }

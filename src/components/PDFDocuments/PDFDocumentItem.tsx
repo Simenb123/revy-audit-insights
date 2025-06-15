@@ -3,7 +3,7 @@ import React from 'react';
 import { PDFDocument } from '@/types/pdf';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Star, Download, Trash2, Eye } from 'lucide-react';
+import { Star, Download, Trash2, Eye, RotateCcw } from 'lucide-react';
 import ExtractionStatusIndicator from './ExtractionStatusIndicator';
 
 interface PDFDocumentItemProps {
@@ -12,6 +12,7 @@ interface PDFDocumentItemProps {
   onToggleFavorite: (documentId: string) => void;
   onDownload: (document: PDFDocument) => void;
   onDelete: (documentId: string) => void;
+  onRetryExtraction: (documentId: string) => void;
 }
 
 const getCategoryLabel = (category: string) => {
@@ -42,13 +43,14 @@ const PDFDocumentItem = ({
   onToggleFavorite,
   onDownload,
   onDelete,
+  onRetryExtraction,
 }: PDFDocumentItemProps) => {
   return (
     <div className="border rounded-lg p-4 hover:bg-gray-50">
       <div className="flex items-start justify-between">
-        <div className="flex-1">
+        <div className="flex-1 mr-4">
           <div className="flex items-center gap-3 mb-2 flex-wrap">
-            <ExtractionStatusIndicator status={document.text_extraction_status} />
+            <ExtractionStatusIndicator document={document} />
             <h3 className="font-medium text-lg">{document.title}</h3>
             <div className="flex items-center gap-2">
               {document.isa_number && (
@@ -81,7 +83,17 @@ const PDFDocumentItem = ({
           </div>
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
+          {(document.text_extraction_status === 'failed' || document.text_extraction_status === 'processing') && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onRetryExtraction(document.id)}
+              title="Prøv tekstanalyse på nytt"
+            >
+              <RotateCcw className="h-4 w-4 text-blue-600" />
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="sm"
