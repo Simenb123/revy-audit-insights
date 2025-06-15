@@ -2,13 +2,14 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserProfile } from './useUserProfile';
+import { AuditLogAction } from '@/types/organization';
 
 interface AuditLog {
   id: string;
   clientId: string;
   userId: string;
   reviewerId?: string;
-  actionType: 'review_completed' | 'task_assigned' | 'document_uploaded' | 'analysis_performed';
+  actionType: AuditLogAction;
   areaName: string;
   description?: string;
   isReviewed: boolean;
@@ -19,7 +20,7 @@ interface AuditLog {
 
 interface UseAuditLogsParams {
   searchTerm?: string;
-  actionType?: 'review_completed' | 'task_assigned' | 'document_uploaded' | 'analysis_performed';
+  actionType?: AuditLogAction;
   isReviewed?: boolean;
   clientId?: string;
 }
@@ -81,7 +82,7 @@ export function useAuditLogs(params: UseAuditLogsParams = {}) {
         clientId: log.client_id,
         userId: log.user_id,
         reviewerId: log.reviewer_id,
-        actionType: log.action_type,
+        actionType: log.action_type as AuditLogAction,
         areaName: log.area_name,
         description: log.description,
         isReviewed: log.is_reviewed,

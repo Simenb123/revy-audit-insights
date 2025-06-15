@@ -1,4 +1,3 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -30,7 +29,7 @@ export function useDocumentVersions(clientAuditActionId: string | undefined) {
         throw error;
       }
 
-      return data;
+      return data as DocumentVersion[];
     },
     enabled: !!clientAuditActionId,
   });
