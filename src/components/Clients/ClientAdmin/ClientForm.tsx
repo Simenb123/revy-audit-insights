@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -115,6 +114,9 @@ const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, submitLa
       documents: initialData?.documents || [],
       roles: initialData?.roles || [],
       announcements: initialData?.announcements || [],
+      is_test_data: initialData?.is_test_data || false,
+      department_id: initialData?.department_id || null,
+      address_line: initialData?.address_line || null
     };
     
     onSubmit(fullClient);

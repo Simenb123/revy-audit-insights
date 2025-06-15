@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { useDocumentVersions, DocumentVersion } from '@/hooks/useDocumentVersions';
@@ -6,8 +5,7 @@ import { useRestoreDocumentVersion } from '@/hooks/useRestoreDocumentVersion';
 import { Clock, History, User, Bot, Loader2, FileDiff } from 'lucide-react';
 import { format } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Client } from '@/types/revio';
-import { ClientAuditAction } from '@/types/audit-actions';
+import { Client, ClientAuditAction } from '@/types/revio';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import VersionDiffDialog from './VersionDiffDialog';
 import { Checkbox } from "@/components/ui/checkbox";

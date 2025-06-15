@@ -34,17 +34,17 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({ versions, selectedVersi
                   <p className={`font-medium truncate ${
                     version.id === selectedVersion.id ? 'text-primary' : ''
                   }`}>
-                    {version.name}
+                    {version.version_name}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {format(new Date(version.date), 'dd.MM.yyyy HH:mm')}
+                    {format(new Date(version.created_at), 'dd.MM.yyyy HH:mm')}
                   </p>
                 </div>
                 <div className="flex-shrink-0">
                   <span className={`inline-block w-2 h-2 rounded-full ${
                     version.id === selectedVersion.id 
                       ? 'bg-primary' 
-                      : version.status === 'archived' 
+                      : version.change_source === 'import'
                         ? 'bg-muted-foreground' 
                         : 'bg-green-500'
                   }`} />

@@ -14,6 +14,7 @@ import DrillDownTable from './DrillDownTable';
 import MaterialityBanner from './MaterialityBanner';
 import VersionSelector from './VersionSelector';
 import VersionHistory from './VersionHistory';
+import { format } from 'date-fns';
 
 const materialityThresholds = {
   materiality: 2000000,
@@ -23,10 +24,10 @@ const materialityThresholds = {
 
 // Mock data for document versions
 const documentVersions: DocumentVersion[] = [
-  { id: '1', name: 'Årsregnskap 2023 (sist importert)', date: '2024-03-15', status: 'active' },
-  { id: '2', name: 'Årsregnskap 2023 (innlevert)', date: '2024-03-10', status: 'archived' },
-  { id: '3', name: 'Årsregnskap 2023 (utkast)', date: '2024-02-28', status: 'archived' },
-  { id: '4', name: 'Årsregnskap 2022 (endelig)', date: '2023-03-20', status: 'archived' },
+  { id: '1', version_name: 'Årsregnskap 2023 (sist importert)', created_at: '2024-03-15T12:00:00.000Z', client_audit_action_id: 'a1', content: '', change_source: 'user', created_by_user_id: 'u1', change_description: null },
+  { id: '2', version_name: 'Årsregnskap 2023 (innlevert)', created_at: '2024-03-10T12:00:00.000Z', client_audit_action_id: 'a1', content: '', change_source: 'user', created_by_user_id: 'u1', change_description: null },
+  { id: '3', version_name: 'Årsregnskap 2023 (utkast)', created_at: '2024-02-28T12:00:00.000Z', client_audit_action_id: 'a1', content: '', change_source: 'user', created_by_user_id: 'u1', change_description: null },
+  { id: '4', version_name: 'Årsregnskap 2022 (endelig)', created_at: '2023-03-20T12:00:00.000Z', client_audit_action_id: 'a1', content: '', change_source: 'user', created_by_user_id: 'u1', change_description: null },
 ];
 
 const AccountingExplorer = () => {
@@ -78,7 +79,7 @@ const AccountingExplorer = () => {
                 <CardHeader>
                   <CardTitle>Regnskapsoversikt</CardTitle>
                   <CardDescription>
-                    {selectedVersion.name} ({selectedVersion.date})
+                    {selectedVersion.version_name} ({format(new Date(selectedVersion.created_at), 'dd.MM.yyyy')})
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -92,7 +93,7 @@ const AccountingExplorer = () => {
                 <CardHeader>
                   <CardTitle>Hovedbok</CardTitle>
                   <CardDescription>
-                    {selectedVersion.name} ({selectedVersion.date})
+                    {selectedVersion.version_name} ({format(new Date(selectedVersion.created_at), 'dd.MM.yyyy')})
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -106,7 +107,7 @@ const AccountingExplorer = () => {
                 <CardHeader>
                   <CardTitle>Saldobalanse</CardTitle>
                   <CardDescription>
-                    {selectedVersion.name} ({selectedVersion.date})
+                    {selectedVersion.version_name} ({format(new Date(selectedVersion.created_at), 'dd.MM.yyyy')})
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -120,7 +121,7 @@ const AccountingExplorer = () => {
                 <CardHeader>
                   <CardTitle>Bilagsjournal</CardTitle>
                   <CardDescription>
-                    {selectedVersion.name} ({selectedVersion.date})
+                    {selectedVersion.version_name} ({format(new Date(selectedVersion.created_at), 'dd.MM.yyyy')})
                   </CardDescription>
                 </CardHeader>
                 <CardContent>

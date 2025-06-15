@@ -36,7 +36,7 @@ export type ClientDocument = {
 export type ClientRole = Database['public']['Tables']['client_roles']['Row'];
 export type Announcement = Database['public']['Tables']['announcements']['Row'] & { isRead: boolean };
 
-export type Account = { id: string; name: string; number: string; balance: number; };
+export type Account = { id: string; name: string; number: string; balance: number; type: string; };
 export type AccountGroup = { id: string; name: string; accounts: Account[]; balance: number; };
 
 // Unified audit phase type for frontend consistency
@@ -44,7 +44,7 @@ export type AuditPhase = 'overview' | 'engagement' | 'planning' | 'risk_assessme
 
 // Extended client type for frontend use. It includes related data not on the client table itself.
 type DbClient = Database['public']['Tables']['clients']['Row'];
-export type Client = DbClient & {
+export type Client = Omit<DbClient, 'phase'> & {
   phase: AuditPhase;
   riskAreas: RiskArea[];
   documents: ClientDocument[];
@@ -79,3 +79,18 @@ export interface PlanningModule {
 export type PlanningModuleStatus = Database['public']['Tables']['planning_module_statuses']['Row'];
 export type PlanningMateriality = Database['public']['Tables']['planning_materiality']['Row'];
 export type PlanningFraudRisk = Database['public']['Tables']['planning_fraud_risks']['Row'];
+
+export type Transaction = {
+  id: string;
+  date: string;
+  description: string;
+  amount: number;
+  account: string;
+};
+
+export type SamplingResult = {
+  sampleSize: number;
+  populationSize: number;
+  sampledItems: Transaction[];
+  evaluation: string;
+};
