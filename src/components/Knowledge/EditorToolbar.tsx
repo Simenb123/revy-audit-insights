@@ -10,19 +10,28 @@ import HeadingGroup from './Toolbar/HeadingGroup';
 import ListGroup from './Toolbar/ListGroup';
 import InsertGroup from './Toolbar/InsertGroup';
 import HistoryGroup from './Toolbar/HistoryGroup';
+import RevyAIGroup from './Toolbar/RevyAIGroup';
+import { Client, ClientAuditAction } from '@/types/revio';
 
 type EditorToolbarProps = {
   editor: Editor | null;
   onImageUpload: (file: File) => Promise<string | undefined>;
   isUploading: boolean;
   onOpenMediaLibrary: () => void;
+  context?: 'knowledge' | 'audit';
+  contextData?: {
+    client?: Client;
+    action?: ClientAuditAction;
+  };
 };
 
-export const EditorToolbar = ({ editor, onImageUpload, isUploading, onOpenMediaLibrary }: EditorToolbarProps) => {
+export const EditorToolbar = ({ editor, onImageUpload, isUploading, onOpenMediaLibrary, context = 'knowledge', contextData = {} }: EditorToolbarProps) => {
 
   if (!editor) {
     return null;
   }
+  
+  const { client, action } = contextData;
 
   return (
     <div className="border-b border-input bg-transparent rounded-t-md p-2 flex flex-wrap items-center gap-1">
@@ -44,6 +53,12 @@ export const EditorToolbar = ({ editor, onImageUpload, isUploading, onOpenMediaL
         isUploading={isUploading}
         onOpenMediaLibrary={onOpenMediaLibrary}
       />
+      {context === 'audit' && client && action && (
+        <>
+          <Separator orientation="vertical" className="h-8 mx-1" />
+          <RevyAIGroup editor={editor} client={client} action={action} />
+        </>
+      )}
     </div>
   );
 };

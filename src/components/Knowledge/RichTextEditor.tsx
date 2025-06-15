@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -20,6 +19,7 @@ import { Image as ImageIcon } from 'lucide-react';
 import { useArticleMedia } from '@/hooks/knowledge/useArticleMedia';
 import { MediaLibraryDialog } from './MediaLibraryDialog';
 import { EditorToolbar } from './EditorToolbar';
+import { Client, ClientAuditAction } from '@/types/revio';
 
 // Extend Tiptap extensions to add keyboard shortcuts
 const CustomSubscript = Subscript.extend({
@@ -41,9 +41,14 @@ const CustomSuperscript = Superscript.extend({
 type RichTextEditorProps = {
   content: string;
   onChange: (richText: string) => void;
+  context?: 'knowledge' | 'audit';
+  contextData?: {
+    client?: Client;
+    action?: ClientAuditAction;
+  };
 };
 
-const RichTextEditor = ({ content, onChange }: RichTextEditorProps) => {
+const RichTextEditor = ({ content, onChange, context = 'knowledge', contextData }: RichTextEditorProps) => {
   const { uploadImage, isUploading } = useArticleMedia();
   const [isDragging, setIsDragging] = useState(false);
   const [isMediaLibraryOpen, setIsMediaLibraryOpen] = useState(false);
@@ -161,6 +166,8 @@ const RichTextEditor = ({ content, onChange }: RichTextEditorProps) => {
         onImageUpload={uploadImage} 
         isUploading={isUploading} 
         onOpenMediaLibrary={() => setIsMediaLibraryOpen(true)}
+        context={context}
+        contextData={contextData}
       />
       <EditorContent editor={editor} />
       {editor && (
