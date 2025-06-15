@@ -1,8 +1,5 @@
 
 import React from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
 import {
   Dialog,
   DialogContent,
@@ -28,18 +25,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useCreateTeam } from '@/hooks/useCreateTeam';
 import { useClientData } from '@/components/Clients/ClientFetcher/useClientData';
-
-const teamSchema = z.object({
-  name: z.string().min(1, 'Teamnavn er påkrevd'),
-  description: z.string().optional(),
-  clientId: z.string().min(1, 'Klient er påkrevd'),
-  startDate: z.string().optional(),
-  endDate: z.string().optional(),
-});
-
-type TeamFormData = z.infer<typeof teamSchema>;
+import { useCreateTeamForm } from '@/hooks/useCreateTeamForm';
 
 interface CreateTeamDialogProps {
   open: boolean;
@@ -49,36 +36,10 @@ interface CreateTeamDialogProps {
 
 const CreateTeamDialog = ({ open, onOpenChange, onTeamCreated }: CreateTeamDialogProps) => {
   const { data: clients = [] } = useClientData();
-  const createTeamMutation = useCreateTeam();
-
-  const form = useForm<TeamFormData>({
-    resolver: zodResolver(teamSchema),
-    defaultValues: {
-      name: '',
-      description: '',
-      clientId: '',
-      startDate: '',
-      endDate: '',
-    },
+  const { form, onSubmit, isPending } = useCreateTeamForm({
+    onOpenChange,
+    onTeamCreated,
   });
-
-  const onSubmit = async (data: TeamFormData) => {
-    try {
-      await createTeamMutation.mutateAsync({
-        name: data.name,
-        description: data.description,
-        clientId: data.clientId,
-        startDate: data.startDate || undefined,
-        endDate: data.endDate || undefined,
-      });
-      
-      form.reset();
-      onOpenChange(false);
-      onTeamCreated();
-    } catch (error) {
-      console.error('Error creating team:', error);
-    }
-  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -188,9 +149,9 @@ const CreateTeamDialog = ({ open, onOpenChange, onTeamCreated }: CreateTeamDialo
               </Button>
               <Button 
                 type="submit" 
-                disabled={createTeamMutation.isPending}
+                disabled={isPending}
               >
-                {createTeamMutation.isPending ? 'Oppretter...' : 'Opprett team'}
+                {isPending ? 'Oppretter...' : 'Opprett team'}
               </Button>
             </div>
           </form>
