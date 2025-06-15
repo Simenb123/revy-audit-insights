@@ -68,8 +68,8 @@ export const RevyContextProvider: React.FC<{ children: React.ReactNode }> = ({ c
         industry: client.industry,
         phase: client.phase,
         progress: client.progress,
-        orgNumber: client.orgNumber,
-        companyName: client.companyName
+        orgNumber: client.org_number,
+        companyName: client.company_name
       });
     } else {
       setContextualData({});

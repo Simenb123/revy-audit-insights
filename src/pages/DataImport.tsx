@@ -14,28 +14,28 @@ const DataImport = () => {
   if (location.pathname.includes('/grunnlagsdata')) {
     return <AccountingDataUploader 
       clientId={orgNumber || ''} 
-      clientName={client?.companyName || client?.name || 'Ukjent klient'} 
+      clientName={client?.company_name || client?.name || 'Ukjent klient'} 
     />;
   }
   
   if (location.pathname.includes('/spesialdata')) {
     return <AccountingDataUploader 
       clientId={orgNumber || ''} 
-      clientName={client?.companyName || client?.name || 'Ukjent klient'} 
+      clientName={client?.company_name || client?.name || 'Ukjent klient'} 
     />;
   }
   
   if (location.pathname.includes('/transaksjoner')) {
     return <AccountingDataUploader 
       clientId={orgNumber || ''} 
-      clientName={client?.companyName || client?.name || 'Ukjent klient'} 
+      clientName={client?.company_name || client?.name || 'Ukjent klient'} 
     />;
   }
   
   if (location.pathname.includes('/import')) {
     return <AccountingDataUploader 
       clientId={orgNumber || ''} 
-      clientName={client?.companyName || client?.name || 'Ukjent klient'} 
+      clientName={client?.company_name || client?.name || 'Ukjent klient'} 
     />;
   }
   

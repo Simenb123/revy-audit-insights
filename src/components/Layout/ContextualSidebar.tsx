@@ -33,8 +33,8 @@ export default function ContextualSidebar() {
           <h2 className="text-lg font-semibold">Revio</h2>
           {isClientContext && client && (
             <div className="mt-2 p-2 bg-revio-50 rounded-md">
-              <p className="text-sm font-medium text-revio-900">{client.companyName}</p>
-              <p className="text-xs text-revio-700">Org.nr: {client.orgNumber}</p>
+              <p className="text-sm font-medium text-revio-900">{client.company_name}</p>
+              <p className="text-xs text-revio-700">Org.nr: {client.org_number}</p>
             </div>
           )}
           {isOrganizationContext && auditFirm && (

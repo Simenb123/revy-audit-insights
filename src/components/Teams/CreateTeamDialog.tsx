@@ -82,7 +82,7 @@ const CreateTeamDialog = ({ open, onOpenChange, onTeamCreated }: CreateTeamDialo
                     <SelectContent>
                       {clients.map((client) => (
                         <SelectItem key={client.id} value={client.id}>
-                          {client.companyName}
+                          {client.company_name}
                         </SelectItem>
                       ))}
                     </SelectContent>

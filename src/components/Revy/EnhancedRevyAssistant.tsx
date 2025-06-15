@@ -61,7 +61,7 @@ const EnhancedRevyAssistant = () => {
       let welcomeMessage = 'Hei! Jeg er Revy, din intelligente revisjonsassistent. Hvordan kan jeg hjelpe deg i dag?';
       
       if (isClientContext && currentClient) {
-        welcomeMessage = `Hei! Jeg er Revy. Jeg ser at du jobber med ${currentClient.companyName} ` +
+        welcomeMessage = `Hei! Jeg er Revy. Jeg ser at du jobber med ${currentClient.company_name} ` +
           `${currentClient.industry ? `(${currentClient.industry})` : ''}. ` +
           `Klienten er i ${currentPhase}-fasen med ${currentClient.progress}% fremdrift. ` +
           `Hvordan kan jeg hjelpe deg med revisjonen?`;
@@ -147,7 +147,7 @@ const EnhancedRevyAssistant = () => {
       return (
         <Badge variant="outline" className="flex items-center gap-1">
           <Building size={12} />
-          {currentClient.companyName}
+          {currentClient.company_name}
         </Badge>
       );
     }
@@ -290,7 +290,7 @@ const EnhancedRevyAssistant = () => {
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder={isClientContext 
-                  ? `Spør om ${currentClient?.companyName}...` 
+                  ? `Spør om ${currentClient?.company_name}...` 
                   : "Skriv melding til Revy..."
                 }
                 disabled={isLoading}

@@ -37,20 +37,20 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
         const client = clients[i];
         setRefreshProgress(Math.round((i / clients.length) * 100));
 
-        if (!client.orgNumber) {
+        if (!client.org_number) {
           failedClients.push(client.name);
           continue;
         }
 
         try {
-          console.log(`Fetching data for ${client.name} (${client.orgNumber})`);
+          console.log(`Fetching data for ${client.name} (${client.org_number})`);
           const response = await fetch(`https://fxelhfwaoizqyecikscu.functions.supabase.co/brreg`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
               ...(authHeader ? { Authorization: authHeader } : {}),
             },
-            body: JSON.stringify({ query: client.orgNumber }),
+            body: JSON.stringify({ query: client.org_number }),
           });
 
           if (response.status === 404 || response.status === 429) {
