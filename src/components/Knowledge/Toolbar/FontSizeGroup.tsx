@@ -12,12 +12,10 @@ const fontSizes = ['12', '14', '16', '18', '20', '24', '30', '36', '48'];
 
 const FontSizeGroup = ({ editor }: Props) => {
   const handleFontSizeChange = (size: string) => {
-    const { fontSize, ...otherAttributes } = editor.getAttributes('textStyle');
-
     if (size === 'default') {
-      editor.chain().focus().setMark('textStyle', otherAttributes).removeEmptyTextStyle().run();
+      editor.chain().focus().unsetFontSize().run();
     } else {
-      editor.chain().focus().setMark('textStyle', { ...otherAttributes, fontSize: `${size}px` }).run();
+      editor.chain().focus().setFontSize(`${size}px`).run();
     }
   };
   

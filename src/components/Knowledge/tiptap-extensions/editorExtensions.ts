@@ -1,4 +1,3 @@
-
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
 import Underline from '@tiptap/extension-underline';
@@ -16,6 +15,7 @@ import Subscript from '@tiptap/extension-subscript';
 import Superscript from '@tiptap/extension-superscript';
 import CharacterCount from '@tiptap/extension-character-count';
 import { LineHeight } from './LineHeight';
+import FontSize from '@tiptap/extension-font-size';
 
 // Extend Tiptap extensions to add keyboard shortcuts
 const CustomSubscript = Subscript.extend({
@@ -47,6 +47,9 @@ export const editorExtensions = [
   }),
   Underline,
   TextStyle,
+  FontSize.configure({
+    types: ['textStyle'],
+  }),
   FontFamily.configure({
     types: ['textStyle'],
   }),
