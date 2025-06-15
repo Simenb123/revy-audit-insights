@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Editor } from '@tiptap/react';
 import { Separator } from '@/components/ui/separator';
@@ -8,6 +7,7 @@ import HighlightLinkGroup from './Toolbar/HighlightLinkGroup';
 import AlignmentGroup from './Toolbar/AlignmentGroup';
 import HeadingGroup from './Toolbar/HeadingGroup';
 import ListGroup from './Toolbar/ListGroup';
+import ListActionsGroup from './Toolbar/ListActionsGroup';
 import InsertGroup from './Toolbar/InsertGroup';
 import HistoryGroup from './Toolbar/HistoryGroup';
 import RevyAIGroup from './Toolbar/RevyAIGroup';
@@ -57,6 +57,7 @@ export const EditorToolbar = ({ editor, onImageUpload, isUploading, onOpenMediaL
       <AlignmentGroup editor={editor} />
       <Separator orientation="vertical" className="h-8 mx-1" />
       <ListGroup editor={editor} />
+      <ListActionsGroup editor={editor} />
       <Separator orientation="vertical" className="h-8 mx-1" />
       <InsertGroup 
         editor={editor}

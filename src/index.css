@@ -154,4 +154,33 @@
   .prose ul ul, .prose ul ol, .prose ol ul, .prose ol ol {
     @apply my-2 ml-5; /* Indent nested lists */
   }
+
+  /* Custom styles for Tiptap Task Lists */
+  .prose ul[data-type="taskList"] {
+    @apply list-none p-0 my-4;
+  }
+
+  .prose li[data-type="taskItem"] {
+    @apply flex items-start gap-3 my-2;
+  }
+  
+  .prose li[data-type="taskItem"] > label {
+    @apply flex-none pt-1;
+  }
+  
+  .prose li[data-type="taskItem"] > div {
+    @apply flex-auto mt-0;
+  }
+
+  .prose li[data-type="taskItem"] > div > p {
+    @apply m-0;
+  }
+  
+  .prose li[data-type="taskItem"] input[type="checkbox"] {
+    @apply h-4 w-4 rounded border-primary text-primary focus:ring-primary cursor-pointer;
+  }
+
+  .prose li[data-type="taskItem"][data-checked="true"] > div > p {
+    @apply line-through text-muted-foreground;
+  }
 }
