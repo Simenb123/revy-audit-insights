@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useForm, Controller } from 'react-hook-form';
@@ -24,6 +23,9 @@ interface ArticleFormData {
   categoryId: string;
   tags: string;
   status: ArticleStatus;
+  reference_code: string;
+  valid_from: string;
+  valid_until: string;
 }
 
 const ArticleEditor = () => {
@@ -73,7 +75,10 @@ const ArticleEditor = () => {
       content: '',
       categoryId: initialCategoryId || '',
       tags: '',
-      status: 'draft'
+      status: 'draft',
+      reference_code: '',
+      valid_from: '',
+      valid_until: ''
     }
   });
 
@@ -86,7 +91,10 @@ const ArticleEditor = () => {
         content: article.content,
         categoryId: article.category_id,
         tags: article.tags?.join(', ') || '',
-        status: article.status
+        status: article.status,
+        reference_code: article.reference_code || '',
+        valid_from: article.valid_from ? article.valid_from.split('T')[0] : '',
+        valid_until: article.valid_until ? article.valid_until.split('T')[0] : ''
       });
     }
   }, [article, form]);
@@ -117,7 +125,10 @@ const ArticleEditor = () => {
         tags: data.tags ? data.tags.split(',').map(tag => tag.trim()).filter(Boolean) : null,
         status: data.status,
         author_id: session.user.id,
-        published_at: data.status === 'published' ? new Date().toISOString() : null
+        published_at: data.status === 'published' ? new Date().toISOString() : null,
+        reference_code: data.reference_code || null,
+        valid_from: data.valid_from || null,
+        valid_until: data.valid_until || null,
       };
 
       if (isEditing && articleId) {
@@ -246,13 +257,42 @@ const ArticleEditor = () => {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="tags">Tags (kommaseparert)</Label>
-              <Input
-                id="tags"
-                {...form.register('tags')}
-                placeholder="revisjon, isa-315, risikovurdering"
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="tags">Tags (kommaseparert)</Label>
+                <Input
+                  id="tags"
+                  {...form.register('tags')}
+                  placeholder="revisjon, isa-315, risikovurdering"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="reference_code">Referansekode</Label>
+                <Input
+                  id="reference_code"
+                  {...form.register('reference_code')}
+                  placeholder="f.eks. ISA 200.15"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="valid_from">Gyldig fra</Label>
+                <Input
+                  id="valid_from"
+                  type="date"
+                  {...form.register('valid_from')}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="valid_until">Gyldig til</Label>
+                <Input
+                  id="valid_until"
+                  type="date"
+                  {...form.register('valid_until')}
+                />
+              </div>
             </div>
           </CardContent>
         </Card>

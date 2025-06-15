@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -9,7 +8,7 @@ import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbP
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/Auth/AuthProvider';
 import { KnowledgeArticle } from '@/types/knowledge';
-import { Eye, Clock, Edit, Star, StarOff, FileText, CheckCircle2, Square } from 'lucide-react';
+import { Eye, Clock, Edit, Star, StarOff, FileText, CheckCircle2, Square, CalendarDays } from 'lucide-react';
 
 const ArticleView = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -269,7 +268,7 @@ const ArticleView = () => {
             <p className="text-lg text-muted-foreground mb-4">{article.summary}</p>
           )}
           
-          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
             <span className="flex items-center gap-1">
               <Eye className="w-4 h-4" />
               {article.view_count} visninger
@@ -278,12 +277,26 @@ const ArticleView = () => {
               <Clock className="w-4 h-4" />
               {new Date(article.published_at || article.created_at).toLocaleDateString('nb-NO')}
             </span>
+            {article.reference_code && (
+              <Badge variant="secondary">{article.reference_code}</Badge>
+            )}
           </div>
           
+          {(article.valid_from || article.valid_until) && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground mt-2">
+              <CalendarDays className="w-4 h-4" />
+              <span>
+                Gyldig: {article.valid_from ? new Date(article.valid_from).toLocaleDateString('nb-NO') : '...'}
+                {' - '}
+                {article.valid_until ? new Date(article.valid_until).toLocaleDateString('nb-NO') : '...'}
+              </span>
+            </div>
+          )}
+
           {article.tags && article.tags.length > 0 && (
-            <div className="flex gap-2 mt-3">
+            <div className="flex flex-wrap gap-2 mt-3">
               {article.tags.map((tag) => (
-                <Badge key={tag} variant="secondary">
+                <Badge key={tag} variant="outline">
                   {tag}
                 </Badge>
               ))}
