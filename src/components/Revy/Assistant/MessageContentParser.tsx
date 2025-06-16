@@ -35,6 +35,63 @@ export const MessageContentParser = ({ content, isEmbedded = false }: MessageCon
     }
   };
 
+  // 🚨 SIMPLIFIED TAG EXTRACTION - Much more robust approach
+  const extractTags = (content: string): string[] => {
+    console.log('🏷️ Starting simplified tag extraction...');
+    
+    // Find any line that contains "EMNER" (case insensitive)
+    const lines = content.split('\n');
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      console.log(`🔍 Checking line ${i}: "${line}"`);
+      
+      // Check if line contains EMNER in any form
+      if (/emner/i.test(line)) {
+        console.log('✅ Found EMNER line:', line);
+        
+        // Extract everything after "EMNER:" or "EMNER"
+        let tagsPart = '';
+        
+        // Try multiple simple extraction methods
+        if (line.includes(':')) {
+          tagsPart = line.split(':').slice(1).join(':').trim();
+        } else {
+          // Look for text after "EMNER" word
+          const emnerIndex = line.toLowerCase().indexOf('emner');
+          if (emnerIndex !== -1) {
+            tagsPart = line.substring(emnerIndex + 5).trim();
+          }
+        }
+        
+        console.log('📝 Extracted tags part:', tagsPart);
+        
+        if (tagsPart) {
+          // Clean up the tags part - remove bold markers, emojis, etc.
+          const cleanedPart = tagsPart
+            .replace(/\*\*/g, '') // Remove bold markers
+            .replace(/🏷️/g, '') // Remove emoji
+            .replace(/[.!?]+$/, '') // Remove trailing punctuation
+            .trim();
+          
+          console.log('🧹 Cleaned tags part:', cleanedPart);
+          
+          // Split on common separators and clean each tag
+          const tags = cleanedPart
+            .split(/[,;]/)
+            .map(tag => tag.trim())
+            .filter(tag => tag.length > 0 && tag.length < 50);
+          
+          console.log('🎯 Final extracted tags:', tags);
+          return tags;
+        }
+      }
+    }
+    
+    console.log('❌ No tags found in content');
+    return [];
+  };
+
   const processContent = (content: string): React.ReactElement[] => {
     const lines = content.split('\n');
     const processedElements: React.ReactElement[] = [];
@@ -42,11 +99,39 @@ export const MessageContentParser = ({ content, isEmbedded = false }: MessageCon
 
     console.log('🔍 Processing content lines:', lines.length);
 
+    // 🏷️ FIRST: Extract and render tags at the beginning
+    const extractedTags = extractTags(content);
+    if (extractedTags.length > 0) {
+      console.log('🎉 Rendering tags section with', extractedTags.length, 'tags');
+      processedElements.push(
+        <div key="extracted-tags" className="mb-4 p-3 bg-blue-50 rounded-lg border-l-4 border-blue-400">
+          <div className="flex flex-wrap gap-2 items-start">
+            <div className="flex items-center gap-1.5 text-blue-700 mb-2 min-w-0">
+              <Tag className="h-4 w-4 flex-shrink-0" />
+              <span className={`font-medium ${isEmbedded ? 'text-sm' : 'text-base'}`}>Emner:</span>
+            </div>
+            <div className="flex flex-wrap gap-2 min-w-0 flex-1">
+              {extractedTags.map((tag, tagIndex) => (
+                <Badge 
+                  key={tagIndex} 
+                  variant="secondary" 
+                  className={`bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors cursor-pointer border border-blue-300 ${isEmbedded ? 'text-xs px-2 py-1' : 'text-sm px-3 py-1.5'}`}
+                  onClick={() => {
+                    console.log('🏷️ Tag clicked:', tag);
+                  }}
+                >
+                  {tag}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
       const trimmedLine = line.trim();
-
-      console.log(`🔍 Processing line ${i}: "${trimmedLine}"`);
 
       // Skip empty lines but add spacing
       if (!trimmedLine) {
@@ -55,6 +140,12 @@ export const MessageContentParser = ({ content, isEmbedded = false }: MessageCon
             <div key={`spacer-${i}`} className="h-2" />
           );
         }
+        continue;
+      }
+
+      // Skip the EMNER line since we already processed it above
+      if (/emner/i.test(trimmedLine)) {
+        console.log('⏭️ Skipping EMNER line since we already processed tags');
         continue;
       }
 
@@ -181,7 +272,6 @@ export const MessageContentParser = ({ content, isEmbedded = false }: MessageCon
       const articleLinkRegex = /\[([^\]]+)\]\(\/fag\/artikkel\/([^)]+)\)/g;
       if (articleLinkRegex.test(trimmedLine)) {
         const matches = [...trimmedLine.matchAll(articleLinkRegex)];
-        const parts = trimmedLine.split(articleLinkRegex);
         
         processedElements.push(
           <div key={`articles-${i}`} className="my-3">
@@ -217,99 +307,6 @@ export const MessageContentParser = ({ content, isEmbedded = false }: MessageCon
                 <span className="mr-1">📋</span>
                 {refMatch[3]}
               </Badge>
-            </div>
-          );
-        }
-        continue;
-      }
-
-      // 🔧 SIMPLIFIED AND ENHANCED Tags parsing with multiple robust patterns
-      console.log(`🔍 Checking line ${i} for tags: "${trimmedLine}"`);
-      
-      // First, check if this line contains any EMNER text at all
-      if (/EMNER/i.test(trimmedLine)) {
-        console.log('✅ Found EMNER in line, attempting to extract tags...');
-        
-        let tags: string[] = [];
-        
-        // Try multiple patterns, ordered from most specific to most general
-        const patterns = [
-          // Pattern 1: 🏷️ **EMNER:** tags
-          /🏷️\s*\*\*EMNER:?\*\*\s*(.+)/i,
-          // Pattern 2: 🏷️ EMNER: tags (without bold)
-          /🏷️\s*EMNER:?\s*(.+)/i,
-          // Pattern 3: **EMNER:** tags (without emoji)
-          /\*\*EMNER:?\*\*\s*(.+)/i,
-          // Pattern 4: EMNER: tags (minimal format)
-          /EMNER:?\s*(.+)/i,
-          // Pattern 5: Any text after EMNER (fallback)
-          /EMNER.*?([A-Za-zÆØÅæøå,\s]+)/i
-        ];
-        
-        for (let p = 0; p < patterns.length; p++) {
-          const match = trimmedLine.match(patterns[p]);
-          if (match && match[1]) {
-            console.log(`✅ Pattern ${p + 1} matched:`, match[1]);
-            
-            // Clean and split the tags
-            const rawTags = match[1]
-              .replace(/\*\*/g, '') // Remove any bold markers
-              .replace(/[.!?]+$/, '') // Remove trailing punctuation
-              .trim();
-            
-            console.log('🧹 Cleaned tags string:', rawTags);
-            
-            // Split on common separators
-            tags = rawTags
-              .split(/[,;]/)
-              .map(tag => tag.trim())
-              .filter(tag => tag.length > 0 && tag.length < 50); // Reasonable tag length
-            
-            console.log('📋 Final tags array:', tags);
-            break;
-          }
-        }
-        
-        // If we found tags, render them
-        if (tags.length > 0) {
-          console.log('🎯 Rendering tags section with', tags.length, 'tags:', tags);
-          processedElements.push(
-            <div key={`tags-${i}`} className="mt-4 mb-2 p-3 bg-blue-50 rounded-lg border-l-4 border-blue-400">
-              <div className="flex flex-wrap gap-2 items-start">
-                <div className="flex items-center gap-1.5 text-blue-700 mb-2 min-w-0">
-                  <Tag className="h-4 w-4 flex-shrink-0" />
-                  <span className={`font-medium ${isEmbedded ? 'text-sm' : 'text-base'}`}>Emner:</span>
-                </div>
-                <div className="flex flex-wrap gap-2 min-w-0 flex-1">
-                  {tags.map((tag, tagIndex) => (
-                    <Badge 
-                      key={tagIndex} 
-                      variant="secondary" 
-                      className={`bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors cursor-pointer border border-blue-300 ${isEmbedded ? 'text-xs px-2 py-1' : 'text-sm px-3 py-1.5'}`}
-                      onClick={() => {
-                        console.log('🏷️ Tag clicked:', tag);
-                        // Future: Add tag navigation functionality
-                      }}
-                    >
-                      {tag}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            </div>
-          );
-          console.log('✅ Tags rendered successfully for line', i);
-        } else {
-          console.warn('⚠️ Found EMNER but could not extract any valid tags from:', trimmedLine);
-          // Show a fallback tags section to indicate we found EMNER but couldn't parse it
-          processedElements.push(
-            <div key={`tags-fallback-${i}`} className="mt-4 mb-2 p-3 bg-yellow-50 rounded-lg border-l-4 border-yellow-400">
-              <div className="flex items-center gap-2 text-yellow-700">
-                <Tag className="h-4 w-4" />
-                <span className={`font-medium ${isEmbedded ? 'text-sm' : 'text-base'}`}>
-                  Emner funnet, men kunne ikke parses: {trimmedLine}
-                </span>
-              </div>
             </div>
           );
         }
