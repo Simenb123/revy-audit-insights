@@ -27,10 +27,10 @@ export const RevyMessageItem = ({ message, isEmbedded = false }: RevyMessageItem
   const formattedTimestamp = timestamp ? formatDistanceToNow(new Date(timestamp), { addSuffix: true, locale: nb }) : '';
 
   // Enhanced content processing for better article link display
-  const processRevyContent = (content: string): JSX.Element[] => {
+  const processRevyContent = (content: string): React.ReactElement[] => {
     // Split content into lines for processing
     const lines = content.split('\n');
-    const processedLines: JSX.Element[] = [];
+    const processedLines: React.ReactElement[] = [];
     
     lines.forEach((line, index) => {
       // Check for article links
