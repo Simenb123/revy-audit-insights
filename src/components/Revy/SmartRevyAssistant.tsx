@@ -116,6 +116,16 @@ const SmartRevyAssistant = ({ embedded = false, clientData, userRole }: SmartRev
         sessionId
       );
 
+      // 🔍 DEBUG: Log the AI response to see its exact format
+      console.log('🔍 DEBUG: Raw AI response received:', aiResponse);
+      console.log('🔍 DEBUG: Response contains EMNER tags:', /🏷️\s*\*\*[Ee][Mm][Nn][Ee][Rr]:?\*\*/.test(aiResponse));
+      
+      // Check if response has tags section
+      const hasTagsSection = /🏷️\s*\*\*[Ee][Mm][Nn][Ee][Rr]:?\*\*/.test(aiResponse);
+      if (!hasTagsSection) {
+        console.warn('⚠️ AI response missing tags section, this should be fixed by backend validation');
+      }
+
       const aiMessage: RevyMessage = {
         id: crypto.randomUUID(),
         sender: 'revy',
@@ -143,7 +153,7 @@ const SmartRevyAssistant = ({ embedded = false, clientData, userRole }: SmartRev
       const errorMessage: RevyMessage = {
         id: crypto.randomUUID(),
         sender: 'revy',
-        content: 'Beklager, jeg kunne ikke behandle forespørselen din akkurat nå. Vennligst prøv igjen senere.',
+        content: 'Beklager, jeg kunne ikke behandle forespørselen din akkurat nå. Vennligst prøv igjen senere.\n\n🏷️ **EMNER:** Feilmeldinger, Support',
         timestamp: new Date().toISOString(),
       };
       

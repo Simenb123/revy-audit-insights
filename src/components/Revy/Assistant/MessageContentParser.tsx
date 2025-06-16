@@ -213,39 +213,61 @@ export const MessageContentParser = ({ content, isEmbedded = false }: MessageCon
         continue;
       }
 
-      // Tags (🏷️ **EMNER:** tag1, tag2)
-      if (/🏷️\s*(\*\*)?[Ee][Mm][Nn][Ee][Rr]:?(\*\*)?/i.test(trimmedLine)) {
-        const tagsMatch = trimmedLine.match(/🏷️\s*(\*\*)?[Ee][Mm][Nn][Ee][Rr]:?(\*\*)?\s*(.+)/i);
-        if (tagsMatch && tagsMatch[3]) {
-          const tags = tagsMatch[3]
-            .replace(/\*\*/g, '')
-            .split(/[,;]/)
-            .map(tag => tag.trim())
-            .filter(tag => tag.length > 0);
-          
-          if (tags.length > 0) {
-            processedElements.push(
-              <div key={`tags-${i}`} className="mt-4 mb-2">
-                <div className="flex flex-wrap gap-2 items-center">
-                  <div className="flex items-center gap-1.5 text-gray-600 mb-1">
-                    <Tag className="h-3 w-3" />
-                    <span className={`font-medium ${isEmbedded ? 'text-xs' : 'text-sm'}`}>Emner:</span>
-                  </div>
-                  <div className="flex flex-wrap gap-1">
-                    {tags.map((tag, tagIndex) => (
-                      <Badge 
-                        key={tagIndex} 
-                        variant="secondary" 
-                        className={`bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors cursor-pointer ${isEmbedded ? 'text-xs px-2 py-0.5' : 'text-sm px-2 py-1'}`}
-                      >
-                        {tag}
-                      </Badge>
-                    ))}
-                  </div>
+      // Enhanced Tags parsing with multiple patterns and better fallback
+      const tagPatterns = [
+        // Primary pattern: 🏷️ **EMNER:** tags
+        /🏷️\s*\*\*[Ee][Mm][Nn][Ee][Rr]:?\*\*\s*(.+)/i,
+        // Alternative patterns in case formatting varies
+        /🏷️\s*[Ee][Mm][Nn][Ee][Rr]:?\s*(.+)/i,
+        /\*\*[Ee][Mm][Nn][Ee][Rr]:?\*\*\s*(.+)/i,
+        // Fallback pattern for tags without emoji
+        /[Ee][Mm][Nn][Ee][Rr]:\s*(.+)/i
+      ];
+
+      let tagsMatch = null;
+      for (const pattern of tagPatterns) {
+        tagsMatch = trimmedLine.match(pattern);
+        if (tagsMatch) break;
+      }
+
+      if (tagsMatch && tagsMatch[1]) {
+        console.log('🏷️ DEBUG: Found tags in response:', tagsMatch[1]);
+        
+        const tags = tagsMatch[1]
+          .replace(/\*\*/g, '') // Remove any remaining bold markers
+          .split(/[,;]/) // Split on comma or semicolon
+          .map(tag => tag.trim())
+          .filter(tag => tag.length > 0);
+        
+        if (tags.length > 0) {
+          processedElements.push(
+            <div key={`tags-${i}`} className="mt-4 mb-2">
+              <div className="flex flex-wrap gap-2 items-center">
+                <div className="flex items-center gap-1.5 text-gray-600 mb-1">
+                  <Tag className="h-3 w-3" />
+                  <span className={`font-medium ${isEmbedded ? 'text-xs' : 'text-sm'}`}>Emner:</span>
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {tags.map((tag, tagIndex) => (
+                    <Badge 
+                      key={tagIndex} 
+                      variant="secondary" 
+                      className={`bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors cursor-pointer ${isEmbedded ? 'text-xs px-2 py-0.5' : 'text-sm px-2 py-1'}`}
+                      onClick={() => {
+                        console.log('🏷️ Tag clicked:', tag);
+                        // Future: Add tag navigation functionality
+                      }}
+                    >
+                      {tag}
+                    </Badge>
+                  ))}
                 </div>
               </div>
-            );
-          }
+            </div>
+          );
+          console.log('✅ DEBUG: Tags rendered successfully:', tags);
+        } else {
+          console.warn('⚠️ DEBUG: Tags array is empty after processing');
         }
         continue;
       }

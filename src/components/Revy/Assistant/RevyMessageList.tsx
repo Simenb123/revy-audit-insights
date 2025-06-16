@@ -41,7 +41,7 @@ export const RevyMessageList = ({ messages, isTyping, isEmbedded = false }: Revy
               <h3 className={`font-semibold text-gray-900 mb-2 ${isEmbedded ? 'text-base' : 'text-lg'}`}>
                 Hei! Jeg er AI-Revy
               </h3>
-              <p className={`text-gray-600 leading-relaxed ${isEmbedded ? 'text-sm' : 'text-base'}`}>
+              <p className={`text-gray-600 leading-relaxed mb-4 ${isEmbedded ? 'text-sm' : 'text-base'}`}>
                 Jeg er din smarte revisjonsassistent. Spør meg om revisjon, ISA-standarder, 
                 regnskap eller andre faglige spørsmål. Jeg har tilgang til oppdatert fagstoff 
                 og kan hjelpe deg med komplekse revisjonsutfordringer.
@@ -50,7 +50,11 @@ export const RevyMessageList = ({ messages, isTyping, isEmbedded = false }: Revy
                 {['Revisjon av inntekter', 'ISA 315', 'Materialitet', 'Risikovurdering'].map((suggestion, index) => (
                   <span 
                     key={index}
-                    className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm cursor-pointer hover:bg-blue-200 transition-colors"
+                    className="px-3 py-2 bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800 rounded-full text-sm font-medium cursor-pointer hover:from-blue-200 hover:to-blue-300 transition-all duration-200 shadow-sm hover:shadow-md border border-blue-200"
+                    onClick={() => {
+                      console.log('🏷️ Suggestion clicked:', suggestion);
+                      // Future: Add functionality to fill input with suggestion
+                    }}
                   >
                     {suggestion}
                   </span>
