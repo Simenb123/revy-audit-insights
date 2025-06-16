@@ -39,8 +39,8 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <AuthProvider>
-          <RevyContextProvider>
-            <BrowserRouter>
+          <BrowserRouter>
+            <RevyContextProvider>
               <Routes>
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/setup" element={<OrganizationSetup />} />
@@ -68,9 +68,9 @@ function App() {
                 <Route path="/ai-revy-admin" element={<AppLayout><AIRevyAdmin /></AppLayout>} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
-            </BrowserRouter>
-            <Toaster />
-          </RevyContextProvider>
+              <Toaster />
+            </RevyContextProvider>
+          </BrowserRouter>
         </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>
