@@ -1,3 +1,4 @@
+
 import { searchKnowledgeIntelligently } from './improved-knowledge.ts';
 
 // Enhanced prompt building
@@ -32,26 +33,43 @@ export async function buildIntelligentSystemPrompt(
     prompt += `\nSom manager, sørg for at teamet følger etablerte prosedyrer.`;
   }
 
-  // Enhanced knowledge integration with tags
-  if (enhancedContext.knowledge && enhancedContext.knowledge.length > 0) {
+  // Enhanced knowledge integration with safe formatting
+  if (enhancedContext.knowledge && Array.isArray(enhancedContext.knowledge) && enhancedContext.knowledge.length > 0) {
     prompt += `\n\n## TILGJENGELIG FAGKUNNSKAP\n`;
     prompt += `Du har tilgang til følgende relevante fagartikler:\n\n`;
     
     enhancedContext.knowledge.forEach((article: any, index: number) => {
-      prompt += `### ${index + 1}. ${article.title}\n`;
-      if (article.summary) {
-        prompt += `**Sammendrag:** ${article.summary}\n`;
+      try {
+        prompt += `### ${index + 1}. ${article.title || 'Uten tittel'}\n`;
+        
+        if (article.summary) {
+          prompt += `**Sammendrag:** ${article.summary}\n`;
+        }
+        
+        if (article.reference_code) {
+          prompt += `**Referanse:** ${article.reference_code}\n`;
+        }
+        
+        if (article.category) {
+          prompt += `**Kategori:** ${article.category}\n`;
+        }
+        
+        if (Array.isArray(article.tags) && article.tags.length > 0) {
+          const validTags = article.tags.filter(tag => tag && typeof tag === 'string');
+          if (validTags.length > 0) {
+            prompt += `**Emner:** ${validTags.join(', ')}\n`;
+          }
+        }
+        
+        if (article.slug) {
+          prompt += `**Link:** [${article.title || 'Artikkel'}](/fag/artikkel/${article.slug})\n`;
+        }
+        
+        prompt += `\n`;
+      } catch (error) {
+        console.error('❌ Error formatting article in prompt:', error);
+        prompt += `### ${index + 1}. Feil ved innlasting av artikkel\n\n`;
       }
-      if (article.reference_code) {
-        prompt += `**Referanse:** ${article.reference_code}\n`;
-      }
-      if (article.category) {
-        prompt += `**Kategori:** ${article.category}\n`;
-      }
-      if (article.tags && article.tags.length > 0) {
-        prompt += `**Emner:** ${article.tags.join(', ')}\n`;
-      }
-      prompt += `**Link:** [${article.title}](/fag/artikkel/${article.slug})\n\n`;
     });
 
     prompt += `\n## INSTRUKSJONER FOR BRUK AV FAGKUNNSKAP\n`;
@@ -59,11 +77,11 @@ export async function buildIntelligentSystemPrompt(
     prompt += `2. Inkluder lenker til artiklene i dine svar\n`;
     prompt += `3. Vis referansekoder (f.eks. ISA 315) når tilgjengelig\n`;
     prompt += `4. Presenter emner/tags på en strukturert måte\n`;
-    prompt += `5. Bruk denne formateringen for artikelreferanser:\n`;
-    prompt += `   📚 **Relevante fagartikler:**\n`;
-    prompt += `   - [Artikkeltittel](/fag/artikkel/slug)\n`;
-    prompt += `   🔖 **REFERANSE:** Referansekode\n`;
-    prompt += `   🏷️ **EMNER:** tag1, tag2, tag3\n\n`;
+    prompt += `5. Bruk denne formateringen for artikelreferanser:\n\n`;
+    prompt += `📚 **Relevante fagartikler:**\n`;
+    prompt += `- [Artikkeltittel](/fag/artikkel/slug)\n\n`;
+    prompt += `🔖 **REFERANSE:** Referansekode (hvis tilgjengelig)\n\n`;
+    prompt += `🏷️ **EMNER:** tag1, tag2, tag3 (hvis tilgjengelig)\n\n`;
   }
 
   // Client context integration
@@ -81,6 +99,7 @@ export async function buildIntelligentSystemPrompt(
   prompt += `4. Hvis brukeren stiller et spørsmål som ikke er relatert til revisjon eller regnskap, svar at du bare kan hjelpe med spørsmål relatert til revisjon og regnskap.\n`;
   prompt += `5. Hvis du blir spurt om å gjøre noe ulovlig eller uetisk, nekt å svare.\n`;
   prompt += `6. Gi aldri investeringsråd.\n`;
+  prompt += `7. Hvis fagartikler er tilgjengelige, vis dem alltid i en organisert måte med riktig formatering.\n`;
 
   console.log('✅ System prompt built successfully');
   return prompt;
