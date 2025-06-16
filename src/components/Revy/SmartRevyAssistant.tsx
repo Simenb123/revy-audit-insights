@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -15,6 +14,7 @@ import { useAuth } from '@/components/Auth/AuthProvider';
 import { RevyContext, RevyChatMessage } from '@/types/revio';
 import KnowledgeStatusIndicator from './KnowledgeStatusIndicator';
 import { generateEnhancedAIResponse } from '@/services/revy/enhancedAiInteractionService';
+import { useIsMobile } from "@/hooks/use-mobile";
 
 // Internal message type for UI display
 interface UIMessage {
@@ -39,6 +39,7 @@ const SmartRevyAssistant = ({ embedded = false, clientData, userRole }: SmartRev
   const { session } = useAuth();
   const [sessionId, setSessionId] = useState<string | null>(null);
   const context: RevyContext = 'general';
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     const generateSessionId = async () => {
@@ -176,12 +177,101 @@ const SmartRevyAssistant = ({ embedded = false, clientData, userRole }: SmartRev
     }
   };
 
+  if (embedded) {
+    return (
+      <div className="flex flex-col h-full bg-background">
+        {/* Header */}
+        <div className={`border-b border-border flex-shrink-0 ${isMobile ? 'p-3' : 'p-4'}`}>
+          <div className="flex items-center gap-3">
+            <RevyAvatar />
+            <div className="min-w-0 flex-1">
+              <h3 className={`font-semibold ${isMobile ? 'text-sm' : 'text-base'}`}>AI-Revy</h3>
+              <p className={`text-muted-foreground ${isMobile ? 'text-xs' : 'text-sm'}`}>
+                Din smarte revisjonsassistent med tilgang til fagstoff og ISA-standarder
+              </p>
+            </div>
+          </div>
+          <div className="mt-2">
+            <KnowledgeStatusIndicator />
+          </div>
+        </div>
+        
+        {/* Messages */}
+        <div className="flex-1 min-h-0">
+          <ScrollArea className="h-full">
+            <div ref={chatContainerRef} className={`space-y-4 ${isMobile ? 'p-3' : 'p-4'}`}>
+              {messages.length === 0 && (
+                <div className="text-center py-8">
+                  <RevyAvatar className="mx-auto mb-4" />
+                  <p className={`text-muted-foreground ${isMobile ? 'text-sm' : 'text-base'}`}>
+                    Hei! Jeg er AI-Revy. Spør meg om revisjon, ISA-standarder eller andre faglige spørsmål.
+                  </p>
+                </div>
+              )}
+              
+              {messages.map((msg, index) => (
+                <div key={index} className={`flex gap-3 ${msg.sender === 'user' ? 'flex-row-reverse' : ''}`}>
+                  {msg.sender === 'revy' && <RevyAvatar className="flex-shrink-0" />}
+                  <div className={`flex-1 ${msg.sender === 'user' ? 'text-right' : ''}`}>
+                    <div className={cn(
+                      "inline-block p-3 rounded-lg text-sm break-words max-w-[85%]",
+                      msg.sender === 'user' 
+                        ? "bg-primary text-primary-foreground ml-auto" 
+                        : "bg-muted"
+                    )}>
+                      {msg.content}
+                    </div>
+                  </div>
+                </div>
+              ))}
+              
+              {isLoading && (
+                <div className="flex gap-3">
+                  <RevyAvatar className="flex-shrink-0" />
+                  <div className="bg-muted p-3 rounded-lg">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  </div>
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+        </div>
+        
+        {/* Input */}
+        <div className={`border-t border-border bg-background flex-shrink-0 ${isMobile ? 'p-3' : 'p-4'}`}>
+          <div className="flex items-center space-x-2">
+            <Input
+              type="text"
+              placeholder="Spør AI-Revy om hjelp..."
+              value={input}
+              onChange={handleInputChange}
+              onKeyDown={handleKeyDown}
+              disabled={isLoading}
+              className={`flex-grow ${isMobile ? 'text-sm h-10' : ''}`}
+            />
+            <Button 
+              type="submit" 
+              onClick={handleSendMessage} 
+              disabled={isLoading || !input.trim()}
+              size={isMobile ? 'sm' : 'default'}
+              className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+            >
+              {isLoading ? (
+                <Loader2 className={`animate-spin ${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
+              ) : (
+                <Send className={isMobile ? 'h-3 w-3' : 'h-4 w-4'} />
+              )}
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Non-embedded version remains the same
   return (
-    <Card className={cn(
-      "flex flex-col",
-      embedded ? "h-full border-0 shadow-none" : "w-full max-w-2xl mx-auto h-[600px]"
-    )}>
-      <CardHeader className={cn("pb-3", embedded && "px-4 py-3")}>
+    <Card className="flex flex-col w-full max-w-2xl mx-auto h-[600px]">
+      <CardHeader className="pb-3">
         <div className="flex items-center gap-3">
           <RevyAvatar />
           <div>
