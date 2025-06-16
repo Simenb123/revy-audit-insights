@@ -33,10 +33,24 @@ const PromptEditor = () => {
   }, []);
 
   const loadCurrentPrompts = async () => {
-    // For now, load from the current system prompt structure
-    // In production, this would come from a database table
-    setPrompts({
-      basePrompt: `Du er AI-Revy, en ekspert AI-revisjonsassistent for norske revisorer. Du har dyp kunnskap om:
+    // Load the most recent prompt configuration
+    try {
+      const { data } = await supabase
+        .from('ai_prompt_configurations')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (data) {
+        setPrompts({
+          basePrompt: data.base_prompt,
+          contextPrompts: data.context_prompts || {}
+        });
+      } else {
+        // Set default prompts if none exist
+        setPrompts({
+          basePrompt: `Du er AI-Revy, en ekspert AI-revisjonsassistent for norske revisorer. Du har dyp kunnskap om:
 - Norsk regnskapslovgivning og standarder (Regnskapsloven, NGRS, IFRS)
 - ISA (International Standards on Auditing) - alle standarder
 - Risikovurdering og revisjonsmetodikk
@@ -48,43 +62,47 @@ const PromptEditor = () => {
 Du kommuniserer alltid på norsk og er vennlig, profesjonell og præsis. Dine svar skal være konkrete og handlingsrettede.
 
 VIKTIG: Du har tilgang til en omfattende kunnskapsbase med artikler om revisjon, ISA-standarder, regnskapslovgivning og praksis. Når brukere spør om faglige temaer, søker du aktivt i kunnskapsbasen og referer til relevante artikler.`,
-      contextPrompts: {
-        'risk-assessment': `Du hjelper med risikovurdering. Fokuser på:
+          contextPrompts: {
+            'risk-assessment': `Du hjelper med risikovurdering. Fokuser på:
 - Systematisk identifisering av risikoområder per ISA 315
 - Vurdering av iboende risiko, kontrollrisiko og oppdagelsesrisiko
 - Forslag til risikoreduserende tiltak og kontroller
 - ISA 330 og utforming av risikoresponser
 - Materialitetsvurderinger og terskelverdi-setting
 - Proaktive anbefalinger basert på bransje og klientstørrelse`,
-        'documentation': `Du hjelper med dokumentasjon. Fokuser på:
+            'documentation': `Du hjelper med dokumentasjon. Fokuser på:
 - Krav til revisjonsdokumentasjon per ISA 230
 - Strukturering av arbeidspapirer og elektronisk arkivering
 - Konklusjoner og faglige vurderinger
 - Forberedelse til partner review og kvalitetskontroll
 - Dokumentasjon av vesentlige forhold og unntak
 - Automatisk kvalitetskontroll og missing elements`,
-        'client-detail': `Du hjelper med klientanalyse. Fokuser på:
+            'client-detail': `Du hjelper med klientanalyse. Fokuser på:
 - Dypere risikovurderinger for denne spesifikke klienten
 - Detaljerte forslag til revisjonshandlinger basert på bransje og størrelse
 - Analyse av regnskapsdata og nøkkeltall
 - Spesifikke dokumentasjonskrav og kontroller
 - Planlegging av feltarbeid og tidsestimater
 - Sammenligning med bransjegjennomsnitt og tidligere perioder`,
-        'collaboration': `Du hjelper med samarbeid og teamarbeid. Fokuser på:
+            'collaboration': `Du hjelper med samarbeid og teamarbeid. Fokuser på:
 - Organisering av team og fordeling av arbeidsoppgaver
 - Effektiv kommunikasjon og koordinering av revisjonsarbeid
 - Kvalitetssikring og review-prosesser
 - Tidsplanlegging, ressursfordeling og budsjettering
 - Håndtering av teammøter og oppfølging
 - Konfliktløsning og teamdynamikk`,
-        'general': `Du kan hjelpe med alle aspekter av revisjonsarbeid:
+            'general': `Du kan hjelpe med alle aspekter av revisjonsarbeid:
 - Planlegging og gjennomføring av revisjoner per ISA-standarder
 - Risikovurderinger og testing av kontroller
 - Regnskapsanalyse og substansielle handlinger
 - Dokumentasjon, rapportering og oppfølging
 - Praktiske utfordringer i revisjonsarbeid`
+          }
+        });
       }
-    });
+    } catch (error) {
+      console.error('Error loading prompts:', error);
+    }
   };
 
   const loadPromptHistory = async () => {
@@ -104,10 +122,29 @@ VIKTIG: Du har tilgang til en omfattende kunnskapsbase med artikler om revisjon,
   const savePrompts = async () => {
     setIsLoading(true);
     try {
-      // Save to database (we'll need to create this table)
+      // Save current configuration to history first
+      const { data: currentConfig } = await supabase
+        .from('ai_prompt_configurations')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (currentConfig) {
+        await supabase
+          .from('ai_prompt_history')
+          .insert({
+            configuration_id: currentConfig.id,
+            base_prompt: currentConfig.base_prompt,
+            context_prompts: currentConfig.context_prompts,
+            updated_by: (await supabase.auth.getUser()).data.user?.id
+          });
+      }
+
+      // Save new configuration
       const { error } = await supabase
         .from('ai_prompt_configurations')
-        .upsert({
+        .insert({
           base_prompt: prompts.basePrompt,
           context_prompts: prompts.contextPrompts,
           updated_by: (await supabase.auth.getUser()).data.user?.id
@@ -119,6 +156,8 @@ VIKTIG: Du har tilgang til en omfattende kunnskapsbase med artikler om revisjon,
         title: "Prompts lagret",
         description: "Promptene er oppdatert og vil brukes i neste AI-samtale."
       });
+
+      loadPromptHistory(); // Refresh history
     } catch (error) {
       toast({
         title: "Feil ved lagring",
@@ -240,16 +279,16 @@ VIKTIG: Du har tilgang til en omfattende kunnskapsbase med artikler om revisjon,
         <CardContent>
           <div className="grid grid-cols-3 gap-4">
             <div className="text-center">
-              <div className="text-2xl font-bold">2,450</div>
-              <div className="text-sm text-muted-foreground">Tokens i base prompt</div>
+              <div className="text-2xl font-bold">{prompts.basePrompt.length}</div>
+              <div className="text-sm text-muted-foreground">Tegn i base prompt</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold">5</div>
               <div className="text-sm text-muted-foreground">Kontekst-varianter</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold">12</div>
-              <div className="text-sm text-muted-foreground">Endringer i dag</div>
+              <div className="text-2xl font-bold">{promptHistory.length}</div>
+              <div className="text-sm text-muted-foreground">Versjoner i historikk</div>
             </div>
           </div>
         </CardContent>

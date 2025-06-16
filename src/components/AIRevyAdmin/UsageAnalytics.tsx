@@ -24,9 +24,9 @@ const UsageAnalytics = () => {
 
   const loadAnalytics = async () => {
     try {
-      // Get usage data from ai_usage table
+      // Get usage data from ai_usage_logs table
       const { data: usageData } = await supabase
-        .from('ai_usage')
+        .from('ai_usage_logs')
         .select('*')
         .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
 
@@ -41,7 +41,7 @@ const UsageAnalytics = () => {
         const contextUsage = processContextUsage(usageData);
         
         // Calculate totals
-        const totalCosts = usageData.reduce((sum, usage) => sum + (usage.cost || 0), 0);
+        const totalCosts = usageData.reduce((sum, usage) => sum + (usage.estimated_cost_usd || 0), 0);
         const totalMessages = usageData.length;
         const activeUsers = new Set(usageData.map(u => u.user_id)).size;
         const avgResponseTime = usageData.reduce((sum, usage) => sum + (usage.response_time_ms || 0), 0) / usageData.length;
@@ -68,7 +68,7 @@ const UsageAnalytics = () => {
         acc[date] = { date, messages: 0, cost: 0, tokens: 0 };
       }
       acc[date].messages += 1;
-      acc[date].cost += usage.cost || 0;
+      acc[date].cost += usage.estimated_cost_usd || 0;
       acc[date].tokens += usage.total_tokens || 0;
       return acc;
     }, {});
@@ -83,7 +83,7 @@ const UsageAnalytics = () => {
         acc[model] = { name: model, count: 0, cost: 0 };
       }
       acc[model].count += 1;
-      acc[model].cost += usage.cost || 0;
+      acc[model].cost += usage.estimated_cost_usd || 0;
       return acc;
     }, {});
 

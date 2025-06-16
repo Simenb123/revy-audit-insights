@@ -158,6 +158,68 @@ export type Database = {
           },
         ]
       }
+      ai_prompt_configurations: {
+        Row: {
+          base_prompt: string
+          context_prompts: Json
+          created_at: string
+          id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          base_prompt: string
+          context_prompts?: Json
+          created_at?: string
+          id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          base_prompt?: string
+          context_prompts?: Json
+          created_at?: string
+          id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      ai_prompt_history: {
+        Row: {
+          base_prompt: string
+          configuration_id: string | null
+          context_prompts: Json
+          created_at: string
+          id: string
+          updated_by: string | null
+        }
+        Insert: {
+          base_prompt: string
+          configuration_id?: string | null
+          context_prompts?: Json
+          created_at?: string
+          id?: string
+          updated_by?: string | null
+        }
+        Update: {
+          base_prompt?: string
+          configuration_id?: string | null
+          context_prompts?: Json
+          created_at?: string
+          id?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_prompt_history_configuration_id_fkey"
+            columns: ["configuration_id"]
+            isOneToOne: false
+            referencedRelation: "ai_prompt_configurations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_usage_logs: {
         Row: {
           client_id: string | null
