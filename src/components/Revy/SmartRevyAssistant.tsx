@@ -327,13 +327,4 @@ const SmartRevyAssistant = ({ embedded = false, clientData, userRole }: SmartRev
   );
 };
 
-function RevyAvatar(props: any) {
-  return (
-    <Avatar {...props}>
-      <AvatarImage src="/revy-avatar.png" alt="AI Revy" />
-      <AvatarFallback>AI</AvatarFallback>
-    </Avatar>
-  )
-}
-
 export default SmartRevyAssistant;
