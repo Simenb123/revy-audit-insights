@@ -21,7 +21,7 @@ import {
   KnowledgeArticle,
   ArticleStatus,
 } from "@/types/knowledge";
-import { Save, X } from "lucide-react";
+import { Save, X, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import RichTextEditor from "./RichTextEditor";
 
@@ -272,10 +272,21 @@ const ArticleEditor = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">
-          {isEditing ? "Rediger artikkel" : "Ny artikkel"}
-        </h1>
-        <Button variant="outline" onClick={() => navigate(-1)}>
+        <div className="flex items-center gap-4">
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={() => navigate('/fag')}
+            className="flex items-center gap-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Tilbake til fagstoff
+          </Button>
+          <h1 className="text-2xl font-bold">
+            {isEditing ? "Rediger artikkel" : "Ny artikkel"}
+          </h1>
+        </div>
+        <Button variant="outline" onClick={() => navigate('/fag')}>
           <X className="w-4 h-4 mr-2" />
           Avbryt
         </Button>

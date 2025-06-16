@@ -1,184 +1,184 @@
 
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
+import { Plus, BookOpen, Heart, Search, Upload } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { KnowledgeCategory } from '@/types/knowledge';
-import { 
-  Search, 
-  Plus, 
-  FileCheck, 
-  Calculator, 
-  Percent, 
-  Scale, 
-  ShieldCheck,
-  Clock,
-  Star,
-  BookOpen,
-  Heart
-} from 'lucide-react';
-
-const iconMap = {
-  'file-check': FileCheck,
-  'calculator': Calculator,
-  'percent': Percent,
-  'scale': Scale,
-  'shield-check': ShieldCheck,
-};
+import { KnowledgeCategory, KnowledgeArticle } from '@/types/knowledge';
 
 const KnowledgeOverview = () => {
-  const [searchTerm, setSearchTerm] = React.useState('');
   const navigate = useNavigate();
-  
-  const { data: categories, isLoading } = useQuery({
+
+  const { data: categories, isLoading: categoriesLoading } = useQuery({
     queryKey: ['knowledge-categories'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('knowledge_categories')
         .select('*')
-        .is('parent_category_id', null)
         .order('display_order');
       
       if (error) throw error;
       return data as KnowledgeCategory[];
-    }
+    },
   });
 
-  const { data: recentArticles } = useQuery({
+  const { data: recentArticles, isLoading: articlesLoading } = useQuery({
     queryKey: ['recent-articles'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('knowledge_articles')
-        .select(`
-          *,
-          category:knowledge_categories(name)
-        `)
+        .select('*, category:knowledge_categories(name)')
         .eq('status', 'published')
-        .order('published_at', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(5);
       
       if (error) throw error;
-      return data;
-    }
+      return data as KnowledgeArticle[];
+    },
   });
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchTerm.trim()) {
-      navigate(`/fag/sok?q=${encodeURIComponent(searchTerm.trim())}`);
-    }
-  };
-
-  if (isLoading) {
-    return <div className="space-y-4">Loading...</div>;
-  }
 
   return (
     <div className="space-y-6">
-      {/* Search and Actions */}
-      <div className="flex gap-4">
-        <form onSubmit={handleSearch} className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="Søk i fagartikler..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </form>
-        <Button asChild>
-          <Link to="/fag/ny-artikkel">
+      {/* Header with Action Buttons */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-bold">Fagstoff</h1>
+          <p className="text-muted-foreground">
+            Utforsk og administrer revisjonsrelatert fagstoff og dokumentasjon
+          </p>
+        </div>
+        
+        <div className="flex flex-wrap gap-2">
+          <Button 
+            onClick={() => navigate('/fag/ny')}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
             <Plus className="w-4 h-4 mr-2" />
             Ny artikkel
-          </Link>
-        </Button>
-      </div>
-
-      {/* Quick Links */}
-      <div className="flex gap-2">
-        <Button variant="outline" size="sm" asChild>
-          <Link to="/fag/mine-artikler">
-            <BookOpen className="w-4 h-4 mr-2" />
-            Mine artikler
-          </Link>
-        </Button>
-        <Button variant="outline" size="sm" asChild>
-          <Link to="/fag/favoritter">
-            <Heart className="w-4 h-4 mr-2" />
-            Favoritter
-          </Link>
-        </Button>
-      </div>
-
-      {/* Categories Grid */}
-      <div>
-        <h2 className="text-xl font-semibold mb-4">Fagområder</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {categories?.map((category) => {
-            const IconComponent = iconMap[category.icon as keyof typeof iconMap] || FileCheck;
-            
-            return (
-              <Link key={category.id} to={`/fag/kategori/${category.id}`}>
-                <Card className="hover:shadow-md transition-shadow cursor-pointer">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center gap-2 text-lg">
-                      <IconComponent className="w-5 h-5 text-primary" />
-                      {category.name}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground">
-                      {category.description}
-                    </p>
-                  </CardContent>
-                </Card>
-              </Link>
-            );
-          })}
+          </Button>
+          
+          <Button 
+            variant="outline"
+            onClick={() => navigate('/fag/upload')}
+          >
+            <Upload className="w-4 h-4 mr-2" />
+            Last opp PDF
+          </Button>
         </div>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate('/fag/ny')}>
+          <CardContent className="p-6 text-center">
+            <Plus className="w-8 h-8 mx-auto mb-2 text-blue-600" />
+            <h3 className="font-semibold">Opprett ny artikkel</h3>
+            <p className="text-sm text-muted-foreground">Skriv ny fagartikkel</p>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate('/fag/mine')}>
+          <CardContent className="p-6 text-center">
+            <BookOpen className="w-8 h-8 mx-auto mb-2 text-green-600" />
+            <h3 className="font-semibold">Mine artikler</h3>
+            <p className="text-sm text-muted-foreground">Se dine artikler</p>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate('/fag/favoritter')}>
+          <CardContent className="p-6 text-center">
+            <Heart className="w-8 h-8 mx-auto mb-2 text-red-600" />
+            <h3 className="font-semibold">Favoritter</h3>
+            <p className="text-sm text-muted-foreground">Lagrede artikler</p>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate('/fag/sok')}>
+          <CardContent className="p-6 text-center">
+            <Search className="w-8 h-8 mx-auto mb-2 text-purple-600" />
+            <h3 className="font-semibold">Søk</h3>
+            <p className="text-sm text-muted-foreground">Finn fagstoff</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Categories */}
+      <div>
+        <h2 className="text-xl font-semibold mb-4">Kategorier</h2>
+        {categoriesLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[...Array(6)].map((_, i) => (
+              <Card key={i} className="animate-pulse">
+                <CardContent className="p-4">
+                  <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                  <div className="h-3 bg-gray-200 rounded"></div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {categories?.map((category) => (
+              <Card 
+                key={category.id} 
+                className="hover:shadow-md transition-shadow cursor-pointer"
+                onClick={() => navigate(`/fag/kategori/${category.id}`)}
+              >
+                <CardContent className="p-4">
+                  <h3 className="font-semibold mb-1">{category.name}</h3>
+                  {category.description && (
+                    <p className="text-sm text-muted-foreground">{category.description}</p>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Recent Articles */}
       <div>
         <h2 className="text-xl font-semibold mb-4">Nylige artikler</h2>
-        <div className="space-y-3">
-          {recentArticles?.map((article) => (
-            <Card key={article.id} className="hover:shadow-sm transition-shadow">
-              <CardContent className="p-4">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <Link to={`/fag/artikkel/${article.slug}`} className="block">
-                      <h3 className="font-medium hover:text-primary transition-colors">
-                        {article.title}
-                      </h3>
+        {articlesLoading ? (
+          <div className="space-y-3">
+            {[...Array(3)].map((_, i) => (
+              <Card key={i} className="animate-pulse">
+                <CardContent className="p-4">
+                  <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                  <div className="h-3 bg-gray-200 rounded"></div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {recentArticles?.map((article) => (
+              <Card 
+                key={article.id}
+                className="hover:shadow-md transition-shadow cursor-pointer"
+                onClick={() => navigate(`/fag/artikkel/${article.slug}`)}
+              >
+                <CardContent className="p-4">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <h3 className="font-semibold">{article.title}</h3>
                       {article.summary && (
-                        <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                          {article.summary}
-                        </p>
+                        <p className="text-sm text-muted-foreground mt-1">{article.summary}</p>
                       )}
-                    </Link>
-                    <div className="flex items-center gap-2 mt-2">
-                      <Badge variant="secondary" className="text-xs">
-                        {article.category?.name}
-                      </Badge>
-                      <span className="text-xs text-muted-foreground flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {new Date(article.published_at || article.created_at).toLocaleDateString('nb-NO')}
-                      </span>
+                      <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
+                        <span>{article.category?.name}</span>
+                        <span>•</span>
+                        <span>{new Date(article.created_at).toLocaleDateString('nb-NO')}</span>
+                      </div>
                     </div>
                   </div>
-                  <Button variant="ghost" size="sm">
-                    <Star className="w-4 h-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
