@@ -47,7 +47,12 @@ serve(async (req) => {
     
     if (cachedResponse) {
       console.log('✅ Cache hit!', { requestHash: cachedResponse.requestHash?.substring(0, 16) + '...' });
-      return new Response(JSON.stringify({ response: cachedResponse.response }), {
+      
+      // VALIDATE CACHED RESPONSE TOO - this is important!
+      const validation = validateAIResponse(cachedResponse.response);
+      const finalResponse = validation.fixedResponse || cachedResponse.response;
+      
+      return new Response(JSON.stringify({ response: finalResponse }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -117,19 +122,26 @@ serve(async (req) => {
       throw new Error('No response content from OpenAI');
     }
 
-    // Validate and potentially fix the AI response
+    // 🚨 CRITICAL FIX: ALWAYS validate and fix the AI response
+    console.log('🔧 Forcing response validation and tag injection...');
     const validation = validateAIResponse(aiResponse);
+    
+    // ALWAYS use the fixed response if available, otherwise force fix it
     if (validation.fixedResponse) {
-      console.log('🔧 Response was fixed to include proper formatting');
       aiResponse = validation.fixedResponse;
+      console.log('✅ Response was fixed with forced tag injection');
+    } else if (!validation.isValid) {
+      // This should never happen with our new validator, but just in case
+      aiResponse += '\n\n🏷️ **EMNER:** Revisjon, Fagstoff, Regnskap';
+      console.log('🔧 Emergency tag injection applied');
     }
 
-    console.log('✅ AI response generated:', {
+    console.log('✅ AI response generated with guaranteed tags:', {
       responseLength: aiResponse.length,
       usage: data.usage,
       responseTime: `${responseTime}ms`,
       isGuestMode: !userId,
-      wasFixed: !!validation.fixedResponse
+      hasTags: /🏷️\s*\*\*[Ee][Mm][Nn][Ee][Rr]:?\*\*/.test(aiResponse)
     });
 
     // Log usage if user is authenticated
@@ -153,11 +165,11 @@ serve(async (req) => {
       }
     }
 
-    // Cache the response
+    // Cache the response (with tags)
     if (userId) {
       try {
         await cacheResponse(cacheKey, aiResponse, userId, clientData?.id, selectedModel);
-        console.log('✅ Response cached successfully');
+        console.log('✅ Response cached successfully with tags');
       } catch (error) {
         console.error('❌ Failed to cache response:', error);
       }
@@ -170,7 +182,12 @@ serve(async (req) => {
   } catch (error) {
     console.error('💥 Function error:', error);
     
-    const fallbackResponse = getIntelligentFallback(await req.json().catch(() => ({})));
+    // Even fallback responses should have tags!
+    let fallbackResponse = getIntelligentFallback(await req.json().catch(() => ({})));
+    const validation = validateAIResponse(fallbackResponse);
+    if (validation.fixedResponse) {
+      fallbackResponse = validation.fixedResponse;
+    }
     
     return new Response(JSON.stringify({ 
       response: fallbackResponse,

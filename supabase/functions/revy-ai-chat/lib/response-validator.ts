@@ -3,54 +3,74 @@ export function validateAIResponse(response: string): { isValid: boolean; fixedR
   console.log('🔍 Validating AI response format...');
   
   // Check if response has the required EMNER section
-  const hasEmnerSection = /🏷️\s*\*\*EMNER:\*\*/.test(response);
+  const hasEmnerSection = /🏷️\s*\*\*[Ee][Mm][Nn][Ee][Rr]:?\*\*/.test(response);
   
   if (hasEmnerSection) {
     console.log('✅ Response has valid EMNER section');
     return { isValid: true };
   }
   
-  console.log('⚠️ Response missing EMNER section, attempting to fix...');
+  console.log('🔧 Response missing EMNER section, forcing tag injection...');
   
-  // Try to extract potential tags from the response content
-  const potentialTags = extractPotentialTags(response);
+  // FORCE tag injection - this is our main fix
+  const intelligentTags = extractIntelligentTags(response);
   
-  if (potentialTags.length > 0) {
-    const fixedResponse = response.trim() + '\n\n🏷️ **EMNER:** ' + potentialTags.join(', ');
-    console.log('✅ Fixed response with extracted tags:', potentialTags);
-    return { isValid: true, fixedResponse };
-  }
-  
-  // Add default tags as fallback
-  const defaultTags = ['Revisjon', 'Regnskap', 'Fagspørsmål'];
-  const fixedResponse = response.trim() + '\n\n🏷️ **EMNER:** ' + defaultTags.join(', ');
-  console.log('⚠️ Using default tags as fallback');
+  const fixedResponse = response.trim() + '\n\n🏷️ **EMNER:** ' + intelligentTags.join(', ');
+  console.log('✅ FORCED tag injection complete with tags:', intelligentTags);
   return { isValid: true, fixedResponse };
 }
 
-function extractPotentialTags(response: string): string[] {
+function extractIntelligentTags(response: string): string[] {
   const tags: string[] = [];
-  
-  // Common audit/accounting terms in Norwegian
-  const commonTerms = [
-    'revisjon', 'inntekt', 'dokumentasjon', 'risiko', 'kontroll', 
-    'materialitet', 'isa', 'regnskaps', 'audit', 'planlegging',
-    'testing', 'vesentlighet', 'feilinformasjon', 'lønn', 'varelager',
-    'kundefordringer', 'årsavslutning', 'mva', 'avgift'
-  ];
-  
   const responseText = response.toLowerCase();
   
-  for (const term of commonTerms) {
-    if (responseText.includes(term)) {
-      // Capitalize first letter for tag
-      const tag = term.charAt(0).toUpperCase() + term.slice(1);
-      if (!tags.includes(tag)) {
-        tags.push(tag);
-      }
+  // Comprehensive mapping of content to relevant tags
+  const tagMappings = [
+    // Core audit terms
+    { keywords: ['revisjon', 'revisor', 'audit'], tags: ['Revisjon'] },
+    { keywords: ['inntekt', 'omsetning', 'salg', 'revenue'], tags: ['Inntekter', 'Inntektsføring'] },
+    { keywords: ['isa', 'standard'], tags: ['ISA', 'Standarder'] },
+    { keywords: ['dokumentasjon', 'dokumenter', 'bevis'], tags: ['Dokumentasjon'] },
+    { keywords: ['risiko', 'risk'], tags: ['Risikovurdering'] },
+    { keywords: ['kontroll', 'internal control'], tags: ['Interne kontroller'] },
+    { keywords: ['materialitet', 'materiality', 'vesentlig'], tags: ['Materialitet'] },
+    { keywords: ['planlegging', 'planning'], tags: ['Planlegging'] },
+    { keywords: ['testing', 'test', 'prøving'], tags: ['Testing'] },
+    { keywords: ['lønn', 'personal', 'salary'], tags: ['Lønn', 'Personalkostnader'] },
+    { keywords: ['varelager', 'inventory'], tags: ['Varelager'] },
+    { keywords: ['kundefordringer', 'receivables'], tags: ['Kundefordringer'] },
+    { keywords: ['mva', 'avgift', 'tax'], tags: ['MVA', 'Avgifter'] },
+    { keywords: ['årsavslutning', 'year-end'], tags: ['Årsavslutning'] },
+    { keywords: ['regnskaps', 'accounting'], tags: ['Regnskap'] },
+    { keywords: ['feilinformasjon', 'misstatement'], tags: ['Feilinformasjon'] },
+    { keywords: ['verdsettelse', 'valuation'], tags: ['Verdsettelse'] },
+    { keywords: ['gjeld', 'liabilities'], tags: ['Gjeld'] },
+    { keywords: ['eiendeler', 'assets'], tags: ['Eiendeler'] },
+    { keywords: ['egenkapital', 'equity'], tags: ['Egenkapital'] },
+    { keywords: ['cash', 'kontant', 'bank'], tags: ['Kontanter', 'Bank'] }
+  ];
+  
+  // Analyze content and extract relevant tags
+  for (const mapping of tagMappings) {
+    const hasKeyword = mapping.keywords.some(keyword => responseText.includes(keyword));
+    if (hasKeyword) {
+      tags.push(...mapping.tags);
     }
   }
   
-  // Limit to max 6 tags
-  return tags.slice(0, 6);
+  // Remove duplicates and limit to 6 tags max
+  const uniqueTags = [...new Set(tags)];
+  
+  // If we found specific tags, return them
+  if (uniqueTags.length > 0) {
+    return uniqueTags.slice(0, 6);
+  }
+  
+  // Context-based fallback tags
+  if (responseText.includes('spørsmål') || responseText.includes('hjelp')) {
+    return ['Fagspørsmål', 'Veiledning', 'Revisjon'];
+  }
+  
+  // Ultimate fallback - always return something relevant
+  return ['Revisjon', 'Fagstoff', 'Regnskap'];
 }
