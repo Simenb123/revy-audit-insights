@@ -24,8 +24,6 @@ interface ArticleFormData {
   tags: string;
   status: ArticleStatus;
   reference_code: string;
-  valid_from: string;
-  valid_until: string;
 }
 
 const ArticleEditor = () => {
@@ -76,9 +74,7 @@ const ArticleEditor = () => {
       categoryId: initialCategoryId || '',
       tags: '',
       status: 'draft',
-      reference_code: '',
-      valid_from: '',
-      valid_until: ''
+      reference_code: ''
     }
   });
 
@@ -92,9 +88,7 @@ const ArticleEditor = () => {
         categoryId: article.category_id,
         tags: article.tags?.join(', ') || '',
         status: article.status,
-        reference_code: article.reference_code || '',
-        valid_from: article.valid_from ? article.valid_from.split('T')[0] : '',
-        valid_until: article.valid_until ? article.valid_until.split('T')[0] : ''
+        reference_code: article.reference_code || ''
       });
     }
   }, [article, form]);
@@ -127,8 +121,6 @@ const ArticleEditor = () => {
         author_id: session.user.id,
         published_at: data.status === 'published' ? new Date().toISOString() : null,
         reference_code: data.reference_code || null,
-        valid_from: data.valid_from || null,
-        valid_until: data.valid_until || null,
       };
 
       if (isEditing && articleId) {
@@ -272,25 +264,6 @@ const ArticleEditor = () => {
                   id="reference_code"
                   {...form.register('reference_code')}
                   placeholder="f.eks. ISA 200.15"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="valid_from">Gyldig fra</Label>
-                <Input
-                  id="valid_from"
-                  type="date"
-                  {...form.register('valid_from')}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="valid_until">Gyldig til</Label>
-                <Input
-                  id="valid_until"
-                  type="date"
-                  {...form.register('valid_until')}
                 />
               </div>
             </div>

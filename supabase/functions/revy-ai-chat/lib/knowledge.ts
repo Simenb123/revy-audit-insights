@@ -37,7 +37,7 @@ export const extractSearchTerms = (query: string, context: string): string[] => 
   const words = query.toLowerCase()
     .replace(/[^\w\såæøäöü]/g, ' ') // Replace punctuation with spaces, keep Nordic chars
     .split(/\s+/)
-    .filter(term => term.length > 0); // Only filter out empty strings
+    .filter(term => term.length > 2); // Filter out very short words
     
   words.forEach(word => {
     terms.add(word);
@@ -211,9 +211,10 @@ async function keywordSearch(message: string, context: string) {
 
   console.log(`📝 Database query with ${conditions.length} OR conditions`);
 
+  // Simplified query - only check for published status
   const { data: articles, error } = await supabase
     .from('knowledge_articles')
-    .select('id, title, content, summary, tags, view_count, slug, published_at, created_at, reference_code, valid_from, valid_until')
+    .select('id, title, content, summary, tags, view_count, slug, published_at, created_at, reference_code')
     .eq('status', 'published')
     .or(conditions.join(','))
     .limit(20);
