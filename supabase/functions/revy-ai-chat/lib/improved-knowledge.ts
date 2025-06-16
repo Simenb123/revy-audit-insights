@@ -21,7 +21,7 @@ export async function searchKnowledgeIntelligently(
     console.log('🔍 Starting intelligent knowledge search...');
     
     // Extract keywords from the message
-    const keywords = extractKeywords(message);
+    const keywords = extractKeywords(message, context);
     console.log('📝 Extracted keywords:', keywords);
 
     if (keywords.length === 0) {
@@ -63,17 +63,29 @@ export async function searchKnowledgeIntelligently(
     // Enhanced formatting with safe data handling
     return articles.map(article => {
       try {
+        // Safe extraction of category name
+        let categoryName = 'Ukategorisert';
+        if (article.category && typeof article.category === 'object' && 'name' in article.category) {
+          categoryName = String(article.category.name);
+        }
+
+        // Safe extraction of tags
+        let tagsList: string[] = [];
+        if (article.tags && Array.isArray(article.tags)) {
+          tagsList = article.tags.filter(tag => tag && typeof tag === 'string' && tag.trim().length > 0);
+        }
+
         return {
-          title: article.title || 'Uten tittel',
-          summary: article.summary || '',
-          slug: article.slug || '',
-          category: article.category?.name || 'Ukategorisert',
-          tags: Array.isArray(article.tags) ? article.tags : [],
-          reference_code: article.reference_code || '',
+          title: String(article.title || 'Uten tittel'),
+          summary: String(article.summary || ''),
+          slug: String(article.slug || ''),
+          category: categoryName,
+          tags: tagsList,
+          reference_code: String(article.reference_code || ''),
           relevanceScore: calculateRelevanceScore(message, article)
         };
       } catch (error) {
-        console.error('❌ Error formatting article:', article.id, error);
+        console.error('❌ Error formatting article:', article?.id || 'unknown', error);
         return {
           title: 'Feil ved innlasting',
           summary: '',

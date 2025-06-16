@@ -40,18 +40,24 @@ export async function buildIntelligentSystemPrompt(
     
     enhancedContext.knowledge.forEach((article: any, index: number) => {
       try {
-        prompt += `### ${index + 1}. ${article.title || 'Uten tittel'}\n`;
+        const title = String(article.title || 'Uten tittel');
+        const summary = String(article.summary || '');
+        const referenceCode = String(article.reference_code || '');
+        const category = String(article.category || '');
+        const slug = String(article.slug || '');
         
-        if (article.summary) {
-          prompt += `**Sammendrag:** ${article.summary}\n`;
+        prompt += `### ${index + 1}. ${title}\n`;
+        
+        if (summary) {
+          prompt += `**Sammendrag:** ${summary}\n`;
         }
         
-        if (article.reference_code) {
-          prompt += `**Referanse:** ${article.reference_code}\n`;
+        if (referenceCode) {
+          prompt += `**Referanse:** ${referenceCode}\n`;
         }
         
-        if (article.category) {
-          prompt += `**Kategori:** ${article.category}\n`;
+        if (category) {
+          prompt += `**Kategori:** ${category}\n`;
         }
         
         if (Array.isArray(article.tags) && article.tags.length > 0) {
@@ -61,8 +67,8 @@ export async function buildIntelligentSystemPrompt(
           }
         }
         
-        if (article.slug) {
-          prompt += `**Link:** [${article.title || 'Artikkel'}](/fag/artikkel/${article.slug})\n`;
+        if (slug) {
+          prompt += `**Link:** [${title}](/fag/artikkel/${slug})\n`;
         }
         
         prompt += `\n`;
