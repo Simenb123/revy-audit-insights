@@ -7,6 +7,7 @@ import { selectOptimalModel, getIntelligentFallback } from './lib/utils.ts'
 import { logUsage } from './lib/logging.ts'
 import { getCachedResponse, cacheResponse } from './lib/cache.ts'
 import { seedArticleTags } from './lib/seed-article-tags.ts'
+import { validateAIResponse } from './lib/response-validator.ts'
 
 serve(async (req) => {
   console.log('🤖 AI-Revy Chat function started');
@@ -109,18 +110,26 @@ serve(async (req) => {
 
     const data = await openaiResponse.json();
     const responseTime = Date.now() - startTime;
-    const aiResponse = data.choices?.[0]?.message?.content;
+    let aiResponse = data.choices?.[0]?.message?.content;
 
     if (!aiResponse) {
       console.error('❌ No content in OpenAI response:', data);
       throw new Error('No response content from OpenAI');
     }
 
+    // Validate and potentially fix the AI response
+    const validation = validateAIResponse(aiResponse);
+    if (validation.fixedResponse) {
+      console.log('🔧 Response was fixed to include proper formatting');
+      aiResponse = validation.fixedResponse;
+    }
+
     console.log('✅ AI response generated:', {
       responseLength: aiResponse.length,
       usage: data.usage,
       responseTime: `${responseTime}ms`,
-      isGuestMode: !userId
+      isGuestMode: !userId,
+      wasFixed: !!validation.fixedResponse
     });
 
     // Log usage if user is authenticated

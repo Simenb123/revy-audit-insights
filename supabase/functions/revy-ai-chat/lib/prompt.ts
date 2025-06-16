@@ -78,22 +78,31 @@ export async function buildIntelligentSystemPrompt(
       }
     });
 
-    prompt += `\n## KRITISKE SVARKRAV - FØLG NØYAKTIG!\n`;
-    prompt += `⚠️ DETTE ER ABSOLUTT PÅKREVD - INGEN UNNTAK!\n\n`;
-    prompt += `Du MÅ ALLTID følge denne EKSAKTE strukturen i alle svar:\n\n`;
-    prompt += `1. 📝 **HOVEDSVAR:** Gi et klart og informativt svar på spørsmålet\n\n`;
-    prompt += `2. 📚 **RELEVANTE FAGARTIKLER:** (hvis du bruker fagartikler)\n`;
-    prompt += `- [Artikkeltittel](/fag/artikkel/slug-her)\n\n`;
-    prompt += `3. 🔖 **REFERANSE:** Kode (hvis relevant, f.eks. ISA 315.12)\n\n`;
-    prompt += `4. 🏷️ **EMNER:** tag1, tag2, tag3\n\n`;
-    prompt += `⚠️ VIKTIG: Punkt 4 (EMNER) er ALLTID påkrevd - ALDRI dropp denne seksjonen!\n\n`;
-    prompt += `EKSEMPEL PÅ KORREKT FORMATERING:\n`;
+    prompt += `\n## 🚨 ABSOLUTTE KRAV TIL SVARFORMAT - IKKE BRYT DISSE REGLENE! 🚨\n`;
+    prompt += `\n⚠️⚠️⚠️ DETTE ER KRITISK - SYSTEMET FUNGERER IKKE UTEN DETTE! ⚠️⚠️⚠️\n\n`;
+    prompt += `ALLE SVAR MÅ FØLGE DENNE EKSAKTE STRUKTUREN:\n\n`;
+    prompt += `[DITT HOVEDSVAR HER]\n\n`;
+    prompt += `📚 **Relevante fagartikler:**\n`;
+    prompt += `- [Artikkeltittel](/fag/artikkel/slug)\n\n`;
+    prompt += `🔖 **REFERANSE:** [Kode som ISA 315.12]\n\n`;
+    prompt += `🏷️ **EMNER:** tag1, tag2, tag3, tag4\n\n`;
+    
+    prompt += `🚨 SPESIELLE KRAV:\n`;
+    prompt += `1. Seksjonen "🏷️ **EMNER:**" er OBLIGATORISK - ALDRI dropp den!\n`;
+    prompt += `2. Emner skal være separert med komma\n`;
+    prompt += `3. Minimum 3 emner, maksimum 6 emner\n`;
+    prompt += `4. Bruk relevante norske fagtermer som: Revisjon, ISA, Inntekter, Dokumentasjon, Risikovurdering, Kontroller, Materialitet, etc.\n`;
+    prompt += `5. Hvis du ikke bruker fagartikler, skriv likevel "📚 **Relevante fagartikler:** Ingen spesifikke artikler funnet"\n\n`;
+    
+    prompt += `EKSEMPEL PÅ KORREKT SVARFORMAT:\n`;
     prompt += `Revisjon av inntekter krever særlig fokus på...\n\n`;
     prompt += `📚 **Relevante fagartikler:**\n`;
     prompt += `- [Revisjon av inntekter og inntektsføring](/fag/artikkel/revisjon-inntekter)\n\n`;
     prompt += `🔖 **REFERANSE:** ISA 240.15\n\n`;
     prompt += `🏷️ **EMNER:** Revisjon, Inntekter, ISA 240, Risikovurdering\n\n`;
-    prompt += `⚠️ HUSK: ALDRI dropp 🏷️ **EMNER:** seksjonen - den er ALLTID påkrevd!\n`;
+    
+    prompt += `🚨 HVIS DU GLEMMER "🏷️ **EMNER:**" SEKSJONEN, FUNGERER IKKE SYSTEMET!\n`;
+    prompt += `🚨 DETTE ER IKKE VALGFRITT - DET ER ABSOLUTT PÅKREVD!\n`;
   }
 
   // Client context integration
@@ -111,8 +120,9 @@ export async function buildIntelligentSystemPrompt(
   prompt += `4. Hvis brukeren stiller et spørsmål som ikke er relatert til revisjon eller regnskap, svar at du bare kan hjelpe med spørsmål relatert til revisjon og regnskap.\n`;
   prompt += `5. Hvis du blir spurt om å gjøre noe ulovlig eller uetisk, nekt å svare.\n`;
   prompt += `6. Gi aldri investeringsråd.\n`;
-  prompt += `7. ⚠️ ABSOLUTT PÅKREVD: Avslutt ALLTID svaret med 🏷️ **EMNER:** etterfulgt av relevante tags.\n`;
-  prompt += `8. ⚠️ DEBUGGING: Hvis du glemmer tags-seksjonen, vil systemet ikke fungere korrekt!\n`;
+  prompt += `7. 🚨 KRITISK: Avslutt ALLTID med "🏷️ **EMNER:**" etterfulgt av relevante tags.\n`;
+  prompt += `8. 🚨 HVIS DU IKKE INKLUDERER TAGS, VIL BRUKEROPPLEVELSEN VÆRE ØDELAGT!\n`;
+  prompt += `9. 🚨 HUSK: Tags må komme SIST i svaret og må være formatert eksakt som vist i eksemplet!\n`;
 
   console.log('✅ System prompt built successfully');
   return prompt;
