@@ -1,4 +1,3 @@
-
 import { supabase } from './supabase.ts';
 import { extractIntelligentKeywords } from './utils.ts';
 
@@ -12,13 +11,25 @@ interface KnowledgeSearchResult {
   relevanceScore: number;
 }
 
+interface ArticleTagMapping {
+  articleSlug: string;
+  articleTitle: string;
+  matchedTags: string[];
+  relevanceScore: number;
+}
+
+interface EnhancedKnowledgeResult {
+  articles: KnowledgeSearchResult[];
+  tagToArticleMap: Record<string, ArticleTagMapping>;
+}
+
 export async function searchKnowledgeIntelligently(
   message: string, 
   context: string, 
   clientData?: any
-): Promise<KnowledgeSearchResult[]> {
+): Promise<EnhancedKnowledgeResult> {
   try {
-    console.log('🔍 Starting intelligent knowledge search...');
+    console.log('🔍 Starting intelligent knowledge search with article mapping...');
     console.log(`📝 Message: "${message}"`);
     console.log(`🎯 Context: "${context}"`);
     
@@ -30,14 +41,14 @@ export async function searchKnowledgeIntelligently(
     
     if (countError) {
       console.error('❌ Error checking article count:', countError);
-      return [];
+      return { articles: [], tagToArticleMap: {} };
     }
     
     console.log(`📊 Total published articles available: ${totalCount || 0}`);
     
     if (!totalCount || totalCount === 0) {
       console.log('❌ No published articles found in database');
-      return [];
+      return { articles: [], tagToArticleMap: {} };
     }
 
     // Extract keywords from the message
@@ -64,15 +75,17 @@ export async function searchKnowledgeIntelligently(
 
       if (broadError) {
         console.error('❌ Broad search error:', broadError);
-        return [];
+        return { articles: [], tagToArticleMap: {} };
       }
 
       if (broadArticles && broadArticles.length > 0) {
         console.log(`✅ Broad search found ${broadArticles.length} articles`);
-        return formatArticleResults(broadArticles);
+        const formattedArticles = formatArticleResults(broadArticles);
+        const tagMapping = createTagToArticleMapping(formattedArticles, keywords);
+        return { articles: formattedArticles, tagToArticleMap: tagMapping };
       }
 
-      return [];
+      return { articles: [], tagToArticleMap: {} };
     }
 
     // Build search patterns for different approaches
@@ -115,12 +128,12 @@ export async function searchKnowledgeIntelligently(
 
     if (error) {
       console.error('❌ Knowledge search error:', error);
-      return [];
+      return { articles: [], tagToArticleMap: {} };
     }
 
     if (!articles || articles.length === 0) {
       console.log('📭 No articles found with keyword search');
-      return [];
+      return { articles: [], tagToArticleMap: {} };
     }
 
     console.log(`✅ Found ${articles.length} relevant articles`);
@@ -147,7 +160,7 @@ export async function searchKnowledgeIntelligently(
           title: 'Feil ved innlasting',
           summary: '',
           slug: '',
-          category: 'Ukategorisert',
+          category: 'Ukategoriseret',
           tags: [],
           reference_code: '',
           relevanceScore: 0
@@ -156,12 +169,15 @@ export async function searchKnowledgeIntelligently(
     }).filter(result => result.relevanceScore > 0)
       .sort((a, b) => b.relevanceScore - a.relevanceScore);
 
-    console.log(`📊 Returning ${results.length} scored and sorted articles`);
-    return results;
+    // Create tag-to-article mapping
+    const tagMapping = createTagToArticleMapping(results, keywords);
+
+    console.log(`📊 Returning ${results.length} scored and sorted articles with tag mappings`);
+    return { articles: results, tagToArticleMap: tagMapping };
 
   } catch (error) {
     console.error('💥 Knowledge search failed:', error);
-    return [];
+    return { articles: [], tagToArticleMap: {} };
   }
 }
 
@@ -177,11 +193,86 @@ function formatArticleResults(articles: any[]): KnowledgeSearchResult[] {
   }));
 }
 
+function createTagToArticleMapping(articles: KnowledgeSearchResult[], keywords: string[]): Record<string, ArticleTagMapping> {
+  const mapping: Record<string, ArticleTagMapping> = {};
+  
+  // For each keyword/tag, find the best matching article
+  keywords.forEach(keyword => {
+    const keywordLower = keyword.toLowerCase();
+    let bestMatch: KnowledgeSearchResult | null = null;
+    let bestScore = 0;
+    
+    articles.forEach(article => {
+      let score = 0;
+      
+      // Check title match
+      if (article.title.toLowerCase().includes(keywordLower)) {
+        score += 5;
+      }
+      
+      // Check if any article tags match this keyword
+      const matchingTags = article.tags.filter(tag => 
+        tag.toLowerCase().includes(keywordLower) || keywordLower.includes(tag.toLowerCase())
+      );
+      score += matchingTags.length * 3;
+      
+      // Check reference code match
+      if (article.reference_code.toLowerCase().includes(keywordLower)) {
+        score += 4;
+      }
+      
+      // Check category match
+      if (article.category.toLowerCase().includes(keywordLower)) {
+        score += 2;
+      }
+      
+      if (score > bestScore) {
+        bestScore = score;
+        bestMatch = article;
+      }
+    });
+    
+    if (bestMatch && bestScore > 0) {
+      mapping[keyword] = {
+        articleSlug: bestMatch.slug,
+        articleTitle: bestMatch.title,
+        matchedTags: bestMatch.tags.filter(tag => 
+          tag.toLowerCase().includes(keywordLower) || keywordLower.includes(tag.toLowerCase())
+        ),
+        relevanceScore: bestScore
+      };
+    }
+  });
+  
+  // Also create mappings for common revision terms to the most relevant articles
+  const commonTerms = ['revisjon', 'risikovurdering', 'vesentlighet', 'kontroll', 'dokumentasjon'];
+  commonTerms.forEach(term => {
+    if (!mapping[term] && articles.length > 0) {
+      // Find article with highest overall relevance for this term
+      const bestArticle = articles.find(article => 
+        article.title.toLowerCase().includes(term) || 
+        article.tags.some(tag => tag.toLowerCase().includes(term))
+      ) || articles[0]; // Fallback to first article
+      
+      if (bestArticle) {
+        mapping[term] = {
+          articleSlug: bestArticle.slug,
+          articleTitle: bestArticle.title,
+          matchedTags: bestArticle.tags.filter(tag => tag.toLowerCase().includes(term)),
+          relevanceScore: 1
+        };
+      }
+    }
+  });
+  
+  return mapping;
+}
+
 function getCategoryName(category: any): string {
   if (category && typeof category === 'object' && 'name' in category) {
     return String(category.name);
   }
-  return 'Ukategorisert';
+  return 'Ukategoriseret';
 }
 
 function getTagsList(tags: any): string[] {

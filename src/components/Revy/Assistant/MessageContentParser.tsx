@@ -3,14 +3,24 @@ import { Badge } from '@/components/ui/badge';
 import { FileText, ExternalLink, Tag, Copy, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 interface MessageContentParserProps {
   content: string;
   isEmbedded?: boolean;
 }
 
+interface ArticleMapping {
+  articleSlug: string;
+  articleTitle: string;
+  matchedTags: string[];
+  relevanceScore: number;
+}
+
 export const MessageContentParser = ({ content, isEmbedded = false }: MessageContentParserProps) => {
   const [copiedBlocks, setCopiedBlocks] = useState<Set<number>>(new Set());
+  const navigate = useNavigate();
 
   // 🔍 DEBUG: Log the content being parsed
   console.log('🔍 MessageContentParser received content:', content);
@@ -34,9 +44,22 @@ export const MessageContentParser = ({ content, isEmbedded = false }: MessageCon
     }
   };
 
-  // 🚨 SUPER SIMPLIFIED TAG EXTRACTION with better visibility
+  // Extract article mappings from content
+  const extractArticleMappings = (content: string): Record<string, ArticleMapping> => {
+    const mappingMatch = content.match(/<!-- ARTICLE_MAPPINGS: (.+?) -->/);
+    if (mappingMatch) {
+      try {
+        return JSON.parse(mappingMatch[1]);
+      } catch (error) {
+        console.error('❌ Failed to parse article mappings:', error);
+      }
+    }
+    return {};
+  };
+
+  // Enhanced tag extraction with better visibility
   const extractTags = (content: string): string[] => {
-    console.log('🏷️ Starting SUPER simplified tag extraction...');
+    console.log('🏷️ Starting enhanced tag extraction...');
     
     // Find any line that contains "EMNER" (case insensitive)
     const lines = content.split('\n');
@@ -91,6 +114,39 @@ export const MessageContentParser = ({ content, isEmbedded = false }: MessageCon
     return [];
   };
 
+  // Handle tag click with article navigation
+  const handleTagClick = (tag: string, articleMappings: Record<string, ArticleMapping>) => {
+    console.log('🏷️ Tag clicked:', tag);
+    
+    // Find exact match first
+    let mapping = articleMappings[tag];
+    
+    // If no exact match, try case-insensitive and partial matches
+    if (!mapping) {
+      const tagLower = tag.toLowerCase();
+      const matchingKey = Object.keys(articleMappings).find(key => 
+        key.toLowerCase() === tagLower || 
+        key.toLowerCase().includes(tagLower) ||
+        tagLower.includes(key.toLowerCase())
+      );
+      
+      if (matchingKey) {
+        mapping = articleMappings[matchingKey];
+        console.log('🎯 Found partial match for tag:', tag, '→', matchingKey);
+      }
+    }
+    
+    if (mapping && mapping.articleSlug) {
+      console.log('📖 Navigating to article:', mapping.articleTitle);
+      navigate(`/fag/artikkel/${mapping.articleSlug}`);
+      toast.success(`Åpner fagartikkel: ${mapping.articleTitle}`);
+    } else {
+      console.log('❌ No article mapping found for tag:', tag);
+      toast.info(`Søker etter: ${tag}`);
+      navigate(`/fag/sok?q=${encodeURIComponent(tag)}`);
+    }
+  };
+
   const processContent = (content: string): React.ReactElement[] => {
     const lines = content.split('\n');
     const processedElements: React.ReactElement[] = [];
@@ -98,11 +154,14 @@ export const MessageContentParser = ({ content, isEmbedded = false }: MessageCon
 
     console.log('🔍 Processing content lines:', lines.length);
 
+    // Extract article mappings first
+    const articleMappings = extractArticleMappings(content);
+    console.log('📎 Extracted article mappings:', Object.keys(articleMappings));
+
     // 🏷️ FIRST: Extract and render tags at the beginning with FORCED visibility
     const extractedTags = extractTags(content);
     if (extractedTags.length > 0) {
-      console.log('🎉 Rendering tags section with', extractedTags.length, 'tags');
-      console.log('🎨 Tags will be rendered with FORCED visibility styles');
+      console.log('🎉 Rendering clickable tags section with', extractedTags.length, 'tags');
       
       processedElements.push(
         <div 
@@ -116,19 +175,36 @@ export const MessageContentParser = ({ content, isEmbedded = false }: MessageCon
               <span className={`font-semibold ${isEmbedded ? 'text-sm' : 'text-base'}`}>Emner:</span>
             </div>
             <div className="flex flex-wrap gap-2 min-w-0 flex-1">
-              {extractedTags.map((tag, tagIndex) => (
-                <Badge 
-                  key={tagIndex} 
-                  variant="secondary" 
-                  className={`bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors cursor-pointer border-2 border-blue-300 font-medium ${isEmbedded ? 'text-xs px-2 py-1.5' : 'text-sm px-3 py-2'}`}
-                  style={{ display: 'inline-flex', visibility: 'visible' }}
-                  onClick={() => {
-                    console.log('🏷️ Tag clicked:', tag);
-                  }}
-                >
-                  {tag}
-                </Badge>
-              ))}
+              {extractedTags.map((tag, tagIndex) => {
+                const hasMapping = articleMappings[tag] || 
+                  Object.keys(articleMappings).some(key => 
+                    key.toLowerCase() === tag.toLowerCase() || 
+                    key.toLowerCase().includes(tag.toLowerCase()) ||
+                    tag.toLowerCase().includes(key.toLowerCase())
+                  );
+                
+                return (
+                  <Badge 
+                    key={tagIndex} 
+                    variant="secondary" 
+                    className={`
+                      ${hasMapping 
+                        ? 'bg-blue-100 text-blue-800 hover:bg-blue-200 border-2 border-blue-300 cursor-pointer' 
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-2 border-gray-300 cursor-pointer'
+                      } 
+                      transition-all duration-200 transform hover:scale-105 font-medium 
+                      ${isEmbedded ? 'text-xs px-2 py-1.5' : 'text-sm px-3 py-2'}
+                    `}
+                    style={{ display: 'inline-flex', visibility: 'visible' }}
+                    onClick={() => handleTagClick(tag, articleMappings)}
+                    title={hasMapping ? `Klikk for å åpne fagartikkel om ${tag}` : `Klikk for å søke etter ${tag}`}
+                  >
+                    {hasMapping && <FileText className="w-3 h-3 mr-1" />}
+                    {tag}
+                    {hasMapping && <ExternalLink className="w-3 h-3 ml-1 opacity-60" />}
+                  </Badge>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -154,6 +230,11 @@ export const MessageContentParser = ({ content, isEmbedded = false }: MessageCon
       // Skip the EMNER line since we already processed it above
       if (/emner/i.test(trimmedLine)) {
         console.log('⏭️ Skipping EMNER line since we already processed tags');
+        continue;
+      }
+
+      // Skip article mapping comments
+      if (trimmedLine.includes('ARTICLE_MAPPINGS')) {
         continue;
       }
 

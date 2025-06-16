@@ -1,4 +1,3 @@
-
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { corsHeaders, isOptions, handleCors } from './lib/cors.ts'
 import { buildIntelligentSystemPrompt } from './lib/prompt.ts'
@@ -59,11 +58,12 @@ serve(async (req) => {
     
     console.log('🧐 Cache miss, proceeding to generate new response.');
 
-    // Build enhanced context with improved search
+    // Build enhanced context with improved search and article mappings
     const enhancedContext = await buildEnhancedContext(message, context, clientData);
     
     console.log('🧠 Enhanced context built:', {
       knowledgeArticleCount: enhancedContext.knowledge?.length || 0,
+      articleTagMappingCount: Object.keys(enhancedContext.articleTagMapping || {}).length,
       hasClientContext: !!enhancedContext.clientContext,
       isGuestMode: !userId
     });
@@ -72,7 +72,7 @@ serve(async (req) => {
     const selectedModel = selectOptimalModel(message, context, !userId);
     console.log('🎯 Selected model:', selectedModel);
 
-    // Build system prompt
+    // Build system prompt with article mappings
     const systemPrompt = await buildIntelligentSystemPrompt(
       context,
       clientData,
@@ -122,6 +122,12 @@ serve(async (req) => {
       throw new Error('No response content from OpenAI');
     }
 
+    // Inject article mappings into response metadata for frontend parsing
+    if (enhancedContext.articleTagMapping && Object.keys(enhancedContext.articleTagMapping).length > 0) {
+      aiResponse += `\n\n<!-- ARTICLE_MAPPINGS: ${JSON.stringify(enhancedContext.articleTagMapping)} -->`;
+      console.log('📎 Injected article mappings into response');
+    }
+
     // 🚨 CRITICAL FIX: ALWAYS validate and fix the AI response
     console.log('🔧 Forcing response validation and tag injection...');
     const validation = validateAIResponse(aiResponse);
@@ -136,12 +142,13 @@ serve(async (req) => {
       console.log('🔧 Emergency tag injection applied');
     }
 
-    console.log('✅ AI response generated with guaranteed tags:', {
+    console.log('✅ AI response generated with guaranteed tags and article mappings:', {
       responseLength: aiResponse.length,
       usage: data.usage,
       responseTime: `${responseTime}ms`,
       isGuestMode: !userId,
-      hasTags: /🏷️\s*\*\*[Ee][Mm][Nn][Ee][Rr]:?\*\*/.test(aiResponse)
+      hasTags: /🏷️\s*\*\*[Ee][Mm][Nn][Ee][Rr]:?\*\*/.test(aiResponse),
+      hasArticleMappings: aiResponse.includes('ARTICLE_MAPPINGS')
     });
 
     // Log usage if user is authenticated
@@ -165,11 +172,11 @@ serve(async (req) => {
       }
     }
 
-    // Cache the response (with tags)
+    // Cache the response (with tags and article mappings)
     if (userId) {
       try {
         await cacheResponse(cacheKey, aiResponse, userId, clientData?.id, selectedModel);
-        console.log('✅ Response cached successfully with tags');
+        console.log('✅ Response cached successfully with tags and article mappings');
       } catch (error) {
         console.error('❌ Failed to cache response:', error);
       }
