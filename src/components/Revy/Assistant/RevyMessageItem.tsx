@@ -59,7 +59,7 @@ export const RevyMessageItem = ({ message, isEmbedded = false }: RevyMessageItem
                 // This is a link title
                 return (
                   <a
-                    key={`link-${lineIndex}-${partIndex}`}
+                    key={`link-${lineIndex}-${partIndex.toString()}`}
                     href={`/fag/artikkel/${match[2]}`}
                     className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 font-medium hover:underline bg-blue-50 px-2 py-1 rounded mr-2"
                   >
@@ -70,7 +70,7 @@ export const RevyMessageItem = ({ message, isEmbedded = false }: RevyMessageItem
                 );
               } else if (partIndex % 3 === 0 && part.trim()) {
                 // Regular text
-                return <span key={`text-${lineIndex}-${partIndex}`}>{part}</span>;
+                return <span key={`text-${lineIndex}-${partIndex.toString()}`}>{part}</span>;
               }
               return null;
             })}
@@ -95,7 +95,7 @@ export const RevyMessageItem = ({ message, isEmbedded = false }: RevyMessageItem
             <div key={`tags-${lineIndex}`} className="my-2 flex flex-wrap gap-1">
               <span className="text-sm text-gray-600 mr-2">Emner:</span>
               {tags.map((tag, tagIndex) => (
-                <Badge key={`tag-${lineIndex}-${tagIndex}`} variant="secondary" className="text-xs">
+                <Badge key={`tag-${lineIndex}-${tagIndex.toString()}`} variant="secondary" className="text-xs">
                   {tag}
                 </Badge>
               ))}
@@ -128,7 +128,7 @@ export const RevyMessageItem = ({ message, isEmbedded = false }: RevyMessageItem
                 if (partIndex % 3 === 1 && match) {
                   return (
                     <a
-                      key={`inline-link-${lineIndex}-${partIndex}`}
+                      key={`inline-link-${lineIndex}-${partIndex.toString()}`}
                       href={`/fag/artikkel/${match[2]}`}
                       className="text-blue-600 hover:text-blue-800 font-medium hover:underline"
                     >
@@ -136,7 +136,7 @@ export const RevyMessageItem = ({ message, isEmbedded = false }: RevyMessageItem
                     </a>
                   );
                 } else if (partIndex % 3 === 0 && part.trim()) {
-                  return <span key={`inline-text-${lineIndex}-${partIndex}`}>{part}</span>;
+                  return <span key={`inline-text-${lineIndex}-${partIndex.toString()}`}>{part}</span>;
                 }
                 return null;
               })}
@@ -177,7 +177,7 @@ export const RevyMessageItem = ({ message, isEmbedded = false }: RevyMessageItem
             <RevyAvatar size={isEmbedded ? 'xs' : 'sm'} className="flex-shrink-0" />
             <div className={`${revyMessageClass} rounded-bl-none prose prose-sm max-w-none`}>
               <div className="space-y-2">
-                {processRevyContent(content)}
+                {processRevyContent(content as string)}
               </div>
             </div>
           </div>
