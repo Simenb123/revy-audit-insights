@@ -31,7 +31,6 @@ export const RevyMessageItem = ({ message, isEmbedded = false }: RevyMessageItem
     // Split content into lines for processing
     const lines = content.split('\n');
     const processedLines: JSX.Element[] = [];
-    let currentSection = '';
     
     lines.forEach((line, index) => {
       // Check for article links
