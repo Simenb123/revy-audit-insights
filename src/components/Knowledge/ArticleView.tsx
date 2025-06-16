@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -8,7 +9,7 @@ import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbP
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/Auth/AuthProvider';
 import { KnowledgeArticle } from '@/types/knowledge';
-import { Eye, Clock, Edit, Star, StarOff, FileText, CheckCircle2, Square, CalendarDays } from 'lucide-react';
+import { Eye, Clock, Edit, Star, StarOff, FileText, CheckCircle2, Square } from 'lucide-react';
 
 const ArticleView = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -281,17 +282,6 @@ const ArticleView = () => {
               <Badge variant="secondary">{article.reference_code}</Badge>
             )}
           </div>
-          
-          {(article.valid_from || article.valid_until) && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground mt-2">
-              <CalendarDays className="w-4 h-4" />
-              <span>
-                Gyldig: {article.valid_from ? new Date(article.valid_from).toLocaleDateString('nb-NO') : '...'}
-                {' - '}
-                {article.valid_until ? new Date(article.valid_until).toLocaleDateString('nb-NO') : '...'}
-              </span>
-            </div>
-          )}
 
           {article.tags && article.tags.length > 0 && (
             <div className="flex flex-wrap gap-2 mt-3">
