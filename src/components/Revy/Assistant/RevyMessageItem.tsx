@@ -32,13 +32,13 @@ export const RevyMessageItem = ({ message, isEmbedded = false }: RevyMessageItem
     const lines = content.split('\n');
     const processedLines: React.ReactElement[] = [];
     
-    lines.forEach((line, index) => {
+    lines.forEach((line, lineIndex) => {
       // Check for article links
       const articleLinkRegex = /\[([^\]]+)\]\(\/fag\/artikkel\/([^)]+)\)/g;
       
       if (line.includes('📚 Relevante artikler:') || line.includes('Relevante artikler:')) {
         processedLines.push(
-          <div key={index} className="mt-4 mb-2">
+          <div key={`header-${lineIndex}`} className="mt-4 mb-2">
             <div className="flex items-center gap-2 text-blue-800 font-semibold">
               <FileText className="h-4 w-4" />
               <span>Relevante fagartikler:</span>
@@ -51,14 +51,15 @@ export const RevyMessageItem = ({ message, isEmbedded = false }: RevyMessageItem
         const parts = line.split(articleLinkRegex);
         
         processedLines.push(
-          <div key={index} className="my-1">
+          <div key={`article-${lineIndex}`} className="my-1">
             {parts.map((part, partIndex) => {
-              const match = matches[Math.floor(partIndex / 3)];
+              const matchIndex = Math.floor(partIndex / 3);
+              const match = matches[matchIndex];
               if (partIndex % 3 === 1 && match) {
                 // This is a link title
                 return (
                   <a
-                    key={partIndex}
+                    key={`link-${lineIndex}-${partIndex}`}
                     href={`/fag/artikkel/${match[2]}`}
                     className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 font-medium hover:underline bg-blue-50 px-2 py-1 rounded mr-2"
                   >
@@ -69,7 +70,7 @@ export const RevyMessageItem = ({ message, isEmbedded = false }: RevyMessageItem
                 );
               } else if (partIndex % 3 === 0 && part.trim()) {
                 // Regular text
-                return <span key={partIndex}>{part}</span>;
+                return <span key={`text-${lineIndex}-${partIndex}`}>{part}</span>;
               }
               return null;
             })}
@@ -79,7 +80,7 @@ export const RevyMessageItem = ({ message, isEmbedded = false }: RevyMessageItem
         const refMatch = line.match(/(?:🔖 REFERANSE:|Referanse:)\s*(.+)/);
         if (refMatch) {
           processedLines.push(
-            <div key={index} className="my-1">
+            <div key={`ref-${lineIndex}`} className="my-1">
               <Badge variant="outline" className="bg-green-50 border-green-200 text-green-800">
                 📋 {refMatch[1]}
               </Badge>
@@ -91,10 +92,10 @@ export const RevyMessageItem = ({ message, isEmbedded = false }: RevyMessageItem
         if (tagsMatch) {
           const tags = tagsMatch[1].split(',').map(tag => tag.trim());
           processedLines.push(
-            <div key={index} className="my-2 flex flex-wrap gap-1">
+            <div key={`tags-${lineIndex}`} className="my-2 flex flex-wrap gap-1">
               <span className="text-sm text-gray-600 mr-2">Emner:</span>
               {tags.map((tag, tagIndex) => (
-                <Badge key={tagIndex} variant="secondary" className="text-xs">
+                <Badge key={`tag-${lineIndex}-${tagIndex}`} variant="secondary" className="text-xs">
                   {tag}
                 </Badge>
               ))}
@@ -103,7 +104,7 @@ export const RevyMessageItem = ({ message, isEmbedded = false }: RevyMessageItem
         }
       } else if (line.includes('💡 Tips:')) {
         processedLines.push(
-          <div key={index} className="mt-3 p-2 bg-yellow-50 border-l-4 border-yellow-400 rounded-r">
+          <div key={`tips-${lineIndex}`} className="mt-3 p-2 bg-yellow-50 border-l-4 border-yellow-400 rounded-r">
             <div className="flex items-start gap-2">
               <span className="text-yellow-600">💡</span>
               <span className="text-sm text-yellow-800">{line.replace('💡 Tips:', '').trim()}</span>
@@ -120,13 +121,14 @@ export const RevyMessageItem = ({ message, isEmbedded = false }: RevyMessageItem
           const matches = [...line.matchAll(articleLinkRegex)];
           
           processedLines.push(
-            <div key={index} className="leading-relaxed">
+            <div key={`inline-${lineIndex}`} className="leading-relaxed">
               {parts.map((part, partIndex) => {
-                const match = matches[Math.floor(partIndex / 3)];
+                const matchIndex = Math.floor(partIndex / 3);
+                const match = matches[matchIndex];
                 if (partIndex % 3 === 1 && match) {
                   return (
                     <a
-                      key={partIndex}
+                      key={`inline-link-${lineIndex}-${partIndex}`}
                       href={`/fag/artikkel/${match[2]}`}
                       className="text-blue-600 hover:text-blue-800 font-medium hover:underline"
                     >
@@ -134,7 +136,7 @@ export const RevyMessageItem = ({ message, isEmbedded = false }: RevyMessageItem
                     </a>
                   );
                 } else if (partIndex % 3 === 0 && part.trim()) {
-                  return <span key={partIndex}>{part}</span>;
+                  return <span key={`inline-text-${lineIndex}-${partIndex}`}>{part}</span>;
                 }
                 return null;
               })}
@@ -143,7 +145,7 @@ export const RevyMessageItem = ({ message, isEmbedded = false }: RevyMessageItem
         } else {
           // Regular text without links
           processedLines.push(
-            <div key={index} className="leading-relaxed">
+            <div key={`regular-${lineIndex}`} className="leading-relaxed">
               {line}
             </div>
           );
