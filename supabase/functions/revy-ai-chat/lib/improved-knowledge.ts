@@ -1,6 +1,6 @@
 
 import { supabase } from './supabase.ts';
-import { extractIntelligentKeywords as extractKeywords } from './utils.ts';
+import { extractIntelligentKeywords } from './utils.ts';
 
 interface KnowledgeSearchResult {
   title: string;
@@ -19,19 +19,84 @@ export async function searchKnowledgeIntelligently(
 ): Promise<KnowledgeSearchResult[]> {
   try {
     console.log('🔍 Starting intelligent knowledge search...');
+    console.log(`📝 Message: "${message}"`);
+    console.log(`🎯 Context: "${context}"`);
     
-    // Extract keywords from the message
-    const keywords = extractKeywords(message, context);
-    console.log('📝 Extracted keywords:', keywords);
-
-    if (keywords.length === 0) {
-      console.log('⚠️ No keywords found, returning empty results');
+    // First check if we have any published articles at all
+    const { count: totalCount, error: countError } = await supabase
+      .from('knowledge_articles')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'published');
+    
+    if (countError) {
+      console.error('❌ Error checking article count:', countError);
+      return [];
+    }
+    
+    console.log(`📊 Total published articles available: ${totalCount || 0}`);
+    
+    if (!totalCount || totalCount === 0) {
+      console.log('❌ No published articles found in database');
       return [];
     }
 
-    // Search using text similarity and tags
-    const searchQuery = keywords.join(' | ');
+    // Extract keywords from the message
+    const keywords = extractIntelligentKeywords(message, context);
+    console.log('📝 Extracted keywords:', keywords);
+
+    if (keywords.length === 0) {
+      console.log('⚠️ No keywords found, performing broad search...');
+      // If no keywords, try a broad search for any articles
+      const { data: broadArticles, error: broadError } = await supabase
+        .from('knowledge_articles')
+        .select(`
+          id,
+          title,
+          slug,
+          summary,
+          content,
+          tags,
+          reference_code,
+          category:knowledge_categories(name)
+        `)
+        .eq('status', 'published')
+        .limit(3);
+
+      if (broadError) {
+        console.error('❌ Broad search error:', broadError);
+        return [];
+      }
+
+      if (broadArticles && broadArticles.length > 0) {
+        console.log(`✅ Broad search found ${broadArticles.length} articles`);
+        return formatArticleResults(broadArticles);
+      }
+
+      return [];
+    }
+
+    // Build search patterns for different approaches
+    const searchQueries = [];
     
+    // 1. Title and content text search
+    keywords.forEach(keyword => {
+      searchQueries.push(`title.ilike.%${keyword}%`);
+      searchQueries.push(`content.ilike.%${keyword}%`);
+      searchQueries.push(`summary.ilike.%${keyword}%`);
+    });
+
+    // 2. Tags array search
+    const tagSearches = keywords.map(keyword => `tags.cs.{${keyword}}`);
+    
+    // 3. Reference code search
+    const refSearches = keywords.map(keyword => `reference_code.ilike.%${keyword}%`);
+
+    // Combine all search patterns
+    const allSearches = [...searchQueries, ...tagSearches, ...refSearches];
+    const searchQuery = allSearches.join(',');
+
+    console.log(`🔎 Executing search with query patterns: ${searchQuery.substring(0, 200)}...`);
+
     const { data: articles, error } = await supabase
       .from('knowledge_articles')
       .select(`
@@ -45,8 +110,8 @@ export async function searchKnowledgeIntelligently(
         category:knowledge_categories(name)
       `)
       .eq('status', 'published')
-      .or(`title.ilike.%${searchQuery}%,content.ilike.%${searchQuery}%,tags.cs.{${keywords.join(',')}}`)
-      .limit(5);
+      .or(searchQuery)
+      .limit(10);
 
     if (error) {
       console.error('❌ Knowledge search error:', error);
@@ -54,26 +119,18 @@ export async function searchKnowledgeIntelligently(
     }
 
     if (!articles || articles.length === 0) {
-      console.log('📭 No articles found');
+      console.log('📭 No articles found with keyword search');
       return [];
     }
 
     console.log(`✅ Found ${articles.length} relevant articles`);
 
-    // Enhanced formatting with safe data handling
-    return articles.map(article => {
+    // Enhanced formatting with relevance scoring
+    const results = articles.map(article => {
       try {
-        // Safe extraction of category name
-        let categoryName = 'Ukategorisert';
-        if (article.category && typeof article.category === 'object' && 'name' in article.category) {
-          categoryName = String(article.category.name);
-        }
-
-        // Safe extraction of tags
-        let tagsList: string[] = [];
-        if (article.tags && Array.isArray(article.tags)) {
-          tagsList = article.tags.filter(tag => tag && typeof tag === 'string' && tag.trim().length > 0);
-        }
+        const categoryName = getCategoryName(article.category);
+        const tagsList = getTagsList(article.tags);
+        const relevanceScore = calculateRelevanceScore(message, article, keywords);
 
         return {
           title: String(article.title || 'Uten tittel'),
@@ -82,7 +139,7 @@ export async function searchKnowledgeIntelligently(
           category: categoryName,
           tags: tagsList,
           reference_code: String(article.reference_code || ''),
-          relevanceScore: calculateRelevanceScore(message, article)
+          relevanceScore
         };
       } catch (error) {
         console.error('❌ Error formatting article:', article?.id || 'unknown', error);
@@ -96,7 +153,11 @@ export async function searchKnowledgeIntelligently(
           relevanceScore: 0
         };
       }
-    }).filter(result => result.relevanceScore > 0);
+    }).filter(result => result.relevanceScore > 0)
+      .sort((a, b) => b.relevanceScore - a.relevanceScore);
+
+    console.log(`📊 Returning ${results.length} scored and sorted articles`);
+    return results;
 
   } catch (error) {
     console.error('💥 Knowledge search failed:', error);
@@ -104,35 +165,82 @@ export async function searchKnowledgeIntelligently(
   }
 }
 
-function calculateRelevanceScore(message: string, article: any): number {
+function formatArticleResults(articles: any[]): KnowledgeSearchResult[] {
+  return articles.map(article => ({
+    title: String(article.title || 'Uten tittel'),
+    summary: String(article.summary || ''),
+    slug: String(article.slug || ''),
+    category: getCategoryName(article.category),
+    tags: getTagsList(article.tags),
+    reference_code: String(article.reference_code || ''),
+    relevanceScore: 1
+  }));
+}
+
+function getCategoryName(category: any): string {
+  if (category && typeof category === 'object' && 'name' in category) {
+    return String(category.name);
+  }
+  return 'Ukategorisert';
+}
+
+function getTagsList(tags: any): string[] {
+  if (tags && Array.isArray(tags)) {
+    return tags.filter(tag => tag && typeof tag === 'string' && tag.trim().length > 0);
+  }
+  return [];
+}
+
+function calculateRelevanceScore(message: string, article: any, keywords: string[]): number {
   try {
     const messageLower = message.toLowerCase();
     let score = 0;
     
-    // Title match
-    if (article.title && article.title.toLowerCase().includes(messageLower)) {
-      score += 3;
+    // Title match (high weight)
+    if (article.title) {
+      keywords.forEach(keyword => {
+        if (article.title.toLowerCase().includes(keyword.toLowerCase())) {
+          score += 5;
+        }
+      });
     }
     
-    // Tags match
+    // Tags match (medium weight)
     if (Array.isArray(article.tags)) {
       const matchingTags = article.tags.filter((tag: string) => 
-        tag && (
-          messageLower.includes(tag.toLowerCase()) || 
-          tag.toLowerCase().includes(messageLower)
+        tag && keywords.some(keyword => 
+          tag.toLowerCase().includes(keyword.toLowerCase()) || 
+          keyword.toLowerCase().includes(tag.toLowerCase())
         )
       );
-      score += matchingTags.length * 2;
+      score += matchingTags.length * 3;
     }
     
-    // Reference code match
-    if (article.reference_code && messageLower.includes(article.reference_code.toLowerCase())) {
-      score += 4;
+    // Reference code match (very high weight)
+    if (article.reference_code) {
+      keywords.forEach(keyword => {
+        if (article.reference_code.toLowerCase().includes(keyword.toLowerCase())) {
+          score += 8;
+        }
+      });
     }
     
-    // Content match (basic, with safety check)
-    if (article.content && typeof article.content === 'string' && article.content.toLowerCase().includes(messageLower)) {
-      score += 1;
+    // Content match (low weight, but broad)
+    if (article.content && typeof article.content === 'string') {
+      keywords.forEach(keyword => {
+        if (article.content.toLowerCase().includes(keyword.toLowerCase())) {
+          score += 1;
+        }
+      });
+    }
+    
+    // Summary match (medium weight)
+    if (article.summary && typeof article.summary === 'string') {
+      keywords.forEach(keyword => {
+        if (article.summary.toLowerCase().includes(keyword.toLowerCase())) {
+          score += 2;
+        }
+      });
     }
     
     return score;

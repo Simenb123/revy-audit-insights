@@ -1,74 +1,82 @@
 
-// Intelligent keyword extraction
+// Improved keyword extraction for Norwegian content
 export function extractIntelligentKeywords(message: string, context: string): string[] {
-  const revisionTerms = ['revisjon', 'audit', 'kontroll', 'risikovurdering', 'materialitet', 'testing', 'verifisering'];
-  const accountingTerms = ['regnskap', 'balanse', 'resultat', 'kontroller', 'transaksjoner', 'kontoplan'];
-  const contextTerms = {
-    'risk-assessment': ['risiko', 'vurdering', 'materialitet', 'kontrollrisiko'],
-    'documentation': ['dokumentasjon', 'arbeidspapirer', 'bevis', 'konklusjon'],
-    'client-detail': ['klient', 'bransje', 'nøkkeltall', 'analyse']
-  };
+  console.log(`🔍 Extracting keywords from: "${message}"`);
+  const keywords = new Set<string>();
 
-  const keywords: string[] = [];
-  const lowerMessage = message.toLowerCase();
-  
-  // Add context-specific terms
-  if (contextTerms[context as keyof typeof contextTerms]) {
-    keywords.push(...contextTerms[context as keyof typeof contextTerms]);
-  }
-  
-  // Add revision terms if relevant
-  if (revisionTerms.some(term => lowerMessage.includes(term))) {
-    keywords.push(...revisionTerms.filter(term => lowerMessage.includes(term)));
-  }
-  
-  // Add accounting terms if relevant
-  if (accountingTerms.some(term => lowerMessage.includes(term))) {
-    keywords.push(...accountingTerms.filter(term => lowerMessage.includes(term)));
-  }
-  
-  // Extract key words from message (simple approach)
-  const words = lowerMessage.split(/\s+/).filter(word => word.length > 3);
-  keywords.push(...words.slice(0, 3));
+  // Norwegian stopwords to exclude
+  const stopwords = ['og', 'eller', 'en', 'et', 'den', 'det', 'de', 'som', 'jeg', 'du', 'han', 'hun', 'vi', 'dere', 'til', 'av', 'for', 'på', 'med', 'i', 'å', 'er', 'var', 'har', 'kan', 'skal', 'vil', 'må', 'om', 'hvis', 'når', 'hvor', 'hva', 'hvem', 'hvorfor', 'hvordan', 'fra', 'blir', 'være', 'sin', 'sitt', 'sine', 'meg', 'deg', 'seg', 'oss', 'dere', 'dem'];
 
-  return [...new Set(keywords)]; // Remove duplicates
+  // Clean and extract words (3+ characters, not stopwords)
+  const words = message.toLowerCase()
+    .replace(/[^\w\såæøäöü]/g, ' ')
+    .split(/\s+/)
+    .filter(word => word.length >= 3 && !stopwords.includes(word));
+    
+  words.forEach(word => {
+    keywords.add(word);
+    console.log(`📝 Added keyword: "${word}"`);
+  });
+
+  // Enhanced ISA standards extraction
+  const isaMatches = message.match(/isa\s*\d{3}/gi);
+  if (isaMatches) {
+    isaMatches.forEach(match => {
+      const cleanMatch = match.replace(/\s+/g, ' ').trim().toUpperCase();
+      keywords.add(cleanMatch);
+      keywords.add('ISA');
+      console.log(`📋 Added ISA term: "${cleanMatch}"`);
+    });
+  }
+
+  // Add key revision terms when found
+  const revisionTerms = ['revisjon', 'revisor', 'regnskap', 'kontroll', 'standard', 'prosedyre', 'fagstoff', 'artikkel', 'retningslinje'];
+  revisionTerms.forEach(term => {
+    if (message.toLowerCase().includes(term)) {
+      keywords.add(term);
+      console.log(`🎯 Added revision term: "${term}"`);
+    }
+  });
+
+  // Context-based keywords
+  if (context === 'risk-assessment') {
+    keywords.add('risiko');
+    keywords.add('vurdering');
+  } else if (context === 'documentation') {
+    keywords.add('dokumentasjon');
+    keywords.add('bevis');
+  }
+
+  const finalKeywords = Array.from(keywords);
+  console.log(`✅ Final keywords (${finalKeywords.length}): ${finalKeywords.join(', ')}`);
+  return finalKeywords;
 }
 
-// Optimal model selection based on complexity - FIXED: Use valid OpenAI models
+// Select optimal model based on complexity
 export function selectOptimalModel(message: string, context: string, isGuestMode = false): string {
-  // Always use gpt-4o-mini for guests to reduce costs
-  if (isGuestMode) {
-    return 'gpt-4o-mini';
-  }
-
-  const complexContexts = ['risk-assessment', 'documentation', 'client-detail'];
-  const longMessage = message.length > 200;
-  const complexTerms = ['analyse', 'vurder', 'beregn', 'sammenlikn', 'konkluder'];
+  if (isGuestMode) return 'gpt-4o-mini';
   
-  const isComplex = complexContexts.includes(context) || 
-                   longMessage || 
-                   complexTerms.some(term => message.toLowerCase().includes(term));
+  // Use gpt-4o-mini for most cases to save costs
+  const complexPatterns = [
+    /kompleks/i,
+    /avansert/i,
+    /detaljert/i,
+    /omfattende/i
+  ];
   
+  const isComplex = complexPatterns.some(pattern => pattern.test(message)) || message.length > 500;
   return isComplex ? 'gpt-4o' : 'gpt-4o-mini';
 }
 
 // Intelligent fallback responses
-export function getIntelligentFallback(requestData: any): string {
-  const context = requestData.context || 'general';
-  const userRole = requestData.userRole || 'employee';
+export function getIntelligentFallback(requestBody: any): string {
+  const { context = 'general', message = '' } = requestBody;
   
   const fallbacks = {
-    'risk-assessment': 'Jeg har tekniske problemer, men her er noen generelle tips for risikovurdering: Start med å identifisere klientens bransje og nøkkelrisiki. Vurder materialitetsnivå basert på størrelse og kompleksitet.',
-    'documentation': 'Tekniske problemer oppstått. For dokumentasjon, husk: ISA 230 krever at all dokumentasjon skal være tilstrekkelig og hensiktsmessig for å støtte revisjonskonklusjoner.',
-    'client-detail': 'Midlertidig feil. For klientanalyse, se på nøkkeltall som omsetningsvekst, lønnsomhet og likviditet. Sammenlign med bransjegjennomsnitt.',
-    'general': 'Jeg opplever tekniske problemer. Prøv igjen om litt, eller kontakt support hvis problemet vedvarer.'
+    'risk-assessment': 'Beklager, jeg opplever tekniske problemer. I mellomtiden kan du fokusere på å identifisere vesentlige risikoer i henhold til ISA 315.',
+    'documentation': 'Beklager for problemet. Fortsett med dokumentasjon i henhold til ISA 230-kravene mens jeg blir tilgjengelig igjen.',
+    'general': 'Beklager, jeg opplever tekniske problemer akkurat nå. Prøv igjen om litt, eller kontakt support hvis problemet vedvarer.'
   };
   
-  const roleSpecific = userRole === 'partner' ? 
-    ' Som partner bør du også vurdere klientporteføljens samlede risiko.' :
-    userRole === 'manager' ? 
-    ' Som manager, sørg for at teamet følger etablerte prosedyrer.' :
-    ' Kontakt din manager hvis du trenger ytterligere veiledning.';
-  
-  return (fallbacks[context as keyof typeof fallbacks] || fallbacks.general) + roleSpecific;
+  return fallbacks[context as keyof typeof fallbacks] || fallbacks.general;
 }
