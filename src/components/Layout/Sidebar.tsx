@@ -33,7 +33,7 @@ const Sidebar = () => {
       >
         <SidebarTrigger
           className="h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent"
-          aria-label={isCollapsed ? "Utvid sidebar" : "Skjul sidebar"}
+          aria-label={isCollapsed ? "Utvid sidebar (Ctrl+Shift+B)" : "Skjul sidebar (Ctrl+Shift+B)"}
         />
         {!isCollapsed && (
           <span className="font-semibold text-sidebar-foreground text-base">
