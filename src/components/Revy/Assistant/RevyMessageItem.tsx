@@ -67,7 +67,7 @@ export const RevyMessageItem = ({ message, isEmbedded = false }: RevyMessageItem
                     <ExternalLink className="h-3 w-3" />
                   </a>
                 );
-              } else if (partIndex % 3 === 0) {
+              } else if (partIndex % 3 === 0 && part.trim()) {
                 // Regular text
                 return <span key={partIndex}>{part}</span>;
               }
@@ -110,15 +110,42 @@ export const RevyMessageItem = ({ message, isEmbedded = false }: RevyMessageItem
             </div>
           </div>
         );
-      } else {
-        // Regular content - process for inline links
-        const processedLine = line.replace(articleLinkRegex, (match, title, slug) => {
-          return `<a href="/fag/artikkel/${slug}" class="text-blue-600 hover:text-blue-800 font-medium hover:underline">${title}</a>`;
-        });
+      } else if (line.trim()) {
+        // Regular content - process for inline links but return as JSX
+        const hasArticleLinks = articleLinkRegex.test(line);
         
-        if (processedLine.trim()) {
+        if (hasArticleLinks) {
+          // Process inline article links within regular text
+          const parts = line.split(articleLinkRegex);
+          const matches = [...line.matchAll(articleLinkRegex)];
+          
           processedLines.push(
-            <div key={index} className="leading-relaxed" dangerouslySetInnerHTML={{ __html: processedLine }} />
+            <div key={index} className="leading-relaxed">
+              {parts.map((part, partIndex) => {
+                const match = matches[Math.floor(partIndex / 3)];
+                if (partIndex % 3 === 1 && match) {
+                  return (
+                    <a
+                      key={partIndex}
+                      href={`/fag/artikkel/${match[2]}`}
+                      className="text-blue-600 hover:text-blue-800 font-medium hover:underline"
+                    >
+                      {match[1]}
+                    </a>
+                  );
+                } else if (partIndex % 3 === 0 && part.trim()) {
+                  return <span key={partIndex}>{part}</span>;
+                }
+                return null;
+              })}
+            </div>
+          );
+        } else {
+          // Regular text without links
+          processedLines.push(
+            <div key={index} className="leading-relaxed">
+              {line}
+            </div>
           );
         }
       }
