@@ -1,19 +1,29 @@
-import React from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { useQuery, useMutation } from '@tanstack/react-query';
-import { useForm, Controller } from 'react-hook-form';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Label } from '@/components/ui/label';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/components/Auth/AuthProvider';
-import { KnowledgeCategory, KnowledgeArticle, ArticleStatus } from '@/types/knowledge';
-import { Save, X } from 'lucide-react';
-import { toast } from 'sonner';
-import RichTextEditor from './RichTextEditor';
+import React from "react";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { useForm, Controller } from "react-hook-form";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/components/Auth/AuthProvider";
+import {
+  KnowledgeCategory,
+  KnowledgeArticle,
+  ArticleStatus,
+} from "@/types/knowledge";
+import { Save, X } from "lucide-react";
+import { toast } from "sonner";
+import RichTextEditor from "./RichTextEditor";
 
 interface ArticleFormData {
   title: string;
@@ -31,12 +41,16 @@ const generateSlug = (title: string): string => {
   return title
     .toLowerCase()
     .replace(/[æøå]/g, (match) => {
-      const replacements: { [key: string]: string } = { 'æ': 'ae', 'ø': 'o', 'å': 'a' };
+      const replacements: { [key: string]: string } = {
+        æ: "ae",
+        ø: "o",
+        å: "a",
+      };
       return replacements[match] || match;
     })
-    .replace(/[^a-z0-9\s-]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
     .trim();
 };
 
@@ -45,120 +59,130 @@ const ArticleEditor = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { session } = useAuth();
-  
+
   const initialCategoryId = location.state?.categoryId;
   const isEditing = !!articleId;
 
   const { data: categories } = useQuery({
-    queryKey: ['knowledge-categories-all'],
+    queryKey: ["knowledge-categories-all"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('knowledge_categories')
-        .select('*')
-        .order('display_order');
-      
+        .from("knowledge_categories")
+        .select("*")
+        .order("display_order");
+
       if (error) throw error;
       return data as KnowledgeCategory[];
-    }
+    },
   });
 
   const { data: article, isLoading: isLoadingArticle } = useQuery({
-    queryKey: ['knowledge-article-edit', articleId],
+    queryKey: ["knowledge-article-edit", articleId],
     queryFn: async () => {
       if (!articleId) return null;
-      
+
       const { data, error } = await supabase
-        .from('knowledge_articles')
-        .select('*')
-        .eq('id', articleId)
+        .from("knowledge_articles")
+        .select("*")
+        .eq("id", articleId)
         .single();
-      
+
       if (error) throw error;
       return data as KnowledgeArticle;
     },
-    enabled: isEditing
+    enabled: isEditing,
   });
 
   const form = useForm<ArticleFormData>({
     defaultValues: {
-      title: '',
-      slug: '',
-      summary: '',
-      content: '<p>Skriv artikkelinnholdet her...</p>',
-      categoryId: initialCategoryId || '',
-      tags: '',
-      status: 'draft',
-      reference_code: ''
-    }
+      title: "",
+      slug: "",
+      summary: "",
+      content: "<p>Skriv artikkelinnholdet her...</p>",
+      categoryId: initialCategoryId || "",
+      tags: "",
+      status: "draft",
+      reference_code: "",
+    },
   });
+
+  const [slugError, setSlugError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     if (article && !isLoadingArticle) {
-      console.log('Setting form values from article:', article);
+      console.log("Setting form values from article:", article);
       form.reset({
-        title: article.title || '',
-        slug: article.slug || '',
-        summary: article.summary || '',
-        content: article.content || '<p>Skriv artikkelinnholdet her...</p>',
-        categoryId: article.category_id || '',
-        tags: article.tags?.join(', ') || '',
-        status: article.status || 'draft',
-        reference_code: article.reference_code || ''
+        title: article.title || "",
+        slug: article.slug || "",
+        summary: article.summary || "",
+        content: article.content || "<p>Skriv artikkelinnholdet her...</p>",
+        categoryId: article.category_id || "",
+        tags: article.tags?.join(", ") || "",
+        status: article.status || "draft",
+        reference_code: article.reference_code || "",
       });
     }
   }, [article, isLoadingArticle, form]);
 
+  const checkSlugUnique = async (slug: string) => {
+    if (!slug) return;
+    const unique = await generateUniqueSlug(slug);
+    if (unique !== slug) {
+      form.setValue("slug", unique);
+      setSlugError("URL-slug eksisterte, så den ble endret til en unik verdi.");
+    } else {
+      setSlugError(null);
+    }
+  };
+
   // Improved slug generation with uniqueness handling
-  const generateUniqueSlug = async (title: string): Promise<string> => {
-    const baseSlug = title
-      .toLowerCase()
-      .replace(/[æøå]/g, (match) => {
-        const replacements: { [key: string]: string } = { 'æ': 'ae', 'ø': 'o', 'å': 'a' };
-        return replacements[match] || match;
-      })
-      .replace(/[^a-z0-9\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-')
-      .trim();
+  const generateUniqueSlug = async (value: string): Promise<string> => {
+    // value might already be a slug or just a title
+    const baseSlug = generateSlug(value);
 
-    // Check if slug exists
-    const { data: existingArticles } = await supabase
-      .from('knowledge_articles')
-      .select('slug')
-      .like('slug', `${baseSlug}%`)
-      .neq('id', articleId || ''); // Exclude current article if editing
+    try {
+      const { data } = await supabase
+        .from("knowledge_articles")
+        .select("id")
+        .eq("slug", baseSlug)
+        .maybeSingle();
 
-    if (!existingArticles || existingArticles.length === 0) {
-      return baseSlug;
+      if (!data) {
+        return baseSlug;
+      }
+    } catch (error) {
+      console.error("Slug uniqueness check failed:", error);
+      return `${baseSlug}-${Date.now().toString().slice(-6)}`;
     }
 
     // If base slug exists, add timestamp suffix
-    const timestamp = Date.now().toString().slice(-6);
-    return `${baseSlug}-${timestamp}`;
+    return `${baseSlug}-${Date.now().toString().slice(-6)}`;
   };
 
   const saveMutation = useMutation({
     mutationFn: async (data: ArticleFormData) => {
-      if (!session?.user?.id) throw new Error('Not authenticated');
+      if (!session?.user?.id) throw new Error("Not authenticated");
 
-      console.log('Saving article with data:', data);
+      console.log("Saving article with data:", data);
 
       // Validate required fields
       if (!data.title.trim()) {
-        throw new Error('Tittel er påkrevd');
+        throw new Error("Tittel er påkrevd");
       }
-      if (!data.content || data.content.trim() === '<p></p>' || data.content.trim() === '<p>Skriv artikkelinnholdet her...</p>') {
-        throw new Error('Artikkelinnhold er påkrevd');
+      if (
+        !data.content ||
+        data.content.trim() === "<p></p>" ||
+        data.content.trim() === "<p>Skriv artikkelinnholdet her...</p>"
+      ) {
+        throw new Error("Artikkelinnhold er påkrevd");
       }
       if (!data.categoryId) {
-        throw new Error('Kategori er påkrevd');
+        throw new Error("Kategori er påkrevd");
       }
 
-      // Generate unique slug if needed
-      let finalSlug = data.slug;
-      if (!finalSlug) {
-        finalSlug = await generateUniqueSlug(data.title);
-      }
+      // Generate unique slug regardless of source
+      const desiredSlug = data.slug || data.title;
+      const finalSlug = await generateUniqueSlug(desiredSlug);
 
       const articleData = {
         title: data.title.trim(),
@@ -166,61 +190,50 @@ const ArticleEditor = () => {
         summary: data.summary || null,
         content: data.content,
         category_id: data.categoryId,
-        tags: data.tags ? data.tags.split(',').map(tag => tag.trim()).filter(Boolean) : null,
+        tags: data.tags
+          ? data.tags
+              .split(",")
+              .map((tag) => tag.trim())
+              .filter(Boolean)
+          : null,
         status: data.status,
         author_id: session.user.id,
-        published_at: data.status === 'published' ? new Date().toISOString() : null,
+        published_at:
+          data.status === "published" ? new Date().toISOString() : null,
         reference_code: data.reference_code || null,
       };
 
-      console.log('Article data to save:', articleData);
+      console.log("Article data to save:", articleData);
 
       if (isEditing && articleId) {
         const { data: result, error } = await supabase
-          .from('knowledge_articles')
+          .from("knowledge_articles")
           .update(articleData)
-          .eq('id', articleId)
+          .eq("id", articleId)
           .select()
           .single();
-        
+
         if (error) {
-          console.error('Update error:', error);
-          if (error.code === '23505' && error.message.includes('slug')) {
-            // Handle slug duplicate by generating a new one
-            articleData.slug = await generateUniqueSlug(data.title + '-retry');
-            const { data: retryResult, error: retryError } = await supabase
-              .from('knowledge_articles')
-              .update(articleData)
-              .eq('id', articleId)
-              .select()
-              .single();
-            
-            if (retryError) throw retryError;
-            return retryResult;
+          console.error("Update error:", error);
+          if (error.code === "23505" && error.message.includes("slug")) {
+            setSlugError("URL-slug eksisterer allerede.");
+            throw new Error("Slug conflict");
           }
           throw error;
         }
         return result;
       } else {
         const { data: result, error } = await supabase
-          .from('knowledge_articles')
+          .from("knowledge_articles")
           .insert(articleData)
           .select()
           .single();
-        
+
         if (error) {
-          console.error('Insert error:', error);
-          if (error.code === '23505' && error.message.includes('slug')) {
-            // Handle slug duplicate by generating a new one
-            articleData.slug = await generateUniqueSlug(data.title + '-retry');
-            const { data: retryResult, error: retryError } = await supabase
-              .from('knowledge_articles')
-              .insert(articleData)
-              .select()
-              .single();
-            
-            if (retryError) throw retryError;
-            return retryResult;
+          console.error("Insert error:", error);
+          if (error.code === "23505" && error.message.includes("slug")) {
+            setSlugError("URL-slug eksisterer allerede.");
+            throw new Error("Slug conflict");
           }
           throw error;
         }
@@ -228,35 +241,39 @@ const ArticleEditor = () => {
       }
     },
     onSuccess: (result) => {
-      toast.success(isEditing ? 'Artikkel oppdatert' : 'Artikkel opprettet');
+      toast.success(isEditing ? "Artikkel oppdatert" : "Artikkel opprettet");
       navigate(`/fag/artikkel/${result.slug}`);
     },
     onError: (error: any) => {
-      console.error('Save error:', error);
-      toast.error('Feil ved lagring: ' + error.message);
-    }
+      console.error("Save error:", error);
+      if (error.message && error.message.includes("slug")) {
+        toast.error("URL-slug eksisterer allerede. Prøv et annet.");
+      } else {
+        toast.error("Feil ved lagring: " + error.message);
+      }
+    },
   });
 
   const onSubmit = async (data: ArticleFormData) => {
-    console.log('Form submitted with data:', data);
-    if (!data.slug) {
-      data.slug = await generateUniqueSlug(data.title);
-    }
+    console.log("Form submitted with data:", data);
+    data.slug = await generateUniqueSlug(data.slug || data.title);
     saveMutation.mutate(data);
   };
 
   if (isLoadingArticle) {
-    return <div className="space-y-6 animate-pulse">
-      <div className="h-8 bg-gray-200 rounded w-1/3"></div>
-      <div className="h-96 bg-gray-200 rounded"></div>
-    </div>;
+    return (
+      <div className="space-y-6 animate-pulse">
+        <div className="h-8 bg-gray-200 rounded w-1/3"></div>
+        <div className="h-96 bg-gray-200 rounded"></div>
+      </div>
+    );
   }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">
-          {isEditing ? 'Rediger artikkel' : 'Ny artikkel'}
+          {isEditing ? "Rediger artikkel" : "Ny artikkel"}
         </h1>
         <Button variant="outline" onClick={() => navigate(-1)}>
           <X className="w-4 h-4 mr-2" />
@@ -275,26 +292,38 @@ const ArticleEditor = () => {
                 <Label htmlFor="title">Tittel *</Label>
                 <Input
                   id="title"
-                  {...form.register('title', { required: 'Tittel er påkrevd' })}
+                  {...form.register("title", { required: "Tittel er påkrevd" })}
                   onBlur={(e) => {
-                    if (!form.getValues('slug')) {
-                      form.setValue('slug', generateSlug(e.target.value));
+                    if (!form.getValues("slug")) {
+                      const base = generateSlug(e.target.value);
+                      form.setValue("slug", base);
+                      checkSlugUnique(base);
                     }
                   }}
                 />
                 {form.formState.errors.title && (
-                  <p className="text-sm text-destructive">{form.formState.errors.title.message}</p>
+                  <p className="text-sm text-destructive">
+                    {form.formState.errors.title.message}
+                  </p>
                 )}
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="slug">URL-slug *</Label>
                 <Input
                   id="slug"
-                  {...form.register('slug', { required: 'URL-slug er påkrevd' })}
+                  {...form.register("slug", {
+                    required: "URL-slug er påkrevd",
+                  })}
+                  onBlur={(e) => checkSlugUnique(e.target.value)}
                 />
                 {form.formState.errors.slug && (
-                  <p className="text-sm text-destructive">{form.formState.errors.slug.message}</p>
+                  <p className="text-sm text-destructive">
+                    {form.formState.errors.slug.message}
+                  </p>
+                )}
+                {slugError && (
+                  <p className="text-sm text-destructive">{slugError}</p>
                 )}
               </div>
             </div>
@@ -303,7 +332,7 @@ const ArticleEditor = () => {
               <Label htmlFor="summary">Sammendrag</Label>
               <Textarea
                 id="summary"
-                {...form.register('summary')}
+                {...form.register("summary")}
                 rows={3}
                 placeholder="Kort beskrivelse av artikkelen..."
               />
@@ -315,7 +344,7 @@ const ArticleEditor = () => {
                 <Controller
                   name="categoryId"
                   control={form.control}
-                  rules={{ required: 'Kategori er påkrevd' }}
+                  rules={{ required: "Kategori er påkrevd" }}
                   render={({ field }) => (
                     <Select value={field.value} onValueChange={field.onChange}>
                       <SelectTrigger>
@@ -332,7 +361,9 @@ const ArticleEditor = () => {
                   )}
                 />
                 {form.formState.errors.categoryId && (
-                  <p className="text-sm text-destructive">{form.formState.errors.categoryId.message}</p>
+                  <p className="text-sm text-destructive">
+                    {form.formState.errors.categoryId.message}
+                  </p>
                 )}
               </div>
 
@@ -362,7 +393,7 @@ const ArticleEditor = () => {
                 <Label htmlFor="tags">Tags (kommaseparert)</Label>
                 <Input
                   id="tags"
-                  {...form.register('tags')}
+                  {...form.register("tags")}
                   placeholder="revisjon, isa-315, risikovurdering"
                 />
               </div>
@@ -370,7 +401,7 @@ const ArticleEditor = () => {
                 <Label htmlFor="reference_code">Referansekode</Label>
                 <Input
                   id="reference_code"
-                  {...form.register('reference_code')}
+                  {...form.register("reference_code")}
                   placeholder="f.eks. ISA 200.15"
                 />
               </div>
@@ -388,11 +419,13 @@ const ArticleEditor = () => {
               <Controller
                 name="content"
                 control={form.control}
-                rules={{ required: 'Artikkelinnhold kan ikke være tomt.' }}
+                rules={{ required: "Artikkelinnhold kan ikke være tomt." }}
                 render={({ field, fieldState }) => (
                   <>
                     <RichTextEditor
-                      content={field.value || '<p>Skriv artikkelinnholdet her...</p>'}
+                      content={
+                        field.value || "<p>Skriv artikkelinnholdet her...</p>"
+                      }
                       onChange={field.onChange}
                     />
                     {fieldState.error && (
@@ -408,12 +441,9 @@ const ArticleEditor = () => {
         </Card>
 
         <div className="flex justify-end gap-2">
-          <Button
-            type="submit"
-            disabled={saveMutation.isPending}
-          >
+          <Button type="submit" disabled={saveMutation.isPending}>
             <Save className="w-4 h-4 mr-2" />
-            {saveMutation.isPending ? 'Lagrer...' : 'Lagre'}
+            {saveMutation.isPending ? "Lagrer..." : "Lagre"}
           </Button>
         </div>
       </form>
