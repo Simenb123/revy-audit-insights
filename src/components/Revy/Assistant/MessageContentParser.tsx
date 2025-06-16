@@ -13,6 +13,12 @@ interface MessageContentParserProps {
 export const MessageContentParser = ({ content, isEmbedded = false }: MessageContentParserProps) => {
   const [copiedBlocks, setCopiedBlocks] = useState<Set<number>>(new Set());
 
+  // 🔍 DEBUG: Log the content being parsed
+  console.log('🔍 MessageContentParser received content:', content);
+  console.log('📏 Content length:', content.length);
+  console.log('🏷️ Content contains emoji:', /🏷️/.test(content));
+  console.log('🔤 Content contains EMNER:', /EMNER/i.test(content));
+
   const copyToClipboard = async (text: string, blockIndex: number) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -34,9 +40,13 @@ export const MessageContentParser = ({ content, isEmbedded = false }: MessageCon
     const processedElements: React.ReactElement[] = [];
     let currentBlockIndex = 0;
 
+    console.log('🔍 Processing content lines:', lines.length);
+
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
       const trimmedLine = line.trim();
+
+      console.log(`🔍 Processing line ${i}: "${trimmedLine}"`);
 
       // Skip empty lines but add spacing
       if (!trimmedLine) {
@@ -213,7 +223,9 @@ export const MessageContentParser = ({ content, isEmbedded = false }: MessageCon
         continue;
       }
 
-      // Enhanced Tags parsing with multiple patterns and better fallback
+      // 🔍 ENHANCED Tags parsing with comprehensive debugging
+      console.log(`🔍 Checking line ${i} for tags: "${trimmedLine}"`);
+      
       const tagPatterns = [
         // Primary pattern: 🏷️ **EMNER:** tags
         /🏷️\s*\*\*[Ee][Mm][Nn][Ee][Rr]:?\*\*\s*(.+)/i,
@@ -225,13 +237,21 @@ export const MessageContentParser = ({ content, isEmbedded = false }: MessageCon
       ];
 
       let tagsMatch = null;
-      for (const pattern of tagPatterns) {
-        tagsMatch = trimmedLine.match(pattern);
-        if (tagsMatch) break;
+      let patternIndex = -1;
+      
+      for (let p = 0; p < tagPatterns.length; p++) {
+        tagsMatch = trimmedLine.match(tagPatterns[p]);
+        if (tagsMatch) {
+          patternIndex = p;
+          console.log(`✅ Found tags match with pattern ${p + 1}:`, tagsMatch);
+          break;
+        } else {
+          console.log(`❌ Pattern ${p + 1} did not match`);
+        }
       }
 
       if (tagsMatch && tagsMatch[1]) {
-        console.log('🏷️ DEBUG: Found tags in response:', tagsMatch[1]);
+        console.log('🏷️ DEBUG: Found tags in response with pattern', patternIndex + 1, ':', tagsMatch[1]);
         
         const tags = tagsMatch[1]
           .replace(/\*\*/g, '') // Remove any remaining bold markers
@@ -239,7 +259,10 @@ export const MessageContentParser = ({ content, isEmbedded = false }: MessageCon
           .map(tag => tag.trim())
           .filter(tag => tag.length > 0);
         
+        console.log('🏷️ DEBUG: Processed tags array:', tags);
+        
         if (tags.length > 0) {
+          console.log('✅ DEBUG: Rendering tags section with', tags.length, 'tags');
           processedElements.push(
             <div key={`tags-${i}`} className="mt-4 mb-2">
               <div className="flex flex-wrap gap-2 items-center">
@@ -270,6 +293,8 @@ export const MessageContentParser = ({ content, isEmbedded = false }: MessageCon
           console.warn('⚠️ DEBUG: Tags array is empty after processing');
         }
         continue;
+      } else {
+        console.log('❌ DEBUG: No tags match found for line:', trimmedLine);
       }
 
       // Tips sections (💡 Tips:)
@@ -297,6 +322,7 @@ export const MessageContentParser = ({ content, isEmbedded = false }: MessageCon
       );
     }
 
+    console.log('✅ DEBUG: Finished processing content, created', processedElements.length, 'elements');
     return processedElements;
   };
 

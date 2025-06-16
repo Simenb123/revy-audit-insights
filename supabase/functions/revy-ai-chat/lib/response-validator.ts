@@ -1,6 +1,7 @@
 
 export function validateAIResponse(response: string): { isValid: boolean; fixedResponse?: string } {
   console.log('🔍 Validating AI response format...');
+  console.log('📝 Response preview:', response.substring(0, 200) + '...');
   
   // Check if response has the required EMNER section with proper format
   const hasEmnerSection = /🏷️\s*\*\*[Ee][Mm][Nn][Ee][Rr]:?\*\*\s*.+/.test(response);
@@ -23,14 +24,21 @@ export function validateAIResponse(response: string): { isValid: boolean; fixedR
     'Regnskap'
   ].slice(0, 6);
   
+  // FORCE standardized format that the frontend expects
   const fixedResponse = response.trim() + '\n\n🏷️ **EMNER:** ' + finalTags.join(', ');
-  console.log('✅ FORCED comprehensive tag injection complete with tags:', finalTags);
+  
+  console.log('🔧 FORCED tag injection with format: 🏷️ **EMNER:** tags');
+  console.log('🏷️ Injected tags:', finalTags.join(', '));
+  console.log('📏 Fixed response length:', fixedResponse.length);
+  
   return { isValid: true, fixedResponse };
 }
 
 function extractComprehensiveTags(response: string): string[] {
   const tags: string[] = [];
   const responseText = response.toLowerCase();
+  
+  console.log('🔍 Extracting tags from response text...');
   
   // Enhanced comprehensive mapping with more keywords and better coverage
   const comprehensiveTagMappings = [
@@ -75,6 +83,7 @@ function extractComprehensiveTags(response: string): string[] {
              responseText.includes(keyword.replace('-', ' '));
     });
     if (hasKeyword) {
+      console.log('🏷️ Found keywords:', mapping.keywords.filter(k => responseText.includes(k)), '-> tags:', mapping.tags);
       tags.push(...mapping.tags);
     }
   }
@@ -84,18 +93,22 @@ function extractComprehensiveTags(response: string): string[] {
   
   // If we found specific tags, return top 6
   if (uniqueTags.length > 0) {
+    console.log('✅ Extracted intelligent tags:', uniqueTags.slice(0, 6));
     return uniqueTags.slice(0, 6);
   }
   
   // Context-based intelligent fallback based on content analysis
   if (responseText.includes('spørsmål') || responseText.includes('hjelp')) {
+    console.log('🏷️ Using help-based fallback tags');
     return ['Fagspørsmål', 'Veiledning', 'Revisjon'];
   }
   
   if (responseText.includes('start') || responseText.includes('begynn') || responseText.includes('første')) {
+    console.log('🏷️ Using beginner-based fallback tags');
     return ['Nybegynner', 'Grunnleggende', 'Revisjon'];
   }
   
   // Ultimate comprehensive fallback - always return meaningful tags
+  console.log('🏷️ Using ultimate fallback tags');
   return ['Revisjon', 'Fagstoff', 'Regnskap'];
 }

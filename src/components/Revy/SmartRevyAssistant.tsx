@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -116,15 +115,34 @@ const SmartRevyAssistant = ({ embedded = false, clientData, userRole }: SmartRev
         sessionId
       );
 
-      // 🔍 DEBUG: Log the AI response to see its exact format
-      console.log('🔍 DEBUG: Raw AI response received:', aiResponse);
-      console.log('🔍 DEBUG: Response contains EMNER tags:', /🏷️\s*\*\*[Ee][Mm][Nn][Ee][Rr]:?\*\*/.test(aiResponse));
+      // 🔍 ENHANCED DEBUG: Log the AI response in detail
+      console.log('🔍 FULL DEBUG: Complete AI response received:');
+      console.log('📝 Response text:', aiResponse);
+      console.log('📏 Response length:', aiResponse.length);
+      console.log('🏷️ Contains emoji:', /🏷️/.test(aiResponse));
+      console.log('🔤 Contains EMNER:', /EMNER/i.test(aiResponse));
+      console.log('⭐ Contains asterisks:', /\*\*/.test(aiResponse));
       
-      // Check if response has tags section
-      const hasTagsSection = /🏷️\s*\*\*[Ee][Mm][Nn][Ee][Rr]:?\*\*/.test(aiResponse);
-      if (!hasTagsSection) {
-        console.warn('⚠️ AI response missing tags section, this should be fixed by backend validation');
-      }
+      // Test multiple tag patterns
+      const patterns = [
+        /🏷️\s*\*\*[Ee][Mm][Nn][Ee][Rr]:?\*\*\s*(.+)/i,
+        /🏷️\s*[Ee][Mm][Nn][Ee][Rr]:?\s*(.+)/i,
+        /\*\*[Ee][Mm][Nn][Ee][Rr]:?\*\*\s*(.+)/i,
+        /[Ee][Mm][Nn][Ee][Rr]:\s*(.+)/i
+      ];
+      
+      patterns.forEach((pattern, index) => {
+        const match = aiResponse.match(pattern);
+        console.log(`🧪 Pattern ${index + 1} match:`, !!match, match ? match[1] : 'no match');
+      });
+
+      // Check line by line for debugging
+      const lines = aiResponse.split('\n');
+      lines.forEach((line, index) => {
+        if (line.includes('🏷️') || line.toLowerCase().includes('emner')) {
+          console.log(`📍 Line ${index}: "${line}"`);
+        }
+      });
 
       const aiMessage: RevyMessage = {
         id: crypto.randomUUID(),
