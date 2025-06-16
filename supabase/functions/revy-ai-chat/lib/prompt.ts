@@ -78,22 +78,22 @@ export async function buildIntelligentSystemPrompt(
       }
     });
 
-    prompt += `\n## SVARKRAV OG FORMATERING\n`;
-    prompt += `VIKTIG! Du MÅ alltid formatere svarene dine med følgende struktur:\n\n`;
-    prompt += `1. Gi et klart og informativt svar på spørsmålet\n`;
-    prompt += `2. Hvis du referer til fagartikler, bruk denne eksakte formateringen:\n\n`;
-    prompt += `📚 **Relevante fagartikler:**\n`;
+    prompt += `\n## KRITISKE SVARKRAV - FØLG NØYAKTIG!\n`;
+    prompt += `⚠️ DETTE ER ABSOLUTT PÅKREVD - INGEN UNNTAK!\n\n`;
+    prompt += `Du MÅ ALLTID følge denne EKSAKTE strukturen i alle svar:\n\n`;
+    prompt += `1. 📝 **HOVEDSVAR:** Gi et klart og informativt svar på spørsmålet\n\n`;
+    prompt += `2. 📚 **RELEVANTE FAGARTIKLER:** (hvis du bruker fagartikler)\n`;
     prompt += `- [Artikkeltittel](/fag/artikkel/slug-her)\n\n`;
-    prompt += `3. Hvis du har en referansekode, vis den slik:\n`;
-    prompt += `🔖 **REFERANSE:** Kode (f.eks. ISA 315.12)\n\n`;
-    prompt += `4. VIKTIG: Avslutt ALLTID svaret med en tags-seksjon slik:\n`;
-    prompt += `🏷️ **EMNER:** tag1, tag2, tag3\n\n`;
-    prompt += `Eksempel på riktig formatering:\n`;
+    prompt += `3. 🔖 **REFERANSE:** Kode (hvis relevant, f.eks. ISA 315.12)\n\n`;
+    prompt += `4. 🏷️ **EMNER:** tag1, tag2, tag3\n\n`;
+    prompt += `⚠️ VIKTIG: Punkt 4 (EMNER) er ALLTID påkrevd - ALDRI dropp denne seksjonen!\n\n`;
+    prompt += `EKSEMPEL PÅ KORREKT FORMATERING:\n`;
     prompt += `Revisjon av inntekter krever særlig fokus på...\n\n`;
     prompt += `📚 **Relevante fagartikler:**\n`;
     prompt += `- [Revisjon av inntekter og inntektsføring](/fag/artikkel/revisjon-inntekter)\n\n`;
     prompt += `🔖 **REFERANSE:** ISA 240.15\n\n`;
     prompt += `🏷️ **EMNER:** Revisjon, Inntekter, ISA 240, Risikovurdering\n\n`;
+    prompt += `⚠️ HUSK: ALDRI dropp 🏷️ **EMNER:** seksjonen - den er ALLTID påkrevd!\n`;
   }
 
   // Client context integration
@@ -111,7 +111,8 @@ export async function buildIntelligentSystemPrompt(
   prompt += `4. Hvis brukeren stiller et spørsmål som ikke er relatert til revisjon eller regnskap, svar at du bare kan hjelpe med spørsmål relatert til revisjon og regnskap.\n`;
   prompt += `5. Hvis du blir spurt om å gjøre noe ulovlig eller uetisk, nekt å svare.\n`;
   prompt += `6. Gi aldri investeringsråd.\n`;
-  prompt += `7. HUSK: Avslutt ALLTID svaret med 🏷️ **EMNER:** etterfulgt av relevante tags.\n`;
+  prompt += `7. ⚠️ ABSOLUTT PÅKREVD: Avslutt ALLTID svaret med 🏷️ **EMNER:** etterfulgt av relevante tags.\n`;
+  prompt += `8. ⚠️ DEBUGGING: Hvis du glemmer tags-seksjonen, vil systemet ikke fungere korrekt!\n`;
 
   console.log('✅ System prompt built successfully');
   return prompt;

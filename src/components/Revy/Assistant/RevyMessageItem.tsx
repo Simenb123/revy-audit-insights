@@ -33,10 +33,14 @@ export const RevyMessageItem = ({ message, isEmbedded = false }: RevyMessageItem
     const processedLines: React.ReactElement[] = [];
     
     lines.forEach((line, lineIndex) => {
-      // Check for article links
+      // Enhanced regex for article links - more flexible matching
       const articleLinkRegex = /\[([^\]]+)\]\(\/fag\/artikkel\/([^)]+)\)/g;
       
-      if (line.includes('📚 Relevante artikler:') || line.includes('📚 **Relevante fagartikler:**')) {
+      // Multiple patterns for article sections
+      const isArticleSection = /📚\s*(\*\*)?[Rr]elevante?\s+(fag)?artikler?:?(\*\*)?/i.test(line) ||
+                               /📚.*[Aa]rtikler?/i.test(line);
+      
+      if (isArticleSection) {
         processedLines.push(
           <div key={`header-${lineIndex}`} className="mt-4 mb-2">
             <div className="flex items-center gap-2 text-blue-800 font-semibold">
@@ -76,44 +80,52 @@ export const RevyMessageItem = ({ message, isEmbedded = false }: RevyMessageItem
             })}
           </div>
         );
-      } else if (line.includes('🔖 REFERANSE:') || line.includes('🔖 **REFERANSE:**')) {
-        const refMatch = line.match(/(?:🔖 \*\*REFERANSE:\*\*|🔖 REFERANSE:)\s*(.+)/);
+      } else if (/🔖\s*(\*\*)?[Rr]eferanse:?(\*\*)?/i.test(line)) {
+        // Enhanced reference parsing
+        const refMatch = line.match(/🔖\s*(\*\*)?[Rr]eferanse:?(\*\*)?\s*(.+)/i);
         if (refMatch) {
           processedLines.push(
             <div key={`ref-${lineIndex}`} className="my-2">
               <Badge variant="outline" className="bg-green-50 border-green-200 text-green-800">
-                📋 {refMatch[1]}
+                📋 {refMatch[3]}
               </Badge>
             </div>
           );
         }
-      } else if (line.includes('🏷️ EMNER:') || line.includes('🏷️ **EMNER:**')) {
-        const tagsMatch = line.match(/(?:🏷️ \*\*EMNER:\*\*|🏷️ EMNER:)\s*(.+)/);
-        if (tagsMatch) {
-          const tags = tagsMatch[1].split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
-          processedLines.push(
-            <div key={`tags-${lineIndex}`} className="mt-3 mb-1">
-              <div className="flex flex-wrap gap-1 items-center">
-                <Tag className="h-3 w-3 text-gray-600 mr-1" />
-                {tags.map((tag, tagIndex) => (
-                  <Badge 
-                    key={`tag-${lineIndex}-${tagIndex.toString()}`} 
-                    variant="secondary" 
-                    className="text-xs bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
-                  >
-                    {tag}
-                  </Badge>
-                ))}
+      } else if (/🏷️\s*(\*\*)?[Ee]mner:?(\*\*)?/i.test(line)) {
+        // Enhanced tags parsing - multiple patterns
+        const tagsMatch = line.match(/🏷️\s*(\*\*)?[Ee]mner:?(\*\*)?\s*(.+)/i);
+        if (tagsMatch && tagsMatch[3]) {
+          const tags = tagsMatch[3]
+            .split(/[,;]/) // Split on comma or semicolon
+            .map(tag => tag.trim())
+            .filter(tag => tag.length > 0 && tag !== '**'); // Remove empty tags and markdown artifacts
+          
+          if (tags.length > 0) {
+            processedLines.push(
+              <div key={`tags-${lineIndex}`} className="mt-3 mb-1">
+                <div className="flex flex-wrap gap-1 items-center">
+                  <Tag className="h-3 w-3 text-gray-600 mr-1" />
+                  {tags.map((tag, tagIndex) => (
+                    <Badge 
+                      key={`tag-${lineIndex}-${tagIndex.toString()}`} 
+                      variant="secondary" 
+                      className="text-xs bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors cursor-pointer"
+                    >
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
               </div>
-            </div>
-          );
+            );
+          }
         }
-      } else if (line.includes('💡 Tips:')) {
+      } else if (/💡\s*[Tt]ips?:/i.test(line)) {
         processedLines.push(
           <div key={`tips-${lineIndex}`} className="mt-3 p-2 bg-yellow-50 border-l-4 border-yellow-400 rounded-r">
             <div className="flex items-start gap-2">
               <span className="text-yellow-600">💡</span>
-              <span className="text-sm text-yellow-800">{line.replace('💡 Tips:', '').trim()}</span>
+              <span className="text-sm text-yellow-800">{line.replace(/💡\s*[Tt]ips?:\s*/i, '').trim()}</span>
             </div>
           </div>
         );
@@ -158,6 +170,46 @@ export const RevyMessageItem = ({ message, isEmbedded = false }: RevyMessageItem
         }
       }
     });
+    
+    // Fallback: If no tags were found in the content, try to extract them from the end
+    const hasTagsSection = processedLines.some(element => 
+      element.key && element.key.toString().startsWith('tags-')
+    );
+    
+    if (!hasTagsSection) {
+      // Try to extract tags from the last part of the content
+      const lastLines = content.split('\n').slice(-3);
+      const fallbackTagsLine = lastLines.find(line => 
+        /\b(revisjon|isa|inntekt|dokumentasjon|risk|kontroll|material|audit)/i.test(line) &&
+        !line.includes('📚') && !line.includes('🔖')
+      );
+      
+      if (fallbackTagsLine) {
+        const potentialTags = fallbackTagsLine
+          .split(/[,\s]+/)
+          .filter(word => word.length > 3 && /^[A-Za-zæøåÆØÅ0-9\s-]+$/.test(word))
+          .slice(0, 5);
+        
+        if (potentialTags.length > 0) {
+          processedLines.push(
+            <div key="fallback-tags" className="mt-3 mb-1">
+              <div className="flex flex-wrap gap-1 items-center">
+                <Tag className="h-3 w-3 text-gray-600 mr-1" />
+                {potentialTags.map((tag, tagIndex) => (
+                  <Badge 
+                    key={`fallback-tag-${tagIndex.toString()}`} 
+                    variant="secondary" 
+                    className="text-xs bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+                  >
+                    {tag}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          );
+        }
+      }
+    }
     
     return processedLines;
   };
