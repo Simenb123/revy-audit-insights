@@ -1,12 +1,12 @@
 
-import { searchRelevantKnowledgeImproved } from './improved-knowledge.ts';
+import { searchKnowledgeIntelligently } from './improved-knowledge.ts';
 import { fetchEnhancedClientContext } from './client-context.ts';
 
 export async function buildEnhancedContext(message: string, context: string, clientData: any | null) {
   console.log('🏗️ Building enhanced context with improved search...');
   try {
     // Use the improved knowledge search
-    const knowledgePromise = searchRelevantKnowledgeImproved(message, context);
+    const knowledgePromise = searchKnowledgeIntelligently(message, context);
     
     const clientContextPromise = (clientData && clientData.id) 
       ? fetchEnhancedClientContext(clientData.id) 
