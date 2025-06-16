@@ -35,9 +35,9 @@ export const MessageContentParser = ({ content, isEmbedded = false }: MessageCon
     }
   };
 
-  // 🚨 SIMPLIFIED TAG EXTRACTION - Much more robust approach
+  // 🚨 SUPER SIMPLIFIED TAG EXTRACTION with better visibility
   const extractTags = (content: string): string[] => {
-    console.log('🏷️ Starting simplified tag extraction...');
+    console.log('🏷️ Starting SUPER simplified tag extraction...');
     
     // Find any line that contains "EMNER" (case insensitive)
     const lines = content.split('\n');
@@ -99,23 +99,26 @@ export const MessageContentParser = ({ content, isEmbedded = false }: MessageCon
 
     console.log('🔍 Processing content lines:', lines.length);
 
-    // 🏷️ FIRST: Extract and render tags at the beginning
+    // 🏷️ FIRST: Extract and render tags at the beginning with FORCED visibility
     const extractedTags = extractTags(content);
     if (extractedTags.length > 0) {
       console.log('🎉 Rendering tags section with', extractedTags.length, 'tags');
+      console.log('🎨 Tags will be rendered with FORCED visibility styles');
+      
       processedElements.push(
-        <div key="extracted-tags" className="mb-4 p-3 bg-blue-50 rounded-lg border-l-4 border-blue-400">
-          <div className="flex flex-wrap gap-2 items-start">
-            <div className="flex items-center gap-1.5 text-blue-700 mb-2 min-w-0">
-              <Tag className="h-4 w-4 flex-shrink-0" />
-              <span className={`font-medium ${isEmbedded ? 'text-sm' : 'text-base'}`}>Emner:</span>
+        <div key="extracted-tags" className="mb-6 p-4 bg-blue-50 rounded-lg border-2 border-blue-200" style={{ display: 'block !important', visibility: 'visible !important' }}>
+          <div className="flex flex-wrap gap-3 items-start">
+            <div className="flex items-center gap-2 text-blue-700 mb-3 min-w-0">
+              <Tag className="h-5 w-5 flex-shrink-0" />
+              <span className={`font-semibold ${isEmbedded ? 'text-sm' : 'text-base'}`}>Emner:</span>
             </div>
             <div className="flex flex-wrap gap-2 min-w-0 flex-1">
               {extractedTags.map((tag, tagIndex) => (
                 <Badge 
                   key={tagIndex} 
                   variant="secondary" 
-                  className={`bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors cursor-pointer border border-blue-300 ${isEmbedded ? 'text-xs px-2 py-1' : 'text-sm px-3 py-1.5'}`}
+                  className={`bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors cursor-pointer border-2 border-blue-300 font-medium ${isEmbedded ? 'text-xs px-2 py-1.5' : 'text-sm px-3 py-2'}`}
+                  style={{ display: 'inline-flex !important', visibility: 'visible !important' }}
                   onClick={() => {
                     console.log('🏷️ Tag clicked:', tag);
                   }}
@@ -127,6 +130,8 @@ export const MessageContentParser = ({ content, isEmbedded = false }: MessageCon
           </div>
         </div>
       );
+    } else {
+      console.log('🚨 NO TAGS EXTRACTED - this should be investigated');
     }
 
     for (let i = 0; i < lines.length; i++) {

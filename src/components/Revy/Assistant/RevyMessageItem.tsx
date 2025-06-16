@@ -50,7 +50,7 @@ export const RevyMessageItem = ({ message, isEmbedded = false }: RevyMessageItem
         <div className={`flex flex-col items-start ${isEmbedded ? 'max-w-[90%]' : 'max-w-[88%]'}`}>
           <div className={revyMessageContainerClass}>
             <RevyAvatar size={isEmbedded ? 'xs' : 'sm'} className="flex-shrink-0 mt-1" />
-            <div className={`${revyMessageClass} rounded-bl-sm prose prose-sm max-w-none flex-1`}>
+            <div className={`${revyMessageClass} rounded-bl-sm max-w-none flex-1`}>
               <MessageContentParser content={content as string} isEmbedded={isEmbedded} />
             </div>
           </div>
