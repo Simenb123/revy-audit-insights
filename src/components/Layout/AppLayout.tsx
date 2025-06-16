@@ -4,8 +4,11 @@ import { SidebarProvider } from '@/components/ui/sidebar';
 import Sidebar from './Sidebar';
 import AppHeader from './AppHeader';
 import RightSidebar from './RightSidebar';
+import MobileRightSidebar from './MobileRightSidebar';
+import MobileRightSidebarToggle from './MobileRightSidebarToggle';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useMobileSidebar } from "@/hooks/use-mobile-sidebar";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -15,6 +18,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
   const [isRightSidebarCollapsed, setIsRightSidebarCollapsed] = useState(false);
   const [isRightSidebarExpanded, setIsRightSidebarExpanded] = useState(false);
   const isMobile = useIsMobile();
+  const { isMobileSidebarOpen, toggleMobileSidebar, closeMobileSidebar } = useMobileSidebar();
 
   const toggleRightSidebar = () => {
     const willBeCollapsed = !isRightSidebarCollapsed;
@@ -56,11 +60,20 @@ const AppLayout = ({ children }: AppLayoutProps) => {
         </div>
         
         {isMobile ? (
-          <div className="flex-1 min-w-0">
-            <main className="h-full overflow-auto bg-background p-6">
-              {children}
-            </main>
-          </div>
+          <>
+            <div className="flex-1 min-w-0">
+              <main className="h-full overflow-auto bg-background p-6">
+                {children}
+              </main>
+            </div>
+            {/* Mobile floating button */}
+            <MobileRightSidebarToggle onClick={toggleMobileSidebar} />
+            {/* Mobile sidebar overlay */}
+            <MobileRightSidebar 
+              isOpen={isMobileSidebarOpen} 
+              onClose={closeMobileSidebar} 
+            />
+          </>
         ) : isRightSidebarCollapsed ? (
           <>
             <div className="flex-1 min-w-0 relative z-10">

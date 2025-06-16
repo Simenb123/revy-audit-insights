@@ -15,12 +15,14 @@ import {
   Minimize2,
   PanelRightClose,
   PanelRightOpen,
-  Sparkles
+  Sparkles,
+  X
 } from 'lucide-react';
 import SmartRevyAssistant from '../Revy/SmartRevyAssistant';
 import { useLocation } from 'react-router-dom';
 import { useAIUsage } from '@/hooks/useAIUsage';
 import { useRevyContext } from '../RevyContext/RevyContextProvider';
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface RightSidebarProps {
   isCollapsed: boolean;
@@ -34,6 +36,7 @@ const RightSidebar = ({ isCollapsed, isExpanded, onToggle, onToggleExpanded }: R
   const [activeTab, setActiveTab] = useState('revy');
   const { personalStats } = useAIUsage('week');
   const { currentClient } = useRevyContext();
+  const isMobile = useIsMobile();
 
   // Mock analytics data
   const analyticsData = {
@@ -117,13 +120,13 @@ const RightSidebar = ({ isCollapsed, isExpanded, onToggle, onToggleExpanded }: R
     );
   }
 
-  // Expanded state - show full sidebar
+  // Expanded state - show full sidebar with mobile optimizations
   return (
     <div className="h-full flex flex-col w-full overflow-hidden bg-background">
       {/* Header with toggle and expand controls */}
-      <div className="p-4 border-b border-border flex items-center justify-between flex-shrink-0">
+      <div className={`border-b border-border flex items-center justify-between flex-shrink-0 ${isMobile ? 'p-3' : 'p-4'}`}>
         <div className="flex items-center gap-2">
-          <h3 className="font-semibold text-base">Verktøy</h3>
+          <h3 className={`font-semibold ${isMobile ? 'text-lg' : 'text-base'}`}>Verktøy</h3>
           {/* Smart upgrade indicator */}
           <div className="flex items-center gap-1 bg-gradient-to-r from-blue-100 to-purple-100 px-2 py-1 rounded-full">
             <Sparkles className="h-3 w-3 text-blue-600" />
@@ -131,23 +134,25 @@ const RightSidebar = ({ isCollapsed, isExpanded, onToggle, onToggleExpanded }: R
           </div>
         </div>
         <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onToggleExpanded}
-            className="h-8 w-8 hover:bg-accent"
-            title={isExpanded ? "Normaliser størrelse" : "Utvid over hele siden"}
-          >
-            {isExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-          </Button>
+          {!isMobile && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onToggleExpanded}
+              className="h-8 w-8 hover:bg-accent"
+              title={isExpanded ? "Normaliser størrelse" : "Utvid over hele siden"}
+            >
+              {isExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="icon"
             onClick={onToggle}
             className="h-8 w-8 hover:bg-accent"
-            title="Trekk inn sidebar"
+            title={isMobile ? "Lukk" : "Trekk inn sidebar"}
           >
-            <PanelRightClose className="h-4 w-4" />
+            {isMobile ? <X className="h-4 w-4" /> : <PanelRightClose className="h-4 w-4" />}
           </Button>
         </div>
       </div>
@@ -155,22 +160,22 @@ const RightSidebar = ({ isCollapsed, isExpanded, onToggle, onToggleExpanded }: R
       {/* Content */}
       <div className="flex-1 flex flex-col min-h-0">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-          <TabsList className="grid w-full grid-cols-3 mx-4 mt-3 flex-shrink-0">
-            <TabsTrigger value="revy" className="text-sm px-3 py-2 relative">
-              <MessageSquare className="h-4 w-4 mr-2" />
-              Revy
+          <TabsList className={`grid w-full grid-cols-3 flex-shrink-0 ${isMobile ? 'mx-3 mt-2' : 'mx-4 mt-3'}`}>
+            <TabsTrigger value="revy" className={`relative ${isMobile ? 'text-xs px-2 py-3' : 'text-sm px-3 py-2'}`}>
+              <MessageSquare className={`${isMobile ? 'h-5 w-5 mr-1' : 'h-4 w-4 mr-2'}`} />
+              {!isMobile && 'Revy'}
               {/* Smart indicator */}
               <div className="absolute -top-1 -right-1 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full p-0.5">
                 <Sparkles className="h-2 w-2 text-white" />
               </div>
             </TabsTrigger>
-            <TabsTrigger value="analytics" className="text-sm px-3 py-2">
-              <BarChart3 className="h-4 w-4 mr-2" />
-              Data
+            <TabsTrigger value="analytics" className={isMobile ? 'text-xs px-2 py-3' : 'text-sm px-3 py-2'}>
+              <BarChart3 className={`${isMobile ? 'h-5 w-5 mr-1' : 'h-4 w-4 mr-2'}`} />
+              {!isMobile && 'Data'}
             </TabsTrigger>
-            <TabsTrigger value="activity" className="text-sm px-3 py-2">
-              <Activity className="h-4 w-4 mr-2" />
-              Aktivitet
+            <TabsTrigger value="activity" className={isMobile ? 'text-xs px-2 py-3' : 'text-sm px-3 py-2'}>
+              <Activity className={`${isMobile ? 'h-5 w-5 mr-1' : 'h-4 w-4 mr-2'}`} />
+              {!isMobile && 'Aktivitet'}
             </TabsTrigger>
           </TabsList>
           
@@ -267,6 +272,7 @@ const RightSidebar = ({ isCollapsed, isExpanded, onToggle, onToggleExpanded }: R
             <TabsContent value="activity" className="h-full m-0 data-[state=inactive]:hidden">
               <ScrollArea className="h-full">
                 <div className="p-3 space-y-3">
+                  {/* Activity items */}
                   <div className="flex items-start gap-3 p-3 bg-muted rounded text-sm">
                     <div className="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0"></div>
                     <div className="min-w-0 flex-1">
