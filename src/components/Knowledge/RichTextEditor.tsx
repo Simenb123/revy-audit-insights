@@ -29,20 +29,8 @@ const RichTextEditor = ({ content, onChange, context = 'knowledge', contextData 
     uploadImage,
   });
 
-  useEffect(() => {
-    if (editor && content) {
-      const isSame = editor.getHTML() === content;
-
-      if (isSame) {
-        return;
-      }
-      
-      // Bruker `setContent` for å oppdatere editorens innhold når `content`-prop endres.
-      // Det andre argumentet `false` forhindrer at denne handlingen utløser `onUpdate`-callbacken,
-      // som unngår en uendelig løkke.
-      editor.commands.setContent(content, false);
-    }
-  }, [editor, content]);
+  // Remove the problematic useEffect that was causing infinite loops
+  // The editor now handles content updates through the useTiptapEditor hook
 
   const handleSelectImageFromLibrary = (url: string) => {
     if (editor) {
@@ -50,6 +38,10 @@ const RichTextEditor = ({ content, onChange, context = 'knowledge', contextData 
       editor.chain().focus().setImage({ src: url, alt: alt || '' }).run();
     }
   };
+
+  if (!editor) {
+    return <div className="border border-input rounded-md p-4 text-center text-muted-foreground">Laster editor...</div>;
+  }
 
   return (
     <div className={`border border-input rounded-md relative transition-all ${isDragging ? 'border-2 border-dashed border-primary ring-2 ring-primary ring-offset-2 ring-offset-background' : ''}`}>

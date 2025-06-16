@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useEditor } from '@tiptap/react';
 import { editorExtensions } from '@/components/Knowledge/tiptap-extensions/editorExtensions';
 
@@ -11,12 +11,14 @@ type UseTiptapEditorProps = {
 
 export const useTiptapEditor = ({ content, onChange, uploadImage }: UseTiptapEditorProps) => {
   const [isDragging, setIsDragging] = useState(false);
+  const [lastContent, setLastContent] = useState(content);
 
   const editor = useEditor({
     extensions: editorExtensions,
     content: content,
     onUpdate: ({ editor }) => {
-      onChange(editor.getHTML());
+      const newContent = editor.getHTML();
+      onChange(newContent);
     },
     editorProps: {
       attributes: {
@@ -68,6 +70,19 @@ export const useTiptapEditor = ({ content, onChange, uploadImage }: UseTiptapEdi
       },
     },
   });
+
+  // Handle external content changes more carefully
+  useEffect(() => {
+    if (editor && content !== lastContent) {
+      const currentContent = editor.getHTML();
+      
+      // Only update if the content is actually different and not empty
+      if (content && content !== currentContent) {
+        editor.commands.setContent(content, false);
+        setLastContent(content);
+      }
+    }
+  }, [editor, content, lastContent]);
 
   return { editor, isDragging };
 };

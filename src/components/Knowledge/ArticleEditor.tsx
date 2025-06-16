@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
@@ -48,7 +49,7 @@ const ArticleEditor = () => {
     }
   });
 
-  const { data: article } = useQuery({
+  const { data: article, isLoading: isLoadingArticle } = useQuery({
     queryKey: ['knowledge-article-edit', articleId],
     queryFn: async () => {
       if (!articleId) return null;
@@ -70,7 +71,7 @@ const ArticleEditor = () => {
       title: '',
       slug: '',
       summary: '',
-      content: '',
+      content: '<p>Skriv artikkelinnholdet her...</p>',
       categoryId: initialCategoryId || '',
       tags: '',
       status: 'draft',
@@ -79,19 +80,20 @@ const ArticleEditor = () => {
   });
 
   React.useEffect(() => {
-    if (article) {
+    if (article && !isLoadingArticle) {
+      console.log('Setting form values from article:', article);
       form.reset({
-        title: article.title,
-        slug: article.slug,
+        title: article.title || '',
+        slug: article.slug || '',
         summary: article.summary || '',
-        content: article.content,
-        categoryId: article.category_id,
+        content: article.content || '<p>Skriv artikkelinnholdet her...</p>',
+        categoryId: article.category_id || '',
         tags: article.tags?.join(', ') || '',
-        status: article.status,
+        status: article.status || 'draft',
         reference_code: article.reference_code || ''
       });
     }
-  }, [article, form]);
+  }, [article, isLoadingArticle, form]);
 
   const generateSlug = (title: string) => {
     return title
@@ -110,9 +112,22 @@ const ArticleEditor = () => {
     mutationFn: async (data: ArticleFormData) => {
       if (!session?.user?.id) throw new Error('Not authenticated');
 
+      console.log('Saving article with data:', data);
+
+      // Validate required fields
+      if (!data.title.trim()) {
+        throw new Error('Tittel er påkrevd');
+      }
+      if (!data.content || data.content.trim() === '<p></p>' || data.content.trim() === '<p>Skriv artikkelinnholdet her...</p>') {
+        throw new Error('Artikkelinnhold er påkrevd');
+      }
+      if (!data.categoryId) {
+        throw new Error('Kategori er påkrevd');
+      }
+
       const articleData = {
-        title: data.title,
-        slug: data.slug,
+        title: data.title.trim(),
+        slug: data.slug || generateSlug(data.title),
         summary: data.summary || null,
         content: data.content,
         category_id: data.categoryId,
@@ -123,6 +138,8 @@ const ArticleEditor = () => {
         reference_code: data.reference_code || null,
       };
 
+      console.log('Article data to save:', articleData);
+
       if (isEditing && articleId) {
         const { data: result, error } = await supabase
           .from('knowledge_articles')
@@ -131,7 +148,10 @@ const ArticleEditor = () => {
           .select()
           .single();
         
-        if (error) throw error;
+        if (error) {
+          console.error('Update error:', error);
+          throw error;
+        }
         return result;
       } else {
         const { data: result, error } = await supabase
@@ -140,7 +160,10 @@ const ArticleEditor = () => {
           .select()
           .single();
         
-        if (error) throw error;
+        if (error) {
+          console.error('Insert error:', error);
+          throw error;
+        }
         return result;
       }
     },
@@ -148,17 +171,26 @@ const ArticleEditor = () => {
       toast.success(isEditing ? 'Artikkel oppdatert' : 'Artikkel opprettet');
       navigate(`/fag/artikkel/${result.slug}`);
     },
-    onError: (error) => {
+    onError: (error: any) => {
+      console.error('Save error:', error);
       toast.error('Feil ved lagring: ' + error.message);
     }
   });
 
   const onSubmit = (data: ArticleFormData) => {
+    console.log('Form submitted with data:', data);
     if (!data.slug) {
       data.slug = generateSlug(data.title);
     }
     saveMutation.mutate(data);
   };
+
+  if (isLoadingArticle) {
+    return <div className="space-y-6 animate-pulse">
+      <div className="h-8 bg-gray-200 rounded w-1/3"></div>
+      <div className="h-96 bg-gray-200 rounded"></div>
+    </div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -183,21 +215,27 @@ const ArticleEditor = () => {
                 <Label htmlFor="title">Tittel *</Label>
                 <Input
                   id="title"
-                  {...form.register('title', { required: true })}
+                  {...form.register('title', { required: 'Tittel er påkrevd' })}
                   onBlur={(e) => {
                     if (!form.getValues('slug')) {
                       form.setValue('slug', generateSlug(e.target.value));
                     }
                   }}
                 />
+                {form.formState.errors.title && (
+                  <p className="text-sm text-destructive">{form.formState.errors.title.message}</p>
+                )}
               </div>
               
               <div className="space-y-2">
                 <Label htmlFor="slug">URL-slug *</Label>
                 <Input
                   id="slug"
-                  {...form.register('slug', { required: true })}
+                  {...form.register('slug', { required: 'URL-slug er påkrevd' })}
                 />
+                {form.formState.errors.slug && (
+                  <p className="text-sm text-destructive">{form.formState.errors.slug.message}</p>
+                )}
               </div>
             </div>
 
@@ -214,38 +252,48 @@ const ArticleEditor = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="categoryId">Kategori *</Label>
-                <Select
-                  value={form.watch('categoryId')}
-                  onValueChange={(value) => form.setValue('categoryId', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Velg kategori" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories?.map((category) => (
-                      <SelectItem key={category.id} value={category.id}>
-                        {category.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Controller
+                  name="categoryId"
+                  control={form.control}
+                  rules={{ required: 'Kategori er påkrevd' }}
+                  render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Velg kategori" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories?.map((category) => (
+                          <SelectItem key={category.id} value={category.id}>
+                            {category.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                {form.formState.errors.categoryId && (
+                  <p className="text-sm text-destructive">{form.formState.errors.categoryId.message}</p>
+                )}
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="status">Status</Label>
-                <Select
-                  value={form.watch('status')}
-                  onValueChange={(value) => form.setValue('status', value as ArticleStatus)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="draft">Utkast</SelectItem>
-                    <SelectItem value="published">Publisert</SelectItem>
-                    <SelectItem value="archived">Arkivert</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Controller
+                  name="status"
+                  control={form.control}
+                  render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="draft">Utkast</SelectItem>
+                        <SelectItem value="published">Publisert</SelectItem>
+                        <SelectItem value="archived">Arkivert</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
               </div>
             </div>
 
@@ -284,7 +332,7 @@ const ArticleEditor = () => {
                 render={({ field, fieldState }) => (
                   <>
                     <RichTextEditor
-                      content={field.value}
+                      content={field.value || '<p>Skriv artikkelinnholdet her...</p>'}
                       onChange={field.onChange}
                     />
                     {fieldState.error && (
