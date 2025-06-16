@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { FileText, ExternalLink, Tag, Copy, Check } from 'lucide-react';
@@ -106,7 +105,11 @@ export const MessageContentParser = ({ content, isEmbedded = false }: MessageCon
       console.log('🎨 Tags will be rendered with FORCED visibility styles');
       
       processedElements.push(
-        <div key="extracted-tags" className="mb-6 p-4 bg-blue-50 rounded-lg border-2 border-blue-200" style={{ display: 'block !important', visibility: 'visible !important' }}>
+        <div 
+          key="extracted-tags" 
+          className="mb-6 p-4 bg-blue-50 rounded-lg border-2 border-blue-200" 
+          style={{ display: 'block', visibility: 'visible', position: 'relative', zIndex: 10 }}
+        >
           <div className="flex flex-wrap gap-3 items-start">
             <div className="flex items-center gap-2 text-blue-700 mb-3 min-w-0">
               <Tag className="h-5 w-5 flex-shrink-0" />
@@ -118,7 +121,7 @@ export const MessageContentParser = ({ content, isEmbedded = false }: MessageCon
                   key={tagIndex} 
                   variant="secondary" 
                   className={`bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors cursor-pointer border-2 border-blue-300 font-medium ${isEmbedded ? 'text-xs px-2 py-1.5' : 'text-sm px-3 py-2'}`}
-                  style={{ display: 'inline-flex !important', visibility: 'visible !important' }}
+                  style={{ display: 'inline-flex', visibility: 'visible' }}
                   onClick={() => {
                     console.log('🏷️ Tag clicked:', tag);
                   }}
