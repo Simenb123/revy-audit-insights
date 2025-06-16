@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,6 +10,14 @@ import { Save, Eye, History, Copy } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from '@/integrations/supabase/client';
 
+type ContextPrompts = {
+  'risk-assessment': string;
+  'documentation': string;
+  'client-detail': string;
+  'collaboration': string;
+  'general': string;
+};
+
 const PromptEditor = () => {
   const [prompts, setPrompts] = useState({
     basePrompt: '',
@@ -20,7 +27,7 @@ const PromptEditor = () => {
       'client-detail': '',
       'collaboration': '',
       'general': ''
-    }
+    } as ContextPrompts
   });
   const [selectedContext, setSelectedContext] = useState('general');
   const [isLoading, setIsLoading] = useState(false);
@@ -43,9 +50,18 @@ const PromptEditor = () => {
         .maybeSingle();
 
       if (data) {
+        // Safely cast the context_prompts with fallback
+        const contextPrompts = data.context_prompts as ContextPrompts || {
+          'risk-assessment': '',
+          'documentation': '',
+          'client-detail': '',
+          'collaboration': '',
+          'general': ''
+        };
+
         setPrompts({
           basePrompt: data.base_prompt,
-          contextPrompts: data.context_prompts || {}
+          contextPrompts
         });
       } else {
         // Set default prompts if none exist
