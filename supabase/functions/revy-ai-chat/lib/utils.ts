@@ -34,9 +34,9 @@ export function extractIntelligentKeywords(message: string, context: string): st
   return [...new Set(keywords)]; // Remove duplicates
 }
 
-// Optimal model selection based on complexity
+// Optimal model selection based on complexity - FIXED: Use valid OpenAI models
 export function selectOptimalModel(message: string, context: string, isGuestMode = false): string {
-  // Always use mini model for guests to reduce costs
+  // Always use gpt-4o-mini for guests to reduce costs
   if (isGuestMode) {
     return 'gpt-4o-mini';
   }

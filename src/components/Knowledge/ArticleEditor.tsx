@@ -95,8 +95,9 @@ const ArticleEditor = () => {
     }
   }, [article, isLoadingArticle, form]);
 
-  const generateSlug = (title: string) => {
-    return title
+  // Improved slug generation with uniqueness handling
+  const generateUniqueSlug = async (title: string): Promise<string> => {
+    const baseSlug = title
       .toLowerCase()
       .replace(/[æøå]/g, (match) => {
         const replacements: { [key: string]: string } = { 'æ': 'ae', 'ø': 'o', 'å': 'a' };
@@ -106,6 +107,21 @@ const ArticleEditor = () => {
       .replace(/\s+/g, '-')
       .replace(/-+/g, '-')
       .trim();
+
+    // Check if slug exists
+    const { data: existingArticles } = await supabase
+      .from('knowledge_articles')
+      .select('slug')
+      .like('slug', `${baseSlug}%`)
+      .neq('id', articleId || ''); // Exclude current article if editing
+
+    if (!existingArticles || existingArticles.length === 0) {
+      return baseSlug;
+    }
+
+    // If base slug exists, add timestamp suffix
+    const timestamp = Date.now().toString().slice(-6);
+    return `${baseSlug}-${timestamp}`;
   };
 
   const saveMutation = useMutation({
@@ -125,9 +141,15 @@ const ArticleEditor = () => {
         throw new Error('Kategori er påkrevd');
       }
 
+      // Generate unique slug if needed
+      let finalSlug = data.slug;
+      if (!finalSlug) {
+        finalSlug = await generateUniqueSlug(data.title);
+      }
+
       const articleData = {
         title: data.title.trim(),
-        slug: data.slug || generateSlug(data.title),
+        slug: finalSlug,
         summary: data.summary || null,
         content: data.content,
         category_id: data.categoryId,
@@ -150,6 +172,19 @@ const ArticleEditor = () => {
         
         if (error) {
           console.error('Update error:', error);
+          if (error.code === '23505' && error.message.includes('slug')) {
+            // Handle slug duplicate by generating a new one
+            articleData.slug = await generateUniqueSlug(data.title + '-retry');
+            const { data: retryResult, error: retryError } = await supabase
+              .from('knowledge_articles')
+              .update(articleData)
+              .eq('id', articleId)
+              .select()
+              .single();
+            
+            if (retryError) throw retryError;
+            return retryResult;
+          }
           throw error;
         }
         return result;
@@ -162,6 +197,18 @@ const ArticleEditor = () => {
         
         if (error) {
           console.error('Insert error:', error);
+          if (error.code === '23505' && error.message.includes('slug')) {
+            // Handle slug duplicate by generating a new one
+            articleData.slug = await generateUniqueSlug(data.title + '-retry');
+            const { data: retryResult, error: retryError } = await supabase
+              .from('knowledge_articles')
+              .insert(articleData)
+              .select()
+              .single();
+            
+            if (retryError) throw retryError;
+            return retryResult;
+          }
           throw error;
         }
         return result;
@@ -177,10 +224,10 @@ const ArticleEditor = () => {
     }
   });
 
-  const onSubmit = (data: ArticleFormData) => {
+  const onSubmit = async (data: ArticleFormData) => {
     console.log('Form submitted with data:', data);
     if (!data.slug) {
-      data.slug = generateSlug(data.title);
+      data.slug = await generateUniqueSlug(data.title);
     }
     saveMutation.mutate(data);
   };
