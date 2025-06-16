@@ -5,7 +5,7 @@ import { nb } from 'date-fns/locale';
 import { RevyMessage } from '@/types/revio';
 import RevyAvatar from '../RevyAvatar';
 import { Badge } from '@/components/ui/badge';
-import { FileText, ExternalLink } from 'lucide-react';
+import { FileText, ExternalLink, Tag } from 'lucide-react';
 
 interface RevyMessageItemProps {
   message: RevyMessage;
@@ -26,7 +26,7 @@ export const RevyMessageItem = ({ message, isEmbedded = false }: RevyMessageItem
 
   const formattedTimestamp = timestamp ? formatDistanceToNow(new Date(timestamp), { addSuffix: true, locale: nb }) : '';
 
-  // Enhanced content processing for better article link display
+  // Enhanced content processing for better article link display and tags
   const processRevyContent = (content: string): React.ReactElement[] => {
     // Split content into lines for processing
     const lines = content.split('\n');
@@ -36,7 +36,7 @@ export const RevyMessageItem = ({ message, isEmbedded = false }: RevyMessageItem
       // Check for article links
       const articleLinkRegex = /\[([^\]]+)\]\(\/fag\/artikkel\/([^)]+)\)/g;
       
-      if (line.includes('📚 Relevante artikler:') || line.includes('Relevante artikler:')) {
+      if (line.includes('📚 Relevante artikler:') || line.includes('📚 **Relevante fagartikler:**')) {
         processedLines.push(
           <div key={`header-${lineIndex}`} className="mt-4 mb-2">
             <div className="flex items-center gap-2 text-blue-800 font-semibold">
@@ -76,29 +76,35 @@ export const RevyMessageItem = ({ message, isEmbedded = false }: RevyMessageItem
             })}
           </div>
         );
-      } else if (line.includes('🔖 REFERANSE:') || line.includes('Referanse:')) {
-        const refMatch = line.match(/(?:🔖 REFERANSE:|Referanse:)\s*(.+)/);
+      } else if (line.includes('🔖 REFERANSE:') || line.includes('🔖 **REFERANSE:**')) {
+        const refMatch = line.match(/(?:🔖 \*\*REFERANSE:\*\*|🔖 REFERANSE:)\s*(.+)/);
         if (refMatch) {
           processedLines.push(
-            <div key={`ref-${lineIndex}`} className="my-1">
+            <div key={`ref-${lineIndex}`} className="my-2">
               <Badge variant="outline" className="bg-green-50 border-green-200 text-green-800">
                 📋 {refMatch[1]}
               </Badge>
             </div>
           );
         }
-      } else if (line.includes('🏷️ EMNER:') || line.includes('Emner:')) {
-        const tagsMatch = line.match(/(?:🏷️ EMNER:|Emner:)\s*(.+)/);
+      } else if (line.includes('🏷️ EMNER:') || line.includes('🏷️ **EMNER:**')) {
+        const tagsMatch = line.match(/(?:🏷️ \*\*EMNER:\*\*|🏷️ EMNER:)\s*(.+)/);
         if (tagsMatch) {
-          const tags = tagsMatch[1].split(',').map(tag => tag.trim());
+          const tags = tagsMatch[1].split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
           processedLines.push(
-            <div key={`tags-${lineIndex}`} className="my-2 flex flex-wrap gap-1">
-              <span className="text-sm text-gray-600 mr-2">Emner:</span>
-              {tags.map((tag, tagIndex) => (
-                <Badge key={`tag-${lineIndex}-${tagIndex.toString()}`} variant="secondary" className="text-xs">
-                  {tag}
-                </Badge>
-              ))}
+            <div key={`tags-${lineIndex}`} className="mt-3 mb-1">
+              <div className="flex flex-wrap gap-1 items-center">
+                <Tag className="h-3 w-3 text-gray-600 mr-1" />
+                {tags.map((tag, tagIndex) => (
+                  <Badge 
+                    key={`tag-${lineIndex}-${tagIndex.toString()}`} 
+                    variant="secondary" 
+                    className="text-xs bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+                  >
+                    {tag}
+                  </Badge>
+                ))}
+              </div>
             </div>
           );
         }

@@ -11,7 +11,7 @@ export async function buildIntelligentSystemPrompt(
 ): Promise<string> {
   console.log('🏗️ Building intelligent system prompt...');
 
-  let prompt = `Du er en hjelpsom assistent som spesialiserer deg på revisjon og regnskap.
+  let prompt = `Du er AI-Revy, en hjelpsom AI-assistent som spesialiserer deg på revisjon og regnskap.
   Du skal hjelpe brukeren med å svare på spørsmål knyttet til revisjon, regnskap og økonomistyring.
   Vær presis og nøyaktig i dine svar, og unngå å gi vage eller generelle råd.
   Hvis du ikke vet svaret, så si det.
@@ -78,16 +78,22 @@ export async function buildIntelligentSystemPrompt(
       }
     });
 
-    prompt += `\n## INSTRUKSJONER FOR BRUK AV FAGKUNNSKAP\n`;
-    prompt += `1. Referer alltid til relevante fagartikler når de finnes\n`;
-    prompt += `2. Inkluder lenker til artiklene i dine svar\n`;
-    prompt += `3. Vis referansekoder (f.eks. ISA 315) når tilgjengelig\n`;
-    prompt += `4. Presenter emner/tags på en strukturert måte\n`;
-    prompt += `5. Bruk denne formateringen for artikelreferanser:\n\n`;
+    prompt += `\n## SVARKRAV OG FORMATERING\n`;
+    prompt += `VIKTIG! Du MÅ alltid formatere svarene dine med følgende struktur:\n\n`;
+    prompt += `1. Gi et klart og informativt svar på spørsmålet\n`;
+    prompt += `2. Hvis du referer til fagartikler, bruk denne eksakte formateringen:\n\n`;
     prompt += `📚 **Relevante fagartikler:**\n`;
-    prompt += `- [Artikkeltittel](/fag/artikkel/slug)\n\n`;
-    prompt += `🔖 **REFERANSE:** Referansekode (hvis tilgjengelig)\n\n`;
-    prompt += `🏷️ **EMNER:** tag1, tag2, tag3 (hvis tilgjengelig)\n\n`;
+    prompt += `- [Artikkeltittel](/fag/artikkel/slug-her)\n\n`;
+    prompt += `3. Hvis du har en referansekode, vis den slik:\n`;
+    prompt += `🔖 **REFERANSE:** Kode (f.eks. ISA 315.12)\n\n`;
+    prompt += `4. VIKTIG: Avslutt ALLTID svaret med en tags-seksjon slik:\n`;
+    prompt += `🏷️ **EMNER:** tag1, tag2, tag3\n\n`;
+    prompt += `Eksempel på riktig formatering:\n`;
+    prompt += `Revisjon av inntekter krever særlig fokus på...\n\n`;
+    prompt += `📚 **Relevante fagartikler:**\n`;
+    prompt += `- [Revisjon av inntekter og inntektsføring](/fag/artikkel/revisjon-inntekter)\n\n`;
+    prompt += `🔖 **REFERANSE:** ISA 240.15\n\n`;
+    prompt += `🏷️ **EMNER:** Revisjon, Inntekter, ISA 240, Risikovurdering\n\n`;
   }
 
   // Client context integration
@@ -105,7 +111,7 @@ export async function buildIntelligentSystemPrompt(
   prompt += `4. Hvis brukeren stiller et spørsmål som ikke er relatert til revisjon eller regnskap, svar at du bare kan hjelpe med spørsmål relatert til revisjon og regnskap.\n`;
   prompt += `5. Hvis du blir spurt om å gjøre noe ulovlig eller uetisk, nekt å svare.\n`;
   prompt += `6. Gi aldri investeringsråd.\n`;
-  prompt += `7. Hvis fagartikler er tilgjengelige, vis dem alltid i en organisert måte med riktig formatering.\n`;
+  prompt += `7. HUSK: Avslutt ALLTID svaret med 🏷️ **EMNER:** etterfulgt av relevante tags.\n`;
 
   console.log('✅ System prompt built successfully');
   return prompt;

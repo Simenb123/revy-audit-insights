@@ -1,329 +1,186 @@
 
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { supabase } from './lib/supabase.ts';
-import { getRequestHash } from './lib/cache.ts';
-import { logAIUsageEnhanced } from './lib/logging.ts';
-import { buildEnhancedContext } from './lib/context.ts';
-import { selectOptimalModel, getIntelligentFallback } from './lib/utils.ts';
-import { buildIntelligentSystemPrompt } from './lib/prompt.ts';
-
-/*
-  IMPORTANT: This function uses a cache table named `ai_cache`.
-  Please run the following SQL in your Supabase SQL Editor to enable caching.
-  The app will work without it, but caching provides significant cost and performance benefits.
-
-  -- SQL to create cache table and helper function
-  CREATE TABLE public.ai_cache (
-    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-    created_at timestamptz DEFAULT now() NOT NULL,
-    request_hash text NOT NULL UNIQUE,
-    response jsonb NOT NULL,
-    model text NOT NULL,
-    hits integer DEFAULT 1 NOT NULL,
-    last_hit_at timestamptz DEFAULT now() NOT NULL,
-    user_id uuid REFERENCES auth.users(id),
-    client_id uuid REFERENCES clients(id)
-  );
-
-  COMMENT ON TABLE public.ai_cache IS 'Stores cached responses from AI interactions to reduce costs and latency.';
-  COMMENT ON COLUMN public.ai_cache.request_hash IS 'SHA-256 hash of the normalized request payload (message, context, client_id, userRole).';
-  COMMENT ON COLUMN public.ai_cache.hits IS 'Number of times the cached response has been served.';
-
-  CREATE INDEX idx_ai_cache_request_hash ON public.ai_cache(request_hash);
-  CREATE INDEX idx_ai_cache_user_client ON public.ai_cache(user_id, client_id);
-
-  CREATE OR REPLACE FUNCTION public.increment_cache_hit(hash_to_update text)
-  RETURNS void
-  LANGUAGE plpgsql
-  AS $$
-  BEGIN
-    UPDATE public.ai_cache
-    SET
-      hits = hits + 1,
-      last_hit_at = now()
-    WHERE request_hash = hash_to_update;
-  END;
-  $$;
-
-  GRANT EXECUTE ON FUNCTION public.increment_cache_hit(text) TO authenticated;
-*/
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { corsHeaders, isOptions, handleCors } from './lib/cors.ts'
+import { buildIntelligentSystemPrompt } from './lib/prompt.ts'
+import { buildEnhancedContext } from './lib/context.ts'
+import { selectOptimalModel, getIntelligentFallback } from './lib/utils.ts'
+import { logUsage } from './lib/logging.ts'
+import { getCachedResponse, cacheResponse } from './lib/cache.ts'
+import { seedArticleTags } from './lib/seed-article-tags.ts'
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  let body;
-  try {
-    body = await req.json();
-  } catch (e) {
-    console.error('❌ Invalid JSON body:', e.message);
-    return new Response(JSON.stringify({ error: 'Invalid JSON body' }), {
-      status: 400,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+  console.log('🤖 AI-Revy Chat function started');
+  
+  if (isOptions(req)) {
+    return handleCors();
   }
 
   try {
-    console.log('🤖 AI-Revy Chat function started');
+    const requestBody = await req.json();
+    const { message, context = 'general', history = [], clientData, userRole, sessionId, userId } = requestBody;
     
-    const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!openAIApiKey) {
-      console.error('❌ OpenAI API key not configured');
-      throw new Error('OpenAI API key not configured');
-    }
-
-    const { message, context, clientData, userRole, userId, sessionId, history } = body;
-    console.log('📝 Request received:', { 
-      message: message.substring(0, 50) + '...', 
-      context, 
-      userRole, 
-      userId: userId?.substring(0, 8) + '...' || 'guest',
+    console.log('📝 Request received:', {
+      message: `${message.substring(0, 50)}...`,
+      context,
+      userRole,
+      userId: `${userId?.substring(0, 8)}...`,
       hasClientData: !!clientData,
-      historyLength: history?.length || 0
+      historyLength: history.length
     });
 
-    // Handle guest mode gracefully
-    const isGuestMode = !userId;
-    if (isGuestMode) {
-      console.log('👤 Guest mode detected - providing limited functionality');
-    }
-
-    // --- Caching Logic ---
-    if (!isGuestMode) {
+    // Check if this is a knowledge-related query and if we should seed tags
+    const isKnowledgeQuery = /\b(inntekter?|revisjon|isa|fagstoff|artikkel|retningslinje|tags?|emner)\b/i.test(message);
+    
+    if (isKnowledgeQuery) {
+      console.log('🏷️ Knowledge query detected, ensuring article tags are seeded...');
       try {
-        const cachePayload = {
-          message,
-          history: history || [],
-          context,
-          client_id: clientData?.id || null,
-          userRole: userRole || null,
-        };
-        const requestHash = await getRequestHash(cachePayload);
-
-        const { data: cached, error: cacheError } = await supabase
-          .from('ai_cache')
-          .select('response, model')
-          .eq('request_hash', requestHash)
-          .maybeSingle();
-
-        if (cacheError) {
-          console.warn('Cache lookup failed (non-critical):', cacheError.message);
-        }
-        
-        if (cached) {
-          console.log('✅ Cache hit!', { requestHash });
-
-          // Asynchronously update hit count.
-          supabase.rpc('increment_cache_hit', { hash_to_update: requestHash })
-            .then(({ error }) => {
-              if (error) console.warn('Failed to increment cache hit count:', error);
-            });
-          
-          await logAIUsageEnhanced({
-            userId,
-            sessionId: sessionId || crypto.randomUUID(),
-            model: cached.model,
-            promptTokens: 0,
-            completionTokens: 0,
-            totalTokens: 0,
-            contextType: context,
-            clientId: clientData?.id || null,
-            responseTimeMs: 1,
-            requestType: 'chat-cached',
-          });
-
-          return new Response(JSON.stringify({
-            response: cached.response,
-            context: context,
-            usage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },
-            model: cached.model,
-            responseTime: 1,
-            isGuestMode,
-            fromCache: true,
-          }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-        }
-      } catch (e) {
-        console.warn('Cache check threw an error (non-critical):', e.message);
+        await seedArticleTags();
+      } catch (error) {
+        console.log('⚠️ Tag seeding failed, continuing with query:', error.message);
       }
     }
-    // --- End Caching Logic ---
 
+    // Check cache first
+    const cacheKey = JSON.stringify({ message, context, clientData, userRole });
+    const cachedResponse = await getCachedResponse(cacheKey, userId);
+    
+    if (cachedResponse) {
+      console.log('✅ Cache hit!', { requestHash: cachedResponse.requestHash?.substring(0, 16) + '...' });
+      return new Response(JSON.stringify({ response: cachedResponse.response }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
     console.log('🧐 Cache miss, proceeding to generate new response.');
 
-    const startTime = Date.now();
-
-    // Enhanced context building with guest mode support
-    const enhancedContext = await buildEnhancedContext(
-      message, 
-      context, 
-      isGuestMode ? null : clientData
-    );
-    console.log('🧠 Enhanced context built:', { 
+    // Build enhanced context with improved search
+    const enhancedContext = await buildEnhancedContext(message, context, clientData);
+    
+    console.log('🧠 Enhanced context built:', {
       knowledgeArticleCount: enhancedContext.knowledge?.length || 0,
       hasClientContext: !!enhancedContext.clientContext,
-      isGuestMode
+      isGuestMode: !userId
     });
 
-    // Select appropriate model based on complexity (simpler for guests)
-    const model = selectOptimalModel(message, context, isGuestMode);
-    console.log('🎯 Selected model:', model);
+    // Select optimal model
+    const selectedModel = selectOptimalModel(message, context, !userId);
+    console.log('🎯 Selected model:', selectedModel);
 
-    // Build system prompt asynchronously with database integration
+    // Build system prompt
     const systemPrompt = await buildIntelligentSystemPrompt(
-      context, 
-      isGuestMode ? null : clientData, 
-      userRole, 
+      context,
+      clientData,
+      userRole,
       enhancedContext,
-      isGuestMode
+      !userId
     );
 
-    const conversationMessages = (history || []).map((msg: { sender: string, content: string }) => ({
-      role: msg.sender === 'revy' ? 'assistant' : 'user',
-      content: msg.content
-    }));
-
+    const startTime = Date.now();
     console.log('🚀 Calling OpenAI API...');
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+
+    // Call OpenAI
+    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
+        'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model,
+        model: selectedModel,
         messages: [
           { role: 'system', content: systemPrompt },
-          ...conversationMessages,
+          ...history.map((msg: any) => ({
+            role: msg.sender === 'user' ? 'user' : 'assistant',
+            content: msg.content
+          })),
           { role: 'user', content: message }
         ],
-        temperature: isGuestMode ? 0.5 : 0.7, // More consistent responses for guests
-        max_tokens: isGuestMode ? 500 : (model === 'gpt-4o' ? 2000 : 1000),
+        max_tokens: 1000,
+        temperature: 0.3,
+        stream: false,
       }),
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('❌ OpenAI API error:', response.status, errorText);
-      throw new Error(`OpenAI API error: ${response.status} ${errorText}`);
+    if (!openaiResponse.ok) {
+      const errorText = await openaiResponse.text();
+      console.error('❌ OpenAI API error:', errorText);
+      throw new Error(`OpenAI API error: ${openaiResponse.status} - ${errorText}`);
     }
 
-    const data = await response.json();
-    const aiResponse = data.choices[0]?.message?.content;
-    const usage = data.usage;
-    const endTime = Date.now();
-    const responseTime = endTime - startTime;
+    const data = await openaiResponse.json();
+    const responseTime = Date.now() - startTime;
+    const aiResponse = data.choices?.[0]?.message?.content;
 
-    console.log('✅ AI response generated:', { 
-      responseLength: aiResponse?.length,
-      usage,
+    if (!aiResponse) {
+      console.error('❌ No content in OpenAI response:', data);
+      throw new Error('No response content from OpenAI');
+    }
+
+    console.log('✅ AI response generated:', {
+      responseLength: aiResponse.length,
+      usage: data.usage,
       responseTime: `${responseTime}ms`,
-      isGuestMode
+      isGuestMode: !userId
     });
 
-    // Enhanced usage logging (only for authenticated users)
-    if (userId && usage) {
+    // Log usage if user is authenticated
+    if (userId && data.usage) {
       try {
-        await logAIUsageEnhanced({
+        await logUsage({
           userId,
-          sessionId: sessionId || crypto.randomUUID(),
-          model,
-          promptTokens: usage.prompt_tokens,
-          completionTokens: usage.completion_tokens,
-          totalTokens: usage.total_tokens,
-          contextType: context,
-          clientId: clientData?.id || null,
+          model: selectedModel,
+          promptTokens: data.usage.prompt_tokens,
+          completionTokens: data.usage.completion_tokens,
+          totalTokens: data.usage.total_tokens,
+          estimatedCostUsd: calculateCost(selectedModel, data.usage.prompt_tokens, data.usage.completion_tokens),
+          clientId: clientData?.id,
           responseTimeMs: responseTime,
-          requestType: 'chat'
+          sessionId,
+          contextType: context
         });
         console.log('📊 Usage logged successfully');
-        
-        // After successful generation and logging, store in cache
-        const cachePayload = {
-          message,
-          history: history || [],
-          context,
-          client_id: clientData?.id || null,
-          userRole: userRole || null,
-        };
-        const requestHash = await getRequestHash(cachePayload);
-
-        supabase.from('ai_cache').insert({
-          request_hash: requestHash,
-          response: aiResponse,
-          model: model,
-          user_id: userId,
-          client_id: clientData?.id || null,
-        }).then(({ error: cacheInsertError }) => {
-          if (cacheInsertError) {
-            // UNIQUE constraint violation is expected if another request is in-flight. Not an error.
-            if (cacheInsertError.code !== '23505') {
-              console.warn('Cache insert failed (non-critical):', cacheInsertError.message);
-            }
-          } else {
-            console.log('✅ Response cached successfully');
-          }
-        });
-
-      } catch (logError) {
-        console.error('⚠️ Failed to log usage (non-critical):', logError);
+      } catch (error) {
+        console.error('❌ Failed to log usage:', error);
       }
-    } else if (isGuestMode) {
-      console.log('📊 Guest mode - usage not logged');
     }
 
-    return new Response(JSON.stringify({ 
-      response: aiResponse,
-      context: context,
-      usage: usage,
-      model: model,
-      responseTime: responseTime,
-      isGuestMode
-    }), {
+    // Cache the response
+    if (userId) {
+      try {
+        await cacheResponse(cacheKey, aiResponse, userId, clientData?.id, selectedModel);
+        console.log('✅ Response cached successfully');
+      } catch (error) {
+        console.error('❌ Failed to cache response:', error);
+      }
+    }
+
+    return new Response(JSON.stringify({ response: aiResponse }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
-    console.error('💥 Error in revy-ai-chat function:', error);
+    console.error('💥 Function error:', error);
     
-    // Enhanced error logging for authenticated users
-    try {
-      const { userId, sessionId, context, clientData } = body;
-      if (userId) {
-        await logAIUsageEnhanced({
-          userId,
-          sessionId: sessionId || crypto.randomUUID(),
-          model: 'gpt-4o-mini',
-          promptTokens: 0,
-          completionTokens: 0,
-          totalTokens: 0,
-          contextType: context,
-          clientId: clientData?.id || null,
-          responseTimeMs: 0,
-          requestType: 'chat',
-          errorMessage: error.message
-        });
-      }
-    } catch (logError) {
-      console.error('Failed to log error:', logError);
-    }
-
-    // Intelligent fallback responses based on context and authentication
-    const fallbackResponse = getIntelligentFallback(body);
-
+    const fallbackResponse = getIntelligentFallback(await req.json().catch(() => ({})));
+    
     return new Response(JSON.stringify({ 
-      error: error.message,
       response: fallbackResponse,
-      isError: true
+      isError: true,
+      error: error.message 
     }), {
-      status: 500,
+      status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 });
+
+function calculateCost(model: string, promptTokens: number, completionTokens: number): number {
+  const costs = {
+    'gpt-4o-mini': { prompt: 0.00015, completion: 0.0006 },
+    'gpt-4o': { prompt: 0.005, completion: 0.015 },
+    'gpt-4': { prompt: 0.03, completion: 0.06 }
+  };
+  
+  const modelCosts = costs[model as keyof typeof costs] || costs['gpt-4o-mini'];
+  return (promptTokens * modelCosts.prompt / 1000) + (completionTokens * modelCosts.completion / 1000);
+}
