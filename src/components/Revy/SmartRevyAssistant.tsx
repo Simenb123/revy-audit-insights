@@ -15,6 +15,7 @@ import { RevyContext, RevyChatMessage } from '@/types/revio';
 import KnowledgeStatusIndicator from './KnowledgeStatusIndicator';
 import { generateEnhancedAIResponse } from '@/services/revy/enhancedAiInteractionService';
 import { useIsMobile } from "@/hooks/use-mobile";
+import RevyAvatar from './RevyAvatar';
 
 // Internal message type for UI display
 interface UIMessage {
