@@ -175,7 +175,8 @@ serve(async (req) => {
     const model = selectOptimalModel(message, context, isGuestMode);
     console.log('🎯 Selected model:', model);
 
-    const systemPrompt = buildIntelligentSystemPrompt(
+    // Build system prompt asynchronously with database integration
+    const systemPrompt = await buildIntelligentSystemPrompt(
       context, 
       isGuestMode ? null : clientData, 
       userRole, 

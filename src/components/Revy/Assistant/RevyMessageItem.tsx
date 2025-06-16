@@ -4,6 +4,8 @@ import { formatDistanceToNow } from 'date-fns';
 import { nb } from 'date-fns/locale';
 import { RevyMessage } from '@/types/revio';
 import RevyAvatar from '../RevyAvatar';
+import { Badge } from '@/components/ui/badge';
+import { FileText, ExternalLink } from 'lucide-react';
 
 interface RevyMessageItemProps {
   message: RevyMessage;
@@ -24,6 +26,108 @@ export const RevyMessageItem = ({ message, isEmbedded = false }: RevyMessageItem
 
   const formattedTimestamp = timestamp ? formatDistanceToNow(new Date(timestamp), { addSuffix: true, locale: nb }) : '';
 
+  // Enhanced content processing for better article link display
+  const processRevyContent = (content: string) => {
+    // Split content into lines for processing
+    const lines = content.split('\n');
+    const processedLines: JSX.Element[] = [];
+    let currentSection = '';
+    
+    lines.forEach((line, index) => {
+      // Check for article links
+      const articleLinkRegex = /\[([^\]]+)\]\(\/fag\/artikkel\/([^)]+)\)/g;
+      
+      if (line.includes('📚 Relevante artikler:') || line.includes('Relevante artikler:')) {
+        processedLines.push(
+          <div key={index} className="mt-4 mb-2">
+            <div className="flex items-center gap-2 text-blue-800 font-semibold">
+              <FileText className="h-4 w-4" />
+              <span>Relevante fagartikler:</span>
+            </div>
+          </div>
+        );
+      } else if (articleLinkRegex.test(line)) {
+        // Process article links specially
+        const matches = [...line.matchAll(articleLinkRegex)];
+        const parts = line.split(articleLinkRegex);
+        
+        processedLines.push(
+          <div key={index} className="my-1">
+            {parts.map((part, partIndex) => {
+              const match = matches[Math.floor(partIndex / 3)];
+              if (partIndex % 3 === 1 && match) {
+                // This is a link title
+                return (
+                  <a
+                    key={partIndex}
+                    href={`/fag/artikkel/${match[2]}`}
+                    className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 font-medium hover:underline bg-blue-50 px-2 py-1 rounded mr-2"
+                  >
+                    <FileText className="h-3 w-3" />
+                    {match[1]}
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                );
+              } else if (partIndex % 3 === 0) {
+                // Regular text
+                return <span key={partIndex}>{part}</span>;
+              }
+              return null;
+            })}
+          </div>
+        );
+      } else if (line.includes('🔖 REFERANSE:') || line.includes('Referanse:')) {
+        const refMatch = line.match(/(?:🔖 REFERANSE:|Referanse:)\s*(.+)/);
+        if (refMatch) {
+          processedLines.push(
+            <div key={index} className="my-1">
+              <Badge variant="outline" className="bg-green-50 border-green-200 text-green-800">
+                📋 {refMatch[1]}
+              </Badge>
+            </div>
+          );
+        }
+      } else if (line.includes('🏷️ EMNER:') || line.includes('Emner:')) {
+        const tagsMatch = line.match(/(?:🏷️ EMNER:|Emner:)\s*(.+)/);
+        if (tagsMatch) {
+          const tags = tagsMatch[1].split(',').map(tag => tag.trim());
+          processedLines.push(
+            <div key={index} className="my-2 flex flex-wrap gap-1">
+              <span className="text-sm text-gray-600 mr-2">Emner:</span>
+              {tags.map((tag, tagIndex) => (
+                <Badge key={tagIndex} variant="secondary" className="text-xs">
+                  {tag}
+                </Badge>
+              ))}
+            </div>
+          );
+        }
+      } else if (line.includes('💡 Tips:')) {
+        processedLines.push(
+          <div key={index} className="mt-3 p-2 bg-yellow-50 border-l-4 border-yellow-400 rounded-r">
+            <div className="flex items-start gap-2">
+              <span className="text-yellow-600">💡</span>
+              <span className="text-sm text-yellow-800">{line.replace('💡 Tips:', '').trim()}</span>
+            </div>
+          </div>
+        );
+      } else {
+        // Regular content - process for inline links
+        const processedLine = line.replace(articleLinkRegex, (match, title, slug) => {
+          return `<a href="/fag/artikkel/${slug}" class="text-blue-600 hover:text-blue-800 font-medium hover:underline">${title}</a>`;
+        });
+        
+        if (processedLine.trim()) {
+          processedLines.push(
+            <div key={index} className="leading-relaxed" dangerouslySetInnerHTML={{ __html: processedLine }} />
+          );
+        }
+      }
+    });
+    
+    return processedLines;
+  };
+
   if (sender === 'user') {
     return (
       <div className="flex justify-end">
@@ -43,8 +147,10 @@ export const RevyMessageItem = ({ message, isEmbedded = false }: RevyMessageItem
         <div className={`flex flex-col items-start ${isEmbedded ? 'max-w-[90%]' : 'max-w-[85%]'}`}>
           <div className={revyMessageContainerClass}>
             <RevyAvatar size={isEmbedded ? 'xs' : 'sm'} className="flex-shrink-0" />
-            <div className={`${revyMessageClass} rounded-bl-none prose prose-sm max-w-none leading-relaxed`}>
-              {content}
+            <div className={`${revyMessageClass} rounded-bl-none prose prose-sm max-w-none`}>
+              <div className="space-y-2">
+                {processRevyContent(content)}
+              </div>
             </div>
           </div>
           {formattedTimestamp && <span className="text-xs text-gray-500 mt-1.5 ml-10 px-1">{formattedTimestamp}</span>}

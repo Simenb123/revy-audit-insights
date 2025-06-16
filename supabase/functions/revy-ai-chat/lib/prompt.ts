@@ -42,51 +42,70 @@ function buildProactiveInsights(client: any): string {
   return insights;
 }
 
-// Intelligent system prompt building
-export function buildIntelligentSystemPrompt(
+// Enhanced intelligent system prompt building with database integration
+export async function buildIntelligentSystemPrompt(
   context: string, 
   clientData: any, 
   userRole: string,
   enhancedContext: any,
   isGuestMode = false
-): string {
-  let basePrompt = `Du er AI-Revy, en ekspert AI-revisjonsassistent for norske revisorer. Du har dyp kunnskap om:
-- Norsk regnskapslovgivning og standarder (Regnskapsloven, NGRS, IFRS)
-- ISA (International Standards on Auditing) - alle standarder
-- Risikovurdering og revisjonsmetodikk
-- Regnskapsanalyse og kontroller
-- Norsk skatterett og MVA-regelverket
-- Revisorlovgivning og etiske regler
-- Praktisk revisjonsarbeid og dokumentasjon
-
-Du kommuniserer alltid på norsk og er vennlig, profesjonell og præsis. Dine svar skal være konkrete og handlingsrettede.
-
-VIKTIG: Du har tilgang til en omfattende kunnskapsbase med artikler om revisjon, ISA-standarder, regnskapslovgivning og praksis. Når brukere spør om faglige temaer, søker du aktivt i kunnskapsbasen og referer til relevante artikler.`;
+): Promise<string> {
+  
+  // Load the latest prompt configuration from database
+  const { basePrompt, contextPrompts } = await getLatestPromptConfiguration();
+  
+  let systemPrompt = basePrompt;
 
   if (isGuestMode) {
-    basePrompt += `\n\nVIKTIG: Brukeren er i gjestmodus og har begrenset tilgang. Gi generelle råd og veiledning, men nevn at full funksjonalitet krever innlogging. Hold svarene enkle og praktiske.`;
+    systemPrompt += `\n\nVIKTIG: Brukeren er i gjestmodus og har begrenset tilgang. Gi generelle råd og veiledning, men nevn at full funksjonalitet krever innlogging. Hold svarene enkle og praktiske.`;
   }
 
-  let contextPrompt = '';
   let knowledgePrompt = '';
   let clientPrompt = '';
   let proactivePrompt = '';
 
-  // Add enhanced knowledge context
+  // Enhanced knowledge integration with active article promotion
   if (enhancedContext.knowledge && enhancedContext.knowledge.length > 0) {
-    knowledgePrompt = `\n\nHER ER RELEVANT FAGSTOFF FRA KUNNSKAPSBASEN. BRUK DETTE AKTIVT I SVARET DITT:\n\n`;
+    knowledgePrompt = `\n\n🎯 RELEVANT FAGSTOFF FRA KUNNSKAPSBASEN - BRUK DETTE AKTIVT:\n\n`;
     enhancedContext.knowledge.forEach((article: any, index: number) => {
-      knowledgePrompt += `ARTIKKEL ${index + 1}: "${article.title}"\n`;
+      knowledgePrompt += `📚 ARTIKKEL ${index + 1}: "${article.title}"\n`;
       if (article.reference_code) {
-        knowledgePrompt += `REFERANSE: ${article.reference_code}\n`;
+        knowledgePrompt += `🔖 REFERANSE: ${article.reference_code}\n`;
       }
-      knowledgePrompt += `SAMMENDRAG: ${article.summary || (article.content || '').substring(0, 300) + '...'}\n`;
-      knowledgePrompt += `INNHOLD: ${article.content.substring(0, 1500)}${article.content.length > 1500 ? '...' : ''}\n`;
-      knowledgePrompt += `LENKE: /fag/artikkel/${article.slug}\n\n`;
+      if (article.tags && article.tags.length > 0) {
+        knowledgePrompt += `🏷️ EMNER: ${article.tags.join(', ')}\n`;
+      }
+      knowledgePrompt += `📝 SAMMENDRAG: ${article.summary || (article.content || '').substring(0, 200) + '...'}\n`;
+      knowledgePrompt += `📄 INNHOLD: ${article.content.substring(0, 1200)}${article.content.length > 1200 ? '...' : ''}\n`;
+      knowledgePrompt += `🔗 LENKE: [Les hele artikkelen](/fag/artikkel/${article.slug})\n\n`;
     });
-    knowledgePrompt += `INSTRUKS: Du MÅ basere svaret ditt på disse artiklene når de er relevante. Referer direkte til artiklene, f.eks. "I artikkelen om '${enhancedContext.knowledge[0]?.title}' står det at...". Gi konkrete svar basert på fagstoffet.`;
+    
+    knowledgePrompt += `\n🚨 KRITISKE INSTRUKSER FOR BRUK AV FAGARTIKLER:
+1. Du MÅ referere til og sitere fra disse artiklene når de er relevante
+2. Vis ALLTID lenker til artiklene i markdown-format: [Artikkeltittel](/fag/artikkel/slug)
+3. Nevn spesifikke referansekoder (f.eks. ISA 315) når de finnes
+4. Gi konkrete sitater fra artiklene med "..." rundt
+5. Hvis artikler har tags, nevn dem som relevante emner
+6. Strukturer svaret med tydelige referanser til fagstoffet
+7. Start gjerne svaret med "Basert på vårt fagstoff om..." når relevant
+
+EKSEMPEL PÅ GODT SVAR:
+"Basert på vår artikkel om [ISA 315 - Risikovurdering](/fag/artikkel/isa-315-risikovurdering) kan jeg hjelpe deg med dette. Som det står i standarden: 'Revisor skal...' 
+
+📚 Relevante artikler:
+- [Artikkeltittel 1](/fag/artikkel/slug1) - Referanse: ISA 315
+- [Artikkeltittel 2](/fag/artikkel/slug2) - Emner: risikovurdering, materialitet"`;
   } else {
-    knowledgePrompt = `\n\nINFO: Ingen spesifikke artikler ble funnet i kunnskapsbasen for dette spørsmålet. Jeg svarer basert på min generelle revisjonskunnskap. Prøv å være mer spesifikk i spørsmålet ditt for å få tilgang til relevante fagartikler.`;
+    knowledgePrompt = `\n\n⚠️ INGEN SPESIFIKKE ARTIKLER funnet for dette spørsmålet i kunnskapsbasen. 
+
+INSTRUKSER NÅR INGEN ARTIKLER FINNES:
+1. Nevn eksplisitt at du ikke fant spesifikke fagartikler for dette emnet
+2. Oppfordre brukeren til å være mer spesifikk eller prøve andre søketermer
+3. Foreslå relevante emner de kan søke på (f.eks. "ISA 315", "risikovurdering", "materialitet")
+4. Gi likevel grundig faglig veiledning basert på din kunnskap
+5. Avslutt med "💡 Tips: Prøv å søke på mer spesifikke fagtermer i chatten for å få tilgang til våre fagartikler"
+
+Du kan fortsatt gi utmerket faglig råd basert på din ekspertise, men vær ærlig om at du ikke har funnet spesifikke artikler.`;
   }
 
   // Enhanced client context with proactive insights
@@ -106,47 +125,8 @@ VIKTIG: Du har tilgang til en omfattende kunnskapsbase med artikler om revisjon,
     proactivePrompt = buildProactiveInsights(client);
   }
 
-  // Enhanced context-specific prompts with workflow integration
-  const contextPrompts = {
-    'risk-assessment': `\nDu hjelper med risikovurdering. Fokuser på:
-- Systematisk identifisering av risikoområder per ISA 315
-- Vurdering av iboende risiko, kontrollrisiko og oppdagelsesrisiko
-- Forslag til risikoreduserende tiltak og kontroller
-- ISA 330 og utforming av risikoresponser
-- Materialitetsvurderinger og terskelverdi-setting
-- Proaktive anbefalinger basert på bransje og klientstørrelse`,
-
-    'documentation': `\nDu hjelper med dokumentasjon. Fokuser på:
-- Krav til revisjonsdokumentasjon per ISA 230
-- Strukturering av arbeidspapirer og elektronisk arkivering
-- Konklusjoner og faglige vurderinger
-- Forberedelse til partner review og kvalitetskontroll
-- Dokumentasjon av vesentlige forhold og unntak
-- Automatisk kvalitetskontroll og missing elements`,
-
-    'client-detail': `\nDu hjelper med klientanalyse. Fokuser på:
-- Dypere risikovurderinger for denne spesifikke klienten
-- Detaljerte forslag til revisjonshandlinger basert på bransje og størrelse
-- Analyse av regnskapsdata og nøkkeltall
-- Spesifikke dokumentasjonskrav og kontroller
-- Planlegging av feltarbeid og tidsestimater
-- Sammenligning med bransjegjennomsnitt og tidligere perioder`,
-
-    'collaboration': `\nDu hjelper med samarbeid og teamarbeid. Fokuser på:
-- Organisering av team og fordeling av arbeidsoppgaver
-- Effektiv kommunikasjon og koordinering av revisjonsarbeid
-- Kvalitetssikring og review-prosesser
-- Tidsplanlegging, ressursfordeling og budsjettering
-- Håndtering av teammøter og oppfølging
-- Konfliktløsning og teamdynamikk`
-  };
-
-  contextPrompt = contextPrompts[context as keyof typeof contextPrompts] || `\nDu kan hjelpe med alle aspekter av revisjonsarbeid:
-- Planlegging og gjennomføring av revisjoner per ISA-standarder
-- Risikovurderinger og testing av kontroller
-- Regnskapsanalyse og substansielle handlinger
-- Dokumentasjon, rapportering og oppfølging
-- Praktiske utfordringer i revisjonsarbeid`;
+  // Get context-specific prompt
+  const contextPrompt = contextPrompts[context as keyof typeof contextPrompts] || contextPrompts.general;
 
   const roleContext = isGuestMode
     ? '\nBrukeren er gjest og har begrenset tilgang. Gi generelle, praktiske råd om revisjonsarbeid uten tilgang til spesifikke klientdata.'
@@ -156,7 +136,14 @@ VIKTIG: Du har tilgang til en omfattende kunnskapsbase med artikler om revisjon,
     ? '\nBrukeren er manager og fokuserer på prosjektledelse, kvalitetssikring og teamkoordinering. Gi praktiske ledelses- og koordineringsråd.'
     : '\nBrukeren er revisor og trenger praktisk, detaljert veiledning i daglig revisjonsarbeid og tekniske spørsmål. Fokuser på håndverk og implementering.';
 
-  return `${basePrompt}${knowledgePrompt}${clientPrompt}${proactivePrompt}${contextPrompt}${roleContext}
+  return `${systemPrompt}${knowledgePrompt}${clientPrompt}${proactivePrompt}\n\n${contextPrompt}${roleContext}
 
-VIKTIG: Gi alltid konkrete, handlingsrettede råd. Referer til relevante ISA-standarder når det er aktuelt. Hold svarene fokuserte og praktiske. ${isGuestMode ? 'Nevn gjerne at innlogging gir tilgang til mer avanserte funksjoner.' : 'Vær proaktiv med forslag basert på klientdata og kontekst. Når du bruker kunnskap fra kunnskapsbasen, referer alltid til spesifikke artikler.'}`;
+🔥 VIKTIG PÅMINNELSE: Du skal være PROAKTIV med å bruke fagartikler! Når brukere spør om faglige temaer:
+1. Referer ALLTID til relevante artikler når de finnes
+2. Vis tydelige lenker i markdown-format
+3. Gi konkrete sitater og referanser
+4. Nevn tags/emner fra artiklene
+5. Oppfordre til videre lesing av hele artikler
+
+${isGuestMode ? 'Nevn gjerne at innlogging gir tilgang til mer avanserte funksjoner.' : 'Vær proaktiv med artikkelbruk og faglige referanser. Gjør det enkelt for brukeren å finne og lese relevante fagartikler.'}`;
 }
