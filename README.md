@@ -71,3 +71,14 @@ Yes, you can!
 To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
 Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+
+## Environment variables
+
+The Supabase edge functions rely on a few environment variables. Make sure the following variables are available when deploying or running the functions locally:
+
+```bash
+SUPABASE_URL=<your-supabase-project-url>
+SUPABASE_SERVICE_ROLE_KEY=<your-service-role-key>
+```
+
+`SUPABASE_SERVICE_ROLE_KEY` is used in the `revy-ai-chat` function to create a Supabase client with elevated permissions required for full-text search across protected tables.
