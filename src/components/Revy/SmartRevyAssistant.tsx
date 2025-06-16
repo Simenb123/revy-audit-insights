@@ -100,10 +100,10 @@ const SmartRevyAssistant = ({ embedded = false, clientData, userRole }: SmartRev
     try {
       console.log('🤖 Generating AI response with enhanced knowledge access...');
       
-      // Convert messages to chat history format
+      // Convert messages to chat history format with string content
       const chatHistory = updatedMessages.map(msg => ({
         sender: msg.sender,
-        content: msg.content
+        content: typeof msg.content === 'string' ? msg.content : String(msg.content)
       }));
 
       // Use enhanced AI service for better knowledge base access
