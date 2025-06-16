@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
@@ -26,6 +25,20 @@ interface ArticleFormData {
   status: ArticleStatus;
   reference_code: string;
 }
+
+// Simple slug generation function
+const generateSlug = (title: string): string => {
+  return title
+    .toLowerCase()
+    .replace(/[æøå]/g, (match) => {
+      const replacements: { [key: string]: string } = { 'æ': 'ae', 'ø': 'o', 'å': 'a' };
+      return replacements[match] || match;
+    })
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .trim();
+};
 
 const ArticleEditor = () => {
   const { articleId } = useParams<{ articleId: string }>();
