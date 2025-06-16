@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -181,7 +182,8 @@ const RightSidebar = ({ isCollapsed, isExpanded, onToggle, onToggleExpanded }: R
           
           <div className="flex-1 min-h-0 px-2">
             <TabsContent value="revy" className="h-full m-0 p-2 data-[state=inactive]:hidden">
-              <div className="h-full revy-assistant-container">
+              {/* Now using the improved SmartRevyAssistant with all formatting enhancements */}
+              <div className="h-full">
                 <SmartRevyAssistant 
                   embedded={true} 
                   clientData={currentClient}

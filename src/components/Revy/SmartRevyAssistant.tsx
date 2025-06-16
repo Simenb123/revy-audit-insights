@@ -1,29 +1,19 @@
+
 import React, { useState, useEffect, useRef } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Send, Loader2 } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Badge } from "@/components/ui/badge"
-import { cn } from "@/lib/utils"
 import { useToast } from "@/components/ui/use-toast"
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/Auth/AuthProvider';
-import { RevyContext, RevyChatMessage } from '@/types/revio';
+import { RevyContext, RevyChatMessage, RevyMessage } from '@/types/revio';
 import KnowledgeStatusIndicator from './KnowledgeStatusIndicator';
 import { generateEnhancedAIResponse } from '@/services/revy/enhancedAiInteractionService';
 import { useIsMobile } from "@/hooks/use-mobile";
 import RevyAvatar from './RevyAvatar';
-
-// Internal message type for UI display
-interface UIMessage {
-  id: string;
-  sender: 'user' | 'revy';
-  content: string;
-  timestamp: Date;
-}
+import { RevyMessageList } from './Assistant/RevyMessageList';
 
 interface SmartRevyAssistantProps {
   embedded?: boolean;
@@ -32,10 +22,9 @@ interface SmartRevyAssistantProps {
 }
 
 const SmartRevyAssistant = ({ embedded = false, clientData, userRole }: SmartRevyAssistantProps) => {
-  const [messages, setMessages] = useState<UIMessage[]>([]);
+  const [messages, setMessages] = useState<RevyMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const chatContainerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const { session } = useAuth();
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -68,11 +57,11 @@ const SmartRevyAssistant = ({ embedded = false, clientData, userRole }: SmartRev
           if (error) {
             console.error('Error loading messages:', error);
           } else if (data) {
-            const loadedMessages: UIMessage[] = data.map(msg => ({
+            const loadedMessages: RevyMessage[] = data.map(msg => ({
               id: msg.id,
               sender: msg.sender as 'user' | 'revy',
               content: msg.content,
-              timestamp: new Date(msg.created_at),
+              timestamp: msg.created_at,
             }));
             setMessages(loadedMessages);
             console.log(`💬 Loaded ${loadedMessages.length} previous messages from session ${sessionId}`);
@@ -86,13 +75,6 @@ const SmartRevyAssistant = ({ embedded = false, clientData, userRole }: SmartRev
     loadPreviousMessages();
   }, [sessionId, session?.user?.id]);
 
-  useEffect(() => {
-    // Scroll to bottom on new messages
-    if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
-    }
-  }, [messages]);
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInput(e.target.value);
   };
@@ -105,11 +87,11 @@ const SmartRevyAssistant = ({ embedded = false, clientData, userRole }: SmartRev
     setIsLoading(true);
 
     // Add user message to chat
-    const newUserMessage: UIMessage = {
+    const newUserMessage: RevyMessage = {
       id: crypto.randomUUID(),
       sender: 'user',
       content: userMessage,
-      timestamp: new Date(),
+      timestamp: new Date().toISOString(),
     };
 
     const updatedMessages = [...messages, newUserMessage];
@@ -118,7 +100,7 @@ const SmartRevyAssistant = ({ embedded = false, clientData, userRole }: SmartRev
     try {
       console.log('🤖 Generating AI response with enhanced knowledge access...');
       
-      // Convert UI messages to chat history format
+      // Convert messages to chat history format
       const chatHistory = updatedMessages.map(msg => ({
         sender: msg.sender,
         content: msg.content
@@ -134,11 +116,11 @@ const SmartRevyAssistant = ({ embedded = false, clientData, userRole }: SmartRev
         sessionId
       );
 
-      const aiMessage: UIMessage = {
+      const aiMessage: RevyMessage = {
         id: crypto.randomUUID(),
         sender: 'revy',
         content: aiResponse,
-        timestamp: new Date(),
+        timestamp: new Date().toISOString(),
       };
 
       setMessages(prev => [...prev, aiMessage]);
@@ -158,11 +140,11 @@ const SmartRevyAssistant = ({ embedded = false, clientData, userRole }: SmartRev
     } catch (error) {
       console.error('Error getting AI response:', error);
       
-      const errorMessage: UIMessage = {
+      const errorMessage: RevyMessage = {
         id: crypto.randomUUID(),
         sender: 'revy',
         content: 'Beklager, jeg kunne ikke behandle forespørselen din akkurat nå. Vennligst prøv igjen senere.',
-        timestamp: new Date(),
+        timestamp: new Date().toISOString(),
       };
       
       setMessages(prev => [...prev, errorMessage]);
@@ -197,45 +179,13 @@ const SmartRevyAssistant = ({ embedded = false, clientData, userRole }: SmartRev
           </div>
         </div>
         
-        {/* Messages */}
+        {/* Messages - Using the improved RevyMessageList component */}
         <div className="flex-1 min-h-0">
-          <ScrollArea className="h-full">
-            <div ref={chatContainerRef} className={`space-y-4 ${isMobile ? 'p-3' : 'p-4'}`}>
-              {messages.length === 0 && (
-                <div className="text-center py-8">
-                  <RevyAvatar className="mx-auto mb-4" />
-                  <p className={`text-muted-foreground ${isMobile ? 'text-sm' : 'text-base'}`}>
-                    Hei! Jeg er AI-Revy. Spør meg om revisjon, ISA-standarder eller andre faglige spørsmål.
-                  </p>
-                </div>
-              )}
-              
-              {messages.map((msg, index) => (
-                <div key={index} className={`flex gap-3 ${msg.sender === 'user' ? 'flex-row-reverse' : ''}`}>
-                  {msg.sender === 'revy' && <RevyAvatar className="flex-shrink-0" />}
-                  <div className={`flex-1 ${msg.sender === 'user' ? 'text-right' : ''}`}>
-                    <div className={cn(
-                      "inline-block p-3 rounded-lg text-sm break-words max-w-[85%]",
-                      msg.sender === 'user' 
-                        ? "bg-primary text-primary-foreground ml-auto" 
-                        : "bg-muted"
-                    )}>
-                      {msg.content}
-                    </div>
-                  </div>
-                </div>
-              ))}
-              
-              {isLoading && (
-                <div className="flex gap-3">
-                  <RevyAvatar className="flex-shrink-0" />
-                  <div className="bg-muted p-3 rounded-lg">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  </div>
-                </div>
-              )}
-            </div>
-          </ScrollArea>
+          <RevyMessageList 
+            messages={messages} 
+            isTyping={isLoading} 
+            isEmbedded={true}
+          />
         </div>
         
         {/* Input */}
@@ -269,7 +219,7 @@ const SmartRevyAssistant = ({ embedded = false, clientData, userRole }: SmartRev
     );
   }
 
-  // Non-embedded version remains the same
+  // Non-embedded version - also using the improved components
   return (
     <Card className="flex flex-col w-full max-w-2xl mx-auto h-[600px]">
       <CardHeader className="pb-3">
@@ -284,45 +234,37 @@ const SmartRevyAssistant = ({ embedded = false, clientData, userRole }: SmartRev
         </div>
         <KnowledgeStatusIndicator />
       </CardHeader>
-      <CardContent className="p-4 h-full flex-grow">
-        <div ref={chatContainerRef} className="chat-container overflow-y-auto h-[400px] pr-2">
-          {messages.map((msg, index) => (
-            <div key={index} className={`chat-message ${msg.sender === 'user' ? 'user-message' : 'ai-message'}`}>
-              {msg.sender === 'revy' && <RevyAvatar className="mr-2" />}
-              <div className="message-content">
-                <p className="text-sm break-words">{msg.content}</p>
-              </div>
-            </div>
-          ))}
-          {isLoading && (
-            <div className="chat-message ai-message">
-              <RevyAvatar className="mr-2" />
-              <div className="message-content">
-                <p className="text-sm">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                </p>
-              </div>
-            </div>
-          )}
+      <CardContent className="p-0 h-full flex-grow flex flex-col">
+        <div className="flex-1 min-h-0">
+          <RevyMessageList 
+            messages={messages} 
+            isTyping={isLoading} 
+            isEmbedded={false}
+          />
+        </div>
+        <div className="p-4 border-t flex-shrink-0">
+          <div className="flex items-center space-x-2">
+            <Input
+              type="text"
+              placeholder="Spør AI-Revy om hjelp..."
+              value={input}
+              onChange={handleInputChange}
+              onKeyDown={handleKeyDown}
+              disabled={isLoading}
+              className="flex-grow"
+            />
+            <Button 
+              type="submit" 
+              onClick={handleSendMessage} 
+              disabled={isLoading || !input.trim()}
+              className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+            >
+              {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+              {isLoading ? 'Laster...' : 'Send'}
+            </Button>
+          </div>
         </div>
       </CardContent>
-      <div className="p-4 border-t">
-        <div className="flex items-center space-x-2">
-          <Input
-            type="text"
-            placeholder="Spør AI-Revy om hjelp..."
-            value={input}
-            onChange={handleInputChange}
-            onKeyDown={handleKeyDown}
-            disabled={isLoading}
-            className="flex-grow"
-          />
-          <Button type="submit" onClick={handleSendMessage} disabled={isLoading}>
-            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
-            {isLoading ? 'Laster...' : 'Send'}
-          </Button>
-        </div>
-      </div>
     </Card>
   );
 };
