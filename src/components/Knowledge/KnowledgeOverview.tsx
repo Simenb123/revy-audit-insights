@@ -43,10 +43,7 @@ const KnowledgeOverview = () => {
         .order('display_order');
       
       if (error) throw error;
-      return data as (KnowledgeCategory & { 
-        subcategories: { count: number };
-        articles: { count: number };
-      })[];
+      return data;
     },
   });
 
@@ -179,8 +176,8 @@ const KnowledgeOverview = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {mainCategories?.map((category) => {
-              const subcategoriesCount = category.subcategories?.count || 0;
-              const articlesCount = category.articles?.count || 0;
+              const subcategoriesCount = Array.isArray(category.subcategories) ? category.subcategories[0]?.count || 0 : 0;
+              const articlesCount = Array.isArray(category.articles) ? category.articles[0]?.count || 0 : 0;
               
               return (
                 <Card 
