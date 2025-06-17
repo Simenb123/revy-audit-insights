@@ -29,7 +29,7 @@ import {
   Gavel
 } from 'lucide-react';
 
-// Icon mapping for categories
+// Enhanced icon mapping for categories
 const getIconComponent = (iconName?: string) => {
   const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
     'file-check': FileCheck,
@@ -48,6 +48,18 @@ const getIconComponent = (iconName?: string) => {
   }
   
   return Folder; // Default icon
+};
+
+// Color mapping for the new main categories
+const getCategoryColor = (categoryName: string) => {
+  const colorMap: Record<string, string> = {
+    'Revisjon': 'text-blue-600',
+    'Regnskap': 'text-green-600',
+    'Skatt': 'text-purple-600',
+    'Annet': 'text-gray-600'
+  };
+  
+  return colorMap[categoryName] || 'text-blue-600';
 };
 
 const KnowledgeOverview = () => {
@@ -131,7 +143,7 @@ const KnowledgeOverview = () => {
         <div>
           <h1 className="text-2xl font-bold">Kunnskapsbase</h1>
           <p className="text-muted-foreground">
-            Utforsk fagartikler, ISA-standarder og revisjonsguidance
+            Utforsk fagartikler, standarder og veiledninger for revisjon, regnskap og skatt
           </p>
         </div>
         <div className="flex gap-2">
@@ -189,8 +201,8 @@ const KnowledgeOverview = () => {
       <div>
         <h2 className="text-xl font-semibold mb-4">Hovedkategorier</h2>
         {categoriesLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[...Array(6)].map((_, i) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[...Array(4)].map((_, i) => (
               <Card key={i} className="animate-pulse">
                 <CardContent className="p-4">
                   <div className="h-4 bg-gray-200 rounded mb-2"></div>
@@ -200,33 +212,35 @@ const KnowledgeOverview = () => {
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {mainCategories?.map((category) => {
-              const subcategoriesCount = Array.isArray(category.subcategories) ? category.subcategories[0]?.count || 0 : 0;
-              const articlesCount = Array.isArray(category.articles) ? category.articles[0]?.count || 0 : 0;
+              const counts = categoryCounts?.[category.id];
+              const subcategoriesCount = counts?.subcategories || 0;
+              const articlesCount = counts?.articles || 0;
               
-              // Get the icon component
+              // Get the icon component and color
               const IconComponent = getIconComponent(category.icon);
+              const iconColor = getCategoryColor(category.name);
               
               return (
                 <Card 
                   key={category.id} 
-                  className="hover:shadow-md transition-shadow cursor-pointer"
+                  className="hover:shadow-md transition-shadow cursor-pointer h-full"
                   onClick={() => navigate(`/fag/kategori/${category.id}`)}
                 >
-                  <CardContent className="p-4">
+                  <CardContent className="p-4 h-full flex flex-col">
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex items-center gap-2">
-                        <IconComponent className="w-5 h-5 text-blue-600" />
+                        <IconComponent className={`w-5 h-5 ${iconColor}`} />
                         <h3 className="font-semibold">{category.name}</h3>
                       </div>
                     </div>
                     
                     {category.description && (
-                      <p className="text-sm text-muted-foreground mb-3">{category.description}</p>
+                      <p className="text-sm text-muted-foreground mb-3 flex-grow">{category.description}</p>
                     )}
                     
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-4 text-xs text-muted-foreground mt-auto">
                       <div className="flex items-center gap-1">
                         <Folder className="w-3 h-3" />
                         <span>{subcategoriesCount} kategorier</span>
@@ -287,19 +301,26 @@ const KnowledgeOverview = () => {
         )}
       </div>
 
-      {/* AI-Revy Integration Notice */}
+      {/* Quick Access Section */}
       <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
         <CardContent className="p-4">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 mb-3">
             <Sparkles className="h-5 w-5 text-blue-600" />
-            <div>
-              <h3 className="font-semibold text-blue-900">AI-Revy integrering</h3>
-              <p className="text-sm text-blue-700">
-                Alle artikler er optimalisert for AI-Revy søk og anbefalinger. 
-                Bruk <Link to="/fag/admin" className="underline font-medium">administrasjonspanelet</Link> for 
-                å optimalisere kategoristruktur og tags.
-              </p>
-            </div>
+            <h3 className="font-semibold text-blue-900">Hurtigtilgang</h3>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            <Button variant="outline" size="sm" asChild className="text-xs">
+              <Link to="/fag/sok?q=ISA">ISA-standarder</Link>
+            </Button>
+            <Button variant="outline" size="sm" asChild className="text-xs">
+              <Link to="/fag/sok?q=NRS">NRS-standarder</Link>
+            </Button>
+            <Button variant="outline" size="sm" asChild className="text-xs">
+              <Link to="/fag/sok?q=regnskapsloven">Regnskapsloven</Link>
+            </Button>
+            <Button variant="outline" size="sm" asChild className="text-xs">
+              <Link to="/fag/admin">Administrasjon</Link>
+            </Button>
           </div>
         </CardContent>
       </Card>

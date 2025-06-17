@@ -53,7 +53,6 @@ const CategoryManager = () => {
 
   const updateCategoryMutation = useMutation({
     mutationFn: async (category: Partial<KnowledgeCategory> & { id: string }) => {
-      // Clean the category data to match database schema
       const cleanCategory = {
         name: category.name,
         description: category.description,
@@ -82,7 +81,6 @@ const CategoryManager = () => {
 
   const createCategoryMutation = useMutation({
     mutationFn: async (category: Omit<KnowledgeCategory, 'id' | 'created_at' | 'updated_at'>) => {
-      // Clean the category data to match database schema
       const cleanCategory = {
         name: category.name,
         description: category.description,
@@ -110,7 +108,6 @@ const CategoryManager = () => {
 
   const deleteCategoryMutation = useMutation({
     mutationFn: async (categoryId: string) => {
-      // First check if category has articles
       const { data: articlesInCategory } = await supabase
         .from('knowledge_articles')
         .select('id')
@@ -228,6 +225,12 @@ const CategoryManager = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
+          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <h4 className="font-medium text-blue-900 mb-2">Hovedkategorier</h4>
+            <p className="text-sm text-blue-700">
+              1. Revisjon • 2. Regnskap • 3. Skatt • 4. Annet
+            </p>
+          </div>
           <TreeView>
             {renderCategoryTree(categoryTree)}
           </TreeView>
@@ -443,13 +446,22 @@ const CategoryForm = ({
       </div>
 
       <div>
-        <Label htmlFor="icon">Ikon</Label>
-        <Input
-          id="icon"
-          value={formData.icon}
-          onChange={(e) => setFormData(prev => ({ ...prev, icon: e.target.value }))}
-          placeholder="📚"
-        />
+        <Label htmlFor="icon">Ikon (valgfritt)</Label>
+        <Select 
+          value={formData.icon} 
+          onValueChange={(value) => setFormData(prev => ({ ...prev, icon: value }))}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Velg ikon" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="folder">📁 Mappe</SelectItem>
+            <SelectItem value="file-text">📄 Dokument</SelectItem>
+            <SelectItem value="calculator">🧮 Kalkulator</SelectItem>
+            <SelectItem value="shield-check">🛡️ Sikkerhet</SelectItem>
+            <SelectItem value="scale">⚖️ Vekt</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="flex gap-2">
