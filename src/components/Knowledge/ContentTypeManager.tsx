@@ -36,7 +36,10 @@ const ContentTypeManager = () => {
     { id: '7', name: 'dom', display_name: 'Dom', description: 'Rettsavgjørelser og dommer', icon: 'scale', color: '#EF4444', sort_order: 7, is_active: true }
   ]);
 
-  const handleSubmit = (formData: FormData) => {
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    
     const typeData = {
       id: editingType?.id || Date.now().toString(),
       name: formData.get('name') as string,
@@ -88,7 +91,7 @@ const ContentTypeManager = () => {
                   {editingType ? 'Rediger innholdstype' : 'Ny innholdstype'}
                 </DialogTitle>
               </DialogHeader>
-              <form action={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <Label htmlFor="name">Navn (teknisk)</Label>
                   <Input

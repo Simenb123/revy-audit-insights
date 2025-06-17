@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -543,7 +542,6 @@ const ArticleEditor = () => {
                   <RichTextEditor
                     content={field.value}
                     onChange={field.onChange}
-                    placeholder="Skriv artikkelinnholdet her..."
                   />
                 )}
               />

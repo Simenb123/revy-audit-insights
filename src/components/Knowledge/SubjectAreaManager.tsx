@@ -33,7 +33,10 @@ const SubjectAreaManager = () => {
     { id: '4', name: 'annet', display_name: 'Annet', description: 'Øvrige fagområder og tverrgående temaer', icon: 'folder', color: '#6B7280', sort_order: 4, is_active: true }
   ]);
 
-  const handleSubmit = (formData: FormData) => {
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    
     const areaData = {
       id: editingArea?.id || Date.now().toString(),
       name: formData.get('name') as string,
@@ -85,7 +88,7 @@ const SubjectAreaManager = () => {
                   {editingArea ? 'Rediger emneområde' : 'Nytt emneområde'}
                 </DialogTitle>
               </DialogHeader>
-              <form action={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <Label htmlFor="name">Navn (teknisk)</Label>
                   <Input

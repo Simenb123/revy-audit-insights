@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 import { supabase } from '@/integrations/supabase/client';
-import { KnowledgeCategory, KnowledgeArticle } from '@/types/knowledge';
+import { KnowledgeCategory, KnowledgeArticle, ContentType } from '@/types/knowledge';
 import ContentTypeBadge from './ContentTypeBadge';
 import { Plus, Clock, Eye } from 'lucide-react';
 
@@ -168,7 +168,7 @@ const CategoryView = () => {
                         {article.title}
                       </h3>
                       {article.content_type && (
-                        <ContentTypeBadge contentType={article.content_type} />
+                        <ContentTypeBadge contentType={article.content_type as ContentType} />
                       )}
                     </div>
                     {article.summary && (

@@ -65,11 +65,11 @@ export interface KnowledgeArticle {
   updated_at: string;
   published_at?: string;
   category?: Partial<KnowledgeCategory>;
-  content_type?: Partial<ContentTypeEntity>;
+  content_type_entity?: Partial<ContentTypeEntity>;
   subject_areas?: SubjectArea[];
   embedding?: any;
   reference_code?: string;
-  content_type?: ContentType; // Legacy field
+  content_type?: ContentType; // Legacy field for backward compatibility
 }
 
 export interface KnowledgeFavorite {
