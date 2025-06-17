@@ -94,20 +94,21 @@ export const MessageContentParser = ({ content, isEmbedded = false }: MessageCon
 
     console.log('🔍 Processing content lines:', lines.length);
 
-    // Extract article mappings and tags using improved extraction
+    // Extract article mappings and tags FIRST
     const articleMappings = extractArticleMappings(content);
     console.log('📎 Extracted article mappings:', Object.keys(articleMappings));
     
     const tagExtraction = extractTagsFromContent(content);
     const extractedTags = tagExtraction.tags;
     
-    console.log('🏷️ Enhanced tag extraction result:', {
+    console.log('🏷️ CRITICAL: Tag extraction result:', {
       tags: extractedTags,
       hasValidFormat: tagExtraction.hasValidFormat,
-      extractedFrom: tagExtraction.extractedFrom
+      extractedFrom: tagExtraction.extractedFrom,
+      tagCount: extractedTags.length
     });
 
-    // Process each line but skip EMNER lines since we'll add tags inline
+    // Process each line but skip EMNER lines since we'll add tags separately
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
       const trimmedLine = line.trim();
@@ -122,9 +123,9 @@ export const MessageContentParser = ({ content, isEmbedded = false }: MessageCon
         continue;
       }
 
-      // Skip the EMNER line since we'll add it as clickable tags inline
+      // Skip the EMNER line since we'll add it as clickable tags separately
       if (/🏷️.*[Ee][Mm][Nn][Ee][Rr]|[Ee][Mm][Nn][Ee][Rr]:/i.test(trimmedLine)) {
-        console.log('⏭️ Skipping EMNER line since we will add clickable tags inline');
+        console.log('⏭️ Skipping EMNER line, will render separately');
         continue;
       }
 
@@ -322,92 +323,74 @@ export const MessageContentParser = ({ content, isEmbedded = false }: MessageCon
       );
     }
 
-    // 🎯 CRITICAL FIX: Always add clickable tags IMMEDIATELY after content processing
-    if (extractedTags && extractedTags.length > 0) {
-      console.log('🎉 GUARANTEED: Rendering inline clickable tags section with', extractedTags.length, 'tags');
-      
-      processedElements.push(
-        <div 
-          key="guaranteed-inline-tags" 
-          className="mt-6 p-4 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 rounded-xl border border-blue-200 shadow-sm"
-        >
-          <div className="flex items-center gap-2 mb-3">
-            <Tag className="h-5 w-5 text-blue-700" />
-            <span className={`font-bold text-blue-800 ${isEmbedded ? 'text-sm' : 'text-base'}`}>
-              Emner
-            </span>
-            <span className="text-blue-600 text-xs opacity-75">
-              Klikk for å utforske
-            </span>
-          </div>
-          
-          <div className="flex flex-wrap gap-2">
-            {extractedTags.map((tag, tagIndex) => {
-              const hasMapping = articleMappings[tag] || 
-                Object.keys(articleMappings).some(key => 
-                  key.toLowerCase() === tag.toLowerCase() || 
-                  key.toLowerCase().includes(tag.toLowerCase()) ||
-                  tag.toLowerCase().includes(key.toLowerCase())
-                );
-              
-              return (
-                <Badge 
-                  key={`guaranteed-tag-${tagIndex}`} 
-                  variant="secondary" 
-                  className={`
-                    ${hasMapping 
-                      ? 'bg-blue-600 text-white hover:bg-blue-700 border border-blue-700 shadow-md' 
-                      : 'bg-gray-600 text-white hover:bg-gray-700 border border-gray-700 shadow-md'
-                    } 
-                    cursor-pointer transition-all duration-200 transform hover:scale-105 hover:shadow-lg 
-                    font-medium px-3 py-1.5 text-xs flex items-center gap-1.5
-                  `}
-                  onClick={() => handleTagClick(tag, articleMappings)}
-                  title={hasMapping ? `Klikk for å åpne fagartikkel om ${tag}` : `Klikk for å søke etter ${tag}`}
-                >
-                  {hasMapping && <FileText className="w-3 h-3" />}
-                  {tag}
-                  <ExternalLink className="w-3 h-3 opacity-60" />
-                </Badge>
-              );
-            })}
-          </div>
-          
-          {!tagExtraction.hasValidFormat && (
-            <div className="mt-2 text-xs text-blue-600 opacity-50">
-              Automatisk generert fra innhold
-            </div>
-          )}
-        </div>
-      );
-    } else {
-      console.log('🚨 NO TAGS EXTRACTED - This should not happen with enhanced extraction');
-      
-      // Force add at least basic tags as fallback
-      const basicTags = ['Revisjon', 'Fagstoff'];
-      processedElements.push(
-        <div key="fallback-tags" className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-          <div className="flex items-center gap-2 mb-2">
-            <Tag className="h-4 w-4 text-yellow-700" />
-            <span className="font-medium text-yellow-800 text-sm">Emner (automatisk generert)</span>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {basicTags.map((tag, index) => (
-              <Badge 
-                key={`fallback-${index}`}
-                variant="secondary" 
-                className="bg-yellow-600 text-white hover:bg-yellow-700 cursor-pointer"
-                onClick={() => handleTagClick(tag, articleMappings)}
-              >
-                {tag}
-              </Badge>
-            ))}
-          </div>
-        </div>
-      );
+    // 🚨 FORCE RENDER TAGS - This must ALWAYS happen regardless of extraction success
+    console.log('🚨 FORCING tag rendering section...');
+    
+    let tagsToRender = extractedTags;
+    
+    // If no tags extracted, use intelligent fallback
+    if (!tagsToRender || tagsToRender.length === 0) {
+      console.log('⚠️ No tags extracted, using fallback tags');
+      tagsToRender = ['Revisjon', 'Fagstoff']; // Basic fallback
     }
+    
+    console.log('🎯 FINAL: Will render these tags:', tagsToRender);
+    
+    // ALWAYS add the clickable tags section
+    processedElements.push(
+      <div 
+        key="FORCED-clickable-tags" 
+        className="mt-6 p-4 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 rounded-xl border border-blue-200 shadow-sm"
+      >
+        <div className="flex items-center gap-2 mb-3">
+          <Tag className="h-5 w-5 text-blue-700" />
+          <span className={`font-bold text-blue-800 ${isEmbedded ? 'text-sm' : 'text-base'}`}>
+            Emner
+          </span>
+          <span className="text-blue-600 text-xs opacity-75">
+            Klikk for å utforske
+          </span>
+        </div>
+        
+        <div className="flex flex-wrap gap-2">
+          {tagsToRender.map((tag, tagIndex) => {
+            const hasMapping = articleMappings[tag] || 
+              Object.keys(articleMappings).some(key => 
+                key.toLowerCase() === tag.toLowerCase() || 
+                key.toLowerCase().includes(tag.toLowerCase()) ||
+                tag.toLowerCase().includes(key.toLowerCase())
+              );
+            
+            return (
+              <Badge 
+                key={`FORCED-tag-${tagIndex}`} 
+                variant="secondary" 
+                className={`
+                  ${hasMapping 
+                    ? 'bg-blue-600 text-white hover:bg-blue-700 border border-blue-700 shadow-md' 
+                    : 'bg-gray-600 text-white hover:bg-gray-700 border border-gray-700 shadow-md'
+                  } 
+                  cursor-pointer transition-all duration-200 transform hover:scale-105 hover:shadow-lg 
+                  font-medium px-3 py-1.5 text-xs flex items-center gap-1.5
+                `}
+                onClick={() => handleTagClick(tag, articleMappings)}
+                title={hasMapping ? `Klikk for å åpne fagartikkel om ${tag}` : `Klikk for å søke etter ${tag}`}
+              >
+                {hasMapping && <FileText className="w-3 h-3" />}
+                {tag}
+                <ExternalLink className="w-3 h-3 opacity-60" />
+              </Badge>
+            );
+          })}
+        </div>
+        
+        <div className="mt-2 text-xs text-blue-600 opacity-50">
+          {tagExtraction.hasValidFormat ? 'Fra AI-respons' : 'Automatisk generert'}
+        </div>
+      </div>
+    );
 
-    console.log('✅ Finished processing content with GUARANTEED tag rendering, created', processedElements.length, 'elements');
+    console.log('✅ FINAL: Created', processedElements.length, 'elements including FORCED tags section');
     return processedElements;
   };
 
