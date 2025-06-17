@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { FileText, ExternalLink, Tag, Copy, Check, Book, Scale, FileCode, Gavel } from 'lucide-react';
@@ -430,15 +431,17 @@ export const MessageContentParser = ({ content, isEmbedded = false }: MessageCon
         
         <div className="flex flex-wrap gap-2">
           {tagsToRender.map((tag, tagIndex) => {
-            const mapping = articleMappings[tag] || 
+            // Find matching key in articleMappings
+            const matchingKey = articleMappings[tag] ? tag : 
               Object.keys(articleMappings).find(key => 
                 key.toLowerCase() === tag.toLowerCase() || 
                 key.toLowerCase().includes(tag.toLowerCase()) ||
                 tag.toLowerCase().includes(key.toLowerCase())
               );
             
-            const hasMapping = !!mapping;
-            const contentType = hasMapping ? articleMappings[mapping]?.contentType : contentTypes[0];
+            const hasMapping = !!matchingKey;
+            const mapping = matchingKey ? articleMappings[matchingKey] : null;
+            const contentType = mapping?.contentType || contentTypes[0];
             const contentTypeConfig = getContentTypeConfig(contentType);
             const IconComponent = contentTypeConfig.icon;
             
