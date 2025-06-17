@@ -9,6 +9,7 @@ interface KnowledgeSearchResult {
   tags: string[];
   reference_code: string;
   relevanceScore: number;
+  contentType: string; // NEW: Added content type classification
 }
 
 interface ArticleTagMapping {
@@ -16,6 +17,8 @@ interface ArticleTagMapping {
   articleTitle: string;
   matchedTags: string[];
   relevanceScore: number;
+  contentType: string; // NEW: Added content type
+  category: string; // NEW: Added category
 }
 
 interface EnhancedKnowledgeResult {
@@ -29,7 +32,7 @@ export async function searchKnowledgeIntelligently(
   clientData?: any
 ): Promise<EnhancedKnowledgeResult> {
   try {
-    console.log('🔍 Starting intelligent knowledge search with article mapping...');
+    console.log('🔍 Starting intelligent knowledge search with enhanced categorization...');
     console.log(`📝 Message: "${message}"`);
     console.log(`🎯 Context: "${context}"`);
     
@@ -81,7 +84,7 @@ export async function searchKnowledgeIntelligently(
       if (broadArticles && broadArticles.length > 0) {
         console.log(`✅ Broad search found ${broadArticles.length} articles`);
         const formattedArticles = formatArticleResults(broadArticles);
-        const tagMapping = createTagToArticleMapping(formattedArticles, keywords);
+        const tagMapping = createEnhancedTagToArticleMapping(formattedArticles, keywords);
         return { articles: formattedArticles, tagToArticleMap: tagMapping };
       }
 
@@ -140,12 +143,13 @@ export async function searchKnowledgeIntelligently(
 
     console.log(`✅ Found ${articles.length} relevant articles`);
 
-    // Enhanced formatting with relevance scoring and summary fallback
+    // Enhanced formatting with relevance scoring and content type classification
     const results = articles.map(article => {
       try {
         const categoryName = getCategoryName(article.category);
         const tagsList = getTagsList(article.tags);
         const relevanceScore = calculateRelevanceScore(message, article, keywords);
+        const contentType = classifyContentType(article, categoryName);
 
         // Create summary from content if missing
         let summary = String(article.summary || '');
@@ -164,7 +168,8 @@ export async function searchKnowledgeIntelligently(
           category: categoryName,
           tags: tagsList,
           reference_code: String(article.reference_code || ''),
-          relevanceScore
+          relevanceScore,
+          contentType
         };
       } catch (error) {
         console.error('❌ Error formatting article:', article?.id || 'unknown', error);
@@ -175,22 +180,59 @@ export async function searchKnowledgeIntelligently(
           category: 'Ukategoriseret',
           tags: [],
           reference_code: '',
-          relevanceScore: 0
+          relevanceScore: 0,
+          contentType: 'fagartikkel'
         };
       }
     }).filter(result => result.relevanceScore > 0)
       .sort((a, b) => b.relevanceScore - a.relevanceScore);
 
-    // Create enhanced tag-to-article mapping
-    const tagMapping = createTagToArticleMapping(results, keywords);
+    // Create enhanced tag-to-article mapping with content types
+    const tagMapping = createEnhancedTagToArticleMapping(results, keywords);
 
-    console.log(`📊 Returning ${results.length} scored and sorted articles with enhanced tag mappings`);
+    console.log(`📊 Returning ${results.length} scored and sorted articles with enhanced categorization`);
     return { articles: results, tagToArticleMap: tagMapping };
 
   } catch (error) {
     console.error('💥 Knowledge search failed:', error);
     return { articles: [], tagToArticleMap: {} };
   }
+}
+
+function classifyContentType(article: any, categoryName: string): string {
+  const title = String(article.title || '').toLowerCase();
+  const refCode = String(article.reference_code || '').toLowerCase();
+  const category = categoryName.toLowerCase();
+  
+  // ISA Standards
+  if (refCode.includes('isa') || title.includes('isa ') || category.includes('isa')) {
+    return 'isa-standard';
+  }
+  
+  // NRS Standards  
+  if (refCode.includes('nrs') || title.includes('nrs ') || category.includes('nrs')) {
+    return 'nrs-standard';
+  }
+  
+  // Laws and regulations
+  if (title.includes('lov') || title.includes('loven') || category.includes('lov') || 
+      title.includes('forskrift') || category.includes('forskrift')) {
+    return 'lov';
+  }
+  
+  // Preparatory works
+  if (title.includes('forarbeider') || title.includes('innstilling') || 
+      title.includes('proposisjon') || category.includes('forarbeider')) {
+    return 'forarbeider';
+  }
+  
+  // Regulations
+  if (title.includes('forskrift') || category.includes('forskrift')) {
+    return 'forskrift';
+  }
+  
+  // Default to professional article
+  return 'fagartikkel';
 }
 
 function formatArticleResults(articles: any[]): KnowledgeSearchResult[] {
@@ -203,19 +245,23 @@ function formatArticleResults(articles: any[]): KnowledgeSearchResult[] {
       summary = sentences.slice(0, 2).join('. ').substring(0, 200) + '...';
     }
     
+    const categoryName = getCategoryName(article.category);
+    const contentType = classifyContentType(article, categoryName);
+    
     return {
       title: String(article.title || 'Uten tittel'),
       summary,
       slug: String(article.slug || ''),
-      category: getCategoryName(article.category),
+      category: categoryName,
       tags: getTagsList(article.tags),
       reference_code: String(article.reference_code || ''),
-      relevanceScore: 1
+      relevanceScore: 1,
+      contentType
     };
   });
 }
 
-function createTagToArticleMapping(articles: KnowledgeSearchResult[], keywords: string[]): Record<string, ArticleTagMapping> {
+function createEnhancedTagToArticleMapping(articles: KnowledgeSearchResult[], keywords: string[]): Record<string, ArticleTagMapping> {
   const mapping: Record<string, ArticleTagMapping> = {};
   
   // For each keyword/tag, find the best matching article
@@ -271,7 +317,9 @@ function createTagToArticleMapping(articles: KnowledgeSearchResult[], keywords: 
         matchedTags: bestMatch.tags.filter(tag => 
           tag.toLowerCase().includes(keywordLower) || keywordLower.includes(tag.toLowerCase())
         ),
-        relevanceScore: bestScore
+        relevanceScore: bestScore,
+        contentType: bestMatch.contentType,
+        category: bestMatch.category
       };
     }
   });
@@ -293,7 +341,9 @@ function createTagToArticleMapping(articles: KnowledgeSearchResult[], keywords: 
           articleSlug: bestArticle.slug,
           articleTitle: bestArticle.title,
           matchedTags: bestArticle.tags.filter(tag => tag.toLowerCase().includes(term)),
-          relevanceScore: 1
+          relevanceScore: 1,
+          contentType: bestArticle.contentType,
+          category: bestArticle.category
         };
       }
     }

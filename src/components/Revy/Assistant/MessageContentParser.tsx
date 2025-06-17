@@ -1,6 +1,6 @@
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
-import { FileText, ExternalLink, Tag, Copy, Check } from 'lucide-react';
+import { FileText, ExternalLink, Tag, Copy, Check, Book, Scale, FileCode, Gavel } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -17,13 +17,67 @@ interface ArticleMapping {
   articleTitle: string;
   matchedTags: string[];
   relevanceScore: number;
+  contentType?: string;
+  category?: string;
 }
+
+// Content type configuration with colors and icons
+const CONTENT_TYPE_CONFIG = {
+  'fagartikkel': {
+    label: 'Fagartikkel',
+    icon: FileText,
+    bgColor: 'bg-blue-600',
+    hoverColor: 'hover:bg-blue-700',
+    borderColor: 'border-blue-700',
+    textColor: 'text-white'
+  },
+  'lov': {
+    label: 'Lov',
+    icon: Scale,
+    bgColor: 'bg-green-600',
+    hoverColor: 'hover:bg-green-700',
+    borderColor: 'border-green-700',
+    textColor: 'text-white'
+  },
+  'isa-standard': {
+    label: 'ISA-standard',
+    icon: FileCode,
+    bgColor: 'bg-purple-600',
+    hoverColor: 'hover:bg-purple-700',
+    borderColor: 'border-purple-700',
+    textColor: 'text-white'
+  },
+  'nrs-standard': {
+    label: 'NRS-standard',
+    icon: Book,
+    bgColor: 'bg-indigo-600',
+    hoverColor: 'hover:bg-indigo-700',
+    borderColor: 'border-indigo-700',
+    textColor: 'text-white'
+  },
+  'forskrift': {
+    label: 'Forskrift',
+    icon: Gavel,
+    bgColor: 'bg-orange-600',
+    hoverColor: 'hover:bg-orange-700',
+    borderColor: 'border-orange-700',
+    textColor: 'text-white'
+  },
+  'forarbeider': {
+    label: 'Forarbeider',
+    icon: FileText,
+    bgColor: 'bg-gray-600',
+    hoverColor: 'hover:bg-gray-700',
+    borderColor: 'border-gray-700',
+    textColor: 'text-white'
+  }
+};
 
 export const MessageContentParser = ({ content, isEmbedded = false }: MessageContentParserProps) => {
   const [copiedBlocks, setCopiedBlocks] = useState<Set<number>>(new Set());
   const navigate = useNavigate();
 
-  console.log('🔍 MessageContentParser processing content:', content.substring(0, 100) + '...');
+  console.log('🔍 MessageContentParser processing content with enhanced categorization:', content.substring(0, 100) + '...');
 
   const copyToClipboard = async (text: string, blockIndex: number) => {
     try {
@@ -54,7 +108,12 @@ export const MessageContentParser = ({ content, isEmbedded = false }: MessageCon
     return {};
   };
 
-  // Handle tag click with article navigation
+  // Get content type config with fallback
+  const getContentTypeConfig = (contentType?: string) => {
+    return CONTENT_TYPE_CONFIG[contentType as keyof typeof CONTENT_TYPE_CONFIG] || CONTENT_TYPE_CONFIG.fagartikkel;
+  };
+
+  // Handle tag click with enhanced content type awareness
   const handleTagClick = (tag: string, articleMappings: Record<string, ArticleMapping>) => {
     console.log('🏷️ Tag clicked:', tag);
     
@@ -77,9 +136,10 @@ export const MessageContentParser = ({ content, isEmbedded = false }: MessageCon
     }
     
     if (mapping && mapping.articleSlug) {
-      console.log('📖 Navigating to article:', mapping.articleTitle);
+      const contentTypeConfig = getContentTypeConfig(mapping.contentType);
+      console.log('📖 Navigating to article:', mapping.articleTitle, 'Type:', mapping.contentType);
       navigate(`/fag/artikkel/${mapping.articleSlug}`);
-      toast.success(`Åpner fagartikkel: ${mapping.articleTitle}`);
+      toast.success(`Åpner ${contentTypeConfig.label.toLowerCase()}: ${mapping.articleTitle}`);
     } else {
       console.log('❌ No article mapping found for tag:', tag);
       toast.info(`Søker etter: ${tag}`);
@@ -92,7 +152,7 @@ export const MessageContentParser = ({ content, isEmbedded = false }: MessageCon
     const processedElements: React.ReactElement[] = [];
     let currentBlockIndex = 0;
 
-    console.log('🔍 Processing content lines:', lines.length);
+    console.log('🔍 Processing content lines with enhanced categorization:', lines.length);
 
     // Extract article mappings and tags FIRST
     const articleMappings = extractArticleMappings(content);
@@ -100,9 +160,11 @@ export const MessageContentParser = ({ content, isEmbedded = false }: MessageCon
     
     const tagExtraction = extractTagsFromContent(content);
     const extractedTags = tagExtraction.tags;
+    const contentTypes = tagExtraction.contentTypes || ['fagartikkel'];
     
-    console.log('🏷️ CRITICAL: Tag extraction result:', {
+    console.log('🏷️ ENHANCED: Tag extraction result:', {
       tags: extractedTags,
+      contentTypes: contentTypes,
       hasValidFormat: tagExtraction.hasValidFormat,
       extractedFrom: tagExtraction.extractedFrom,
       tagCount: extractedTags.length
@@ -125,7 +187,7 @@ export const MessageContentParser = ({ content, isEmbedded = false }: MessageCon
 
       // Skip the EMNER line since we'll add it as clickable tags separately
       if (/🏷️.*[Ee][Mm][Nn][Ee][Rr]|[Ee][Mm][Nn][Ee][Rr]:/i.test(trimmedLine)) {
-        console.log('⏭️ Skipping EMNER line, will render separately');
+        console.log('⏭️ Skipping EMNER line, will render separately with content types');
         continue;
       }
 
@@ -253,7 +315,7 @@ export const MessageContentParser = ({ content, isEmbedded = false }: MessageCon
         continue;
       }
 
-      // Article links
+      // Article links with enhanced content type display
       const articleLinkRegex = /\[([^\]]+)\]\(\/fag\/artikkel\/([^)]+)\)/g;
       if (articleLinkRegex.test(trimmedLine)) {
         const matches = [...trimmedLine.matchAll(articleLinkRegex)];
@@ -262,20 +324,29 @@ export const MessageContentParser = ({ content, isEmbedded = false }: MessageCon
           <div key={`articles-${i}`} className="my-3">
             <div className="flex items-center gap-2 text-blue-800 font-medium mb-2">
               <FileText className="h-4 w-4" />
-              <span className={isEmbedded ? 'text-sm' : 'text-base'}>Relevante fagartikler:</span>
+              <span className={isEmbedded ? 'text-sm' : 'text-base'}>Relevante artikler:</span>
             </div>
             <div className="flex flex-wrap gap-2">
-              {matches.map((match, matchIndex) => (
-                <a
-                  key={`article-${i}-${matchIndex}`}
-                  href={`/fag/artikkel/${match[2]}`}
-                  className="inline-flex items-center gap-1.5 text-blue-600 hover:text-blue-800 font-medium hover:underline bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-md transition-colors duration-200 group"
-                >
-                  <FileText className="h-3 w-3" />
-                  <span className={isEmbedded ? 'text-xs' : 'text-sm'}>{match[1]}</span>
-                  <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
-                </a>
-              ))}
+              {matches.map((match, matchIndex) => {
+                // Try to determine content type from article mappings
+                const slug = match[2];
+                const matchedMapping = Object.values(articleMappings).find(m => m.articleSlug === slug);
+                const contentTypeConfig = getContentTypeConfig(matchedMapping?.contentType);
+                const IconComponent = contentTypeConfig.icon;
+                
+                return (
+                  <a
+                    key={`article-${i}-${matchIndex}`}
+                    href={`/fag/artikkel/${match[2]}`}
+                    className={`inline-flex items-center gap-1.5 font-medium hover:underline px-3 py-1.5 rounded-md transition-colors duration-200 group shadow-sm ${contentTypeConfig.bgColor} ${contentTypeConfig.hoverColor} ${contentTypeConfig.textColor}`}
+                  >
+                    <IconComponent className="h-3 w-3" />
+                    <span className={isEmbedded ? 'text-xs' : 'text-sm'}>{match[1]}</span>
+                    <span className="text-xs opacity-75">({contentTypeConfig.label})</span>
+                    <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </a>
+                );
+              })}
             </div>
           </div>
         );
@@ -323,8 +394,8 @@ export const MessageContentParser = ({ content, isEmbedded = false }: MessageCon
       );
     }
 
-    // 🚨 FORCE RENDER TAGS - This must ALWAYS happen regardless of extraction success
-    console.log('🚨 FORCING tag rendering section...');
+    // 🚨 ENHANCED TAGS SECTION with content type awareness
+    console.log('🚨 ENHANCED: Rendering tags section with content types...');
     
     let tagsToRender = extractedTags;
     
@@ -334,12 +405,12 @@ export const MessageContentParser = ({ content, isEmbedded = false }: MessageCon
       tagsToRender = ['Revisjon', 'Fagstoff']; // Basic fallback
     }
     
-    console.log('🎯 FINAL: Will render these tags:', tagsToRender);
+    console.log('🎯 FINAL: Will render these tags with content types:', tagsToRender, 'Content types:', contentTypes);
     
-    // ALWAYS add the clickable tags section
+    // ALWAYS add the enhanced clickable tags section
     processedElements.push(
       <div 
-        key="FORCED-clickable-tags" 
+        key="ENHANCED-clickable-tags" 
         className="mt-6 p-4 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 rounded-xl border border-blue-200 shadow-sm"
       >
         <div className="flex items-center gap-2 mb-3">
@@ -350,33 +421,43 @@ export const MessageContentParser = ({ content, isEmbedded = false }: MessageCon
           <span className="text-blue-600 text-xs opacity-75">
             Klikk for å utforske
           </span>
+          {contentTypes.length > 0 && (
+            <span className="text-xs text-gray-600 ml-2">
+              ({contentTypes.map(type => CONTENT_TYPE_CONFIG[type as keyof typeof CONTENT_TYPE_CONFIG]?.label || type).join(', ')})
+            </span>
+          )}
         </div>
         
         <div className="flex flex-wrap gap-2">
           {tagsToRender.map((tag, tagIndex) => {
-            const hasMapping = articleMappings[tag] || 
-              Object.keys(articleMappings).some(key => 
+            const mapping = articleMappings[tag] || 
+              Object.keys(articleMappings).find(key => 
                 key.toLowerCase() === tag.toLowerCase() || 
                 key.toLowerCase().includes(tag.toLowerCase()) ||
                 tag.toLowerCase().includes(key.toLowerCase())
               );
             
+            const hasMapping = !!mapping;
+            const contentType = hasMapping ? articleMappings[mapping]?.contentType : contentTypes[0];
+            const contentTypeConfig = getContentTypeConfig(contentType);
+            const IconComponent = contentTypeConfig.icon;
+            
             return (
               <Badge 
-                key={`FORCED-tag-${tagIndex}`} 
+                key={`ENHANCED-tag-${tagIndex}`} 
                 variant="secondary" 
                 className={`
                   ${hasMapping 
-                    ? 'bg-blue-600 text-white hover:bg-blue-700 border border-blue-700 shadow-md' 
+                    ? `${contentTypeConfig.bgColor} ${contentTypeConfig.textColor} ${contentTypeConfig.hoverColor} border ${contentTypeConfig.borderColor} shadow-md` 
                     : 'bg-gray-600 text-white hover:bg-gray-700 border border-gray-700 shadow-md'
                   } 
                   cursor-pointer transition-all duration-200 transform hover:scale-105 hover:shadow-lg 
                   font-medium px-3 py-1.5 text-xs flex items-center gap-1.5
                 `}
                 onClick={() => handleTagClick(tag, articleMappings)}
-                title={hasMapping ? `Klikk for å åpne fagartikkel om ${tag}` : `Klikk for å søke etter ${tag}`}
+                title={hasMapping ? `Klikk for å åpne ${contentTypeConfig.label.toLowerCase()}: ${tag}` : `Klikk for å søke etter ${tag}`}
               >
-                {hasMapping && <FileText className="w-3 h-3" />}
+                <IconComponent className="w-3 h-3" />
                 {tag}
                 <ExternalLink className="w-3 h-3 opacity-60" />
               </Badge>
@@ -385,12 +466,12 @@ export const MessageContentParser = ({ content, isEmbedded = false }: MessageCon
         </div>
         
         <div className="mt-2 text-xs text-blue-600 opacity-50">
-          {tagExtraction.hasValidFormat ? 'Fra AI-respons' : 'Automatisk generert'}
+          {tagExtraction.hasValidFormat ? 'Fra AI-respons' : 'Automatisk generert'} • {contentTypes.join(', ')}
         </div>
       </div>
     );
 
-    console.log('✅ FINAL: Created', processedElements.length, 'elements including FORCED tags section');
+    console.log('✅ ENHANCED: Created', processedElements.length, 'elements including enhanced tags section with content types');
     return processedElements;
   };
 
