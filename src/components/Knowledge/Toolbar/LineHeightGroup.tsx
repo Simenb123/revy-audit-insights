@@ -12,7 +12,7 @@ const lineHeights = ['1', '1.2', '1.5', '1.75', '2', '2.5', '3'];
 
 const LineHeightGroup = ({ editor }: Props) => {
   const handleLineHeightChange = (height: string) => {
-    if (height === 'default') {
+    if (height === 'unset') {
       editor.chain().focus().unsetLineHeight().run();
     } else {
       editor.chain().focus().setLineHeight(height).run();
@@ -20,7 +20,7 @@ const LineHeightGroup = ({ editor }: Props) => {
   };
 
   const activeNode = editor.state.selection.$head.parent;
-  const currentLineHeight = activeNode.attrs.lineHeight || 'default';
+  const currentLineHeight = activeNode.attrs.lineHeight || 'unset';
 
   return (
     <TooltipProvider delayDuration={100}>
@@ -31,7 +31,7 @@ const LineHeightGroup = ({ editor }: Props) => {
               <SelectValue placeholder="Linjehøyde" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="default">Default</SelectItem>
+              <SelectItem value="unset">Standard</SelectItem>
               {lineHeights.map(height => (
                 <SelectItem key={height} value={height}>{height}</SelectItem>
               ))}

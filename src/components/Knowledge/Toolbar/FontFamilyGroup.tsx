@@ -19,14 +19,14 @@ const fontFamilies = [
 
 const FontFamilyGroup = ({ editor }: Props) => {
   const handleFontFamilyChange = (family: string) => {
-    if (family === 'default') {
+    if (family === 'unset') {
       editor.chain().focus().unsetFontFamily().run();
     } else {
       editor.chain().focus().setFontFamily(family).run();
     }
   };
 
-  const currentFontFamily = editor.getAttributes('textStyle').fontFamily || 'default';
+  const currentFontFamily = editor.getAttributes('textStyle').fontFamily || 'unset';
 
   return (
     <TooltipProvider delayDuration={100}>
@@ -37,7 +37,7 @@ const FontFamilyGroup = ({ editor }: Props) => {
               <SelectValue placeholder="Skrifttype" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="default">Default</SelectItem>
+              <SelectItem value="unset">Standard</SelectItem>
               {fontFamilies.map(font => (
                 <SelectItem key={font.name} value={font.value} style={{ fontFamily: font.value }}>
                   {font.name}

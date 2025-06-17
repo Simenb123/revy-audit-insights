@@ -14,14 +14,14 @@ const LetterSpacingGroup = ({ editor }: Props) => {
   const handleLetterSpacingChange = (spacing: string) => {
     const { letterSpacing, ...otherAttributes } = editor.getAttributes('textStyle');
 
-    if (spacing === 'default') {
+    if (spacing === 'unset') {
       editor.chain().focus().setMark('textStyle', otherAttributes).removeEmptyTextStyle().run();
     } else {
       editor.chain().focus().setMark('textStyle', { ...otherAttributes, letterSpacing: spacing }).run();
     }
   };
 
-  const currentLetterSpacing = editor.getAttributes('textStyle').letterSpacing || 'default';
+  const currentLetterSpacing = editor.getAttributes('textStyle').letterSpacing || 'unset';
 
   return (
     <TooltipProvider delayDuration={100}>
@@ -32,7 +32,7 @@ const LetterSpacingGroup = ({ editor }: Props) => {
               <SelectValue placeholder="Bokstavavstand" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="default">Default</SelectItem>
+              <SelectItem value="unset">Standard</SelectItem>
               {letterSpacings.map(spacing => (
                 <SelectItem key={spacing} value={spacing}>{spacing}</SelectItem>
               ))}
