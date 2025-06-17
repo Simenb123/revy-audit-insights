@@ -1,5 +1,4 @@
 
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -21,8 +20,35 @@ import {
   Sparkles,
   Heart,
   Folder,
-  FileText
+  FileText,
+  FileCheck,
+  Calculator,
+  Scale,
+  Shield,
+  Newspaper,
+  Gavel
 } from 'lucide-react';
+
+// Icon mapping for categories
+const getIconComponent = (iconName?: string) => {
+  const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+    'file-check': FileCheck,
+    'calculator': Calculator,
+    'percent': Scale, // Using Scale for percent
+    'scale': Scale,
+    'shield-check': Shield,
+    'newspaper': Newspaper,
+    'gavel': Gavel,
+    'folder': Folder,
+    'file-text': FileText,
+  };
+
+  if (iconName && iconMap[iconName]) {
+    return iconMap[iconName];
+  }
+  
+  return Folder; // Default icon
+};
 
 const KnowledgeOverview = () => {
   const navigate = useNavigate();
@@ -179,6 +205,9 @@ const KnowledgeOverview = () => {
               const subcategoriesCount = Array.isArray(category.subcategories) ? category.subcategories[0]?.count || 0 : 0;
               const articlesCount = Array.isArray(category.articles) ? category.articles[0]?.count || 0 : 0;
               
+              // Get the icon component
+              const IconComponent = getIconComponent(category.icon);
+              
               return (
                 <Card 
                   key={category.id} 
@@ -188,7 +217,7 @@ const KnowledgeOverview = () => {
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex items-center gap-2">
-                        {category.icon && <span className="text-lg">{category.icon}</span>}
+                        <IconComponent className="w-5 h-5 text-blue-600" />
                         <h3 className="font-semibold">{category.name}</h3>
                       </div>
                     </div>
@@ -279,4 +308,3 @@ const KnowledgeOverview = () => {
 };
 
 export default KnowledgeOverview;
-
