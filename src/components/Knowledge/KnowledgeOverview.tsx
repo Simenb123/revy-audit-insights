@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -42,8 +43,8 @@ const KnowledgeOverview = () => {
       
       if (error) throw error;
       return data as (KnowledgeCategory & { 
-        subcategories: { count: number };
-        articles: { count: number };
+        subcategories: [{ count: number }];
+        articles: [{ count: number }];
       })[];
     },
   });
@@ -177,7 +178,8 @@ const KnowledgeOverview = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {mainCategories?.map((category) => {
-              const counts = categoryCounts?.[category.id] || { subcategories: 0, articles: 0 };
+              const subcategoriesCount = category.subcategories?.[0]?.count || 0;
+              const articlesCount = category.articles?.[0]?.count || 0;
               
               return (
                 <Card 
@@ -200,11 +202,11 @@ const KnowledgeOverview = () => {
                     <div className="flex items-center gap-4 text-xs text-muted-foreground">
                       <div className="flex items-center gap-1">
                         <Folder className="w-3 h-3" />
-                        <span>{counts.subcategories} kategorier</span>
+                        <span>{subcategoriesCount} kategorier</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <FileText className="w-3 h-3" />
-                        <span>{counts.articles} artikler</span>
+                        <span>{articlesCount} artikler</span>
                       </div>
                     </div>
                   </CardContent>
