@@ -18,24 +18,71 @@ import {
   Eye, 
   Settings,
   Sparkles,
-  Heart
+  Heart,
+  Folder,
+  FileText
 } from 'lucide-react';
 
 const KnowledgeOverview = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
 
-  const { data: categories, isLoading: categoriesLoading } = useQuery({
-    queryKey: ['knowledge-categories'],
+  // Only fetch main categories (those without parent_category_id)
+  const { data: mainCategories, isLoading: categoriesLoading } = useQuery({
+    queryKey: ['knowledge-main-categories'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('knowledge_categories')
-        .select('*')
+        .select(`
+          *,
+          subcategories:knowledge_categories!parent_category_id(count),
+          articles:knowledge_articles!category_id(count)
+        `)
+        .is('parent_category_id', null)
         .order('display_order');
       
       if (error) throw error;
-      return data as KnowledgeCategory[];
+      return data as (KnowledgeCategory & { 
+        subcategories: { count: number }[];
+        articles: { count: number }[];
+      })[];
     },
+  });
+
+  // Get subcategory and article counts for main categories
+  const { data: categoryCounts, isLoading: countsLoading } = useQuery({
+    queryKey: ['category-counts'],
+    queryFn: async () => {
+      if (!mainCategories) return {};
+      
+      const counts: Record<string, { subcategories: number; articles: number }> = {};
+      
+      for (const category of mainCategories) {
+        // Count subcategories
+        const { data: subcategories } = await supabase
+          .from('knowledge_categories')
+          .select('id')
+          .eq('parent_category_id', category.id);
+        
+        // Count articles in this category and all its subcategories
+        const subcategoryIds = subcategories?.map(sub => sub.id) || [];
+        const allCategoryIds = [category.id, ...subcategoryIds];
+        
+        const { data: articles } = await supabase
+          .from('knowledge_articles')
+          .select('id')
+          .eq('status', 'published')
+          .in('category_id', allCategoryIds);
+        
+        counts[category.id] = {
+          subcategories: subcategories?.length || 0,
+          articles: articles?.length || 0
+        };
+      }
+      
+      return counts;
+    },
+    enabled: !!mainCategories && mainCategories.length > 0
   });
 
   const { data: recentArticles, isLoading: articlesLoading } = useQuery({
@@ -114,9 +161,9 @@ const KnowledgeOverview = () => {
         </Card>
       </div>
 
-      {/* Categories */}
+      {/* Main Categories */}
       <div>
-        <h2 className="text-xl font-semibold mb-4">Kategorier</h2>
+        <h2 className="text-xl font-semibold mb-4">Hovedkategorier</h2>
         {categoriesLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {[...Array(6)].map((_, i) => (
@@ -130,20 +177,41 @@ const KnowledgeOverview = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {categories?.map((category) => (
-              <Card 
-                key={category.id} 
-                className="hover:shadow-md transition-shadow cursor-pointer"
-                onClick={() => navigate(`/fag/kategori/${category.id}`)}
-              >
-                <CardContent className="p-4">
-                  <h3 className="font-semibold mb-1">{category.name}</h3>
-                  {category.description && (
-                    <p className="text-sm text-muted-foreground">{category.description}</p>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
+            {mainCategories?.map((category) => {
+              const counts = categoryCounts?.[category.id] || { subcategories: 0, articles: 0 };
+              
+              return (
+                <Card 
+                  key={category.id} 
+                  className="hover:shadow-md transition-shadow cursor-pointer"
+                  onClick={() => navigate(`/fag/kategori/${category.id}`)}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        {category.icon && <span className="text-lg">{category.icon}</span>}
+                        <h3 className="font-semibold">{category.name}</h3>
+                      </div>
+                    </div>
+                    
+                    {category.description && (
+                      <p className="text-sm text-muted-foreground mb-3">{category.description}</p>
+                    )}
+                    
+                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-1">
+                        <Folder className="w-3 h-3" />
+                        <span>{counts.subcategories} kategorier</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <FileText className="w-3 h-3" />
+                        <span>{counts.articles} artikler</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         )}
       </div>
