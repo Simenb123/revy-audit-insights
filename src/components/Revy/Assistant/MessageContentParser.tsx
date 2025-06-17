@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { extractTagsFromContent } from './TagExtractor';
 
 interface MessageContentParserProps {
   content: string;
@@ -23,11 +24,7 @@ export const MessageContentParser = ({ content, isEmbedded = false }: MessageCon
   const [copiedBlocks, setCopiedBlocks] = useState<Set<number>>(new Set());
   const navigate = useNavigate();
 
-  // 🔍 DEBUG: Log the content being parsed
-  console.log('🔍 MessageContentParser received content:', content);
-  console.log('📏 Content length:', content.length);
-  console.log('🏷️ Content contains emoji:', /🏷️/.test(content));
-  console.log('🔤 Content contains EMNER:', /EMNER/i.test(content));
+  console.log('🔍 MessageContentParser received content:', content.substring(0, 100) + '...');
 
   const copyToClipboard = async (text: string, blockIndex: number) => {
     try {
@@ -56,63 +53,6 @@ export const MessageContentParser = ({ content, isEmbedded = false }: MessageCon
       }
     }
     return {};
-  };
-
-  // Enhanced tag extraction with better visibility
-  const extractTags = (content: string): string[] => {
-    console.log('🏷️ Starting enhanced tag extraction...');
-    
-    // Find any line that contains "EMNER" (case insensitive)
-    const lines = content.split('\n');
-    
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      console.log(`🔍 Checking line ${i}: "${line}"`);
-      
-      // Check if line contains EMNER in any form
-      if (/emner/i.test(line)) {
-        console.log('✅ Found EMNER line:', line);
-        
-        // Extract everything after "EMNER:" or "EMNER"
-        let tagsPart = '';
-        
-        // Try multiple simple extraction methods
-        if (line.includes(':')) {
-          tagsPart = line.split(':').slice(1).join(':').trim();
-        } else {
-          // Look for text after "EMNER" word
-          const emnerIndex = line.toLowerCase().indexOf('emner');
-          if (emnerIndex !== -1) {
-            tagsPart = line.substring(emnerIndex + 5).trim();
-          }
-        }
-        
-        console.log('📝 Extracted tags part:', tagsPart);
-        
-        if (tagsPart) {
-          // Clean up the tags part - remove bold markers, emojis, etc.
-          const cleanedPart = tagsPart
-            .replace(/\*\*/g, '') // Remove bold markers
-            .replace(/🏷️/g, '') // Remove emoji
-            .replace(/[.!?]+$/, '') // Remove trailing punctuation
-            .trim();
-          
-          console.log('🧹 Cleaned tags part:', cleanedPart);
-          
-          // Split on common separators and clean each tag
-          const tags = cleanedPart
-            .split(/[,;]/)
-            .map(tag => tag.trim())
-            .filter(tag => tag.length > 0 && tag.length < 50);
-          
-          console.log('🎯 Final extracted tags:', tags);
-          return tags;
-        }
-      }
-    }
-    
-    console.log('❌ No tags found in content');
-    return [];
   };
 
   // Handle tag click with article navigation
@@ -155,10 +95,18 @@ export const MessageContentParser = ({ content, isEmbedded = false }: MessageCon
 
     console.log('🔍 Processing content lines:', lines.length);
 
-    // Extract article mappings and tags first
+    // Extract article mappings and tags using improved extraction
     const articleMappings = extractArticleMappings(content);
     console.log('📎 Extracted article mappings:', Object.keys(articleMappings));
-    const extractedTags = extractTags(content);
+    
+    const tagExtraction = extractTagsFromContent(content);
+    const extractedTags = tagExtraction.tags;
+    
+    console.log('🏷️ Tag extraction result:', {
+      tags: extractedTags,
+      hasValidFormat: tagExtraction.hasValidFormat,
+      extractedFrom: tagExtraction.extractedFrom
+    });
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
@@ -174,9 +122,9 @@ export const MessageContentParser = ({ content, isEmbedded = false }: MessageCon
         continue;
       }
 
-      // Skip the EMNER line since we'll add it at the bottom
-      if (/emner/i.test(trimmedLine)) {
-        console.log('⏭️ Skipping EMNER line since we will add tags at the bottom');
+      // Skip the EMNER line since we'll add it as clickable tags at the bottom
+      if (/🏷️.*[Ee][Mm][Nn][Ee][Rr]|[Ee][Mm][Nn][Ee][Rr]:/i.test(trimmedLine)) {
+        console.log('⏭️ Skipping EMNER line since we will add clickable tags at the bottom');
         continue;
       }
 
@@ -374,58 +322,82 @@ export const MessageContentParser = ({ content, isEmbedded = false }: MessageCon
       );
     }
 
-    // 🏷️ NOW: Add tags at the BOTTOM with enhanced visibility
+    // 🏷️ ENHANCED: Add clickable tags at the BOTTOM with maximum visibility
     if (extractedTags.length > 0) {
-      console.log('🎉 Rendering clickable tags section at BOTTOM with', extractedTags.length, 'tags');
+      console.log('🎉 Rendering enhanced clickable tags section with', extractedTags.length, 'tags');
       
       processedElements.push(
         <div 
-          key="extracted-tags-bottom" 
-          className="mt-6 p-4 bg-blue-50 rounded-lg border-2 border-blue-200" 
-          style={{ display: 'block', visibility: 'visible', position: 'relative', zIndex: 10 }}
+          key="enhanced-clickable-tags" 
+          className="mt-8 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border-2 border-blue-200 shadow-sm"
         >
-          <div className="flex flex-wrap gap-3 items-start">
-            <div className="flex items-center gap-2 text-blue-700 mb-3 min-w-0">
-              <Tag className="h-5 w-5 flex-shrink-0" />
-              <span className={`font-semibold ${isEmbedded ? 'text-sm' : 'text-base'}`}>Emner:</span>
+          <div className="flex items-center gap-3 mb-4">
+            <div className="flex items-center gap-2 text-blue-800">
+              <Tag className="h-6 w-6" />
+              <span className={`font-bold ${isEmbedded ? 'text-base' : 'text-lg'}`}>Emner</span>
             </div>
-            <div className="flex flex-wrap gap-2 min-w-0 flex-1">
-              {extractedTags.map((tag, tagIndex) => {
-                const hasMapping = articleMappings[tag] || 
-                  Object.keys(articleMappings).some(key => 
-                    key.toLowerCase() === tag.toLowerCase() || 
-                    key.toLowerCase().includes(tag.toLowerCase()) ||
-                    tag.toLowerCase().includes(key.toLowerCase())
-                  );
-                
-                return (
-                  <Badge 
-                    key={tagIndex} 
-                    variant="secondary" 
-                    className={`
-                      ${hasMapping 
-                        ? 'bg-blue-100 text-blue-800 hover:bg-blue-200 border-2 border-blue-300 cursor-pointer' 
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-2 border-gray-300 cursor-pointer'
-                      } 
-                      transition-all duration-200 transform hover:scale-105 font-medium 
-                      ${isEmbedded ? 'text-xs px-2 py-1.5' : 'text-sm px-3 py-2'}
-                    `}
-                    style={{ display: 'inline-flex', visibility: 'visible' }}
-                    onClick={() => handleTagClick(tag, articleMappings)}
-                    title={hasMapping ? `Klikk for å åpne fagartikkel om ${tag}` : `Klikk for å søke etter ${tag}`}
-                  >
-                    {hasMapping && <FileText className="w-3 h-3 mr-1" />}
-                    {tag}
-                    {hasMapping && <ExternalLink className="w-3 h-3 ml-1 opacity-60" />}
-                  </Badge>
-                );
-              })}
-            </div>
+            <div className="text-blue-600 text-sm opacity-75">Klikk for å utforske fagartikler</div>
           </div>
+          
+          <div className="flex flex-wrap gap-3">
+            {extractedTags.map((tag, tagIndex) => {
+              const hasMapping = articleMappings[tag] || 
+                Object.keys(articleMappings).some(key => 
+                  key.toLowerCase() === tag.toLowerCase() || 
+                  key.toLowerCase().includes(tag.toLowerCase()) ||
+                  tag.toLowerCase().includes(key.toLowerCase())
+                );
+              
+              return (
+                <Badge 
+                  key={tagIndex} 
+                  variant="secondary" 
+                  className={`
+                    ${hasMapping 
+                      ? 'bg-blue-600 text-white hover:bg-blue-700 border-2 border-blue-700 shadow-md' 
+                      : 'bg-gray-600 text-white hover:bg-gray-700 border-2 border-gray-700 shadow-md'
+                    } 
+                    cursor-pointer transition-all duration-300 transform hover:scale-110 hover:shadow-lg 
+                    font-semibold px-4 py-2 text-sm flex items-center gap-2
+                  `}
+                  onClick={() => handleTagClick(tag, articleMappings)}
+                  title={hasMapping ? `Klikk for å åpne fagartikkel om ${tag}` : `Klikk for å søke etter ${tag}`}
+                >
+                  {hasMapping && <FileText className="w-4 h-4" />}
+                  {tag}
+                  <ExternalLink className="w-3 h-3 opacity-70" />
+                </Badge>
+              );
+            })}
+          </div>
+          
+          {tagExtraction.hasValidFormat && (
+            <div className="mt-3 text-xs text-blue-600 opacity-60">
+              Ekstrahert fra: "{tagExtraction.extractedFrom.substring(0, 50)}..."
+            </div>
+          )}
         </div>
       );
     } else {
-      console.log('🚨 NO TAGS EXTRACTED - this should be investigated');
+      console.log('🚨 NO TAGS EXTRACTED - Adding debug information');
+      
+      // Add debug info when no tags are found
+      processedElements.push(
+        <div key="debug-no-tags" className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+          <div className="text-red-800 text-sm">
+            <strong>Debug:</strong> Ingen emner funnet i AI-respons. Dette kan skyldes formatering.
+          </div>
+          <details className="mt-2">
+            <summary className="text-red-600 text-xs cursor-pointer">Vis debug-info</summary>
+            <pre className="text-xs text-red-700 mt-1 overflow-auto">
+              {JSON.stringify({ 
+                contentPreview: content.substring(0, 200),
+                tagExtraction: tagExtraction 
+              }, null, 2)}
+            </pre>
+          </details>
+        </div>
+      );
     }
 
     console.log('✅ Finished processing content, created', processedElements.length, 'elements');

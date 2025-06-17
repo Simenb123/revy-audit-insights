@@ -3,15 +3,28 @@ export function validateAIResponse(response: string): { isValid: boolean; fixedR
   console.log('🔍 Validating AI response format...');
   console.log('📝 Response preview:', response.substring(0, 200) + '...');
   
-  // Check if response has the required EMNER section with proper format
-  const hasEmnerSection = /🏷️\s*\*\*[Ee][Mm][Nn][Ee][Rr]:?\*\*\s*.+/.test(response);
+  // Check if response has ANY form of EMNER section
+  const hasEmnerSection = /🏷️.*[Ee][Mm][Nn][Ee][Rr]|[Ee][Mm][Nn][Ee][Rr]:/i.test(response);
   
   if (hasEmnerSection) {
-    console.log('✅ Response has valid EMNER section with content');
-    return { isValid: true };
+    console.log('✅ Response has some form of EMNER section');
+    
+    // Check if it's in the standardized format we want
+    const hasStandardFormat = /🏷️\s*\*\*[Ee][Mm][Nn][Ee][Rr]:?\*\*\s*.+/.test(response);
+    
+    if (hasStandardFormat) {
+      console.log('✅ Response has perfect standardized format');
+      return { isValid: true };
+    } else {
+      console.log('🔧 Response has EMNER but not standardized format, fixing...');
+      // Extract existing tags and reformat them
+      const existingTags = extractExistingTags(response);
+      const fixedResponse = response + '\n\n🏷️ **EMNER:** ' + existingTags.join(', ');
+      return { isValid: true, fixedResponse };
+    }
   }
   
-  console.log('🔧 Response missing proper EMNER section, forcing comprehensive tag injection...');
+  console.log('🔧 Response missing EMNER section, forcing comprehensive tag injection...');
   
   // FORCE intelligent tag injection based on content analysis
   const intelligentTags = extractComprehensiveTags(response);
@@ -27,11 +40,39 @@ export function validateAIResponse(response: string): { isValid: boolean; fixedR
   // FORCE standardized format that the frontend expects
   const fixedResponse = response.trim() + '\n\n🏷️ **EMNER:** ' + finalTags.join(', ');
   
-  console.log('🔧 FORCED tag injection with format: 🏷️ **EMNER:** tags');
+  console.log('🔧 FORCED tag injection with standardized format');
   console.log('🏷️ Injected tags:', finalTags.join(', '));
   console.log('📏 Fixed response length:', fixedResponse.length);
   
   return { isValid: true, fixedResponse };
+}
+
+function extractExistingTags(response: string): string[] {
+  const lines = response.split('\n');
+  
+  for (const line of lines) {
+    // Try to find any existing EMNER line
+    const match = line.match(/[Ee][Mm][Nn][Ee][Rr]:?\s*(.+)/i);
+    if (match && match[1]) {
+      const tagsPart = match[1]
+        .replace(/\*\*/g, '')
+        .replace(/🏷️/g, '')
+        .replace(/[.!?]+$/, '')
+        .trim();
+      
+      const tags = tagsPart
+        .split(/[,;]/)
+        .map(tag => tag.trim())
+        .filter(tag => tag.length > 0 && tag.length < 50);
+      
+      if (tags.length > 0) {
+        console.log('🔍 Extracted existing tags:', tags);
+        return tags;
+      }
+    }
+  }
+  
+  return [];
 }
 
 function extractComprehensiveTags(response: string): string[] {
@@ -71,7 +112,7 @@ function extractComprehensiveTags(response: string): string[] {
     { keywords: ['utvalg', 'sampling', 'stikkprøve'], tags: ['Utvalg', 'Stikkprøver'] },
     { keywords: ['konklusjon', 'conclusion', 'vurdering'], tags: ['Konklusjoner', 'Revisjonskonklusjon'] },
     { keywords: ['første', 'ny', 'start', 'begynne'], tags: ['Nybegynner', 'Grunnleggende'] },
-    { keywords: ['hjelp', 'veiledning', 'guide'], tags: ['Veiledning', 'Fagstøtte'] }
+    { keywords: ['hjelp', 'veiledning', 'guide', 'artikkel', 'fagstoff'], tags: ['Veiledning', 'Fagstøtte', 'Artikler'] }
   ];
   
   // Analyze content with enhanced keyword matching

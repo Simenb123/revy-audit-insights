@@ -1,3 +1,4 @@
+
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { corsHeaders, isOptions, handleCors } from './lib/cors.ts'
 import { buildIntelligentSystemPrompt } from './lib/prompt.ts'
@@ -47,9 +48,12 @@ serve(async (req) => {
     if (cachedResponse) {
       console.log('✅ Cache hit!', { requestHash: cachedResponse.requestHash?.substring(0, 16) + '...' });
       
-      // VALIDATE CACHED RESPONSE TOO - this is important!
+      // CRITICAL: ALWAYS validate cached responses too
+      console.log('🔧 Validating cached response for proper tag format...');
       const validation = validateAIResponse(cachedResponse.response);
       const finalResponse = validation.fixedResponse || cachedResponse.response;
+      
+      console.log('✅ Cached response validated and ready with guaranteed tags');
       
       return new Response(JSON.stringify({ response: finalResponse }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -72,7 +76,7 @@ serve(async (req) => {
     const selectedModel = selectOptimalModel(message, context, !userId);
     console.log('🎯 Selected model:', selectedModel);
 
-    // Build system prompt with article mappings
+    // Build system prompt with article mappings and explicit tag instructions
     const systemPrompt = await buildIntelligentSystemPrompt(
       context,
       clientData,
@@ -81,8 +85,11 @@ serve(async (req) => {
       !userId
     );
 
+    // Add explicit tag instruction to ensure AI includes them
+    const enhancedSystemPrompt = systemPrompt + '\n\nIMPORTANT: ALWAYS end your response with a line: "🏷️ **EMNER:** [list relevant Norwegian tags separated by commas]". This is required for proper UI functionality.';
+
     const startTime = Date.now();
-    console.log('🚀 Calling OpenAI API...');
+    console.log('🚀 Calling OpenAI API with enhanced tag instructions...');
 
     // Call OpenAI
     const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -94,7 +101,7 @@ serve(async (req) => {
       body: JSON.stringify({
         model: selectedModel,
         messages: [
-          { role: 'system', content: systemPrompt },
+          { role: 'system', content: enhancedSystemPrompt },
           ...history.map((msg: any) => ({
             role: msg.sender === 'user' ? 'user' : 'assistant',
             content: msg.content
@@ -128,26 +135,22 @@ serve(async (req) => {
       console.log('📎 Injected article mappings into response');
     }
 
-    // 🚨 CRITICAL FIX: ALWAYS validate and fix the AI response
-    console.log('🔧 Forcing response validation and tag injection...');
+    // 🚨 CRITICAL FIX: ALWAYS validate and fix the AI response to guarantee proper tags
+    console.log('🔧 ENFORCING response validation and tag standardization...');
     const validation = validateAIResponse(aiResponse);
     
-    // ALWAYS use the fixed response if available, otherwise force fix it
+    // ALWAYS use the fixed response to ensure standardized format
     if (validation.fixedResponse) {
       aiResponse = validation.fixedResponse;
-      console.log('✅ Response was fixed with forced tag injection');
-    } else if (!validation.isValid) {
-      // This should never happen with our new validator, but just in case
-      aiResponse += '\n\n🏷️ **EMNER:** Revisjon, Fagstoff, Regnskap';
-      console.log('🔧 Emergency tag injection applied');
+      console.log('✅ Response was standardized with guaranteed tag format');
     }
 
-    console.log('✅ AI response generated with guaranteed tags and article mappings:', {
+    console.log('✅ AI response generated with GUARANTEED clickable tags:', {
       responseLength: aiResponse.length,
       usage: data.usage,
       responseTime: `${responseTime}ms`,
       isGuestMode: !userId,
-      hasTags: /🏷️\s*\*\*[Ee][Mm][Nn][Ee][Rr]:?\*\*/.test(aiResponse),
+      hasStandardizedTags: /🏷️\s*\*\*[Ee][Mm][Nn][Ee][Rr]:?\*\*/.test(aiResponse),
       hasArticleMappings: aiResponse.includes('ARTICLE_MAPPINGS')
     });
 
@@ -172,11 +175,11 @@ serve(async (req) => {
       }
     }
 
-    // Cache the response (with tags and article mappings)
+    // Cache the response (with guaranteed tags and article mappings)
     if (userId) {
       try {
         await cacheResponse(cacheKey, aiResponse, userId, clientData?.id, selectedModel);
-        console.log('✅ Response cached successfully with tags and article mappings');
+        console.log('✅ Response cached successfully with guaranteed clickable tags');
       } catch (error) {
         console.error('❌ Failed to cache response:', error);
       }
@@ -189,11 +192,13 @@ serve(async (req) => {
   } catch (error) {
     console.error('💥 Function error:', error);
     
-    // Even fallback responses should have tags!
+    // Even fallback responses must have proper tags!
     let fallbackResponse = getIntelligentFallback(await req.json().catch(() => ({})));
+    console.log('🔧 Validating fallback response for proper tag format...');
     const validation = validateAIResponse(fallbackResponse);
     if (validation.fixedResponse) {
       fallbackResponse = validation.fixedResponse;
+      console.log('✅ Fallback response fixed with guaranteed tags');
     }
     
     return new Response(JSON.stringify({ 
