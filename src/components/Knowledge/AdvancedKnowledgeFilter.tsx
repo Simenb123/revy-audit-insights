@@ -22,6 +22,23 @@ interface AdvancedKnowledgeFilterProps {
   className?: string;
 }
 
+// Temporary interfaces until database is updated
+interface ContentType {
+  id: string;
+  name: string;
+  display_name: string;
+  color: string;
+  icon?: string;
+}
+
+interface SubjectArea {
+  id: string;
+  name: string;
+  display_name: string;
+  color: string;
+  icon?: string;
+}
+
 const AdvancedKnowledgeFilter = ({ onFilterChange, className }: AdvancedKnowledgeFilterProps) => {
   const [filters, setFilters] = useState<FilterState>({
     searchTerm: '',
@@ -29,33 +46,23 @@ const AdvancedKnowledgeFilter = ({ onFilterChange, className }: AdvancedKnowledg
     subjectAreas: []
   });
 
-  const { data: contentTypes } = useQuery({
-    queryKey: ['content-types-filter'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('content_types')
-        .select('*')
-        .eq('is_active', true)
-        .order('sort_order');
-      
-      if (error) throw error;
-      return data;
-    }
-  });
+  // Temporary hardcoded data until database tables are created
+  const contentTypes: ContentType[] = [
+    { id: '1', name: 'fagartikkel', display_name: 'Fagartikkel', color: '#3B82F6', icon: 'file-text' },
+    { id: '2', name: 'lov', display_name: 'Lov', color: '#10B981', icon: 'scale' },
+    { id: '3', name: 'isa-standard', display_name: 'ISA-standard', color: '#8B5CF6', icon: 'file-code' },
+    { id: '4', name: 'nrs-standard', display_name: 'NRS-standard', color: '#6366F1', icon: 'book' },
+    { id: '5', name: 'forskrift', display_name: 'Forskrift', color: '#F59E0B', icon: 'gavel' },
+    { id: '6', name: 'forarbeider', display_name: 'Forarbeider', color: '#6B7280', icon: 'file-text' },
+    { id: '7', name: 'dom', display_name: 'Dom', color: '#EF4444', icon: 'scale' }
+  ];
 
-  const { data: subjectAreas } = useQuery({
-    queryKey: ['subject-areas-filter'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('subject_areas')
-        .select('*')
-        .eq('is_active', true)
-        .order('sort_order');
-      
-      if (error) throw error;
-      return data;
-    }
-  });
+  const subjectAreas: SubjectArea[] = [
+    { id: '1', name: 'revisjon', display_name: 'Revisjon', color: '#3B82F6', icon: 'shield-check' },
+    { id: '2', name: 'regnskap', display_name: 'Regnskap', color: '#10B981', icon: 'calculator' },
+    { id: '3', name: 'skatt', display_name: 'Skatt', color: '#F59E0B', icon: 'coins' },
+    { id: '4', name: 'annet', display_name: 'Annet', color: '#6B7280', icon: 'folder' }
+  ];
 
   const updateFilters = (newFilters: Partial<FilterState>) => {
     const updatedFilters = { ...filters, ...newFilters };
@@ -127,7 +134,7 @@ const AdvancedKnowledgeFilter = ({ onFilterChange, className }: AdvancedKnowledg
         <div className="space-y-3">
           <Label>Innholdstyper</Label>
           <div className="space-y-2">
-            {contentTypes?.map((type) => (
+            {contentTypes.map((type) => (
               <div key={type.id} className="flex items-center space-x-2">
                 <Checkbox
                   id={`type-${type.id}`}
@@ -155,7 +162,7 @@ const AdvancedKnowledgeFilter = ({ onFilterChange, className }: AdvancedKnowledg
         <div className="space-y-3">
           <Label>Emneområder</Label>
           <div className="space-y-2">
-            {subjectAreas?.map((area) => (
+            {subjectAreas.map((area) => (
               <div key={area.id} className="flex items-center space-x-2">
                 <Checkbox
                   id={`area-${area.id}`}
@@ -190,7 +197,7 @@ const AdvancedKnowledgeFilter = ({ onFilterChange, className }: AdvancedKnowledg
                   </Badge>
                 )}
                 {filters.contentTypes.map(typeId => {
-                  const type = contentTypes?.find(t => t.id === typeId);
+                  const type = contentTypes.find(t => t.id === typeId);
                   return type ? (
                     <Badge key={typeId} variant="secondary" className="text-xs">
                       Type: {type.display_name}
@@ -198,7 +205,7 @@ const AdvancedKnowledgeFilter = ({ onFilterChange, className }: AdvancedKnowledg
                   ) : null;
                 })}
                 {filters.subjectAreas.map(areaId => {
-                  const area = subjectAreas?.find(a => a.id === areaId);
+                  const area = subjectAreas.find(a => a.id === areaId);
                   return area ? (
                     <Badge key={areaId} variant="secondary" className="text-xs">
                       Emne: {area.display_name}

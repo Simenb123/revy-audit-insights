@@ -1,6 +1,5 @@
 
 import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,7 +7,6 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { supabase } from '@/integrations/supabase/client';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -26,110 +24,48 @@ interface SubjectArea {
 const SubjectAreaManager = () => {
   const [editingArea, setEditingArea] = useState<SubjectArea | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const queryClient = useQueryClient();
 
-  const { data: subjectAreas, isLoading } = useQuery({
-    queryKey: ['subject-areas'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('subject_areas')
-        .select('*')
-        .order('sort_order');
-      
-      if (error) throw error;
-      return data as SubjectArea[];
-    }
-  });
-
-  const createMutation = useMutation({
-    mutationFn: async (area: Omit<SubjectArea, 'id'>) => {
-      const { data, error } = await supabase
-        .from('subject_areas')
-        .insert(area)
-        .select()
-        .single();
-      
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['subject-areas'] });
-      setIsDialogOpen(false);
-      setEditingArea(null);
-      toast.success('Emneområde opprettet');
-    },
-    onError: (error: any) => {
-      toast.error('Feil ved oppretting: ' + error.message);
-    }
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: async (area: SubjectArea) => {
-      const { data, error } = await supabase
-        .from('subject_areas')
-        .update(area)
-        .eq('id', area.id)
-        .select()
-        .single();
-      
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['subject-areas'] });
-      setIsDialogOpen(false);
-      setEditingArea(null);
-      toast.success('Emneområde oppdatert');
-    },
-    onError: (error: any) => {
-      toast.error('Feil ved oppdatering: ' + error.message);
-    }
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('subject_areas')
-        .delete()
-        .eq('id', id);
-      
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['subject-areas'] });
-      toast.success('Emneområde slettet');
-    },
-    onError: (error: any) => {
-      toast.error('Feil ved sletting: ' + error.message);
-    }
-  });
+  // Temporary hardcoded data until database tables are created
+  const [subjectAreas, setSubjectAreas] = useState<SubjectArea[]>([
+    { id: '1', name: 'revisjon', display_name: 'Revisjon', description: 'Revisjonsteori, standarder og metodikk', icon: 'shield-check', color: '#3B82F6', sort_order: 1, is_active: true },
+    { id: '2', name: 'regnskap', display_name: 'Regnskap', description: 'Regnskapsstandarder og regnskapsregler', icon: 'calculator', color: '#10B981', sort_order: 2, is_active: true },
+    { id: '3', name: 'skatt', display_name: 'Skatt', description: 'Skattelover, regler og veiledning', icon: 'coins', color: '#F59E0B', sort_order: 3, is_active: true },
+    { id: '4', name: 'annet', display_name: 'Annet', description: 'Øvrige fagområder og tverrgående temaer', icon: 'folder', color: '#6B7280', sort_order: 4, is_active: true }
+  ]);
 
   const handleSubmit = (formData: FormData) => {
     const areaData = {
+      id: editingArea?.id || Date.now().toString(),
       name: formData.get('name') as string,
       display_name: formData.get('display_name') as string,
-      description: formData.get('description') as string || null,
-      icon: formData.get('icon') as string || null,
+      description: formData.get('description') as string || undefined,
+      icon: formData.get('icon') as string || undefined,
       color: formData.get('color') as string,
       sort_order: parseInt(formData.get('sort_order') as string) || 0,
       is_active: formData.get('is_active') === 'on'
     };
 
     if (editingArea) {
-      updateMutation.mutate({ ...areaData, id: editingArea.id });
+      setSubjectAreas(prev => prev.map(area => area.id === editingArea.id ? areaData : area));
+      toast.success('Emneområde oppdatert');
     } else {
-      createMutation.mutate(areaData);
+      setSubjectAreas(prev => [...prev, areaData]);
+      toast.success('Emneområde opprettet');
     }
+
+    setIsDialogOpen(false);
+    setEditingArea(null);
+  };
+
+  const handleDelete = (id: string) => {
+    setSubjectAreas(prev => prev.filter(area => area.id !== id));
+    toast.success('Emneområde slettet');
   };
 
   const openDialog = (area?: SubjectArea) => {
     setEditingArea(area || null);
     setIsDialogOpen(true);
   };
-
-  if (isLoading) {
-    return <div>Laster emneområder...</div>;
-  }
 
   return (
     <Card>
@@ -221,7 +157,7 @@ const SubjectAreaManager = () => {
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
-          {subjectAreas?.map((area) => (
+          {subjectAreas.map((area) => (
             <div key={area.id} className="flex items-center justify-between p-3 border rounded-lg">
               <div className="flex items-center gap-3">
                 <div 
@@ -247,7 +183,7 @@ const SubjectAreaManager = () => {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => deleteMutation.mutate(area.id)}
+                  onClick={() => handleDelete(area.id)}
                 >
                   <Trash2 className="w-4 h-4" />
                 </Button>

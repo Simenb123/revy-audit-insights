@@ -1,6 +1,5 @@
 
 import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,7 +7,6 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { supabase } from '@/integrations/supabase/client';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -26,110 +24,51 @@ interface ContentType {
 const ContentTypeManager = () => {
   const [editingType, setEditingType] = useState<ContentType | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const queryClient = useQueryClient();
 
-  const { data: contentTypes, isLoading } = useQuery({
-    queryKey: ['content-types'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('content_types')
-        .select('*')
-        .order('sort_order');
-      
-      if (error) throw error;
-      return data as ContentType[];
-    }
-  });
-
-  const createMutation = useMutation({
-    mutationFn: async (type: Omit<ContentType, 'id'>) => {
-      const { data, error } = await supabase
-        .from('content_types')
-        .insert(type)
-        .select()
-        .single();
-      
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['content-types'] });
-      setIsDialogOpen(false);
-      setEditingType(null);
-      toast.success('Innholdstype opprettet');
-    },
-    onError: (error: any) => {
-      toast.error('Feil ved oppretting: ' + error.message);
-    }
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: async (type: ContentType) => {
-      const { data, error } = await supabase
-        .from('content_types')
-        .update(type)
-        .eq('id', type.id)
-        .select()
-        .single();
-      
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['content-types'] });
-      setIsDialogOpen(false);
-      setEditingType(null);
-      toast.success('Innholdstype oppdatert');
-    },
-    onError: (error: any) => {
-      toast.error('Feil ved oppdatering: ' + error.message);
-    }
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('content_types')
-        .delete()
-        .eq('id', id);
-      
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['content-types'] });
-      toast.success('Innholdstype slettet');
-    },
-    onError: (error: any) => {
-      toast.error('Feil ved sletting: ' + error.message);
-    }
-  });
+  // Temporary hardcoded data until database tables are created
+  const [contentTypes, setContentTypes] = useState<ContentType[]>([
+    { id: '1', name: 'fagartikkel', display_name: 'Fagartikkel', description: 'Generelle fagartikler og veiledninger', icon: 'file-text', color: '#3B82F6', sort_order: 1, is_active: true },
+    { id: '2', name: 'lov', display_name: 'Lov', description: 'Lovtekster og juridiske dokumenter', icon: 'scale', color: '#10B981', sort_order: 2, is_active: true },
+    { id: '3', name: 'isa-standard', display_name: 'ISA-standard', description: 'International Standards on Auditing', icon: 'file-code', color: '#8B5CF6', sort_order: 3, is_active: true },
+    { id: '4', name: 'nrs-standard', display_name: 'NRS-standard', description: 'Norske Revisjons Standarder', icon: 'book', color: '#6366F1', sort_order: 4, is_active: true },
+    { id: '5', name: 'forskrift', display_name: 'Forskrift', description: 'Forskrifter og reglementer', icon: 'gavel', color: '#F59E0B', sort_order: 5, is_active: true },
+    { id: '6', name: 'forarbeider', display_name: 'Forarbeider', description: 'Forarbeider og proposisjoner', icon: 'file-text', color: '#6B7280', sort_order: 6, is_active: true },
+    { id: '7', name: 'dom', display_name: 'Dom', description: 'Rettsavgjørelser og dommer', icon: 'scale', color: '#EF4444', sort_order: 7, is_active: true }
+  ]);
 
   const handleSubmit = (formData: FormData) => {
     const typeData = {
+      id: editingType?.id || Date.now().toString(),
       name: formData.get('name') as string,
       display_name: formData.get('display_name') as string,
-      description: formData.get('description') as string || null,
-      icon: formData.get('icon') as string || null,
+      description: formData.get('description') as string || undefined,
+      icon: formData.get('icon') as string || undefined,
       color: formData.get('color') as string,
       sort_order: parseInt(formData.get('sort_order') as string) || 0,
       is_active: formData.get('is_active') === 'on'
     };
 
     if (editingType) {
-      updateMutation.mutate({ ...typeData, id: editingType.id });
+      setContentTypes(prev => prev.map(type => type.id === editingType.id ? typeData : type));
+      toast.success('Innholdstype oppdatert');
     } else {
-      createMutation.mutate(typeData);
+      setContentTypes(prev => [...prev, typeData]);
+      toast.success('Innholdstype opprettet');
     }
+
+    setIsDialogOpen(false);
+    setEditingType(null);
+  };
+
+  const handleDelete = (id: string) => {
+    setContentTypes(prev => prev.filter(type => type.id !== id));
+    toast.success('Innholdstype slettet');
   };
 
   const openDialog = (type?: ContentType) => {
     setEditingType(type || null);
     setIsDialogOpen(true);
   };
-
-  if (isLoading) {
-    return <div>Laster innholdstyper...</div>;
-  }
 
   return (
     <Card>
@@ -221,7 +160,7 @@ const ContentTypeManager = () => {
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
-          {contentTypes?.map((type) => (
+          {contentTypes.map((type) => (
             <div key={type.id} className="flex items-center justify-between p-3 border rounded-lg">
               <div className="flex items-center gap-3">
                 <div 
@@ -247,7 +186,7 @@ const ContentTypeManager = () => {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => deleteMutation.mutate(type.id)}
+                  onClick={() => handleDelete(type.id)}
                 >
                   <Trash2 className="w-4 h-4" />
                 </Button>

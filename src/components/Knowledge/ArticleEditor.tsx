@@ -40,6 +40,21 @@ interface ArticleFormData {
   reference_code: string;
 }
 
+// Temporary interfaces until database is updated
+interface ContentType {
+  id: string;
+  name: string;
+  display_name: string;
+  color: string;
+}
+
+interface SubjectArea {
+  id: string;
+  name: string;
+  display_name: string;
+  color: string;
+}
+
 // Simple slug generation function
 const generateSlug = (title: string): string => {
   return title
@@ -80,33 +95,23 @@ const ArticleEditor = () => {
     },
   });
 
-  const { data: contentTypes } = useQuery({
-    queryKey: ["content-types"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("content_types")
-        .select("*")
-        .eq("is_active", true)
-        .order("sort_order");
+  // Temporary hardcoded data until database tables are created
+  const contentTypes: ContentType[] = [
+    { id: '1', name: 'fagartikkel', display_name: 'Fagartikkel', color: '#3B82F6' },
+    { id: '2', name: 'lov', display_name: 'Lov', color: '#10B981' },
+    { id: '3', name: 'isa-standard', display_name: 'ISA-standard', color: '#8B5CF6' },
+    { id: '4', name: 'nrs-standard', display_name: 'NRS-standard', color: '#6366F1' },
+    { id: '5', name: 'forskrift', display_name: 'Forskrift', color: '#F59E0B' },
+    { id: '6', name: 'forarbeider', display_name: 'Forarbeider', color: '#6B7280' },
+    { id: '7', name: 'dom', display_name: 'Dom', color: '#EF4444' }
+  ];
 
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  const { data: subjectAreas } = useQuery({
-    queryKey: ["subject-areas"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("subject_areas")
-        .select("*")
-        .eq("is_active", true)
-        .order("sort_order");
-
-      if (error) throw error;
-      return data;
-    },
-  });
+  const subjectAreas: SubjectArea[] = [
+    { id: '1', name: 'revisjon', display_name: 'Revisjon', color: '#3B82F6' },
+    { id: '2', name: 'regnskap', display_name: 'Regnskap', color: '#10B981' },
+    { id: '3', name: 'skatt', display_name: 'Skatt', color: '#F59E0B' },
+    { id: '4', name: 'annet', display_name: 'Annet', color: '#6B7280' }
+  ];
 
   const { data: article, isLoading: isLoadingArticle } = useQuery({
     queryKey: ["knowledge-article-edit", articleId],
@@ -121,17 +126,9 @@ const ArticleEditor = () => {
 
       if (articleError) throw articleError;
 
-      // Get subject areas for this article
-      const { data: subjectData, error: subjectError } = await supabase
-        .from("article_subject_areas")
-        .select("subject_area_id")
-        .eq("article_id", articleId);
-
-      if (subjectError) throw subjectError;
-
       return {
         ...articleData,
-        subject_area_ids: subjectData.map(s => s.subject_area_id)
+        subject_area_ids: [] // Will be populated when database is updated
       } as KnowledgeArticle & { subject_area_ids: string[] };
     },
     enabled: isEditing,
@@ -163,8 +160,8 @@ const ArticleEditor = () => {
         summary: article.summary || "",
         content: article.content || "<p>Skriv artikkelinnholdet her...</p>",
         categoryId: article.category_id || "",
-        contentTypeId: article.content_type_id || "",
-        subjectAreaIds: (article as any).subject_area_ids || [],
+        contentTypeId: "",
+        subjectAreaIds: [],
         tags: article.tags?.join(", ") || "",
         status: article.status || "draft",
         reference_code: article.reference_code || "",
@@ -227,9 +224,6 @@ const ArticleEditor = () => {
       if (!data.categoryId) {
         throw new Error("Kategori er påkrevd");
       }
-      if (!data.contentTypeId) {
-        throw new Error("Innholdstype er påkrevd");
-      }
 
       // Generate unique slug
       const desiredSlug = data.slug || data.title;
@@ -241,7 +235,6 @@ const ArticleEditor = () => {
         summary: data.summary || null,
         content: data.content,
         category_id: data.categoryId,
-        content_type_id: data.contentTypeId,
         tags: data.tags
           ? data.tags
               .split(",")
@@ -291,32 +284,6 @@ const ArticleEditor = () => {
           throw error;
         }
         savedArticle = result;
-      }
-
-      // Handle subject area relationships
-      if (isEditing && articleId) {
-        // Delete existing relationships
-        await supabase
-          .from("article_subject_areas")
-          .delete()
-          .eq("article_id", articleId);
-      }
-
-      // Insert new relationships
-      if (data.subjectAreaIds.length > 0) {
-        const subjectAreaData = data.subjectAreaIds.map(subjectAreaId => ({
-          article_id: savedArticle.id,
-          subject_area_id: subjectAreaId
-        }));
-
-        const { error: subjectError } = await supabase
-          .from("article_subject_areas")
-          .insert(subjectAreaData);
-
-        if (subjectError) {
-          console.error("Subject area error:", subjectError);
-          throw subjectError;
-        }
       }
 
       return savedArticle;
@@ -460,18 +427,17 @@ const ArticleEditor = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="contentTypeId">Innholdstype *</Label>
+                <Label htmlFor="contentTypeId">Innholdstype</Label>
                 <Controller
                   name="contentTypeId"
                   control={form.control}
-                  rules={{ required: "Innholdstype er påkrevd" }}
                   render={({ field }) => (
                     <Select value={field.value} onValueChange={field.onChange}>
                       <SelectTrigger>
                         <SelectValue placeholder="Velg innholdstype" />
                       </SelectTrigger>
                       <SelectContent>
-                        {contentTypes?.map((type) => (
+                        {contentTypes.map((type) => (
                           <SelectItem key={type.id} value={type.id}>
                             <div className="flex items-center gap-2">
                               <div 
@@ -486,11 +452,6 @@ const ArticleEditor = () => {
                     </Select>
                   )}
                 />
-                {form.formState.errors.contentTypeId && (
-                  <p className="text-sm text-destructive">
-                    {form.formState.errors.contentTypeId.message}
-                  </p>
-                )}
               </div>
             </div>
 
@@ -498,7 +459,7 @@ const ArticleEditor = () => {
             <div className="space-y-2">
               <Label>Emneområder</Label>
               <div className="grid grid-cols-2 gap-3">
-                {subjectAreas?.map((area) => (
+                {subjectAreas.map((area) => (
                   <Controller
                     key={area.id}
                     name="subjectAreaIds"
@@ -570,6 +531,27 @@ const ArticleEditor = () => {
                 {...form.register("tags")}
                 placeholder="revisjon, isa-315, risikovurdering"
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="content">Innhold *</Label>
+              <Controller
+                name="content"
+                control={form.control}
+                rules={{ required: "Innhold er påkrevd" }}
+                render={({ field }) => (
+                  <RichTextEditor
+                    content={field.value}
+                    onChange={field.onChange}
+                    placeholder="Skriv artikkelinnholdet her..."
+                  />
+                )}
+              />
+              {form.formState.errors.content && (
+                <p className="text-sm text-destructive">
+                  {form.formState.errors.content.message}
+                </p>
+              )}
             </div>
           </CardContent>
         </Card>
