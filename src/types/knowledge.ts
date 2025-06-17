@@ -16,6 +16,39 @@ export interface KnowledgeCategory {
   applicable_phases?: string[];
 }
 
+export interface ContentTypeEntity {
+  id: string;
+  name: string;
+  display_name: string;
+  description?: string;
+  icon?: string;
+  color: string;
+  sort_order: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SubjectArea {
+  id: string;
+  name: string;
+  display_name: string;
+  description?: string;
+  icon?: string;
+  color: string;
+  sort_order: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ArticleSubjectArea {
+  id: string;
+  article_id: string;
+  subject_area_id: string;
+  created_at: string;
+}
+
 export interface KnowledgeArticle {
   id: string;
   title: string;
@@ -23,6 +56,7 @@ export interface KnowledgeArticle {
   summary?: string;
   content: string;
   category_id: string;
+  content_type_id?: string;
   status: ArticleStatus;
   author_id: string;
   tags?: string[];
@@ -31,9 +65,11 @@ export interface KnowledgeArticle {
   updated_at: string;
   published_at?: string;
   category?: Partial<KnowledgeCategory>;
+  content_type?: Partial<ContentTypeEntity>;
+  subject_areas?: SubjectArea[];
   embedding?: any;
   reference_code?: string;
-  content_type?: ContentType;
+  content_type?: ContentType; // Legacy field
 }
 
 export interface KnowledgeFavorite {

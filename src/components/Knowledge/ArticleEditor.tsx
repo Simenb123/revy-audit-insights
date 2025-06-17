@@ -1,3 +1,4 @@
+
 import React from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -6,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -31,6 +33,8 @@ interface ArticleFormData {
   summary: string;
   content: string;
   categoryId: string;
+  contentTypeId: string;
+  subjectAreaIds: string[];
   tags: string;
   status: ArticleStatus;
   reference_code: string;
@@ -76,19 +80,59 @@ const ArticleEditor = () => {
     },
   });
 
+  const { data: contentTypes } = useQuery({
+    queryKey: ["content-types"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("content_types")
+        .select("*")
+        .eq("is_active", true)
+        .order("sort_order");
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: subjectAreas } = useQuery({
+    queryKey: ["subject-areas"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("subject_areas")
+        .select("*")
+        .eq("is_active", true)
+        .order("sort_order");
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const { data: article, isLoading: isLoadingArticle } = useQuery({
     queryKey: ["knowledge-article-edit", articleId],
     queryFn: async () => {
       if (!articleId) return null;
 
-      const { data, error } = await supabase
+      const { data: articleData, error: articleError } = await supabase
         .from("knowledge_articles")
         .select("*")
         .eq("id", articleId)
         .single();
 
-      if (error) throw error;
-      return data as KnowledgeArticle;
+      if (articleError) throw articleError;
+
+      // Get subject areas for this article
+      const { data: subjectData, error: subjectError } = await supabase
+        .from("article_subject_areas")
+        .select("subject_area_id")
+        .eq("article_id", articleId);
+
+      if (subjectError) throw subjectError;
+
+      return {
+        ...articleData,
+        subject_area_ids: subjectData.map(s => s.subject_area_id)
+      } as KnowledgeArticle & { subject_area_ids: string[] };
     },
     enabled: isEditing,
   });
@@ -100,6 +144,8 @@ const ArticleEditor = () => {
       summary: "",
       content: "<p>Skriv artikkelinnholdet her...</p>",
       categoryId: initialCategoryId || "",
+      contentTypeId: "",
+      subjectAreaIds: [],
       tags: "",
       status: "draft",
       reference_code: "",
@@ -117,6 +163,8 @@ const ArticleEditor = () => {
         summary: article.summary || "",
         content: article.content || "<p>Skriv artikkelinnholdet her...</p>",
         categoryId: article.category_id || "",
+        contentTypeId: article.content_type_id || "",
+        subjectAreaIds: (article as any).subject_area_ids || [],
         tags: article.tags?.join(", ") || "",
         status: article.status || "draft",
         reference_code: article.reference_code || "",
@@ -179,8 +227,11 @@ const ArticleEditor = () => {
       if (!data.categoryId) {
         throw new Error("Kategori er påkrevd");
       }
+      if (!data.contentTypeId) {
+        throw new Error("Innholdstype er påkrevd");
+      }
 
-      // Generate unique slug regardless of source
+      // Generate unique slug
       const desiredSlug = data.slug || data.title;
       const finalSlug = await generateUniqueSlug(desiredSlug);
 
@@ -190,6 +241,7 @@ const ArticleEditor = () => {
         summary: data.summary || null,
         content: data.content,
         category_id: data.categoryId,
+        content_type_id: data.contentTypeId,
         tags: data.tags
           ? data.tags
               .split(",")
@@ -205,6 +257,7 @@ const ArticleEditor = () => {
 
       console.log("Article data to save:", articleData);
 
+      let savedArticle;
       if (isEditing && articleId) {
         const { data: result, error } = await supabase
           .from("knowledge_articles")
@@ -221,7 +274,7 @@ const ArticleEditor = () => {
           }
           throw error;
         }
-        return result;
+        savedArticle = result;
       } else {
         const { data: result, error } = await supabase
           .from("knowledge_articles")
@@ -237,8 +290,36 @@ const ArticleEditor = () => {
           }
           throw error;
         }
-        return result;
+        savedArticle = result;
       }
+
+      // Handle subject area relationships
+      if (isEditing && articleId) {
+        // Delete existing relationships
+        await supabase
+          .from("article_subject_areas")
+          .delete()
+          .eq("article_id", articleId);
+      }
+
+      // Insert new relationships
+      if (data.subjectAreaIds.length > 0) {
+        const subjectAreaData = data.subjectAreaIds.map(subjectAreaId => ({
+          article_id: savedArticle.id,
+          subject_area_id: subjectAreaId
+        }));
+
+        const { error: subjectError } = await supabase
+          .from("article_subject_areas")
+          .insert(subjectAreaData);
+
+        if (subjectError) {
+          console.error("Subject area error:", subjectError);
+          throw subjectError;
+        }
+      }
+
+      return savedArticle;
     },
     onSuccess: (result) => {
       toast.success(isEditing ? "Artikkel oppdatert" : "Artikkel opprettet");
@@ -379,6 +460,80 @@ const ArticleEditor = () => {
               </div>
 
               <div className="space-y-2">
+                <Label htmlFor="contentTypeId">Innholdstype *</Label>
+                <Controller
+                  name="contentTypeId"
+                  control={form.control}
+                  rules={{ required: "Innholdstype er påkrevd" }}
+                  render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Velg innholdstype" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {contentTypes?.map((type) => (
+                          <SelectItem key={type.id} value={type.id}>
+                            <div className="flex items-center gap-2">
+                              <div 
+                                className="w-3 h-3 rounded" 
+                                style={{ backgroundColor: type.color }}
+                              />
+                              {type.display_name}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                {form.formState.errors.contentTypeId && (
+                  <p className="text-sm text-destructive">
+                    {form.formState.errors.contentTypeId.message}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Subject Areas */}
+            <div className="space-y-2">
+              <Label>Emneområder</Label>
+              <div className="grid grid-cols-2 gap-3">
+                {subjectAreas?.map((area) => (
+                  <Controller
+                    key={area.id}
+                    name="subjectAreaIds"
+                    control={form.control}
+                    render={({ field }) => (
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`area-${area.id}`}
+                          checked={field.value.includes(area.id)}
+                          onCheckedChange={(checked) => {
+                            const newValue = checked
+                              ? [...field.value, area.id]
+                              : field.value.filter(id => id !== area.id);
+                            field.onChange(newValue);
+                          }}
+                        />
+                        <Label
+                          htmlFor={`area-${area.id}`}
+                          className="text-sm font-normal cursor-pointer flex items-center gap-2"
+                        >
+                          <div 
+                            className="w-3 h-3 rounded" 
+                            style={{ backgroundColor: area.color }}
+                          />
+                          {area.display_name}
+                        </Label>
+                      </div>
+                    )}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
                 <Label htmlFor="status">Status</Label>
                 <Controller
                   name="status"
@@ -397,17 +552,7 @@ const ArticleEditor = () => {
                   )}
                 />
               </div>
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="tags">Tags (kommaseparert)</Label>
-                <Input
-                  id="tags"
-                  {...form.register("tags")}
-                  placeholder="revisjon, isa-315, risikovurdering"
-                />
-              </div>
               <div className="space-y-2">
                 <Label htmlFor="reference_code">Referansekode</Label>
                 <Input
@@ -417,35 +562,13 @@ const ArticleEditor = () => {
                 />
               </div>
             </div>
-          </CardContent>
-        </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Innhold</CardTitle>
-          </CardHeader>
-          <CardContent>
             <div className="space-y-2">
-              <Label htmlFor="content">Artikkelinnhold *</Label>
-              <Controller
-                name="content"
-                control={form.control}
-                rules={{ required: "Artikkelinnhold kan ikke være tomt." }}
-                render={({ field, fieldState }) => (
-                  <>
-                    <RichTextEditor
-                      content={
-                        field.value || "<p>Skriv artikkelinnholdet her...</p>"
-                      }
-                      onChange={field.onChange}
-                    />
-                    {fieldState.error && (
-                      <p className="text-sm font-medium text-destructive mt-1">
-                        {fieldState.error.message}
-                      </p>
-                    )}
-                  </>
-                )}
+              <Label htmlFor="tags">Tags (kommaseparert)</Label>
+              <Input
+                id="tags"
+                {...form.register("tags")}
+                placeholder="revisjon, isa-315, risikovurdering"
               />
             </div>
           </CardContent>
