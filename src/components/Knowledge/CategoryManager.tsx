@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { KnowledgeCategory } from '@/types/knowledge';
-import { Folder, FolderOpen, Edit, Trash2, Plus, Move, ArrowUp, ArrowDown, AlertTriangle, ChevronRight, ChevronDown } from 'lucide-react';
+import { Folder, FolderOpen, Edit, Trash2, Plus, Move, AlertTriangle, ChevronRight, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
 import ConfirmDeleteDialog from './ConfirmDeleteDialog';
 
@@ -111,23 +111,27 @@ const CategoryManager = () => {
   const deleteCategoryMutation = useMutation({
     mutationFn: async (categoryId: string) => {
       // Check if category has articles
-      const { data: articlesInCategory } = await supabase
+      const { data: articlesInCategory, error: articlesError } = await supabase
         .from('knowledge_articles')
         .select('id')
         .eq('category_id', categoryId);
       
+      if (articlesError) throw articlesError;
+      
       // Check if category has subcategories
-      const { data: subcategories } = await supabase
+      const { data: subcategories, error: subcategoriesError } = await supabase
         .from('knowledge_categories')
         .select('id, name')
         .eq('parent_category_id', categoryId);
+      
+      if (subcategoriesError) throw subcategoriesError;
       
       if (articlesInCategory && articlesInCategory.length > 0) {
         throw new Error(`Kan ikke slette kategori som inneholder ${articlesInCategory.length} artikler`);
       }
       
       if (subcategories && subcategories.length > 0) {
-        throw new Error(`Kan ikke slette kategori som har ${subcategories.length} underkategorier`);
+        throw new Error(`Kan ikke slette kategori som har ${subcategories.length} underkategorier. Du må først flytte eller slette underkategoriene.`);
       }
 
       const { error } = await supabase
@@ -145,6 +149,7 @@ const CategoryManager = () => {
     },
     onError: (error: Error) => {
       toast.error(error.message);
+      setIsDeleteDialogOpen(false);
     }
   });
 
@@ -167,26 +172,51 @@ const CategoryManager = () => {
 
   const deleteEmptySubcategoriesMutation = useMutation({
     mutationFn: async (parentCategoryId: string) => {
-      const { data: subcategories } = await supabase
+      const { data: subcategories, error: subcategoriesError } = await supabase
         .from('knowledge_categories')
         .select('id, name')
         .eq('parent_category_id', parentCategoryId);
       
-      if (!subcategories) return;
+      if (subcategoriesError) throw subcategoriesError;
+      if (!subcategories) return 0;
       
       let deletedCount = 0;
       for (const subcat of subcategories) {
-        const { data: articles } = await supabase
+        // Check if subcategory has articles
+        const { data: articles, error: articlesError } = await supabase
           .from('knowledge_articles')
           .select('id')
           .eq('category_id', subcat.id);
         
-        if (!articles || articles.length === 0) {
-          await supabase
+        if (articlesError) {
+          console.error(`Error checking articles for category ${subcat.name}:`, articlesError);
+          continue;
+        }
+        
+        // Check if subcategory has its own subcategories
+        const { data: nestedSubcategories, error: nestedError } = await supabase
+          .from('knowledge_categories')
+          .select('id')
+          .eq('parent_category_id', subcat.id);
+        
+        if (nestedError) {
+          console.error(`Error checking nested subcategories for ${subcat.name}:`, nestedError);
+          continue;
+        }
+        
+        // Only delete if truly empty (no articles and no subcategories)
+        if ((!articles || articles.length === 0) && (!nestedSubcategories || nestedSubcategories.length === 0)) {
+          const { error: deleteError } = await supabase
             .from('knowledge_categories')
             .delete()
             .eq('id', subcat.id);
-          deletedCount++;
+          
+          if (deleteError) {
+            console.error(`Error deleting category ${subcat.name}:`, deleteError);
+          } else {
+            deletedCount++;
+            console.log(`Deleted empty category: ${subcat.name}`);
+          }
         }
       }
       
@@ -194,7 +224,14 @@ const CategoryManager = () => {
     },
     onSuccess: (deletedCount) => {
       queryClient.invalidateQueries({ queryKey: ['knowledge-categories-all'] });
-      toast.success(`${deletedCount} tomme underkategorier slettet`);
+      if (deletedCount > 0) {
+        toast.success(`${deletedCount} tomme underkategorier slettet`);
+      } else {
+        toast.info('Ingen tomme underkategorier funnet');
+      }
+    },
+    onError: (error: Error) => {
+      toast.error('Feil ved sletting av underkategorier: ' + error.message);
     }
   });
 
@@ -223,15 +260,21 @@ const CategoryManager = () => {
       const hasChildren = category.children && category.children.length > 0;
       const isExpanded = expandedCategories.has(category.id);
       const isSelected = selectedCategory?.id === category.id;
-      const articlesCount = articles.length;
-      const isEmpty = !hasChildren && articlesCount === 0;
+      
+      // Count articles in this specific category
+      const articlesInCategory = categories.filter(c => c.id === category.id).length > 0 ? 
+        articles.filter(a => a.category_id === category.id).length : 0;
+      
+      // Check if category is empty (no articles and no subcategories)
+      const isEmpty = !hasChildren && articlesInCategory === 0;
       
       return (
         <div key={category.id} className="w-full">
           <div 
             className={`flex items-center gap-2 p-2 rounded-md cursor-pointer transition-colors hover:bg-accent/50 ${
               isSelected ? 'bg-accent border border-primary/20' : ''
-            } ${depth > 0 ? 'ml-6' : ''}`}
+            }`}
+            style={{ marginLeft: `${depth * 24}px` }}
             onClick={() => setSelectedCategory(category)}
           >
             {hasChildren && (
@@ -290,16 +333,22 @@ const CategoryManager = () => {
     const subcategories = categories.filter(c => c.parent_category_id === selectedCategory.id);
     const articlesCount = articles.length;
     const isEmpty = subcategories.length === 0 && articlesCount === 0;
-    const hasEmptySubcategories = subcategories.some(sub => {
-      const subArticles = categories.filter(c => c.parent_category_id === sub.id);
-      return subArticles.length === 0;
+    
+    // Count empty subcategories (no articles and no nested subcategories)
+    const emptySubcategories = subcategories.filter(sub => {
+      const hasArticles = articles.some(a => a.category_id === sub.id);
+      const hasNestedSubcategories = categories.some(c => c.parent_category_id === sub.id);
+      return !hasArticles && !hasNestedSubcategories;
     });
+    
+    const hasEmptySubcategories = emptySubcategories.length > 0;
     
     return {
       subcategories,
       articlesCount,
       isEmpty,
-      hasEmptySubcategories
+      hasEmptySubcategories,
+      emptySubcategoriesCount: emptySubcategories.length
     };
   };
 
@@ -447,7 +496,7 @@ const CategoryManager = () => {
                           Tomme underkategorier funnet
                         </h4>
                         <p className="text-sm text-orange-700 mb-3">
-                          Denne kategorien har tomme underkategorier som kan slettes.
+                          Denne kategorien har {selectedDetails.emptySubcategoriesCount} tomme underkategorier som kan slettes.
                         </p>
                         <Button 
                           size="sm" 
@@ -456,7 +505,7 @@ const CategoryManager = () => {
                           disabled={deleteEmptySubcategoriesMutation.isPending}
                         >
                           <Trash2 className="h-4 w-4 mr-1" />
-                          Slett tomme underkategorier
+                          {deleteEmptySubcategoriesMutation.isPending ? 'Sletter...' : 'Slett tomme underkategorier'}
                         </Button>
                       </div>
                     )}
@@ -518,7 +567,7 @@ const CategoryManager = () => {
           usageCount={selectedDetails.articlesCount + selectedDetails.subcategories.length}
           consequences={[
             ...(selectedDetails.articlesCount > 0 ? [`${selectedDetails.articlesCount} artikler vil miste sin kategori`] : []),
-            ...(selectedDetails.subcategories.length > 0 ? [`${selectedDetails.subcategories.length} underkategorier må flyttes først`] : []),
+            ...(selectedDetails.subcategories.length > 0 ? [`${selectedDetails.subcategories.length} underkategorier må flyttes eller slettes først`] : []),
             'Handlingen kan ikke angres'
           ]}
         />
