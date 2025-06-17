@@ -44,7 +44,7 @@ const CategoryManager = () => {
       
       const { data, error } = await supabase
         .from('knowledge_articles')
-        .select('id, title, status, tags')
+        .select('id, title, status, tags, category_id')
         .eq('category_id', selectedCategory.id);
       
       if (error) throw error;
@@ -262,8 +262,7 @@ const CategoryManager = () => {
       const isSelected = selectedCategory?.id === category.id;
       
       // Count articles in this specific category
-      const articlesInCategory = categories.filter(c => c.id === category.id).length > 0 ? 
-        articles.filter(a => a.category_id === category.id).length : 0;
+      const articlesInCategory = selectedCategory?.id === category.id ? articles.length : 0;
       
       // Check if category is empty (no articles and no subcategories)
       const isEmpty = !hasChildren && articlesInCategory === 0;
@@ -336,9 +335,8 @@ const CategoryManager = () => {
     
     // Count empty subcategories (no articles and no nested subcategories)
     const emptySubcategories = subcategories.filter(sub => {
-      const hasArticles = articles.some(a => a.category_id === sub.id);
       const hasNestedSubcategories = categories.some(c => c.parent_category_id === sub.id);
-      return !hasArticles && !hasNestedSubcategories;
+      return !hasNestedSubcategories;
     });
     
     const hasEmptySubcategories = emptySubcategories.length > 0;
