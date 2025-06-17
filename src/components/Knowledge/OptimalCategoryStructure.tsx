@@ -144,12 +144,24 @@ const OptimalCategoryStructure = () => {
 
   const createOptimalStructureMutation = useMutation({
     mutationFn: async () => {
-      // Start with clearing existing structure
       toast.info('Starter implementering av optimal struktur...');
       
-      let order = 0;
+      // First, get existing categories to avoid duplicates
+      const { data: existingCategories } = await supabase
+        .from('knowledge_categories')
+        .select('*');
+      
+      const existingNames = new Set(existingCategories?.map(c => c.name) || []);
+      
+      let order = 100; // Start with high number to avoid conflicts
       
       for (const [mainCategoryName, mainCategoryData] of Object.entries(optimalStructure)) {
+        // Skip if main category already exists
+        if (existingNames.has(mainCategoryName)) {
+          console.log(`Hopper over eksisterende hovedkategori: ${mainCategoryName}`);
+          continue;
+        }
+        
         // Create main category
         const { data: mainCategory, error: mainError } = await supabase
           .from('knowledge_categories')
@@ -163,12 +175,21 @@ const OptimalCategoryStructure = () => {
           .select()
           .single();
         
-        if (mainError) throw mainError;
+        if (mainError) {
+          console.error('Feil ved opprettelse av hovedkategori:', mainError);
+          continue;
+        }
         
         let subOrder = 0;
         
         // Create subcategories
         for (const [subCategoryName, subCategoryData] of Object.entries(mainCategoryData.children)) {
+          // Skip if subcategory already exists
+          if (existingNames.has(subCategoryName)) {
+            console.log(`Hopper over eksisterende underkategori: ${subCategoryName}`);
+            continue;
+          }
+          
           const { data: subCategory, error: subError } = await supabase
             .from('knowledge_categories')
             .insert({
@@ -180,11 +201,20 @@ const OptimalCategoryStructure = () => {
             .select()
             .single();
           
-          if (subError) throw subError;
+          if (subError) {
+            console.error('Feil ved opprettelse av underkategori:', subError);
+            continue;
+          }
           
           // Create individual item categories if needed
           let itemOrder = 0;
           for (const item of subCategoryData.items) {
+            // Skip if item already exists
+            if (existingNames.has(item)) {
+              console.log(`Hopper over eksisterende element: ${item}`);
+              continue;
+            }
+            
             await supabase
               .from('knowledge_categories')
               .insert({
@@ -198,9 +228,10 @@ const OptimalCategoryStructure = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['knowledge-categories-all'] });
-      toast.success('Optimal kategoristruktur implementert!');
+      toast.success('Optimal kategoristruktur implementert! Eksisterende kategorier ble bevart.');
     },
     onError: (error) => {
+      console.error('Implementeringsfeil:', error);
       toast.error(`Feil ved implementering: ${error.message}`);
     }
   });
@@ -255,6 +286,17 @@ const OptimalCategoryStructure = () => {
                 <li>• Tydelig skille mellom standarder, metodikk og praksis</li>
                 <li>• Bedre kontekstforståelse for anbefalinger</li>
                 <li>• Enklere å finne relaterte artikler og emner</li>
+              </ul>
+            </div>
+
+            <div className="bg-green-50 p-4 rounded-lg">
+              <h3 className="font-semibold text-green-900 mb-2">Implementeringsdetaljer:</h3>
+              <ul className="text-sm text-green-800 space-y-1">
+                <li>• Eksisterende kategorier bevares (ingen data går tapt)</li>
+                <li>• Nye kategorier får høye sorteringsnumre for å unngå konflikter</li>
+                <li>• Duplikater hoppes over automatisk</li>
+                <li>• ISA-standarder organiseres i logiske grupper</li>
+                <li>• Hierarkisk struktur med 3 nivåer: Hovedområde → Underområde → Spesifikk standard</li>
               </ul>
             </div>
             
