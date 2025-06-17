@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -54,9 +53,19 @@ const CategoryManager = () => {
 
   const updateCategoryMutation = useMutation({
     mutationFn: async (category: Partial<KnowledgeCategory> & { id: string }) => {
+      // Clean the category data to match database schema
+      const cleanCategory = {
+        name: category.name,
+        description: category.description,
+        parent_category_id: category.parent_category_id,
+        display_order: category.display_order,
+        icon: category.icon,
+        applicable_phases: category.applicable_phases as ("engagement" | "planning" | "execution" | "conclusion")[] | null
+      };
+
       const { data, error } = await supabase
         .from('knowledge_categories')
-        .update(category)
+        .update(cleanCategory)
         .eq('id', category.id)
         .select()
         .single();
@@ -73,9 +82,19 @@ const CategoryManager = () => {
 
   const createCategoryMutation = useMutation({
     mutationFn: async (category: Omit<KnowledgeCategory, 'id' | 'created_at' | 'updated_at'>) => {
+      // Clean the category data to match database schema
+      const cleanCategory = {
+        name: category.name,
+        description: category.description,
+        parent_category_id: category.parent_category_id,
+        display_order: category.display_order,
+        icon: category.icon,
+        applicable_phases: category.applicable_phases as ("engagement" | "planning" | "execution" | "conclusion")[] | null
+      };
+
       const { data, error } = await supabase
         .from('knowledge_categories')
-        .insert(category)
+        .insert(cleanCategory)
         .select()
         .single();
       
