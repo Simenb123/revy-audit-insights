@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -56,7 +57,7 @@ const CategoryManager = () => {
       const cleanCategory = {
         name: category.name,
         description: category.description,
-        parent_category_id: category.parent_category_id,
+        parent_category_id: category.parent_category_id === 'none' ? null : category.parent_category_id,
         display_order: category.display_order,
         icon: category.icon,
         applicable_phases: category.applicable_phases as ("engagement" | "planning" | "execution" | "conclusion")[] | null
@@ -84,7 +85,7 @@ const CategoryManager = () => {
       const cleanCategory = {
         name: category.name,
         description: category.description,
-        parent_category_id: category.parent_category_id,
+        parent_category_id: category.parent_category_id === 'none' ? null : category.parent_category_id,
         display_order: category.display_order,
         icon: category.icon,
         applicable_phases: category.applicable_phases as ("engagement" | "planning" | "execution" | "conclusion")[] | null
@@ -380,7 +381,7 @@ const CategoryForm = ({
   const [formData, setFormData] = useState({
     name: category?.name || '',
     description: category?.description || '',
-    parent_category_id: category?.parent_category_id || '',
+    parent_category_id: category?.parent_category_id || 'none',
     display_order: category?.display_order || 0,
     icon: category?.icon || ''
   });
@@ -389,7 +390,7 @@ const CategoryForm = ({
     e.preventDefault();
     onSubmit({
       ...formData,
-      parent_category_id: formData.parent_category_id || null,
+      parent_category_id: formData.parent_category_id === 'none' ? null : formData.parent_category_id,
       display_order: Number(formData.display_order)
     });
   };
@@ -425,7 +426,7 @@ const CategoryForm = ({
             <SelectValue placeholder="Velg overordnet kategori (valgfritt)" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Ingen (hovedkategori)</SelectItem>
+            <SelectItem value="none">Ingen (hovedkategori)</SelectItem>
             {categories.map((cat) => (
               <SelectItem key={cat.id} value={cat.id}>
                 {cat.name}
