@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -43,8 +42,8 @@ const KnowledgeOverview = () => {
       
       if (error) throw error;
       return data as (KnowledgeCategory & { 
-        subcategories: { count: number }[];
-        articles: { count: number }[];
+        subcategories: { count: number };
+        articles: { count: number };
       })[];
     },
   });
