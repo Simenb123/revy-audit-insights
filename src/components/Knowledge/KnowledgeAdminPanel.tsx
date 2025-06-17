@@ -3,12 +3,13 @@ import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Settings, FolderTree, Tags, Sparkles, Database, FileText, Users } from 'lucide-react';
+import { Settings, FolderTree, Tags, Sparkles, Database, FileText, Users, ListChecks } from 'lucide-react';
 import CategoryManager from './CategoryManager';
 import OptimalCategoryStructure from './OptimalCategoryStructure';
 import TagManager from './TagManager';
 import ContentTypeManager from './ContentTypeManager';
 import SubjectAreaManager from './SubjectAreaManager';
+import AuditActionManager from './AuditActionManager';
 
 const KnowledgeAdminPanel = () => {
   return (
@@ -17,7 +18,7 @@ const KnowledgeAdminPanel = () => {
         <div>
           <h1 className="text-2xl font-bold">Kunnskapsbase administrasjon</h1>
           <p className="text-muted-foreground">
-            Administrer kategorier, innholdstyper, emneområder og struktur for optimal AI-Revy ytelse
+            Administrer kategorier, innholdstyper, emneområder, revisjonshandlinger og struktur for optimal AI-Revy ytelse
           </p>
         </div>
         <Badge variant="outline" className="flex items-center gap-1">
@@ -26,8 +27,12 @@ const KnowledgeAdminPanel = () => {
         </Badge>
       </div>
 
-      <Tabs defaultValue="content-types" className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
+      <Tabs defaultValue="audit-actions" className="w-full">
+        <TabsList className="grid w-full grid-cols-7">
+          <TabsTrigger value="audit-actions" className="flex items-center gap-2">
+            <ListChecks className="h-4 w-4" />
+            Handlinger
+          </TabsTrigger>
           <TabsTrigger value="content-types" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
             Typer
@@ -54,6 +59,21 @@ const KnowledgeAdminPanel = () => {
           </TabsTrigger>
         </TabsList>
 
+        <TabsContent value="audit-actions" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Revisjonshandlinger administrasjon</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground mb-4">
+                Administrer praktiske revisjonshandlinger og prosedyrer som kan kobles til spesifikke 
+                fagområder og risikonivåer. Disse kan brukes av AI-Revy for å gi klienttilpassede forslag.
+              </p>
+            </CardContent>
+          </Card>
+          <AuditActionManager />
+        </TabsContent>
+
         <TabsContent value="content-types" className="space-y-4">
           <Card>
             <CardHeader>
@@ -61,7 +81,7 @@ const KnowledgeAdminPanel = () => {
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground mb-4">
-                Administrer innholdstyper som artikkel, lov, standard, forskrift, forarbeid og dom.
+                Administrer innholdstyper som artikkel, lov, standard, forskrift, forarbeid, dom og revisjonshandlinger.
                 Hver type kan ha egne farger og ikoner for enkel identifikasjon.
               </p>
             </CardContent>
@@ -139,6 +159,10 @@ const AnalysisPanel = () => {
               <Badge variant="outline">125</Badge>
             </div>
             <div className="flex justify-between items-center">
+              <span className="text-sm">Revisjonshandlinger</span>
+              <Badge variant="outline">67</Badge>
+            </div>
+            <div className="flex justify-between items-center">
               <span className="text-sm">ISA-standarder</span>
               <Badge variant="outline">45</Badge>
             </div>
@@ -157,16 +181,20 @@ const AnalysisPanel = () => {
         <CardContent>
           <div className="space-y-2">
             <div className="flex justify-between items-center">
-              <span className="text-sm">Revisjon</span>
-              <Badge variant="outline">89</Badge>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm">Regnskap</span>
-              <Badge variant="outline">67</Badge>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm">Skatt</span>
+              <span className="text-sm">Inntekter/Salg</span>
               <Badge variant="outline">34</Badge>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm">Varelager</span>
+              <Badge variant="outline">28</Badge>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm">Banktransaksjoner</span>
+              <Badge variant="outline">22</Badge>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm">Revisjon (generelt)</span>
+              <Badge variant="outline">89</Badge>
             </div>
           </div>
         </CardContent>
@@ -184,6 +212,10 @@ const AnalysisPanel = () => {
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm">Emne-mappning</span>
+              <Badge variant="default">96%</Badge>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm">Handlings-koblinger</span>
               <Badge variant="default">94%</Badge>
             </div>
             <div className="flex justify-between items-center">

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -25,12 +24,27 @@ const SubjectAreaManager = () => {
   const [editingArea, setEditingArea] = useState<SubjectArea | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  // Temporary hardcoded data until database tables are created
+  // Expanded with specific audit areas for revisjonshandlinger
   const [subjectAreas, setSubjectAreas] = useState<SubjectArea[]>([
-    { id: '1', name: 'revisjon', display_name: 'Revisjon', description: 'Revisjonsteori, standarder og metodikk', icon: 'shield-check', color: '#3B82F6', sort_order: 1, is_active: true },
+    // Original general areas
+    { id: '1', name: 'revisjon', display_name: 'Revisjon', description: 'Generell revisjonsteori og metodikk', icon: 'shield-check', color: '#3B82F6', sort_order: 1, is_active: true },
     { id: '2', name: 'regnskap', display_name: 'Regnskap', description: 'Regnskapsstandarder og regnskapsregler', icon: 'calculator', color: '#10B981', sort_order: 2, is_active: true },
     { id: '3', name: 'skatt', display_name: 'Skatt', description: 'Skattelover, regler og veiledning', icon: 'coins', color: '#F59E0B', sort_order: 3, is_active: true },
-    { id: '4', name: 'annet', display_name: 'Annet', description: 'Øvrige fagområder og tverrgående temaer', icon: 'folder', color: '#6B7280', sort_order: 4, is_active: true }
+    
+    // Specific audit areas for revisjonshandlinger
+    { id: '5', name: 'inntekter', display_name: 'Inntekter/Salg', description: 'Revisjonshandlinger for inntektsføring og salg', icon: 'trending-up', color: '#059669', sort_order: 5, is_active: true },
+    { id: '6', name: 'lonn', display_name: 'Lønn', description: 'Revisjonshandlinger for lønn og personalutgifter', icon: 'users', color: '#7C3AED', sort_order: 6, is_active: true },
+    { id: '7', name: 'andre-driftskostnader', display_name: 'Andre driftskostnader', description: 'Revisjonshandlinger for øvrige driftskostnader', icon: 'receipt', color: '#DC2626', sort_order: 7, is_active: true },
+    { id: '8', name: 'varelager', display_name: 'Varelager', description: 'Revisjonshandlinger for varelager og lagerføring', icon: 'package', color: '#EA580C', sort_order: 8, is_active: true },
+    { id: '9', name: 'banktransaksjoner', display_name: 'Banktransaksjoner', description: 'Revisjonshandlinger for bank og kontanter', icon: 'banknote', color: '#0891B2', sort_order: 9, is_active: true },
+    { id: '10', name: 'investeringer', display_name: 'Investeringer/Anleggsmidler', description: 'Revisjonshandlinger for anleggsmidler og investeringer', icon: 'building', color: '#9333EA', sort_order: 10, is_active: true },
+    { id: '11', name: 'kundefordringer', display_name: 'Kundefordringer', description: 'Revisjonshandlinger for kundefordringer og nedskrivninger', icon: 'user-check', color: '#16A34A', sort_order: 11, is_active: true },
+    { id: '12', name: 'leverandorgjeld', display_name: 'Leverandørgjeld', description: 'Revisjonshandlinger for leverandørgjeld og påløpte kostnader', icon: 'credit-card', color: '#DB2777', sort_order: 12, is_active: true },
+    { id: '13', name: 'egenkapital', display_name: 'Egenkapital', description: 'Revisjonshandlinger for egenkapital og utbytte', icon: 'pie-chart', color: '#7C2D12', sort_order: 13, is_active: true },
+    { id: '14', name: 'naerstaaende', display_name: 'Nærstående transaksjoner', description: 'Revisjonshandlinger for nærstående parter og transaksjoner', icon: 'link', color: '#BE185D', sort_order: 14, is_active: true },
+    
+    // Keep general "annet" category
+    { id: '4', name: 'annet', display_name: 'Annet', description: 'Øvrige fagområder og tverrgående temaer', icon: 'folder', color: '#6B7280', sort_order: 15, is_active: true }
   ]);
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {

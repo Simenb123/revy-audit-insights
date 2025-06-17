@@ -25,7 +25,7 @@ const ContentTypeManager = () => {
   const [editingType, setEditingType] = useState<ContentType | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  // Temporary hardcoded data until database tables are created
+  // Updated with "Revisjonshandlinger" as new content type
   const [contentTypes, setContentTypes] = useState<ContentType[]>([
     { id: '1', name: 'fagartikkel', display_name: 'Fagartikkel', description: 'Generelle fagartikler og veiledninger', icon: 'file-text', color: '#3B82F6', sort_order: 1, is_active: true },
     { id: '2', name: 'lov', display_name: 'Lov', description: 'Lovtekster og juridiske dokumenter', icon: 'scale', color: '#10B981', sort_order: 2, is_active: true },
@@ -33,7 +33,8 @@ const ContentTypeManager = () => {
     { id: '4', name: 'nrs-standard', display_name: 'NRS-standard', description: 'Norske Revisjons Standarder', icon: 'book', color: '#6366F1', sort_order: 4, is_active: true },
     { id: '5', name: 'forskrift', display_name: 'Forskrift', description: 'Forskrifter og reglementer', icon: 'gavel', color: '#F59E0B', sort_order: 5, is_active: true },
     { id: '6', name: 'forarbeider', display_name: 'Forarbeider', description: 'Forarbeider og proposisjoner', icon: 'file-text', color: '#6B7280', sort_order: 6, is_active: true },
-    { id: '7', name: 'dom', display_name: 'Dom', description: 'Rettsavgjørelser og dommer', icon: 'scale', color: '#EF4444', sort_order: 7, is_active: true }
+    { id: '7', name: 'dom', display_name: 'Dom', description: 'Rettsavgjørelser og dommer', icon: 'scale', color: '#EF4444', sort_order: 7, is_active: true },
+    { id: '8', name: 'revisjonshandlinger', display_name: 'Revisjonshandlinger', description: 'Praktiske revisjonshandlinger og prosedyrer', icon: 'list-checks', color: '#059669', sort_order: 8, is_active: true }
   ]);
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {

@@ -94,7 +94,7 @@ const ArticleEditor = () => {
     },
   });
 
-  // Temporary hardcoded data until database tables are created
+  // Updated temporary hardcoded data until database tables are created
   const contentTypes: ContentType[] = [
     { id: '1', name: 'fagartikkel', display_name: 'Fagartikkel', color: '#3B82F6' },
     { id: '2', name: 'lov', display_name: 'Lov', color: '#10B981' },
@@ -102,13 +102,27 @@ const ArticleEditor = () => {
     { id: '4', name: 'nrs-standard', display_name: 'NRS-standard', color: '#6366F1' },
     { id: '5', name: 'forskrift', display_name: 'Forskrift', color: '#F59E0B' },
     { id: '6', name: 'forarbeider', display_name: 'Forarbeider', color: '#6B7280' },
-    { id: '7', name: 'dom', display_name: 'Dom', color: '#EF4444' }
+    { id: '7', name: 'dom', display_name: 'Dom', color: '#EF4444' },
+    { id: '8', name: 'revisjonshandlinger', display_name: 'Revisjonshandlinger', color: '#059669' }
   ];
 
   const subjectAreas: SubjectArea[] = [
+    // General areas
     { id: '1', name: 'revisjon', display_name: 'Revisjon', color: '#3B82F6' },
     { id: '2', name: 'regnskap', display_name: 'Regnskap', color: '#10B981' },
     { id: '3', name: 'skatt', display_name: 'Skatt', color: '#F59E0B' },
+    
+    // Specific audit areas
+    { id: '5', name: 'inntekter', display_name: 'Inntekter/Salg', color: '#059669' },
+    { id: '6', name: 'lonn', display_name: 'Lønn', color: '#7C3AED' },
+    { id: '7', name: 'andre-driftskostnader', display_name: 'Andre driftskostnader', color: '#DC2626' },
+    { id: '8', name: 'varelager', display_name: 'Varelager', color: '#EA580C' },
+    { id: '9', name: 'banktransaksjoner', display_name: 'Banktransaksjoner', color: '#0891B2' },
+    { id: '10', name: 'investeringer', display_name: 'Investeringer/Anleggsmidler', color: '#9333EA' },
+    { id: '11', name: 'kundefordringer', display_name: 'Kundefordringer', color: '#16A34A' },
+    { id: '12', name: 'leverandorgjeld', display_name: 'Leverandørgjeld', color: '#DB2777' },
+    { id: '13', name: 'egenkapital', display_name: 'Egenkapital', color: '#7C2D12' },
+    { id: '14', name: 'naerstaaende', display_name: 'Nærstående transaksjoner', color: '#BE185D' },
     { id: '4', name: 'annet', display_name: 'Annet', color: '#6B7280' }
   ];
 
