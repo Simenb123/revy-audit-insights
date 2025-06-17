@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 import { supabase } from '@/integrations/supabase/client';
 import { KnowledgeCategory, KnowledgeArticle } from '@/types/knowledge';
+import ContentTypeBadge from './ContentTypeBadge';
 import { Plus, Clock, Eye } from 'lucide-react';
 
 const CategoryView = () => {
@@ -162,9 +163,14 @@ const CategoryView = () => {
               <Card key={article.id} className="hover:shadow-sm transition-shadow bg-card">
                 <CardContent className="p-4">
                   <Link to={`/fag/artikkel/${article.slug}`} className="block">
-                    <h3 className="font-medium hover:text-primary transition-colors">
-                      {article.title}
-                    </h3>
+                    <div className="flex items-start justify-between gap-3 mb-2">
+                      <h3 className="font-medium hover:text-primary transition-colors flex-1">
+                        {article.title}
+                      </h3>
+                      {article.content_type && (
+                        <ContentTypeBadge contentType={article.content_type} />
+                      )}
+                    </div>
                     {article.summary && (
                       <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
                         {article.summary}

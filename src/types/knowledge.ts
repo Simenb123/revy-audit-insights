@@ -1,6 +1,8 @@
 
 export type ArticleStatus = 'draft' | 'published' | 'archived';
 
+export type ContentType = 'fagartikkel' | 'isa-standard' | 'nrs-standard' | 'lov' | 'forskrift' | 'forarbeider';
+
 export interface KnowledgeCategory {
   id: string;
   name: string;
@@ -31,6 +33,7 @@ export interface KnowledgeArticle {
   category?: Partial<KnowledgeCategory>;
   embedding?: any;
   reference_code?: string;
+  content_type?: ContentType;
 }
 
 export interface KnowledgeFavorite {

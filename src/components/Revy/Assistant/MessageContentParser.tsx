@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { extractTagsFromContent } from './TagExtractor';
+import ContentTypeBadge from '@/components/Knowledge/ContentTypeBadge';
 
 interface MessageContentParserProps {
   content: string;
@@ -22,7 +23,7 @@ interface ArticleMapping {
   category?: string;
 }
 
-// Content type configuration with colors and icons
+// Enhanced content type configuration
 const CONTENT_TYPE_CONFIG = {
   'fagartikkel': {
     label: 'Fagartikkel',
@@ -322,29 +323,31 @@ export const MessageContentParser = ({ content, isEmbedded = false }: MessageCon
         const matches = [...trimmedLine.matchAll(articleLinkRegex)];
         
         processedElements.push(
-          <div key={`articles-${i}`} className="my-3">
-            <div className="flex items-center gap-2 text-blue-800 font-medium mb-2">
+          <div key={`articles-${i}`} className="my-4">
+            <div className="flex items-center gap-2 text-blue-800 font-medium mb-3">
               <FileText className="h-4 w-4" />
               <span className={isEmbedded ? 'text-sm' : 'text-base'}>Relevante artikler:</span>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-3">
               {matches.map((match, matchIndex) => {
                 // Try to determine content type from article mappings
                 const slug = match[2];
                 const matchedMapping = Object.values(articleMappings).find(m => m.articleSlug === slug);
-                const contentTypeConfig = getContentTypeConfig(matchedMapping?.contentType);
-                const IconComponent = contentTypeConfig.icon;
+                const contentType = matchedMapping?.contentType || 'fagartikkel';
                 
                 return (
                   <a
                     key={`article-${i}-${matchIndex}`}
                     href={`/fag/artikkel/${match[2]}`}
-                    className={`inline-flex items-center gap-1.5 font-medium hover:underline px-3 py-1.5 rounded-md transition-colors duration-200 group shadow-sm ${contentTypeConfig.bgColor} ${contentTypeConfig.hoverColor} ${contentTypeConfig.textColor}`}
+                    className="inline-flex items-center gap-2 hover:underline px-4 py-2 rounded-lg transition-all duration-200 group shadow-sm bg-white border border-gray-200 hover:shadow-md"
                   >
-                    <IconComponent className="h-3 w-3" />
-                    <span className={isEmbedded ? 'text-xs' : 'text-sm'}>{match[1]}</span>
-                    <span className="text-xs opacity-75">({contentTypeConfig.label})</span>
-                    <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <div className="flex items-center gap-2">
+                      <span className={`font-medium ${isEmbedded ? 'text-sm' : 'text-base'} text-gray-900`}>
+                        {match[1]}
+                      </span>
+                      <ContentTypeBadge contentType={contentType as any} size="sm" />
+                    </div>
+                    <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity text-gray-500" />
                   </a>
                 );
               })}
@@ -395,8 +398,8 @@ export const MessageContentParser = ({ content, isEmbedded = false }: MessageCon
       );
     }
 
-    // 🚨 ENHANCED TAGS SECTION with content type awareness
-    console.log('🚨 ENHANCED: Rendering tags section with content types...');
+    // Enhanced tags section with better content type visualization
+    console.log('🚨 ENHANCED: Rendering tags section with improved content types...');
     
     let tagsToRender = extractedTags;
     
@@ -412,21 +415,32 @@ export const MessageContentParser = ({ content, isEmbedded = false }: MessageCon
     processedElements.push(
       <div 
         key="ENHANCED-clickable-tags" 
-        className="mt-6 p-4 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 rounded-xl border border-blue-200 shadow-sm"
+        className="mt-6 p-5 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 rounded-xl border border-blue-200 shadow-sm"
       >
-        <div className="flex items-center gap-2 mb-3">
-          <Tag className="h-5 w-5 text-blue-700" />
-          <span className={`font-bold text-blue-800 ${isEmbedded ? 'text-sm' : 'text-base'}`}>
-            Emner
-          </span>
-          <span className="text-blue-600 text-xs opacity-75">
-            Klikk for å utforske
-          </span>
-          {contentTypes.length > 0 && (
-            <span className="text-xs text-gray-600 ml-2">
-              ({contentTypes.map(type => CONTENT_TYPE_CONFIG[type as keyof typeof CONTENT_TYPE_CONFIG]?.label || type).join(', ')})
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Tag className="h-5 w-5 text-blue-700" />
+            <span className={`font-bold text-blue-800 ${isEmbedded ? 'text-sm' : 'text-base'}`}>
+              Relaterte emner
             </span>
-          )}
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-blue-600 opacity-75">
+              Klikk for å utforske
+            </span>
+            {contentTypes.length > 0 && (
+              <div className="flex gap-1">
+                {contentTypes.map((type, index) => (
+                  <ContentTypeBadge 
+                    key={index} 
+                    contentType={type as any} 
+                    size="sm" 
+                    showIcon={false}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
         
         <div className="flex flex-wrap gap-2">
@@ -455,7 +469,7 @@ export const MessageContentParser = ({ content, isEmbedded = false }: MessageCon
                     : 'bg-gray-600 text-white hover:bg-gray-700 border border-gray-700 shadow-md'
                   } 
                   cursor-pointer transition-all duration-200 transform hover:scale-105 hover:shadow-lg 
-                  font-medium px-3 py-1.5 text-xs flex items-center gap-1.5
+                  font-medium px-3 py-2 text-xs flex items-center gap-1.5
                 `}
                 onClick={() => handleTagClick(tag, articleMappings)}
                 title={hasMapping ? `Klikk for å åpne ${contentTypeConfig.label.toLowerCase()}: ${tag}` : `Klikk for å søke etter ${tag}`}
@@ -468,8 +482,9 @@ export const MessageContentParser = ({ content, isEmbedded = false }: MessageCon
           })}
         </div>
         
-        <div className="mt-2 text-xs text-blue-600 opacity-50">
-          {tagExtraction.hasValidFormat ? 'Fra AI-respons' : 'Automatisk generert'} • {contentTypes.join(', ')}
+        <div className="mt-3 text-xs text-blue-600 opacity-60">
+          {tagExtraction.hasValidFormat ? 'Fra AI-respons' : 'Automatisk generert'} • 
+          {contentTypes.map(type => CONTENT_TYPE_CONFIG[type as keyof typeof CONTENT_TYPE_CONFIG]?.label || type).join(', ')}
         </div>
       </div>
     );

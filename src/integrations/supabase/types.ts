@@ -1284,6 +1284,7 @@ export type Database = {
           author_id: string
           category_id: string
           content: string
+          content_type: string | null
           created_at: string
           embedding: string | null
           id: string
@@ -1303,6 +1304,7 @@ export type Database = {
           author_id: string
           category_id: string
           content: string
+          content_type?: string | null
           created_at?: string
           embedding?: string | null
           id?: string
@@ -1322,6 +1324,7 @@ export type Database = {
           author_id?: string
           category_id?: string
           content?: string
+          content_type?: string | null
           created_at?: string
           embedding?: string | null
           id?: string

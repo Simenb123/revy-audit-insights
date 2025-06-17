@@ -9,7 +9,7 @@ interface KnowledgeSearchResult {
   tags: string[];
   reference_code: string;
   relevanceScore: number;
-  contentType: string; // NEW: Added content type classification
+  contentType: string; // Enhanced content type classification
 }
 
 interface ArticleTagMapping {
@@ -17,8 +17,8 @@ interface ArticleTagMapping {
   articleTitle: string;
   matchedTags: string[];
   relevanceScore: number;
-  contentType: string; // NEW: Added content type
-  category: string; // NEW: Added category
+  contentType: string; // Enhanced content type
+  category: string; // Enhanced category
 }
 
 interface EnhancedKnowledgeResult {
@@ -32,7 +32,7 @@ export async function searchKnowledgeIntelligently(
   clientData?: any
 ): Promise<EnhancedKnowledgeResult> {
   try {
-    console.log('🔍 Starting intelligent knowledge search with enhanced categorization...');
+    console.log('🔍 Starting intelligent knowledge search with enhanced content type support...');
     console.log(`📝 Message: "${message}"`);
     console.log(`🎯 Context: "${context}"`);
     
@@ -71,6 +71,7 @@ export async function searchKnowledgeIntelligently(
           content,
           tags,
           reference_code,
+          content_type,
           category:knowledge_categories(name)
         `)
         .eq('status', 'published')
@@ -125,6 +126,7 @@ export async function searchKnowledgeIntelligently(
         content,
         tags,
         reference_code,
+        content_type,
         category:knowledge_categories(name)
       `)
       .eq('status', 'published')
@@ -149,7 +151,7 @@ export async function searchKnowledgeIntelligently(
         const categoryName = getCategoryName(article.category);
         const tagsList = getTagsList(article.tags);
         const relevanceScore = calculateRelevanceScore(message, article, keywords);
-        const contentType = classifyContentType(article, categoryName);
+        const contentType = article.content_type || classifyContentType(article, categoryName);
 
         // Create summary from content if missing
         let summary = String(article.summary || '');
@@ -190,7 +192,7 @@ export async function searchKnowledgeIntelligently(
     // Create enhanced tag-to-article mapping with content types
     const tagMapping = createEnhancedTagToArticleMapping(results, keywords);
 
-    console.log(`📊 Returning ${results.length} scored and sorted articles with enhanced categorization`);
+    console.log(`📊 Returning ${results.length} scored and sorted articles with enhanced content type support`);
     return { articles: results, tagToArticleMap: tagMapping };
 
   } catch (error) {
@@ -204,34 +206,34 @@ function classifyContentType(article: any, categoryName: string): string {
   const refCode = String(article.reference_code || '').toLowerCase();
   const category = categoryName.toLowerCase();
   
-  // ISA Standards
-  if (refCode.includes('isa') || title.includes('isa ') || category.includes('isa')) {
+  // Enhanced content type classification
+  if (refCode.includes('isa') || title.includes('isa ') || /isa\s+\d+/.test(title) || 
+      category.includes('isa') || title.includes('international standards on auditing')) {
     return 'isa-standard';
   }
   
-  // NRS Standards  
-  if (refCode.includes('nrs') || title.includes('nrs ') || category.includes('nrs')) {
+  if (refCode.includes('nrs') || title.includes('nrs ') || /nrs\s+\d+/.test(title) || 
+      category.includes('nrs') || title.includes('norsk revisjonsstandard')) {
     return 'nrs-standard';
   }
   
-  // Laws and regulations
   if (title.includes('lov') || title.includes('loven') || category.includes('lov') || 
-      title.includes('forskrift') || category.includes('forskrift')) {
+      title.includes('lovbestemmelse') || category.includes('lover')) {
     return 'lov';
   }
   
-  // Preparatory works
-  if (title.includes('forarbeider') || title.includes('innstilling') || 
-      title.includes('proposisjon') || category.includes('forarbeider')) {
-    return 'forarbeider';
-  }
-  
-  // Regulations
-  if (title.includes('forskrift') || category.includes('forskrift')) {
+  if (title.includes('forskrift') || category.includes('forskrift') || 
+      title.includes('reglement') || category.includes('forskrifter')) {
     return 'forskrift';
   }
   
-  // Default to professional article
+  if (title.includes('forarbeider') || title.includes('innstilling') || 
+      title.includes('proposisjon') || category.includes('forarbeider') ||
+      title.includes('stortingsmelding')) {
+    return 'forarbeider';
+  }
+  
+  // Default to fagartikkel
   return 'fagartikkel';
 }
 
@@ -246,7 +248,7 @@ function formatArticleResults(articles: any[]): KnowledgeSearchResult[] {
     }
     
     const categoryName = getCategoryName(article.category);
-    const contentType = classifyContentType(article, categoryName);
+    const contentType = article.content_type || classifyContentType(article, categoryName);
     
     return {
       title: String(article.title || 'Uten tittel'),
@@ -324,16 +326,17 @@ function createEnhancedTagToArticleMapping(articles: KnowledgeSearchResult[], ke
     }
   });
   
-  // Also create mappings for common tax and accounting terms
-  const taxTerms = ['skattemelding', 'skatt', 'avgift', 'mva', 'regnskap', 'revisjon', 'dokumentasjon'];
-  taxTerms.forEach(term => {
+  // Also create mappings for common terms with enhanced content type awareness
+  const commonTerms = ['skattemelding', 'skatt', 'avgift', 'mva', 'regnskap', 'revisjon', 'dokumentasjon', 'isa', 'nrs'];
+  commonTerms.forEach(term => {
     if (!mapping[term] && articles.length > 0) {
       // Find article with highest relevance for this term
       const bestArticle = articles.find(article => 
         article.title.toLowerCase().includes(term) || 
         article.slug.toLowerCase().includes(term) ||
         article.tags.some(tag => tag.toLowerCase().includes(term)) ||
-        (article.summary && article.summary.toLowerCase().includes(term))
+        (article.summary && article.summary.toLowerCase().includes(term)) ||
+        article.contentType.includes(term)
       ) || articles[0]; // Fallback to first article
       
       if (bestArticle) {
@@ -405,6 +408,15 @@ function calculateRelevanceScore(message: string, article: any, keywords: string
       keywords.forEach(keyword => {
         if (article.reference_code.toLowerCase().includes(keyword.toLowerCase())) {
           score += 8;
+        }
+      });
+    }
+    
+    // Content type match (medium weight)
+    if (article.content_type) {
+      keywords.forEach(keyword => {
+        if (article.content_type.toLowerCase().includes(keyword.toLowerCase())) {
+          score += 3;
         }
       });
     }

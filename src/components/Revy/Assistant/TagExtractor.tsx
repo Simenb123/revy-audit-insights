@@ -5,16 +5,16 @@ interface TagExtractionResult {
   tags: string[];
   hasValidFormat: boolean;
   extractedFrom: string;
-  contentTypes: string[]; // NEW: Array of content types found
+  contentTypes: string[]; // Enhanced content type detection
 }
 
 export const extractTagsFromContent = (content: string): TagExtractionResult => {
-  console.log('🔍 Starting enhanced tag extraction with content type detection...');
+  console.log('🔍 Starting enhanced tag extraction with improved content type detection...');
   console.log('📝 Content preview:', content.substring(0, 200) + '...');
   
   const lines = content.split('\n');
   
-  // Comprehensive patterns to catch all AI response formats
+  // Enhanced patterns to catch all AI response formats
   const tagPatterns = [
     // Standard format: 🏷️ **EMNER:** tag1, tag2, tag3
     /🏷️\s*\*\*[Ee][Mm][Nn][Ee][Rr]:?\*\*\s*(.+)/,
@@ -116,26 +116,31 @@ function detectContentTypes(content: string): string[] {
   const contentLower = content.toLowerCase();
   const detectedTypes: string[] = [];
   
-  // Detect different content types based on content analysis
-  if (contentLower.includes('isa ') || contentLower.includes('revisjonsstandard')) {
+  // Enhanced content type detection with more specific patterns
+  if (contentLower.includes('isa ') || contentLower.includes('international standards on auditing') || 
+      /isa\s+\d+/.test(contentLower) || contentLower.includes('revisjonsstandard')) {
     detectedTypes.push('isa-standard');
   }
   
-  if (contentLower.includes('nrs ') || contentLower.includes('nrs-')) {
+  if (contentLower.includes('nrs ') || contentLower.includes('norsk revisjonsstandard') || 
+      /nrs\s+\d+/.test(contentLower)) {
     detectedTypes.push('nrs-standard');
   }
   
   if (contentLower.includes('lov') || contentLower.includes('loven') || 
-      contentLower.includes('lovbestemmelse')) {
+      contentLower.includes('lovbestemmelse') || contentLower.includes('lovverk') ||
+      contentLower.includes('lovgiv')) {
     detectedTypes.push('lov');
   }
   
-  if (contentLower.includes('forskrift') || contentLower.includes('reglement')) {
+  if (contentLower.includes('forskrift') || contentLower.includes('reglement') ||
+      contentLower.includes('forordning')) {
     detectedTypes.push('forskrift');
   }
   
   if (contentLower.includes('forarbeider') || contentLower.includes('proposisjon') || 
-      contentLower.includes('innstilling')) {
+      contentLower.includes('innstilling') || contentLower.includes('odelsting') ||
+      contentLower.includes('stortingsmelding')) {
     detectedTypes.push('forarbeider');
   }
   
@@ -144,7 +149,7 @@ function detectContentTypes(content: string): string[] {
     detectedTypes.push('fagartikkel');
   }
   
-  console.log('🏷️ Detected content types:', detectedTypes);
+  console.log('🏷️ Enhanced content type detection result:', detectedTypes);
   return detectedTypes;
 }
 
@@ -152,24 +157,27 @@ function extractIntelligentFallbackTags(content: string): string[] {
   const contentLower = content.toLowerCase();
   const foundTags: string[] = [];
   
-  // Enhanced term mappings with content type awareness
+  // Enhanced term mappings with improved content type awareness
   const termMappings = [
-    { patterns: ['skattemelding', 'skatterapport'], tag: 'Skattemelding', type: 'fagartikkel' },
-    { patterns: ['mva', 'merverdiavgift'], tag: 'MVA', type: 'fagartikkel' },
-    { patterns: ['regnskap', 'bokføring'], tag: 'Regnskap', type: 'fagartikkel' },
-    { patterns: ['revisjon', 'revisjonsarbeid'], tag: 'Revisjon', type: 'fagartikkel' },
-    { patterns: ['inntekt', 'omsetning'], tag: 'Inntekter', type: 'fagartikkel' },
+    { patterns: ['skattemelding', 'skatterapport', 'selvangivelse'], tag: 'Skattemelding', type: 'fagartikkel' },
+    { patterns: ['mva', 'merverdiavgift', 'omsetningsavgift'], tag: 'MVA', type: 'fagartikkel' },
+    { patterns: ['regnskap', 'bokføring', 'regnskapsføring'], tag: 'Regnskap', type: 'fagartikkel' },
+    { patterns: ['revisjon', 'revisjonsarbeid', 'audit'], tag: 'Revisjon', type: 'fagartikkel' },
+    { patterns: ['inntekt', 'omsetning', 'driftsinntekt'], tag: 'Inntekter', type: 'fagartikkel' },
     { patterns: ['isa 315', 'isa315'], tag: 'ISA 315', type: 'isa-standard' },
     { patterns: ['isa 230', 'isa230'], tag: 'ISA 230', type: 'isa-standard' },
     { patterns: ['isa 240', 'isa240'], tag: 'ISA 240', type: 'isa-standard' },
+    { patterns: ['isa 500', 'isa500'], tag: 'ISA 500', type: 'isa-standard' },
     { patterns: ['nrs 17', 'nrs17'], tag: 'NRS 17', type: 'nrs-standard' },
-    { patterns: ['materialitet', 'vesentlighet'], tag: 'Materialitet', type: 'fagartikkel' },
-    { patterns: ['risikovurdering', 'risiko'], tag: 'Risikovurdering', type: 'fagartikkel' },
-    { patterns: ['dokumentasjon', 'dokumentere'], tag: 'Dokumentasjon', type: 'fagartikkel' },
-    { patterns: ['planlegging', 'plan'], tag: 'Planlegging', type: 'fagartikkel' },
-    { patterns: ['kontroll', 'testing'], tag: 'Kontroll', type: 'fagartikkel' },
-    { patterns: ['årsavslutning', 'årsslutt'], tag: 'Årsavslutning', type: 'fagartikkel' },
-    { patterns: ['hvitvasking', 'hvitvaskingsloven'], tag: 'Hvitvasking', type: 'lov' },
+    { patterns: ['materialitet', 'vesentlighet', 'betydelighet'], tag: 'Materialitet', type: 'fagartikkel' },
+    { patterns: ['risikovurdering', 'risiko', 'risikoanalyse'], tag: 'Risikovurdering', type: 'fagartikkel' },
+    { patterns: ['dokumentasjon', 'dokumentere', 'arbeidspapirer'], tag: 'Dokumentasjon', type: 'fagartikkel' },
+    { patterns: ['planlegging', 'plan', 'revisjonsplan'], tag: 'Planlegging', type: 'fagartikkel' },
+    { patterns: ['kontroll', 'testing', 'kontrollhandling'], tag: 'Kontroll', type: 'fagartikkel' },
+    { patterns: ['årsavslutning', 'årsslutt', 'årsoppgjør'], tag: 'Årsavslutning', type: 'fagartikkel' },
+    { patterns: ['hvitvasking', 'hvitvaskingsloven', 'aml'], tag: 'Hvitvasking', type: 'lov' },
+    { patterns: ['regnskapsloven', 'rskl'], tag: 'Regnskapsloven', type: 'lov' },
+    { patterns: ['revisorloven', 'revisorlov'], tag: 'Revisorloven', type: 'lov' },
   ];
   
   termMappings.forEach(({ patterns, tag, type }) => {
@@ -178,6 +186,6 @@ function extractIntelligentFallbackTags(content: string): string[] {
     }
   });
   
-  // Return max 4 most relevant tags
-  return foundTags.slice(0, 4);
+  // Return max 5 most relevant tags
+  return foundTags.slice(0, 5);
 }
