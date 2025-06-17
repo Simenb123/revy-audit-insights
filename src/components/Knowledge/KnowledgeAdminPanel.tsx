@@ -98,7 +98,7 @@ const AnalysisPanel = () => {
               <Badge variant="outline">3</Badge>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-sm">For dype hierarkier (>3 nivåer)</span>
+              <span className="text-sm">For dype hierarkier ({'>'}3 nivåer)</span>
               <Badge variant="outline">2</Badge>
             </div>
             <div className="flex justify-between items-center">
