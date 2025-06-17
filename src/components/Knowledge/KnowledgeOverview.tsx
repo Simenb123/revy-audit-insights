@@ -1,15 +1,27 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, BookOpen, Heart, Search, Upload } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { KnowledgeCategory, KnowledgeArticle } from '@/types/knowledge';
+import { 
+  BookOpen, 
+  Plus, 
+  Search, 
+  TrendingUp, 
+  Clock, 
+  Eye, 
+  Settings,
+  Sparkles
+} from 'lucide-react';
 
 const KnowledgeOverview = () => {
   const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState('');
 
   const { data: categories, isLoading: categoriesLoading } = useQuery({
     queryKey: ['knowledge-categories'],
@@ -41,30 +53,26 @@ const KnowledgeOverview = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header with Action Buttons */}
+      {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Fagstoff</h1>
+          <h1 className="text-2xl font-bold">Kunnskapsbase</h1>
           <p className="text-muted-foreground">
-            Utforsk og administrer revisjonsrelatert fagstoff og dokumentasjon
+            Utforsk fagartikler, ISA-standarder og revisjonsguidance
           </p>
         </div>
-        
-        <div className="flex flex-wrap gap-2">
-          <Button 
-            onClick={() => navigate('/fag/ny')}
-            className="bg-blue-600 hover:bg-blue-700"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Ny artikkel
+        <div className="flex gap-2">
+          <Button asChild variant="outline">
+            <Link to="/fag/admin">
+              <Settings className="w-4 h-4 mr-2" />
+              Administrer
+            </Link>
           </Button>
-          
-          <Button 
-            variant="outline"
-            onClick={() => navigate('/fag/upload')}
-          >
-            <Upload className="w-4 h-4 mr-2" />
-            Last opp PDF
+          <Button asChild>
+            <Link to="/fag/ny">
+              <Plus className="w-4 h-4 mr-2" />
+              Ny artikkel
+            </Link>
           </Button>
         </div>
       </div>
@@ -180,6 +188,23 @@ const KnowledgeOverview = () => {
           </div>
         )}
       </div>
+
+      {/* AI-Revy Integration Notice */}
+      <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+        <CardContent className="p-4">
+          <div className="flex items-center gap-3">
+            <Sparkles className="h-5 w-5 text-blue-600" />
+            <div>
+              <h3 className="font-semibold text-blue-900">AI-Revy integrering</h3>
+              <p className="text-sm text-blue-700">
+                Alle artikler er optimalisert for AI-Revy søk og anbefalinger. 
+                Bruk <Link to="/fag/admin" className="underline font-medium">administrasjonspanelet</Link> for 
+                å optimalisere kategoristruktur og tags.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

@@ -9,6 +9,7 @@ import MyArticles from '@/components/Knowledge/MyArticles';
 import MyFavorites from '@/components/Knowledge/MyFavorites';
 import SearchResults from '@/components/Knowledge/SearchResults';
 import PDFUploadManager from '@/components/Knowledge/PDFUploadManager';
+import KnowledgeAdminPanel from '@/components/Knowledge/KnowledgeAdminPanel';
 
 const KnowledgeBase = () => {
   return (
@@ -24,6 +25,7 @@ const KnowledgeBase = () => {
         <Route path="/favoritter" element={<MyFavorites />} />
         <Route path="/sok" element={<SearchResults />} />
         <Route path="/upload" element={<PDFUploadManager />} />
+        <Route path="/admin" element={<KnowledgeAdminPanel />} />
       </Routes>
     </div>
   );
