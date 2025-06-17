@@ -24,7 +24,7 @@ export const MessageContentParser = ({ content, isEmbedded = false }: MessageCon
   const [copiedBlocks, setCopiedBlocks] = useState<Set<number>>(new Set());
   const navigate = useNavigate();
 
-  console.log('🔍 MessageContentParser received content:', content.substring(0, 100) + '...');
+  console.log('🔍 MessageContentParser processing content:', content.substring(0, 100) + '...');
 
   const copyToClipboard = async (text: string, blockIndex: number) => {
     try {
@@ -124,7 +124,7 @@ export const MessageContentParser = ({ content, isEmbedded = false }: MessageCon
 
       // Skip the EMNER line since we'll add it as clickable tags at the bottom
       if (/🏷️.*[Ee][Mm][Nn][Ee][Rr]|[Ee][Mm][Nn][Ee][Rr]:/i.test(trimmedLine)) {
-        console.log('⏭️ Skipping EMNER line since we will add clickable tags at the bottom');
+        console.log('⏭️ Skipping EMNER line since we will add clickable tags inline');
         continue;
       }
 
@@ -322,24 +322,26 @@ export const MessageContentParser = ({ content, isEmbedded = false }: MessageCon
       );
     }
 
-    // 🏷️ ENHANCED: Add clickable tags at the BOTTOM with maximum visibility
+    // 🚀 CRITICAL: Add clickable tags INSIDE each message as prominent badges
     if (extractedTags.length > 0) {
-      console.log('🎉 Rendering enhanced clickable tags section with', extractedTags.length, 'tags');
+      console.log('🎉 Rendering INLINE clickable tags section with', extractedTags.length, 'tags');
       
       processedElements.push(
         <div 
-          key="enhanced-clickable-tags" 
-          className="mt-8 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border-2 border-blue-200 shadow-sm"
+          key="inline-clickable-tags" 
+          className="mt-6 p-4 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 rounded-xl border border-blue-200 shadow-sm"
         >
-          <div className="flex items-center gap-3 mb-4">
-            <div className="flex items-center gap-2 text-blue-800">
-              <Tag className="h-6 w-6" />
-              <span className={`font-bold ${isEmbedded ? 'text-base' : 'text-lg'}`}>Emner</span>
-            </div>
-            <div className="text-blue-600 text-sm opacity-75">Klikk for å utforske fagartikler</div>
+          <div className="flex items-center gap-2 mb-3">
+            <Tag className="h-5 w-5 text-blue-700" />
+            <span className={`font-bold text-blue-800 ${isEmbedded ? 'text-sm' : 'text-base'}`}>
+              Emner
+            </span>
+            <span className="text-blue-600 text-xs opacity-75">
+              Klikk for å utforske
+            </span>
           </div>
           
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-2">
             {extractedTags.map((tag, tagIndex) => {
               const hasMapping = articleMappings[tag] || 
                 Object.keys(articleMappings).some(key => 
@@ -354,26 +356,26 @@ export const MessageContentParser = ({ content, isEmbedded = false }: MessageCon
                   variant="secondary" 
                   className={`
                     ${hasMapping 
-                      ? 'bg-blue-600 text-white hover:bg-blue-700 border-2 border-blue-700 shadow-md' 
-                      : 'bg-gray-600 text-white hover:bg-gray-700 border-2 border-gray-700 shadow-md'
+                      ? 'bg-blue-600 text-white hover:bg-blue-700 border border-blue-700 shadow-md' 
+                      : 'bg-gray-600 text-white hover:bg-gray-700 border border-gray-700 shadow-md'
                     } 
-                    cursor-pointer transition-all duration-300 transform hover:scale-110 hover:shadow-lg 
-                    font-semibold px-4 py-2 text-sm flex items-center gap-2
+                    cursor-pointer transition-all duration-200 transform hover:scale-105 hover:shadow-lg 
+                    font-medium px-3 py-1.5 text-xs flex items-center gap-1.5
                   `}
                   onClick={() => handleTagClick(tag, articleMappings)}
                   title={hasMapping ? `Klikk for å åpne fagartikkel om ${tag}` : `Klikk for å søke etter ${tag}`}
                 >
-                  {hasMapping && <FileText className="w-4 h-4" />}
+                  {hasMapping && <FileText className="w-3 h-3" />}
                   {tag}
-                  <ExternalLink className="w-3 h-3 opacity-70" />
+                  <ExternalLink className="w-3 h-3 opacity-60" />
                 </Badge>
               );
             })}
           </div>
           
-          {tagExtraction.hasValidFormat && (
-            <div className="mt-3 text-xs text-blue-600 opacity-60">
-              Ekstrahert fra: "{tagExtraction.extractedFrom.substring(0, 50)}..."
+          {!tagExtraction.hasValidFormat && (
+            <div className="mt-2 text-xs text-blue-600 opacity-50">
+              Automatisk generert fra innhold
             </div>
           )}
         </div>
@@ -381,23 +383,26 @@ export const MessageContentParser = ({ content, isEmbedded = false }: MessageCon
     } else {
       console.log('🚨 NO TAGS EXTRACTED - Adding debug information');
       
-      // Add debug info when no tags are found
-      processedElements.push(
-        <div key="debug-no-tags" className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-          <div className="text-red-800 text-sm">
-            <strong>Debug:</strong> Ingen emner funnet i AI-respons. Dette kan skyldes formatering.
+      // Add debug info when no tags are found (only in development)
+      if (process.env.NODE_ENV === 'development') {
+        processedElements.push(
+          <div key="debug-no-tags" className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <div className="text-yellow-800 text-sm">
+              <strong>Debug:</strong> Ingen emner funnet i AI-respons.
+            </div>
+            <details className="mt-2">
+              <summary className="text-yellow-600 text-xs cursor-pointer">Vis debug-info</summary>
+              <pre className="text-xs text-yellow-700 mt-1 overflow-auto max-h-32">
+                {JSON.stringify({ 
+                  contentPreview: content.substring(0, 200),
+                  tagExtraction: tagExtraction,
+                  hasEMNERLine: /[Ee][Mm][Nn][Ee][Rr]/.test(content)
+                }, null, 2)}
+              </pre>
+            </details>
           </div>
-          <details className="mt-2">
-            <summary className="text-red-600 text-xs cursor-pointer">Vis debug-info</summary>
-            <pre className="text-xs text-red-700 mt-1 overflow-auto">
-              {JSON.stringify({ 
-                contentPreview: content.substring(0, 200),
-                tagExtraction: tagExtraction 
-              }, null, 2)}
-            </pre>
-          </details>
-        </div>
-      );
+        );
+      }
     }
 
     console.log('✅ Finished processing content, created', processedElements.length, 'elements');
