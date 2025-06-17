@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,17 +8,19 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { TreeView, TreeItem, TreeViewTrigger, TreeViewContent } from '@/components/ui/tree-view';
 import { supabase } from '@/integrations/supabase/client';
 import { KnowledgeCategory } from '@/types/knowledge';
-import { Folder, FolderOpen, Edit, Trash2, Plus, Move, ArrowUp, ArrowDown } from 'lucide-react';
+import { Folder, FolderOpen, Edit, Trash2, Plus, Move, ArrowUp, ArrowDown, AlertTriangle, ChevronRight, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
+import ConfirmDeleteDialog from './ConfirmDeleteDialog';
 
 const CategoryManager = () => {
   const [selectedCategory, setSelectedCategory] = useState<KnowledgeCategory | null>(null);
   const [editingCategory, setEditingCategory] = useState<KnowledgeCategory | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isMoveDialogOpen, setIsMoveDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   
   const queryClient = useQueryClient();
 
@@ -109,13 +110,24 @@ const CategoryManager = () => {
 
   const deleteCategoryMutation = useMutation({
     mutationFn: async (categoryId: string) => {
+      // Check if category has articles
       const { data: articlesInCategory } = await supabase
         .from('knowledge_articles')
         .select('id')
         .eq('category_id', categoryId);
       
+      // Check if category has subcategories
+      const { data: subcategories } = await supabase
+        .from('knowledge_categories')
+        .select('id, name')
+        .eq('parent_category_id', categoryId);
+      
       if (articlesInCategory && articlesInCategory.length > 0) {
-        throw new Error('Kan ikke slette kategori som inneholder artikler');
+        throw new Error(`Kan ikke slette kategori som inneholder ${articlesInCategory.length} artikler`);
+      }
+      
+      if (subcategories && subcategories.length > 0) {
+        throw new Error(`Kan ikke slette kategori som har ${subcategories.length} underkategorier`);
       }
 
       const { error } = await supabase
@@ -129,6 +141,7 @@ const CategoryManager = () => {
       queryClient.invalidateQueries({ queryKey: ['knowledge-categories-all'] });
       toast.success('Kategori slettet');
       setSelectedCategory(null);
+      setIsDeleteDialogOpen(false);
     },
     onError: (error: Error) => {
       toast.error(error.message);
@@ -152,6 +165,39 @@ const CategoryManager = () => {
     }
   });
 
+  const deleteEmptySubcategoriesMutation = useMutation({
+    mutationFn: async (parentCategoryId: string) => {
+      const { data: subcategories } = await supabase
+        .from('knowledge_categories')
+        .select('id, name')
+        .eq('parent_category_id', parentCategoryId);
+      
+      if (!subcategories) return;
+      
+      let deletedCount = 0;
+      for (const subcat of subcategories) {
+        const { data: articles } = await supabase
+          .from('knowledge_articles')
+          .select('id')
+          .eq('category_id', subcat.id);
+        
+        if (!articles || articles.length === 0) {
+          await supabase
+            .from('knowledge_categories')
+            .delete()
+            .eq('id', subcat.id);
+          deletedCount++;
+        }
+      }
+      
+      return deletedCount;
+    },
+    onSuccess: (deletedCount) => {
+      queryClient.invalidateQueries({ queryKey: ['knowledge-categories-all'] });
+      toast.success(`${deletedCount} tomme underkategorier slettet`);
+    }
+  });
+
   const buildCategoryTree = (categories: KnowledgeCategory[], parentId: string | null = null): KnowledgeCategory[] => {
     return categories
       .filter(cat => cat.parent_category_id === parentId)
@@ -162,34 +208,99 @@ const CategoryManager = () => {
       }));
   };
 
-  const renderCategoryTree = (categories: KnowledgeCategory[]) => {
-    return categories.map((category) => (
-      <TreeItem key={category.id} value={category.id}>
-        <TreeViewTrigger>
+  const toggleCategory = (categoryId: string) => {
+    const newExpanded = new Set(expandedCategories);
+    if (newExpanded.has(categoryId)) {
+      newExpanded.delete(categoryId);
+    } else {
+      newExpanded.add(categoryId);
+    }
+    setExpandedCategories(newExpanded);
+  };
+
+  const renderCategoryTree = (categories: KnowledgeCategory[], depth: number = 0) => {
+    return categories.map((category) => {
+      const hasChildren = category.children && category.children.length > 0;
+      const isExpanded = expandedCategories.has(category.id);
+      const isSelected = selectedCategory?.id === category.id;
+      const articlesCount = articles.length;
+      const isEmpty = !hasChildren && articlesCount === 0;
+      
+      return (
+        <div key={category.id} className="w-full">
           <div 
-            className="flex items-center gap-2 p-2 rounded hover:bg-accent cursor-pointer"
+            className={`flex items-center gap-2 p-2 rounded-md cursor-pointer transition-colors hover:bg-accent/50 ${
+              isSelected ? 'bg-accent border border-primary/20' : ''
+            } ${depth > 0 ? 'ml-6' : ''}`}
             onClick={() => setSelectedCategory(category)}
           >
-            {category.children && category.children.length > 0 ? (
-              <FolderOpen className="h-4 w-4" />
-            ) : (
-              <Folder className="h-4 w-4" />
+            {hasChildren && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleCategory(category.id);
+                }}
+                className="p-1 hover:bg-accent rounded"
+              >
+                {isExpanded ? (
+                  <ChevronDown className="h-4 w-4" />
+                ) : (
+                  <ChevronRight className="h-4 w-4" />
+                )}
+              </button>
             )}
-            <span className={selectedCategory?.id === category.id ? 'font-semibold text-primary' : ''}>
+            
+            {!hasChildren && <div className="w-6" />}
+            
+            {hasChildren ? (
+              <FolderOpen className="h-4 w-4 text-blue-600" />
+            ) : (
+              <Folder className="h-4 w-4 text-gray-500" />
+            )}
+            
+            <span className={`flex-1 ${isSelected ? 'font-semibold text-primary' : ''}`}>
               {category.name}
             </span>
-            <Badge variant="outline" className="ml-auto text-xs">
-              {category.display_order}
-            </Badge>
+            
+            <div className="flex items-center gap-1">
+              <Badge variant="outline" className="text-xs">
+                {category.display_order}
+              </Badge>
+              {isEmpty && (
+                <Badge variant="secondary" className="text-xs text-orange-600">
+                  Tom
+                </Badge>
+              )}
+            </div>
           </div>
-        </TreeViewTrigger>
-        {category.children && category.children.length > 0 && (
-          <TreeViewContent>
-            {renderCategoryTree(category.children)}
-          </TreeViewContent>
-        )}
-      </TreeItem>
-    ));
+          
+          {hasChildren && isExpanded && (
+            <div className="mt-1">
+              {renderCategoryTree(category.children, depth + 1)}
+            </div>
+          )}
+        </div>
+      );
+    });
+  };
+
+  const getSelectedCategoryDetails = () => {
+    if (!selectedCategory) return null;
+    
+    const subcategories = categories.filter(c => c.parent_category_id === selectedCategory.id);
+    const articlesCount = articles.length;
+    const isEmpty = subcategories.length === 0 && articlesCount === 0;
+    const hasEmptySubcategories = subcategories.some(sub => {
+      const subArticles = categories.filter(c => c.parent_category_id === sub.id);
+      return subArticles.length === 0;
+    });
+    
+    return {
+      subcategories,
+      articlesCount,
+      isEmpty,
+      hasEmptySubcategories
+    };
   };
 
   if (isLoading) {
@@ -198,6 +309,7 @@ const CategoryManager = () => {
 
   const categoryTree = buildCategoryTree(categories);
   const flatCategories = categories.filter(cat => cat.id !== selectedCategory?.id);
+  const selectedDetails = getSelectedCategoryDetails();
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 p-6">
@@ -225,16 +337,17 @@ const CategoryManager = () => {
             </Dialog>
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-2">
           <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
             <h4 className="font-medium text-blue-900 mb-2">Hovedkategorier</h4>
             <p className="text-sm text-blue-700">
               1. Revisjon • 2. Regnskap • 3. Skatt • 4. Annet
             </p>
           </div>
-          <TreeView>
+          
+          <div className="space-y-1">
             {renderCategoryTree(categoryTree)}
-          </TreeView>
+          </div>
         </CardContent>
       </Card>
 
@@ -277,7 +390,7 @@ const CategoryManager = () => {
                 <Button 
                   size="sm" 
                   variant="destructive"
-                  onClick={() => deleteCategoryMutation.mutate(selectedCategory.id)}
+                  onClick={() => setIsDeleteDialogOpen(true)}
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
@@ -316,10 +429,39 @@ const CategoryManager = () => {
                     <p>{categories.find(c => c.id === selectedCategory.parent_category_id)?.name}</p>
                   </div>
                 )}
-                <div>
-                  <Label className="font-semibold">Antall artikler</Label>
-                  <p>{articles.length}</p>
-                </div>
+                
+                {selectedDetails && (
+                  <>
+                    <div>
+                      <Label className="font-semibold">Statistikk</Label>
+                      <div className="space-y-1 text-sm">
+                        <p>Artikler: {selectedDetails.articlesCount}</p>
+                        <p>Underkategorier: {selectedDetails.subcategories.length}</p>
+                      </div>
+                    </div>
+                    
+                    {selectedDetails.hasEmptySubcategories && (
+                      <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                        <h4 className="font-medium text-orange-900 mb-2 flex items-center gap-2">
+                          <AlertTriangle className="h-4 w-4" />
+                          Tomme underkategorier funnet
+                        </h4>
+                        <p className="text-sm text-orange-700 mb-3">
+                          Denne kategorien har tomme underkategorier som kan slettes.
+                        </p>
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => deleteEmptySubcategoriesMutation.mutate(selectedCategory.id)}
+                          disabled={deleteEmptySubcategoriesMutation.isPending}
+                        >
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          Slett tomme underkategorier
+                        </Button>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             )
           ) : (
@@ -363,6 +505,24 @@ const CategoryManager = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Enhanced Delete Dialog */}
+      {selectedCategory && selectedDetails && (
+        <ConfirmDeleteDialog
+          open={isDeleteDialogOpen}
+          onOpenChange={setIsDeleteDialogOpen}
+          onConfirm={() => deleteCategoryMutation.mutate(selectedCategory.id)}
+          title="Slett kategori"
+          itemName={selectedCategory.name}
+          itemType="kategori"
+          usageCount={selectedDetails.articlesCount + selectedDetails.subcategories.length}
+          consequences={[
+            ...(selectedDetails.articlesCount > 0 ? [`${selectedDetails.articlesCount} artikler vil miste sin kategori`] : []),
+            ...(selectedDetails.subcategories.length > 0 ? [`${selectedDetails.subcategories.length} underkategorier må flyttes først`] : []),
+            'Handlingen kan ikke angres'
+          ]}
+        />
+      )}
     </div>
   );
 };
