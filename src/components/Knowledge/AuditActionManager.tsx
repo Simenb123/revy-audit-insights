@@ -69,6 +69,13 @@ const AuditActionManager = () => {
     { value: 'naerstaaende', label: 'Nærstående transaksjoner' }
   ];
 
+  const riskLevelOptions = [
+    { value: 'all', label: 'Alle risikonivå' },
+    { value: 'high', label: 'Høy risiko' },
+    { value: 'medium', label: 'Medium risiko' },
+    { value: 'low', label: 'Lav risiko' }
+  ];
+
   const getRiskLevelColor = (level: string) => {
     switch (level) {
       case 'high': return 'destructive';
@@ -157,10 +164,11 @@ const AuditActionManager = () => {
                   <SelectValue placeholder="Risikonivå" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Alle risikonivå</SelectItem>
-                  <SelectItem value="high">Høy risiko</SelectItem>
-                  <SelectItem value="medium">Medium risiko</SelectItem>
-                  <SelectItem value="low">Lav risiko</SelectItem>
+                  {riskLevelOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
