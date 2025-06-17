@@ -91,11 +91,13 @@ export async function searchKnowledgeIntelligently(
     // Build search patterns for different approaches
     const searchQueries = [];
     
-    // 1. Title and content text search
+    // 1. Title and content text search - enhanced for empty summaries
     keywords.forEach(keyword => {
       searchQueries.push(`title.ilike.%${keyword}%`);
       searchQueries.push(`content.ilike.%${keyword}%`);
       searchQueries.push(`summary.ilike.%${keyword}%`);
+      // Also search in slug for better matching
+      searchQueries.push(`slug.ilike.%${keyword}%`);
     });
 
     // 2. Tags array search
@@ -108,7 +110,7 @@ export async function searchKnowledgeIntelligently(
     const allSearches = [...searchQueries, ...tagSearches, ...refSearches];
     const searchQuery = allSearches.join(',');
 
-    console.log(`🔎 Executing search with query patterns: ${searchQuery.substring(0, 200)}...`);
+    console.log(`🔎 Executing enhanced search with query patterns: ${searchQuery.substring(0, 200)}...`);
 
     const { data: articles, error } = await supabase
       .from('knowledge_articles')
@@ -124,7 +126,7 @@ export async function searchKnowledgeIntelligently(
       `)
       .eq('status', 'published')
       .or(searchQuery)
-      .limit(10);
+      .limit(15);
 
     if (error) {
       console.error('❌ Knowledge search error:', error);
@@ -138,16 +140,26 @@ export async function searchKnowledgeIntelligently(
 
     console.log(`✅ Found ${articles.length} relevant articles`);
 
-    // Enhanced formatting with relevance scoring
+    // Enhanced formatting with relevance scoring and summary fallback
     const results = articles.map(article => {
       try {
         const categoryName = getCategoryName(article.category);
         const tagsList = getTagsList(article.tags);
         const relevanceScore = calculateRelevanceScore(message, article, keywords);
 
+        // Create summary from content if missing
+        let summary = String(article.summary || '');
+        if (!summary && article.content) {
+          // Extract first meaningful paragraph as summary
+          const contentText = String(article.content);
+          const sentences = contentText.replace(/<[^>]*>/g, '').split(/[.!?]+/);
+          summary = sentences.slice(0, 2).join('. ').substring(0, 200) + '...';
+          console.log(`📝 Generated summary for article "${article.title}": ${summary.substring(0, 50)}...`);
+        }
+
         return {
           title: String(article.title || 'Uten tittel'),
-          summary: String(article.summary || ''),
+          summary,
           slug: String(article.slug || ''),
           category: categoryName,
           tags: tagsList,
@@ -169,10 +181,10 @@ export async function searchKnowledgeIntelligently(
     }).filter(result => result.relevanceScore > 0)
       .sort((a, b) => b.relevanceScore - a.relevanceScore);
 
-    // Create tag-to-article mapping
+    // Create enhanced tag-to-article mapping
     const tagMapping = createTagToArticleMapping(results, keywords);
 
-    console.log(`📊 Returning ${results.length} scored and sorted articles with tag mappings`);
+    console.log(`📊 Returning ${results.length} scored and sorted articles with enhanced tag mappings`);
     return { articles: results, tagToArticleMap: tagMapping };
 
   } catch (error) {
@@ -182,15 +194,25 @@ export async function searchKnowledgeIntelligently(
 }
 
 function formatArticleResults(articles: any[]): KnowledgeSearchResult[] {
-  return articles.map(article => ({
-    title: String(article.title || 'Uten tittel'),
-    summary: String(article.summary || ''),
-    slug: String(article.slug || ''),
-    category: getCategoryName(article.category),
-    tags: getTagsList(article.tags),
-    reference_code: String(article.reference_code || ''),
-    relevanceScore: 1
-  }));
+  return articles.map(article => {
+    // Create summary from content if missing
+    let summary = String(article.summary || '');
+    if (!summary && article.content) {
+      const contentText = String(article.content);
+      const sentences = contentText.replace(/<[^>]*>/g, '').split(/[.!?]+/);
+      summary = sentences.slice(0, 2).join('. ').substring(0, 200) + '...';
+    }
+    
+    return {
+      title: String(article.title || 'Uten tittel'),
+      summary,
+      slug: String(article.slug || ''),
+      category: getCategoryName(article.category),
+      tags: getTagsList(article.tags),
+      reference_code: String(article.reference_code || ''),
+      relevanceScore: 1
+    };
+  });
 }
 
 function createTagToArticleMapping(articles: KnowledgeSearchResult[], keywords: string[]): Record<string, ArticleTagMapping> {
@@ -205,9 +227,14 @@ function createTagToArticleMapping(articles: KnowledgeSearchResult[], keywords: 
     articles.forEach(article => {
       let score = 0;
       
-      // Check title match
+      // Check title match (high priority)
       if (article.title.toLowerCase().includes(keywordLower)) {
         score += 5;
+      }
+      
+      // Check slug match (medium-high priority for URLs)
+      if (article.slug.toLowerCase().includes(keywordLower)) {
+        score += 4;
       }
       
       // Check if any article tags match this keyword
@@ -224,6 +251,11 @@ function createTagToArticleMapping(articles: KnowledgeSearchResult[], keywords: 
       // Check category match
       if (article.category.toLowerCase().includes(keywordLower)) {
         score += 2;
+      }
+      
+      // Check summary/content match (lower priority but still relevant)
+      if (article.summary && article.summary.toLowerCase().includes(keywordLower)) {
+        score += 1;
       }
       
       if (score > bestScore) {
@@ -244,14 +276,16 @@ function createTagToArticleMapping(articles: KnowledgeSearchResult[], keywords: 
     }
   });
   
-  // Also create mappings for common revision terms to the most relevant articles
-  const commonTerms = ['revisjon', 'risikovurdering', 'vesentlighet', 'kontroll', 'dokumentasjon'];
-  commonTerms.forEach(term => {
+  // Also create mappings for common tax and accounting terms
+  const taxTerms = ['skattemelding', 'skatt', 'avgift', 'mva', 'regnskap', 'revisjon', 'dokumentasjon'];
+  taxTerms.forEach(term => {
     if (!mapping[term] && articles.length > 0) {
-      // Find article with highest overall relevance for this term
+      // Find article with highest relevance for this term
       const bestArticle = articles.find(article => 
         article.title.toLowerCase().includes(term) || 
-        article.tags.some(tag => tag.toLowerCase().includes(term))
+        article.slug.toLowerCase().includes(term) ||
+        article.tags.some(tag => tag.toLowerCase().includes(term)) ||
+        (article.summary && article.summary.toLowerCase().includes(term))
       ) || articles[0]; // Fallback to first article
       
       if (bestArticle) {
@@ -292,6 +326,15 @@ function calculateRelevanceScore(message: string, article: any, keywords: string
       keywords.forEach(keyword => {
         if (article.title.toLowerCase().includes(keyword.toLowerCase())) {
           score += 5;
+        }
+      });
+    }
+    
+    // Slug match (high weight for URL-based matching)
+    if (article.slug) {
+      keywords.forEach(keyword => {
+        if (article.slug.toLowerCase().includes(keyword.toLowerCase())) {
+          score += 4;
         }
       });
     }

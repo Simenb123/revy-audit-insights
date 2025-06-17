@@ -8,12 +8,12 @@ interface TagExtractionResult {
 }
 
 export const extractTagsFromContent = (content: string): TagExtractionResult => {
-  console.log('🔍 Starting tag extraction from content...');
+  console.log('🔍 Starting enhanced tag extraction from content...');
   console.log('📝 Content preview:', content.substring(0, 200) + '...');
   
   const lines = content.split('\n');
   
-  // Enhanced patterns to catch AI responses
+  // Comprehensive patterns to catch all AI response formats
   const tagPatterns = [
     // Standard format: 🏷️ **EMNER:** tag1, tag2, tag3
     /🏷️\s*\*\*[Ee][Mm][Nn][Ee][Rr]:?\*\*\s*(.+)/,
@@ -25,6 +25,10 @@ export const extractTagsFromContent = (content: string): TagExtractionResult => 
     /[•·]\s*[Ee][Mm][Nn][Ee][Rr]:?\s*(.+)/,
     // Markdown style: ## EMNER or ### EMNER
     /#{2,3}\s*[Ee][Mm][Nn][Ee][Rr]:?\s*(.+)/,
+    // Any line ending with EMNER: content
+    /.*[Ee][Mm][Nn][Ee][Rr]:?\s*(.+)/,
+    // Line starting with tags emoji
+    /🏷️\s*(.+)/,
   ];
   
   for (let i = 0; i < lines.length; i++) {
@@ -38,31 +42,38 @@ export const extractTagsFromContent = (content: string): TagExtractionResult => 
         const tagsPart = match[1].trim();
         console.log('📝 Raw tags part:', tagsPart);
         
-        // Clean and extract tags more aggressively
+        // Enhanced cleaning for various AI response formats
         const cleanedPart = tagsPart
           .replace(/\*\*/g, '') // Remove bold markers
           .replace(/🏷️/g, '') // Remove emoji
           .replace(/[.!?]+$/, '') // Remove trailing punctuation
           .replace(/<!--.*?-->/g, '') // Remove HTML comments
           .replace(/\s+/g, ' ') // Normalize whitespace
+          .replace(/^[:\-\s]+/, '') // Remove leading colons, dashes, spaces
           .trim();
         
         console.log('🧹 Cleaned tags part:', cleanedPart);
         
         // Split on common separators and clean each tag
         const tags = cleanedPart
-          .split(/[,;]/)
+          .split(/[,;|]/)
           .map(tag => tag.trim())
           .filter(tag => 
             tag.length > 0 && 
             tag.length < 50 && 
             !tag.includes('ARTICLE_MAPPINGS') &&
             !tag.includes('<!--') &&
-            !/^\d+$/.test(tag) // Remove pure numbers
-          );
+            !/^\d+$/.test(tag) && // Remove pure numbers
+            !tag.includes('**') && // Remove any remaining markdown
+            tag !== 'EMNER' // Remove the word EMNER itself
+          )
+          .map(tag => {
+            // Capitalize first letter for consistency
+            return tag.charAt(0).toUpperCase() + tag.slice(1).toLowerCase();
+          });
         
         if (tags.length > 0) {
-          console.log('🎯 Successfully extracted tags:', tags);
+          console.log('🎯 Successfully extracted and formatted tags:', tags);
           return {
             tags,
             hasValidFormat: true,
@@ -73,29 +84,17 @@ export const extractTagsFromContent = (content: string): TagExtractionResult => 
     }
   }
   
-  console.log('❌ No valid tags found with standard patterns, trying fallback extraction...');
+  console.log('❌ No valid tags found with standard patterns, trying intelligent fallback extraction...');
   
-  // Fallback: look for any line containing common Norwegian revision terms
-  const fallbackTerms = [
-    'revisjon', 'inntekter', 'isa', 'materialitet', 'risikovurdering', 
-    'dokumentasjon', 'planlegging', 'testing', 'kontroll', 'fagstoff'
-  ];
-  
-  const fallbackTags: string[] = [];
-  const contentLower = content.toLowerCase();
-  
-  fallbackTerms.forEach(term => {
-    if (contentLower.includes(term)) {
-      fallbackTags.push(term.charAt(0).toUpperCase() + term.slice(1));
-    }
-  });
+  // Intelligent fallback: extract key terms from the actual content
+  const fallbackTags = extractIntelligentFallbackTags(content);
   
   if (fallbackTags.length > 0) {
-    console.log('🔄 Using fallback tags:', fallbackTags);
+    console.log('🔄 Using intelligent fallback tags:', fallbackTags);
     return {
-      tags: fallbackTags.slice(0, 4), // Limit to 4 fallback tags
+      tags: fallbackTags,
       hasValidFormat: false,
-      extractedFrom: 'Fallback extraction from content analysis'
+      extractedFrom: 'Intelligent content analysis'
     };
   }
   
@@ -106,3 +105,35 @@ export const extractTagsFromContent = (content: string): TagExtractionResult => 
     extractedFrom: ''
   };
 };
+
+function extractIntelligentFallbackTags(content: string): string[] {
+  const contentLower = content.toLowerCase();
+  const foundTags: string[] = [];
+  
+  // Tax and accounting terms that often appear in content
+  const termMappings = [
+    { patterns: ['skattemelding', 'skatterapport'], tag: 'Skattemelding' },
+    { patterns: ['mva', 'merverdiavgift'], tag: 'MVA' },
+    { patterns: ['regnskap', 'bokføring'], tag: 'Regnskap' },
+    { patterns: ['revisjon', 'revisjonsarbeid'], tag: 'Revisjon' },
+    { patterns: ['inntekt', 'omsetning'], tag: 'Inntekter' },
+    { patterns: ['isa 315', 'isa315'], tag: 'ISA 315' },
+    { patterns: ['isa 230', 'isa230'], tag: 'ISA 230' },
+    { patterns: ['isa 240', 'isa240'], tag: 'ISA 240' },
+    { patterns: ['materialitet', 'vesentlighet'], tag: 'Materialitet' },
+    { patterns: ['risikovurdering', 'risiko'], tag: 'Risikovurdering' },
+    { patterns: ['dokumentasjon', 'dokumentere'], tag: 'Dokumentasjon' },
+    { patterns: ['planlegging', 'plan'], tag: 'Planlegging' },
+    { patterns: ['kontroll', 'testing'], tag: 'Kontroll' },
+    { patterns: ['årsavslutning', 'årsslutt'], tag: 'Årsavslutning' },
+  ];
+  
+  termMappings.forEach(({ patterns, tag }) => {
+    if (patterns.some(pattern => contentLower.includes(pattern))) {
+      foundTags.push(tag);
+    }
+  });
+  
+  // Return max 4 most relevant tags
+  return foundTags.slice(0, 4);
+}
