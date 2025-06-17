@@ -1,3 +1,4 @@
+
 export type ArticleStatus = 'draft' | 'published' | 'archived';
 
 export type ContentType = 'fagartikkel' | 'isa-standard' | 'nrs-standard' | 'lov' | 'forskrift' | 'forarbeider' | 'dom' | 'revisjonshandlinger';

@@ -434,6 +434,42 @@ export type Database = {
         }
         Relationships: []
       }
+      article_subject_areas: {
+        Row: {
+          article_id: string
+          created_at: string
+          id: string
+          subject_area_id: string
+        }
+        Insert: {
+          article_id: string
+          created_at?: string
+          id?: string
+          subject_area_id: string
+        }
+        Update: {
+          article_id?: string
+          created_at?: string
+          id?: string
+          subject_area_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "article_subject_areas_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "article_subject_areas_subject_area_id_fkey"
+            columns: ["subject_area_id"]
+            isOneToOne: false
+            referencedRelation: "subject_areas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_action_templates: {
         Row: {
           action_type: Database["public"]["Enums"]["action_type"]
@@ -1134,6 +1170,45 @@ export type Database = {
           },
         ]
       }
+      content_types: {
+        Row: {
+          color: string
+          created_at: string
+          description: string | null
+          display_name: string
+          icon: string | null
+          id: string
+          is_active: boolean
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          description?: string | null
+          display_name: string
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          description?: string | null
+          display_name?: string
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       departments: {
         Row: {
           audit_firm_id: string
@@ -1285,6 +1360,7 @@ export type Database = {
           category_id: string
           content: string
           content_type: string | null
+          content_type_id: string | null
           created_at: string
           embedding: string | null
           id: string
@@ -1305,6 +1381,7 @@ export type Database = {
           category_id: string
           content: string
           content_type?: string | null
+          content_type_id?: string | null
           created_at?: string
           embedding?: string | null
           id?: string
@@ -1325,6 +1402,7 @@ export type Database = {
           category_id?: string
           content?: string
           content_type?: string | null
+          content_type_id?: string | null
           created_at?: string
           embedding?: string | null
           id?: string
@@ -1346,6 +1424,13 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "knowledge_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "knowledge_articles_content_type_id_fkey"
+            columns: ["content_type_id"]
+            isOneToOne: false
+            referencedRelation: "content_types"
             referencedColumns: ["id"]
           },
         ]
@@ -2208,6 +2293,45 @@ export type Database = {
           id?: string
           standard_name?: string
           standard_number?: string
+        }
+        Relationships: []
+      }
+      subject_areas: {
+        Row: {
+          color: string
+          created_at: string
+          description: string | null
+          display_name: string
+          icon: string | null
+          id: string
+          is_active: boolean
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          description?: string | null
+          display_name: string
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          description?: string | null
+          display_name?: string
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          sort_order?: number
+          updated_at?: string
         }
         Relationships: []
       }
