@@ -1,3 +1,4 @@
+
 import React from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -167,20 +168,30 @@ const ArticleEditor = () => {
   React.useEffect(() => {
     if (article && !isLoadingArticle) {
       console.log("Setting form values from article:", article);
+      // Find the content type ID based on the article's content_type_id or legacy content_type field
+      let contentTypeId = "";
+      if (article.content_type_id) {
+        contentTypeId = article.content_type_id;
+      } else if (article.content_type) {
+        // Map legacy content_type to new ID
+        const foundType = contentTypes.find(ct => ct.name === article.content_type);
+        contentTypeId = foundType?.id || "";
+      }
+
       form.reset({
         title: article.title || "",
         slug: article.slug || "",
         summary: article.summary || "",
         content: article.content || "<p>Skriv artikkelinnholdet her...</p>",
         categoryId: article.category_id || "",
-        contentTypeId: "",
+        contentTypeId: contentTypeId,
         subjectAreaIds: [],
         tags: article.tags?.join(", ") || "",
         status: article.status || "draft",
         reference_code: article.reference_code || "",
       });
     }
-  }, [article, isLoadingArticle, form]);
+  }, [article, isLoadingArticle, form, contentTypes]);
 
   const checkSlugUnique = async (slug: string) => {
     if (!slug) return;
@@ -242,12 +253,17 @@ const ArticleEditor = () => {
       const desiredSlug = data.slug || data.title;
       const finalSlug = await generateUniqueSlug(desiredSlug);
 
+      // Get the content type name from the selected ID
+      const selectedContentType = contentTypes.find(ct => ct.id === data.contentTypeId);
+      
       const articleData = {
         title: data.title.trim(),
         slug: finalSlug,
         summary: data.summary || null,
         content: data.content,
         category_id: data.categoryId,
+        content_type_id: data.contentTypeId || null, // Store the ID
+        content_type: selectedContentType?.name || null, // Store the legacy field as well for compatibility
         tags: data.tags
           ? data.tags
               .split(",")
@@ -303,6 +319,7 @@ const ArticleEditor = () => {
     },
     onSuccess: (result) => {
       toast.success(isEditing ? "Artikkel oppdatert" : "Artikkel opprettet");
+      console.log("Article saved successfully:", result);
       navigate(`/fag/artikkel/${result.slug}`);
     },
     onError: (error: any) => {
