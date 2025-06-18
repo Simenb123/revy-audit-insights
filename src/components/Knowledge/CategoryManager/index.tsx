@@ -581,6 +581,7 @@ const CategoryManager = () => {
       await queryClient.removeQueries({ queryKey: ['knowledge-categories-all'] });
       await queryClient.removeQueries({ queryKey: ['articles-by-category'] });
       await invalidateAllCaches();
+      await refetchCategories();
       toast.success('Kategorier oppdatert');
     } catch (error) {
       console.error('Manual refresh error:', error);
