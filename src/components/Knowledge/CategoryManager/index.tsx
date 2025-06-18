@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -81,6 +82,9 @@ const CategoryManager = () => {
 
   const updateCategoryMutation = useMutation({
     mutationFn: async (category: Partial<KnowledgeCategory> & { id: string }) => {
+      console.log('=== STARTING CATEGORY UPDATE ===');
+      console.log('Update data:', category);
+      
       const cleanCategory = {
         name: category.name,
         description: category.description,
@@ -90,6 +94,8 @@ const CategoryManager = () => {
         applicable_phases: category.applicable_phases as ("engagement" | "planning" | "execution" | "conclusion")[] | null
       };
 
+      console.log('Clean category data for update:', cleanCategory);
+
       const { data, error } = await supabase
         .from('knowledge_categories')
         .update(cleanCategory)
@@ -97,15 +103,29 @@ const CategoryManager = () => {
         .select()
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error('Update error:', error);
+        throw error;
+      }
+      
+      console.log('Update successful:', data);
       return data;
     },
-    onSuccess: async () => {
+    onSuccess: async (updatedCategory) => {
+      console.log('=== UPDATE SUCCESS ===');
+      console.log('Updated category:', updatedCategory);
+      
       await invalidateAllCaches();
       toast.success('Kategori oppdatert');
       setEditingCategory(null);
+      
+      // Update selected category if it was the one being edited
+      if (selectedCategory?.id === updatedCategory.id) {
+        setSelectedCategory(updatedCategory);
+      }
     },
     onError: (error: Error) => {
+      console.error('=== UPDATE ERROR ===');
       console.error('Update category error:', error);
       toast.error(`Feil ved oppdatering: ${error.message}`);
     }
@@ -623,11 +643,12 @@ const CategoryManager = () => {
           
           <div className="mb-2 text-sm text-muted-foreground flex items-center gap-2">
             <span>Totalt: {categories.length} kategorier</span>
-            {(deleteCategoryMutation.isPending || deleteEmptySubcategoriesMutation.isPending) && (
+            {(deleteCategoryMutation.isPending || deleteEmptySubcategoriesMutation.isPending || updateCategoryMutation.isPending) && (
               <div className="flex items-center gap-1 text-orange-600">
                 <RefreshCw className="h-3 w-3 animate-spin" />
                 <span className="text-xs">
-                  {deleteCategoryMutation.isPending ? 'Sletter...' : 'Sletter tomme...'}
+                  {updateCategoryMutation.isPending ? 'Oppdaterer...' : 
+                   deleteCategoryMutation.isPending ? 'Sletter...' : 'Sletter tomme...'}
                 </span>
               </div>
             )}
@@ -674,7 +695,12 @@ const CategoryManager = () => {
             {editingCategory ? (
               <CategoryForm 
                 category={editingCategory}
-                onSubmit={(data) => updateCategoryMutation.mutate({ ...data, id: editingCategory.id })}
+                onSubmit={(data) => {
+                  console.log('=== FORM SUBMIT TRIGGERED ===');
+                  console.log('Form data:', data);
+                  console.log('Editing category ID:', editingCategory.id);
+                  updateCategoryMutation.mutate({ ...data, id: editingCategory.id });
+                }}
                 onCancel={() => setEditingCategory(null)}
                 categories={flatCategories}
               />
