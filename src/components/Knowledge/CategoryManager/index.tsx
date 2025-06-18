@@ -163,127 +163,30 @@ const CategoryManager = () => {
 
   const deleteCategoryMutation = useMutation({
     mutationFn: async (categoryId: string) => {
-      console.log(`=== STARTING ENHANCED DELETE PROCESS FOR CATEGORY: ${categoryId} ===`);
+      console.log(`=== STARTING SIMPLE DELETE FOR CATEGORY: ${categoryId} ===`);
       
-      try {
-        // Pre-delete verification: Check current category count
-        console.log('Pre-delete: Fetching current categories...');
-        const { count: preDeleteCount } = await supabase
-          .from('knowledge_categories')
-          .select('*', { count: 'exact', head: true });
-        console.log(`Pre-delete total categories: ${preDeleteCount}`);
-        
-        // Step 1: Verify category exists and get current state
-        console.log('Step 1: Verifying category exists...');
-        const { data: categoryCheck, error: categoryCheckError } = await supabase
-          .from('knowledge_categories')
-          .select('id, name, parent_category_id')
-          .eq('id', categoryId)
-          .single();
-        
-        if (categoryCheckError) {
-          if (categoryCheckError.code === 'PGRST116') {
-            console.log('Category already deleted or does not exist');
-            return { success: true, message: 'Category already deleted' };
-          }
-          throw new Error(`Failed to verify category: ${categoryCheckError.message}`);
-        }
-        
-        console.log('Category found:', categoryCheck);
-        
-        // Step 2: Check for articles with detailed logging
-        console.log('Step 2: Checking for articles...');
-        const { data: articlesCheck, error: articlesError, count: articlesCount } = await supabase
-          .from('knowledge_articles')
-          .select('id, title', { count: 'exact' })
-          .eq('category_id', categoryId);
-        
-        if (articlesError) {
-          throw new Error(`Failed to check articles: ${articlesError.message}`);
-        }
-        
-        console.log(`Found ${articlesCount || 0} articles:`, articlesCheck);
-        
-        if (articlesCount && articlesCount > 0) {
-          throw new Error(`Cannot delete category with ${articlesCount} articles. Move or delete articles first.`);
-        }
-        
-        // Step 3: Check for subcategories with detailed logging
-        console.log('Step 3: Checking for subcategories...');
-        const { data: subcategoriesCheck, error: subcategoriesError, count: subcategoriesCount } = await supabase
-          .from('knowledge_categories')
-          .select('id, name', { count: 'exact' })
-          .eq('parent_category_id', categoryId);
-        
-        if (subcategoriesError) {
-          throw new Error(`Failed to check subcategories: ${subcategoriesError.message}`);
-        }
-        
-        console.log(`Found ${subcategoriesCount || 0} subcategories:`, subcategoriesCheck);
-        
-        if (subcategoriesCount && subcategoriesCount > 0) {
-          throw new Error(`Cannot delete category with ${subcategoriesCount} subcategories. Delete subcategories first.`);
-        }
-        
-        // Step 4: Perform deletion with verification
-        console.log('Step 4: Performing deletion...');
-        const { error: deleteError, count: deletedCount } = await supabase
-          .from('knowledge_categories')
-          .delete({ count: 'exact' })
-          .eq('id', categoryId);
-        
-        if (deleteError) {
-          throw new Error(`Delete operation failed: ${deleteError.message}`);
-        }
-        
-        console.log(`Deletion result: ${deletedCount || 0} rows deleted`);
-        
-        if (deletedCount === 0) {
-          console.warn('No rows were deleted - category may have been deleted already');
-        }
-        
-        // Step 5: Verify deletion and count change
-        console.log('Step 5: Verifying deletion...');
-        const { data: verifyData, error: verifyError } = await supabase
-          .from('knowledge_categories')
-          .select('id')
-          .eq('id', categoryId)
-          .maybeSingle();
-        
-        if (verifyError) {
-          console.error('Verification error:', verifyError);
-        }
-        
-        if (verifyData) {
-          console.error('Category still exists after deletion!', verifyData);
-          throw new Error('Category deletion failed - category still exists');
-        }
-        
-        // Post-delete verification: Check new category count
-        console.log('Post-delete: Fetching updated categories...');
-        const { count: postDeleteCount } = await supabase
-          .from('knowledge_categories')
-          .select('*', { count: 'exact', head: true });
-        console.log(`Post-delete total categories: ${postDeleteCount}`);
-        console.log(`Categories reduced by: ${(preDeleteCount || 0) - (postDeleteCount || 0)}`);
-        
-        console.log(`✅ Category ${categoryId} successfully deleted and verified`);
-        return { success: true, categoryId, deletedCount };
-        
-      } catch (error) {
-        console.error('Enhanced delete process failed:', error);
-        throw error;
+      const { error, count } = await supabase
+        .from('knowledge_categories')
+        .delete({ count: 'exact' })
+        .eq('id', categoryId);
+      
+      if (error) {
+        console.error('Delete operation failed:', error);
+        throw new Error(`Sletting feilet: ${error.message}`);
       }
+      
+      console.log(`Delete successful: ${count || 0} rows deleted`);
+      return { success: true, categoryId, deletedCount: count || 0 };
     },
     onSuccess: async (result) => {
-      console.log('Delete mutation successful:', result);
-      toast.success('Kategori slettet!');
+      console.log('=== DELETE SUCCESS ===');
+      console.log('Delete result:', result);
       
-      // Force complete cache refresh with explicit invalidation
-      console.log('=== FORCING CACHE REFRESH POST-DELETE ===');
-      await queryClient.removeQueries({ queryKey: ['knowledge-categories-all'] });
-      await queryClient.removeQueries({ queryKey: ['articles-by-category'] });
-      await invalidateAllCaches();
+      // Simple cache refresh
+      await queryClient.invalidateQueries({ queryKey: ['knowledge-categories-all'] });
+      await queryClient.invalidateQueries({ queryKey: ['articles-by-category'] });
+      
+      toast.success('Kategori slettet!');
       
       // Clear selected category if it was deleted
       if (selectedCategory?.id === result.categoryId) {
@@ -291,12 +194,6 @@ const CategoryManager = () => {
       }
       
       setIsDeleteDialogOpen(false);
-      
-      // Additional verification after cache refresh
-      setTimeout(async () => {
-        console.log('=== POST-DELETE VERIFICATION ===');
-        await refetchCategories();
-      }, 1000);
     },
     onError: (error: Error) => {
       console.error('Delete mutation error:', error);
@@ -332,12 +229,6 @@ const CategoryManager = () => {
   const deleteEmptySubcategoriesMutation = useMutation({
     mutationFn: async (parentCategoryId: string) => {
       console.log(`=== DELETING EMPTY SUBCATEGORIES FOR PARENT: ${parentCategoryId} ===`);
-      
-      // Pre-batch verification: Check current category count
-      const { count: preBatchCount } = await supabase
-        .from('knowledge_categories')
-        .select('*', { count: 'exact', head: true });
-      console.log(`Pre-batch total categories: ${preBatchCount}`);
       
       // Get all subcategories
       const { data: subcategories, error: subcategoriesError } = await supabase
@@ -406,33 +297,20 @@ const CategoryManager = () => {
         
         deletedCount = actualDeleted || 0;
         console.log(`Successfully deleted ${deletedCount} empty categories`);
-        
-        // Post-batch verification: Check new category count
-        const { count: postBatchCount } = await supabase
-          .from('knowledge_categories')
-          .select('*', { count: 'exact', head: true });
-        console.log(`Post-batch total categories: ${postBatchCount}`);
-        console.log(`Categories reduced by: ${(preBatchCount || 0) - (postBatchCount || 0)}`);
       }
       
       return deletedCount;
     },
     onSuccess: async (deletedCount) => {
-      console.log('=== FORCING CACHE REFRESH POST-BATCH-DELETE ===');
-      await queryClient.removeQueries({ queryKey: ['knowledge-categories-all'] });
-      await queryClient.removeQueries({ queryKey: ['articles-by-category'] });
-      await invalidateAllCaches();
+      console.log('=== BATCH DELETE SUCCESS ===');
+      await queryClient.invalidateQueries({ queryKey: ['knowledge-categories-all'] });
+      await queryClient.invalidateQueries({ queryKey: ['articles-by-category'] });
       
       if (deletedCount > 0) {
         toast.success(`${deletedCount} tomme underkategorier slettet`);
       } else {
         toast.info('Ingen tomme underkategorier funnet');
       }
-      
-      // Force UI refresh
-      setTimeout(async () => {
-        await refetchCategories();
-      }, 1000);
     },
     onError: (error: Error) => {
       console.error('Delete empty subcategories error:', error);
@@ -687,7 +565,11 @@ const CategoryManager = () => {
                 toast.error('Kategorien kan ikke slettes fordi den ikke er tom');
               }
             }}
-            onDeleteEmptySubcategories={() => deleteEmptySubcategoriesMutation.mutate(selectedCategory!.id)}
+            onDeleteEmptySubcategories={() => {
+              if (selectedCategory?.id) {
+                deleteEmptySubcategoriesMutation.mutate(selectedCategory.id);
+              }
+            }}
             onMoveArticles={() => setIsMoveDialogOpen(true)}
             isDeleting={deleteCategoryMutation.isPending}
             isDeletingEmpty={deleteEmptySubcategoriesMutation.isPending}
