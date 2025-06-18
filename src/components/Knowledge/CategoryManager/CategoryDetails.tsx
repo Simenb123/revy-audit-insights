@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { KnowledgeCategory } from '@/types/knowledge';
 import { Button } from '@/components/ui/button';
@@ -16,6 +15,8 @@ interface CategoryDetailsProps {
   onDelete: () => void;
   onDeleteEmptySubcategories: () => void;
   onMoveArticles: () => void;
+  isDeleting: boolean;
+  isDeletingEmpty: boolean;
   children: React.ReactNode;
 }
 
@@ -28,6 +29,8 @@ const CategoryDetails = ({
   onDelete,
   onDeleteEmptySubcategories,
   onMoveArticles,
+  isDeleting,
+  isDeletingEmpty,
   children
 }: CategoryDetailsProps) => {
   if (!selectedCategory) {
@@ -92,10 +95,14 @@ const CategoryDetails = ({
             size="sm" 
             variant="destructive"
             onClick={onDelete}
-            disabled={!canDelete}
+            disabled={!canDelete || isDeleting}
             title={!canDelete ? 'Kategorien kan ikke slettes fordi den ikke er tom' : 'Slett kategori'}
           >
-            <Trash2 className="h-4 w-4" />
+            {isDeleting ? (
+              <RefreshCw className="h-4 w-4 animate-spin" />
+            ) : (
+              <Trash2 className="h-4 w-4" />
+            )}
           </Button>
         </div>
       </div>
@@ -156,9 +163,14 @@ const CategoryDetails = ({
                 size="sm" 
                 variant="outline"
                 onClick={onDeleteEmptySubcategories}
+                disabled={isDeletingEmpty}
               >
-                <Trash2 className="h-4 w-4 mr-1" />
-                Slett tomme underkategorier
+                {isDeletingEmpty ? (
+                  <RefreshCw className="h-4 w-4 mr-1 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4 mr-1" />
+                )}
+                {isDeletingEmpty ? 'Sletter...' : 'Slett tomme underkategorier'}
               </Button>
               <div className="text-xs text-orange-600">
                 <p>Underkategorier som vil bli sjekket:</p>
