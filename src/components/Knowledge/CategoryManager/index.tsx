@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -27,15 +26,22 @@ const CategoryManager = () => {
   
   const queryClient = useQueryClient();
 
-  const { data: categories = [], isLoading } = useQuery({
+  const { data: categories = [], isLoading, refetch: refetchCategories } = useQuery({
     queryKey: ['knowledge-categories-all'],
     queryFn: async () => {
+      console.log('=== FETCHING ALL CATEGORIES ===');
       const { data, error } = await supabase
         .from('knowledge_categories')
         .select('*')
         .order('display_order');
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching categories:', error);
+        throw error;
+      }
+      
+      console.log('Fetched categories:', data?.length || 0, 'categories');
+      console.log('Categories data:', data);
       return data as KnowledgeCategory[];
     }
   });
@@ -45,16 +51,33 @@ const CategoryManager = () => {
     queryFn: async () => {
       if (!selectedCategory?.id) return [];
       
+      console.log(`=== FETCHING ARTICLES FOR CATEGORY: ${selectedCategory.id} ===`);
       const { data, error } = await supabase
         .from('knowledge_articles')
         .select('id, title, status, tags, category_id')
         .eq('category_id', selectedCategory.id);
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching articles:', error);
+        throw error;
+      }
+      
+      console.log(`Fetched ${data?.length || 0} articles for category ${selectedCategory.id}`);
       return data;
     },
     enabled: !!selectedCategory?.id
   });
+
+  // Enhanced cache invalidation helper
+  const invalidateAllCaches = async () => {
+    console.log('=== INVALIDATING ALL CACHES ===');
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['knowledge-categories-all'] }),
+      queryClient.invalidateQueries({ queryKey: ['articles-by-category'] }),
+      queryClient.refetchQueries({ queryKey: ['knowledge-categories-all'] })
+    ]);
+    console.log('Cache invalidation complete');
+  };
 
   const updateCategoryMutation = useMutation({
     mutationFn: async (category: Partial<KnowledgeCategory> & { id: string }) => {
@@ -77,10 +100,14 @@ const CategoryManager = () => {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['knowledge-categories-all'] });
+    onSuccess: async () => {
+      await invalidateAllCaches();
       toast.success('Kategori oppdatert');
       setEditingCategory(null);
+    },
+    onError: (error: Error) => {
+      console.error('Update category error:', error);
+      toast.error(`Feil ved oppdatering: ${error.message}`);
     }
   });
 
@@ -104,95 +131,135 @@ const CategoryManager = () => {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['knowledge-categories-all'] });
+    onSuccess: async () => {
+      await invalidateAllCaches();
       toast.success('Kategori opprettet');
       setIsCreateDialogOpen(false);
+    },
+    onError: (error: Error) => {
+      console.error('Create category error:', error);
+      toast.error(`Feil ved opprettelse: ${error.message}`);
     }
   });
 
   const deleteCategoryMutation = useMutation({
     mutationFn: async (categoryId: string) => {
-      console.log(`=== STARTING DELETE PROCESS FOR CATEGORY: ${categoryId} ===`);
+      console.log(`=== STARTING ENHANCED DELETE PROCESS FOR CATEGORY: ${categoryId} ===`);
       
       try {
-        // Step 1: Get detailed category info
-        const { data: categoryData, error: categoryError } = await supabase
+        // Step 1: Verify category exists and get current state
+        console.log('Step 1: Verifying category exists...');
+        const { data: categoryCheck, error: categoryCheckError } = await supabase
           .from('knowledge_categories')
           .select('id, name, parent_category_id')
           .eq('id', categoryId)
           .single();
         
-        if (categoryError) {
-          console.error('Error fetching category:', categoryError);
-          throw new Error(`Kunne ikke hente kategoriinformasjon: ${categoryError.message}`);
+        if (categoryCheckError) {
+          if (categoryCheckError.code === 'PGRST116') {
+            console.log('Category already deleted or does not exist');
+            return { success: true, message: 'Category already deleted' };
+          }
+          throw new Error(`Failed to verify category: ${categoryCheckError.message}`);
         }
         
-        console.log('Category to delete:', categoryData);
+        console.log('Category found:', categoryCheck);
         
-        // Step 2: Check articles with explicit query
-        console.log('Checking for articles in category...');
-        const { data: articlesData, error: articlesError, count: articlesCount } = await supabase
+        // Step 2: Check for articles with detailed logging
+        console.log('Step 2: Checking for articles...');
+        const { data: articlesCheck, error: articlesError, count: articlesCount } = await supabase
           .from('knowledge_articles')
-          .select('id, title, category_id', { count: 'exact' })
+          .select('id, title', { count: 'exact' })
           .eq('category_id', categoryId);
         
         if (articlesError) {
-          console.error('Error checking articles:', articlesError);
-          throw new Error(`Feil ved sjekk av artikler: ${articlesError.message}`);
+          throw new Error(`Failed to check articles: ${articlesError.message}`);
         }
         
-        console.log(`Found ${articlesCount} articles:`, articlesData);
+        console.log(`Found ${articlesCount || 0} articles:`, articlesCheck);
         
         if (articlesCount && articlesCount > 0) {
-          throw new Error(`Kan ikke slette kategori som inneholder ${articlesCount} artikler. Flytt eller slett artiklene først.`);
+          throw new Error(`Cannot delete category with ${articlesCount} articles. Move or delete articles first.`);
         }
         
-        // Step 3: Check subcategories with explicit query
-        console.log('Checking for subcategories...');
-        const { data: subcategoriesData, error: subcategoriesError, count: subcategoriesCount } = await supabase
+        // Step 3: Check for subcategories with detailed logging
+        console.log('Step 3: Checking for subcategories...');
+        const { data: subcategoriesCheck, error: subcategoriesError, count: subcategoriesCount } = await supabase
           .from('knowledge_categories')
-          .select('id, name, parent_category_id', { count: 'exact' })
+          .select('id, name', { count: 'exact' })
           .eq('parent_category_id', categoryId);
         
         if (subcategoriesError) {
-          console.error('Error checking subcategories:', subcategoriesError);
-          throw new Error(`Feil ved sjekk av underkategorier: ${subcategoriesError.message}`);
+          throw new Error(`Failed to check subcategories: ${subcategoriesError.message}`);
         }
         
-        console.log(`Found ${subcategoriesCount} subcategories:`, subcategoriesData);
+        console.log(`Found ${subcategoriesCount || 0} subcategories:`, subcategoriesCheck);
         
         if (subcategoriesCount && subcategoriesCount > 0) {
-          throw new Error(`Kan ikke slette kategori som har ${subcategoriesCount} underkategorier. Flytt eller slett underkategoriene først.`);
+          throw new Error(`Cannot delete category with ${subcategoriesCount} subcategories. Delete subcategories first.`);
         }
         
-        // Step 4: Perform the actual deletion
-        console.log(`Category ${categoryId} is empty, proceeding with deletion...`);
-        
-        const { error: deleteError } = await supabase
+        // Step 4: Perform deletion with verification
+        console.log('Step 4: Performing deletion...');
+        const { error: deleteError, count: deletedCount } = await supabase
           .from('knowledge_categories')
-          .delete()
+          .delete({ count: 'exact' })
           .eq('id', categoryId);
         
         if (deleteError) {
-          console.error('Delete operation failed:', deleteError);
-          throw new Error(`Sletting feilet: ${deleteError.message}`);
+          throw new Error(`Delete operation failed: ${deleteError.message}`);
         }
         
-        console.log(`Successfully deleted category ${categoryId}`);
-        return { success: true, categoryId };
+        console.log(`Deletion result: ${deletedCount || 0} rows deleted`);
+        
+        if (deletedCount === 0) {
+          console.warn('No rows were deleted - category may have been deleted already');
+        }
+        
+        // Step 5: Verify deletion
+        console.log('Step 5: Verifying deletion...');
+        const { data: verifyData, error: verifyError } = await supabase
+          .from('knowledge_categories')
+          .select('id')
+          .eq('id', categoryId)
+          .maybeSingle();
+        
+        if (verifyError) {
+          console.error('Verification error:', verifyError);
+        }
+        
+        if (verifyData) {
+          console.error('Category still exists after deletion!', verifyData);
+          throw new Error('Category deletion failed - category still exists');
+        }
+        
+        console.log(`✅ Category ${categoryId} successfully deleted and verified`);
+        return { success: true, categoryId, deletedCount };
         
       } catch (error) {
-        console.error('Delete process failed:', error);
+        console.error('Enhanced delete process failed:', error);
         throw error;
       }
     },
-    onSuccess: (result) => {
+    onSuccess: async (result) => {
       console.log('Delete mutation successful:', result);
-      queryClient.invalidateQueries({ queryKey: ['knowledge-categories-all'] });
-      toast.success('Kategori slettet successfully!');
-      setSelectedCategory(null);
+      toast.success('Kategori slettet!');
+      
+      // Force complete cache refresh
+      await invalidateAllCaches();
+      
+      // Clear selected category if it was deleted
+      if (selectedCategory?.id === result.categoryId) {
+        setSelectedCategory(null);
+      }
+      
       setIsDeleteDialogOpen(false);
+      
+      // Additional verification after cache refresh
+      setTimeout(async () => {
+        console.log('=== POST-DELETE VERIFICATION ===');
+        await refetchCategories();
+      }, 500);
     },
     onError: (error: Error) => {
       console.error('Delete mutation error:', error);
@@ -203,88 +270,105 @@ const CategoryManager = () => {
 
   const moveArticlesMutation = useMutation({
     mutationFn: async ({ fromCategoryId, toCategoryId }: { fromCategoryId: string; toCategoryId: string }) => {
-      const { error } = await supabase
+      console.log(`Moving articles from ${fromCategoryId} to ${toCategoryId}`);
+      const { error, count } = await supabase
         .from('knowledge_articles')
         .update({ category_id: toCategoryId })
-        .eq('category_id', fromCategoryId);
+        .eq('category_id', fromCategoryId)
+        .select('id', { count: 'exact' });
       
       if (error) throw error;
+      console.log(`Moved ${count || 0} articles`);
+      return { movedCount: count || 0 };
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['articles-by-category'] });
-      queryClient.invalidateQueries({ queryKey: ['knowledge-categories-all'] });
-      toast.success('Artikler flyttet');
+    onSuccess: async (result) => {
+      await invalidateAllCaches();
+      toast.success(`${result.movedCount} artikler flyttet`);
       setIsMoveDialogOpen(false);
+    },
+    onError: (error: Error) => {
+      console.error('Move articles error:', error);
+      toast.error(`Feil ved flytting: ${error.message}`);
     }
   });
 
   const deleteEmptySubcategoriesMutation = useMutation({
     mutationFn: async (parentCategoryId: string) => {
-      console.log(`Deleting empty subcategories for parent: ${parentCategoryId}`);
+      console.log(`=== DELETING EMPTY SUBCATEGORIES FOR PARENT: ${parentCategoryId} ===`);
       
+      // Get all subcategories
       const { data: subcategories, error: subcategoriesError } = await supabase
         .from('knowledge_categories')
         .select('id, name')
         .eq('parent_category_id', parentCategoryId);
       
       if (subcategoriesError) throw subcategoriesError;
-      if (!subcategories) return 0;
+      if (!subcategories || subcategories.length === 0) {
+        console.log('No subcategories found');
+        return 0;
+      }
+      
+      console.log(`Found ${subcategories.length} subcategories to check:`, subcategories);
       
       let deletedCount = 0;
+      const emptyCategories: string[] = [];
+      
+      // Check each subcategory
       for (const subcat of subcategories) {
         console.log(`Checking subcategory: ${subcat.name} (${subcat.id})`);
         
-        // Check if subcategory has articles
-        const { data: articles, error: articlesError } = await supabase
+        // Check for articles
+        const { data: articles, error: articlesError, count: articlesCount } = await supabase
           .from('knowledge_articles')
-          .select('id')
+          .select('id', { count: 'exact' })
           .eq('category_id', subcat.id);
         
         if (articlesError) {
-          console.error(`Error checking articles for category ${subcat.name}:`, articlesError);
+          console.error(`Error checking articles for ${subcat.name}:`, articlesError);
           continue;
         }
         
-        // Check if subcategory has its own subcategories
-        const { data: nestedSubcategories, error: nestedError } = await supabase
+        // Check for nested subcategories
+        const { data: nestedSubs, error: nestedError, count: nestedCount } = await supabase
           .from('knowledge_categories')
-          .select('id')
+          .select('id', { count: 'exact' })
           .eq('parent_category_id', subcat.id);
         
         if (nestedError) {
-          console.error(`Error checking nested subcategories for ${subcat.name}:`, nestedError);
+          console.error(`Error checking nested categories for ${subcat.name}:`, nestedError);
           continue;
         }
         
-        const hasArticles = articles && articles.length > 0;
-        const hasNestedCategories = nestedSubcategories && nestedSubcategories.length > 0;
+        const isEmpty = (articlesCount || 0) === 0 && (nestedCount || 0) === 0;
+        console.log(`Category ${subcat.name}: articles=${articlesCount || 0}, nested=${nestedCount || 0}, isEmpty=${isEmpty}`);
         
-        console.log(`Category ${subcat.name}: articles=${hasArticles}, nested=${hasNestedCategories}`);
-        
-        // Only delete if truly empty (no articles and no subcategories)
-        if (!hasArticles && !hasNestedCategories) {
-          console.log(`Deleting empty category: ${subcat.name}`);
-          
-          const { error: deleteError } = await supabase
-            .from('knowledge_categories')
-            .delete()
-            .eq('id', subcat.id);
-          
-          if (deleteError) {
-            console.error(`Error deleting category ${subcat.name}:`, deleteError);
-          } else {
-            deletedCount++;
-            console.log(`Successfully deleted empty category: ${subcat.name}`);
-          }
-        } else {
-          console.log(`Skipping category ${subcat.name} - not empty`);
+        if (isEmpty) {
+          emptyCategories.push(subcat.id);
         }
+      }
+      
+      // Delete all empty categories in batch
+      if (emptyCategories.length > 0) {
+        console.log(`Deleting ${emptyCategories.length} empty categories:`, emptyCategories);
+        
+        const { error: deleteError, count: actualDeleted } = await supabase
+          .from('knowledge_categories')
+          .delete({ count: 'exact' })
+          .in('id', emptyCategories);
+        
+        if (deleteError) {
+          console.error('Batch delete error:', deleteError);
+          throw deleteError;
+        }
+        
+        deletedCount = actualDeleted || 0;
+        console.log(`Successfully deleted ${deletedCount} empty categories`);
       }
       
       return deletedCount;
     },
-    onSuccess: (deletedCount) => {
-      queryClient.invalidateQueries({ queryKey: ['knowledge-categories-all'] });
+    onSuccess: async (deletedCount) => {
+      await invalidateAllCaches();
       if (deletedCount > 0) {
         toast.success(`${deletedCount} tomme underkategorier slettet`);
       } else {
@@ -293,7 +377,7 @@ const CategoryManager = () => {
     },
     onError: (error: Error) => {
       console.error('Delete empty subcategories error:', error);
-      toast.error('Feil ved sletting av underkategorier: ' + error.message);
+      toast.error(`Feil ved sletting av underkategorier: ${error.message}`);
     }
   });
 
@@ -302,91 +386,69 @@ const CategoryManager = () => {
       console.log(`=== STARTING BULK DELETE PROCESS FOR CATEGORY: ${categoryId} ===`);
       
       try {
-        // Step 1: Get detailed category info
+        // Get category details
         const { data: categoryData, error: categoryError } = await supabase
           .from('knowledge_categories')
           .select('id, name, parent_category_id')
           .eq('id', categoryId)
           .single();
         
-        if (categoryError) {
-          console.error('Error fetching category:', categoryError);
-          throw new Error(`Kunne ikke hente kategoriinformasjon: ${categoryError.message}`);
-        }
+        if (categoryError) throw new Error(`Failed to get category: ${categoryError.message}`);
         
-        console.log('Category to bulk delete:', categoryData);
-        
-        // Step 2: Get all subcategory IDs recursively
+        // Get all subcategory IDs recursively
         const subcategoryIds = getSubcategoryIds(categoryId);
-        console.log(`Subcategory IDs to delete:`, subcategoryIds);
+        const allCategoryIds = [categoryId, ...subcategoryIds];
         
-        // Step 3: Delete all articles in the category and subcategories
-        console.log('Deleting articles in category and subcategories...');
-        const { error: articlesError } = await supabase
+        console.log(`Will delete categories: ${allCategoryIds.length} total`);
+        console.log('Category IDs:', allCategoryIds);
+        
+        // Delete all articles in these categories
+        const { error: articlesError, count: articlesDeleted } = await supabase
           .from('knowledge_articles')
-          .delete()
-          .in('category_id', [categoryId, ...subcategoryIds]);
+          .delete({ count: 'exact' })
+          .in('category_id', allCategoryIds);
         
-        if (articlesError) {
-          console.error('Error deleting articles:', articlesError);
-          throw new Error(`Feil ved sletting av artikler: ${articlesError.message}`);
-        }
+        if (articlesError) throw new Error(`Failed to delete articles: ${articlesError.message}`);
         
-        console.log('Articles deleted successfully.');
+        console.log(`Deleted ${articlesDeleted || 0} articles`);
         
-        // Step 4: Delete all subcategories
-        console.log('Deleting subcategories...');
-        const { error: subcategoriesError } = await supabase
+        // Delete all categories (subcategories first, then parent)
+        const { error: categoriesError, count: categoriesDeleted } = await supabase
           .from('knowledge_categories')
-          .delete()
-          .in('id', subcategoryIds);
+          .delete({ count: 'exact' })
+          .in('id', allCategoryIds);
         
-        if (subcategoriesError) {
-          console.error('Error deleting subcategories:', subcategoriesError);
-          throw new Error(`Feil ved sletting av underkategorier: ${subcategoriesError.message}`);
-        }
+        if (categoriesError) throw new Error(`Failed to delete categories: ${categoriesError.message}`);
         
-        console.log('Subcategories deleted successfully.');
+        console.log(`Deleted ${categoriesDeleted || 0} categories`);
         
-        // Step 5: Delete the main category
-        console.log('Deleting main category...');
-        const { error: categoryDeleteError } = await supabase
-          .from('knowledge_categories')
-          .delete()
-          .eq('id', categoryId);
-        
-        if (categoryDeleteError) {
-          console.error('Error deleting main category:', categoryDeleteError);
-          throw new Error(`Feil ved sletting av hovedkategori: ${categoryDeleteError.message}`);
-        }
-        
-        console.log('Main category deleted successfully.');
-        
-        console.log(`Successfully bulk deleted category ${categoryId} and all its content.`);
-        return { success: true };
+        return { 
+          success: true, 
+          articlesDeleted: articlesDeleted || 0,
+          categoriesDeleted: categoriesDeleted || 0
+        };
         
       } catch (error) {
         console.error('Bulk delete process failed:', error);
         throw error;
       }
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['knowledge-categories-all'] });
-      queryClient.invalidateQueries({ queryKey: ['articles-by-category'] });
-      toast.success('Kategori og alt innhold slettet');
+    onSuccess: async (result) => {
+      await invalidateAllCaches();
+      toast.success(`Bulk delete completed: ${result.categoriesDeleted} kategorier og ${result.articlesDeleted} artikler slettet`);
       setSelectedCategory(null);
       setIsBulkDeleteDialogOpen(false);
     },
     onError: (error: Error) => {
       console.error('Bulk delete mutation error:', error);
-      toast.error(`Feil ved sletting: ${error.message}`);
+      toast.error(`Feil ved bulk sletting: ${error.message}`);
       setIsBulkDeleteDialogOpen(false);
     }
   });
 
   const getSubcategoryIds = (parentId: string): string[] => {
     const subcategories = categories.filter(c => c.parent_category_id === parentId);
-    let allIds: string[] = [parentId];
+    let allIds: string[] = [];
     
     subcategories.forEach(sub => {
       allIds.push(sub.id);
@@ -434,7 +496,7 @@ const CategoryManager = () => {
       canDelete: isEmpty
     });
     
-    // Count empty subcategories (no articles and no nested subcategories)
+    // Count empty subcategories
     const emptySubcategories = subcategories.filter(sub => {
       const hasNestedSubcategories = categories.some(c => c.parent_category_id === sub.id);
       return !hasNestedSubcategories;
@@ -452,6 +514,19 @@ const CategoryManager = () => {
     };
   };
 
+  const handleManualRefresh = async () => {
+    console.log('=== MANUAL REFRESH TRIGGERED ===');
+    toast.info('Oppdaterer kategorier...');
+    
+    try {
+      await invalidateAllCaches();
+      toast.success('Kategorier oppdatert');
+    } catch (error) {
+      console.error('Manual refresh error:', error);
+      toast.error('Feil ved oppdatering');
+    }
+  };
+
   if (isLoading) {
     return <div className="p-6">Laster kategorier...</div>;
   }
@@ -466,23 +541,33 @@ const CategoryManager = () => {
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             <span>Kategoristruktur</span>
-            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-              <DialogTrigger asChild>
-                <Button size="sm">
-                  <Plus className="h-4 w-4 mr-1" />
-                  Ny
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Opprett ny kategori</DialogTitle>
-                </DialogHeader>
-                <CategoryForm 
-                  onSubmit={(data) => createCategoryMutation.mutate(data)}
-                  categories={flatCategories}
-                />
-              </DialogContent>
-            </Dialog>
+            <div className="flex gap-2">
+              <Button 
+                size="sm" 
+                variant="outline"
+                onClick={handleManualRefresh}
+                disabled={deleteCategoryMutation.isPending || deleteEmptySubcategoriesMutation.isPending}
+              >
+                Oppdater
+              </Button>
+              <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button size="sm">
+                    <Plus className="h-4 w-4 mr-1" />
+                    Ny
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Opprett ny kategori</DialogTitle>
+                  </DialogHeader>
+                  <CategoryForm 
+                    onSubmit={(data) => createCategoryMutation.mutate(data)}
+                    categories={flatCategories}
+                  />
+                </DialogContent>
+              </Dialog>
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
@@ -491,6 +576,16 @@ const CategoryManager = () => {
             <p className="text-sm text-blue-700">
               1. Revisjon • 2. Regnskap • 3. Skatt • 4. Annet
             </p>
+          </div>
+          
+          <div className="mb-2 text-sm text-muted-foreground">
+            Totalt: {categories.length} kategorier
+            {deleteCategoryMutation.isPending && (
+              <span className="ml-2 text-orange-600">Sletter...</span>
+            )}
+            {deleteEmptySubcategoriesMutation.isPending && (
+              <span className="ml-2 text-orange-600">Sletter tomme...</span>
+            )}
           </div>
           
           <CategoryTree
@@ -526,7 +621,7 @@ const CategoryManager = () => {
                 toast.error('Kategorien kan ikke slettes fordi den ikke er tom');
               }
             }}
-            onDeleteEmptySubcategories={() => deleteEmptySubcategoriesMutation.mutate(selectedCategory.id)}
+            onDeleteEmptySubcategories={() => deleteEmptySubcategoriesMutation.mutate(selectedCategory!.id)}
             onMoveArticles={() => setIsMoveDialogOpen(true)}
           >
             {editingCategory ? (
@@ -546,8 +641,9 @@ const CategoryManager = () => {
                 size="sm"
                 onClick={() => setIsBulkDeleteDialogOpen(true)}
                 className="w-full"
+                disabled={bulkDeleteMutation.isPending}
               >
-                Slett kategori og alt innhold
+                {bulkDeleteMutation.isPending ? 'Sletter...' : 'Slett kategori og alt innhold'}
               </Button>
               <p className="text-xs text-muted-foreground mt-1 text-center">
                 Sletter kategorien, alle underkategorier og artikler
@@ -595,9 +691,6 @@ const CategoryManager = () => {
 
       {/* Move Articles Dialog */}
       <Dialog open={isMoveDialogOpen} onOpenChange={setIsMoveDialogOpen}>
-        <DialogTrigger asChild>
-          {/* This trigger is hidden */}
-        </DialogTrigger>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Flytt artikler</DialogTitle>

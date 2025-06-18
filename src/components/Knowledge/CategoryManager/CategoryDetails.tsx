@@ -4,7 +4,7 @@ import { KnowledgeCategory } from '@/types/knowledge';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Edit, Move, Trash2, AlertTriangle } from 'lucide-react';
+import { Edit, Move, Trash2, AlertTriangle, RefreshCw } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 interface CategoryDetailsProps {
@@ -49,6 +49,7 @@ const CategoryDetails = ({
   // Count empty subcategories (no articles and no nested subcategories)
   const emptySubcategories = subcategories.filter(sub => {
     const hasNestedSubcategories = categories.some(c => c.parent_category_id === sub.id);
+    // Check if this subcategory has any articles (we'd need to query this, but for now assume 0)
     return !hasNestedSubcategories;
   });
   
@@ -67,24 +68,26 @@ const CategoryDetails = ({
           >
             <Edit className="h-4 w-4" />
           </Button>
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button size="sm" variant="outline">
-                <Move className="h-4 w-4" />
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Flytt artikler</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <p>Flytt alle artikler fra "{selectedCategory.name}" til en annen kategori.</p>
-                <Button onClick={onMoveArticles}>
-                  Åpne flyttedialog
+          {articlesCount > 0 && (
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button size="sm" variant="outline">
+                  <Move className="h-4 w-4" />
                 </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Flytt artikler</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <p>Flytt alle artikler fra "{selectedCategory.name}" til en annen kategori.</p>
+                  <Button onClick={onMoveArticles}>
+                    Åpne flyttedialog
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
           <Button 
             size="sm" 
             variant="destructive"
@@ -111,6 +114,11 @@ const CategoryDetails = ({
         )}
         
         <div>
+          <Label className="font-semibold">ID (for debugging)</Label>
+          <p className="text-xs text-muted-foreground font-mono">{selectedCategory.id}</p>
+        </div>
+        
+        <div>
           <Label className="font-semibold">Sorteringsrekkefølge</Label>
           <p>{selectedCategory.display_order}</p>
         </div>
@@ -127,7 +135,10 @@ const CategoryDetails = ({
           <div className="space-y-1 text-sm">
             <p>Artikler: {articlesCount}</p>
             <p>Underkategorier: {subcategories.length}</p>
-            <p>Status: {isEmpty ? 'Tom' : 'Inneholder data'}</p>
+            <p>Status: <Badge variant={isEmpty ? "secondary" : "default"}>{isEmpty ? 'Tom' : 'Inneholder data'}</Badge></p>
+            {hasEmptySubcategories && (
+              <p>Potensielt tomme underkategorier: {emptySubcategories.length}</p>
+            )}
           </div>
         </div>
         
@@ -135,19 +146,43 @@ const CategoryDetails = ({
           <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
             <h4 className="font-medium text-orange-900 mb-2 flex items-center gap-2">
               <AlertTriangle className="h-4 w-4" />
-              Tomme underkategorier funnet
+              Potensielt tomme underkategorier
             </h4>
             <p className="text-sm text-orange-700 mb-3">
               Denne kategorien har {emptySubcategories.length} underkategorier som kan være tomme.
             </p>
-            <Button 
-              size="sm" 
-              variant="outline"
-              onClick={onDeleteEmptySubcategories}
-            >
-              <Trash2 className="h-4 w-4 mr-1" />
-              Slett tomme underkategorier
-            </Button>
+            <div className="space-y-2">
+              <Button 
+                size="sm" 
+                variant="outline"
+                onClick={onDeleteEmptySubcategories}
+              >
+                <Trash2 className="h-4 w-4 mr-1" />
+                Slett tomme underkategorier
+              </Button>
+              <div className="text-xs text-orange-600">
+                <p>Underkategorier som vil bli sjekket:</p>
+                <ul className="list-disc list-inside">
+                  {emptySubcategories.map(sub => (
+                    <li key={sub.id} className="font-mono">{sub.name} ({sub.id.slice(0, 8)}...)</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {subcategories.length > 0 && (
+          <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <h4 className="font-medium text-blue-900 mb-2">Underkategorier ({subcategories.length})</h4>
+            <div className="text-sm text-blue-700 space-y-1">
+              {subcategories.map(sub => (
+                <div key={sub.id} className="flex justify-between items-center">
+                  <span>{sub.name}</span>
+                  <code className="text-xs">{sub.id.slice(0, 8)}...</code>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
