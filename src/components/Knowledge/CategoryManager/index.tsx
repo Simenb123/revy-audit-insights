@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -73,8 +74,7 @@ const CategoryManager = () => {
     console.log('=== INVALIDATING ALL CACHES ===');
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ['knowledge-categories-all'] }),
-      queryClient.invalidateQueries({ queryKey: ['articles-by-category'] }),
-      queryClient.refetchQueries({ queryKey: ['knowledge-categories-all'] })
+      queryClient.invalidateQueries({ queryKey: ['articles-by-category'] })
     ]);
     console.log('Cache invalidation complete');
   };
