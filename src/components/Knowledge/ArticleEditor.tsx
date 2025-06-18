@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -95,36 +94,36 @@ const ArticleEditor = () => {
     },
   });
 
-  // Updated temporary hardcoded data until database tables are created
+  // Updated with valid UUID-er for content types - these should eventually come from database
   const contentTypes: ContentType[] = [
-    { id: '1', name: 'fagartikkel', display_name: 'Fagartikkel', color: '#3B82F6' },
-    { id: '2', name: 'lov', display_name: 'Lov', color: '#10B981' },
-    { id: '3', name: 'isa-standard', display_name: 'ISA-standard', color: '#8B5CF6' },
-    { id: '4', name: 'nrs-standard', display_name: 'NRS-standard', color: '#6366F1' },
-    { id: '5', name: 'forskrift', display_name: 'Forskrift', color: '#F59E0B' },
-    { id: '6', name: 'forarbeider', display_name: 'Forarbeider', color: '#6B7280' },
-    { id: '7', name: 'dom', display_name: 'Dom', color: '#EF4444' },
-    { id: '8', name: 'revisjonshandlinger', display_name: 'Revisjonshandlinger', color: '#059669' }
+    { id: 'b1e3b4b5-4d3e-4b5f-8a2c-1d2e3f4a5b6c', name: 'fagartikkel', display_name: 'Fagartikkel', color: '#3B82F6' },
+    { id: 'c2f4c5c6-5e4f-5c6g-9b3d-2e3f4g5b6c7d', name: 'lov', display_name: 'Lov', color: '#10B981' },
+    { id: 'd3g5d6d7-6f5g-6d7h-ac4e-3f4g5h6c7d8e', name: 'isa-standard', display_name: 'ISA-standard', color: '#8B5CF6' },
+    { id: 'e4h6e7e8-7g6h-7e8i-bd5f-4g5h6i7d8e9f', name: 'nrs-standard', display_name: 'NRS-standard', color: '#6366F1' },
+    { id: 'f5i7f8f9-8h7i-8f9j-ce6g-5h6i7j8e9f0g', name: 'forskrift', display_name: 'Forskrift', color: '#F59E0B' },
+    { id: 'a6j8a9a0-9i8j-9a0k-df7h-6i7j8k9f0g1h', name: 'forarbeider', display_name: 'Forarbeider', color: '#6B7280' },
+    { id: 'b7k9b0b1-0j9k-0b1l-ea8i-7j8k9l0g1h2i', name: 'dom', display_name: 'Dom', color: '#EF4444' },
+    { id: 'c8l0c1c2-1k0l-1c2m-fb9j-8k9l0m1h2i3j', name: 'revisjonshandlinger', display_name: 'Revisjonshandlinger', color: '#059669' }
   ];
 
   const subjectAreas: SubjectArea[] = [
     // General areas
-    { id: '1', name: 'revisjon', display_name: 'Revisjon', color: '#3B82F6' },
-    { id: '2', name: 'regnskap', display_name: 'Regnskap', color: '#10B981' },
-    { id: '3', name: 'skatt', display_name: 'Skatt', color: '#F59E0B' },
+    { id: 'd9m1d2d3-2l1m-2d3n-gc0k-9l0m1n2i3j4k', name: 'revisjon', display_name: 'Revisjon', color: '#3B82F6' },
+    { id: 'e0n2e3e4-3m2n-3e4o-hd1l-0m1n2o3j4k5l', name: 'regnskap', display_name: 'Regnskap', color: '#10B981' },
+    { id: 'f1o3f4f5-4n3o-4f5p-ie2m-1n2o3p4k5l6m', name: 'skatt', display_name: 'Skatt', color: '#F59E0B' },
     
     // Specific audit areas
-    { id: '5', name: 'inntekter', display_name: 'Inntekter/Salg', color: '#059669' },
-    { id: '6', name: 'lonn', display_name: 'Lønn', color: '#7C3AED' },
-    { id: '7', name: 'andre-driftskostnader', display_name: 'Andre driftskostnader', color: '#DC2626' },
-    { id: '8', name: 'varelager', display_name: 'Varelager', color: '#EA580C' },
-    { id: '9', name: 'banktransaksjoner', display_name: 'Banktransaksjoner', color: '#0891B2' },
-    { id: '10', name: 'investeringer', display_name: 'Investeringer/Anleggsmidler', color: '#9333EA' },
-    { id: '11', name: 'kundefordringer', display_name: 'Kundefordringer', color: '#16A34A' },
-    { id: '12', name: 'leverandorgjeld', display_name: 'Leverandørgjeld', color: '#DB2777' },
-    { id: '13', name: 'egenkapital', display_name: 'Egenkapital', color: '#7C2D12' },
-    { id: '14', name: 'naerstaaende', display_name: 'Nærstående transaksjoner', color: '#BE185D' },
-    { id: '4', name: 'annet', display_name: 'Annet', color: '#6B7280' }
+    { id: 'a2p4a5a6-5o4p-5a6q-jf3n-2o3p4q5l6m7n', name: 'inntekter', display_name: 'Inntekter/Salg', color: '#059669' },
+    { id: 'b3q5b6b7-6p5q-6b7r-kg4o-3p4q5r6m7n8o', name: 'lonn', display_name: 'Lønn', color: '#7C3AED' },
+    { id: 'c4r6c7c8-7q6r-7c8s-lh5p-4q5r6s7n8o9p', name: 'andre-driftskostnader', display_name: 'Andre driftskostnader', color: '#DC2626' },
+    { id: 'd5s7d8d9-8r7s-8d9t-mi6q-5r6s7t8o9p0q', name: 'varelager', display_name: 'Varelager', color: '#EA580C' },
+    { id: 'e6t8e9e0-9s8t-9e0u-nj7r-6s7t8u9p0q1r', name: 'banktransaksjoner', display_name: 'Banktransaksjoner', color: '#0891B2' },
+    { id: 'f7u9f0f1-0t9u-0f1v-ok8s-7t8u9v0q1r2s', name: 'investeringer', display_name: 'Investeringer/Anleggsmidler', color: '#9333EA' },
+    { id: 'a8v0a1a2-1u0v-1a2w-pl9t-8u9v0w1r2s3t', name: 'kundefordringer', display_name: 'Kundefordringer', color: '#16A34A' },
+    { id: 'b9w1b2b3-2v1w-2b3x-qm0u-9v0w1x2s3t4u', name: 'leverandorgjeld', display_name: 'Leverandørgjeld', color: '#DB2777' },
+    { id: 'c0x2c3c4-3w2x-3c4y-rn1v-0w1x2y3t4u5v', name: 'egenkapital', display_name: 'Egenkapital', color: '#7C2D12' },
+    { id: 'd1y3d4d5-4x3y-4d5z-so2w-1x2y3z4u5v6w', name: 'naerstaaende', display_name: 'Nærstående transaksjoner', color: '#BE185D' },
+    { id: 'e2z4e5e6-5y4z-5e60-tp3x-2y3z405v6w7x', name: 'annet', display_name: 'Annet', color: '#6B7280' }
   ];
 
   const { data: article, isLoading: isLoadingArticle } = useQuery({
