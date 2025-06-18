@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Plus } from 'lucide-react';
+import { Plus, RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { KnowledgeCategory } from '@/types/knowledge';
 import { toast } from 'sonner';
@@ -147,6 +147,13 @@ const CategoryManager = () => {
       console.log(`=== STARTING ENHANCED DELETE PROCESS FOR CATEGORY: ${categoryId} ===`);
       
       try {
+        // Pre-delete verification: Check current category count
+        console.log('Pre-delete: Fetching current categories...');
+        const { count: preDeleteCount } = await supabase
+          .from('knowledge_categories')
+          .select('*', { count: 'exact', head: true });
+        console.log(`Pre-delete total categories: ${preDeleteCount}`);
+        
         // Step 1: Verify category exists and get current state
         console.log('Step 1: Verifying category exists...');
         const { data: categoryCheck, error: categoryCheckError } = await supabase
@@ -216,7 +223,7 @@ const CategoryManager = () => {
           console.warn('No rows were deleted - category may have been deleted already');
         }
         
-        // Step 5: Verify deletion
+        // Step 5: Verify deletion and count change
         console.log('Step 5: Verifying deletion...');
         const { data: verifyData, error: verifyError } = await supabase
           .from('knowledge_categories')
@@ -233,6 +240,14 @@ const CategoryManager = () => {
           throw new Error('Category deletion failed - category still exists');
         }
         
+        // Post-delete verification: Check new category count
+        console.log('Post-delete: Fetching updated categories...');
+        const { count: postDeleteCount } = await supabase
+          .from('knowledge_categories')
+          .select('*', { count: 'exact', head: true });
+        console.log(`Post-delete total categories: ${postDeleteCount}`);
+        console.log(`Categories reduced by: ${(preDeleteCount || 0) - (postDeleteCount || 0)}`);
+        
         console.log(`✅ Category ${categoryId} successfully deleted and verified`);
         return { success: true, categoryId, deletedCount };
         
@@ -245,7 +260,10 @@ const CategoryManager = () => {
       console.log('Delete mutation successful:', result);
       toast.success('Kategori slettet!');
       
-      // Force complete cache refresh
+      // Force complete cache refresh with explicit invalidation
+      console.log('=== FORCING CACHE REFRESH POST-DELETE ===');
+      await queryClient.removeQueries({ queryKey: ['knowledge-categories-all'] });
+      await queryClient.removeQueries({ queryKey: ['articles-by-category'] });
       await invalidateAllCaches();
       
       // Clear selected category if it was deleted
@@ -259,7 +277,7 @@ const CategoryManager = () => {
       setTimeout(async () => {
         console.log('=== POST-DELETE VERIFICATION ===');
         await refetchCategories();
-      }, 500);
+      }, 1000);
     },
     onError: (error: Error) => {
       console.error('Delete mutation error:', error);
@@ -295,6 +313,12 @@ const CategoryManager = () => {
   const deleteEmptySubcategoriesMutation = useMutation({
     mutationFn: async (parentCategoryId: string) => {
       console.log(`=== DELETING EMPTY SUBCATEGORIES FOR PARENT: ${parentCategoryId} ===`);
+      
+      // Pre-batch verification: Check current category count
+      const { count: preBatchCount } = await supabase
+        .from('knowledge_categories')
+        .select('*', { count: 'exact', head: true });
+      console.log(`Pre-batch total categories: ${preBatchCount}`);
       
       // Get all subcategories
       const { data: subcategories, error: subcategoriesError } = await supabase
@@ -363,17 +387,33 @@ const CategoryManager = () => {
         
         deletedCount = actualDeleted || 0;
         console.log(`Successfully deleted ${deletedCount} empty categories`);
+        
+        // Post-batch verification: Check new category count
+        const { count: postBatchCount } = await supabase
+          .from('knowledge_categories')
+          .select('*', { count: 'exact', head: true });
+        console.log(`Post-batch total categories: ${postBatchCount}`);
+        console.log(`Categories reduced by: ${(preBatchCount || 0) - (postBatchCount || 0)}`);
       }
       
       return deletedCount;
     },
     onSuccess: async (deletedCount) => {
+      console.log('=== FORCING CACHE REFRESH POST-BATCH-DELETE ===');
+      await queryClient.removeQueries({ queryKey: ['knowledge-categories-all'] });
+      await queryClient.removeQueries({ queryKey: ['articles-by-category'] });
       await invalidateAllCaches();
+      
       if (deletedCount > 0) {
         toast.success(`${deletedCount} tomme underkategorier slettet`);
       } else {
         toast.info('Ingen tomme underkategorier funnet');
       }
+      
+      // Force UI refresh
+      setTimeout(async () => {
+        await refetchCategories();
+      }, 1000);
     },
     onError: (error: Error) => {
       console.error('Delete empty subcategories error:', error);
@@ -519,6 +559,8 @@ const CategoryManager = () => {
     toast.info('Oppdaterer kategorier...');
     
     try {
+      await queryClient.removeQueries({ queryKey: ['knowledge-categories-all'] });
+      await queryClient.removeQueries({ queryKey: ['articles-by-category'] });
       await invalidateAllCaches();
       toast.success('Kategorier oppdatert');
     } catch (error) {
@@ -548,6 +590,7 @@ const CategoryManager = () => {
                 onClick={handleManualRefresh}
                 disabled={deleteCategoryMutation.isPending || deleteEmptySubcategoriesMutation.isPending}
               >
+                <RefreshCw className="h-4 w-4 mr-1" />
                 Oppdater
               </Button>
               <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
@@ -578,13 +621,15 @@ const CategoryManager = () => {
             </p>
           </div>
           
-          <div className="mb-2 text-sm text-muted-foreground">
-            Totalt: {categories.length} kategorier
-            {deleteCategoryMutation.isPending && (
-              <span className="ml-2 text-orange-600">Sletter...</span>
-            )}
-            {deleteEmptySubcategoriesMutation.isPending && (
-              <span className="ml-2 text-orange-600">Sletter tomme...</span>
+          <div className="mb-2 text-sm text-muted-foreground flex items-center gap-2">
+            <span>Totalt: {categories.length} kategorier</span>
+            {(deleteCategoryMutation.isPending || deleteEmptySubcategoriesMutation.isPending) && (
+              <div className="flex items-center gap-1 text-orange-600">
+                <RefreshCw className="h-3 w-3 animate-spin" />
+                <span className="text-xs">
+                  {deleteCategoryMutation.isPending ? 'Sletter...' : 'Sletter tomme...'}
+                </span>
+              </div>
             )}
           </div>
           
@@ -623,6 +668,8 @@ const CategoryManager = () => {
             }}
             onDeleteEmptySubcategories={() => deleteEmptySubcategoriesMutation.mutate(selectedCategory!.id)}
             onMoveArticles={() => setIsMoveDialogOpen(true)}
+            isDeleting={deleteCategoryMutation.isPending}
+            isDeletingEmpty={deleteEmptySubcategoriesMutation.isPending}
           >
             {editingCategory ? (
               <CategoryForm 
