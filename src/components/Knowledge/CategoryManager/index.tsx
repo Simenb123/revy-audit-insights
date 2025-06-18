@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -429,7 +428,7 @@ const CategoryManager = () => {
         toast.info('Ingen tomme underkategorier funnet');
       }
       
-      // Force UI refresh - fixed to not pass arguments
+      // Force UI refresh
       setTimeout(async () => {
         await refetchCategories();
       }, 1000);

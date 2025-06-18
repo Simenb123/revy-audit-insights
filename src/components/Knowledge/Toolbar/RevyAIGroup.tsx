@@ -17,7 +17,7 @@ type Props = {
   action: ClientAuditAction;
 };
 
-const RevyAIGroup = ({ editor, client, action }: Props) => {
+const ReviAIGroup = ({ editor, client, action }: Props) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [aiSuggestion, setAiSuggestion] = useState<string | null>(null);
@@ -26,9 +26,9 @@ const RevyAIGroup = ({ editor, client, action }: Props) => {
   const createVersion = useCreateDocumentVersion();
   const createAuditLog = useCreateAuditLog();
 
-  const handleRevyHelp = async () => {
+  const handleReviHelp = async () => {
     if (!editor || !action || !client) {
-      toast({ title: "Mangler kontekst", description: "Kan ikke hente hjelp fra AI-Revy uten full kontekst.", variant: "destructive" });
+      toast({ title: "Mangler kontekst", description: "Kan ikke hente hjelp fra AI-Revi uten full kontekst.", variant: "destructive" });
       return;
     }
 
@@ -42,7 +42,7 @@ const RevyAIGroup = ({ editor, client, action }: Props) => {
         content: currentContent,
         versionName: `Før AI-forbedring ${new Date().toLocaleTimeString()}`,
         changeSource: 'user',
-        changeDescription: 'Automatisk lagret versjon før AI-Revy ble kjørt.',
+        changeDescription: 'Automatisk lagret versjon før AI-Revi ble kjørt.',
         clientId: client.id,
         subjectArea: action.subject_area,
         actionName: action.name,
@@ -70,8 +70,8 @@ const RevyAIGroup = ({ editor, client, action }: Props) => {
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Ukjent feil";
-      console.error("Error getting response from AI-Revy:", error);
-      toast({ title: "Feil", description: `Kunne ikke få svar fra AI-Revy: ${errorMessage}`, variant: "destructive" });
+      console.error("Error getting response from AI-Revi:", error);
+      toast({ title: "Feil", description: `Kunne ikke få svar fra AI-Revi: ${errorMessage}`, variant: "destructive" });
       setOriginalContent(null);
     } finally {
       setIsLoading(false);
@@ -87,7 +87,7 @@ const RevyAIGroup = ({ editor, client, action }: Props) => {
         content: aiSuggestion,
         versionName: `AI-forbedring ${new Date().toLocaleTimeString()}`,
         changeSource: 'ai',
-        changeDescription: 'Innhold generert av AI-Revy og godkjent av bruker.',
+        changeDescription: 'Innhold generert av AI-Revi og godkjent av bruker.',
         clientId: client.id,
         subjectArea: action.subject_area,
         actionName: action.name,
@@ -95,7 +95,7 @@ const RevyAIGroup = ({ editor, client, action }: Props) => {
       
       editor.chain().focus().setContent(aiSuggestion).run();
       
-      toast({ title: "AI-Revy hjalp til!", description: "Innholdet i editoren ble oppdatert." });
+      toast({ title: "AI-Revi hjalp til!", description: "Innholdet i editoren ble oppdatert." });
 
       createAuditLog.mutate({
         clientId: client.id,
@@ -141,10 +141,10 @@ const RevyAIGroup = ({ editor, client, action }: Props) => {
   return (
     <>
       <ToolbarButton
-        tooltip="Spør AI-Revy om hjelp"
-        onPressedChange={handleRevyHelp}
+        tooltip="Spør AI-Revi om hjelp"
+        onPressedChange={handleReviHelp}
         disabled={isLoading || isPreviewOpen}
-        aria-label="Spør AI-Revy om hjelp"
+        aria-label="Spør AI-Revi om hjelp"
       >
         {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Bot className="h-4 w-4" />}
       </ToolbarButton>
@@ -160,4 +160,4 @@ const RevyAIGroup = ({ editor, client, action }: Props) => {
   );
 };
 
-export default RevyAIGroup;
+export default ReviAIGroup;

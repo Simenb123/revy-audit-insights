@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
@@ -8,7 +9,7 @@ import { useRevyChatSessions } from './useRevyChatSessions';
 import { useRevyChatMessages } from './useRevyChatMessages';
 import { RevyMessage, RevyChatMessage } from '@/types/revio';
 
-interface UseSmartRevyAssistantProps {
+interface UseSmartReviAssistantProps {
   clientData?: any;
   userRole?: string;
   embedded?: boolean;
@@ -23,7 +24,7 @@ const mapMessageToUIMessage = (msg: RevyChatMessage): RevyMessage => ({
     metadata: msg.metadata
 });
 
-export const useSmartRevyAssistant = ({ clientData, userRole, embedded = false }: UseSmartRevyAssistantProps) => {
+export const useSmartReviAssistant = ({ clientData, userRole, embedded = false }: UseSmartReviAssistantProps) => {
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const { sessions, isLoading: sessionsLoading, createSession } = useRevyChatSessions();
   const { messages: dbMessages, isLoading: messagesLoading, sendMessage } = useRevyChatMessages(activeSessionId);
@@ -47,7 +48,7 @@ export const useSmartRevyAssistant = ({ clientData, userRole, embedded = false }
       
       // Add welcome message to new session
       await sendMessage({
-        content: `Hei! Jeg er AI-Revy, din AI-drevne revisjonsassistent. Hvordan kan jeg hjelpe deg i dag?`,
+        content: `Hei! Jeg er AI-Revi, din AI-drevne revisjonsassistent. Hvordan kan jeg hjelpe deg i dag?`,
         sender: 'revy',
       });
     } catch (error) {

@@ -8,13 +8,13 @@ import UsageAnalytics from '@/components/AIRevyAdmin/UsageAnalytics';
 import TestInterface from '@/components/AIRevyAdmin/TestInterface';
 import { Settings, Brain, BarChart3, TestTube } from 'lucide-react';
 
-const AIRevyAdmin = () => {
+const AIReviAdmin = () => {
   return (
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex items-center gap-3 mb-6">
         <Brain className="h-8 w-8 text-primary" />
         <div>
-          <h1 className="text-3xl font-bold">AI-Revy Administrator</h1>
+          <h1 className="text-3xl font-bold">AI-Revi Administrator</h1>
           <p className="text-muted-foreground">
             Administrer prompts, overvåk kunnskapsbase og analyser bruk
           </p>
@@ -61,4 +61,4 @@ const AIRevyAdmin = () => {
   );
 };
 
-export default AIRevyAdmin;
+export default AIReviAdmin;

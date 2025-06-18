@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -14,13 +15,13 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import RevyAvatar from './RevyAvatar';
 import { RevyMessageList } from './Assistant/RevyMessageList';
 
-interface SmartRevyAssistantProps {
+interface SmartReviAssistantProps {
   embedded?: boolean;
   clientData?: any;
   userRole?: string;
 }
 
-const SmartRevyAssistant = ({ embedded = false, clientData, userRole }: SmartRevyAssistantProps) => {
+const SmartReviAssistant = ({ embedded = false, clientData, userRole }: SmartReviAssistantProps) => {
   const [messages, setMessages] = useState<RevyMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -196,7 +197,7 @@ const SmartRevyAssistant = ({ embedded = false, clientData, userRole }: SmartRev
           <div className="flex items-center gap-3">
             <RevyAvatar />
             <div className="min-w-0 flex-1">
-              <h3 className={`font-semibold ${isMobile ? 'text-sm' : 'text-base'}`}>AI-Revy</h3>
+              <h3 className={`font-semibold ${isMobile ? 'text-sm' : 'text-base'}`}>AI-Revi</h3>
               <p className={`text-muted-foreground ${isMobile ? 'text-xs' : 'text-sm'}`}>
                 Din smarte revisjonsassistent med tilgang til fagstoff og ISA-standarder
               </p>
@@ -221,7 +222,7 @@ const SmartRevyAssistant = ({ embedded = false, clientData, userRole }: SmartRev
           <div className="flex items-center space-x-2">
             <Input
               type="text"
-              placeholder="Spør AI-Revy om hjelp..."
+              placeholder="Spør AI-Revi om hjelp..."
               value={input}
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
@@ -254,7 +255,7 @@ const SmartRevyAssistant = ({ embedded = false, clientData, userRole }: SmartRev
         <div className="flex items-center gap-3">
           <RevyAvatar />
           <div>
-            <CardTitle className="text-lg font-semibold">AI-Revy</CardTitle>
+            <CardTitle className="text-lg font-semibold">AI-Revi</CardTitle>
             <p className="text-sm text-muted-foreground">
               Din smarte revisjonsassistent med tilgang til fagstoff og ISA-standarder
             </p>
@@ -274,7 +275,7 @@ const SmartRevyAssistant = ({ embedded = false, clientData, userRole }: SmartRev
           <div className="flex items-center space-x-2">
             <Input
               type="text"
-              placeholder="Spør AI-Revy om hjelp..."
+              placeholder="Spør AI-Revi om hjelp..."
               value={input}
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
@@ -297,4 +298,4 @@ const SmartRevyAssistant = ({ embedded = false, clientData, userRole }: SmartRev
   );
 };
 
-export default SmartRevyAssistant;
+export default SmartReviAssistant;
