@@ -1,3 +1,4 @@
+
 import React from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -25,6 +26,8 @@ import {
 import { Save, X, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import RichTextEditor from "./RichTextEditor";
+import { useContentTypes } from "@/hooks/knowledge/useContentTypes";
+import { useSubjectAreas } from "@/hooks/knowledge/useSubjectAreas";
 
 interface ArticleFormData {
   title: string;
@@ -37,21 +40,6 @@ interface ArticleFormData {
   tags: string;
   status: ArticleStatus;
   reference_code: string;
-}
-
-// Temporary interfaces until database is updated
-interface ContentType {
-  id: string;
-  name: string;
-  display_name: string;
-  color: string;
-}
-
-interface SubjectArea {
-  id: string;
-  name: string;
-  display_name: string;
-  color: string;
 }
 
 // Simple slug generation function
@@ -94,37 +82,9 @@ const ArticleEditor = () => {
     },
   });
 
-  // Updated with REAL UUIDs from the database - these match the knowledge_categories table
-  const contentTypes: ContentType[] = [
-    { id: '01942fca-b16c-7b10-be44-8e1dd40b2fbd', name: 'fagartikkel', display_name: 'Fagartikkel', color: '#3B82F6' },
-    { id: '01942fca-b16c-7b10-be44-8e1dd40b2fbe', name: 'lov', display_name: 'Lov', color: '#10B981' },
-    { id: '01942fca-b16c-7b10-be44-8e1dd40b2fbf', name: 'isa-standard', display_name: 'ISA-standard', color: '#8B5CF6' },
-    { id: '01942fca-b16c-7b10-be44-8e1dd40b2fc0', name: 'nrs-standard', display_name: 'NRS-standard', color: '#6366F1' },
-    { id: '01942fca-b16c-7b10-be44-8e1dd40b2fc1', name: 'forskrift', display_name: 'Forskrift', color: '#F59E0B' },
-    { id: '01942fca-b16c-7b10-be44-8e1dd40b2fc2', name: 'forarbeider', display_name: 'Forarbeider', color: '#6B7280' },
-    { id: '01942fca-b16c-7b10-be44-8e1dd40b2fc3', name: 'dom', display_name: 'Dom', color: '#EF4444' },
-    { id: '01942fca-b16c-7b10-be44-8e1dd40b2fc4', name: 'revisjonshandlinger', display_name: 'Revisjonshandlinger', color: '#059669' }
-  ];
-
-  const subjectAreas: SubjectArea[] = [
-    // Using REAL UUIDs from the database - these match the subject_areas table
-    { id: '01942fca-b16c-7b10-be44-8e1dd40b2fc5', name: 'revisjon', display_name: 'Revisjon', color: '#3B82F6' },
-    { id: '01942fca-b16c-7b10-be44-8e1dd40b2fc6', name: 'regnskap', display_name: 'Regnskap', color: '#10B981' },
-    { id: '01942fca-b16c-7b10-be44-8e1dd40b2fc7', name: 'skatt', display_name: 'Skatt', color: '#F59E0B' },
-    
-    // Specific audit areas
-    { id: '01942fca-b16c-7b10-be44-8e1dd40b2fc8', name: 'inntekter', display_name: 'Inntekter/Salg', color: '#059669' },
-    { id: '01942fca-b16c-7b10-be44-8e1dd40b2fc9', name: 'lonn', display_name: 'Lønn', color: '#7C3AED' },
-    { id: '01942fca-b16c-7b10-be44-8e1dd40b2fca', name: 'andre-driftskostnader', display_name: 'Andre driftskostnader', color: '#DC2626' },
-    { id: '01942fca-b16c-7b10-be44-8e1dd40b2fcb', name: 'varelager', display_name: 'Varelager', color: '#EA580C' },
-    { id: '01942fca-b16c-7b10-be44-8e1dd40b2fcc', name: 'banktransaksjoner', display_name: 'Banktransaksjoner', color: '#0891B2' },
-    { id: '01942fca-b16c-7b10-be44-8e1dd40b2fcd', name: 'investeringer', display_name: 'Investeringer/Anleggsmidler', color: '#9333EA' },
-    { id: '01942fca-b16c-7b10-be44-8e1dd40b2fce', name: 'kundefordringer', display_name: 'Kundefordringer', color: '#16A34A' },
-    { id: '01942fca-b16c-7b10-be44-8e1dd40b2fcf', name: 'leverandorgjeld', display_name: 'Leverandørgjeld', color: '#DB2777' },
-    { id: '01942fca-b16c-7b10-be44-8e1dd40b2fd0', name: 'egenkapital', display_name: 'Egenkapital', color: '#7C2D12' },
-    { id: '01942fca-b16c-7b10-be44-8e1dd40b2fd1', name: 'naerstaaende', display_name: 'Nærstående transaksjoner', color: '#BE185D' },
-    { id: '01942fca-b16c-7b10-be44-8e1dd40b2fd2', name: 'annet', display_name: 'Annet', color: '#6B7280' }
-  ];
+  // Use hooks to get content types and subject areas from database
+  const { data: contentTypes = [] } = useContentTypes();
+  const { data: subjectAreas = [] } = useSubjectAreas();
 
   const { data: article, isLoading: isLoadingArticle } = useQuery({
     queryKey: ["knowledge-article-edit", articleId],
@@ -154,7 +114,7 @@ const ArticleEditor = () => {
       summary: "",
       content: "<p>Skriv artikkelinnholdet her...</p>",
       categoryId: initialCategoryId || "",
-      contentTypeId: "01942fca-b16c-7b10-be44-8e1dd40b2fbd", // Default to 'fagartikkel'
+      contentTypeId: contentTypes.length > 0 ? contentTypes[0]?.id : "", // Use first available content type
       subjectAreaIds: [],
       tags: "",
       status: "draft",
@@ -168,13 +128,13 @@ const ArticleEditor = () => {
     if (article && !isLoadingArticle) {
       console.log("Setting form values from article:", article);
       // Find the content type ID based on the article's content_type_id or legacy content_type field
-      let contentTypeId = "01942fca-b16c-7b10-be44-8e1dd40b2fbd"; // Default to fagartikkel
+      let contentTypeId = contentTypes.length > 0 ? contentTypes[0]?.id : "";
       if (article.content_type_id) {
         contentTypeId = article.content_type_id;
       } else if (article.content_type) {
         // Map legacy content_type to new ID
         const foundType = contentTypes.find(ct => ct.name === article.content_type);
-        contentTypeId = foundType?.id || "01942fca-b16c-7b10-be44-8e1dd40b2fbd";
+        contentTypeId = foundType?.id || (contentTypes.length > 0 ? contentTypes[0]?.id : "");
       }
 
       form.reset({
@@ -191,6 +151,13 @@ const ArticleEditor = () => {
       });
     }
   }, [article, isLoadingArticle, form, contentTypes]);
+
+  // Update form default when content types are loaded
+  React.useEffect(() => {
+    if (contentTypes.length > 0 && !form.getValues("contentTypeId")) {
+      form.setValue("contentTypeId", contentTypes[0].id);
+    }
+  }, [contentTypes, form]);
 
   const checkSlugUnique = async (slug: string) => {
     if (!slug) return;

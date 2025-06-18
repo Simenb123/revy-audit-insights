@@ -429,7 +429,7 @@ const CategoryManager = () => {
         toast.info('Ingen tomme underkategorier funnet');
       }
       
-      // Force UI refresh
+      // Force UI refresh - fixed this line to not pass arguments
       setTimeout(async () => {
         await refetchCategories();
       }, 1000);
