@@ -1,123 +1,124 @@
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { useState, useEffect, useMemo } from 'react';
+import { useClientDocuments } from './useClientDocuments';
 
 export interface EnhancedClientDocument {
   id: string;
-  client_id: string;
-  user_id: string;
   file_name: string;
-  file_path: string;
-  file_size: number;
-  mime_type: string;
   category?: string;
-  subject_area?: string;
-  ai_suggested_category?: string;
   ai_confidence_score?: number;
   ai_analysis_summary?: string;
-  manual_category_override?: boolean;
-  created_at: string;
-  updated_at: string;
+  ai_suggested_subject_areas?: string[];
+  ai_isa_standard_references?: string[];
   extracted_text?: string;
-  text_extraction_status?: string;
+  created_at: string;
+}
+
+export interface DocumentStats {
+  total: number;
+  highConfidence: number;
+  mediumConfidence: number;
+  lowConfidence: number;
+  uncategorized: number;
+  byCategory: Record<string, number>;
+  qualityScore: number;
 }
 
 export const useEnhancedClientDocuments = (clientId: string) => {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
+  const { documents: rawDocuments, isLoading, refetch } = useClientDocuments(clientId);
+  
+  const documents = useMemo((): EnhancedClientDocument[] => {
+    return (rawDocuments || []).map(doc => ({
+      id: doc.id,
+      file_name: doc.file_name,
+      category: doc.category,
+      ai_confidence_score: doc.ai_confidence_score,
+      ai_analysis_summary: doc.ai_analysis_summary,
+      ai_suggested_subject_areas: doc.ai_suggested_subject_areas,
+      ai_isa_standard_references: doc.ai_isa_standard_references,
+      extracted_text: doc.extracted_text,
+      created_at: doc.created_at
+    }));
+  }, [rawDocuments]);
 
-  // Fetch documents with enhanced categorization info
-  const { data: documents = [], isLoading, refetch } = useQuery({
-    queryKey: ['enhanced-client-documents', clientId],
-    queryFn: async () => {
-      if (!clientId) return [];
+  const getCategorizeionStats = (): DocumentStats => {
+    const total = documents.length;
+    let highConfidence = 0;
+    let mediumConfidence = 0;
+    let lowConfidence = 0;
+    let uncategorized = 0;
+    const byCategory: Record<string, number> = {};
+
+    documents.forEach(doc => {
+      // Confidence scoring
+      const confidence = doc.ai_confidence_score || 0;
+      if (confidence >= 0.8) highConfidence++;
+      else if (confidence >= 0.6) mediumConfidence++;
+      else if (confidence > 0) lowConfidence++;
       
-      const { data, error } = await supabase
-        .from('client_documents_files')
-        .select('*')
-        .eq('client_id', clientId)
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      return data as EnhancedClientDocument[];
-    },
-    enabled: !!clientId
-  });
+      // Category counting
+      const category = doc.category || 'uncategorized';
+      if (category === 'uncategorized') uncategorized++;
+      byCategory[category] = (byCategory[category] || 0) + 1;
+    });
 
-  // Update document category
-  const updateDocumentCategory = useMutation({
-    mutationFn: async (data: {
-      documentId: string;
-      category: string;
-      manualOverride?: boolean;
-    }) => {
-      const { error } = await supabase
-        .from('client_documents_files')
-        .update({
-          category: data.category,
-          manual_category_override: data.manualOverride || true,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', data.documentId);
+    const qualityScore = total > 0 ? Math.round(((highConfidence + mediumConfidence * 0.7) / total) * 100) : 0;
 
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['enhanced-client-documents'] });
-      toast({
-        title: "Kategori oppdatert",
-        description: "Dokumentkategorien har blitt endret.",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Kunne ikke oppdatere kategori",
-        description: error.message,
-        variant: "destructive"
-      });
-    }
-  });
-
-  // Get categorization statistics
-  const getCategorizeionStats = () => {
-    const highConfidence = documents.filter(d => d.ai_confidence_score && d.ai_confidence_score >= 0.8).length;
-    const mediumConfidence = documents.filter(d => d.ai_confidence_score && d.ai_confidence_score >= 0.6 && d.ai_confidence_score < 0.8).length;
-    const lowConfidence = documents.filter(d => d.ai_confidence_score && d.ai_confidence_score < 0.6).length;
-    const uncategorized = documents.filter(d => !d.ai_confidence_score).length;
-    
     return {
+      total,
       highConfidence,
       mediumConfidence,
       lowConfidence,
       uncategorized,
-      total: documents.length
+      byCategory,
+      qualityScore
     };
   };
 
-  // Get documents by confidence level
   const getDocumentsByConfidence = (level: 'high' | 'medium' | 'low' | 'uncategorized') => {
-    switch (level) {
-      case 'high':
-        return documents.filter(d => d.ai_confidence_score && d.ai_confidence_score >= 0.8);
-      case 'medium':
-        return documents.filter(d => d.ai_confidence_score && d.ai_confidence_score >= 0.6 && d.ai_confidence_score < 0.8);
-      case 'low':
-        return documents.filter(d => d.ai_confidence_score && d.ai_confidence_score < 0.6);
-      case 'uncategorized':
-        return documents.filter(d => !d.ai_confidence_score);
-      default:
-        return documents;
-    }
+    return documents.filter(doc => {
+      const confidence = doc.ai_confidence_score || 0;
+      switch (level) {
+        case 'high':
+          return confidence >= 0.8;
+        case 'medium':
+          return confidence >= 0.6 && confidence < 0.8;
+        case 'low':
+          return confidence > 0 && confidence < 0.6;
+        case 'uncategorized':
+          return !doc.category || doc.category === 'uncategorized';
+        default:
+          return false;
+      }
+    });
+  };
+
+  const getDocumentContext = () => {
+    const stats = getCategorizeionStats();
+    const categories = Array.from(new Set(documents.map(d => d.category).filter(Boolean)));
+    const subjectAreas = Array.from(new Set(
+      documents.flatMap(d => d.ai_suggested_subject_areas || [])
+    ));
+    const isaStandards = Array.from(new Set(
+      documents.flatMap(d => d.ai_isa_standard_references || [])
+    ));
+
+    return {
+      categories,
+      subjectAreas,
+      isaStandards,
+      riskLevel: stats.qualityScore >= 80 ? 'low' : stats.qualityScore >= 60 ? 'medium' : 'high',
+      auditPhase: 'execution', // Could be derived from client data
+      documentStats: stats
+    };
   };
 
   return {
     documents,
     isLoading,
     refetch,
-    updateDocumentCategory,
     getCategorizeionStats,
-    getDocumentsByConfidence
+    getDocumentsByConfidence,
+    getDocumentContext
   };
 };

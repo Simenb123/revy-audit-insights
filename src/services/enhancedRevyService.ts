@@ -1,96 +1,110 @@
+
 import { supabase } from '@/integrations/supabase/client';
-import { RevyContext } from '@/types/revio';
-import { getBasicContextualTip } from './revy/contextualTipService';
+import { getContextualRecommendations } from './revy/enhancedAiInteractionService';
+import { useAIRevyVariants } from '@/hooks/useAIRevyVariants';
 
-// The `detectEnhancedContext` function has been removed.
-// This logic is now centralized in `RevyContextProvider` for a single source of truth.
+export interface ContextualTip {
+  context: string;
+  tip: string;
+  priority: 'high' | 'medium' | 'low';
+  actionable: boolean;
+}
 
-// Get contextual suggestions based on current app state
 export const getEnhancedContextualTips = async (
-  context: RevyContext, 
+  context: string,
   clientData?: any,
   userRole?: string
 ): Promise<string> => {
   try {
-    // If we have client data, provide specific tips
-    if (clientData) {
-      const clientSpecificTips = await getClientSpecificTips(clientData, context);
-      if (clientSpecificTips) return clientSpecificTips;
+    // Load appropriate AI variant for context
+    const { data: variants } = await supabase
+      .from('ai_revy_variants')
+      .select('*')
+      .contains('available_contexts', [context])
+      .eq('is_active', true)
+      .order('sort_order')
+      .limit(1);
+
+    const variant = variants?.[0];
+    
+    if (!variant) {
+      return getBasicContextualTip(context);
     }
 
-    // Enhanced contextual tips based on user role and context
-    const roleBasedTips = getRoleBasedTips(context, userRole);
+    // Get contextual recommendations and pick the most actionable one
+    const recommendations = await getContextualRecommendations(
+      context,
+      clientData,
+      userRole,
+      variant
+    );
+
+    return recommendations[0] || getBasicContextualTip(context);
     
-    return roleBasedTips;
   } catch (error) {
-    console.error('Error getting enhanced tips:', error);
+    console.error('Failed to get enhanced contextual tips:', error);
     return getBasicContextualTip(context);
   }
 };
 
-const getClientSpecificTips = async (clientData: any, context: RevyContext): Promise<string | null> => {
-  if (!clientData) return null;
-
-  const tips = [];
-  
-  // Progress-based tips
-  if (clientData.progress < 25) {
-    tips.push(`${clientData.company_name} er i tidlig fase (${clientData.progress}% fullført). Fokuser på planlegging og risikovurdering.`);
-  } else if (clientData.progress > 75) {
-    tips.push(`${clientData.company_name} nærmer seg ferdigstillelse (${clientData.progress}% fullført). Tid for avslutning og rapportering.`);
-  }
-
-  // Industry-specific tips
-  if (clientData.industry) {
-    const industryTip = getIndustrySpecificTip(clientData.industry, context);
-    if (industryTip) tips.push(industryTip);
-  }
-
-  // Phase-specific tips
-  if (clientData.phase) {
-    const phaseTip = getPhaseSpecificTip(clientData.phase, clientData.company_name);
-    if (phaseTip) tips.push(phaseTip);
-  }
-
-  return tips.length > 0 ? tips.join(' ') : null;
-};
-
-const getIndustrySpecificTip = (industry: string, context: RevyContext): string | null => {
-  const industryTips: Record<string, string> = {
-    'Bygg og anlegg': 'For byggebransjen: Vær spesielt oppmerksom på prosjektregnskapsføring og pågående arbeider (POC).',
-    'Handel': 'For handelsbedrifter: Fokuser på lagerverdsettelse, kundefordringer og sesongjusteringer.',
-    'Teknologi': 'For teknologibedrifter: Vurder immaterielle eiendeler, utviklingskostnader og inntektsføring.',
-    'Finans': 'For finansnæringen: Særlig oppmerksomhet på regulatoriske krav, risikostyring og kapitalkrav.',
-    'Eiendom': 'For eiendomsbransjen: Fokuser på verdivurderinger, avskrivninger og leiekontrakter.'
+const getBasicContextualTip = (context: string): string => {
+  const basicTips: Record<string, string> = {
+    'documentation': 'Tips: Bruk AI-analyse for automatisk kategorisering av dokumenter',
+    'audit-actions': 'Tips: Kopier handlinger fra lignende klienter for å spare tid',
+    'client-detail': 'Tips: Sjekk at alle obligatoriske felt er utfylt for klienten',
+    'planning': 'Tips: Vurder risikoområder tidlig i planleggingsfasen',
+    'execution': 'Tips: Dokumenter alle revisjonshandlinger grundig underveis',
+    'completion': 'Tips: Gjennomgå at alle handlinger er fullført før avslutning',
+    'general': 'Tips: Bruk AI-assistenten for spørsmål om revisjon og regnskapslovgivning'
   };
 
-  return industryTips[industry] || null;
+  return basicTips[context] || basicTips['general'];
 };
 
-const getPhaseSpecificTip = (phase: string, companyName: string): string | null => {
-  const phaseTips: Record<string, string> = {
-    'planning': `${companyName} er i planleggingsfasen. Sett opp revisjonshandlinger og vurder risiko.`,
-    'risk_assessment': `Nå er tiden for grundig risikovurdering av ${companyName}. Bruk ISA 315 som guide.`,
-    'execution': `${companyName} er i gjennomføringsfasen. Fokuser på substansielle handlinger og kontrollprøving.`,
-    'completion': `${companyName} nærmer seg avslutning. Tid for konklusjoner og rapportering.`
-  };
+export const getContextualWorkflowSuggestions = async (
+  context: string,
+  clientData?: any
+): Promise<Array<{ action: string; description: string; priority: number }>> => {
+  try {
+    const suggestions = [];
 
-  return phaseTips[phase] || null;
-};
+    // Context-specific workflow suggestions
+    switch (context) {
+      case 'documentation':
+        if (clientData?.documentContext?.documentStats?.qualityScore < 60) {
+          suggestions.push({
+            action: 'Analyser dokumenter med lav sikkerhet',
+            description: 'Flere dokumenter trenger manual gjennomgang',
+            priority: 1
+          });
+        }
+        break;
+        
+      case 'audit-actions':
+        if (clientData?.phase === 'planning') {
+          suggestions.push({
+            action: 'Opprett revisjonshandlinger',
+            description: 'Kopier handlinger fra maler eller lignende klienter',
+            priority: 1
+          });
+        }
+        break;
+        
+      case 'client-detail':
+        if (!clientData?.industry) {
+          suggestions.push({
+            action: 'Oppdater bransjeinfo',
+            description: 'Bransjeregistrering mangler for bedre risikovurdering',
+            priority: 2
+          });
+        }
+        break;
+    }
 
-const getRoleBasedTips = (context: RevyContext, userRole?: string): string => {
-  const baseTip = getBasicContextualTip(context);
-  
-  if (userRole === 'partner') {
-    return `${baseTip} Som partner kan du også vurdere porteføljeoptimalisering og ressursallokering.`;
-  } else if (userRole === 'manager') {
-    return `${baseTip} Som manager, følg opp teamets fremdrift og kvalitetssikring.`;
+    return suggestions.sort((a, b) => a.priority - b.priority);
+    
+  } catch (error) {
+    console.error('Failed to get workflow suggestions:', error);
+    return [];
   }
-  
-  return baseTip;
 };
-
-// The 'buildEnhancedMessage' function was previously here. It has been removed
-// because its logic (searching for knowledge articles and building a complex context object)
-// has been moved into the 'revy-ai-chat' edge function. This simplifies the client-side
-// code and centralizes the AI logic on the server.
