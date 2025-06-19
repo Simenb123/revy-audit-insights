@@ -27,7 +27,14 @@ export const useSubjectAreaMappings = () => {
         .select('*');
       
       if (error) throw error;
-      setMappings(data || []);
+      
+      // Transform database data to match interface
+      const transformedData = data?.map(item => ({
+        ...item,
+        risk_level: (item.risk_level as 'low' | 'medium' | 'high') || 'medium'
+      })) || [];
+      
+      setMappings(transformedData);
     } catch (error) {
       console.error('Error loading subject area mappings:', error);
     } finally {

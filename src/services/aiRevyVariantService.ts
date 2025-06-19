@@ -42,8 +42,8 @@ export const buildEnhancedAIPrompt = (
 - ISA-standarder: ${docContext.isaStandards.join(', ')}
 - Risikonivå: ${docContext.riskLevel}
 - Revisjonsfase: ${docContext.auditPhase}
-- Dokumentkvalitet: ${Math.round(docContext.qualityScore)}%
-- Totalt dokumenter: ${docContext.total}`;
+- Dokumentkvalitet: ${Math.round(docContext.documentStats.qualityScore)}%
+- Totalt dokumenter: ${docContext.documentStats.total}`;
   }
 
   // Add client context if available

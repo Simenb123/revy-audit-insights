@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -193,6 +194,14 @@ const SmartDocumentSearch: React.FC<SmartDocumentSearchProps> = ({ clientId }) =
     return `${Math.round(score * 100)}% match`;
   };
 
+  const handleSearchClick = () => {
+    if (isAISearchMode) {
+      handleAIAssistedSearch();
+    } else {
+      handleSearch();
+    }
+  };
+
   return (
     <div className="space-y-6">
       <Card>
@@ -226,7 +235,7 @@ const SmartDocumentSearch: React.FC<SmartDocumentSearchProps> = ({ clientId }) =
               }
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && (isAISearchMode ? handleAIAssistedSearch() : handleSearch())}
+              onKeyPress={(e) => e.key === 'Enter' && handleSearchClick()}
               className="pl-10 pr-32"
             />
             <div className="absolute right-2 top-1.5 flex gap-1">
@@ -239,7 +248,7 @@ const SmartDocumentSearch: React.FC<SmartDocumentSearchProps> = ({ clientId }) =
                 {isAISearchMode ? 'AI' : 'Vanlig'}
               </Button>
               <Button
-                onClick={isAISearchMode ? handleAIAssistedSearch : handleSearch}
+                onClick={handleSearchClick}
                 disabled={isSearching || !searchTerm.trim()}
                 className="h-7"
                 size="sm"

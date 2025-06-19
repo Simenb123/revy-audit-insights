@@ -39,11 +39,17 @@ export const useAIRevyVariants = (context?: string) => {
       
       if (error) throw error;
       
-      setVariants(data || []);
+      // Transform database data to match interface
+      const transformedData = data?.map(item => ({
+        ...item,
+        context_requirements: item.context_requirements as Record<string, any> || {}
+      })) || [];
+      
+      setVariants(transformedData);
       
       // Auto-select most appropriate variant based on context
-      if (data && data.length > 0 && !selectedVariant) {
-        const defaultVariant = selectDefaultVariant(data, context);
+      if (transformedData && transformedData.length > 0 && !selectedVariant) {
+        const defaultVariant = selectDefaultVariant(transformedData, context);
         setSelectedVariant(defaultVariant);
       }
     } catch (error) {
@@ -79,11 +85,16 @@ export const useAIRevyVariants = (context?: string) => {
     setSelectedVariant(variant);
   };
 
+  const handleVariantChange = (variant: AIRevyVariant) => {
+    switchVariant(variant);
+  };
+
   return {
     variants,
     selectedVariant,
     isLoading,
     switchVariant,
+    handleVariantChange,
     loadVariants
   };
 };
