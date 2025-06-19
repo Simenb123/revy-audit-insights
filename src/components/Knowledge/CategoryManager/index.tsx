@@ -182,7 +182,7 @@ const CategoryManager = () => {
       console.log('=== DELETE SUCCESS ===');
       console.log('Delete result:', result);
       
-      // Simple cache refresh - Fixed: removed extra parameter
+      // Fixed: removed extra parameter
       await queryClient.invalidateQueries({ queryKey: ['knowledge-categories-all'] });
       await queryClient.invalidateQueries({ queryKey: ['articles-by-category'] });
       
