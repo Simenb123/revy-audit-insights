@@ -181,7 +181,7 @@ const DocumentUploader = ({ clientId, categories }: DocumentUploaderProps) => {
                 <SelectValue placeholder="Velg fagområde" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Alle fagområder</SelectItem>
+                <SelectItem value="none">Alle fagområder</SelectItem>
                 {subjectAreas.map(area => (
                   <SelectItem key={area} value={area}>
                     {area === 'lnn' ? 'Lønn' : area}
@@ -198,7 +198,7 @@ const DocumentUploader = ({ clientId, categories }: DocumentUploaderProps) => {
                 <SelectValue placeholder="Velg kategori" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">AI vil foreslå kategori</SelectItem>
+                <SelectItem value="ai-suggest">AI vil foreslå kategori</SelectItem>
                 {filteredCategories.map(category => (
                   <SelectItem key={category.id} value={category.category_name}>
                     {category.category_name}
