@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -25,7 +26,6 @@ import BulkCategoryManager from './BulkCategoryManager';
 import AdvancedDocumentWorkflow from './AdvancedDocumentWorkflow';
 import EnhancedDocumentAnalyzer from './EnhancedDocumentAnalyzer';
 import DocumentInsights from './DocumentInsights';
-import EmbeddedContextChat from '@/components/Revy/EmbeddedContextChat';
 
 interface ImprovedClientDocumentManagerProps {
   clientId: string;
@@ -87,88 +87,75 @@ const ImprovedClientDocumentManager: React.FC<ImprovedClientDocumentManagerProps
       label: 'Oversikt',
       icon: FileText,
       content: (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
-            <DocumentInsights 
-              documents={documents || []}
-              clientId={clientId}
-              context="documentation"
-            />
-            <DocumentUploader 
-              clientId={clientId}
-              categories={categories || []}
-            />
-            <DocumentList 
-              documents={documents || []}
-              documentsByCategory={documentsByCategory || {}}
-              isLoading={isLoading}
-            />
-          </div>
-          <div>
-            <EmbeddedContextChat
-              clientId={clientId}
-              context="documentation"
-              title="AI-Revi Dokumenthjelp"
-              height="600px"
-            />
-          </div>
+        <div className="space-y-6">
+          <DocumentInsights 
+            documents={documents || []}
+            clientId={clientId}
+            context="documentation"
+          />
+          <DocumentUploader 
+            clientId={clientId}
+            categories={categories || []}
+          />
+          <DocumentList 
+            documents={documents || []}
+            documentsByCategory={documentsByCategory || {}}
+            isLoading={isLoading}
+          />
         </div>
       )
     },
     {
-      id: 'ai-assistant',
-      label: 'AI-Assistent',
-      icon: MessageSquare,
+      id: 'ai-insights',
+      label: 'AI-Innsikt',
+      icon: Brain,
       content: (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="space-y-6">
-            <DocumentInsights 
-              documents={documents || []}
-              clientId={clientId}
-              context="documentation"
-            />
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Brain className="h-5 w-5 text-purple-600" />
-                  Dokumentanalyse med AI-Revi
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground mb-4">
-                  Få hjelp til dokumentanalyse, kategorisering og kvalitetssikring.
-                </p>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="p-3 bg-blue-50 rounded-lg">
-                    <p className="text-sm font-medium">Totalt dokumenter</p>
-                    <p className="text-lg font-bold text-blue-600">{documents?.length || 0}</p>
-                  </div>
-                  <div className="p-3 bg-green-50 rounded-lg">
-                    <p className="text-sm font-medium">Kategoriserte</p>
-                    <p className="text-lg font-bold text-green-600">{documents?.filter(d => d.category).length || 0}</p>
-                  </div>
-                  <div className="p-3 bg-yellow-50 rounded-lg">
-                    <p className="text-sm font-medium">Trenger gjennomgang</p>
-                    <p className="text-lg font-bold text-yellow-600">{documents?.filter(d => !d.category).length || 0}</p>
-                  </div>
-                  <div className="p-3 bg-purple-50 rounded-lg">
-                    <p className="text-sm font-medium">AI-sikkerhet</p>
-                    <p className="text-lg font-bold text-purple-600">
-                      {documents?.length ? Math.round((documents.filter(d => d.ai_confidence_score && d.ai_confidence_score >= 0.8).length / documents.length) * 100) : 0}%
-                    </p>
-                  </div>
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Brain className="h-5 w-5 text-purple-600" />
+                Dokumentanalyse med AI-Revi
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <MessageSquare className="h-5 w-5 text-blue-600" />
+                  <span className="font-medium text-blue-900">Bruk AI-Revi i høyre sidebar</span>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-          <div>
-            <EmbeddedContextChat
-              clientId={clientId}
-              context="documentation"
-              title="AI-Revi Dokumentassistent"
-              height="500px"
-            />
-          </div>
+                <p className="text-sm text-blue-700">
+                  AI-Revi i sidebar vil automatisk tilpasse seg dokumentkonteksten når du er på denne siden. 
+                  Åpne høyre sidebar for å få hjelp med dokumentanalyse og kategorisering.
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-3 bg-blue-50 rounded-lg">
+                  <p className="text-sm font-medium">Totalt dokumenter</p>
+                  <p className="text-lg font-bold text-blue-600">{documents?.length || 0}</p>
+                </div>
+                <div className="p-3 bg-green-50 rounded-lg">
+                  <p className="text-sm font-medium">Kategoriserte</p>
+                  <p className="text-lg font-bold text-green-600">{documents?.filter(d => d.category).length || 0}</p>
+                </div>
+                <div className="p-3 bg-yellow-50 rounded-lg">
+                  <p className="text-sm font-medium">Trenger gjennomgang</p>
+                  <p className="text-lg font-bold text-yellow-600">{documents?.filter(d => !d.category).length || 0}</p>
+                </div>
+                <div className="p-3 bg-purple-50 rounded-lg">
+                  <p className="text-sm font-medium">AI-sikkerhet</p>
+                  <p className="text-lg font-bold text-purple-600">
+                    {documents?.length ? Math.round((documents.filter(d => d.ai_confidence_score && d.ai_confidence_score >= 0.8).length / documents.length) * 100) : 0}%
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <DocumentInsights 
+            documents={documents || []}
+            clientId={clientId}
+            context="documentation"
+          />
         </div>
       )
     },
@@ -254,7 +241,7 @@ const ImprovedClientDocumentManager: React.FC<ImprovedClientDocumentManagerProps
           Dokumenter for {clientName}
         </CardTitle>
         <p className="text-sm text-muted-foreground">
-          Administrer og organiser klientdokumenter med AI-Revi assistanse
+          Administrer og organiser klientdokumenter med AI-Revi assistanse i høyre sidebar
         </p>
       </CardHeader>
       <CardContent>

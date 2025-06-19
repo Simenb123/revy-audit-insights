@@ -1,9 +1,10 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
 import { 
   MessageSquare, 
   BarChart3, 
@@ -17,9 +18,12 @@ import {
   PanelRightClose,
   PanelRightOpen,
   Sparkles,
-  X
+  X,
+  BookOpen,
+  Settings
 } from 'lucide-react';
 import SmartRevyAssistant from '../Revy/SmartRevyAssistant';
+import AIRevyVariantSelector from '../AI/AIRevyVariantSelector';
 import { useLocation } from 'react-router-dom';
 import { useAIUsage } from '@/hooks/useAIUsage';
 import { useRevyContext } from '../RevyContext/RevyContextProvider';
@@ -35,9 +39,82 @@ interface RightSidebarProps {
 const RightSidebar = ({ isCollapsed, isExpanded, onToggle, onToggleExpanded }: RightSidebarProps) => {
   const location = useLocation();
   const [activeTab, setActiveTab] = useState('revy');
+  const [selectedVariant, setSelectedVariant] = useState<any>(null);
   const { personalStats } = useAIUsage('week');
   const { currentClient } = useRevyContext();
   const isMobile = useIsMobile();
+
+  // Detect current context based on URL and location
+  const getCurrentContext = () => {
+    const path = location.pathname;
+    if (path.includes('/dokumenter') || path.includes('documents')) {
+      return 'documentation';
+    } else if (path.includes('/revisjonshandlinger') || path.includes('audit-actions')) {
+      return 'audit-actions';
+    } else if (path.includes('/klienter/') && path.match(/\/\d+$/)) {
+      return 'client-detail';
+    } else if (path.includes('/planlegging')) {
+      return 'planning';
+    } else if (path.includes('/gjennomforing')) {
+      return 'execution';
+    } else if (path.includes('/avslutning')) {
+      return 'completion';
+    }
+    return 'general';
+  };
+
+  const currentContext = getCurrentContext();
+
+  // Context display information
+  const getContextInfo = (context: string) => {
+    const contextMap = {
+      'documentation': {
+        name: 'Dokumentanalyse',
+        description: 'Hjelper med dokumentkategorisering og kvalitetssikring',
+        color: 'bg-blue-100 text-blue-800',
+        icon: FileText
+      },
+      'audit-actions': {
+        name: 'Revisjonshandlinger',
+        description: 'Veileder om ISA-standarder og revisjonshandlinger',
+        color: 'bg-green-100 text-green-800',
+        icon: BookOpen
+      },
+      'client-detail': {
+        name: 'Klientdetaljer',
+        description: 'Analyser klientinfo og risikovurdering',
+        color: 'bg-purple-100 text-purple-800',
+        icon: Users
+      },
+      'planning': {
+        name: 'Planlegging',
+        description: 'Hjelper med revisjonsplanlegging',
+        color: 'bg-yellow-100 text-yellow-800',
+        icon: Settings
+      },
+      'execution': {
+        name: 'Gjennomføring',
+        description: 'Støtter revisjonsgjennomføring',
+        color: 'bg-orange-100 text-orange-800',
+        icon: Activity
+      },
+      'completion': {
+        name: 'Avslutning',
+        description: 'Hjelper med revisjonsavslutning',
+        color: 'bg-red-100 text-red-800',
+        icon: TrendingUp
+      },
+      'general': {
+        name: 'Generell assistanse',
+        description: 'Hjelper med alle revisjonsrelaterte spørsmål',
+        color: 'bg-gray-100 text-gray-800',
+        icon: Brain
+      }
+    };
+    return contextMap[context as keyof typeof contextMap] || contextMap.general;
+  };
+
+  const contextInfo = getContextInfo(currentContext);
 
   // Mock analytics data
   const analyticsData = {
@@ -127,12 +204,12 @@ const RightSidebar = ({ isCollapsed, isExpanded, onToggle, onToggleExpanded }: R
       {/* Header with toggle and expand controls */}
       <div className={`border-b border-border flex items-center justify-between flex-shrink-0 ${isMobile ? 'p-3' : 'p-4'}`}>
         <div className="flex items-center gap-2">
-          <h3 className={`font-semibold ${isMobile ? 'text-lg' : 'text-base'}`}>Verktøy</h3>
-          {/* Smart upgrade indicator */}
-          <div className="flex items-center gap-1 bg-gradient-to-r from-blue-100 to-purple-100 px-2 py-1 rounded-full">
-            <Sparkles className="h-3 w-3 text-blue-600" />
-            <span className="text-xs text-blue-700 font-medium">AI Oppgradert</span>
-          </div>
+          <h3 className={`font-semibold ${isMobile ? 'text-lg' : 'text-base'}`}>AI-Verktøy</h3>
+          {/* Context indicator */}
+          <Badge className={`text-xs ${contextInfo.color}`}>
+            <contextInfo.icon className="h-3 w-3 mr-1" />
+            {contextInfo.name}
+          </Badge>
         </div>
         <div className="flex items-center gap-1">
           {!isMobile && (
@@ -164,7 +241,7 @@ const RightSidebar = ({ isCollapsed, isExpanded, onToggle, onToggleExpanded }: R
           <TabsList className={`grid w-full grid-cols-3 flex-shrink-0 ${isMobile ? 'mx-3 mt-2' : 'mx-4 mt-3'}`}>
             <TabsTrigger value="revy" className={`relative ${isMobile ? 'text-xs px-2 py-3' : 'text-sm px-3 py-2'}`}>
               <MessageSquare className={`${isMobile ? 'h-5 w-5 mr-1' : 'h-4 w-4 mr-2'}`} />
-              {!isMobile && 'Revy'}
+              {!isMobile && 'AI-Revi'}
               {/* Smart indicator */}
               <div className="absolute -top-1 -right-1 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full p-0.5">
                 <Sparkles className="h-2 w-2 text-white" />
@@ -182,13 +259,50 @@ const RightSidebar = ({ isCollapsed, isExpanded, onToggle, onToggleExpanded }: R
           
           <div className="flex-1 min-h-0 px-2">
             <TabsContent value="revy" className="h-full m-0 p-2 data-[state=inactive]:hidden">
-              {/* Now using the improved SmartRevyAssistant with all formatting enhancements */}
-              <div className="h-full">
-                <SmartRevyAssistant 
-                  embedded={true} 
-                  clientData={currentClient}
-                  userRole="employee"
-                />
+              <div className="h-full flex flex-col space-y-3">
+                {/* Context info and variant selector */}
+                <Card className="flex-shrink-0">
+                  <CardContent className="p-3">
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <contextInfo.icon className="h-4 w-4 text-purple-600" />
+                        <div>
+                          <p className="text-sm font-medium">{contextInfo.name}</p>
+                          <p className="text-xs text-muted-foreground">{contextInfo.description}</p>
+                        </div>
+                      </div>
+                      
+                      {/* Variant selector */}
+                      <div className="border-t pt-2">
+                        <AIRevyVariantSelector
+                          currentContext={currentContext}
+                          onVariantChange={setSelectedVariant}
+                          compact={true}
+                        />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* AI Assistant */}
+                <div className="flex-1 min-h-0">
+                  <SmartRevyAssistant 
+                    embedded={true} 
+                    clientData={{
+                      ...currentClient,
+                      documentContext: currentContext === 'documentation' ? {
+                        currentTab: 'documents',
+                        documentStats: {
+                          total: 0,
+                          categorized: 0,
+                          uncategorized: 0,
+                          qualityScore: 0
+                        }
+                      } : undefined
+                    }}
+                    userRole="employee"
+                  />
+                </div>
               </div>
             </TabsContent>
             
@@ -296,6 +410,15 @@ const RightSidebar = ({ isCollapsed, isExpanded, onToggle, onToggleExpanded }: R
                     <div className="min-w-0 flex-1">
                       <span className="truncate block font-medium">Revisjon klar</span>
                       <span className="text-muted-foreground text-xs">08:45</span>
+                    </div>
+                  </div>
+
+                  {/* Context-aware activity */}
+                  <div className="flex items-start gap-3 p-3 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded text-sm">
+                    <div className="w-2 h-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full mt-2 flex-shrink-0"></div>
+                    <div className="min-w-0 flex-1">
+                      <span className="truncate block font-medium">AI-Revi i {contextInfo.name} modus</span>
+                      <span className="text-muted-foreground text-xs">{contextInfo.description}</span>
                     </div>
                   </div>
 
