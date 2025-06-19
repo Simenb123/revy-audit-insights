@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -467,6 +466,11 @@ const CategoryManager = () => {
     }
   };
 
+  const handleDeleteEmptySubcategories = () => {
+    if (!selectedCategory) return;
+    deleteEmptySubcategoriesMutation.mutate(selectedCategory.id);
+  };
+
   if (isLoading) {
     return <div className="p-6">Laster kategorier...</div>;
   }
@@ -565,11 +569,7 @@ const CategoryManager = () => {
                 toast.error('Kategorien kan ikke slettes fordi den ikke er tom');
               }
             }}
-            onDeleteEmptySubcategories={() => {
-              if (selectedCategory?.id) {
-                deleteEmptySubcategoriesMutation.mutate(selectedCategory.id);
-              }
-            }}
+            onDeleteEmptySubcategories={() => handleDeleteEmptySubcategories()}
             onMoveArticles={() => setIsMoveDialogOpen(true)}
             isDeleting={deleteCategoryMutation.isPending}
             isDeletingEmpty={deleteEmptySubcategoriesMutation.isPending}

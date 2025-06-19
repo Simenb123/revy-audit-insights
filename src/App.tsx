@@ -47,7 +47,9 @@ function App() {
                 <Route path="/" element={<AppLayout><Index /></AppLayout>} />
                 <Route path="/dashboard" element={<AppLayout><NavigationDashboard /></AppLayout>} />
                 <Route path="/clients" element={<AppLayout><ClientsOverview /></AppLayout>} />
+                <Route path="/klienter" element={<AppLayout><ClientsOverview /></AppLayout>} />
                 <Route path="/clients/:id" element={<AppLayout><ClientDetail /></AppLayout>} />
+                <Route path="/klienter/:orgNumber" element={<AppLayout><ClientDetail /></AppLayout>} />
                 <Route path="/client-admin" element={<AppLayout><ClientAdmin /></AppLayout>} />
                 <Route path="/user-admin" element={<AppLayout><UserAdmin /></AppLayout>} />
                 <Route path="/profile" element={<AppLayout><UserProfile /></AppLayout>} />
