@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -34,8 +33,22 @@ const ImprovedClientDocumentManager: React.FC<ImprovedClientDocumentManagerProps
   clientName
 }) => {
   const [activeTab, setActiveTab] = useState('overview');
-  const { documents, isLoading, refetch, categories, documentsByCategory } = useClientDocuments(clientId);
+  const { documents, isLoading, refetch, categories } = useClientDocuments(clientId);
   const [selectedDocuments, setSelectedDocuments] = useState<any[]>([]);
+
+  // Create documentsByCategory as derived data
+  const documentsByCategory = useMemo(() => {
+    if (!documents) return {};
+    
+    return documents.reduce((acc, doc) => {
+      const category = doc.category || 'uncategorized';
+      if (!acc[category]) {
+        acc[category] = [];
+      }
+      acc[category].push(doc);
+      return acc;
+    }, {} as Record<string, typeof documents>);
+  }, [documents]);
 
   // Mock AI suggestions for SmartCategoryPanel
   const mockAISuggestions = [
