@@ -85,6 +85,27 @@ const EnhancedDocumentList = ({ clientId }: EnhancedDocumentListProps) => {
     }
   };
 
+  const handlePreview = async (document: ClientDocument) => {
+    try {
+      const url = await getDocumentUrl(document.file_path);
+      if (url) {
+        // Create a mock File object for preview
+        const response = await fetch(url);
+        const blob = await response.blob();
+        const file = new File([blob], document.file_name, { type: document.mime_type });
+        
+        // Create a preview document with file
+        const previewDoc = {
+          ...document,
+          file: file
+        };
+        setPreviewDocument(previewDoc);
+      }
+    } catch (error) {
+      toast.error('Kunne ikke laste preview');
+    }
+  };
+
   const getConfidenceColor = (confidence?: number) => {
     if (!confidence) return 'text-gray-600 bg-gray-50 border-gray-200';
     if (confidence >= 0.8) return 'text-green-600 bg-green-50 border-green-200';
@@ -228,7 +249,8 @@ const EnhancedDocumentList = ({ clientId }: EnhancedDocumentListProps) => {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => setPreviewDocument(document)}
+                        onClick={() => handlePreview(document)}
+                        title="Forhåndsvisning"
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
@@ -236,6 +258,7 @@ const EnhancedDocumentList = ({ clientId }: EnhancedDocumentListProps) => {
                         size="sm"
                         variant="outline"
                         onClick={() => handleDownload(document)}
+                        title="Last ned"
                       >
                         <Download className="h-4 w-4" />
                       </Button>
@@ -244,6 +267,7 @@ const EnhancedDocumentList = ({ clientId }: EnhancedDocumentListProps) => {
                         variant="outline"
                         onClick={() => deleteDocument.mutate(document.id)}
                         disabled={deleteDocument.isPending}
+                        title="Slett"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -257,9 +281,9 @@ const EnhancedDocumentList = ({ clientId }: EnhancedDocumentListProps) => {
       </Card>
 
       {/* Advanced File Preview */}
-      {previewDocument && (
+      {previewDocument && 'file' in previewDocument && (
         <AdvancedFilePreview
-          file={new File([], previewDocument.file_name, { type: previewDocument.mime_type })}
+          file={previewDocument.file as File}
           isOpen={!!previewDocument}
           onClose={() => setPreviewDocument(null)}
         />
