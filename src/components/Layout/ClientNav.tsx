@@ -9,7 +9,6 @@ import {
   ArrowLeft,
   Database,
   Package,
-  Users,
   Receipt
 } from 'lucide-react';
 import { cn } from "@/lib/utils";
@@ -40,7 +39,7 @@ const ClientNav = () => {
     {
       to: `/klienter/${orgNumber}/regnskapsdata`,
       icon: Database,
-      label: "Grunnlagsdata",
+      label: "Regnskapsdata",
       description: "Kontoplan, Saldobalanse, Hovedbok"
     },
     {

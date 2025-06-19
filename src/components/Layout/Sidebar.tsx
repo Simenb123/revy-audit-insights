@@ -16,7 +16,7 @@ const Sidebar = ({ isCollapsed, onToggle }: SidebarProps) => {
   const location = useLocation();
   const { orgNumber } = useParams<{ orgNumber: string }>();
   
-  // Check if we're in a client context
+  // Simple check for client context
   const isClientContext = location.pathname.includes('/klienter/') && orgNumber;
 
   return (

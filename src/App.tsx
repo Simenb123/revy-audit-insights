@@ -51,6 +51,12 @@ function App() {
                   <Route path="klienter" element={<ClientsOverview />} />
                   <Route path="clients/:id" element={<ClientDetail />} />
                   <Route path="klienter/:orgNumber" element={<ClientDetail />} />
+                  <Route path="klienter/:orgNumber/regnskap" element={<AccountingData />} />
+                  <Route path="klienter/:orgNumber/analyser" element={<ClientDetail />} />
+                  <Route path="klienter/:orgNumber/regnskapsdata" element={<DataImport />} />
+                  <Route path="klienter/:orgNumber/spesialdata" element={<DataImport />} />
+                  <Route path="klienter/:orgNumber/transaksjoner" element={<DataImport />} />
+                  <Route path="klienter/:orgNumber/import" element={<DataImport />} />
                   <Route path="client-admin" element={<ClientAdmin />} />
                   <Route path="user-admin" element={<UserAdmin />} />
                   <Route path="profile" element={<UserProfile />} />

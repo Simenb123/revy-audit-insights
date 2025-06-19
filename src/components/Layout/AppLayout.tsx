@@ -10,8 +10,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 
 const AppLayout = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [isRightSidebarCollapsed, setIsRightSidebarCollapsed] = useState(false);
-  const [isRightSidebarExpanded, setIsRightSidebarExpanded] = useState(false);
+  const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(false);
   const [isMobileRightSidebarOpen, setIsMobileRightSidebarOpen] = useState(false);
   const isMobile = useIsMobile();
 
@@ -23,17 +22,13 @@ const AppLayout = () => {
     if (isMobile) {
       setIsMobileRightSidebarOpen(!isMobileRightSidebarOpen);
     } else {
-      setIsRightSidebarCollapsed(!isRightSidebarCollapsed);
+      setIsRightSidebarOpen(!isRightSidebarOpen);
     }
-  };
-
-  const toggleRightSidebarExpanded = () => {
-    setIsRightSidebarExpanded(!isRightSidebarExpanded);
   };
 
   return (
     <div className="min-h-screen bg-background flex w-full">
-      {/* Left Sidebar */}
+      {/* Left Sidebar - Fixed width based on collapsed state */}
       <div className={`${isSidebarCollapsed ? 'w-16' : 'w-64'} transition-all duration-300 flex-shrink-0`}>
         <Sidebar isCollapsed={isSidebarCollapsed} onToggle={toggleSidebar} />
       </div>
@@ -42,30 +37,19 @@ const AppLayout = () => {
       <div className="flex-1 flex flex-col min-w-0">
         <AppHeader 
           onToggleRightSidebar={toggleRightSidebar}
-          isRightSidebarOpen={!isRightSidebarCollapsed}
+          isRightSidebarOpen={isRightSidebarOpen}
         />
         
-        <div className="flex-1 flex min-h-0">
+        <div className="flex-1 flex">
           {/* Main Content */}
-          <main className={`flex-1 overflow-auto ${
-            isRightSidebarExpanded ? 'hidden lg:block' : ''
-          }`}>
+          <main className="flex-1 overflow-auto">
             <Outlet />
           </main>
 
-          {/* Right Sidebar - Desktop */}
-          {!isMobile && (
-            <div className={`
-              transition-all duration-300 flex-shrink-0 border-l border-border
-              ${isRightSidebarCollapsed ? 'w-12' : isRightSidebarExpanded ? 'w-full max-w-2xl' : 'w-80'}
-              ${isRightSidebarExpanded ? 'fixed inset-0 z-50 bg-background' : 'relative'}
-            `}>
-              <RightSidebar
-                isCollapsed={isRightSidebarCollapsed}
-                isExpanded={isRightSidebarExpanded}
-                onToggle={toggleRightSidebar}
-                onToggleExpanded={toggleRightSidebarExpanded}
-              />
+          {/* Right Sidebar - Desktop only, fixed 300px width */}
+          {!isMobile && isRightSidebarOpen && (
+            <div className="w-80 border-l border-border flex-shrink-0">
+              <RightSidebar onToggle={toggleRightSidebar} />
             </div>
           )}
         </div>

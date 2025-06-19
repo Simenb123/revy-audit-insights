@@ -18,45 +18,32 @@ const AppBreadcrumb = () => {
   const { data: client } = useClientDetails(orgNumber || '');
   const pathSegments = location.pathname.split('/').filter(Boolean);
 
-  const getBreadcrumbName = (segment: string, index: number) => {
-    const fullPath = '/' + pathSegments.slice(0, index + 1).join('/');
-    
+  // Simple route name mapping
+  const getRouteName = (segment: string) => {
     const routeNames: Record<string, string> = {
-      '/dashboard': 'Dashboard',
-      '/funksjoner': 'Funksjoner',
-      '/klienter': 'Klienter',
-      '/clients': 'Klienter',
-      '/analyser': 'Analyser',
-      '/fag': 'Fagstoff',
-      '/knowledge': 'Fagstoff',
-      '/innstillinger': 'Innstillinger',
-      '/organization/settings': 'Innstillinger',
-      '/hjelp': 'Hjelp',
-      '/ai-usage': 'AI-bruk',
-      '/ai-revy-admin': 'AI-Revy Admin',
-      '/communication': 'Kommunikasjon',
-      '/teams': 'Teams',
-      '/training': 'Opplæring',
-      '/documents': 'Dokumenter',
-      '/ledger': 'Reskontro',
-      '/accounting': 'Regnskap',
-      '/data-import': 'Dataimport',
-      '/audit-logs': 'Revisjonslogger',
-      '/regnskap': 'Regnskap',
-      '/regnskapsdata': 'Regnskapsdata',
-      '/spesialdata': 'Spesialdata',
-      '/transaksjoner': 'Transaksjoner',
-      '/import': 'Import'
+      'dashboard': 'Dashboard',
+      'klienter': 'Klienter',
+      'regnskap': 'Regnskap',
+      'analyser': 'Analyser',
+      'regnskapsdata': 'Regnskapsdata',
+      'spesialdata': 'Spesialdata',
+      'transaksjoner': 'Transaksjoner',
+      'import': 'Import',
+      'organization': 'Organisasjon',
+      'teams': 'Teams',
+      'fag': 'Fagstoff',
+      'ai-usage': 'AI-bruk',
     };
-
-    // If this is a client org number, use the client name
+    
+    // If it's an org number and we have client data, use client name
     if (segment.match(/^\d+$/) && client) {
       return client.company_name || client.name;
     }
-
-    return routeNames[fullPath] || segment.charAt(0).toUpperCase() + segment.slice(1);
+    
+    return routeNames[segment] || segment.charAt(0).toUpperCase() + segment.slice(1);
   };
 
+  // Handle root/dashboard case
   if (location.pathname === '/' || location.pathname === '/dashboard') {
     return (
       <Breadcrumb>
@@ -86,7 +73,7 @@ const AppBreadcrumb = () => {
         {pathSegments.map((segment, index) => {
           const isLast = index === pathSegments.length - 1;
           const fullPath = '/' + pathSegments.slice(0, index + 1).join('/');
-          const breadcrumbName = getBreadcrumbName(segment, index);
+          const breadcrumbName = getRouteName(segment);
 
           return (
             <React.Fragment key={fullPath}>
