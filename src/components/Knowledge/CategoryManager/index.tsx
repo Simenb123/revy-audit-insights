@@ -569,7 +569,7 @@ const CategoryManager = () => {
                 toast.error('Kategorien kan ikke slettes fordi den ikke er tom');
               }
             }}
-            onDeleteEmptySubcategories={() => handleDeleteEmptySubcategories()}
+            onDeleteEmptySubcategories={handleDeleteEmptySubcategories}
             onMoveArticles={() => setIsMoveDialogOpen(true)}
             isDeleting={deleteCategoryMutation.isPending}
             isDeletingEmpty={deleteEmptySubcategoriesMutation.isPending}
