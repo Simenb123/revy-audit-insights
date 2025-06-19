@@ -466,7 +466,7 @@ const CategoryManager = () => {
     }
   };
 
-  const handleDeleteEmptySubcategories = (...args: any[]) => {
+  const handleDeleteEmptySubcategories = () => {
     if (!selectedCategory) return;
     deleteEmptySubcategoriesMutation.mutate(selectedCategory.id);
   };
