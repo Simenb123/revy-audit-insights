@@ -18,13 +18,20 @@ interface RightSidebarProps {
   onToggle: () => void;
 }
 
+interface Message {
+  id: number;
+  sender: 'revy' | 'user';
+  content: string;
+  timestamp: string;
+}
+
 const RightSidebar = ({ isCollapsed = false, onToggle }: RightSidebarProps) => {
   const isMobile = useIsMobile();
   const [message, setMessage] = useState('');
-  const [messages, setMessages] = useState([
+  const [messages, setMessages] = useState<Message[]>([
     {
       id: 1,
-      sender: 'revy' as const,
+      sender: 'revy',
       content: 'Hei! Jeg er AI-Revi assistenten. Hvordan kan jeg hjelpe deg i dag?',
       timestamp: new Date().toISOString()
     }
@@ -34,9 +41,9 @@ const RightSidebar = ({ isCollapsed = false, onToggle }: RightSidebarProps) => {
   const handleSendMessage = () => {
     if (!message.trim() || isLoading) return;
     
-    const userMessage = {
+    const userMessage: Message = {
       id: Date.now(),
-      sender: 'user' as const,
+      sender: 'user',
       content: message,
       timestamp: new Date().toISOString()
     };
@@ -47,9 +54,9 @@ const RightSidebar = ({ isCollapsed = false, onToggle }: RightSidebarProps) => {
     
     // Simulate AI response
     setTimeout(() => {
-      const aiResponse = {
+      const aiResponse: Message = {
         id: Date.now() + 1,
-        sender: 'revy' as const,
+        sender: 'revy',
         content: 'Takk for spørsmålet ditt! Jeg er her for å hjelpe deg med revisjonsarbeid.',
         timestamp: new Date().toISOString()
       };
@@ -68,30 +75,8 @@ const RightSidebar = ({ isCollapsed = false, onToggle }: RightSidebarProps) => {
   if (isCollapsed) {
     return (
       <div className="h-full flex flex-col w-full overflow-hidden bg-background">
-        {/* Collapsed Header */}
-        <div className="border-b border-border flex items-center justify-center p-4 flex-shrink-0">
-          <TooltipProvider delayDuration={0}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={onToggle}
-                  className="h-8 w-8 hover:bg-accent"
-                  title="Utvid AI-assistant"
-                >
-                  <PanelRightOpen className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="left">
-                Utvid AI-assistant
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </div>
-        
         {/* Collapsed Content - Only the chat icon */}
-        <div className="flex-1 min-h-0 p-2 flex justify-center">
+        <div className="flex-1 min-h-0 p-2 flex justify-center items-center">
           <TooltipProvider delayDuration={0}>
             <Tooltip>
               <TooltipTrigger asChild>
