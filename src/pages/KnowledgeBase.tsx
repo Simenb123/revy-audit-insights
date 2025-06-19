@@ -10,6 +10,7 @@ import MyFavorites from '@/components/Knowledge/MyFavorites';
 import SearchResults from '@/components/Knowledge/SearchResults';
 import PDFUploadManager from '@/components/Knowledge/PDFUploadManager';
 import KnowledgeAdminPanel from '@/components/Knowledge/KnowledgeAdminPanel';
+import SecretTrainingArea from '@/components/Knowledge/SecretTrainingArea';
 
 const KnowledgeBase = () => {
   return (
@@ -26,6 +27,7 @@ const KnowledgeBase = () => {
         <Route path="/sok" element={<SearchResults />} />
         <Route path="/upload" element={<PDFUploadManager />} />
         <Route path="/admin" element={<KnowledgeAdminPanel />} />
+        <Route path="/hemmelig-ai-trening" element={<SecretTrainingArea />} />
       </Routes>
     </div>
   );

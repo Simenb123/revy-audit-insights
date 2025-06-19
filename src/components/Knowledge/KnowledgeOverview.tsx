@@ -1,326 +1,224 @@
 
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { supabase } from '@/integrations/supabase/client';
-import { KnowledgeCategory, KnowledgeArticle } from '@/types/knowledge';
+import { Link } from 'react-router-dom';
 import { 
   BookOpen, 
-  Plus, 
   Search, 
+  Plus, 
   TrendingUp, 
-  Clock, 
-  Eye, 
-  Settings,
-  Sparkles,
-  Heart,
-  Folder,
+  Star, 
   FileText,
-  FileCheck,
-  Calculator,
-  Scale,
+  Upload,
+  Settings,
+  Brain,
   Shield,
-  Newspaper,
-  Gavel
+  Eye,
+  EyeOff
 } from 'lucide-react';
-
-// Enhanced icon mapping for categories
-const getIconComponent = (iconName?: string) => {
-  const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
-    'file-check': FileCheck,
-    'calculator': Calculator,
-    'percent': Scale, // Using Scale for percent
-    'scale': Scale,
-    'shield-check': Shield,
-    'newspaper': Newspaper,
-    'gavel': Gavel,
-    'folder': Folder,
-    'file-text': FileText,
-  };
-
-  if (iconName && iconMap[iconName]) {
-    return iconMap[iconName];
-  }
-  
-  return Folder; // Default icon
-};
-
-// Color mapping for the new main categories
-const getCategoryColor = (categoryName: string) => {
-  const colorMap: Record<string, string> = {
-    'Revisjon': 'text-blue-600',
-    'Regnskap': 'text-green-600',
-    'Skatt': 'text-purple-600',
-    'Annet': 'text-gray-600'
-  };
-  
-  return colorMap[categoryName] || 'text-blue-600';
-};
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 const KnowledgeOverview = () => {
-  const navigate = useNavigate();
-  const [searchQuery, setSearchQuery] = useState('');
-
-  // Only fetch main categories (those without parent_category_id)
-  const { data: mainCategories, isLoading: categoriesLoading } = useQuery({
-    queryKey: ['knowledge-main-categories'],
+  // Check if user has admin access for secret area
+  const { data: userProfile } = useQuery({
+    queryKey: ['user-profile'],
     queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+      
       const { data, error } = await supabase
-        .from('knowledge_categories')
-        .select(`
-          *,
-          subcategories:knowledge_categories!parent_category_id(count),
-          articles:knowledge_articles!category_id(count)
-        `)
-        .is('parent_category_id', null)
-        .order('display_order');
+        .from('profiles')
+        .select('user_role')
+        .eq('id', user.id)
+        .single();
       
       if (error) throw error;
       return data;
-    },
+    }
   });
 
-  // Get subcategory and article counts for main categories
-  const { data: categoryCounts, isLoading: countsLoading } = useQuery({
-    queryKey: ['category-counts'],
-    queryFn: async () => {
-      if (!mainCategories) return {};
-      
-      const counts: Record<string, { subcategories: number; articles: number }> = {};
-      
-      for (const category of mainCategories) {
-        // Count subcategories
-        const { data: subcategories } = await supabase
-          .from('knowledge_categories')
-          .select('id')
-          .eq('parent_category_id', category.id);
-        
-        // Count articles in this category and all its subcategories
-        const subcategoryIds = subcategories?.map(sub => sub.id) || [];
-        const allCategoryIds = [category.id, ...subcategoryIds];
-        
-        const { data: articles } = await supabase
-          .from('knowledge_articles')
-          .select('id')
-          .eq('status', 'published')
-          .in('category_id', allCategoryIds);
-        
-        counts[category.id] = {
-          subcategories: subcategories?.length || 0,
-          articles: articles?.length || 0
-        };
-      }
-      
-      return counts;
-    },
-    enabled: !!mainCategories && mainCategories.length > 0
-  });
-
-  const { data: recentArticles, isLoading: articlesLoading } = useQuery({
-    queryKey: ['recent-articles'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('knowledge_articles')
-        .select('*, category:knowledge_categories(name)')
-        .eq('status', 'published')
-        .order('created_at', { ascending: false })
-        .limit(5);
-      
-      if (error) throw error;
-      return data as KnowledgeArticle[];
-    },
-  });
+  const isAdmin = userProfile?.user_role === 'admin' || userProfile?.user_role === 'partner';
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Kunnskapsbase</h1>
+          <h1 className="text-3xl font-bold">Fagstoff</h1>
           <p className="text-muted-foreground">
-            Utforsk fagartikler, standarder og veiledninger for revisjon, regnskap og skatt
+            Tilgang til revisjonsartikler, standarder og veiledninger
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button asChild variant="outline">
-            <Link to="/fag/admin">
-              <Settings className="w-4 h-4 mr-2" />
-              Administrer
-            </Link>
-          </Button>
-          <Button asChild>
-            <Link to="/fag/ny">
-              <Plus className="w-4 h-4 mr-2" />
-              Ny artikkel
-            </Link>
-          </Button>
-        </div>
+        <Button asChild>
+          <Link to="/fag/ny-artikkel">
+            <Plus className="h-4 w-4 mr-2" />
+            Ny artikkel
+          </Link>
+        </Button>
+      </div>
+
+      {/* Quick Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <BookOpen className="h-5 w-5 text-blue-600" />
+              <div>
+                <p className="text-sm text-gray-600">Artikler</p>
+                <p className="text-2xl font-bold">142</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-green-600" />
+              <div>
+                <p className="text-sm text-gray-600">Denne måneden</p>
+                <p className="text-2xl font-bold">+12</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <Star className="h-5 w-5 text-yellow-600" />
+              <div>
+                <p className="text-sm text-gray-600">Favoritter</p>
+                <p className="text-2xl font-bold">8</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <FileText className="h-5 w-5 text-purple-600" />
+              <div>
+                <p className="text-sm text-gray-600">Utkast</p>
+                <p className="text-2xl font-bold">3</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate('/fag/ny')}>
-          <CardContent className="p-6 text-center">
-            <Plus className="w-8 h-8 mx-auto mb-2 text-blue-600" />
-            <h3 className="font-semibold">Opprett ny artikkel</h3>
-            <p className="text-sm text-muted-foreground">Skriv ny fagartikkel</p>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate('/fag/mine')}>
-          <CardContent className="p-6 text-center">
-            <BookOpen className="w-8 h-8 mx-auto mb-2 text-green-600" />
-            <h3 className="font-semibold">Mine artikler</h3>
-            <p className="text-sm text-muted-foreground">Se dine artikler</p>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate('/fag/favoritter')}>
-          <CardContent className="p-6 text-center">
-            <Heart className="w-8 h-8 mx-auto mb-2 text-red-600" />
-            <h3 className="font-semibold">Favoritter</h3>
-            <p className="text-sm text-muted-foreground">Lagrede artikler</p>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate('/fag/sok')}>
-          <CardContent className="p-6 text-center">
-            <Search className="w-8 h-8 mx-auto mb-2 text-purple-600" />
-            <h3 className="font-semibold">Søk</h3>
-            <p className="text-sm text-muted-foreground">Finn fagstoff</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Main Categories */}
-      <div>
-        <h2 className="text-xl font-semibold mb-4">Hovedkategorier</h2>
-        {categoriesLoading ? (
+      <Card>
+        <CardHeader>
+          <CardTitle>Hurtighandlinger</CardTitle>
+        </CardHeader>
+        <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {[...Array(4)].map((_, i) => (
-              <Card key={i} className="animate-pulse">
-                <CardContent className="p-4">
-                  <div className="h-4 bg-gray-200 rounded mb-2"></div>
-                  <div className="h-3 bg-gray-200 rounded"></div>
-                </CardContent>
-              </Card>
-            ))}
+            <Button asChild variant="outline" className="h-auto p-4">
+              <Link to="/fag/sok" className="flex flex-col items-center gap-2">
+                <Search className="h-6 w-6" />
+                <span>Søk i fagstoff</span>
+              </Link>
+            </Button>
+            
+            <Button asChild variant="outline" className="h-auto p-4">
+              <Link to="/fag/favoritter" className="flex flex-col items-center gap-2">
+                <Star className="h-6 w-6" />
+                <span>Mine favoritter</span>
+              </Link>
+            </Button>
+            
+            <Button asChild variant="outline" className="h-auto p-4">
+              <Link to="/fag/upload" className="flex flex-col items-center gap-2">
+                <Upload className="h-6 w-6" />
+                <span>Last opp PDF</span>
+              </Link>
+            </Button>
+            
+            <Button asChild variant="outline" className="h-auto p-4">
+              <Link to="/fag/mine" className="flex flex-col items-center gap-2">
+                <FileText className="h-6 w-6" />
+                <span>Mine artikler</span>
+              </Link>
+            </Button>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {mainCategories?.map((category) => {
-              const counts = categoryCounts?.[category.id];
-              const subcategoriesCount = counts?.subcategories || 0;
-              const articlesCount = counts?.articles || 0;
+        </CardContent>
+      </Card>
+
+      {/* Admin Actions */}
+      {isAdmin && (
+        <Card className="border-orange-200 bg-gradient-to-r from-orange-50 to-red-50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-orange-900">
+              <Shield className="h-5 w-5" />
+              Administrator-handlinger
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Button asChild variant="outline" className="h-auto p-4">
+                <Link to="/fag/admin" className="flex flex-col items-center gap-2">
+                  <Settings className="h-6 w-6" />
+                  <span>Admin panel</span>
+                </Link>
+              </Button>
               
-              // Get the icon component and color
-              const IconComponent = getIconComponent(category.icon);
-              const iconColor = getCategoryColor(category.name);
+              <Button asChild variant="outline" className="h-auto p-4 border-red-200 hover:bg-red-50">
+                <Link to="/fag/hemmelig-ai-trening" className="flex flex-col items-center gap-2">
+                  <Brain className="h-6 w-6 text-red-600" />
+                  <div className="text-center">
+                    <span className="text-red-900">🤫 AI-treningsområde</span>
+                    <Badge variant="secondary" className="mt-1 bg-red-100 text-red-800">
+                      Hemmelig
+                    </Badge>
+                  </div>
+                </Link>
+              </Button>
               
-              return (
-                <Card 
-                  key={category.id} 
-                  className="hover:shadow-md transition-shadow cursor-pointer h-full"
-                  onClick={() => navigate(`/fag/kategori/${category.id}`)}
-                >
-                  <CardContent className="p-4 h-full flex flex-col">
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <IconComponent className={`w-5 h-5 ${iconColor}`} />
-                        <h3 className="font-semibold">{category.name}</h3>
-                      </div>
-                    </div>
-                    
-                    {category.description && (
-                      <p className="text-sm text-muted-foreground mb-3 flex-grow">{category.description}</p>
-                    )}
-                    
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground mt-auto">
-                      <div className="flex items-center gap-1">
-                        <Folder className="w-3 h-3" />
-                        <span>{subcategoriesCount} kategorier</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <FileText className="w-3 h-3" />
-                        <span>{articlesCount} artikler</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        )}
-      </div>
+              <div className="flex flex-col items-center gap-2 p-4 border rounded-lg bg-gray-50">
+                <Eye className="h-6 w-6 text-gray-400" />
+                <span className="text-gray-600">Flere admin-funksjoner</span>
+                <Badge variant="outline">Kommer snart</Badge>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Recent Articles */}
-      <div>
-        <h2 className="text-xl font-semibold mb-4">Nylige artikler</h2>
-        {articlesLoading ? (
+      <Card>
+        <CardHeader>
+          <CardTitle>Nylige artikler</CardTitle>
+        </CardHeader>
+        <CardContent>
           <div className="space-y-3">
-            {[...Array(3)].map((_, i) => (
-              <Card key={i} className="animate-pulse">
-                <CardContent className="p-4">
-                  <div className="h-4 bg-gray-200 rounded mb-2"></div>
-                  <div className="h-3 bg-gray-200 rounded"></div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {recentArticles?.map((article) => (
-              <Card 
-                key={article.id}
-                className="hover:shadow-md transition-shadow cursor-pointer"
-                onClick={() => navigate(`/fag/artikkel/${article.slug}`)}
-              >
-                <CardContent className="p-4">
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <h3 className="font-semibold">{article.title}</h3>
-                      {article.summary && (
-                        <p className="text-sm text-muted-foreground mt-1">{article.summary}</p>
-                      )}
-                      <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
-                        <span>{article.category?.name}</span>
-                        <span>•</span>
-                        <span>{new Date(article.created_at).toLocaleDateString('nb-NO')}</span>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Quick Access Section */}
-      <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
-        <CardContent className="p-4">
-          <div className="flex items-center gap-3 mb-3">
-            <Sparkles className="h-5 w-5 text-blue-600" />
-            <h3 className="font-semibold text-blue-900">Hurtigtilgang</h3>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-            <Button variant="outline" size="sm" asChild className="text-xs">
-              <Link to="/fag/sok?q=ISA">ISA-standarder</Link>
-            </Button>
-            <Button variant="outline" size="sm" asChild className="text-xs">
-              <Link to="/fag/sok?q=NRS">NRS-standarder</Link>
-            </Button>
-            <Button variant="outline" size="sm" asChild className="text-xs">
-              <Link to="/fag/sok?q=regnskapsloven">Regnskapsloven</Link>
-            </Button>
-            <Button variant="outline" size="sm" asChild className="text-xs">
-              <Link to="/fag/admin">Administrasjon</Link>
-            </Button>
+            {/* Mock recent articles */}
+            <div className="flex items-center justify-between p-3 border rounded-lg">
+              <div>
+                <h4 className="font-medium">ISA 315 - Identifisering og vurdering av risiko</h4>
+                <p className="text-sm text-gray-600">Oppdatert guide for risikovurdering</p>
+              </div>
+              <Badge>Ny</Badge>
+            </div>
+            
+            <div className="flex items-center justify-between p-3 border rounded-lg">
+              <div>
+                <h4 className="font-medium">Vesentlighetsvurdering 2024</h4>
+                <p className="text-sm text-gray-600">Nye retningslinjer for vesentlighet</p>
+              </div>
+              <Badge variant="outline">Oppdatert</Badge>
+            </div>
+            
+            <div className="flex items-center justify-between p-3 border rounded-lg">
+              <div>
+                <h4 className="font-medium">Digital dokumentasjon</h4>
+                <p className="text-sm text-gray-600">Best practices for digitale revisjonsarkiv</p>
+              </div>
+              <Badge variant="secondary">Guide</Badge>
+            </div>
           </div>
         </CardContent>
       </Card>
