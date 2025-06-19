@@ -3,7 +3,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Trash2, Edit, FileMove, Trash, Loader2 } from 'lucide-react';
+import { Trash2, Edit, Move, Trash, Loader2 } from 'lucide-react';
 import { KnowledgeCategory } from '@/types/knowledge';
 
 interface CategoryDetailsProps {
@@ -128,7 +128,7 @@ const CategoryDetails = ({
                 variant="outline"
                 onClick={onMoveArticles}
               >
-                <FileMove className="h-4 w-4 mr-1" />
+                <Move className="h-4 w-4 mr-1" />
                 Flytt artikler
               </Button>
             )}
