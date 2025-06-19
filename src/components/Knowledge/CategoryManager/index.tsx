@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -181,7 +182,7 @@ const CategoryManager = () => {
       console.log('=== DELETE SUCCESS ===');
       console.log('Delete result:', result);
       
-      // Simple cache refresh
+      // Simple cache refresh - Fixed: removed extra parameter
       await queryClient.invalidateQueries({ queryKey: ['knowledge-categories-all'] });
       await queryClient.invalidateQueries({ queryKey: ['articles-by-category'] });
       

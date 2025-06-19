@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -7,6 +6,7 @@ import { useClientDocuments } from '@/hooks/useClientDocuments';
 import EnhancedDocumentUploader from './EnhancedDocumentUploader';
 import EnhancedDocumentList from './EnhancedDocumentList';
 import DocumentCategories from './DocumentCategories';
+import DocumentDeleteDebugger from './DocumentDeleteDebugger';
 
 interface ImprovedClientDocumentManagerProps {
   clientId: string;
@@ -16,6 +16,22 @@ interface ImprovedClientDocumentManagerProps {
 const ImprovedClientDocumentManager = ({ clientId, clientName }: ImprovedClientDocumentManagerProps) => {
   const { documents, categories, isLoading } = useClientDocuments(clientId);
   const [activeTab, setActiveTab] = useState('upload');
+
+  // Log AI categorization for debugging
+  React.useEffect(() => {
+    console.log('=== AI CATEGORIZATION DEBUG ===');
+    console.log('Total documents:', documents.length);
+    
+    documents.forEach(doc => {
+      console.log(`Document: ${doc.file_name}`);
+      console.log(`- Subject area: ${doc.subject_area || 'None'}`);
+      console.log(`- Category: ${doc.category || 'None'}`);
+      console.log(`- AI suggested: ${doc.ai_suggested_category || 'None'}`);
+      console.log(`- AI confidence: ${doc.ai_confidence_score || 'None'}`);
+      console.log(`- AI analysis: ${doc.ai_analysis_summary || 'None'}`);
+      console.log('---');
+    });
+  }, [documents]);
 
   const documentsByCategory = documents.reduce((acc, doc) => {
     const category = doc.category || 'Ukategorisert';
@@ -48,6 +64,9 @@ const ImprovedClientDocumentManager = ({ clientId, clientName }: ImprovedClientD
           </p>
         </div>
       </div>
+
+      {/* Debug informasjon */}
+      <DocumentDeleteDebugger clientId={clientId} />
 
       {/* AI-statistikk banner */}
       <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
