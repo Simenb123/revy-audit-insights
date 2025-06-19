@@ -15,7 +15,7 @@ const EmbeddedContextChat: React.FC<EmbeddedContextChatProps> = ({
   clientId,
   clientData,
   context,
-  title = "AI-Assistanse",
+  title = "AI-Revi Assistanse",
   height = "400px"
 }) => {
   return (

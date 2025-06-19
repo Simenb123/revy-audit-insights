@@ -10,9 +10,17 @@ interface RevyInputProps {
   handleSendMessage: () => void;
   isTyping: boolean;
   isEmbedded?: boolean;
+  placeholder?: string;
 }
 
-export const RevyInput = ({ message, setMessage, handleSendMessage, isTyping, isEmbedded = false }: RevyInputProps) => {
+export const RevyInput = ({ 
+  message, 
+  setMessage, 
+  handleSendMessage, 
+  isTyping, 
+  isEmbedded = false,
+  placeholder = "Spør meg om Revio eller revisjon..."
+}: RevyInputProps) => {
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -27,7 +35,7 @@ export const RevyInput = ({ message, setMessage, handleSendMessage, isTyping, is
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Spør meg om Revio eller revisjon..."
+          placeholder={placeholder}
           className={isEmbedded ? 'flex-1 text-xs h-8' : 'flex-1'}
           disabled={isTyping}
         />

@@ -198,12 +198,12 @@ const ContextAwareRevyChat: React.FC<ContextAwareRevyChatProps> = ({
           />
         </div>
 
-        {/* Input */}
+        {/* Input - Fixed props to match RevyInputProps interface */}
         <RevyInput
-          value={message}
-          onChange={setMessage}
-          onSend={handleSendMessage}
-          disabled={isTyping}
+          message={message}
+          setMessage={setMessage}
+          handleSendMessage={handleSendMessage}
+          isTyping={isTyping}
           placeholder={`Spør AI-Revi om ${getContextDisplayName(context).toLowerCase()}...`}
         />
 
