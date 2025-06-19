@@ -22,12 +22,7 @@ const MobileRightSidebar = ({ isOpen, onClose }: MobileRightSidebarProps) => {
         style={{ width: '100vw' }}
       >
         <div className="h-full">
-          <RightSidebar 
-            isCollapsed={false}
-            isExpanded={false}
-            onToggle={onClose}
-            onToggleExpanded={() => {}}
-          />
+          <RightSidebar onToggle={onClose} />
         </div>
       </SheetContent>
     </Sheet>
