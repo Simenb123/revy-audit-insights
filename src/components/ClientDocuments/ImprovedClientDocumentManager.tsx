@@ -121,7 +121,7 @@ const ImprovedClientDocumentManager = ({ clientId, clientName }: ImprovedClientD
         </TabsList>
 
         <TabsContent value="upload">
-          <EnhancedDocumentUploader clientId={clientId} categories={categories} />
+          <EnhancedDocumentUploader clientId={clientId} />
         </TabsContent>
 
         <TabsContent value="documents">

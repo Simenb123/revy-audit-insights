@@ -19,6 +19,7 @@ import {
 import { useDropzone } from 'react-dropzone';
 import { toast } from 'sonner';
 import { useDocumentTypes, useDocumentTags } from '@/hooks/useDocumentTypes';
+import { supabase } from '@/integrations/supabase/client';
 
 interface EnhancedDocumentUploaderProps {
   clientId: string;
