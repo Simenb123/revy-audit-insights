@@ -27,7 +27,7 @@ export const generateEnhancedAIResponseWithVariant = async (
     // If no variant specified, use fallback to basic AI service
     if (!variant) {
       console.log('No AI variant specified, using basic AI service');
-      return await generateAIResponse(message, context, messageHistory, clientData, userRole, sessionId);
+      return await generateAIResponse(message, context as any, messageHistory, clientData, userRole, sessionId);
     }
 
     // Build enhanced context for AI
@@ -58,7 +58,7 @@ export const generateEnhancedAIResponseWithVariant = async (
     // Generate response using enhanced prompt
     const response = await generateAIResponse(
       enhancedPrompt, 
-      context, 
+      context as any, 
       messageHistory, 
       clientData, 
       userRole, 
@@ -72,8 +72,20 @@ export const generateEnhancedAIResponseWithVariant = async (
     
     // Fallback to basic AI service
     console.log('Falling back to basic AI service');
-    return await generateAIResponse(message, context, messageHistory, clientData, userRole, sessionId);
+    return await generateAIResponse(message, context as any, messageHistory, clientData, userRole, sessionId);
   }
+};
+
+// Add the missing export that SmartRevyAssistant expects
+export const generateEnhancedAIResponse = async (
+  message: string,
+  context: string,
+  messageHistory: any[],
+  clientData?: any,
+  userRole?: string,
+  sessionId?: string
+): Promise<string> => {
+  return await generateAIResponse(message, context as any, messageHistory, clientData, userRole, sessionId);
 };
 
 export const getContextualRecommendations = async (

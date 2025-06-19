@@ -1,7 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { getContextualRecommendations } from './revy/enhancedAiInteractionService';
-import { useAIRevyVariants } from '@/hooks/useAIRevyVariants';
+import { AIRevyVariant } from '@/hooks/useAIRevyVariants';
 
 export interface ContextualTip {
   context: string;
@@ -25,11 +25,17 @@ export const getEnhancedContextualTips = async (
       .order('sort_order')
       .limit(1);
 
-    const variant = variants?.[0];
+    const rawVariant = variants?.[0];
     
-    if (!variant) {
+    if (!rawVariant) {
       return getBasicContextualTip(context);
     }
+
+    // Transform to match AIRevyVariant interface
+    const variant: AIRevyVariant = {
+      ...rawVariant,
+      context_requirements: (rawVariant.context_requirements as Record<string, any>) || {}
+    };
 
     // Get contextual recommendations and pick the most actionable one
     const recommendations = await getContextualRecommendations(

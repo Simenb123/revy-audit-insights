@@ -4,13 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Brain, MessageSquare, Lightbulb, FileText, Settings } from 'lucide-react';
-import { useSmartRevyAssistant } from '@/hooks/revy/useSmartRevyAssistant';
+import { useSmartReviAssistant } from '@/hooks/revy/useSmartRevyAssistant';
 import { useAIRevyVariants } from '@/hooks/useAIRevyVariants';
 import { useEnhancedClientDocuments } from '@/hooks/useEnhancedClientDocuments';
 import { getContextualRecommendations } from '@/services/revy/enhancedAiInteractionService';
 import AIRevyVariantSelector from '@/components/AI/AIRevyVariantSelector';
-import RevyMessageList from './Assistant/RevyMessageList';
-import RevyInput from './Assistant/RevyInput';
+import { RevyMessageList } from '@/components/Revy/Assistant/RevyMessageList';
+import { RevyInput } from '@/components/Revy/Assistant/RevyInput';
 
 interface ContextAwareRevyChatProps {
   clientId?: string;
@@ -53,7 +53,7 @@ const ContextAwareRevyChat: React.FC<ContextAwareRevyChatProps> = ({
     handleSendMessage,
     selectedVariant: assistantVariant,
     handleVariantChange: assistantVariantChange
-  } = useSmartRevyAssistant({
+  } = useSmartReviAssistant({
     clientData: enhancedClientData,
     userRole: 'employee',
     embedded

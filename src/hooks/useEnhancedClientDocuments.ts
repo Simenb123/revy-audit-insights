@@ -34,8 +34,9 @@ export const useEnhancedClientDocuments = (clientId: string) => {
       category: doc.category,
       ai_confidence_score: doc.ai_confidence_score,
       ai_analysis_summary: doc.ai_analysis_summary,
-      ai_suggested_subject_areas: doc.ai_suggested_subject_areas,
-      ai_isa_standard_references: doc.ai_isa_standard_references,
+      // These fields might not exist on ClientDocument, so we'll provide fallbacks
+      ai_suggested_subject_areas: (doc as any).ai_suggested_subject_areas || [],
+      ai_isa_standard_references: (doc as any).ai_isa_standard_references || [],
       extracted_text: doc.extracted_text,
       created_at: doc.created_at
     }));
