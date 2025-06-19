@@ -1,95 +1,43 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { 
-  Search, 
-  Plus, 
-  Bell, 
-  Settings,
-  User,
-  Menu,
-} from 'lucide-react';
-import { useSidebar } from '@/components/ui/sidebar';
+import { PanelRightOpen, MessageSquare } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
+import Logo from './Logo';
 
 interface AppHeaderProps {
-  onRightSidebarToggle?: () => void;
+  onToggleRightSidebar?: () => void;
+  isRightSidebarOpen?: boolean;
 }
 
-const AppHeader = ({ onRightSidebarToggle }: AppHeaderProps) => {
-  const { toggleSidebar } = useSidebar();
+const AppHeader = ({ onToggleRightSidebar, isRightSidebarOpen }: AppHeaderProps) => {
+  const isMobile = useIsMobile();
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-40 flex h-16 shrink-0 items-center justify-between bg-gradient-to-r from-revio-500 to-revio-600 text-white px-4 shadow-lg">
-      {/* Left Section */}
-      <div className="flex items-center gap-3">
-        {/* Mobile sidebar toggle */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-9 w-9 text-white hover:bg-white/20 md:hidden"
-          onClick={toggleSidebar}
-          aria-label="Toggle sidebar"
-        >
-          <Menu className="h-6 w-6" />
-        </Button>
-        
-        {/* Desktop Logo and Title */}
-        <div className="hidden md:flex items-center gap-2">
-          <div className="w-9 h-9 bg-white/20 rounded-lg flex items-center justify-center">
-            <span className="text-sm font-bold">R</span>
-          </div>
-          <span className="font-bold text-xl">Revio</span>
+    <header className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-40">
+      <div className="flex h-14 items-center justify-between px-4">
+        <div className="flex items-center gap-2">
+          <Logo />
         </div>
-        <div className="hidden md:block h-6 w-px bg-white/30"></div>
-        <h1 className="hidden md:block text-lg font-semibold">RevisionAkademiet</h1>
-      </div>
-      
-      {/* Center Section - Search */}
-      <div className="flex-1 max-w-lg mx-6">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white/60" />
-          <Input 
-            type="text"
-            placeholder="Søk i opplæring og ressurser..."
-            className="w-full pl-10 pr-4 py-2 bg-white/20 border-white/30 text-white placeholder:text-white/60 focus:bg-white/30 focus:border-white/50"
-          />
+        
+        {/* Right Sidebar Toggle */}
+        <div className="flex items-center gap-2">
+          {onToggleRightSidebar && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onToggleRightSidebar}
+              className="h-8 w-8 relative"
+              title="Toggle AI-Revi Assistant"
+            >
+              <MessageSquare className="h-4 w-4" />
+              {/* AI indicator */}
+              <div className="absolute -top-1 -right-1 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full p-0.5">
+                <div className="h-2 w-2 bg-white rounded-full" />
+              </div>
+            </Button>
+          )}
         </div>
-      </div>
-      
-      {/* Right Section */}
-      <div className="flex items-center gap-2">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-9 w-9 text-white hover:bg-white/20"
-        >
-          <Plus className="h-5 w-5" />
-        </Button>
-        
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-9 w-9 text-white hover:bg-white/20"
-        >
-          <Bell className="h-5 w-5" />
-        </Button>
-        
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-9 w-9 text-white hover:bg-white/20"
-        >
-          <Settings className="h-5 w-5" />
-        </Button>
-        
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-9 w-9 text-white hover:bg-white/20"
-        >
-          <User className="h-5 w-5" />
-        </Button>
       </div>
     </header>
   );

@@ -1,115 +1,86 @@
 
 import React, { useState } from 'react';
-import { SidebarProvider } from '@/components/ui/sidebar';
-import Sidebar from './Sidebar';
+import { Outlet } from 'react-router-dom';
+import { Toaster } from '@/components/ui/toaster';
 import AppHeader from './AppHeader';
+import Sidebar from './Sidebar';
 import RightSidebar from './RightSidebar';
 import MobileRightSidebar from './MobileRightSidebar';
-import MobileRightSidebarToggle from './MobileRightSidebarToggle';
-import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { useMobileSidebar } from "@/hooks/use-mobile-sidebar";
+import { useIsMobile } from '@/hooks/use-mobile';
 
-interface AppLayoutProps {
-  children: React.ReactNode;
-}
-
-const AppLayout = ({ children }: AppLayoutProps) => {
+const AppLayout = () => {
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isRightSidebarCollapsed, setIsRightSidebarCollapsed] = useState(false);
   const [isRightSidebarExpanded, setIsRightSidebarExpanded] = useState(false);
+  const [isMobileRightSidebarOpen, setIsMobileRightSidebarOpen] = useState(false);
   const isMobile = useIsMobile();
-  const { isMobileSidebarOpen, toggleMobileSidebar, closeMobileSidebar } = useMobileSidebar();
+
+  const toggleSidebar = () => {
+    setIsSidebarCollapsed(!isSidebarCollapsed);
+  };
 
   const toggleRightSidebar = () => {
-    const willBeCollapsed = !isRightSidebarCollapsed;
-    setIsRightSidebarCollapsed(willBeCollapsed);
-    if (willBeCollapsed) {
-      setIsRightSidebarExpanded(false);
+    if (isMobile) {
+      setIsMobileRightSidebarOpen(!isMobileRightSidebarOpen);
+    } else {
+      setIsRightSidebarCollapsed(!isRightSidebarCollapsed);
     }
   };
 
   const toggleRightSidebarExpanded = () => {
-    const willBeExpanded = !isRightSidebarExpanded;
-    setIsRightSidebarExpanded(willBeExpanded);
-    if (willBeExpanded) {
-      setIsRightSidebarCollapsed(false);
-    }
+    setIsRightSidebarExpanded(!isRightSidebarExpanded);
   };
 
-  const rightSidebarComponent = (
-    <RightSidebar 
-      isCollapsed={isRightSidebarCollapsed}
-      isExpanded={isRightSidebarExpanded}
-      onToggle={toggleRightSidebar}
-      onToggleExpanded={toggleRightSidebarExpanded}
-    />
-  );
-
   return (
-    <SidebarProvider defaultOpen={true}>
-      <AppHeader onRightSidebarToggle={toggleRightSidebar} />
-      <div
-        className="w-full flex flex-row bg-background relative z-10"
-        style={{ 
-          height: `calc(100vh - 4rem)`,
-          marginTop: '4rem'
-        }}
-      >
-        <div className="relative z-20 h-full flex-shrink-0">
-          <Sidebar />
-        </div>
-        
-        {isMobile ? (
-          <>
-            <div className="flex-1 min-w-0">
-              <main className="h-full overflow-auto bg-background p-6">
-                {children}
-              </main>
-            </div>
-            {/* Mobile floating button */}
-            <MobileRightSidebarToggle onClick={toggleMobileSidebar} />
-            {/* Mobile sidebar overlay */}
-            <MobileRightSidebar 
-              isOpen={isMobileSidebarOpen} 
-              onClose={closeMobileSidebar} 
-            />
-          </>
-        ) : isRightSidebarCollapsed ? (
-          <>
-            <div className="flex-1 min-w-0 relative z-10">
-              <main className="h-full overflow-auto bg-background p-6">
-                {children}
-              </main>
-            </div>
-            <div 
-              className="relative h-full bg-background border-l border-border z-30"
-              style={{ width: '60px' }}
-            >
-              {rightSidebarComponent}
-            </div>
-          </>
-        ) : (
-          <ResizablePanelGroup
-            direction="horizontal"
-            className="flex-1 min-w-0 h-full"
-            key={isRightSidebarExpanded ? 'expanded' : 'normal'}
-          >
-            <ResizablePanel defaultSize={isRightSidebarExpanded ? 15 : 65} minSize={20}>
-              <main className="h-full overflow-auto bg-background p-6">
-                {children}
-              </main>
-            </ResizablePanel>
-            <ResizableHandle withHandle />
-            <ResizablePanel 
-              defaultSize={isRightSidebarExpanded ? 85 : 35} 
-              minSize={isRightSidebarExpanded ? 80 : 25}
-            >
-              {rightSidebarComponent}
-            </ResizablePanel>
-          </ResizablePanelGroup>
-        )}
+    <div className="min-h-screen bg-background flex w-full">
+      {/* Left Sidebar */}
+      <div className={`${isSidebarCollapsed ? 'w-16' : 'w-64'} transition-all duration-300 flex-shrink-0`}>
+        <Sidebar isCollapsed={isSidebarCollapsed} onToggle={toggleSidebar} />
       </div>
-    </SidebarProvider>
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col min-w-0">
+        <AppHeader 
+          onToggleRightSidebar={toggleRightSidebar}
+          isRightSidebarOpen={!isRightSidebarCollapsed}
+        />
+        
+        <div className="flex-1 flex min-h-0">
+          {/* Main Content */}
+          <main className={`flex-1 overflow-auto transition-all duration-300 ${
+            isRightSidebarExpanded ? 'hidden md:block' : ''
+          }`}>
+            <Outlet />
+          </main>
+
+          {/* Right Sidebar - Desktop */}
+          {!isMobile && (
+            <div className={`
+              transition-all duration-300 flex-shrink-0 border-l border-border
+              ${isRightSidebarCollapsed ? 'w-12' : isRightSidebarExpanded ? 'w-full md:w-96' : 'w-80'}
+              ${isRightSidebarExpanded ? 'fixed inset-0 z-50 bg-background' : 'relative'}
+            `}>
+              <RightSidebar
+                isCollapsed={isRightSidebarCollapsed}
+                isExpanded={isRightSidebarExpanded}
+                onToggle={toggleRightSidebar}
+                onToggleExpanded={toggleRightSidebarExpanded}
+              />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Mobile Right Sidebar */}
+      {isMobile && (
+        <MobileRightSidebar
+          isOpen={isMobileRightSidebarOpen}
+          onClose={() => setIsMobileRightSidebarOpen(false)}
+        />
+      )}
+
+      <Toaster />
+    </div>
   );
 };
 

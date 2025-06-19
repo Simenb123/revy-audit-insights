@@ -18,15 +18,17 @@ const MobileRightSidebar = ({ isOpen, onClose }: MobileRightSidebarProps) => {
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent 
         side="right" 
-        className="w-full p-0 border-l-0"
-        style={{ maxWidth: '100vw' }}
+        className="w-full p-0 border-l-0 max-w-none"
+        style={{ width: '100vw' }}
       >
-        <RightSidebar 
-          isCollapsed={false}
-          isExpanded={false}
-          onToggle={onClose}
-          onToggleExpanded={() => {}}
-        />
+        <div className="h-full">
+          <RightSidebar 
+            isCollapsed={false}
+            isExpanded={false}
+            onToggle={onClose}
+            onToggleExpanded={() => {}}
+          />
+        </div>
       </SheetContent>
     </Sheet>
   );
