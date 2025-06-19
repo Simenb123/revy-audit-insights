@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -132,6 +131,12 @@ const RightSidebar = ({ isCollapsed, isExpanded, onToggle, onToggleExpanded }: R
     }).format(amount);
   };
 
+  // Handle variant changes with immediate feedback
+  const handleVariantChange = (variant: any) => {
+    setSelectedVariant(variant);
+    console.log(`🔄 Variant changed to: ${variant.name} (${variant.display_name})`);
+  };
+
   // Completely collapsed state - show minimal sidebar with icons only
   if (isCollapsed) {
     return (
@@ -198,18 +203,23 @@ const RightSidebar = ({ isCollapsed, isExpanded, onToggle, onToggleExpanded }: R
     );
   }
 
-  // Expanded state - show full sidebar with mobile optimizations
+  // Expanded state - show full sidebar with context-aware AI-Revi
   return (
     <div className="h-full flex flex-col w-full overflow-hidden bg-background">
       {/* Header with toggle and expand controls */}
       <div className={`border-b border-border flex items-center justify-between flex-shrink-0 ${isMobile ? 'p-3' : 'p-4'}`}>
         <div className="flex items-center gap-2">
           <h3 className={`font-semibold ${isMobile ? 'text-lg' : 'text-base'}`}>AI-Verktøy</h3>
-          {/* Context indicator */}
+          {/* Enhanced context indicator with variant info */}
           <Badge className={`text-xs ${contextInfo.color}`}>
             <contextInfo.icon className="h-3 w-3 mr-1" />
             {contextInfo.name}
           </Badge>
+          {selectedVariant && (
+            <Badge className="text-xs bg-purple-100 text-purple-800">
+              {selectedVariant.display_name.replace('AI-Revi ', '')}
+            </Badge>
+          )}
         </div>
         <div className="flex items-center gap-1">
           {!isMobile && (
@@ -272,11 +282,11 @@ const RightSidebar = ({ isCollapsed, isExpanded, onToggle, onToggleExpanded }: R
                         </div>
                       </div>
                       
-                      {/* Variant selector */}
+                      {/* Variant selector with change handler */}
                       <div className="border-t pt-2">
                         <AIRevyVariantSelector
                           currentContext={currentContext}
-                          onVariantChange={setSelectedVariant}
+                          onVariantChange={handleVariantChange}
                           compact={true}
                         />
                       </div>
@@ -284,10 +294,12 @@ const RightSidebar = ({ isCollapsed, isExpanded, onToggle, onToggleExpanded }: R
                   </CardContent>
                 </Card>
 
-                {/* AI Assistant */}
+                {/* Context-aware AI Assistant */}
                 <div className="flex-1 min-h-0">
                   <SmartRevyAssistant 
                     embedded={true} 
+                    context={currentContext as any}
+                    selectedVariant={selectedVariant}
                     clientData={{
                       ...currentClient,
                       documentContext: currentContext === 'documentation' ? {
@@ -301,6 +313,9 @@ const RightSidebar = ({ isCollapsed, isExpanded, onToggle, onToggleExpanded }: R
                       } : undefined
                     }}
                     userRole="employee"
+                    onContextChange={(newContext) => {
+                      console.log(`🔄 Context change detected: ${newContext}`);
+                    }}
                   />
                 </div>
               </div>
@@ -417,7 +432,9 @@ const RightSidebar = ({ isCollapsed, isExpanded, onToggle, onToggleExpanded }: R
                   <div className="flex items-start gap-3 p-3 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded text-sm">
                     <div className="w-2 h-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full mt-2 flex-shrink-0"></div>
                     <div className="min-w-0 flex-1">
-                      <span className="truncate block font-medium">AI-Revi i {contextInfo.name} modus</span>
+                      <span className="truncate block font-medium">
+                        AI-Revi i {contextInfo.name} modus {selectedVariant && `(${selectedVariant.display_name.replace('AI-Revi ', '')})`}
+                      </span>
                       <span className="text-muted-foreground text-xs">{contextInfo.description}</span>
                     </div>
                   </div>

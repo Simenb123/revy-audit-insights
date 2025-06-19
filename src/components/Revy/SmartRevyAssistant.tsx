@@ -10,7 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/Auth/AuthProvider';
 import { RevyContext, RevyChatMessage, RevyMessage } from '@/types/revio';
 import KnowledgeStatusIndicator from './KnowledgeStatusIndicator';
-import { generateEnhancedAIResponse } from '@/services/revy/enhancedAiInteractionService';
+import { generateEnhancedAIResponseWithVariant } from '@/services/revy/enhancedAiInteractionService';
 import { useIsMobile } from "@/hooks/use-mobile";
 import RevyAvatar from './RevyAvatar';
 import { RevyMessageList } from './Assistant/RevyMessageList';
@@ -19,17 +19,29 @@ interface SmartReviAssistantProps {
   embedded?: boolean;
   clientData?: any;
   userRole?: string;
+  context?: RevyContext;
+  selectedVariant?: any;
+  onContextChange?: (context: RevyContext) => void;
 }
 
-const SmartReviAssistant = ({ embedded = false, clientData, userRole }: SmartReviAssistantProps) => {
+const SmartReviAssistant = ({ 
+  embedded = false, 
+  clientData, 
+  userRole,
+  context = 'general',
+  selectedVariant,
+  onContextChange
+}: SmartReviAssistantProps) => {
   const [messages, setMessages] = useState<RevyMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const { session } = useAuth();
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const context: RevyContext = 'general';
   const isMobile = useIsMobile();
+
+  // Use context from props instead of hardcoded 'general'
+  const currentContext = context;
 
   useEffect(() => {
     const generateSessionId = async () => {
@@ -75,6 +87,13 @@ const SmartReviAssistant = ({ embedded = false, clientData, userRole }: SmartRev
     loadPreviousMessages();
   }, [sessionId, session?.user?.id]);
 
+  // Add context change effect to show visual feedback
+  useEffect(() => {
+    if (embedded && onContextChange) {
+      console.log(`🔄 AI-Revi context changed to: ${currentContext}${selectedVariant ? ` with variant: ${selectedVariant.name}` : ''}`);
+    }
+  }, [currentContext, selectedVariant, embedded, onContextChange]);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInput(e.target.value);
   };
@@ -98,7 +117,7 @@ const SmartReviAssistant = ({ embedded = false, clientData, userRole }: SmartRev
     setMessages(updatedMessages);
 
     try {
-      console.log('🤖 Generating AI response with enhanced knowledge access...');
+      console.log(`🤖 Generating AI response with context: ${currentContext} and variant:`, selectedVariant?.name || 'default');
       
       // Convert RevyMessage[] to RevyChatMessage[] format expected by the enhanced AI service
       const chatHistory: RevyChatMessage[] = updatedMessages.map(msg => ({
@@ -110,43 +129,21 @@ const SmartReviAssistant = ({ embedded = false, clientData, userRole }: SmartRev
         metadata: {}
       }));
 
-      // Use enhanced AI service for better knowledge base access
-      const aiResponse = await generateEnhancedAIResponse(
+      // Use enhanced AI service with dynamic context and variant
+      const aiResponse = await generateEnhancedAIResponseWithVariant(
         userMessage,
-        context,
+        currentContext,
         chatHistory,
         clientData,
         userRole,
-        sessionId
+        sessionId,
+        selectedVariant
       );
 
-      // 🔍 ENHANCED DEBUG: Log the AI response in detail
-      console.log('🔍 FULL DEBUG: Complete AI response received:');
-      console.log('📝 Response text:', aiResponse);
-      console.log('📏 Response length:', aiResponse.length);
-      console.log('🏷️ Contains emoji:', /🏷️/.test(aiResponse));
-      console.log('🔤 Contains EMNER:', /EMNER/i.test(aiResponse));
-      console.log('⭐ Contains asterisks:', /\*\*/.test(aiResponse));
-      
-      // Test multiple tag patterns
-      const patterns = [
-        /🏷️\s*\*\*[Ee][Mm][Nn][Ee][Rr]:?\*\*\s*(.+)/i,
-        /🏷️\s*[Ee][Mm][Nn][Ee][Rr]:?\s*(.+)/i,
-        /\*\*[Ee][Mm][Nn][Ee][Rr]:?\*\*\s*(.+)/i,
-        /[Ee][Mm][Nn][Ee][Rr]:\s*(.+)/i
-      ];
-      
-      patterns.forEach((pattern, index) => {
-        const match = aiResponse.match(pattern);
-        console.log(`🧪 Pattern ${index + 1} match:`, !!match, match ? match[1] : 'no match');
-      });
-
-      // Check line by line for debugging
-      const lines = aiResponse.split('\n');
-      lines.forEach((line, index) => {
-        if (line.includes('🏷️') || line.toLowerCase().includes('emner')) {
-          console.log(`📍 Line ${index}: "${line}"`);
-        }
+      console.log('🔍 AI response received with context-aware content:', {
+        context: currentContext,
+        variant: selectedVariant?.name,
+        responseLength: aiResponse.length
       });
 
       const aiMessage: RevyMessage = {
@@ -176,7 +173,7 @@ const SmartReviAssistant = ({ embedded = false, clientData, userRole }: SmartRev
       const errorMessage: RevyMessage = {
         id: crypto.randomUUID(),
         sender: 'revy',
-        content: 'Beklager, jeg kunne ikke behandle forespørselen din akkurat nå. Vennligst prøv igjen senere.\n\n🏷️ **EMNER:** Feilmeldinger, Support',
+        content: `Beklager, jeg kunne ikke behandle forespørselen din akkurat nå. Vennligst prøv igjen senere.\n\n🏷️ **EMNER:** Feilmeldinger, Support`,
         timestamp: new Date().toISOString(),
       };
       
@@ -193,17 +190,38 @@ const SmartReviAssistant = ({ embedded = false, clientData, userRole }: SmartRev
     }
   };
 
+  // Get context display name for user feedback
+  const getContextDisplayName = (ctx: RevyContext) => {
+    const contextMap = {
+      'documentation': 'Dokumentanalyse',
+      'audit-actions': 'Revisjonshandlinger', 
+      'client-detail': 'Klientdetaljer',
+      'planning': 'Planlegging',
+      'execution': 'Gjennomføring',
+      'completion': 'Avslutning',
+      'general': 'Generell assistanse'
+    };
+    return contextMap[ctx] || 'Generell assistanse';
+  };
+
   if (embedded) {
     return (
       <div className="flex flex-col h-full bg-background">
-        {/* Header */}
+        {/* Header with context indicator */}
         <div className={`border-b border-border flex-shrink-0 ${isMobile ? 'p-3' : 'p-4'}`}>
           <div className="flex items-center gap-3">
             <RevyAvatar />
             <div className="min-w-0 flex-1">
-              <h3 className={`font-semibold ${isMobile ? 'text-sm' : 'text-base'}`}>AI-Revi</h3>
+              <div className="flex items-center gap-2">
+                <h3 className={`font-semibold ${isMobile ? 'text-sm' : 'text-base'}`}>AI-Revi</h3>
+                {selectedVariant && (
+                  <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">
+                    {selectedVariant.display_name.replace('AI-Revi ', '')}
+                  </span>
+                )}
+              </div>
               <p className={`text-muted-foreground ${isMobile ? 'text-xs' : 'text-sm'}`}>
-                Din smarte revisjonsassistent med tilgang til fagstoff og ISA-standarder
+                {getContextDisplayName(currentContext)} - {selectedVariant?.description || 'Din smarte revisjonsassistent'}
               </p>
             </div>
           </div>
@@ -212,7 +230,7 @@ const SmartReviAssistant = ({ embedded = false, clientData, userRole }: SmartRev
           </div>
         </div>
         
-        {/* Messages - Using the improved RevyMessageList component */}
+        {/* Messages */}
         <div className="flex-1 min-h-0">
           <RevyMessageList 
             messages={messages} 
@@ -226,7 +244,7 @@ const SmartReviAssistant = ({ embedded = false, clientData, userRole }: SmartRev
           <div className="flex items-center space-x-2">
             <Input
               type="text"
-              placeholder="Spør AI-Revi om hjelp..."
+              placeholder={`Spør ${selectedVariant?.display_name || 'AI-Revi'} om ${getContextDisplayName(currentContext).toLowerCase()}...`}
               value={input}
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
@@ -261,7 +279,7 @@ const SmartReviAssistant = ({ embedded = false, clientData, userRole }: SmartRev
           <div>
             <CardTitle className="text-lg font-semibold">AI-Revi</CardTitle>
             <p className="text-sm text-muted-foreground">
-              Din smarte revisjonsassistent med tilgang til fagstoff og ISA-standarder
+              {getContextDisplayName(currentContext)} - {selectedVariant?.description || 'Din smarte revisjonsassistent'}
             </p>
           </div>
         </div>
@@ -279,7 +297,7 @@ const SmartReviAssistant = ({ embedded = false, clientData, userRole }: SmartRev
           <div className="flex items-center space-x-2">
             <Input
               type="text"
-              placeholder="Spør AI-Revi om hjelp..."
+              placeholder={`Spør ${selectedVariant?.display_name || 'AI-Revi'} om ${getContextDisplayName(currentContext).toLowerCase()}...`}
               value={input}
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
