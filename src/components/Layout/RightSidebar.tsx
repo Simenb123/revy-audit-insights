@@ -1,11 +1,14 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { 
   MessageSquare, 
   X,
   PanelRightClose,
-  PanelRightOpen
+  PanelRightOpen,
+  Send,
+  Loader2
 } from 'lucide-react';
 import { useIsMobile } from "@/hooks/use-mobile";
 import { TooltipProvider, Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -17,6 +20,50 @@ interface RightSidebarProps {
 
 const RightSidebar = ({ isCollapsed = false, onToggle }: RightSidebarProps) => {
   const isMobile = useIsMobile();
+  const [message, setMessage] = useState('');
+  const [messages, setMessages] = useState([
+    {
+      id: 1,
+      sender: 'revy' as const,
+      content: 'Hei! Jeg er AI-Revi assistenten. Hvordan kan jeg hjelpe deg i dag?',
+      timestamp: new Date().toISOString()
+    }
+  ]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSendMessage = () => {
+    if (!message.trim() || isLoading) return;
+    
+    const userMessage = {
+      id: Date.now(),
+      sender: 'user' as const,
+      content: message,
+      timestamp: new Date().toISOString()
+    };
+    
+    setMessages(prev => [...prev, userMessage]);
+    setMessage('');
+    setIsLoading(true);
+    
+    // Simulate AI response
+    setTimeout(() => {
+      const aiResponse = {
+        id: Date.now() + 1,
+        sender: 'revy' as const,
+        content: 'Takk for spørsmålet ditt! Jeg er her for å hjelpe deg med revisjonsarbeid.',
+        timestamp: new Date().toISOString()
+      };
+      setMessages(prev => [...prev, aiResponse]);
+      setIsLoading(false);
+    }, 1000);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
 
   if (isCollapsed) {
     return (
@@ -43,7 +90,7 @@ const RightSidebar = ({ isCollapsed = false, onToggle }: RightSidebarProps) => {
           </TooltipProvider>
         </div>
         
-        {/* Collapsed Content */}
+        {/* Collapsed Content - Only the chat icon */}
         <div className="flex-1 min-h-0 p-2 flex justify-center">
           <TooltipProvider delayDuration={0}>
             <Tooltip>
@@ -86,31 +133,62 @@ const RightSidebar = ({ isCollapsed = false, onToggle }: RightSidebarProps) => {
         </Button>
       </div>
       
-      {/* AI Chat Content */}
-      <div className="flex-1 min-h-0 p-4">
-        <div className="flex flex-col h-full">
-          <div className="flex-1 overflow-y-auto mb-4">
-            <div className="space-y-4">
-              <div className="bg-blue-50 p-3 rounded-lg">
-                <p className="text-sm text-blue-900">
-                  Hei! Jeg er AI-Revi assistenten. Hvordan kan jeg hjelpe deg i dag?
-                </p>
+      {/* Messages Area */}
+      <div className="flex-1 min-h-0 p-4 overflow-y-auto">
+        <div className="space-y-4">
+          {messages.map((msg) => (
+            <div
+              key={msg.id}
+              className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+            >
+              <div
+                className={`max-w-[85%] p-3 rounded-lg ${
+                  msg.sender === 'user'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-blue-50 text-blue-900'
+                }`}
+              >
+                <p className="text-sm">{msg.content}</p>
               </div>
             </div>
-          </div>
-          
-          <div className="border-t border-border pt-4">
-            <div className="flex gap-2">
-              <input
-                type="text"
-                placeholder="Skriv din melding..."
-                className="flex-1 px-3 py-2 border border-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-              />
-              <Button size="sm" className="px-3">
-                Send
-              </Button>
+          ))}
+          {isLoading && (
+            <div className="flex justify-start">
+              <div className="bg-blue-50 p-3 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                  <span className="text-sm text-blue-900">AI-Revi skriver...</span>
+                </div>
+              </div>
             </div>
-          </div>
+          )}
+        </div>
+      </div>
+      
+      {/* Input Area */}
+      <div className="border-t border-border p-4 flex-shrink-0">
+        <div className="flex gap-2">
+          <Input
+            type="text"
+            placeholder="Skriv din melding..."
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            onKeyDown={handleKeyDown}
+            disabled={isLoading}
+            className="flex-1 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+          />
+          <Button 
+            size="sm" 
+            onClick={handleSendMessage}
+            disabled={isLoading || !message.trim()}
+            className="px-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+          >
+            {isLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Send className="h-4 w-4" />
+            )}
+          </Button>
         </div>
       </div>
     </div>

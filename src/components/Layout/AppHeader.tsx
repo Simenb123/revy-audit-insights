@@ -28,9 +28,9 @@ const AppHeader = ({ onToggleRightSidebar, isRightSidebarCollapsed }: AppHeaderP
           )}
         </div>
         
-        {/* Right Sidebar Toggle */}
+        {/* Right Sidebar Toggle - Only show on desktop when not mobile */}
         <div className="flex items-center gap-2">
-          {onToggleRightSidebar && (
+          {onToggleRightSidebar && !isMobile && (
             <Button
               variant="ghost"
               size="icon"
