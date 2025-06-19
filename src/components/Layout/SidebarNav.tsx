@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { cn } from "@/lib/utils";
 import { 
   Users, 
   Home, 
@@ -15,15 +16,6 @@ import {
   FileText,
   Brain
 } from 'lucide-react';
-import {
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-} from "@/components/ui/sidebar";
-
 import { TooltipProvider, Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface SidebarNavProps {
@@ -112,19 +104,27 @@ const SidebarNav = ({ collapsed = false }: SidebarNavProps) => {
     return location.pathname.startsWith(path) && !location.pathname.includes('/clients/');
   };
 
-  // Helper to render an item (icon only + tooltip when collapsed)
   const renderMenuItem = (item: { to: string, icon: any, label: string }) => {
+    const Icon = item.icon;
+    const active = isActive(item.to);
+    
     if (collapsed) {
       return (
         <TooltipProvider delayDuration={0} key={item.to}>
           <Tooltip>
             <TooltipTrigger asChild>
-              <SidebarMenuButton asChild isActive={isActive(item.to)} className="justify-center">
-                <Link to={item.to}>
-                  <item.icon />
-                  <span className="sr-only">{item.label}</span>
-                </Link>
-              </SidebarMenuButton>
+              <Link
+                to={item.to}
+                className={cn(
+                  "flex items-center justify-center w-8 h-8 rounded-md transition-colors",
+                  active 
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground" 
+                    : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                )}
+              >
+                <Icon className="h-4 w-4" />
+                <span className="sr-only">{item.label}</span>
+              </Link>
             </TooltipTrigger>
             <TooltipContent side="right" className="capitalize">
               {item.label}
@@ -133,56 +133,50 @@ const SidebarNav = ({ collapsed = false }: SidebarNavProps) => {
         </TooltipProvider>
       );
     }
-    // Expanded: icon + text label
+
     return (
-      <SidebarMenuItem key={item.to}>
-        <SidebarMenuButton asChild isActive={isActive(item.to)}>
-          <Link to={item.to}>
-            <item.icon />
-            <span>{item.label}</span>
-          </Link>
-        </SidebarMenuButton>
-      </SidebarMenuItem>
+      <Link
+        key={item.to}
+        to={item.to}
+        className={cn(
+          "flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors",
+          active
+            ? "bg-sidebar-accent text-sidebar-accent-foreground"
+            : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+        )}
+      >
+        <Icon className="h-4 w-4" />
+        <span>{item.label}</span>
+      </Link>
     );
   };
 
   return (
-    <>
-      <SidebarGroup>
-        {!collapsed && <SidebarGroupLabel>Hovedmeny</SidebarGroupLabel>}
-        <SidebarGroupContent>
-          <SidebarMenu>
-            {navItems.map((item) =>
-              collapsed
-                ? (
-                  // Only render icon+tooltip; one per line
-                  <SidebarMenuItem key={item.to}>
-                    {renderMenuItem(item)}
-                  </SidebarMenuItem>
-                )
-                : renderMenuItem(item)
-            )}
-          </SidebarMenu>
-        </SidebarGroupContent>
-      </SidebarGroup>
+    <div className="space-y-6">
+      {/* Main navigation */}
+      <div className="space-y-2">
+        {!collapsed && (
+          <h3 className="px-3 text-xs font-semibold text-sidebar-foreground/70 uppercase tracking-wider">
+            Hovedmeny
+          </h3>
+        )}
+        <nav className={cn("space-y-1", collapsed && "flex flex-col items-center space-y-2")}>
+          {navItems.map((item) => renderMenuItem(item))}
+        </nav>
+      </div>
 
-      <SidebarGroup>
-        {!collapsed && <SidebarGroupLabel>System</SidebarGroupLabel>}
-        <SidebarGroupContent>
-          <SidebarMenu>
-            {settingsItems.map((item) =>
-              collapsed
-                ? (
-                  <SidebarMenuItem key={item.to}>
-                    {renderMenuItem(item)}
-                  </SidebarMenuItem>
-                )
-                : renderMenuItem(item)
-            )}
-          </SidebarMenu>
-        </SidebarGroupContent>
-      </SidebarGroup>
-    </>
+      {/* Settings navigation */}
+      <div className="space-y-2">
+        {!collapsed && (
+          <h3 className="px-3 text-xs font-semibold text-sidebar-foreground/70 uppercase tracking-wider">
+            System
+          </h3>
+        )}
+        <nav className={cn("space-y-1", collapsed && "flex flex-col items-center space-y-2")}>
+          {settingsItems.map((item) => renderMenuItem(item))}
+        </nav>
+      </div>
+    </div>
   );
 };
 
