@@ -48,7 +48,7 @@ const KnowledgeOverview = () => {
         <div>
           <h1 className="text-3xl font-bold">Fagstoff</h1>
           <p className="text-muted-foreground">
-            Tilgang til revisjonsartikler, standarder og veiledninger
+            Tilgang til revisjonsartikler, standarder, veiledninger og avansert dokumenthåndtering
           </p>
         </div>
         <Button asChild>
@@ -172,16 +172,16 @@ const KnowledgeOverview = () => {
                   <div className="text-center">
                     <span className="text-red-900">🤫 AI-treningsområde</span>
                     <Badge variant="secondary" className="mt-1 bg-red-100 text-red-800">
-                      Hemmelig
+                      Avansert
                     </Badge>
                   </div>
                 </Link>
               </Button>
               
-              <div className="flex flex-col items-center gap-2 p-4 border rounded-lg bg-gray-50">
-                <Eye className="h-6 w-6 text-gray-400" />
-                <span className="text-gray-600">Flere admin-funksjoner</span>
-                <Badge variant="outline">Kommer snart</Badge>
+              <div className="flex flex-col items-center gap-2 p-4 border rounded-lg bg-blue-50">
+                <Brain className="h-6 w-6 text-blue-600" />
+                <span className="text-blue-900">Dokumenttype-manager</span>
+                <Badge variant="outline" className="bg-blue-100 text-blue-800">Ny!</Badge>
               </div>
             </div>
           </CardContent>
@@ -214,10 +214,10 @@ const KnowledgeOverview = () => {
             
             <div className="flex items-center justify-between p-3 border rounded-lg">
               <div>
-                <h4 className="font-medium">Digital dokumentasjon</h4>
-                <p className="text-sm text-gray-600">Best practices for digitale revisjonsarkiv</p>
+                <h4 className="font-medium">AI-forbedret dokumentanalyse</h4>
+                <p className="text-sm text-gray-600">Ny funksjonalitet for automatisk kategorisering</p>
               </div>
-              <Badge variant="secondary">Guide</Badge>
+              <Badge variant="secondary" className="bg-purple-100 text-purple-800">AI</Badge>
             </div>
           </div>
         </CardContent>

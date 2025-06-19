@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
@@ -15,14 +14,15 @@ import {
   Database,
   Settings,
   BookOpen,
-  Target
+  Target,
+  Zap
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
 import TrainingDocumentUploader from './TrainingDocumentUploader';
 import TrainingDocumentLibrary from './TrainingDocumentLibrary';
 import AIAnalysisPatterns from './AIAnalysisPatterns';
+import DocumentTypeTrainer from './DocumentTypeTrainer';
 
 const SecretTrainingArea = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -69,7 +69,7 @@ const SecretTrainingArea = () => {
               <div>
                 <CardTitle className="text-red-900">🤫 Hemmelig AI-treningsområde</CardTitle>
                 <p className="text-red-700 text-sm">
-                  Konfidensielt område for AI-forbedring og treningsdata
+                  Konfidensielt område for AI-forbedring og dokumenttype-trening
                 </p>
               </div>
             </div>
@@ -102,7 +102,7 @@ const SecretTrainingArea = () => {
                   <FileText className="h-5 w-5 text-blue-600" />
                   <div>
                     <p className="text-sm text-gray-600">Treningsdokumenter</p>
-                    <p className="text-2xl font-bold">47</p>
+                    <p className="text-2xl font-bold">64</p>
                   </div>
                 </div>
               </CardContent>
@@ -111,10 +111,10 @@ const SecretTrainingArea = () => {
             <Card>
               <CardContent className="p-4">
                 <div className="flex items-center gap-2">
-                  <Database className="h-5 w-5 text-green-600" />
+                  <Brain className="h-5 w-5 text-purple-600" />
                   <div>
-                    <p className="text-sm text-gray-600">Analysemønstre</p>
-                    <p className="text-2xl font-bold">23</p>
+                    <p className="text-sm text-gray-600">AI-modeller</p>
+                    <p className="text-2xl font-bold">6</p>
                   </div>
                 </div>
               </CardContent>
@@ -123,10 +123,10 @@ const SecretTrainingArea = () => {
             <Card>
               <CardContent className="p-4">
                 <div className="flex items-center gap-2">
-                  <Target className="h-5 w-5 text-purple-600" />
+                  <Target className="h-5 w-5 text-green-600" />
                   <div>
-                    <p className="text-sm text-gray-600">Suksessrate</p>
-                    <p className="text-2xl font-bold">87%</p>
+                    <p className="text-sm text-gray-600">Nøyaktighet</p>
+                    <p className="text-2xl font-bold">91%</p>
                   </div>
                 </div>
               </CardContent>
@@ -135,10 +135,10 @@ const SecretTrainingArea = () => {
             <Card>
               <CardContent className="p-4">
                 <div className="flex items-center gap-2">
-                  <Brain className="h-5 w-5 text-orange-600" />
+                  <Zap className="h-5 w-5 text-orange-600" />
                   <div>
-                    <p className="text-sm text-gray-600">AI-forbedringer</p>
-                    <p className="text-2xl font-bold">+12%</p>
+                    <p className="text-sm text-gray-600">Forbedringer</p>
+                    <p className="text-2xl font-bold">+15%</p>
                   </div>
                 </div>
               </CardContent>
@@ -147,7 +147,7 @@ const SecretTrainingArea = () => {
 
           {/* Main Tabs */}
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="library" className="flex items-center gap-2">
                 <BookOpen className="h-4 w-4" />
                 Dokumentbibliotek
@@ -155,6 +155,10 @@ const SecretTrainingArea = () => {
               <TabsTrigger value="upload" className="flex items-center gap-2">
                 <Upload className="h-4 w-4" />
                 Last opp treningsdata
+              </TabsTrigger>
+              <TabsTrigger value="trainer" className="flex items-center gap-2">
+                <Zap className="h-4 w-4" />
+                Dokumenttype-trener
               </TabsTrigger>
               <TabsTrigger value="patterns" className="flex items-center gap-2">
                 <Brain className="h-4 w-4" />
@@ -172,6 +176,10 @@ const SecretTrainingArea = () => {
 
             <TabsContent value="upload">
               <TrainingDocumentUploader />
+            </TabsContent>
+
+            <TabsContent value="trainer">
+              <DocumentTypeTrainer />
             </TabsContent>
 
             <TabsContent value="patterns">
@@ -195,11 +203,11 @@ const SecretTrainingArea = () => {
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="text-sm font-medium">AI-læringsrate</label>
-                        <Input type="number" defaultValue="0.85" step="0.01" />
+                        <input type="number" defaultValue="0.85" step="0.01" className="w-full p-2 border rounded" />
                       </div>
                       <div>
                         <label className="text-sm font-medium">Minimum konfidens</label>
-                        <Input type="number" defaultValue="0.70" step="0.01" />
+                        <input type="number" defaultValue="0.70" step="0.01" className="w-full p-2 border rounded" />
                       </div>
                     </div>
                   </div>

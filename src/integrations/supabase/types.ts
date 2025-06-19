@@ -1345,6 +1345,285 @@ export type Database = {
         }
         Relationships: []
       }
+      document_metadata: {
+        Row: {
+          amount_fields: Json | null
+          column_mappings: Json | null
+          contract_date: string | null
+          created_at: string
+          detected_system: string | null
+          document_id: string
+          document_type_id: string | null
+          employee_id: string | null
+          id: string
+          period_end: string | null
+          period_month: number | null
+          period_start: string | null
+          period_year: number | null
+          processing_notes: string | null
+          quality_score: number | null
+          updated_at: string
+          validation_errors: Json | null
+          validation_status: string | null
+        }
+        Insert: {
+          amount_fields?: Json | null
+          column_mappings?: Json | null
+          contract_date?: string | null
+          created_at?: string
+          detected_system?: string | null
+          document_id: string
+          document_type_id?: string | null
+          employee_id?: string | null
+          id?: string
+          period_end?: string | null
+          period_month?: number | null
+          period_start?: string | null
+          period_year?: number | null
+          processing_notes?: string | null
+          quality_score?: number | null
+          updated_at?: string
+          validation_errors?: Json | null
+          validation_status?: string | null
+        }
+        Update: {
+          amount_fields?: Json | null
+          column_mappings?: Json | null
+          contract_date?: string | null
+          created_at?: string
+          detected_system?: string | null
+          document_id?: string
+          document_type_id?: string | null
+          employee_id?: string | null
+          id?: string
+          period_end?: string | null
+          period_month?: number | null
+          period_start?: string | null
+          period_year?: number | null
+          processing_notes?: string | null
+          quality_score?: number | null
+          updated_at?: string
+          validation_errors?: Json | null
+          validation_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_metadata_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "client_documents_files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_metadata_document_type_id_fkey"
+            columns: ["document_type_id"]
+            isOneToOne: false
+            referencedRelation: "document_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_relationships: {
+        Row: {
+          child_document_id: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          parent_document_id: string
+          relationship_type: string
+        }
+        Insert: {
+          child_document_id: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          parent_document_id: string
+          relationship_type: string
+        }
+        Update: {
+          child_document_id?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          parent_document_id?: string
+          relationship_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_relationships_child_document_id_fkey"
+            columns: ["child_document_id"]
+            isOneToOne: false
+            referencedRelation: "client_documents_files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_relationships_parent_document_id_fkey"
+            columns: ["parent_document_id"]
+            isOneToOne: false
+            referencedRelation: "client_documents_files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_tag_assignments: {
+        Row: {
+          assigned_by_ai: boolean | null
+          confidence_score: number | null
+          created_at: string
+          document_id: string
+          id: string
+          tag_id: string
+        }
+        Insert: {
+          assigned_by_ai?: boolean | null
+          confidence_score?: number | null
+          created_at?: string
+          document_id: string
+          id?: string
+          tag_id: string
+        }
+        Update: {
+          assigned_by_ai?: boolean | null
+          confidence_score?: number | null
+          created_at?: string
+          document_id?: string
+          id?: string
+          tag_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_tag_assignments_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "client_documents_files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_tag_assignments_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "document_tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_tags: {
+        Row: {
+          color: string | null
+          created_at: string
+          description: string | null
+          display_name: string
+          id: string
+          is_system_tag: boolean | null
+          name: string
+          usage_count: number | null
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          display_name: string
+          id?: string
+          is_system_tag?: boolean | null
+          name: string
+          usage_count?: number | null
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          display_name?: string
+          id?: string
+          is_system_tag?: boolean | null
+          name?: string
+          usage_count?: number | null
+        }
+        Relationships: []
+      }
+      document_type_categories: {
+        Row: {
+          category_id: string
+          created_at: string
+          document_type_id: string
+          id: string
+          is_primary: boolean | null
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          document_type_id: string
+          id?: string
+          is_primary?: boolean | null
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          document_type_id?: string
+          id?: string
+          is_primary?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_type_categories_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "document_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_type_categories_document_type_id_fkey"
+            columns: ["document_type_id"]
+            isOneToOne: false
+            referencedRelation: "document_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_types: {
+        Row: {
+          created_at: string
+          description: string | null
+          display_name: string
+          expected_structure: Json | null
+          file_pattern_hints: string[] | null
+          id: string
+          is_standard: boolean | null
+          name: string
+          sort_order: number | null
+          updated_at: string
+          validation_rules: Json | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          display_name: string
+          expected_structure?: Json | null
+          file_pattern_hints?: string[] | null
+          id?: string
+          is_standard?: boolean | null
+          name: string
+          sort_order?: number | null
+          updated_at?: string
+          validation_rules?: Json | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          display_name?: string
+          expected_structure?: Json | null
+          file_pattern_hints?: string[] | null
+          id?: string
+          is_standard?: boolean | null
+          name?: string
+          sort_order?: number | null
+          updated_at?: string
+          validation_rules?: Json | null
+        }
+        Relationships: []
+      }
       document_versions: {
         Row: {
           change_description: string | null
