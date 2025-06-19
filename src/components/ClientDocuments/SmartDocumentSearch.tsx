@@ -1,23 +1,30 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { 
   Search, 
-  Filter, 
-  Calendar, 
-  Tag, 
-  FileText, 
-  Brain,
-  TrendingUp,
-  AlertCircle,
+  Brain, 
+  Loader2,
   CheckCircle,
-  Clock
+  AlertTriangle,
+  Calendar,
+  FileText,
+  Sparkles,
+  TrendingUp
 } from 'lucide-react';
-import { useDocumentTypes, useDocumentTags } from '@/hooks/useDocumentTypes';
+import { 
+  performSemanticSearch, 
+  generateSearchSuggestions,
+  SearchQuery,
+  SearchResult,
+  SearchSuggestion 
+} from '@/services/documentSearch/semanticSearchService';
+import { useClientDocuments } from '@/hooks/useClientDocuments';
+import SearchRecommendationEngine from './SearchRecommendationEngine';
+import { toast } from 'sonner';
 
 interface SmartDocumentSearchProps {
   clientId: string;
@@ -25,43 +32,87 @@ interface SmartDocumentSearchProps {
 
 const SmartDocumentSearch: React.FC<SmartDocumentSearchProps> = ({ clientId }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedType, setSelectedType] = useState('');
-  const [selectedPeriod, setSelectedPeriod] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState('');
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
+  const [selectedFilters, setSelectedFilters] = useState<SearchQuery['filters']>({});
 
-  const { data: documentTypes = [] } = useDocumentTypes();
-  const { data: documentTags = [] } = useDocumentTags();
+  const { getDocumentUrl } = useClientDocuments(clientId);
 
-  const smartSearchSuggestions = [
-    {
-      icon: <TrendingUp className="h-4 w-4" />,
-      label: "Sammenlign saldobalanser 2022-2024",
-      filters: { type: 'saldobalanse', period: 'multi-year' }
-    },
-    {
-      icon: <AlertCircle className="h-4 w-4" />,
-      label: "Dokumenter som trenger gjennomgang",
-      filters: { status: 'pending', tags: ['manual_review'] }
-    },
-    {
-      icon: <Calendar className="h-4 w-4" />,
-      label: "Årsoppgjørsdokumenter 2024",
-      filters: { period: '2024', tags: ['year_end'] }
-    },
-    {
-      icon: <CheckCircle className="h-4 w-4" />,
-      label: "AI-validerte dokumenter",
-      filters: { status: 'validated', tags: ['automated'] }
+  useEffect(() => {
+    loadSearchSuggestions();
+  }, [clientId]);
+
+  const loadSearchSuggestions = async () => {
+    try {
+      const suggestionData = await generateSearchSuggestions(clientId);
+      setSuggestions(suggestionData);
+    } catch (error) {
+      console.error('Failed to load search suggestions:', error);
     }
-  ];
+  };
 
-  const handleSmartSearch = (suggestion: typeof smartSearchSuggestions[0]) => {
-    // Apply smart search filters
-    if (suggestion.filters.type) setSelectedType(suggestion.filters.type);
-    if (suggestion.filters.period) setSelectedPeriod(suggestion.filters.period);
-    if (suggestion.filters.status) setSelectedStatus(suggestion.filters.status);
-    if (suggestion.filters.tags) setSelectedTags(suggestion.filters.tags);
+  const handleSearch = async (queryTerm?: string) => {
+    const term = queryTerm || searchTerm;
+    if (!term.trim()) {
+      setSearchResults([]);
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      const query: SearchQuery = {
+        term,
+        clientId,
+        filters: selectedFilters
+      };
+
+      const results = await performSemanticSearch(query);
+      setSearchResults(results);
+
+      if (results.length === 0) {
+        toast.error(`Ingen resultater funnet for "${term}"`);
+      } else {
+        toast.success(`Fant ${results.length} relevante dokumenter`);
+      }
+    } catch (error) {
+      console.error('Search error:', error);
+      toast.error('Søket feilet - prøv igjen');
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleRecommendationSearch = (query: string) => {
+    setSearchTerm(query);
+    handleSearch(query);
+  };
+
+  const handleSuggestionClick = (suggestion: SearchSuggestion) => {
+    setSearchTerm(suggestion.query);
+    handleSearch(suggestion.query);
+  };
+
+  const handleDownload = async (result: SearchResult) => {
+    try {
+      const url = await getDocumentUrl(result.document.file_path);
+      if (url) {
+        window.open(url, '_blank');
+      }
+    } catch (error) {
+      toast.error('Kunne ikke laste ned dokumentet');
+    }
+  };
+
+  const getConfidenceIcon = (score?: number) => {
+    if (!score) return <AlertTriangle className="h-4 w-4 text-gray-400" />;
+    if (score >= 0.8) return <CheckCircle className="h-4 w-4 text-green-600" />;
+    if (score >= 0.6) return <AlertTriangle className="h-4 w-4 text-yellow-600" />;
+    return <AlertTriangle className="h-4 w-4 text-red-600" />;
+  };
+
+  const formatRelevanceScore = (score: number) => {
+    return `${Math.round(score * 100)}% match`;
   };
 
   return (
@@ -69,150 +120,208 @@ const SmartDocumentSearch: React.FC<SmartDocumentSearchProps> = ({ clientId }) =
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Brain className="h-5 w-5" />
-            Intelligent dokumentsøk
+            <Brain className="h-5 w-5 text-purple-600" />
+            AI-Revi Smart Søk
           </CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Intelligente søk som forstår mening og sammenheng
+          </p>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Main Search */}
+          {/* Search Input */}
           <div className="relative">
             <Search className="h-4 w-4 absolute left-3 top-3 text-gray-400" />
             <Input
-              placeholder="Søk i dokumenter, metadata, AI-analyser..."
+              placeholder="Søk på konsepter som 'manglende bilag Q4', 'lønn desember', eller 'dokumenter som trenger gjennomgang'..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
+              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+              className="pl-10 pr-20"
             />
+            <Button
+              onClick={() => handleSearch()}
+              disabled={isSearching || !searchTerm.trim()}
+              className="absolute right-2 top-1.5 h-7"
+              size="sm"
+            >
+              {isSearching ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <Sparkles className="h-3 w-3" />
+              )}
+            </Button>
           </div>
 
-          {/* Advanced Filters */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Select value={selectedType} onValueChange={setSelectedType}>
-              <SelectTrigger>
-                <FileText className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Dokumenttype" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">Alle typer</SelectItem>
-                {documentTypes.map(type => (
-                  <SelectItem key={type.id} value={type.name}>
-                    {type.display_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-              <SelectTrigger>
-                <Calendar className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Periode" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">Alle perioder</SelectItem>
-                <SelectItem value="2024">2024</SelectItem>
-                <SelectItem value="2023">2023</SelectItem>
-                <SelectItem value="2022">2022</SelectItem>
-                <SelectItem value="q4-2024">Q4 2024</SelectItem>
-                <SelectItem value="q3-2024">Q3 2024</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-              <SelectTrigger>
-                <Filter className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">Alle statuser</SelectItem>
-                <SelectItem value="validated">Validert</SelectItem>
-                <SelectItem value="pending">Venter</SelectItem>
-                <SelectItem value="failed">Feilet</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <div className="flex items-center gap-2">
-              <Tag className="h-4 w-4 text-gray-400" />
-              <div className="flex flex-wrap gap-1">
-                {selectedTags.length > 0 ? (
-                  selectedTags.map(tagId => {
-                    const tag = documentTags.find(t => t.id === tagId);
-                    return tag ? (
-                      <Badge key={tagId} variant="secondary" className="text-xs">
-                        {tag.display_name}
-                      </Badge>
-                    ) : null;
-                  })
-                ) : (
-                  <span className="text-sm text-gray-500">Ingen tags valgt</span>
-                )}
-              </div>
-            </div>
+          {/* Quick Filters */}
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant={selectedFilters.aiValidated ? "default" : "outline"}
+              size="sm"
+              onClick={() => setSelectedFilters(prev => ({ 
+                ...prev, 
+                aiValidated: !prev.aiValidated 
+              }))}
+            >
+              <CheckCircle className="h-3 w-3 mr-1" />
+              AI-validerte
+            </Button>
+            <Button
+              variant={selectedFilters.confidenceLevel === 'low' ? "default" : "outline"}
+              size="sm"
+              onClick={() => setSelectedFilters(prev => ({ 
+                ...prev, 
+                confidenceLevel: prev.confidenceLevel === 'low' ? undefined : 'low' 
+              }))}
+            >
+              <AlertTriangle className="h-3 w-3 mr-1" />
+              Trenger gjennomgang
+            </Button>
           </div>
 
-          {/* Smart Search Suggestions */}
+          {/* Smart Suggestions */}
           <div>
             <h4 className="text-sm font-medium mb-3 flex items-center gap-1">
-              <Brain className="h-4 w-4" />
-              Smart søk-forslag
+              <TrendingUp className="h-4 w-4" />
+              Smarte søkeforslag
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              {smartSearchSuggestions.map((suggestion, index) => (
+              {suggestions.map((suggestion, index) => (
                 <Button
                   key={index}
                   variant="outline"
                   size="sm"
-                  onClick={() => handleSmartSearch(suggestion)}
-                  className="justify-start h-auto p-3"
+                  onClick={() => handleSuggestionClick(suggestion)}
+                  className="justify-start h-auto p-3 text-left"
                 >
-                  <div className="flex items-center gap-2">
-                    {suggestion.icon}
-                    <span className="text-sm">{suggestion.label}</span>
+                  <div className="flex items-start gap-2 w-full">
+                    <span className="text-lg">{suggestion.icon}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-sm">{suggestion.description}</div>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Badge variant="secondary" className="text-xs">
+                          {suggestion.category}
+                        </Badge>
+                        {suggestion.estimatedResults > 0 && (
+                          <span className="text-xs text-muted-foreground">
+                            ~{suggestion.estimatedResults} resultater
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </Button>
               ))}
             </div>
           </div>
 
-          {/* Search Results Preview */}
-          <div className="border-t pt-4">
-            <div className="flex items-center justify-between mb-3">
-              <h4 className="text-sm font-medium">Søkeresultater</h4>
-              <span className="text-xs text-gray-500">47 dokumenter funnet</span>
-            </div>
-            
-            <div className="space-y-2">
-              {/* Mock search results */}
-              <div className="p-3 border rounded-lg hover:bg-gray-50">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h5 className="font-medium text-sm">Hovedbok_2024_Q4.xlsx</h5>
-                    <p className="text-xs text-gray-600">Visma Business • Q4 2024 • 98% AI-sikkerhet</p>
-                    <div className="flex gap-1 mt-1">
-                      <Badge variant="secondary" className="text-xs">Hovedbok</Badge>
-                      <Badge variant="outline" className="text-xs">Validert</Badge>
-                    </div>
-                  </div>
-                  <CheckCircle className="h-4 w-4 text-green-600" />
-                </div>
+          {/* Search Results */}
+          {searchResults.length > 0 && (
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="text-sm font-medium">
+                  Søkeresultater ({searchResults.length})
+                </h4>
+                <Badge variant="outline" className="text-xs">
+                  Rangert etter relevans
+                </Badge>
               </div>
               
-              <div className="p-3 border rounded-lg hover:bg-gray-50">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h5 className="font-medium text-sm">Saldobalanse_des_2024.pdf</h5>
-                    <p className="text-xs text-gray-600">PowerOffice • Desember 2024 • 92% AI-sikkerhet</p>
-                    <div className="flex gap-1 mt-1">
-                      <Badge variant="secondary" className="text-xs">Saldobalanse</Badge>
-                      <Badge variant="outline" className="text-xs">Trenger gjennomgang</Badge>
-                    </div>
-                  </div>
-                  <Clock className="h-4 w-4 text-yellow-600" />
-                </div>
+              <div className="space-y-3">
+                {searchResults.map((result, index) => (
+                  <Card key={index} className="hover:shadow-md transition-shadow">
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-2">
+                            <FileText className="h-4 w-4 text-gray-500" />
+                            <h5 className="font-medium text-sm truncate">
+                              {result.document.file_name}
+                            </h5>
+                            {getConfidenceIcon(result.document.ai_confidence_score)}
+                            <Badge variant="secondary" className="text-xs ml-auto">
+                              {formatRelevanceScore(result.relevanceScore)}
+                            </Badge>
+                          </div>
+                          
+                          <div className="flex flex-wrap gap-1 mb-2">
+                            {result.document.category && (
+                              <Badge variant="outline" className="text-xs">
+                                {result.document.category}
+                              </Badge>
+                            )}
+                            {result.document.ai_confidence_score && (
+                              <Badge 
+                                variant="outline" 
+                                className={`text-xs ${
+                                  result.document.ai_confidence_score >= 0.8 
+                                    ? 'bg-green-50 text-green-700' 
+                                    : result.document.ai_confidence_score >= 0.6
+                                    ? 'bg-yellow-50 text-yellow-700'
+                                    : 'bg-red-50 text-red-700'
+                                }`}
+                              >
+                                {Math.round(result.document.ai_confidence_score * 100)}% AI-sikkerhet
+                              </Badge>
+                            )}
+                          </div>
+
+                          <div className="text-xs text-gray-600 mb-2">
+                            <strong>Match grunner:</strong> {result.matchReasons.join(', ')}
+                          </div>
+
+                          {result.suggestedActions && result.suggestedActions.length > 0 && (
+                            <div className="text-xs">
+                              <strong className="text-purple-700">AI-anbefalinger:</strong>
+                              <ul className="mt-1 space-y-1">
+                                {result.suggestedActions.map((action, actionIndex) => (
+                                  <li key={actionIndex} className="flex items-center gap-1 text-purple-600">
+                                    <span>•</span>
+                                    <span>{action}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+
+                          <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
+                            <Calendar className="h-3 w-3" />
+                            <span>
+                              Lastet opp {new Date(result.document.created_at).toLocaleDateString()}
+                            </span>
+                          </div>
+                        </div>
+
+                        <Button
+                          onClick={() => handleDownload(result)}
+                          size="sm"
+                          variant="outline"
+                          className="ml-3"
+                        >
+                          Åpne
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
             </div>
-          </div>
+          )}
+
+          {searchTerm && searchResults.length === 0 && !isSearching && (
+            <div className="text-center py-8 text-gray-500">
+              <Search className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+              <p>Ingen dokumenter matcher søket ditt</p>
+              <p className="text-xs mt-1">Prøv andre søkeord eller bruk forslagene over</p>
+            </div>
+          )}
         </CardContent>
       </Card>
+
+      {/* AI Recommendations */}
+      <SearchRecommendationEngine 
+        clientId={clientId}
+        onSearchRecommendation={handleRecommendationSearch}
+      />
     </div>
   );
 };
