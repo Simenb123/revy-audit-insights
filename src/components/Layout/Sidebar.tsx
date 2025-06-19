@@ -4,6 +4,8 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import SidebarNav from './SidebarNav';
+import ClientNav from './ClientNav';
+import { useLocation, useParams } from 'react-router-dom';
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -11,6 +13,12 @@ interface SidebarProps {
 }
 
 const Sidebar = ({ isCollapsed, onToggle }: SidebarProps) => {
+  const location = useLocation();
+  const { orgNumber } = useParams<{ orgNumber: string }>();
+  
+  // Check if we're in a client context
+  const isClientContext = location.pathname.includes('/klienter/') && orgNumber;
+
   return (
     <div className={cn(
       "h-full bg-sidebar border-r border-sidebar-border transition-all duration-300",
@@ -32,7 +40,11 @@ const Sidebar = ({ isCollapsed, onToggle }: SidebarProps) => {
         
         {/* Navigation Content */}
         <div className="flex-1 p-4 overflow-y-auto">
-          <SidebarNav collapsed={isCollapsed} />
+          {isClientContext ? (
+            <ClientNav />
+          ) : (
+            <SidebarNav collapsed={isCollapsed} />
+          )}
         </div>
       </div>
     </div>

@@ -12,14 +12,7 @@ import {
   Users,
   Receipt
 } from 'lucide-react';
-import {
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-} from "@/components/ui/sidebar";
+import { cn } from "@/lib/utils";
 
 const ClientNav = () => {
   const location = useLocation();
@@ -75,63 +68,81 @@ const ClientNav = () => {
   };
 
   return (
-    <>
-      <SidebarGroup>
-        <SidebarGroupContent>
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild>
-                <Link to="/klienter">
-                  <ArrowLeft />
-                  <span>Tilbake til klienter</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarGroupContent>
-      </SidebarGroup>
+    <div className="space-y-6">
+      {/* Back to clients */}
+      <div className="space-y-2">
+        <Link
+          to="/klienter"
+          className="flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          <span>Tilbake til klienter</span>
+        </Link>
+      </div>
 
-      <SidebarGroup>
-        <SidebarGroupLabel>Klientmeny</SidebarGroupLabel>
-        <SidebarGroupContent>
-          <SidebarMenu>
-            {clientNavItems.map((item) => (
-              <SidebarMenuItem key={item.to}>
-                <SidebarMenuButton asChild isActive={isActive(item.to)}>
-                  <Link to={item.to}>
-                    <item.icon />
-                    <span>{item.label}</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            ))}
-          </SidebarMenu>
-        </SidebarGroupContent>
-      </SidebarGroup>
+      {/* Client navigation */}
+      <div className="space-y-2">
+        <h3 className="px-3 text-xs font-semibold text-sidebar-foreground/70 uppercase tracking-wider">
+          Klientmeny
+        </h3>
+        <nav className="space-y-1">
+          {clientNavItems.map((item) => {
+            const Icon = item.icon;
+            const active = isActive(item.to);
+            
+            return (
+              <Link
+                key={item.to}
+                to={item.to}
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors",
+                  active
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                    : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                )}
+              >
+                <Icon className="h-4 w-4" />
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
+      </div>
 
-      <SidebarGroup>
-        <SidebarGroupLabel>Dataopplasting</SidebarGroupLabel>
-        <SidebarGroupContent>
-          <SidebarMenu>
-            {dataItems.map((item) => (
-              <SidebarMenuItem key={item.to}>
-                <SidebarMenuButton asChild isActive={isActive(item.to)}>
-                  <Link to={item.to} className="flex flex-col items-start">
-                    <div className="flex items-center gap-2">
-                      <item.icon />
-                      <span>{item.label}</span>
-                    </div>
-                    <span className="text-xs text-muted-foreground ml-6">
-                      {item.description}
-                    </span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            ))}
-          </SidebarMenu>
-        </SidebarGroupContent>
-      </SidebarGroup>
-    </>
+      {/* Data upload section */}
+      <div className="space-y-2">
+        <h3 className="px-3 text-xs font-semibold text-sidebar-foreground/70 uppercase tracking-wider">
+          Dataopplasting
+        </h3>
+        <nav className="space-y-1">
+          {dataItems.map((item) => {
+            const Icon = item.icon;
+            const active = isActive(item.to);
+            
+            return (
+              <Link
+                key={item.to}
+                to={item.to}
+                className={cn(
+                  "flex flex-col items-start gap-1 px-3 py-2 rounded-md text-sm transition-colors",
+                  active
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                    : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                )}
+              >
+                <div className="flex items-center gap-2">
+                  <Icon className="h-4 w-4" />
+                  <span className="font-medium">{item.label}</span>
+                </div>
+                <span className="text-xs text-muted-foreground ml-6">
+                  {item.description}
+                </span>
+              </Link>
+            );
+          })}
+        </nav>
+      </div>
+    </div>
   );
 };
 

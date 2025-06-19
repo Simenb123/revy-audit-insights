@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { useLocation, Link } from 'react-router-dom';
+import { useLocation, Link, useParams } from 'react-router-dom';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -10,9 +10,12 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { Home } from 'lucide-react';
+import { useClientDetails } from '@/hooks/useClientDetails';
 
 const AppBreadcrumb = () => {
   const location = useLocation();
+  const { orgNumber } = useParams<{ orgNumber: string }>();
+  const { data: client } = useClientDetails(orgNumber || '');
   const pathSegments = location.pathname.split('/').filter(Boolean);
 
   const getBreadcrumbName = (segment: string, index: number) => {
@@ -38,8 +41,18 @@ const AppBreadcrumb = () => {
       '/ledger': 'Reskontro',
       '/accounting': 'Regnskap',
       '/data-import': 'Dataimport',
-      '/audit-logs': 'Revisjonslogger'
+      '/audit-logs': 'Revisjonslogger',
+      '/regnskap': 'Regnskap',
+      '/regnskapsdata': 'Regnskapsdata',
+      '/spesialdata': 'Spesialdata',
+      '/transaksjoner': 'Transaksjoner',
+      '/import': 'Import'
     };
+
+    // If this is a client org number, use the client name
+    if (segment.match(/^\d+$/) && client) {
+      return client.company_name || client.name;
+    }
 
     return routeNames[fullPath] || segment.charAt(0).toUpperCase() + segment.slice(1);
   };

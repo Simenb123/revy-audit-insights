@@ -47,8 +47,8 @@ const AppLayout = () => {
         
         <div className="flex-1 flex min-h-0">
           {/* Main Content */}
-          <main className={`flex-1 overflow-auto transition-all duration-300 ${
-            isRightSidebarExpanded ? 'hidden md:block' : ''
+          <main className={`flex-1 overflow-auto ${
+            isRightSidebarExpanded ? 'hidden lg:block' : ''
           }`}>
             <Outlet />
           </main>
@@ -57,7 +57,7 @@ const AppLayout = () => {
           {!isMobile && (
             <div className={`
               transition-all duration-300 flex-shrink-0 border-l border-border
-              ${isRightSidebarCollapsed ? 'w-12' : isRightSidebarExpanded ? 'w-full md:w-96' : 'w-80'}
+              ${isRightSidebarCollapsed ? 'w-12' : isRightSidebarExpanded ? 'w-full max-w-2xl' : 'w-80'}
               ${isRightSidebarExpanded ? 'fixed inset-0 z-50 bg-background' : 'relative'}
             `}>
               <RightSidebar
