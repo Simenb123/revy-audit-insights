@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -33,7 +34,35 @@ const ImprovedClientDocumentManager: React.FC<ImprovedClientDocumentManagerProps
   clientName
 }) => {
   const [activeTab, setActiveTab] = useState('overview');
-  const { documents, isLoading, refetch } = useClientDocuments(clientId);
+  const { documents, isLoading, refetch, categories, documentsByCategory } = useClientDocuments(clientId);
+  const [selectedDocuments, setSelectedDocuments] = useState<any[]>([]);
+
+  // Mock AI suggestions for SmartCategoryPanel
+  const mockAISuggestions = [
+    {
+      category: 'Hovedbok',
+      confidence: 0.9,
+      reasoning: 'Dokumentet inneholder kontoplaner og posteringer',
+      keywords: ['hovedbok', 'konto', 'postering']
+    }
+  ];
+
+  const handleAcceptSuggestion = (category: string) => {
+    console.log('Accepted suggestion:', category);
+  };
+
+  const handleRejectSuggestion = (category: string) => {
+    console.log('Rejected suggestion:', category);
+  };
+
+  const handleCloseManager = () => {
+    setSelectedDocuments([]);
+  };
+
+  const handleUpdateDocuments = () => {
+    refetch();
+    setSelectedDocuments([]);
+  };
 
   const tabs = [
     {
@@ -44,12 +73,12 @@ const ImprovedClientDocumentManager: React.FC<ImprovedClientDocumentManagerProps
         <div className="space-y-6">
           <DocumentUploader 
             clientId={clientId}
-            onUploadComplete={refetch}
+            categories={categories || []}
           />
           <DocumentList 
-            clientId={clientId}
-            documents={documents}
-            onRefresh={refetch}
+            documents={documents || []}
+            documentsByCategory={documentsByCategory || {}}
+            isLoading={isLoading}
           />
         </div>
       )
@@ -77,15 +106,29 @@ const ImprovedClientDocumentManager: React.FC<ImprovedClientDocumentManagerProps
       label: 'Kategorier',
       icon: Filter,
       content: (
-        <SmartCategoryPanel clientId={clientId} />
+        <SmartCategoryPanel 
+          suggestions={mockAISuggestions}
+          onAccept={handleAcceptSuggestion}
+          onReject={handleRejectSuggestion}
+          isVisible={true}
+        />
       )
     },
     {
       id: 'bulk-edit',
       label: 'Bulk Endring',
       icon: FolderOpen,
-      content: (
-        <BulkCategoryManager clientId={clientId} />
+      content: selectedDocuments.length > 0 ? (
+        <BulkCategoryManager 
+          selectedDocuments={selectedDocuments}
+          categories={categories || []}
+          onClose={handleCloseManager}
+          onUpdate={handleUpdateDocuments}
+        />
+      ) : (
+        <div className="text-center text-muted-foreground p-8">
+          Velg dokumenter fra oversikten for å bruke bulk-endring
+        </div>
       )
     },
     {
