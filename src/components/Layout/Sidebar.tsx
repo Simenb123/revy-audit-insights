@@ -1,50 +1,45 @@
 
 import React from 'react';
-import {
-  Sidebar as ShadcnSidebar,
-  SidebarContent,
-  SidebarHeader,
-  useSidebar,
-  SidebarTrigger,
-  SidebarRail
-} from '@/components/ui/sidebar';
-import SidebarNav from './SidebarNav';
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 
-const Sidebar = () => {
-  const { state } = useSidebar();
-  const isCollapsed = state === "collapsed";
+interface SidebarProps {
+  isCollapsed: boolean;
+  onToggle: () => void;
+}
 
+const Sidebar = ({ isCollapsed, onToggle }: SidebarProps) => {
   return (
-    <ShadcnSidebar
-      collapsible="icon"
-      className={`
-        flex flex-col transition-all duration-300
-        shadow-lg border-r border-sidebar-border bg-sidebar z-20
-      `}
-      style={{
-        top: '4rem',
-        height: 'calc(100vh - 4rem)',
-      }}
-      data-collapsed={isCollapsed}
-    >
-      <SidebarRail />
-      <SidebarHeader 
-        className={`flex flex-row items-center px-4 h-14 border-b border-sidebar-border ${isCollapsed ? 'justify-center' : 'justify-between'}`}
-      >
-        <SidebarTrigger
-          className="h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent"
-          aria-label={isCollapsed ? "Utvid sidebar (Ctrl+Shift+B)" : "Skjul sidebar (Ctrl+Shift+B)"}
-        />
-        {!isCollapsed && (
-          <span className="font-semibold text-sidebar-foreground text-base">
-            Menu
-          </span>
-        )}
-      </SidebarHeader>
-      <SidebarContent className="flex-1 p-0">
-        <SidebarNav collapsed={isCollapsed} />
-      </SidebarContent>
-    </ShadcnSidebar>
+    <div className={cn(
+      "h-full bg-sidebar border-r border-sidebar-border transition-all duration-300",
+      isCollapsed ? "w-16" : "w-64"
+    )}>
+      <div className="flex flex-col h-full">
+        {/* Header with toggle */}
+        <div className="p-4 border-b border-sidebar-border">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onToggle}
+            className="h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent"
+            title={isCollapsed ? "Utvid sidebar" : "Trekk inn sidebar"}
+          >
+            {isCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+          </Button>
+        </div>
+        
+        {/* Content */}
+        <div className="flex-1 p-4">
+          {!isCollapsed && (
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium text-sidebar-foreground">Navigasjon</h3>
+              <p className="text-xs text-sidebar-foreground/60">Hovednavigasjon kommer her</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 };
 

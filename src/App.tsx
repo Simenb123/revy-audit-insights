@@ -44,30 +44,32 @@ function App() {
               <Routes>
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/setup" element={<OrganizationSetup />} />
-                <Route path="/" element={<AppLayout><Index /></AppLayout>} />
-                <Route path="/dashboard" element={<AppLayout><NavigationDashboard /></AppLayout>} />
-                <Route path="/clients" element={<AppLayout><ClientsOverview /></AppLayout>} />
-                <Route path="/klienter" element={<AppLayout><ClientsOverview /></AppLayout>} />
-                <Route path="/clients/:id" element={<AppLayout><ClientDetail /></AppLayout>} />
-                <Route path="/klienter/:orgNumber" element={<AppLayout><ClientDetail /></AppLayout>} />
-                <Route path="/client-admin" element={<AppLayout><ClientAdmin /></AppLayout>} />
-                <Route path="/user-admin" element={<AppLayout><UserAdmin /></AppLayout>} />
-                <Route path="/profile" element={<AppLayout><UserProfile /></AppLayout>} />
-                <Route path="/organization/settings" element={<AppLayout><OrganizationSettings /></AppLayout>} />
-                <Route path="/organization" element={<AppLayout><OrganizationOverview /></AppLayout>} />
-                <Route path="/teams" element={<AppLayout><TeamManagement /></AppLayout>} />
-                <Route path="/departments/:id" element={<AppLayout><DepartmentView /></AppLayout>} />
-                <Route path="/communication" element={<AppLayout><Communication /></AppLayout>} />
-                <Route path="/collaboration" element={<AppLayout><Collaboration /></AppLayout>} />
-                <Route path="/training" element={<AppLayout><Training /></AppLayout>} />
-                <Route path="/ledger" element={<AppLayout><LedgerPage /></AppLayout>} />
-                <Route path="/accounting" element={<AppLayout><AccountingData /></AppLayout>} />
-                <Route path="/data-import" element={<AppLayout><DataImport /></AppLayout>} />
-                <Route path="/documents" element={<AppLayout><PDFDocuments /></AppLayout>} />
-                <Route path="/audit-logs" element={<AppLayout><AuditLogs /></AppLayout>} />
-                <Route path="/ai-usage" element={<AppLayout><AIUsage /></AppLayout>} />
-                <Route path="/fag/*" element={<AppLayout><KnowledgeBase /></AppLayout>} />
-                <Route path="/ai-revy-admin" element={<AppLayout><AIRevyAdmin /></AppLayout>} />
+                <Route path="/" element={<AppLayout />}>
+                  <Route index element={<Index />} />
+                  <Route path="dashboard" element={<NavigationDashboard />} />
+                  <Route path="clients" element={<ClientsOverview />} />
+                  <Route path="klienter" element={<ClientsOverview />} />
+                  <Route path="clients/:id" element={<ClientDetail />} />
+                  <Route path="klienter/:orgNumber" element={<ClientDetail />} />
+                  <Route path="client-admin" element={<ClientAdmin />} />
+                  <Route path="user-admin" element={<UserAdmin />} />
+                  <Route path="profile" element={<UserProfile />} />
+                  <Route path="organization/settings" element={<OrganizationSettings />} />
+                  <Route path="organization" element={<OrganizationOverview />} />
+                  <Route path="teams" element={<TeamManagement />} />
+                  <Route path="departments/:id" element={<DepartmentView />} />
+                  <Route path="communication" element={<Communication />} />
+                  <Route path="collaboration" element={<Collaboration />} />
+                  <Route path="training" element={<Training />} />
+                  <Route path="ledger" element={<LedgerPage />} />
+                  <Route path="accounting" element={<AccountingData />} />
+                  <Route path="data-import" element={<DataImport />} />
+                  <Route path="documents" element={<PDFDocuments />} />
+                  <Route path="audit-logs" element={<AuditLogs />} />
+                  <Route path="ai-usage" element={<AIUsage />} />
+                  <Route path="fag/*" element={<KnowledgeBase />} />
+                  <Route path="ai-revy-admin" element={<AIRevyAdmin />} />
+                </Route>
                 <Route path="*" element={<NotFound />} />
               </Routes>
               <Toaster />
