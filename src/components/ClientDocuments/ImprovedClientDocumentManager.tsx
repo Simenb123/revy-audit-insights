@@ -2,12 +2,13 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FileText, Upload, BarChart3, Bot } from 'lucide-react';
+import { FileText, Upload, BarChart3, Bot, Workflow, Link2 } from 'lucide-react';
 import { useClientDocuments } from '@/hooks/useClientDocuments';
 import EnhancedDocumentUploader from './EnhancedDocumentUploader';
 import EnhancedDocumentList from './EnhancedDocumentList';
 import DocumentCategories from './DocumentCategories';
 import DocumentDeleteDebugger from './DocumentDeleteDebugger';
+import AdvancedDocumentWorkflow from './AdvancedDocumentWorkflow';
 
 interface ImprovedClientDocumentManagerProps {
   clientId: string;
@@ -59,9 +60,9 @@ const ImprovedClientDocumentManager = ({ clientId, clientName }: ImprovedClientD
       <div className="flex items-center gap-3">
         <FileText className="h-6 w-6 text-primary" />
         <div>
-          <h2 className="text-2xl font-bold">Forbedret dokumenthåndtering for {clientName}</h2>
+          <h2 className="text-2xl font-bold">Intelligent dokumenthåndtering for {clientName}</h2>
           <p className="text-muted-foreground">
-            Last opp og organiser dokumenter med forbedret AI-kategorisering
+            Last opp, analyser og koble dokumenter med AI-Revi
           </p>
         </div>
       </div>
@@ -76,7 +77,7 @@ const ImprovedClientDocumentManager = ({ clientId, clientName }: ImprovedClientD
             <div className="flex items-center gap-3">
               <Bot className="h-8 w-8 text-blue-600" />
               <div>
-                <h3 className="font-semibold text-blue-900">AI-kategorisering status</h3>
+                <h3 className="font-semibold text-blue-900">AI-Revi dokumentstatus</h3>
                 <p className="text-sm text-blue-700">
                   {documents.length} dokumenter • {aiStats.highConfidence} høy sikkerhet • {aiStats.uncategorized} ukategoriserte
                 </p>
@@ -105,14 +106,18 @@ const ImprovedClientDocumentManager = ({ clientId, clientName }: ImprovedClientD
       </Card>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="upload" className="flex items-center gap-2">
             <Upload className="h-4 w-4" />
-            Last opp (forbedret AI)
+            AI-opplasting
           </TabsTrigger>
           <TabsTrigger value="documents" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
             Dokumenter ({documents.length})
+          </TabsTrigger>
+          <TabsTrigger value="workflow" className="flex items-center gap-2">
+            <Workflow className="h-4 w-4" />
+            Arbeidsflyt
           </TabsTrigger>
           <TabsTrigger value="categories" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
@@ -126,6 +131,10 @@ const ImprovedClientDocumentManager = ({ clientId, clientName }: ImprovedClientD
 
         <TabsContent value="documents">
           <EnhancedDocumentList clientId={clientId} />
+        </TabsContent>
+
+        <TabsContent value="workflow">
+          <AdvancedDocumentWorkflow clientId={clientId} />
         </TabsContent>
 
         <TabsContent value="categories">
