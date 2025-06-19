@@ -935,6 +935,74 @@ export type Database = {
           },
         ]
       }
+      client_documents_files: {
+        Row: {
+          ai_analysis_summary: string | null
+          ai_confidence_score: number | null
+          ai_suggested_category: string | null
+          category: string | null
+          client_id: string
+          created_at: string
+          extracted_text: string | null
+          file_name: string
+          file_path: string
+          file_size: number
+          id: string
+          manual_category_override: boolean | null
+          mime_type: string
+          subject_area: string | null
+          text_extraction_status: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ai_analysis_summary?: string | null
+          ai_confidence_score?: number | null
+          ai_suggested_category?: string | null
+          category?: string | null
+          client_id: string
+          created_at?: string
+          extracted_text?: string | null
+          file_name: string
+          file_path: string
+          file_size: number
+          id?: string
+          manual_category_override?: boolean | null
+          mime_type: string
+          subject_area?: string | null
+          text_extraction_status?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ai_analysis_summary?: string | null
+          ai_confidence_score?: number | null
+          ai_suggested_category?: string | null
+          category?: string | null
+          client_id?: string
+          created_at?: string
+          extracted_text?: string | null
+          file_name?: string
+          file_path?: string
+          file_size?: number
+          id?: string
+          manual_category_override?: boolean | null
+          mime_type?: string
+          subject_area?: string | null
+          text_extraction_status?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_documents_files_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_roles: {
         Row: {
           client_id: string | null
@@ -1246,6 +1314,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      document_categories: {
+        Row: {
+          category_name: string
+          created_at: string
+          description: string | null
+          expected_file_patterns: string[] | null
+          id: string
+          is_standard: boolean | null
+          subject_area: string
+        }
+        Insert: {
+          category_name: string
+          created_at?: string
+          description?: string | null
+          expected_file_patterns?: string[] | null
+          id?: string
+          is_standard?: boolean | null
+          subject_area: string
+        }
+        Update: {
+          category_name?: string
+          created_at?: string
+          description?: string | null
+          expected_file_patterns?: string[] | null
+          id?: string
+          is_standard?: boolean | null
+          subject_area?: string
+        }
+        Relationships: []
       }
       document_versions: {
         Row: {

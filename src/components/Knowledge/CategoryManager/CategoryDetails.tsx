@@ -1,10 +1,10 @@
+
 import React from 'react';
-import { KnowledgeCategory } from '@/types/knowledge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Edit, Move, Trash2, AlertTriangle, RefreshCw } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Trash2, Edit, FileMove, Trash, Loader2 } from 'lucide-react';
+import { KnowledgeCategory } from '@/types/knowledge';
 
 interface CategoryDetailsProps {
   selectedCategory: KnowledgeCategory | null;
@@ -17,7 +17,7 @@ interface CategoryDetailsProps {
   onMoveArticles: () => void;
   isDeleting: boolean;
   isDeletingEmpty: boolean;
-  children: React.ReactNode;
+  children?: React.ReactNode;
 }
 
 const CategoryDetails = ({
@@ -35,192 +35,122 @@ const CategoryDetails = ({
 }: CategoryDetailsProps) => {
   if (!selectedCategory) {
     return (
-      <div className="text-muted-foreground">
+      <div className="p-6 text-center text-muted-foreground">
         Velg en kategori for å se detaljer
       </div>
     );
   }
 
-  if (editingCategory) {
-    return children;
-  }
-
   const subcategories = categories.filter(c => c.parent_category_id === selectedCategory.id);
-  const articlesCount = articles.length;
-  const isEmpty = subcategories.length === 0 && articlesCount === 0;
-  
-  // Count empty subcategories (no articles and no nested subcategories)
+  const isEmpty = subcategories.length === 0 && articles.length === 0;
   const emptySubcategories = subcategories.filter(sub => {
     const hasNestedSubcategories = categories.some(c => c.parent_category_id === sub.id);
-    // Check if this subcategory has any articles (we'd need to query this, but for now assume 0)
     return !hasNestedSubcategories;
   });
-  
-  const hasEmptySubcategories = emptySubcategories.length > 0;
-  const canDelete = isEmpty;
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Kategoridetails</h3>
-        <div className="flex gap-2">
-          <Button 
-            size="sm" 
-            variant="outline"
-            onClick={() => onEdit(selectedCategory)}
-          >
-            <Edit className="h-4 w-4" />
-          </Button>
-          {articlesCount > 0 && (
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button size="sm" variant="outline">
-                  <Move className="h-4 w-4" />
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Flytt artikler</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <p>Flytt alle artikler fra "{selectedCategory.name}" til en annen kategori.</p>
-                  <Button onClick={onMoveArticles}>
-                    Åpne flyttedialog
-                  </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
-          )}
-          <Button 
-            size="sm" 
-            variant="destructive"
-            onClick={onDelete}
-            disabled={!canDelete || isDeleting}
-            title={!canDelete ? 'Kategorien kan ikke slettes fordi den ikke er tom' : 'Slett kategori'}
-          >
-            {isDeleting ? (
-              <RefreshCw className="h-4 w-4 animate-spin" />
-            ) : (
-              <Trash2 className="h-4 w-4" />
+    <div className="space-y-6">
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold">{selectedCategory.name}</h3>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => onEdit(selectedCategory)}
+              disabled={!!editingCategory}
+            >
+              <Edit className="h-4 w-4 mr-1" />
+              Rediger
+            </Button>
+            {isEmpty && (
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={onDelete}
+                disabled={isDeleting}
+              >
+                {isDeleting ? (
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4 mr-1" />
+                )}
+                Slett
+              </Button>
             )}
-          </Button>
+          </div>
         </div>
+
+        {selectedCategory.description && (
+          <p className="text-sm text-muted-foreground">
+            {selectedCategory.description}
+          </p>
+        )}
+
+        <div className="grid grid-cols-2 gap-4 text-sm">
+          <div>
+            <span className="font-medium">Underkategorier:</span> {subcategories.length}
+          </div>
+          <div>
+            <span className="font-medium">Artikler:</span> {articles.length}
+          </div>
+          <div>
+            <span className="font-medium">Sorteringsrekkefølge:</span> {selectedCategory.display_order}
+          </div>
+          <div>
+            <span className="font-medium">Ikon:</span> {selectedCategory.icon || 'Ingen'}
+          </div>
+        </div>
+
+        {selectedCategory.applicable_phases && selectedCategory.applicable_phases.length > 0 && (
+          <div>
+            <span className="text-sm font-medium">Gjeldende faser:</span>
+            <div className="flex flex-wrap gap-1 mt-1">
+              {selectedCategory.applicable_phases.map((phase) => (
+                <Badge key={phase} variant="outline" className="text-xs">
+                  {phase}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
-      <div className="space-y-4">
-        <div>
-          <Label className="font-semibold">Navn</Label>
-          <p>{selectedCategory.name}</p>
-        </div>
-        
-        {selectedCategory.description && (
-          <div>
-            <Label className="font-semibold">Beskrivelse</Label>
-            <p>{selectedCategory.description}</p>
-          </div>
-        )}
-        
-        <div>
-          <Label className="font-semibold">ID (for debugging)</Label>
-          <p className="text-xs text-muted-foreground font-mono">{selectedCategory.id}</p>
-        </div>
-        
-        <div>
-          <Label className="font-semibold">Sorteringsrekkefølge</Label>
-          <p>{selectedCategory.display_order}</p>
-        </div>
-        
-        {selectedCategory.parent_category_id && (
-          <div>
-            <Label className="font-semibold">Overordnet kategori</Label>
-            <p>{categories.find(c => c.id === selectedCategory.parent_category_id)?.name}</p>
-          </div>
-        )}
-        
-        <div>
-          <Label className="font-semibold">Statistikk</Label>
-          <div className="space-y-1 text-sm">
-            <p>Artikler: {articlesCount}</p>
-            <p>Underkategorier: {subcategories.length}</p>
-            <p>Status: <Badge variant={isEmpty ? "secondary" : "default"}>{isEmpty ? 'Tom' : 'Inneholder data'}</Badge></p>
-            {hasEmptySubcategories && (
-              <p>Potensielt tomme underkategorier: {emptySubcategories.length}</p>
+      {children}
+
+      {subcategories.length > 0 && (
+        <div className="space-y-3">
+          <h4 className="font-medium">Handlinger</h4>
+          <div className="flex flex-wrap gap-2">
+            {articles.length > 0 && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={onMoveArticles}
+              >
+                <FileMove className="h-4 w-4 mr-1" />
+                Flytt artikler
+              </Button>
             )}
-          </div>
-        </div>
-        
-        {hasEmptySubcategories && (
-          <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
-            <h4 className="font-medium text-orange-900 mb-2 flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4" />
-              Potensielt tomme underkategorier
-            </h4>
-            <p className="text-sm text-orange-700 mb-3">
-              Denne kategorien har {emptySubcategories.length} underkategorier som kan være tomme.
-            </p>
-            <div className="space-y-2">
-              <Button 
-                size="sm" 
+            
+            {emptySubcategories.length > 0 && (
+              <Button
+                size="sm"
                 variant="outline"
                 onClick={onDeleteEmptySubcategories}
                 disabled={isDeletingEmpty}
               >
                 {isDeletingEmpty ? (
-                  <RefreshCw className="h-4 w-4 mr-1 animate-spin" />
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
                 ) : (
-                  <Trash2 className="h-4 w-4 mr-1" />
+                  <Trash className="h-4 w-4 mr-1" />
                 )}
-                {isDeletingEmpty ? 'Sletter...' : 'Slett tomme underkategorier'}
+                Slett tomme underkategorier ({emptySubcategories.length})
               </Button>
-              <div className="text-xs text-orange-600">
-                <p>Underkategorier som vil bli sjekket:</p>
-                <ul className="list-disc list-inside">
-                  {emptySubcategories.map(sub => (
-                    <li key={sub.id} className="font-mono">{sub.name} ({sub.id.slice(0, 8)}...)</li>
-                  ))}
-                </ul>
-              </div>
-            </div>
+            )}
           </div>
-        )}
-
-        {subcategories.length > 0 && (
-          <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <h4 className="font-medium text-blue-900 mb-2">Underkategorier ({subcategories.length})</h4>
-            <div className="text-sm text-blue-700 space-y-1">
-              {subcategories.map(sub => (
-                <div key={sub.id} className="flex justify-between items-center">
-                  <span>{sub.name}</span>
-                  <code className="text-xs">{sub.id.slice(0, 8)}...</code>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {subcategories.length > 0 && (
-          <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <h4 className="font-medium text-blue-900 mb-2">Sletteveiledning</h4>
-            <p className="text-sm text-blue-700 mb-3">
-              For å slette denne kategorien må du først:
-            </p>
-            <ol className="text-sm text-blue-700 list-decimal list-inside space-y-1">
-              <li>Flytt eller slett alle artikler ({articlesCount} artikler)</li>
-              <li>Slett alle underkategorier ({subcategories.length} kategorier)</li>
-              <li>Deretter kan hovedkategorien slettes</li>
-            </ol>
-          </div>
-        )}
-        
-        {!canDelete && subcategories.length === 0 && articlesCount > 0 && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-sm text-red-700">
-              Kategorien kan ikke slettes fordi den inneholder {articlesCount} artikler. 
-              Flytt eller slett artiklene først.
-            </p>
-          </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };
