@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -82,34 +83,6 @@ const CategoryManager = () => {
     }
   });
 
-  const createArticle = useMutation({
-    mutationFn: async (data: { categoryId: string, title: string, content: string }) => {
-      const { error } = await supabase
-        .from('knowledge_articles')
-        .insert({
-          category_id: data.categoryId,
-          title: data.title,
-          content: data.content
-        });
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['articles'] });
-      toast({
-        title: "Artikkel opprettet",
-        description: "Ny artikkel ble lagt til.",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Feil ved opprettelse",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  });
-
   const createCategory = useMutation({
     mutationFn: async (name: string) => {
       const { error } = await supabase
@@ -122,16 +95,13 @@ const CategoryManager = () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       setNewCategoryName('');
       setNewCategoryDescription('');
-      toast({
-        title: "Kategori opprettet",
-        description: "Ny kategori ble lagt til.",
+      toast.success("Kategori opprettet", {
+        description: "Ny kategori ble lagt til."
       });
     },
     onError: (error: any) => {
-      toast({
-        title: "Feil ved opprettelse",
-        description: error.message,
-        variant: "destructive",
+      toast.error("Feil ved opprettelse", {
+        description: error.message
       });
     }
   });
@@ -147,16 +117,13 @@ const CategoryManager = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['articles'] });
-      toast({
-        title: "Artikkel slettet",
-        description: "Artikkelen ble fjernet.",
+      toast.success("Artikkel slettet", {
+        description: "Artikkelen ble fjernet."
       });
     },
     onError: (error: any) => {
-      toast({
-        title: "Feil ved sletting",
-        description: error.message,
-        variant: "destructive",
+      toast.error("Feil ved sletting", {
+        description: error.message
       });
     }
   });
@@ -173,18 +140,15 @@ const CategoryManager = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       queryClient.invalidateQueries({ queryKey: ['articles'] });
-      toast({
-        title: "Artikler flyttet",
-        description: `${selectedArticles.length} artikler ble flyttet til ny kategori.`,
+      toast.success("Artikler flyttet", {
+        description: `${selectedArticles.length} artikler ble flyttet til ny kategori.`
       });
       setSelectedArticles([]);
       setMoveToCategory(null);
     },
     onError: (error: any) => {
-      toast({
-        title: "Feil ved flytting",
-        description: error.message,
-        variant: "destructive",
+      toast.error("Feil ved flytting", {
+        description: error.message
       });
     }
   });
@@ -201,16 +165,13 @@ const CategoryManager = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       queryClient.invalidateQueries({ queryKey: ['articles'] });
-      toast({
-        title: "Kategori slettet",
-        description: "Kategorien ble fjernet.",
+      toast.success("Kategori slettet", {
+        description: "Kategorien ble fjernet."
       });
     },
     onError: (error: any) => {
-      toast({
-        title: "Feil ved sletting",
-        description: error.message,
-        variant: "destructive",
+      toast.error("Feil ved sletting", {
+        description: error.message
       });
     }
   });
@@ -283,7 +244,7 @@ const CategoryManager = () => {
                 value={newCategoryDescription}
                 onChange={(e) => setNewCategoryDescription(e.target.value)}
               />
-              <Button onClick={() => createCategory.mutate(newCategoryName)} disabled={createCategory.isLoading}>
+              <Button onClick={() => createCategory.mutate(newCategoryName)} disabled={createCategory.isPending}>
                 Opprett
               </Button>
             </div>
