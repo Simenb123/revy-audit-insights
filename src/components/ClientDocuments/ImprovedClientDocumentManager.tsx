@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,7 +13,8 @@ import {
   Settings,
   FolderOpen,
   Zap,
-  MessageSquare
+  MessageSquare,
+  Lightbulb
 } from 'lucide-react';
 import { useClientDocuments } from '@/hooks/useClientDocuments';
 import DocumentUploader from './DocumentUploader';
@@ -24,6 +24,7 @@ import SmartCategoryPanel from './SmartCategoryPanel';
 import BulkCategoryManager from './BulkCategoryManager';
 import AdvancedDocumentWorkflow from './AdvancedDocumentWorkflow';
 import EnhancedDocumentAnalyzer from './EnhancedDocumentAnalyzer';
+import DocumentInsights from './DocumentInsights';
 import EmbeddedContextChat from '@/components/Revy/EmbeddedContextChat';
 
 interface ImprovedClientDocumentManagerProps {
@@ -88,6 +89,11 @@ const ImprovedClientDocumentManager: React.FC<ImprovedClientDocumentManagerProps
       content: (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
+            <DocumentInsights 
+              documents={documents || []}
+              clientId={clientId}
+              context="documentation"
+            />
             <DocumentUploader 
               clientId={clientId}
               categories={categories || []}
@@ -115,24 +121,41 @@ const ImprovedClientDocumentManager: React.FC<ImprovedClientDocumentManagerProps
       icon: MessageSquare,
       content: (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div>
+          <div className="space-y-6">
+            <DocumentInsights 
+              documents={documents || []}
+              clientId={clientId}
+              context="documentation"
+            />
             <Card>
               <CardHeader>
-                <CardTitle>Dokumentanalyse med AI-Revi</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <Brain className="h-5 w-5 text-purple-600" />
+                  Dokumentanalyse med AI-Revi
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground mb-4">
                   Få hjelp til dokumentanalyse, kategorisering og kvalitetssikring.
                 </p>
-                <div className="space-y-2">
+                <div className="grid grid-cols-2 gap-3">
                   <div className="p-3 bg-blue-50 rounded-lg">
-                    <p className="text-sm font-medium">Totalt dokumenter: {documents?.length || 0}</p>
+                    <p className="text-sm font-medium">Totalt dokumenter</p>
+                    <p className="text-lg font-bold text-blue-600">{documents?.length || 0}</p>
                   </div>
                   <div className="p-3 bg-green-50 rounded-lg">
-                    <p className="text-sm font-medium">Kategoriserte: {documents?.filter(d => d.category).length || 0}</p>
+                    <p className="text-sm font-medium">Kategoriserte</p>
+                    <p className="text-lg font-bold text-green-600">{documents?.filter(d => d.category).length || 0}</p>
                   </div>
                   <div className="p-3 bg-yellow-50 rounded-lg">
-                    <p className="text-sm font-medium">Trenger gjennomgang: {documents?.filter(d => !d.category).length || 0}</p>
+                    <p className="text-sm font-medium">Trenger gjennomgang</p>
+                    <p className="text-lg font-bold text-yellow-600">{documents?.filter(d => !d.category).length || 0}</p>
+                  </div>
+                  <div className="p-3 bg-purple-50 rounded-lg">
+                    <p className="text-sm font-medium">AI-sikkerhet</p>
+                    <p className="text-lg font-bold text-purple-600">
+                      {documents?.length ? Math.round((documents.filter(d => d.ai_confidence_score && d.ai_confidence_score >= 0.8).length / documents.length) * 100) : 0}%
+                    </p>
                   </div>
                 </div>
               </CardContent>
@@ -226,9 +249,12 @@ const ImprovedClientDocumentManager: React.FC<ImprovedClientDocumentManagerProps
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle>Dokumenter for {clientName}</CardTitle>
+        <CardTitle className="flex items-center gap-2">
+          <FileText className="h-5 w-5" />
+          Dokumenter for {clientName}
+        </CardTitle>
         <p className="text-sm text-muted-foreground">
-          Administrer og organiser klientdokumenter med AI-assistanse
+          Administrer og organiser klientdokumenter med AI-Revi assistanse
         </p>
       </CardHeader>
       <CardContent>

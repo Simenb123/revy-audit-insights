@@ -7,7 +7,7 @@ import { Brain, MessageSquare, Lightbulb, FileText, Settings } from 'lucide-reac
 import { useSmartReviAssistant } from '@/hooks/revy/useSmartRevyAssistant';
 import { useAIRevyVariants } from '@/hooks/useAIRevyVariants';
 import { useEnhancedClientDocuments } from '@/hooks/useEnhancedClientDocuments';
-import { getContextualRecommendations } from '@/services/revy/enhancedAiInteractionService';
+import { getContextualDocumentSuggestions } from '@/services/documentAIService';
 import AIRevyVariantSelector from '@/components/AI/AIRevyVariantSelector';
 import { RevyMessageList } from '@/components/Revy/Assistant/RevyMessageList';
 import { RevyInput } from '@/components/Revy/Assistant/RevyInput';
@@ -27,11 +27,11 @@ const ContextAwareRevyChat: React.FC<ContextAwareRevyChatProps> = ({
   embedded = false,
   showVariantSelector = true
 }) => {
-  const [recommendations, setRecommendations] = useState<string[]>([]);
-  const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(false);
+  const [smartSuggestions, setSmartSuggestions] = useState<string[]>([]);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
   
   const { selectedVariant, handleVariantChange } = useAIRevyVariants(context);
-  const { getDocumentContext } = useEnhancedClientDocuments(clientId || '');
+  const { getDocumentContext, documents } = useEnhancedClientDocuments(clientId || '');
   
   // Enhanced client data with document context
   const enhancedClientData = React.useMemo(() => {
@@ -66,32 +66,27 @@ const ContextAwareRevyChat: React.FC<ContextAwareRevyChatProps> = ({
     }
   }, [selectedVariant, assistantVariant, assistantVariantChange]);
 
-  // Load contextual recommendations
+  // Load smart document suggestions
   useEffect(() => {
-    const loadRecommendations = async () => {
-      if (!selectedVariant) return;
+    const loadSmartSuggestions = async () => {
+      if (context !== 'documentation' || !documents) return;
       
-      setIsLoadingRecommendations(true);
+      setIsLoadingSuggestions(true);
       try {
-        const recs = await getContextualRecommendations(
-          context,
-          enhancedClientData,
-          'employee',
-          selectedVariant
-        );
-        setRecommendations(recs);
+        const suggestions = await getContextualDocumentSuggestions('', documents, context);
+        setSmartSuggestions(suggestions);
       } catch (error) {
-        console.error('Failed to load recommendations:', error);
+        console.error('Failed to load smart suggestions:', error);
       } finally {
-        setIsLoadingRecommendations(false);
+        setIsLoadingSuggestions(false);
       }
     };
 
-    loadRecommendations();
-  }, [context, enhancedClientData, selectedVariant]);
+    loadSmartSuggestions();
+  }, [context, documents]);
 
-  const handleRecommendationClick = (recommendation: string) => {
-    setMessage(recommendation);
+  const handleSuggestionClick = (suggestion: string) => {
+    setMessage(suggestion);
   };
 
   const getContextIcon = (contextType: string) => {
@@ -165,25 +160,25 @@ const ContextAwareRevyChat: React.FC<ContextAwareRevyChatProps> = ({
           </div>
         )}
 
-        {/* Contextual recommendations */}
-        {recommendations.length > 0 && (
+        {/* Smart document suggestions */}
+        {smartSuggestions.length > 0 && context === 'documentation' && (
           <div>
             <h4 className="text-sm font-medium mb-2 flex items-center gap-1">
-              <Lightbulb className="h-4 w-4" />
-              Anbefalinger for {getContextDisplayName(context).toLowerCase()}
+              <Brain className="h-4 w-4" />
+              Smarte forslag
             </h4>
             <div className="space-y-1">
-              {recommendations.map((rec, index) => (
+              {smartSuggestions.map((suggestion, index) => (
                 <Button
                   key={index}
                   variant="ghost"
                   size="sm"
-                  onClick={() => handleRecommendationClick(rec)}
+                  onClick={() => handleSuggestionClick(suggestion)}
                   className="w-full justify-start h-auto text-left p-2 text-xs"
-                  disabled={isLoadingRecommendations}
+                  disabled={isLoadingSuggestions}
                 >
-                  <span className="text-blue-600 mr-2">•</span>
-                  {rec}
+                  <span className="text-purple-600 mr-2">•</span>
+                  {suggestion}
                 </Button>
               ))}
             </div>
@@ -198,23 +193,35 @@ const ContextAwareRevyChat: React.FC<ContextAwareRevyChatProps> = ({
           />
         </div>
 
-        {/* Input - Fixed props to match RevyInputProps interface */}
+        {/* Input */}
         <RevyInput
           message={message}
           setMessage={setMessage}
           handleSendMessage={handleSendMessage}
           isTyping={isTyping}
+          isEmbedded={embedded}
           placeholder={`Spør AI-Revi om ${getContextDisplayName(context).toLowerCase()}...`}
         />
 
-        {/* Context information */}
+        {/* Enhanced context information */}
         {enhancedClientData?.documentContext && (
           <div className="text-xs text-gray-500 border-t pt-2">
-            <div className="flex items-center gap-4 text-xs">
-              <span>{enhancedClientData.documentContext.documentStats.total} dokumenter</span>
-              <span>Kvalitet: {enhancedClientData.documentContext.documentStats.qualityScore}%</span>
-              {enhancedClientData.documentContext.subjectAreas.length > 0 && (
-                <span>Områder: {enhancedClientData.documentContext.subjectAreas.slice(0, 2).join(', ')}</span>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="flex items-center gap-1">
+                <FileText className="h-3 w-3" />
+                <span>{enhancedClientData.documentContext.documentStats.total} dokumenter</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Brain className="h-3 w-3" />
+                <span>Kvalitet: {enhancedClientData.documentContext.documentStats.qualityScore}%</span>
+              </div>
+              {enhancedClientData.documentContext.categories.length > 0 && (
+                <div className="col-span-2 flex items-center gap-1">
+                  <span>Kategorier: {enhancedClientData.documentContext.categories.slice(0, 2).join(', ')}</span>
+                  {enhancedClientData.documentContext.categories.length > 2 && (
+                    <span>+{enhancedClientData.documentContext.categories.length - 2}</span>
+                  )}
+                </div>
               )}
             </div>
           </div>
