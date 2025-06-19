@@ -229,7 +229,6 @@ const CategoryManager = () => {
     mutationFn: async (parentCategoryId: string) => {
       console.log(`=== DELETING EMPTY SUBCATEGORIES FOR PARENT: ${parentCategoryId} ===`);
       
-      // Get all subcategories
       const { data: subcategories, error: subcategoriesError } = await supabase
         .from('knowledge_categories')
         .select('id, name')
@@ -246,11 +245,9 @@ const CategoryManager = () => {
       let deletedCount = 0;
       const emptyCategories: string[] = [];
       
-      // Check each subcategory
       for (const subcat of subcategories) {
         console.log(`Checking subcategory: ${subcat.name} (${subcat.id})`);
         
-        // Check for articles
         const { data: articles, error: articlesError, count: articlesCount } = await supabase
           .from('knowledge_articles')
           .select('id', { count: 'exact' })
@@ -261,7 +258,6 @@ const CategoryManager = () => {
           continue;
         }
         
-        // Check for nested subcategories
         const { data: nestedSubs, error: nestedError, count: nestedCount } = await supabase
           .from('knowledge_categories')
           .select('id', { count: 'exact' })
@@ -280,7 +276,6 @@ const CategoryManager = () => {
         }
       }
       
-      // Delete all empty categories in batch
       if (emptyCategories.length > 0) {
         console.log(`Deleting ${emptyCategories.length} empty categories:`, emptyCategories);
         
@@ -322,7 +317,6 @@ const CategoryManager = () => {
       console.log(`=== STARTING BULK DELETE PROCESS FOR CATEGORY: ${categoryId} ===`);
       
       try {
-        // Get category details
         const { data: categoryData, error: categoryError } = await supabase
           .from('knowledge_categories')
           .select('id, name, parent_category_id')
@@ -331,14 +325,12 @@ const CategoryManager = () => {
         
         if (categoryError) throw new Error(`Failed to get category: ${categoryError.message}`);
         
-        // Get all subcategory IDs recursively
         const subcategoryIds = getSubcategoryIds(categoryId);
         const allCategoryIds = [categoryId, ...subcategoryIds];
         
         console.log(`Will delete categories: ${allCategoryIds.length} total`);
         console.log('Category IDs:', allCategoryIds);
         
-        // Delete all articles in these categories
         const { error: articlesError, count: articlesDeleted } = await supabase
           .from('knowledge_articles')
           .delete({ count: 'exact' })
@@ -348,13 +340,12 @@ const CategoryManager = () => {
         
         console.log(`Deleted ${articlesDeleted || 0} articles`);
         
-        // Delete all categories (subcategories first, then parent)
         const { error: categoriesError, count: categoriesDeleted } = await supabase
           .from('knowledge_categories')
           .delete({ count: 'exact' })
           .in('id', allCategoryIds);
         
-        if (categoriesError) throw new Error(`Failed to delete categories: ${categoriesError.message}`);
+        if (categoriesError) throw new Error(`Failed to delete categories: categoriesError.message}`);
         
         console.log(`Deleted ${categoriesDeleted || 0} categories`);
         
@@ -432,7 +423,6 @@ const CategoryManager = () => {
       canDelete: isEmpty
     });
     
-    // Count empty subcategories
     const emptySubcategories = subcategories.filter(sub => {
       const hasNestedSubcategories = categories.some(c => c.parent_category_id === sub.id);
       return !hasNestedSubcategories;
