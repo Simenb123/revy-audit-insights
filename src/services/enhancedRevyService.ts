@@ -1,116 +1,88 @@
 
-import { supabase } from '@/integrations/supabase/client';
-import { getContextualRecommendations } from './revy/enhancedAiInteractionService';
-import { AIRevyVariant } from '@/hooks/useAIRevyVariants';
-
-export interface ContextualTip {
-  context: string;
-  tip: string;
-  priority: 'high' | 'medium' | 'low';
-  actionable: boolean;
-}
-
 export const getEnhancedContextualTips = async (
   context: string,
   clientData?: any,
   userRole?: string
 ): Promise<string> => {
-  try {
-    // Load appropriate AI variant for context
-    const { data: variants } = await supabase
-      .from('ai_revy_variants')
-      .select('*')
-      .contains('available_contexts', [context])
-      .eq('is_active', true)
-      .order('sort_order')
-      .limit(1);
-
-    const rawVariant = variants?.[0];
-    
-    if (!rawVariant) {
-      return getBasicContextualTip(context);
-    }
-
-    // Transform to match AIRevyVariant interface
-    const variant: AIRevyVariant = {
-      ...rawVariant,
-      context_requirements: (rawVariant.context_requirements as Record<string, any>) || {}
-    };
-
-    // Get contextual recommendations and pick the most actionable one
-    const recommendations = await getContextualRecommendations(
-      context,
-      clientData,
-      userRole,
-      variant
-    );
-
-    return recommendations[0] || getBasicContextualTip(context);
-    
-  } catch (error) {
-    console.error('Failed to get enhanced contextual tips:', error);
-    return getBasicContextualTip(context);
-  }
-};
-
-const getBasicContextualTip = (context: string): string => {
-  const basicTips: Record<string, string> = {
-    'documentation': 'Tips: Bruk AI-analyse for automatisk kategorisering av dokumenter',
-    'audit-actions': 'Tips: Kopier handlinger fra lignende klienter for å spare tid',
-    'client-detail': 'Tips: Sjekk at alle obligatoriske felt er utfylt for klienten',
-    'planning': 'Tips: Vurder risikoområder tidlig i planleggingsfasen',
-    'execution': 'Tips: Dokumenter alle revisjonshandlinger grundig underveis',
-    'completion': 'Tips: Gjennomgå at alle handlinger er fullført før avslutning',
-    'general': 'Tips: Bruk AI-assistenten for spørsmål om revisjon og regnskapslovgivning'
+  const tips = {
+    documentation: [
+      '💡 Tips: Bruk AI-Revi til å analysere dokumentkvalitet og identifisere mangler',
+      '📋 Husk: Kategoriser dokumenter etter fagområde for bedre oversikt',
+      '🔍 Sjekk: AI-konfidensscoren indikerer kvaliteten på automatisk kategorisering',
+      '⚡ Effektivt: Bruk bulk-operasjoner for å behandle mange dokumenter samtidig',
+      '📊 Analyse: AI-Revi kan foreslå revisjonshandlinger basert på opplastede dokumenter'
+    ],
+    'audit-actions': [
+      '🎯 Planlegg: Start med risikovurdering før du velger revisjonshandlinger',
+      '📖 ISA-standarder: AI-Revi kan hjelpe deg identifisere relevante standarder',
+      '⏰ Tidsbruk: Estimer timer realistisk basert på kompleksitet',
+      '✅ Kvalitet: Dokumenter alle funn og konklusjoner grundig',
+      '🔄 Oppfølging: Planlegg kontrollaktiviteter for identifiserte risikoområder'
+    ],
+    'client-detail': [
+      '🏢 Bransjeforståelse: Analyser bransjerisiko og spesielle forhold',
+      '📈 Trender: Følg med på endringer i klientens virksomhet',
+      '🎨 Tilpasning: Juster revisjonsstrategien til klientens størrelse og kompleksitet',
+      '🤝 Kommunikasjon: Oppretthold god dialog med klientens ledelse',
+      '⚖️ Vurdering: Evaluer intern kontroll og ledelsens integritet'
+    ]
   };
 
-  return basicTips[context] || basicTips['general'];
+  const contextTips = tips[context as keyof typeof tips] || [
+    '💡 AI-Revi er her for å hjelpe deg med alle dine revisjonsbehov',
+    '🚀 Utforsk ulike funksjoner for å effektivisere arbeidsflyten din'
+  ];
+
+  // Select tip based on client data or randomly
+  let selectedTip = contextTips[Math.floor(Math.random() * contextTips.length)];
+
+  // Customize tips based on client data
+  if (clientData) {
+    if (context === 'documentation' && clientData.documentContext) {
+      const stats = clientData.documentContext.documentStats;
+      if (stats.uncategorized > 0) {
+        selectedTip = `📋 Du har ${stats.uncategorized} ukategoriserte dokumenter. AI-Revi kan hjelpe med automatisk kategorisering`;
+      } else if (stats.qualityScore < 70) {
+        selectedTip = '🔍 Noen dokumenter har lav AI-sikkerhet. Vurder manuell gjennomgang for bedre kvalitet';
+      }
+    }
+    
+    if (context === 'client-detail' && clientData.industry) {
+      selectedTip = `🏢 Bransje: ${clientData.industry}. AI-Revi kan gi bransjetilpassede revisjonsråd`;
+    }
+  }
+
+  return selectedTip;
 };
 
-export const getContextualWorkflowSuggestions = async (
+export const getContextualSuggestions = (
   context: string,
   clientData?: any
-): Promise<Array<{ action: string; description: string; priority: number }>> => {
-  try {
-    const suggestions = [];
+): string[] => {
+  const baseSuggestions = {
+    documentation: [
+      'Analyser dokumentkvaliteten for denne klienten',
+      'Foreslå kategorier for ukategoriserte dokumenter',
+      'Hvilke dokumenter mangler for en komplett revisjon?',
+      'Gi en oversikt over dokumentstrukturen'
+    ],
+    'audit-actions': [
+      'Foreslå revisjonshandlinger basert på risikovurdering',
+      'Hvilke ISA-standarder er relevante for denne klienten?',
+      'Hjelp meg prioritere revisjonshandlinger',
+      'Estimer tidsbruk for planlagte handlinger'
+    ],
+    'client-detail': [
+      'Analyser risikoområder for denne klienten',
+      'Foreslå revisjonstilnærming basert på bransje',
+      'Vurder materialitetsnivå og prøvetak',
+      'Identifiser spesielle forhold å følge opp'
+    ]
+  };
 
-    // Context-specific workflow suggestions
-    switch (context) {
-      case 'documentation':
-        if (clientData?.documentContext?.documentStats?.qualityScore < 60) {
-          suggestions.push({
-            action: 'Analyser dokumenter med lav sikkerhet',
-            description: 'Flere dokumenter trenger manual gjennomgang',
-            priority: 1
-          });
-        }
-        break;
-        
-      case 'audit-actions':
-        if (clientData?.phase === 'planning') {
-          suggestions.push({
-            action: 'Opprett revisjonshandlinger',
-            description: 'Kopier handlinger fra maler eller lignende klienter',
-            priority: 1
-          });
-        }
-        break;
-        
-      case 'client-detail':
-        if (!clientData?.industry) {
-          suggestions.push({
-            action: 'Oppdater bransjeinfo',
-            description: 'Bransjeregistrering mangler for bedre risikovurdering',
-            priority: 2
-          });
-        }
-        break;
-    }
-
-    return suggestions.sort((a, b) => a.priority - b.priority);
-    
-  } catch (error) {
-    console.error('Failed to get workflow suggestions:', error);
-    return [];
-  }
+  return baseSuggestions[context as keyof typeof baseSuggestions] || [
+    'Hvordan kan jeg hjelpe deg i dag?',
+    'Gi meg en oversikt over arbeidsoppgavene',
+    'Hjelp meg med å prioritere arbeidet'
+  ];
 };
