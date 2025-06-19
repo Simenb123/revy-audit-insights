@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -43,13 +42,19 @@ export const useClientDocuments = (clientId: string) => {
     queryFn: async () => {
       if (!clientId) return [];
       
+      console.log('=== FETCHING DOCUMENTS FOR CLIENT:', clientId, '===');
       const { data, error } = await supabase
         .from('client_documents_files')
         .select('*')
         .eq('client_id', clientId)
         .order('created_at', { ascending: false });
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching documents:', error);
+        throw error;
+      }
+      
+      console.log('Fetched documents:', data?.length || 0);
       return data as ClientDocument[];
     },
     enabled: !!clientId
@@ -149,31 +154,84 @@ export const useClientDocuments = (clientId: string) => {
     }
   });
 
-  // Delete document
+  // Delete document - IMPROVED VERSION
   const deleteDocument = useMutation({
     mutationFn: async (documentId: string) => {
+      console.log('=== ATTEMPTING TO DELETE DOCUMENT ===');
+      console.log('Document ID:', documentId);
+      console.log('Available documents:', documents.map(d => ({ id: d.id, name: d.file_name })));
+      
       const document = documents.find(d => d.id === documentId);
-      if (!document) throw new Error('Document not found');
+      if (!document) {
+        console.error('Document not found in local cache');
+        // Try to fetch fresh data
+        const { data: freshDoc, error: fetchError } = await supabase
+          .from('client_documents_files')
+          .select('*')
+          .eq('id', documentId)
+          .single();
+        
+        if (fetchError || !freshDoc) {
+          console.error('Document not found in database either:', fetchError);
+          throw new Error('Dokumentet ble ikke funnet');
+        }
+        
+        console.log('Found document in database:', freshDoc.file_name);
+        
+        // Delete the document record
+        const { error: deleteError } = await supabase
+          .from('client_documents_files')
+          .delete()
+          .eq('id', documentId);
 
-      const { error } = await supabase
+        if (deleteError) {
+          console.error('Delete error:', deleteError);
+          throw new Error(`Kunne ikke slette dokument: ${deleteError.message}`);
+        }
+
+        // Also delete the file from storage
+        if (freshDoc.file_path) {
+          const { error: storageError } = await supabase.storage
+            .from('client-documents')
+            .remove([freshDoc.file_path]);
+
+          if (storageError) {
+            console.warn('Could not delete file from storage:', storageError);
+          }
+        }
+
+        return documentId;
+      }
+
+      console.log('Deleting document:', document.file_name);
+      
+      // Delete the document record
+      const { error: deleteError } = await supabase
         .from('client_documents_files')
         .delete()
         .eq('id', documentId);
 
-      if (error) throw error;
-
-      // Also delete the file from storage
-      const { error: storageError } = await supabase.storage
-        .from('client-documents')
-        .remove([document.file_path]);
-
-      if (storageError) {
-        console.warn('Could not delete file from storage:', storageError);
+      if (deleteError) {
+        console.error('Delete error:', deleteError);
+        throw new Error(`Kunne ikke slette dokument: ${deleteError.message}`);
       }
 
+      // Also delete the file from storage
+      if (document.file_path) {
+        const { error: storageError } = await supabase.storage
+          .from('client-documents')
+          .remove([document.file_path]);
+
+        if (storageError) {
+          console.warn('Could not delete file from storage:', storageError);
+        }
+      }
+
+      console.log('Document deleted successfully');
       return documentId;
     },
-    onSuccess: () => {
+    onSuccess: (deletedId) => {
+      console.log('=== DELETE SUCCESS ===');
       queryClient.invalidateQueries({ queryKey: ['client-documents'] });
       toast({
         title: "Dokument slettet",
@@ -181,6 +239,8 @@ export const useClientDocuments = (clientId: string) => {
       });
     },
     onError: (error) => {
+      console.error('=== DELETE ERROR ===');
+      console.error('Delete mutation error:', error);
       toast({
         title: "Kunne ikke slette",
         description: error.message,

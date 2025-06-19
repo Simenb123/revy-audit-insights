@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,6 +9,7 @@ import { Upload, File, X, Eye, Bot, CheckCircle, AlertCircle, Clock } from 'luci
 import { useClientDocuments, DocumentCategory } from '@/hooks/useClientDocuments';
 import { useAdvancedDocumentAI } from '@/hooks/useAdvancedDocumentAI';
 import FilePreview from './FilePreview';
+import AdvancedFilePreview from './AdvancedFilePreview';
 import { toast } from 'sonner';
 
 interface FileWithPreview extends File {
@@ -130,7 +130,7 @@ const EnhancedDocumentUploader = ({ clientId, categories }: EnhancedDocumentUplo
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Upload className="h-5 w-5" />
-            Last opp dokumenter med AI-kategorisering
+            Last opp dokumenter med forbedret AI-kategorisering
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -149,7 +149,7 @@ const EnhancedDocumentUploader = ({ clientId, categories }: EnhancedDocumentUplo
               Dra og slipp filer her, eller klikk for å velge
             </p>
             <p className="text-sm text-gray-500 mb-4">
-              Støtter PDF, Excel, Word, bilder og mer
+              Støtter PDF, Excel, Word, bilder og mer. Automatisk AI-kategorisering aktivert.
             </p>
             <input
               type="file"
@@ -208,12 +208,15 @@ const EnhancedDocumentUploader = ({ clientId, categories }: EnhancedDocumentUplo
             </Card>
           )}
 
-          {/* Selected files with AI analysis */}
+          {/* Selected files with enhanced AI analysis */}
           {selectedFiles.length > 0 && (
             <div className="space-y-3">
-              <h3 className="font-medium">Valgte filer ({selectedFiles.length})</h3>
+              <h3 className="font-medium flex items-center gap-2">
+                <Bot className="h-4 w-4 text-blue-600" />
+                Valgte filer med AI-analyse ({selectedFiles.length})
+              </h3>
               {selectedFiles.map((file) => (
-                <Card key={file.id} className="p-4">
+                <Card key={file.id} className="p-4 border-l-4 border-l-blue-500">
                   <div className="flex items-start justify-between">
                     <div className="flex items-start gap-3 flex-1">
                       <File className="h-8 w-8 text-blue-600 mt-1" />
@@ -223,39 +226,56 @@ const EnhancedDocumentUploader = ({ clientId, categories }: EnhancedDocumentUplo
                           {(file.size / 1024 / 1024).toFixed(2)} MB • {file.type || 'Ukjent type'}
                         </p>
                         
-                        {/* AI Analysis Results */}
+                        {/* Enhanced AI Analysis Results */}
                         {file.aiAnalysis ? (
-                          <div className="mt-3 space-y-2">
+                          <div className="mt-3 space-y-3">
                             <div className="flex items-center gap-2">
                               <Bot className="h-4 w-4 text-blue-600" />
-                              <span className="text-sm font-medium">AI-analyse:</span>
+                              <span className="text-sm font-medium">Forbedret AI-analyse:</span>
                             </div>
                             
-                            <div className="flex flex-wrap gap-2">
-                              <Badge 
-                                variant="outline" 
-                                className={`${getConfidenceColor(file.aiAnalysis.confidence)} flex items-center gap-1`}
-                              >
-                                {getConfidenceIcon(file.aiAnalysis.confidence)}
-                                {file.aiAnalysis.suggestedCategory}
-                                ({Math.round(file.aiAnalysis.confidence * 100)}%)
-                              </Badge>
+                            <div className="bg-blue-50 p-3 rounded-lg">
+                              <div className="flex flex-wrap gap-2 mb-2">
+                                <Badge 
+                                  variant="outline" 
+                                  className={`${getConfidenceColor(file.aiAnalysis.confidence)} flex items-center gap-1`}
+                                >
+                                  {getConfidenceIcon(file.aiAnalysis.confidence)}
+                                  {file.aiAnalysis.suggestedCategory}
+                                  ({Math.round(file.aiAnalysis.confidence * 100)}%)
+                                </Badge>
+                                
+                                <Badge variant="secondary">
+                                  {file.aiAnalysis.subjectArea === 'lnn' ? 'Lønn' : file.aiAnalysis.subjectArea}
+                                </Badge>
+
+                                <Badge variant="outline" className="text-xs">
+                                  {file.aiAnalysis.documentType}
+                                </Badge>
+                              </div>
                               
-                              <Badge variant="secondary">
-                                {file.aiAnalysis.subjectArea === 'lnn' ? 'Lønn' : file.aiAnalysis.subjectArea}
-                              </Badge>
+                              {file.aiAnalysis.extractedKeywords.length > 0 && (
+                                <div className="mb-2">
+                                  <span className="text-xs text-blue-700 font-medium">Nøkkelord: </span>
+                                  {file.aiAnalysis.extractedKeywords.map((keyword, idx) => (
+                                    <Badge key={idx} variant="outline" className="text-xs mr-1">
+                                      {keyword}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              )}
+                              
+                              {file.aiAnalysis.reasoning && (
+                                <p className="text-xs text-blue-800 bg-white p-2 rounded border">
+                                  <strong>AI-begrunnelse:</strong> {file.aiAnalysis.reasoning}
+                                </p>
+                              )}
                             </div>
-                            
-                            {file.aiAnalysis.reasoning && (
-                              <p className="text-xs text-gray-600 bg-gray-50 p-2 rounded">
-                                {file.aiAnalysis.reasoning}
-                              </p>
-                            )}
                           </div>
                         ) : isAnalyzing ? (
-                          <div className="mt-3 flex items-center gap-2 text-sm text-gray-500">
+                          <div className="mt-3 flex items-center gap-2 text-sm text-blue-600">
                             <Clock className="h-4 w-4 animate-spin" />
-                            Analyserer med AI...
+                            Analyserer med forbedret AI...
                           </div>
                         ) : null}
                       </div>
@@ -266,8 +286,10 @@ const EnhancedDocumentUploader = ({ clientId, categories }: EnhancedDocumentUplo
                         size="sm"
                         variant="outline"
                         onClick={() => setPreviewFile(file)}
+                        className="text-blue-600 border-blue-200 hover:bg-blue-50"
                       >
                         <Eye className="h-4 w-4" />
+                        Preview
                       </Button>
                       <Button
                         size="sm"
@@ -288,18 +310,18 @@ const EnhancedDocumentUploader = ({ clientId, categories }: EnhancedDocumentUplo
             <Button 
               onClick={uploadFiles}
               disabled={uploadDocument.isPending}
-              className="w-full"
+              className="w-full bg-blue-600 hover:bg-blue-700"
               size="lg"
             >
               {uploadDocument.isPending ? (
                 <>
                   <Clock className="h-4 w-4 mr-2 animate-spin" />
-                  Laster opp {selectedFiles.length} filer...
+                  Laster opp {selectedFiles.length} filer med AI-analyse...
                 </>
               ) : (
                 <>
                   <Upload className="h-4 w-4 mr-2" />
-                  Last opp {selectedFiles.length} filer
+                  Last opp {selectedFiles.length} filer med AI-kategorisering
                 </>
               )}
             </Button>
@@ -307,9 +329,9 @@ const EnhancedDocumentUploader = ({ clientId, categories }: EnhancedDocumentUplo
         </CardContent>
       </Card>
 
-      {/* File Preview Dialog */}
+      {/* Enhanced File Preview Dialog */}
       {previewFile && (
-        <FilePreview
+        <AdvancedFilePreview
           file={previewFile}
           isOpen={!!previewFile}
           onClose={() => setPreviewFile(null)}
