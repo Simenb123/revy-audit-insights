@@ -66,14 +66,35 @@ const ContextAwareRevyChat: React.FC<ContextAwareRevyChatProps> = ({
     }
   }, [selectedVariant, assistantVariant, assistantVariantChange]);
 
-  // Load smart document suggestions
+  // Load smart document suggestions - Fix type issue by converting to the expected format
   useEffect(() => {
     const loadSmartSuggestions = async () => {
       if (context !== 'documentation' || !documents) return;
       
       setIsLoadingSuggestions(true);
       try {
-        const suggestions = await getContextualDocumentSuggestions('', documents, context);
+        // Convert EnhancedClientDocument[] to ClientDocument[] format expected by the service
+        const clientDocuments = documents.map(doc => ({
+          id: doc.id,
+          client_id: clientId || '',
+          user_id: '',
+          file_name: doc.file_name,
+          file_path: '',
+          file_size: 0,
+          mime_type: '',
+          category: doc.category,
+          subject_area: '',
+          ai_suggested_category: '',
+          ai_confidence_score: doc.ai_confidence_score,
+          ai_analysis_summary: doc.ai_analysis_summary,
+          manual_category_override: false,
+          created_at: doc.created_at,
+          updated_at: doc.created_at,
+          extracted_text: doc.extracted_text,
+          text_extraction_status: 'completed'
+        }));
+        
+        const suggestions = await getContextualDocumentSuggestions('', clientDocuments, context);
         setSmartSuggestions(suggestions);
       } catch (error) {
         console.error('Failed to load smart suggestions:', error);
@@ -83,7 +104,7 @@ const ContextAwareRevyChat: React.FC<ContextAwareRevyChatProps> = ({
     };
 
     loadSmartSuggestions();
-  }, [context, documents]);
+  }, [context, documents, clientId]);
 
   const handleSuggestionClick = (suggestion: string) => {
     setMessage(suggestion);
