@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,7 +13,8 @@ import {
   BarChart3,
   Settings,
   FolderOpen,
-  Zap
+  Zap,
+  MessageSquare
 } from 'lucide-react';
 import { useClientDocuments } from '@/hooks/useClientDocuments';
 import DocumentUploader from './DocumentUploader';
@@ -22,6 +24,7 @@ import SmartCategoryPanel from './SmartCategoryPanel';
 import BulkCategoryManager from './BulkCategoryManager';
 import AdvancedDocumentWorkflow from './AdvancedDocumentWorkflow';
 import EnhancedDocumentAnalyzer from './EnhancedDocumentAnalyzer';
+import EmbeddedContextChat from '@/components/Revy/EmbeddedContextChat';
 
 interface ImprovedClientDocumentManagerProps {
   clientId: string;
@@ -83,16 +86,66 @@ const ImprovedClientDocumentManager: React.FC<ImprovedClientDocumentManagerProps
       label: 'Oversikt',
       icon: FileText,
       content: (
-        <div className="space-y-6">
-          <DocumentUploader 
-            clientId={clientId}
-            categories={categories || []}
-          />
-          <DocumentList 
-            documents={documents || []}
-            documentsByCategory={documentsByCategory || {}}
-            isLoading={isLoading}
-          />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
+            <DocumentUploader 
+              clientId={clientId}
+              categories={categories || []}
+            />
+            <DocumentList 
+              documents={documents || []}
+              documentsByCategory={documentsByCategory || {}}
+              isLoading={isLoading}
+            />
+          </div>
+          <div>
+            <EmbeddedContextChat
+              clientId={clientId}
+              context="documentation"
+              title="AI-Revi Dokumenthjelp"
+              height="600px"
+            />
+          </div>
+        </div>
+      )
+    },
+    {
+      id: 'ai-assistant',
+      label: 'AI-Assistent',
+      icon: MessageSquare,
+      content: (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div>
+            <Card>
+              <CardHeader>
+                <CardTitle>Dokumentanalyse med AI-Revi</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground mb-4">
+                  Få hjelp til dokumentanalyse, kategorisering og kvalitetssikring.
+                </p>
+                <div className="space-y-2">
+                  <div className="p-3 bg-blue-50 rounded-lg">
+                    <p className="text-sm font-medium">Totalt dokumenter: {documents?.length || 0}</p>
+                  </div>
+                  <div className="p-3 bg-green-50 rounded-lg">
+                    <p className="text-sm font-medium">Kategoriserte: {documents?.filter(d => d.category).length || 0}</p>
+                  </div>
+                  <div className="p-3 bg-yellow-50 rounded-lg">
+                    <p className="text-sm font-medium">Trenger gjennomgang: {documents?.filter(d => !d.category).length || 0}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          <div>
+            <EmbeddedContextChat
+              clientId={clientId}
+              context="documentation"
+              title="AI-Revi Dokumentassistent"
+              height="500px"
+            />
+          </div>
         </div>
       )
     },
@@ -175,16 +228,16 @@ const ImprovedClientDocumentManager: React.FC<ImprovedClientDocumentManagerProps
       <CardHeader>
         <CardTitle>Dokumenter for {clientName}</CardTitle>
         <p className="text-sm text-muted-foreground">
-          Administrer og organiser klientdokumenter
+          Administrer og organiser klientdokumenter med AI-assistanse
         </p>
       </CardHeader>
       <CardContent>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList>
+          <TabsList className="grid w-full grid-cols-4 lg:grid-cols-9">
             {tabs.map((tab) => (
-              <TabsTrigger key={tab.id} value={tab.id} className="flex items-center space-x-2">
-                <tab.icon className="h-4 w-4" />
-                <span>{tab.label}</span>
+              <TabsTrigger key={tab.id} value={tab.id} className="flex items-center space-x-1 text-xs">
+                <tab.icon className="h-3 w-3" />
+                <span className="hidden sm:inline">{tab.label}</span>
               </TabsTrigger>
             ))}
           </TabsList>
