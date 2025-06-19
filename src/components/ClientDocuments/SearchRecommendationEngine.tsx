@@ -11,7 +11,8 @@ import {
   CheckCircle,
   Clock,
   FileText,
-  ArrowRight
+  ArrowRight,
+  Calendar
 } from 'lucide-react';
 import { useClientDocuments } from '@/hooks/useClientDocuments';
 
