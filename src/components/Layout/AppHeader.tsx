@@ -15,13 +15,15 @@ const AppHeader = ({ onToggleRightSidebar, isRightSidebarOpen }: AppHeaderProps)
   const isMobile = useIsMobile();
 
   return (
-    <header className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-40">
+    <header className="bg-sidebar border-b border-sidebar-border sticky top-0 z-50 w-full">
       <div className="flex h-14 items-center justify-between px-4">
         <div className="flex items-center gap-4">
           <Logo />
           {!isMobile && (
-            <div className="border-l border-border pl-4">
-              <AppBreadcrumb />
+            <div className="border-l border-sidebar-border pl-4">
+              <div className="text-sidebar-foreground">
+                <AppBreadcrumb />
+              </div>
             </div>
           )}
         </div>
@@ -33,7 +35,7 @@ const AppHeader = ({ onToggleRightSidebar, isRightSidebarOpen }: AppHeaderProps)
               variant="ghost"
               size="icon"
               onClick={onToggleRightSidebar}
-              className="h-8 w-8 relative"
+              className="h-8 w-8 relative text-sidebar-foreground hover:bg-sidebar-accent"
               title="Toggle AI-Revi Assistant"
             >
               <MessageSquare className="h-4 w-4" />

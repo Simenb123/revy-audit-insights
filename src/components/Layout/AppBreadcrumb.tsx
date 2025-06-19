@@ -49,7 +49,7 @@ const AppBreadcrumb = () => {
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
-            <BreadcrumbPage className="flex items-center gap-1">
+            <BreadcrumbPage className="flex items-center gap-1 text-sidebar-foreground">
               <Home className="h-4 w-4" />
               Dashboard
             </BreadcrumbPage>
@@ -64,7 +64,7 @@ const AppBreadcrumb = () => {
       <BreadcrumbList>
         <BreadcrumbItem>
           <BreadcrumbLink asChild>
-            <Link to="/dashboard" className="flex items-center gap-1">
+            <Link to="/dashboard" className="flex items-center gap-1 text-sidebar-foreground hover:text-sidebar-primary">
               <Home className="h-4 w-4" />
               Dashboard
             </Link>
@@ -77,13 +77,13 @@ const AppBreadcrumb = () => {
 
           return (
             <React.Fragment key={fullPath}>
-              <BreadcrumbSeparator />
+              <BreadcrumbSeparator className="text-sidebar-foreground/60" />
               <BreadcrumbItem>
                 {isLast ? (
-                  <BreadcrumbPage>{breadcrumbName}</BreadcrumbPage>
+                  <BreadcrumbPage className="text-sidebar-foreground">{breadcrumbName}</BreadcrumbPage>
                 ) : (
                   <BreadcrumbLink asChild>
-                    <Link to={fullPath}>{breadcrumbName}</Link>
+                    <Link to={fullPath} className="text-sidebar-foreground hover:text-sidebar-primary">{breadcrumbName}</Link>
                   </BreadcrumbLink>
                 )}
               </BreadcrumbItem>

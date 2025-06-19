@@ -1,15 +1,11 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
   MessageSquare, 
   X,
   PanelRightClose
 } from 'lucide-react';
-import SmartRevyAssistant from '../Revy/SmartRevyAssistant';
-import { useLocation, useParams } from 'react-router-dom';
-import { useRevyContext } from '../RevyContext/RevyContextProvider';
 import { useIsMobile } from "@/hooks/use-mobile";
 
 interface RightSidebarProps {
@@ -17,21 +13,7 @@ interface RightSidebarProps {
 }
 
 const RightSidebar = ({ onToggle }: RightSidebarProps) => {
-  const location = useLocation();
-  const { orgNumber } = useParams<{ orgNumber: string }>();
-  const { currentClient } = useRevyContext();
   const isMobile = useIsMobile();
-
-  // Simple context detection
-  const getCurrentContext = () => {
-    const path = location.pathname;
-    if (path.includes('/klienter/') && orgNumber) {
-      return 'client-detail';
-    }
-    return 'general';
-  };
-
-  const currentContext = getCurrentContext();
 
   return (
     <div className="h-full flex flex-col w-full overflow-hidden bg-background">
@@ -52,14 +34,32 @@ const RightSidebar = ({ onToggle }: RightSidebarProps) => {
         </Button>
       </div>
       
-      {/* AI Assistant Content */}
+      {/* Simple AI Chat Content */}
       <div className="flex-1 min-h-0 p-4">
-        <SmartRevyAssistant 
-          embedded={true} 
-          context={currentContext as any}
-          clientData={currentClient}
-          userRole="employee"
-        />
+        <div className="flex flex-col h-full">
+          <div className="flex-1 overflow-y-auto mb-4">
+            <div className="space-y-4">
+              <div className="bg-blue-50 p-3 rounded-lg">
+                <p className="text-sm text-blue-900">
+                  Hei! Jeg er AI-Revi assistenten. Hvordan kan jeg hjelpe deg i dag?
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="border-t border-border pt-4">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Skriv din melding..."
+                className="flex-1 px-3 py-2 border border-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              />
+              <Button size="sm" className="px-3">
+                Send
+              </Button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
