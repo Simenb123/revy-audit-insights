@@ -122,7 +122,7 @@ const EnhancedRevyMessageList: React.FC<EnhancedRevyMessageListProps> = ({
 
                   {/* Message content */}
                   <div className={`prose prose-sm max-w-none ${embedded ? 'text-sm' : ''}`}>
-                    {formatMessageContent(message.content)}
+                    {formatMessageContent(String(message.content))}
                   </div>
 
                   {/* Quality indicator for AI responses */}

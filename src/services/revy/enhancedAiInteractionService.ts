@@ -2,7 +2,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { RevyChatMessage } from '@/types/revio';
 import { generateSmartDocumentPrompt } from '@/services/documentAIService';
-import { useClientDocuments } from '@/hooks/useClientDocuments';
 
 export const generateEnhancedAIResponseWithVariant = async (
   userMessage: string,
@@ -60,6 +59,9 @@ export const generateEnhancedAIResponseWithVariant = async (
     return getFallbackResponse(context, userMessage);
   }
 };
+
+// Export the alias for backward compatibility
+export const generateEnhancedAIResponse = generateEnhancedAIResponseWithVariant;
 
 const buildEnhancedSystemPrompt = (
   context: string,
