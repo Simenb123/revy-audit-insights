@@ -61,19 +61,11 @@ const EnhancedDocumentList: React.FC<EnhancedDocumentListProps> = ({ clientId })
       if (url) {
         window.open(url, '_blank');
       } else {
-        toast({
-          title: "Kunne ikke laste ned",
-          description: "Dokumentet er ikke tilgjengelig",
-          variant: "destructive"
-        });
+        toast.error("Kunne ikke laste ned - dokumentet er ikke tilgjengelig");
       }
     } catch (error) {
       console.error('Download error:', error);
-      toast({
-        title: "Nedlasting feilet",
-        description: "Prøv igjen senere",
-        variant: "destructive"
-      });
+      toast.error("Nedlasting feilet - prøv igjen senere");
     }
   };
 

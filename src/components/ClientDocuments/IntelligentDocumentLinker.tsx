@@ -102,11 +102,7 @@ const IntelligentDocumentLinker: React.FC<IntelligentDocumentLinkerProps> = ({
 
     } catch (error) {
       console.error('Error analyzing relationships:', error);
-      toast({
-        title: "Analyse feilet",
-        description: "Kunne ikke analysere dokumentkoblinger",
-        variant: "destructive"
-      });
+      toast.error("Kunne ikke analysere dokumentkoblinger");
     } finally {
       setIsAnalyzing(false);
     }
@@ -241,10 +237,7 @@ const IntelligentDocumentLinker: React.FC<IntelligentDocumentLinkerProps> = ({
 
       if (error) throw error;
 
-      toast({
-        title: "Kobling opprettet",
-        description: `Koblet dokumenter med ${Math.round(suggestion.confidence * 100)}% sikkerhet`
-      });
+      toast.success(`Koblet dokumenter med ${Math.round(suggestion.confidence * 100)}% sikkerhet`);
 
       // Oppdater lokale data
       loadExistingRelationships();
@@ -252,11 +245,7 @@ const IntelligentDocumentLinker: React.FC<IntelligentDocumentLinkerProps> = ({
 
     } catch (error) {
       console.error('Error creating link:', error);
-      toast({
-        title: "Kunne ikke opprette kobling",
-        description: "Prøv igjen senere",
-        variant: "destructive"
-      });
+      toast.error("Kunne ikke opprette kobling - prøv igjen senere");
     }
   };
 
@@ -269,19 +258,12 @@ const IntelligentDocumentLinker: React.FC<IntelligentDocumentLinkerProps> = ({
 
       if (error) throw error;
 
-      toast({
-        title: "Kobling fjernet",
-        description: "Dokumentkoblingen er slettet"
-      });
+      toast.success("Dokumentkoblingen er slettet");
 
       loadExistingRelationships();
     } catch (error) {
       console.error('Error removing link:', error);
-      toast({
-        title: "Kunne ikke fjerne kobling",
-        description: "Prøv igjen senere",
-        variant: "destructive"
-      });
+      toast.error("Kunne ikke fjerne kobling - prøv igjen senere");
     }
   };
 
