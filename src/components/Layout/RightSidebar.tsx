@@ -4,20 +4,72 @@ import { Button } from "@/components/ui/button";
 import { 
   MessageSquare, 
   X,
-  PanelRightClose
+  PanelRightClose,
+  PanelRightOpen
 } from 'lucide-react';
 import { useIsMobile } from "@/hooks/use-mobile";
+import { TooltipProvider, Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface RightSidebarProps {
+  isCollapsed?: boolean;
   onToggle: () => void;
 }
 
-const RightSidebar = ({ onToggle }: RightSidebarProps) => {
+const RightSidebar = ({ isCollapsed = false, onToggle }: RightSidebarProps) => {
   const isMobile = useIsMobile();
+
+  if (isCollapsed) {
+    return (
+      <div className="h-full flex flex-col w-full overflow-hidden bg-background">
+        {/* Collapsed Header */}
+        <div className="border-b border-border flex items-center justify-center p-4 flex-shrink-0">
+          <TooltipProvider delayDuration={0}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={onToggle}
+                  className="h-8 w-8 hover:bg-accent"
+                  title="Utvid AI-assistant"
+                >
+                  <PanelRightOpen className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="left">
+                Utvid AI-assistant
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+        
+        {/* Collapsed Content */}
+        <div className="flex-1 min-h-0 p-2 flex justify-center">
+          <TooltipProvider delayDuration={0}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={onToggle}
+                  className="h-8 w-8 hover:bg-accent"
+                >
+                  <MessageSquare className="h-4 w-4 text-blue-600" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="left">
+                AI-Revi Assistant
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full flex flex-col w-full overflow-hidden bg-background">
-      {/* Simple Header */}
+      {/* Expanded Header */}
       <div className="border-b border-border flex items-center justify-between p-4 flex-shrink-0">
         <div className="flex items-center gap-2">
           <MessageSquare className="h-5 w-5 text-blue-600" />
@@ -28,13 +80,13 @@ const RightSidebar = ({ onToggle }: RightSidebarProps) => {
           size="icon"
           onClick={onToggle}
           className="h-8 w-8 hover:bg-accent"
-          title={isMobile ? "Lukk" : "Lukk AI-assistant"}
+          title={isMobile ? "Lukk" : "Trekk inn AI-assistant"}
         >
           {isMobile ? <X className="h-4 w-4" /> : <PanelRightClose className="h-4 w-4" />}
         </Button>
       </div>
       
-      {/* Simple AI Chat Content */}
+      {/* AI Chat Content */}
       <div className="flex-1 min-h-0 p-4">
         <div className="flex flex-col h-full">
           <div className="flex-1 overflow-y-auto mb-4">

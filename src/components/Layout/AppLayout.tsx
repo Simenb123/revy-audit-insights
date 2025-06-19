@@ -10,7 +10,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 
 const AppLayout = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(false);
+  const [isRightSidebarCollapsed, setIsRightSidebarCollapsed] = useState(false);
   const [isMobileRightSidebarOpen, setIsMobileRightSidebarOpen] = useState(false);
   const isMobile = useIsMobile();
 
@@ -22,21 +22,21 @@ const AppLayout = () => {
     if (isMobile) {
       setIsMobileRightSidebarOpen(!isMobileRightSidebarOpen);
     } else {
-      setIsRightSidebarOpen(!isRightSidebarOpen);
+      setIsRightSidebarCollapsed(!isRightSidebarCollapsed);
     }
   };
 
   return (
     <div className="min-h-screen bg-background flex flex-col w-full">
-      {/* Global Header - spans entire width */}
+      {/* Global Header */}
       <AppHeader 
         onToggleRightSidebar={toggleRightSidebar}
-        isRightSidebarOpen={isRightSidebarOpen}
+        isRightSidebarCollapsed={isRightSidebarCollapsed}
       />
       
       {/* Main Layout Below Header */}
       <div className="flex-1 flex">
-        {/* Left Sidebar - Fixed width based on collapsed state */}
+        {/* Left Sidebar */}
         <div className={`${isSidebarCollapsed ? 'w-16' : 'w-64'} transition-all duration-300 flex-shrink-0`}>
           <Sidebar isCollapsed={isSidebarCollapsed} onToggle={toggleSidebar} />
         </div>
@@ -46,10 +46,13 @@ const AppLayout = () => {
           <Outlet />
         </main>
 
-        {/* Right Sidebar - Desktop only, fixed 320px width */}
-        {!isMobile && isRightSidebarOpen && (
-          <div className="w-80 border-l border-border flex-shrink-0">
-            <RightSidebar onToggle={toggleRightSidebar} />
+        {/* Right Sidebar - Desktop only */}
+        {!isMobile && (
+          <div className={`${isRightSidebarCollapsed ? 'w-16' : 'w-80'} border-l border-border flex-shrink-0 transition-all duration-300`}>
+            <RightSidebar 
+              isCollapsed={isRightSidebarCollapsed} 
+              onToggle={toggleRightSidebar} 
+            />
           </div>
         )}
       </div>
