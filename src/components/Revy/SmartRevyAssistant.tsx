@@ -100,10 +100,14 @@ const SmartReviAssistant = ({ embedded = false, clientData, userRole }: SmartRev
     try {
       console.log('🤖 Generating AI response with enhanced knowledge access...');
       
-      // Convert messages to chat history format with string content
-      const chatHistory = updatedMessages.map(msg => ({
+      // Convert RevyMessage[] to RevyChatMessage[] format expected by the enhanced AI service
+      const chatHistory: RevyChatMessage[] = updatedMessages.map(msg => ({
+        id: msg.id,
+        session_id: sessionId || '',
         sender: msg.sender,
-        content: typeof msg.content === 'string' ? msg.content : String(msg.content)
+        content: typeof msg.content === 'string' ? msg.content : String(msg.content),
+        created_at: msg.timestamp,
+        metadata: {}
       }));
 
       // Use enhanced AI service for better knowledge base access
