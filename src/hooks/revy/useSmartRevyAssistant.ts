@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
@@ -26,6 +25,7 @@ const mapMessageToUIMessage = (msg: RevyChatMessage): RevyMessage => ({
 
 export const useSmartReviAssistant = ({ clientData, userRole, embedded = false }: UseSmartReviAssistantProps) => {
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [selectedVariant, setSelectedVariant] = useState<any>(null);
   const { sessions, isLoading: sessionsLoading, createSession } = useRevyChatSessions();
   const { messages: dbMessages, isLoading: messagesLoading, sendMessage } = useRevyChatMessages(activeSessionId);
   
@@ -56,13 +56,13 @@ export const useSmartReviAssistant = ({ clientData, userRole, embedded = false }
     }
   }, [createSession, enhancedContext, clientData?.id, sendMessage, toast]);
   
-  // Effect to manage sessions
+  // Enhanced effect to manage sessions with variant context
   useEffect(() => {
     if (sessionsLoading) return;
 
     if (embedded) {
       // For embedded, we want one session per context
-      const contextTitle = `Embedded: ${enhancedContext} ${clientData?.id || ''}`;
+      const contextTitle = `Embedded: ${enhancedContext} ${clientData?.id || ''} ${selectedVariant?.name || ''}`;
       const existingSession = sessions.find(s => s.title === contextTitle);
       if (existingSession) {
         if (activeSessionId !== existingSession.id) {
@@ -79,7 +79,7 @@ export const useSmartReviAssistant = ({ clientData, userRole, embedded = false }
         handleCreateSession();
       }
     }
-  }, [sessions, sessionsLoading, embedded, enhancedContext, clientData?.id, activeSessionId, handleCreateSession]);
+  }, [sessions, sessionsLoading, embedded, enhancedContext, clientData?.id, activeSessionId, selectedVariant?.name, handleCreateSession]);
 
   useEffect(() => {
     const fetchTip = async () => {
@@ -111,15 +111,15 @@ export const useSmartReviAssistant = ({ clientData, userRole, embedded = false }
     setIsTyping(true);
     
     try {
-      // The logic for building an "enhanced message" has been moved to the revy-ai-chat edge function.
-      // We can now call generateAIResponse directly with the context we have on the client.
-      const responseText = await generateAIResponse(
+      // Use enhanced AI response with variant support
+      const responseText = await generateEnhancedAIResponseWithVariant(
         userMessageContent, 
         enhancedContext,
         historyBeforeSend,
-        clientData, // This is the actual client data object
+        clientData,
         userRole,
-        activeSessionId
+        activeSessionId,
+        selectedVariant
       );
       
       await sendMessage({
@@ -141,6 +141,15 @@ export const useSmartReviAssistant = ({ clientData, userRole, embedded = false }
     }
   };
 
+  const handleVariantChange = (variant: any) => {
+    setSelectedVariant(variant);
+    // Optionally create a new session when variant changes for better context separation
+    if (!embedded) {
+      const variantTitle = `${variant.display_name} - ${new Date().toLocaleDateString()}`;
+      handleCreateSession(variantTitle);
+    }
+  };
+
   return {
     sessions,
     activeSessionId,
@@ -152,5 +161,7 @@ export const useSmartReviAssistant = ({ clientData, userRole, embedded = false }
     isTyping: isTyping || messagesLoading || sessionsLoading,
     currentTip,
     handleSendMessage,
+    selectedVariant,
+    handleVariantChange,
   };
 };

@@ -1,7 +1,221 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { RevyContext } from '@/types/revio';
 import { generateEmbeddingsForExistingArticles } from './generateEmbeddingsService';
+
+// Enhanced AI response generation with AI variant support
+export const generateEnhancedAIResponseWithVariant = async (
+  message: string, 
+  context: RevyContext,
+  history: Array<{ sender: string; content: string }>,
+  clientData?: any,
+  userRole?: string,
+  sessionId?: string,
+  selectedVariant?: any
+): Promise<string> => {
+  console.log('🚀 Calling enhanced generateAIResponse service with variant support', {
+    context,
+    hasClientData: !!clientData,
+    userRole,
+    messageLength: message.length,
+    historyLength: history.length,
+    selectedVariant: selectedVariant?.name
+  });
+
+  // Check if user is asking about knowledge/ISA standards and if embeddings exist
+  const isKnowledgeQuery = /\b(isa|revisjonsstandard|fagstoff|artikkel|retningslinje)\b/i.test(message);
+  
+  if (isKnowledgeQuery) {
+    console.log('🔍 Knowledge query detected, checking if embeddings exist...');
+    
+    // Check if we have any articles with embeddings
+    const { data: articlesWithEmbeddings, error } = await supabase
+      .from('knowledge_articles')
+      .select('id')
+      .eq('status', 'published')
+      .not('embedding', 'is', null)
+      .limit(1);
+    
+    if (!error && (!articlesWithEmbeddings || articlesWithEmbeddings.length === 0)) {
+      console.log('⚠️ No embeddings found, triggering generation...');
+      
+      // Generate embeddings in the background (don't wait for completion)
+      generateEmbeddingsForExistingArticles()
+        .then(result => {
+          console.log('🎉 Background embedding generation completed:', result);
+        })
+        .catch(error => {
+          console.error('❌ Background embedding generation failed:', error);
+        });
+    }
+  }
+
+  // Enhance clientData with document context and AI variant context
+  let enhancedClientData = clientData;
+  
+  if (clientData?.id) {
+    try {
+      console.log('📄 Fetching enhanced document context for client:', clientData.id);
+      
+      // Get client documents with AI analysis and enhanced context
+      const { data: documents, error: docsError } = await supabase
+        .from('client_documents_files')
+        .select(`
+          *,
+          ai_suggested_subject_areas,
+          ai_isa_standard_references,
+          ai_revision_phase_relevance
+        `)
+        .eq('client_id', clientData.id)
+        .order('created_at', { ascending: false });
+
+      if (!docsError && documents) {
+        // Get document relationships and subject area mappings
+        const documentIds = documents.map(d => d.id);
+        const { data: relationships } = await supabase
+          .from('document_relationships')
+          .select('*')
+          .or(`parent_document_id.in.(${documentIds.join(',')}),child_document_id.in.(${documentIds.join(',')})`);
+
+        const { data: subjectAreaMappings } = await supabase
+          .from('document_category_subject_area_mappings')
+          .select('*');
+
+        // Calculate enhanced document statistics
+        const documentStats = {
+          total: documents.length,
+          highConfidence: documents.filter(d => d.ai_confidence_score && d.ai_confidence_score >= 0.8).length,
+          mediumConfidence: documents.filter(d => d.ai_confidence_score && d.ai_confidence_score >= 0.6 && d.ai_confidence_score < 0.8).length,
+          lowConfidence: documents.filter(d => d.ai_confidence_score && d.ai_confidence_score < 0.6).length,
+          uncategorized: documents.filter(d => !d.ai_confidence_score).length,
+          categories: [...new Set(documents.map(d => d.category).filter(Boolean))],
+          subjectAreas: [...new Set(documents.flatMap(d => d.ai_suggested_subject_areas || []))],
+          isaStandards: [...new Set(documents.flatMap(d => d.ai_isa_standard_references || []))],
+          relationships: relationships?.length || 0
+        };
+
+        // Identify recent documents with enhanced context
+        const recentDocuments = documents.slice(0, 5).map(d => ({
+          name: d.file_name,
+          category: d.category,
+          confidence: d.ai_confidence_score,
+          analysis: d.ai_analysis_summary,
+          uploadDate: d.created_at,
+          subjectAreas: d.ai_suggested_subject_areas || [],
+          isaStandards: d.ai_isa_standard_references || [],
+          phaseRelevance: d.ai_revision_phase_relevance || {}
+        }));
+
+        // Calculate risk level based on subject areas and ISA standards
+        const riskLevel = calculateOverallRiskLevel(documentStats.subjectAreas, subjectAreaMappings);
+
+        enhancedClientData = {
+          ...clientData,
+          documentContext: {
+            stats: documentStats,
+            recentDocuments,
+            hasDocumentRelationships: (relationships?.length || 0) > 0,
+            documentQualityScore: documentStats.total > 0 ? 
+              (documentStats.highConfidence / documentStats.total * 100) : 0,
+            riskLevel,
+            currentPhase: clientData.phase || 'execution',
+            aiVariantContext: selectedVariant ? {
+              variantName: selectedVariant.name,
+              variantFocus: selectedVariant.description,
+              availableContexts: selectedVariant.available_contexts
+            } : null
+          }
+        };
+
+        console.log('📊 Enhanced client data with AI variant context:', {
+          totalDocs: documentStats.total,
+          qualityScore: enhancedClientData.documentContext.documentQualityScore,
+          relationships: documentStats.relationships,
+          subjectAreas: documentStats.subjectAreas.length,
+          isaStandards: documentStats.isaStandards.length,
+          selectedVariant: selectedVariant?.name,
+          riskLevel
+        });
+      }
+    } catch (error) {
+      console.error('❌ Error fetching enhanced document context:', error);
+      // Continue without enhanced document context if there's an error
+    }
+  }
+
+  try {
+    // Get current user
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      console.error('❌ Authentication error in enhanced generateAIResponse:', userError?.message || 'No user found');
+      throw new Error('Authentication required');
+    }
+
+    console.log('✅ User authenticated for enhanced AI call:', user.id);
+
+    const requestBody = {
+      message,
+      context,
+      history,
+      clientData: enhancedClientData,
+      userRole,
+      sessionId,
+      userId: user.id,
+      selectedVariant: selectedVariant ? {
+        name: selectedVariant.name,
+        systemPrompt: selectedVariant.system_prompt_template,
+        availableContexts: selectedVariant.available_contexts
+      } : null
+    };
+
+    console.log('📤 Sending enhanced request to revy-ai-chat edge function with variant support');
+
+    const { data, error } = await supabase.functions.invoke('revy-ai-chat', {
+      body: requestBody
+    });
+
+    if (error) {
+      console.error('❌ Supabase function invocation error:', error);
+      const errorMessage = error.context?.msg || error.message || 'Unknown function error';
+      throw new Error(errorMessage);
+    }
+
+    if (data.isError) {
+        console.error('❌ Error response from enhanced AI function:', data.error);
+        throw new Error(data.response || data.error || 'The AI assistant encountered an error.');
+    }
+
+    if (!data || !data.response) {
+      console.error('❌ Invalid response structure from enhanced AI function:', data);
+      throw new Error('Invalid response from AI service');
+    }
+
+    console.log('✅ Enhanced AI response received successfully with variant support', { 
+      responseLength: data.response.length,
+      variant: selectedVariant?.name 
+    });
+    return data.response;
+
+  } catch (error) {
+    console.error('💥 Final catch block in enhanced generateAIResponse with variant:', error);
+    throw new Error(error instanceof Error ? error.message : 'An unknown error occurred while contacting the AI assistant.');
+  }
+};
+
+const calculateOverallRiskLevel = (subjectAreas: string[], mappings: any[]): string => {
+  if (!subjectAreas.length || !mappings) return 'medium';
+  
+  const riskLevels = subjectAreas.map(area => {
+    const mapping = mappings.find(m => m.subject_area === area);
+    return mapping?.risk_level || 'medium';
+  });
+
+  // If any high risk, overall is high
+  if (riskLevels.includes('high')) return 'high';
+  // If any medium risk, overall is medium
+  if (riskLevels.includes('medium')) return 'medium';
+  // Otherwise low
+  return 'low';
+};
 
 // Enhanced AI response generation with document context
 export const generateEnhancedAIResponse = async (

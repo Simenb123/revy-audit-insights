@@ -1,15 +1,15 @@
-
 import React, { useState } from 'react';
 import { Editor } from '@tiptap/react';
 import { Bot, Loader2 } from 'lucide-react';
 import ToolbarButton from '../ToolbarButton';
-import { generateEnhancedAIResponse } from '@/services/revy/enhancedAiInteractionService';
+import { generateEnhancedAIResponseWithVariant } from '@/services/revy/enhancedAiInteractionService';
 import { toast } from '@/components/ui/use-toast';
 import { Client } from '@/types/revio';
 import { ClientAuditAction } from '@/types/audit-actions';
 import { useCreateDocumentVersion } from '@/hooks/useCreateDocumentVersion';
 import { useCreateAuditLog } from '@/hooks/useCreateAuditLog';
 import AIPreviewDialog from '@/components/AuditActions/AIPreviewDialog';
+import { useAIRevyVariants } from '@/hooks/useAIRevyVariants';
 
 type Props = {
   editor: Editor;
@@ -25,6 +25,7 @@ const ReviAIGroup = ({ editor, client, action }: Props) => {
 
   const createVersion = useCreateDocumentVersion();
   const createAuditLog = useCreateAuditLog();
+  const { selectedVariant } = useAIRevyVariants('audit-actions');
 
   const handleReviHelp = async () => {
     if (!editor || !action || !client) {
@@ -54,24 +55,39 @@ const ReviAIGroup = ({ editor, client, action }: Props) => {
        return;
     }
     
-    const prompt = `Du er en erfaren revisor. Forbedre og utdyp følgende dokumentasjon for revisjonshandlingen "${action.name}". 
+    const prompt = selectedVariant?.name === 'methodology' 
+      ? `Du er AI-Revi Metodikk. Forbedre og utdyp følgende revisjonshandling "${action.name}" med fokus på ISA-standarder og metodikk.
 
-    VIKTIG: Ta hensyn til klientens dokumentstatus når du gir forslag:
-    - Hvis klienten har mange dokumenter med høy AI-sikkerhet, kan du være mer spesifikk i anbefalingene
-    - Hvis klienten mangler dokumenter eller har lav dokumentkvalitet, fokuser på hva som må skaffes først
-    - Vurder dokumentkoblinger når du foreslår analyser
+VIKTIG: Inkluder konkrete ISA-referanser og prosedyrer.
+- Spesifiser hvilke ISA-standarder som gjelder
+- Gi detaljerte revisjonshandlinger
+- Foreslå dokumentasjonskrav
+- Vurder risikonivå og materialitet
+- Ta hensyn til klientens dokumentstatus og fagområder
+
+Svar kun med den oppdaterte HTML-formaterte teksten.
     
-    Svar kun med den oppdaterte HTML-formaterte teksten, uten ekstra kommentarer eller introduksjoner. 
-    
-    Eksisterende tekst:\n\n${currentContent}`;
+Eksisterende tekst:\n\n${currentContent}`
+      : `Du er en erfaren revisor. Forbedre og utdyp følgende dokumentasjon for revisjonshandlingen "${action.name}". 
+
+VIKTIG: Ta hensyn til klientens dokumentstatus når du gir forslag:
+- Hvis klienten har mange dokumenter med høy AI-sikkerhet, kan du være mer spesifikk i anbefalingene
+- Hvis klienten mangler dokumenter eller har lav dokumentkvalitet, fokuser på hva som må skaffes først
+- Vurder dokumentkoblinger når du foreslår analyser
+
+Svar kun med den oppdaterte HTML-formaterte teksten, uten ekstra kommentarer eller introduksjoner. 
+
+Eksisterende tekst:\n\n${currentContent}`;
 
     try {
-      const response = await generateEnhancedAIResponse(
+      const response = await generateEnhancedAIResponseWithVariant(
         prompt,
         'audit-actions',
         [], // history
         client, // clientData with enhanced document context
-        'employee' // userRole
+        'employee', // userRole
+        undefined, // sessionId
+        selectedVariant // Selected AI variant
       );
       
       setAiSuggestion(response);
@@ -150,10 +166,10 @@ const ReviAIGroup = ({ editor, client, action }: Props) => {
   return (
     <>
       <ToolbarButton
-        tooltip="Spør AI-Revi om hjelp"
+        tooltip={`Spør ${selectedVariant?.display_name || 'AI-Revi'} om hjelp`}
         onPressedChange={handleReviHelp}
         disabled={isLoading || isPreviewOpen}
-        aria-label="Spør AI-Revi om hjelp"
+        aria-label={`Spør ${selectedVariant?.display_name || 'AI-Revi'} om hjelp`}
       >
         {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Bot className="h-4 w-4" />}
       </ToolbarButton>

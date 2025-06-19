@@ -220,6 +220,48 @@ export type Database = {
           },
         ]
       }
+      ai_revy_variants: {
+        Row: {
+          available_contexts: string[] | null
+          context_requirements: Json | null
+          created_at: string
+          description: string | null
+          display_name: string
+          id: string
+          is_active: boolean | null
+          name: string
+          sort_order: number | null
+          system_prompt_template: string
+          updated_at: string
+        }
+        Insert: {
+          available_contexts?: string[] | null
+          context_requirements?: Json | null
+          created_at?: string
+          description?: string | null
+          display_name: string
+          id?: string
+          is_active?: boolean | null
+          name: string
+          sort_order?: number | null
+          system_prompt_template: string
+          updated_at?: string
+        }
+        Update: {
+          available_contexts?: string[] | null
+          context_requirements?: Json | null
+          created_at?: string
+          description?: string | null
+          display_name?: string
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          sort_order?: number | null
+          system_prompt_template?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ai_usage_logs: {
         Row: {
           client_id: string | null
@@ -939,7 +981,10 @@ export type Database = {
         Row: {
           ai_analysis_summary: string | null
           ai_confidence_score: number | null
+          ai_isa_standard_references: string[] | null
+          ai_revision_phase_relevance: Json | null
           ai_suggested_category: string | null
+          ai_suggested_subject_areas: string[] | null
           category: string | null
           client_id: string
           created_at: string
@@ -958,7 +1003,10 @@ export type Database = {
         Insert: {
           ai_analysis_summary?: string | null
           ai_confidence_score?: number | null
+          ai_isa_standard_references?: string[] | null
+          ai_revision_phase_relevance?: Json | null
           ai_suggested_category?: string | null
+          ai_suggested_subject_areas?: string[] | null
           category?: string | null
           client_id: string
           created_at?: string
@@ -977,7 +1025,10 @@ export type Database = {
         Update: {
           ai_analysis_summary?: string | null
           ai_confidence_score?: number | null
+          ai_isa_standard_references?: string[] | null
+          ai_revision_phase_relevance?: Json | null
           ai_suggested_category?: string | null
+          ai_suggested_subject_areas?: string[] | null
           category?: string | null
           client_id?: string
           created_at?: string
@@ -1344,6 +1395,47 @@ export type Database = {
           subject_area?: string
         }
         Relationships: []
+      }
+      document_category_subject_area_mappings: {
+        Row: {
+          audit_phases: string[] | null
+          confidence_score: number | null
+          created_at: string
+          document_category_id: string | null
+          id: string
+          isa_standards: string[] | null
+          risk_level: string | null
+          subject_area: string
+        }
+        Insert: {
+          audit_phases?: string[] | null
+          confidence_score?: number | null
+          created_at?: string
+          document_category_id?: string | null
+          id?: string
+          isa_standards?: string[] | null
+          risk_level?: string | null
+          subject_area: string
+        }
+        Update: {
+          audit_phases?: string[] | null
+          confidence_score?: number | null
+          created_at?: string
+          document_category_id?: string | null
+          id?: string
+          isa_standards?: string[] | null
+          risk_level?: string | null
+          subject_area?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_category_subject_area_mappin_document_category_id_fkey"
+            columns: ["document_category_id"]
+            isOneToOne: false
+            referencedRelation: "document_categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       document_metadata: {
         Row: {

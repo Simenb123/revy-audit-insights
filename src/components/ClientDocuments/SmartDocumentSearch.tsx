@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -25,6 +24,9 @@ import {
 import { useClientDocuments } from '@/hooks/useClientDocuments';
 import SearchRecommendationEngine from './SearchRecommendationEngine';
 import { toast } from 'sonner';
+import AIRevyVariantSelector from '@/components/AI/AIRevyVariantSelector';
+import { useAIRevyVariants } from '@/hooks/useAIRevyVariants';
+import { generateEnhancedAIResponseWithVariant } from '@/services/revy/enhancedAiInteractionService';
 
 interface SmartDocumentSearchProps {
   clientId: string;
@@ -36,8 +38,10 @@ const SmartDocumentSearch: React.FC<SmartDocumentSearchProps> = ({ clientId }) =
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
   const [selectedFilters, setSelectedFilters] = useState<SearchQuery['filters']>({});
+  const [isAISearchMode, setIsAISearchMode] = useState(false);
 
   const { getDocumentUrl } = useClientDocuments(clientId);
+  const { selectedVariant, handleVariantChange } = useAIRevyVariants('documentation');
 
   useEffect(() => {
     loadSearchSuggestions();
@@ -81,6 +85,80 @@ const SmartDocumentSearch: React.FC<SmartDocumentSearchProps> = ({ clientId }) =
     } finally {
       setIsSearching(false);
     }
+  };
+
+  const handleAIAssistedSearch = async () => {
+    if (!searchTerm.trim()) return;
+    
+    setIsSearching(true);
+    try {
+      const aiPrompt = `Hjælp meg å finne dokumenter relatert til: "${searchTerm}". 
+      Basert på mine opplastede dokumenter, foreslå:
+      1. Spesifikke søkefiltre 
+      2. Relaterte dokumenttyper jeg bør se etter
+      3. Revisjonshandlinger som er relevante
+      4. ISA-standarder som gjelder`;
+
+      const aiResponse = await generateEnhancedAIResponseWithVariant(
+        aiPrompt,
+        'documentation',
+        [],
+        { id: clientId },
+        'employee',
+        undefined,
+        selectedVariant
+      );
+
+      // Parse AI response for actionable suggestions
+      const aiSuggestions = parseAISearchSuggestions(aiResponse);
+      
+      // Execute the actual search with AI-suggested parameters
+      const enhancedQuery: SearchQuery = {
+        term: searchTerm,
+        clientId,
+        filters: {
+          ...selectedFilters,
+          ...aiSuggestions.suggestedFilters
+        }
+      };
+
+      const results = await performSemanticSearch(enhancedQuery);
+      setSearchResults(results);
+
+      if (results.length === 0) {
+        toast.error(`AI-søk fant ingen resultater for "${searchTerm}". ${aiSuggestions.alternativeSuggestion || ''}`);
+      } else {
+        toast.success(`AI-søk fant ${results.length} relevante dokumenter med forbedrede kriterier`);
+      }
+    } catch (error) {
+      console.error('AI-assisted search error:', error);
+      // Fallback to regular search
+      await handleSearch();
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const parseAISearchSuggestions = (aiResponse: string) => {
+    // Simple parsing of AI response for suggestions
+    const suggestedFilters: any = {};
+    const alternativeSuggestion = '';
+
+    // Look for confidence level suggestions
+    if (aiResponse.toLowerCase().includes('lav sikkerhet') || aiResponse.toLowerCase().includes('trenger gjennomgang')) {
+      suggestedFilters.confidenceLevel = 'low';
+    }
+    if (aiResponse.toLowerCase().includes('høy kvalitet') || aiResponse.toLowerCase().includes('validert')) {
+      suggestedFilters.aiValidated = true;
+    }
+
+    // Look for category suggestions
+    const categoryMatches = aiResponse.match(/kategori[:\s]+([^.]+)/i);
+    if (categoryMatches) {
+      suggestedFilters.category = categoryMatches[1].trim();
+    }
+
+    return { suggestedFilters, alternativeSuggestion };
   };
 
   const handleRecommendationSearch = (query: string) => {
@@ -128,29 +206,67 @@ const SmartDocumentSearch: React.FC<SmartDocumentSearchProps> = ({ clientId }) =
           </p>
         </CardHeader>
         <CardContent className="space-y-6">
+          {/* AI Variant Selector */}
+          <AIRevyVariantSelector 
+            currentContext="documentation"
+            onVariantChange={handleVariantChange}
+            compact={true}
+          />
+
           {/* Search Input */}
           <div className="relative">
             <Search className="h-4 w-4 absolute left-3 top-3 text-gray-400" />
             <Input
-              placeholder="Søk på konsepter som 'manglende bilag Q4', 'lønn desember', eller 'dokumenter som trenger gjennomgang'..."
+              placeholder={
+                selectedVariant?.name === 'methodology' 
+                  ? "Søk på ISA-standarder som 'ISA 315 risikovurdering', 'kontroller for lønn'..."
+                  : selectedVariant?.name === 'professional'
+                  ? "Søk på faglige emner som 'IFRS 16 leasingavtaler', 'regnskapsestimater'..."
+                  : "Søk på konsepter som 'manglende bilag Q4', 'lønn desember', eller 'dokumenter som trenger gjennomgang'..."
+              }
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-              className="pl-10 pr-20"
+              onKeyPress={(e) => e.key === 'Enter' && (isAISearchMode ? handleAIAssistedSearch() : handleSearch())}
+              className="pl-10 pr-32"
             />
-            <Button
-              onClick={() => handleSearch()}
-              disabled={isSearching || !searchTerm.trim()}
-              className="absolute right-2 top-1.5 h-7"
-              size="sm"
-            >
-              {isSearching ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
-              ) : (
-                <Sparkles className="h-3 w-3" />
-              )}
-            </Button>
+            <div className="absolute right-2 top-1.5 flex gap-1">
+              <Button
+                onClick={() => setIsAISearchMode(!isAISearchMode)}
+                size="sm"
+                variant={isAISearchMode ? "default" : "outline"}
+                className="h-7 text-xs"
+              >
+                {isAISearchMode ? 'AI' : 'Vanlig'}
+              </Button>
+              <Button
+                onClick={isAISearchMode ? handleAIAssistedSearch : handleSearch}
+                disabled={isSearching || !searchTerm.trim()}
+                className="h-7"
+                size="sm"
+              >
+                {isSearching ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <Sparkles className="h-3 w-3" />
+                )}
+              </Button>
+            </div>
           </div>
+
+          {/* Enhanced Mode Indicator */}
+          {isAISearchMode && selectedVariant && (
+            <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
+              <div className="flex items-center gap-2 mb-1">
+                <Brain className="h-4 w-4 text-purple-600" />
+                <span className="font-medium text-sm text-purple-900">
+                  AI-assistert søk med {selectedVariant.display_name}
+                </span>
+              </div>
+              <p className="text-xs text-purple-700">
+                Søket vil bli forbedret med AI-forslag for filtre, relaterte dokumenter og revisjonshandlinger.
+              </p>
+            </div>
+          )}
 
           {/* Quick Filters */}
           <div className="flex flex-wrap gap-2">
