@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -124,12 +125,7 @@ const ImprovedClientDocumentManager = ({ clientId, clientName }: ImprovedClientD
         </TabsContent>
 
         <TabsContent value="documents">
-          <EnhancedDocumentList 
-            documents={documents} 
-            documentsByCategory={documentsByCategory}
-            isLoading={isLoading}
-            categories={categories}
-          />
+          <EnhancedDocumentList clientId={clientId} />
         </TabsContent>
 
         <TabsContent value="categories">

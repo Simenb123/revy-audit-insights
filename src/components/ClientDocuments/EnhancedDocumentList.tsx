@@ -75,7 +75,7 @@ const EnhancedDocumentList = ({ clientId }: EnhancedDocumentListProps) => {
     try {
       const url = await getDocumentUrl(document.file_path);
       if (url) {
-        const link = document.createElement('a');
+        const link = window.document.createElement('a');
         link.href = url;
         link.download = document.file_name;
         link.click();
