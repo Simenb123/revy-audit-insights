@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { RevyContext } from '@/types/revio';
 import { generateEmbeddingsForExistingArticles } from './generateEmbeddingsService';
 
-// Enhanced AI response generation with automatic embedding generation
+// Enhanced AI response generation with document context
 export const generateEnhancedAIResponse = async (
   message: string, 
   context: RevyContext,
@@ -12,7 +12,7 @@ export const generateEnhancedAIResponse = async (
   userRole?: string,
   sessionId?: string
 ): Promise<string> => {
-  console.log('🚀 Calling enhanced generateAIResponse service', {
+  console.log('🚀 Calling enhanced generateAIResponse service with document context', {
     context,
     hasClientData: !!clientData,
     userRole,
@@ -48,6 +48,71 @@ export const generateEnhancedAIResponse = async (
     }
   }
 
+  // Enhance clientData with document context if available
+  let enhancedClientData = clientData;
+  
+  if (clientData?.id) {
+    try {
+      console.log('📄 Fetching document context for client:', clientData.id);
+      
+      // Get client documents with AI analysis
+      const { data: documents, error: docsError } = await supabase
+        .from('client_documents_files')
+        .select('*')
+        .eq('client_id', clientData.id)
+        .order('created_at', { ascending: false });
+
+      if (!docsError && documents) {
+        // Get document relationships
+        const documentIds = documents.map(d => d.id);
+        const { data: relationships, error: relError } = await supabase
+          .from('document_relationships')
+          .select('*')
+          .or(`parent_document_id.in.(${documentIds.join(',')}),child_document_id.in.(${documentIds.join(',')})`);
+
+        // Calculate document statistics
+        const documentStats = {
+          total: documents.length,
+          highConfidence: documents.filter(d => d.ai_confidence_score && d.ai_confidence_score >= 0.8).length,
+          mediumConfidence: documents.filter(d => d.ai_confidence_score && d.ai_confidence_score >= 0.6 && d.ai_confidence_score < 0.8).length,
+          lowConfidence: documents.filter(d => d.ai_confidence_score && d.ai_confidence_score < 0.6).length,
+          uncategorized: documents.filter(d => !d.ai_confidence_score).length,
+          categories: [...new Set(documents.map(d => d.category).filter(Boolean))],
+          relationships: relationships?.length || 0
+        };
+
+        // Identify recent documents
+        const recentDocuments = documents.slice(0, 5).map(d => ({
+          name: d.file_name,
+          category: d.category,
+          confidence: d.ai_confidence_score,
+          analysis: d.ai_analysis_summary,
+          uploadDate: d.created_at
+        }));
+
+        enhancedClientData = {
+          ...clientData,
+          documentContext: {
+            stats: documentStats,
+            recentDocuments,
+            hasDocumentRelationships: (relationships?.length || 0) > 0,
+            documentQualityScore: documentStats.total > 0 ? 
+              (documentStats.highConfidence / documentStats.total * 100) : 0
+          }
+        };
+
+        console.log('📊 Enhanced client data with document context:', {
+          totalDocs: documentStats.total,
+          qualityScore: enhancedClientData.documentContext.documentQualityScore,
+          relationships: documentStats.relationships
+        });
+      }
+    } catch (error) {
+      console.error('❌ Error fetching document context:', error);
+      // Continue without document context if there's an error
+    }
+  }
+
   try {
     // Get current user
     const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -62,13 +127,13 @@ export const generateEnhancedAIResponse = async (
       message,
       context,
       history,
-      clientData,
+      clientData: enhancedClientData,
       userRole,
       sessionId,
       userId: user.id
     };
 
-    console.log('📤 Sending request to revy-ai-chat edge function with enhanced knowledge lookup');
+    console.log('📤 Sending request to revy-ai-chat edge function with enhanced document context');
 
     const { data, error } = await supabase.functions.invoke('revy-ai-chat', {
       body: requestBody
