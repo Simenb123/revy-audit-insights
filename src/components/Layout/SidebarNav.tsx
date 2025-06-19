@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
@@ -6,7 +7,13 @@ import {
   BarChart3, 
   Book,
   Settings,
-  HelpCircle
+  HelpCircle,
+  Building2,
+  MessageSquare,
+  UserCog,
+  GraduationCap,
+  FileText,
+  Brain
 } from 'lucide-react';
 import {
   SidebarGroup,
@@ -33,30 +40,55 @@ const SidebarNav = ({ collapsed = false }: SidebarNavProps) => {
       label: "Dashboard"
     },
     {
-      to: "/funksjoner",
-      icon: BarChart3,
-      label: "Funksjoner"
-    },
-    {
-      to: "/klienter",
+      to: "/clients",
       icon: Users,
       label: "Klienter"
     },
     {
-      to: "/analyser",
-      icon: BarChart3,
-      label: "Analyser"
+      to: "/organization",
+      icon: Building2,
+      label: "Organisasjon"
+    },
+    {
+      to: "/communication",
+      icon: MessageSquare,
+      label: "Kommunikasjon"
+    },
+    {
+      to: "/teams",
+      icon: UserCog,
+      label: "Teams"
+    },
+    {
+      to: "/training",
+      icon: GraduationCap,
+      label: "Opplæring"
+    },
+    {
+      to: "/documents",
+      icon: FileText,
+      label: "Dokumenter"
     },
     {
       to: "/fag",
       icon: Book,
-      label: "Fag"
+      label: "Fagstoff"
+    },
+    {
+      to: "/ai-usage",
+      icon: BarChart3,
+      label: "AI-bruk"
+    },
+    {
+      to: "/ai-revy-admin",
+      icon: Brain,
+      label: "AI-Revy Admin"
     }
   ];
 
   const settingsItems = [
     {
-      to: "/innstillinger",
+      to: "/organization/settings",
       icon: Settings,
       label: "Innstillinger"
     },
@@ -74,10 +106,10 @@ const SidebarNav = ({ collapsed = false }: SidebarNavProps) => {
     if (path === "/fag") {
       return location.pathname.startsWith("/fag") || location.pathname.startsWith("/knowledge");
     }
-    if (path === "/klienter") {
-      return location.pathname.startsWith("/klienter") || location.pathname.startsWith("/clients");
+    if (path === "/clients") {
+      return location.pathname.startsWith("/clients") || location.pathname.startsWith("/klienter");
     }
-    return location.pathname.startsWith(path) && !location.pathname.includes('/klienter/');
+    return location.pathname.startsWith(path) && !location.pathname.includes('/clients/');
   };
 
   // Helper to render an item (icon only + tooltip when collapsed)

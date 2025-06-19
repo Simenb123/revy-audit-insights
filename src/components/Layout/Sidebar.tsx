@@ -3,6 +3,7 @@ import React from 'react';
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import SidebarNav from './SidebarNav';
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -29,14 +30,9 @@ const Sidebar = ({ isCollapsed, onToggle }: SidebarProps) => {
           </Button>
         </div>
         
-        {/* Content */}
-        <div className="flex-1 p-4">
-          {!isCollapsed && (
-            <div className="space-y-2">
-              <h3 className="text-sm font-medium text-sidebar-foreground">Navigasjon</h3>
-              <p className="text-xs text-sidebar-foreground/60">Hovednavigasjon kommer her</p>
-            </div>
-          )}
+        {/* Navigation Content */}
+        <div className="flex-1 p-4 overflow-y-auto">
+          <SidebarNav collapsed={isCollapsed} />
         </div>
       </div>
     </div>

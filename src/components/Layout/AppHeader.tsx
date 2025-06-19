@@ -1,9 +1,10 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { PanelRightOpen, MessageSquare } from 'lucide-react';
+import { MessageSquare } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import Logo from './Logo';
+import AppBreadcrumb from './AppBreadcrumb';
 
 interface AppHeaderProps {
   onToggleRightSidebar?: () => void;
@@ -16,8 +17,13 @@ const AppHeader = ({ onToggleRightSidebar, isRightSidebarOpen }: AppHeaderProps)
   return (
     <header className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-40">
       <div className="flex h-14 items-center justify-between px-4">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-4">
           <Logo />
+          {!isMobile && (
+            <div className="border-l border-border pl-4">
+              <AppBreadcrumb />
+            </div>
+          )}
         </div>
         
         {/* Right Sidebar Toggle */}
