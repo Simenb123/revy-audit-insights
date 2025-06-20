@@ -1,132 +1,151 @@
 
-import { buildVariantSpecificPrompt } from './variant-handler.ts';
+import { getVariantSystemPrompt } from './variant-handler.ts';
 
 export async function buildIntelligentSystemPromptWithVariant(
   context: string,
-  clientData: any,
+  clientData: any | null,
   userRole?: string,
   enhancedContext?: any,
   isGuestMode: boolean = false,
   selectedVariant?: any
-): Promise<string> {
-  
-  // Start with variant-specific prompt
-  let basePrompt = buildVariantSpecificPrompt(
-    selectedVariant, 
-    context, 
-    enhancedContext?.enrichedClientData || clientData
-  );
+) {
+  console.log('🎯 Building intelligent system prompt with variant support:', {
+    context,
+    variantName: selectedVariant?.name,
+    hasClientData: !!clientData,
+    hasKnowledge: !!enhancedContext?.knowledge?.length,
+    hasDocumentResults: !!enhancedContext?.documentSearchResults,
+    isGuestMode
+  });
 
-  basePrompt += `
+  // Start with base system prompt
+  let systemPrompt = `Du er AI-Revi, en AI-drevet revisjonsassistent som hjelper revisorer med faglige spørsmål, dokumentanalyse og revisjonsarbeid.
 
-VIKTIG IDENTITET:
-- Du kommuniserer alltid på norsk
-- Du er profesjonell, hjelpsom og nøyaktig
-- Du gir konkrete, praktiske råd basert på din spesialisering
-- Du refererer til relevante standarder når mulig
+GRUNNLEGGENDE INSTRUKSJONER:
+- Svar alltid på norsk (bokmål)
+- Vær profesjonell, men vennlig og tilgjengelig
+- Gi konkrete, praktiske råd basert på norske revisjonstandarder
+- Referer til ISA-standarder når relevant
+- Hvis du ikke er sikker på noe, si det tydelig
 
-SVAR-FORMAT:
-- Gi alltid korte, presise svar tilpasset din spesialisering
-- Bruk punktlister når hensiktsmessig  
-- Inkluder relevante fagartikkel-lenker når tilgjengelig
-- VIKTIG: Avslutt ALLTID med en 🏷️ **EMNER:** linje som inneholder relevante søkeord/tags kommaseparert
+VIKTIG: Avslutt ALLTID svaret ditt med en linje som inneholder: "🏷️ **EMNER:** [liste over relevante norske emner adskilt med komma]"
+Dette er påkrevd for at grensesnittet skal fungere korrekt.`;
 
-${isGuestMode ? `
-GJEST-MODUS:
-- Brukeren er ikke innlogget, så gi generelle råd
-- Ikke referer til spesifikke klientdata
-- Fokuser på generell revisjonsteori og praksis basert på din spesialisering
-` : ''}`;
-
-  // Add knowledge context if available (for methodology and professional variants)
-  if (enhancedContext?.knowledge && enhancedContext.knowledge.length > 0 && 
-      (selectedVariant?.name === 'methodology-expert' || selectedVariant?.name === 'professional-knowledge')) {
-    basePrompt += `
-
-TILGJENGELIG FAGSTOFF:
-Her er relevante fagartikler som støtter din spesialisering:
-
-`;
-    
-    enhancedContext.knowledge.slice(0, 5).forEach((article: any, index: number) => {
-      basePrompt += `${index + 1}. **${article.title}**
-   - Kategori: ${article.category}
-   - Sammendrag: ${article.summary || 'Ingen sammendrag tilgjengelig'}
-   - Link: [${article.title}](/fag/artikkel/${article.slug})
-   - Tags: ${article.tags.join(', ')}
-   ${article.reference_code ? `- Referanse: ${article.reference_code}` : ''}
-
-`;
-    });
-
-    // Add article-to-tag mapping for knowledge-focused variants
-    if (enhancedContext.articleTagMapping && Object.keys(enhancedContext.articleTagMapping).length > 0) {
-      basePrompt += `
-ARTIKKEL-TAG MAPPINGER:
-Følgende tags/emner kan kobles til spesifikke artikler:
-`;
-      Object.entries(enhancedContext.articleTagMapping).forEach(([tag, mapping]: [string, any]) => {
-        basePrompt += `- "${tag}" → ${mapping.articleTitle} (/fag/artikkel/${mapping.articleSlug})
-`;
-      });
-    }
-    
-    basePrompt += `
-INSTRUKSJONER FOR BRUK AV FAGSTOFF:
-- Referer til relevante artikler i ditt svar når de støtter din spesialisering
-- Bruk format: [Artikkelnavn](/fag/artikkel/slug) for lenker
-- Inkluder kun artikler som er direkte relevante for spørsmålet
-- I EMNER-taggen på slutten, bruk tags som matcher artiklene du refererer til
-`;
-  }
-
-  // Add client context for client-guide variant
-  if (enhancedContext?.clientContext && !isGuestMode && selectedVariant?.name === 'client-guide') {
-    basePrompt += `
-
-KLIENT-KONTEKST FOR VEILEDNING:
-${JSON.stringify(enhancedContext.clientContext, null, 2)}
-
-Bruk denne informasjonen aktivt når du gir klient-spesifikke råd og veiledning.
-`;
-  }
-
-  // Add context-specific instructions based on variant
-  if (selectedVariant?.name === 'client-guide') {
-    switch (context) {
-      case 'planning':
-        basePrompt += `
-PLANLEGGINGS-VEILEDNING:
-- Hjelp revisoren planlegge denne spesifikke klientens revisjon
-- Vurder klientens bransje, størrelse og kompleksitet
-- Foreslå spesifikke risikoområder å fokusere på
-- Gi konkrete neste steg for planleggingsfasen
-`;
-        break;
-      case 'execution':
-        basePrompt += `
-GJENNOMFØRINGS-VEILEDNING:
-- Hjelp med revisjonshandlinger for denne klienten
-- Prioriter handlinger basert på klientens risikoområder
-- Gi praktiske tips for dokumentasjon og testing
-- Foreslå hvordan bruke tilgjengelige dokumenter effektivt
-`;
-        break;
+  // Add variant-specific prompt if available
+  if (selectedVariant && selectedVariant.system_prompt_template) {
+    const variantPrompt = await getVariantSystemPrompt(selectedVariant, context, clientData);
+    if (variantPrompt) {
+      systemPrompt += `\n\n${variantPrompt}`;
     }
   }
 
-  basePrompt += `
+  // Add document context if available
+  if (enhancedContext?.documentSearchResults) {
+    const { specificDocument, generalDocuments } = enhancedContext.documentSearchResults;
+    
+    if (specificDocument && specificDocument.fullContent) {
+      systemPrompt += `\n\nDOKUMENTINNHOLD TILGJENGELIG:
+Du har tilgang til følgende spesifikke dokument:
 
-HUSK (tilpasset din spesialisering):
-- Hold svarene konsise og praktiske
-- Gi alltid konkrete eksempler når mulig og relevant for din rolle
-- Avslutt ALLTID med 🏷️ **EMNER:** [relevante tags]
-- ${selectedVariant?.name === 'methodology-expert' || selectedVariant?.name === 'professional-knowledge' ? 
-    'Bruk fagartikkel-lenker når de er relevante for metodikk/fagkunnskap' : 
-    selectedVariant?.name === 'client-guide' ? 
-    'Fokuser på praktiske råd for den aktuelle klienten' :
-    'Hjelp brukeren med tekniske spørsmål om systemet'}
-`;
+DOKUMENT: ${specificDocument.fileName}
+KATEGORI: ${specificDocument.category || 'Ukategorisert'}
+SAMMENDRAG: ${specificDocument.summary || 'Ikke tilgjengelig'}
 
-  return basePrompt;
+FULLSTEDIG INNHOLD:
+${specificDocument.fullContent}
+
+Du kan nå svare på spørsmål om dette dokumentet basert på det faktiske innholdet. Vær nøyaktig og referer til spesifikke deler av dokumentet når det er relevant.`;
+    } else if (generalDocuments && generalDocuments.length > 0) {
+      systemPrompt += `\n\nRELEVANTE DOKUMENTER FUNNET:
+Du har tilgang til følgende relevante dokumenter:
+
+${generalDocuments.slice(0, 3).map(doc => `
+- ${doc.fileName}
+  Kategori: ${doc.category || 'Ukategorisert'}
+  Sammendrag: ${doc.summary || 'Ikke tilgjengelig'}
+  ${doc.relevantText ? `Relevant tekst: "${doc.relevantText}"` : ''}
+  ${doc.fullContent ? `\nInnhold: ${doc.fullContent.substring(0, 1000)}${doc.fullContent.length > 1000 ? '...' : ''}` : ''}
+`).join('')}
+
+Du kan referere til disse dokumentene i ditt svar og bruke informasjonen derfra.`;
+    }
+  }
+
+  // Add context-specific guidance
+  const contextGuidance = {
+    'client-detail': `
+KLIENTKONTEKST:
+Du hjelper med analyse av ${clientData?.company_name || 'denne klienten'}.
+- Fokuser på klientspesifikke utfordringer og revisjonsrisiko
+- Gi praktiske råd for denne spesifikke klientens revisjon
+- Vurder bransjespesifikke forhold`,
+
+    'documentation': `
+DOKUMENTASJONSKONTEKST:
+Du hjelper med dokumentanalyse og kategorisering.
+- Fokuser på dokumentkvalitet og korrekt kategorisering
+- Gi råd om revisjonsbevis og dokumentasjon
+- Vurder dokumentenes relevans for revisjonen`,
+
+    'audit-actions': `
+REVISJONSHANDLINGER:
+Du hjelper med planlegging og gjennomføring av revisjonshandlinger.
+- Fokuser på ISA-standarder og metodikk
+- Gi praktiske råd for revisjonshandlinger
+- Vurder risikonivå og omfang av testing`
+  };
+
+  if (contextGuidance[context as keyof typeof contextGuidance]) {
+    systemPrompt += contextGuidance[context as keyof typeof contextGuidance];
+  }
+
+  // Add client data context if available
+  if (clientData) {
+    systemPrompt += `\n\nKLIENTINFORMASJON:
+- Navn: ${clientData.company_name || 'Ikke oppgitt'}
+- Organisasjonsnummer: ${clientData.organization_number || 'Ikke oppgitt'}
+- Bransje: ${clientData.industry || 'Ikke oppgitt'}`;
+
+    if (enhancedContext?.clientContext) {
+      const insights = enhancedContext.clientContext.documentInsights;
+      if (insights) {
+        systemPrompt += `
+- Totalt ${insights.totalDocuments} dokumenter
+- ${insights.withText} dokumenter med ekstrahert tekst
+- Kategorier: ${insights.categories.join(', ') || 'Ingen'}`;
+      }
+    }
+  }
+
+  // Add knowledge context if available
+  if (enhancedContext?.knowledge && enhancedContext.knowledge.length > 0) {
+    const relevantArticles = enhancedContext.knowledge.slice(0, 3);
+    systemPrompt += `\n\nRELEVANTE FAGARTIKLER:
+${relevantArticles.map((article: any) => `
+- ${article.title}: ${article.summary || 'Ingen sammendrag'}
+  ${article.content ? article.content.substring(0, 300) + '...' : ''}
+`).join('')}`;
+  }
+
+  // Add role-specific guidance
+  if (userRole) {
+    const roleGuidance = {
+      'revisor': 'Du snakker med en autorisert revisor. Gi faglig dybde og tekniske detaljer.',
+      'revisorassistent': 'Du snakker med en revisorassistent. Gi praktisk veiledning og forklaringer.',
+      'partner': 'Du snakker med en partner. Fokuser på strategiske og kvalitetsmessige aspekter.',
+      'admin': 'Du snakker med en administrator. Gi systemrelatert informasjon og oversikt.'
+    };
+
+    if (roleGuidance[userRole as keyof typeof roleGuidance]) {
+      systemPrompt += `\n\nROLLETILPASNING: ${roleGuidance[userRole as keyof typeof roleGuidance]}`;
+    }
+  }
+
+  // Add guest mode limitations
+  if (isGuestMode) {
+    systemPrompt += `\n\nGJESTEMODUS: Brukeren er ikke logget inn. Gi generelle råd uten tilgang til spesifikke klientdata.`;
+  }
+
+  console.log('✅ Intelligent system prompt built with variant and document support');
+  return systemPrompt;
 }

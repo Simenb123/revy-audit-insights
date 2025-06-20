@@ -1,30 +1,30 @@
 
-import { buildVariantSpecificPrompt, getVariantContextualTips } from './variant-handler.ts';
 import { searchKnowledgeIntelligently } from './improved-knowledge.ts';
-import { fetchEnhancedClientContext, findDocumentByReference, searchDocumentContent } from './client-context.ts';
+import { fetchEnhancedClientContext, searchDocumentContent, findDocumentByReference } from './client-context.ts';
 
 export async function buildEnhancedContextWithVariant(
   message: string, 
   context: string, 
-  clientData: any | null,
-  selectedVariant: any | null
+  clientData: any | null, 
+  selectedVariant?: any
 ) {
   console.log('🏗️ Building enhanced context with variant and document search support:', {
     context,
     variantName: selectedVariant?.name,
     hasClientData: !!clientData
   });
-
+  
   try {
-    // Build base context
+    // Use the improved knowledge search that returns both articles and tag mappings
     const knowledgePromise = searchKnowledgeIntelligently(message, context);
+    
     const clientContextPromise = (clientData && clientData.id) 
       ? fetchEnhancedClientContext(clientData.id) 
       : Promise.resolve(null);
-    
-    // Check if this is a document query and search for specific documents
+
+    // Check if this is a document-related query and search for relevant documents
     let documentSearchResults = null;
-    if (clientData?.id && isDocumentQuery(message)) {
+    if (clientData && clientData.id && isDocumentQuery(message)) {
       console.log('📄 Document query detected, searching for specific documents...');
       
       try {
@@ -34,84 +34,62 @@ export async function buildEnhancedContextWithVariant(
         if (specificDoc && specificDoc.fullContent) {
           documentSearchResults = {
             specificDocument: specificDoc,
-            searchResults: []
+            generalDocuments: []
           };
-          console.log('✅ Found specific document:', specificDoc.fileName);
+          console.log('✅ Found specific document with content:', specificDoc.fileName);
         } else {
           // Fall back to general document search
-          const searchResults = await searchDocumentContent(clientData.id, message);
+          const generalDocs = await searchDocumentContent(clientData.id, message);
           documentSearchResults = {
             specificDocument: null,
-            searchResults: searchResults || []
+            generalDocuments: generalDocs || []
           };
-          console.log(`✅ Found ${searchResults?.length || 0} relevant documents`);
+          console.log(`✅ Found ${generalDocs?.length || 0} relevant documents`);
         }
       } catch (docError) {
-        console.error('❌ Error searching documents:', docError);
-        documentSearchResults = { specificDocument: null, searchResults: [] };
+        console.error('❌ Error searching for documents:', docError);
       }
     }
     
-    const [knowledgeResult, enhancedClientContext] = await Promise.all([
+    const [knowledgeResult, clientContext] = await Promise.all([
       knowledgePromise,
       clientContextPromise
     ]);
-
-    // Enhance client data with documents if available
-    const enrichedClientData = clientData ? {
-      ...clientData,
-      documentContext: enhancedClientContext,
-      documentSearchResults,
-      // Add document summary for variant-specific use
-      documentSummary: {
-        totalDocuments: clientData.documents?.length || 0,
-        categories: [...new Set((clientData.documents || []).map((d: any) => d.category).filter(Boolean))],
-        recentDocuments: (clientData.documents || []).slice(0, 3).map((d: any) => ({
-          name: d.file_name,
-          category: d.category,
-          uploadDate: d.created_at
-        }))
-      }
-    } : null;
     
     console.log('✅ Enhanced context built with variant and document search support:', { 
       hasKnowledge: !!knowledgeResult && knowledgeResult.articles.length > 0,
       knowledgeCount: knowledgeResult?.articles.length || 0,
       tagMappingCount: Object.keys(knowledgeResult?.tagToArticleMap || {}).length,
-      hasClientContext: !!enhancedClientContext,
+      hasClientContext: !!clientContext,
       variantName: selectedVariant?.name,
       hasDocumentSearchResults: !!documentSearchResults,
       specificDocumentFound: !!documentSearchResults?.specificDocument,
-      generalDocumentsFound: documentSearchResults?.searchResults?.length || 0
+      generalDocumentsFound: documentSearchResults?.generalDocuments?.length || 0
     });
 
     return { 
       knowledge: knowledgeResult?.articles || [], 
       articleTagMapping: knowledgeResult?.tagToArticleMap || {},
-      clientContext: enhancedClientContext,
-      enrichedClientData,
-      variant: selectedVariant,
+      clientContext,
       documentSearchResults
     };
   } catch (err) {
-    console.error("Error building enhanced context with variant and document search:", err);
+    console.error("Error building enhanced context:", err);
     return { 
       knowledge: null, 
       clientContext: null, 
       articleTagMapping: {},
-      enrichedClientData: clientData,
-      variant: selectedVariant,
       documentSearchResults: null
     };
   }
 }
 
-// Check if the user message is asking about documents
+// Helper function to detect document queries
 function isDocumentQuery(message: string): boolean {
   const documentKeywords = [
     'dokument', 'faktura', 'rapport', 'fil', 'innhold', 'står på', 'viser',
     'hva inneholder', 'kan du lese', 'se på', 'analyser', 'gjennomgå',
-    'nummer', 'kvitering', 'bilag', 'regning'
+    'nummer', 'kvitering', 'bilag', 'regning', 'hva står på'
   ];
   
   const messageLower = message.toLowerCase();

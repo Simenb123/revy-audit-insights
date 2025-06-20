@@ -1,6 +1,20 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { corsHeaders, isOptions, handleCors } from './lib/cors.ts'
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+function isOptions(req: Request): boolean {
+  return req.method === 'OPTIONS'
+}
+
+function handleCors(): Response {
+  return new Response(null, { headers: corsHeaders })
+}
+
+// Import local modules
 import { buildIntelligentSystemPromptWithVariant } from './lib/improved-prompt.ts'
 import { buildEnhancedContextWithVariant } from './lib/enhanced-context.ts'
 import { selectOptimalModel, getIntelligentFallback } from './lib/utils.ts'
@@ -11,7 +25,7 @@ import { validateAIResponse } from './lib/response-validator.ts'
 import { getVariantContextualTips } from './lib/variant-handler.ts'
 
 serve(async (req) => {
-  console.log('🤖 AI-Revi Chat function started with enhanced variant support');
+  console.log('🤖 AI-Revi Chat function started with enhanced document reading support');
   
   if (isOptions(req)) {
     return handleCors();
@@ -80,7 +94,7 @@ serve(async (req) => {
     
     console.log('🧐 Cache miss for variant request, proceeding to generate new response.');
 
-    // Build enhanced context with variant support
+    // Build enhanced context with variant and document support
     const enhancedContext = await buildEnhancedContextWithVariant(
       message, 
       context, 
@@ -88,10 +102,13 @@ serve(async (req) => {
       selectedVariant
     );
     
-    console.log('🧠 Enhanced variant-aware context built:', {
+    console.log('🧠 Enhanced variant-aware context built with document support:', {
       knowledgeArticleCount: enhancedContext.knowledge?.length || 0,
       articleTagMappingCount: Object.keys(enhancedContext.articleTagMapping || {}).length,
       hasClientContext: !!enhancedContext.clientContext,
+      hasDocumentResults: !!enhancedContext.documentSearchResults,
+      specificDocumentFound: !!enhancedContext.documentSearchResults?.specificDocument,
+      generalDocumentsFound: enhancedContext.documentSearchResults?.generalDocuments?.length || 0,
       isGuestMode: !userId,
       variantName: selectedVariant?.name,
       variantDescription: selectedVariant?.description
@@ -101,7 +118,7 @@ serve(async (req) => {
     const selectedModel = selectOptimalModel(message, context, !userId);
     console.log('🎯 Selected model:', selectedModel, 'for variant:', selectedVariant?.name);
 
-    // Build system prompt with variant-specific enhancements
+    // Build system prompt with variant-specific enhancements and document context
     const systemPrompt = await buildIntelligentSystemPromptWithVariant(
       context,
       clientData,
@@ -115,7 +132,7 @@ serve(async (req) => {
     const enhancedSystemPrompt = systemPrompt + '\n\nIMPORTANT: ALWAYS end your response with a line: "🏷️ **EMNER:** [list relevant Norwegian tags separated by commas]". This is required for proper UI functionality.';
 
     const startTime = Date.now();
-    console.log('🚀 Calling OpenAI API with variant-enhanced prompt...');
+    console.log('🚀 Calling OpenAI API with document-enhanced prompt...');
 
     // Call OpenAI
     const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -134,8 +151,8 @@ serve(async (req) => {
           })),
           { role: 'user', content: message }
         ],
-        max_tokens: 1000,
-        temperature: selectedVariant?.name === 'methodology-expert' ? 0.1 : 0.3, // More precise for methodology
+        max_tokens: 1500,
+        temperature: selectedVariant?.name === 'methodology-expert' ? 0.1 : 0.3,
         stream: false,
       }),
     });
@@ -170,22 +187,58 @@ serve(async (req) => {
       console.log('🎭 Injected variant info into response');
     }
 
+    // Add document reference metadata if documents were used
+    if (enhancedContext.documentSearchResults) {
+      const documentRefs = [];
+      
+      if (enhancedContext.documentSearchResults.specificDocument) {
+        documentRefs.push({
+          id: enhancedContext.documentSearchResults.specificDocument.id,
+          fileName: enhancedContext.documentSearchResults.specificDocument.fileName,
+          category: enhancedContext.documentSearchResults.specificDocument.category,
+          summary: enhancedContext.documentSearchResults.specificDocument.summary,
+          confidence: enhancedContext.documentSearchResults.specificDocument.confidence,
+          uploadDate: enhancedContext.documentSearchResults.specificDocument.uploadDate
+        });
+      }
+      
+      if (enhancedContext.documentSearchResults.generalDocuments) {
+        for (const doc of enhancedContext.documentSearchResults.generalDocuments.slice(0, 3)) {
+          documentRefs.push({
+            id: doc.id,
+            fileName: doc.fileName,
+            category: doc.category,
+            summary: doc.summary,
+            confidence: doc.confidence,
+            relevantText: doc.relevantText,
+            uploadDate: doc.uploadDate
+          });
+        }
+      }
+      
+      if (documentRefs.length > 0) {
+        aiResponse += `\n\n<!-- DOCUMENT_REFERENCES: ${JSON.stringify(documentRefs)} -->`;
+        console.log('📄 Injected document references into response');
+      }
+    }
+
     // Validate and fix the AI response
-    console.log('🔧 ENFORCING response validation with variant awareness...');
+    console.log('🔧 ENFORCING response validation with document-aware content...');
     const validation = validateAIResponse(aiResponse);
     
     if (validation.fixedResponse) {
       aiResponse = validation.fixedResponse;
-      console.log('✅ Response was standardized with guaranteed tag format for variant:', selectedVariant?.name);
+      console.log('✅ Response was standardized with guaranteed tag format and document context');
     }
 
-    console.log('✅ Variant-aware AI response generated:', {
+    console.log('✅ Document-enhanced AI response generated:', {
       responseLength: aiResponse.length,
       usage: data.usage,
       responseTime: `${responseTime}ms`,
       isGuestMode: !userId,
       hasStandardizedTags: /🏷️\s*\*\*[Ee][Mm][Nn][Ee][Rr]:?\*\*/.test(aiResponse),
       hasArticleMappings: aiResponse.includes('ARTICLE_MAPPINGS'),
+      hasDocumentReferences: aiResponse.includes('DOCUMENT_REFERENCES'),
       variantUsed: selectedVariant?.name || 'default'
     });
 
@@ -204,7 +257,7 @@ serve(async (req) => {
           sessionId,
           contextType: context + (selectedVariant ? `_${selectedVariant.name}` : '')
         });
-        console.log('📊 Usage logged successfully with variant info');
+        console.log('📊 Usage logged successfully with variant and document info');
       } catch (error) {
         console.error('❌ Failed to log usage:', error);
       }
@@ -214,7 +267,7 @@ serve(async (req) => {
     if (userId) {
       try {
         await cacheResponse(cacheKey, aiResponse, userId, clientData?.id, selectedModel);
-        console.log('✅ Variant-aware response cached successfully');
+        console.log('✅ Document-enhanced response cached successfully');
       } catch (error) {
         console.error('❌ Failed to cache response:', error);
       }
@@ -225,7 +278,7 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('💥 Function error with variant support:', error);
+    console.error('💥 Function error with document support:', error);
     
     // Enhanced fallback response with variant awareness
     const requestData = await req.json().catch(() => ({}));

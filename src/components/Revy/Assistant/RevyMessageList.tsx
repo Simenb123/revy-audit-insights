@@ -31,20 +31,45 @@ export const RevyMessageList: React.FC<RevyMessageListProps> = ({
     scrollToBottom();
   }, [messages, isTyping]);
 
-  // Extract document references from message metadata
+  // Extract document references from message content or metadata
   const extractDocumentReferences = (message: RevyMessage) => {
-    if (!message.metadata?.documentReferences) return [];
-    
-    return message.metadata.documentReferences.map((ref: any) => ({
-      id: String(ref.id || ''),
-      fileName: String(ref.fileName || ref.file_name || ''),
-      category: ref.category ? String(ref.category) : undefined,
-      summary: ref.summary || ref.ai_analysis_summary ? String(ref.summary || ref.ai_analysis_summary) : undefined,
-      confidence: typeof ref.confidence === 'number' ? ref.confidence : (typeof ref.ai_confidence_score === 'number' ? ref.ai_confidence_score : undefined),
-      textPreview: ref.textPreview ? String(ref.textPreview) : undefined,
-      uploadDate: String(ref.uploadDate || ref.created_at || ''),
-      relevantText: ref.relevantText ? String(ref.relevantText) : undefined
-    }));
+    // First try to get from message metadata
+    if (message.metadata?.documentReferences) {
+      return message.metadata.documentReferences.map((ref: any) => ({
+        id: String(ref.id || ''),
+        fileName: String(ref.fileName || ref.file_name || ''),
+        category: ref.category ? String(ref.category) : undefined,
+        summary: ref.summary || ref.ai_analysis_summary ? String(ref.summary || ref.ai_analysis_summary) : undefined,
+        confidence: typeof ref.confidence === 'number' ? ref.confidence : (typeof ref.ai_confidence_score === 'number' ? ref.ai_confidence_score : undefined),
+        textPreview: ref.textPreview ? String(ref.textPreview) : undefined,
+        uploadDate: String(ref.uploadDate || ref.created_at || ''),
+        relevantText: ref.relevantText ? String(ref.relevantText) : undefined
+      }));
+    }
+
+    // Try to extract from message content (for AI responses with embedded metadata)
+    if (typeof message.content === 'string' && message.content.includes('DOCUMENT_REFERENCES:')) {
+      try {
+        const match = message.content.match(/<!-- DOCUMENT_REFERENCES: (.*?) -->/);
+        if (match) {
+          const documentRefs = JSON.parse(match[1]);
+          return documentRefs.map((ref: any) => ({
+            id: String(ref.id || ''),
+            fileName: String(ref.fileName || ''),
+            category: ref.category ? String(ref.category) : undefined,
+            summary: ref.summary ? String(ref.summary) : undefined,
+            confidence: typeof ref.confidence === 'number' ? ref.confidence : undefined,
+            textPreview: ref.textPreview ? String(ref.textPreview) : undefined,
+            uploadDate: String(ref.uploadDate || ''),
+            relevantText: ref.relevantText ? String(ref.relevantText) : undefined
+          }));
+        }
+      } catch (error) {
+        console.error('Error parsing document references from message:', error);
+      }
+    }
+
+    return [];
   };
 
   return (
