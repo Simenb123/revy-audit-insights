@@ -22,6 +22,7 @@ export const useRevyMessageHandling = ({
   const [messages, setMessages] = useState<RevyMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isAnalyzingDocuments, setIsAnalyzingDocuments] = useState(false);
   const { session } = useAuth();
   const [sessionId, setSessionId] = useState<string | null>(null);
 
@@ -37,6 +38,18 @@ export const useRevyMessageHandling = ({
       generateSessionId();
     }
   }, [sessionId]);
+
+  // Function to detect if message is asking about documents
+  const isDocumentQuery = (message: string): boolean => {
+    const documentKeywords = [
+      'dokument', 'faktura', 'rapport', 'fil', 'innhold', 'står på', 'viser',
+      'hva inneholder', 'kan du lese', 'se på', 'analyser', 'gjennomgå',
+      'nummer', 'kvitering', 'bilag', 'regning'
+    ];
+    
+    const messageLower = message.toLowerCase();
+    return documentKeywords.some(keyword => messageLower.includes(keyword));
+  };
 
   // Function to get contextual welcome message with enhanced client data
   const getContextualWelcomeMessage = (ctx: RevyContext, client?: any) => {
@@ -144,12 +157,25 @@ Jeg kan hjelpe deg med planlegging og gjennomføring av revisjonshandlinger, ISA
     setInput(e.target.value);
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
+
   const handleSendMessage = async () => {
     if (!input.trim() || isLoading || !session?.user?.id) return;
 
     const userMessage = input.trim();
     setInput('');
     setIsLoading(true);
+
+    // Check if this is a document query to show analysis indicator
+    const isDocQuery = isDocumentQuery(userMessage);
+    if (isDocQuery && clientData?.id) {
+      setIsAnalyzingDocuments(true);
+    }
 
     // Add user message to chat
     const newUserMessage: RevyMessage = {
@@ -219,20 +245,14 @@ Jeg kan hjelpe deg med planlegging og gjennomføring av revisjonshandlinger, ISA
       const errorMessage: RevyMessage = {
         id: crypto.randomUUID(),
         sender: 'revy',
-        content: `Beklager, jeg kunne ikke behandle forespørselen din akkurat nå. Vennligst prøv igjen senere.\n\n🏷️ **EMNER:** Feilmeldinger, Support`,
+        content: 'Beklager, jeg opplever tekniske problemer akkurat nå. Prøv igjen om litt.',
         timestamp: new Date().toISOString(),
       };
-      
+
       setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
+      setIsAnalyzingDocuments(false);
     }
   };
 
@@ -240,6 +260,7 @@ Jeg kan hjelpe deg med planlegging og gjennomføring av revisjonshandlinger, ISA
     messages,
     input,
     isLoading,
+    isAnalyzingDocuments,
     handleInputChange,
     handleKeyDown,
     handleSendMessage

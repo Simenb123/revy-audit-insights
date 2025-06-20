@@ -1,9 +1,10 @@
 
 import React, { useEffect, useRef } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { MessageContentParser } from './MessageContentParser';
+import EnhancedMessageContentParser from './EnhancedMessageContentParser';
 import RevyAvatar from '../RevyAvatar';
 import DocumentReferenceViewer from '@/components/ClientDocuments/DocumentReferenceViewer';
+import DocumentAnalysisIndicator from './DocumentAnalysisIndicator';
 import { RevyMessage } from '@/types/revio';
 import { User, Bot } from 'lucide-react';
 
@@ -11,12 +12,14 @@ interface RevyMessageListProps {
   messages: RevyMessage[];
   isTyping: boolean;
   isEmbedded?: boolean;
+  isAnalyzingDocuments?: boolean;
 }
 
 export const RevyMessageList: React.FC<RevyMessageListProps> = ({
   messages,
   isTyping,
-  isEmbedded = false
+  isEmbedded = false,
+  isAnalyzingDocuments = false
 }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -78,7 +81,7 @@ export const RevyMessageList: React.FC<RevyMessageListProps> = ({
                     <RevyAvatar />
                     <div className="flex-1 space-y-3">
                       <div className="bg-gray-100 p-3 rounded-lg">
-                        <MessageContentParser content={String(message.content)} />
+                        <EnhancedMessageContentParser content={String(message.content)} />
                       </div>
                       
                       {/* Show document references if available */}
@@ -95,6 +98,14 @@ export const RevyMessageList: React.FC<RevyMessageListProps> = ({
               </div>
             );
           })
+        )}
+        
+        {/* Show document analysis indicator */}
+        {isAnalyzingDocuments && (
+          <DocumentAnalysisIndicator 
+            isAnalyzing={true}
+            analysisComplete={false}
+          />
         )}
         
         {isTyping && (
