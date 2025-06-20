@@ -67,7 +67,7 @@ export const RevyMessageList: React.FC<RevyMessageListProps> = ({
                 {message.sender === 'user' ? (
                   <div className="flex items-start gap-3 justify-end w-full">
                     <div className="bg-blue-500 text-white p-3 rounded-lg max-w-xs lg:max-w-md">
-                      <p className="text-sm">{message.content}</p>
+                      <p className="text-sm">{String(message.content)}</p>
                     </div>
                     <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
                       <User className="w-4 h-4 text-white" />
@@ -78,7 +78,7 @@ export const RevyMessageList: React.FC<RevyMessageListProps> = ({
                     <RevyAvatar />
                     <div className="flex-1 space-y-3">
                       <div className="bg-gray-100 p-3 rounded-lg">
-                        <MessageContentParser content={message.content} />
+                        <MessageContentParser content={String(message.content)} />
                       </div>
                       
                       {/* Show document references if available */}
