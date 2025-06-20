@@ -5,10 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Upload, FileText, X, Brain } from 'lucide-react';
+import { Upload, FileText, X } from 'lucide-react';
 import { useClientDocuments, DocumentCategory } from '@/hooks/useClientDocuments';
 import { toast } from '@/components/ui/use-toast';
-import EmbeddedContextChat from '@/components/Revy/EmbeddedContextChat';
 
 interface DocumentUploaderProps {
   clientId: string;
@@ -20,7 +19,6 @@ const DocumentUploader = ({ clientId, categories }: DocumentUploaderProps) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [selectedSubjectArea, setSelectedSubjectArea] = useState<string>('');
   const [isDragging, setIsDragging] = useState(false);
-  const [showAIAssistant, setShowAIAssistant] = useState(false);
   
   const { uploadDocument } = useClientDocuments(clientId);
 
@@ -107,146 +105,120 @@ const DocumentUploader = ({ clientId, categories }: DocumentUploaderProps) => {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <div className="lg:col-span-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Upload className="h-5 w-5" />
-                Last opp dokumenter
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowAIAssistant(!showAIAssistant)}
-              >
-                <Brain className="h-4 w-4 mr-2" />
-                AI-Revi Hjelp
-              </Button>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* File drop zone */}
-            <div
-              className={`
-                border-2 border-dashed rounded-lg p-8 text-center transition-colors
-                ${isDragging ? 'border-primary bg-primary/5' : 'border-muted-foreground/25 hover:border-primary/50'}
-                ${uploadDocument.isPending ? 'pointer-events-none opacity-50' : ''}
-              `}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-            >
-              <input
-                type="file"
-                id="document-upload"
-                className="hidden"
-                multiple
-                accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.jpg,.jpeg,.png"
-                onChange={(e) => handleFileSelect(e.target.files)}
-                disabled={uploadDocument.isPending}
-              />
-              <label htmlFor="document-upload" className="cursor-pointer">
-                <FileText className="h-12 w-12 text-primary mx-auto mb-4" />
-                <p className="text-lg font-medium text-foreground mb-2">
-                  Dra og slipp filer her, eller klikk for å velge
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Støtter PDF, Word, Excel, CSV og bilder (maks 50MB per fil)
-                </p>
-              </label>
-            </div>
-
-            {/* Selected files */}
-            {selectedFiles.length > 0 && (
-              <div className="space-y-2">
-                <Label>Valgte filer:</Label>
-                <div className="space-y-2 max-h-32 overflow-y-auto">
-                  {selectedFiles.map((file, index) => (
-                    <div key={index} className="flex items-center justify-between p-2 bg-muted rounded">
-                      <div className="flex items-center gap-2">
-                        <FileText className="h-4 w-4" />
-                        <span className="text-sm font-medium">{file.name}</span>
-                        <span className="text-xs text-muted-foreground">
-                          ({(file.size / 1024 / 1024).toFixed(1)} MB)
-                        </span>
-                      </div>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => removeFile(index)}
-                        disabled={uploadDocument.isPending}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Category selection */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="subject-area">Fagområde (valgfritt)</Label>
-                <Select value={selectedSubjectArea} onValueChange={setSelectedSubjectArea}>
-                  <SelectTrigger id="subject-area">
-                    <SelectValue placeholder="Velg fagområde" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Alle fagområder</SelectItem>
-                    {subjectAreas.map(area => (
-                      <SelectItem key={area} value={area}>
-                        {area === 'lnn' ? 'Lønn' : area}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="category">Kategori (valgfritt)</Label>
-                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                  <SelectTrigger id="category">
-                    <SelectValue placeholder="Velg kategori" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ai-suggest">AI-Revi vil foreslå kategori</SelectItem>
-                    {filteredCategories.map(category => (
-                      <SelectItem key={category.id} value={category.category_name}>
-                        {category.category_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            {/* Upload button */}
-            <Button 
-              onClick={handleUpload}
-              disabled={selectedFiles.length === 0 || uploadDocument.isPending}
-              className="w-full"
-            >
-              {uploadDocument.isPending ? 'Laster opp...' : `Last opp ${selectedFiles.length} fil${selectedFiles.length === 1 ? '' : 'er'}`}
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-      
-      {/* AI Assistant Panel */}
-      {showAIAssistant && (
-        <div>
-          <EmbeddedContextChat
-            clientId={clientId}
-            context="documentation"
-            title="AI-Revi Opplastingshjelp"
-            height="500px"
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Upload className="h-5 w-5" />
+          Last opp dokumenter
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {/* File drop zone */}
+        <div
+          className={`
+            border-2 border-dashed rounded-lg p-8 text-center transition-colors
+            ${isDragging ? 'border-primary bg-primary/5' : 'border-muted-foreground/25 hover:border-primary/50'}
+            ${uploadDocument.isPending ? 'pointer-events-none opacity-50' : ''}
+          `}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
+          <input
+            type="file"
+            id="document-upload"
+            className="hidden"
+            multiple
+            accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.jpg,.jpeg,.png"
+            onChange={(e) => handleFileSelect(e.target.files)}
+            disabled={uploadDocument.isPending}
           />
+          <label htmlFor="document-upload" className="cursor-pointer">
+            <FileText className="h-12 w-12 text-primary mx-auto mb-4" />
+            <p className="text-lg font-medium text-foreground mb-2">
+              Dra og slipp filer her, eller klikk for å velge
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Støtter PDF, Word, Excel, CSV og bilder (maks 50MB per fil)
+            </p>
+          </label>
         </div>
-      )}
-    </div>
+
+        {/* Selected files */}
+        {selectedFiles.length > 0 && (
+          <div className="space-y-2">
+            <Label>Valgte filer:</Label>
+            <div className="space-y-2 max-h-32 overflow-y-auto">
+              {selectedFiles.map((file, index) => (
+                <div key={index} className="flex items-center justify-between p-2 bg-muted rounded">
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    <span className="text-sm font-medium">{file.name}</span>
+                    <span className="text-xs text-muted-foreground">
+                      ({(file.size / 1024 / 1024).toFixed(1)} MB)
+                    </span>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => removeFile(index)}
+                    disabled={uploadDocument.isPending}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Category selection */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="subject-area">Fagområde (valgfritt)</Label>
+            <Select value={selectedSubjectArea} onValueChange={setSelectedSubjectArea}>
+              <SelectTrigger id="subject-area">
+                <SelectValue placeholder="Velg fagområde" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Alle fagområder</SelectItem>
+                {subjectAreas.map(area => (
+                  <SelectItem key={area} value={area}>
+                    {area === 'lnn' ? 'Lønn' : area}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="category">Kategori (valgfritt)</Label>
+            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+              <SelectTrigger id="category">
+                <SelectValue placeholder="Velg kategori" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ai-suggest">AI-Revi vil foreslå kategori</SelectItem>
+                {filteredCategories.map(category => (
+                  <SelectItem key={category.id} value={category.category_name}>
+                    {category.category_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {/* Upload button */}
+        <Button 
+          onClick={handleUpload}
+          disabled={selectedFiles.length === 0 || uploadDocument.isPending}
+          className="w-full"
+        >
+          {uploadDocument.isPending ? 'Laster opp...' : `Last opp ${selectedFiles.length} fil${selectedFiles.length === 1 ? '' : 'er'}`}
+        </Button>
+      </CardContent>
+    </Card>
   );
 };
 
