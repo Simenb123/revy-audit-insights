@@ -56,7 +56,7 @@ const SmartReviAssistant = ({
   }, [sessionId]);
 
   useEffect(() => {
-    // Load previous messages from session
+    // Load previous messages from session or add welcome message
     const loadPreviousMessages = async () => {
       if (sessionId && session?.user?.id) {
         try {
@@ -68,7 +68,7 @@ const SmartReviAssistant = ({
 
           if (error) {
             console.error('Error loading messages:', error);
-          } else if (data) {
+          } else if (data && data.length > 0) {
             const loadedMessages: RevyMessage[] = data.map(msg => ({
               id: msg.id,
               sender: msg.sender as 'user' | 'revy',
@@ -77,6 +77,27 @@ const SmartReviAssistant = ({
             }));
             setMessages(loadedMessages);
             console.log(`💬 Loaded ${loadedMessages.length} previous messages from session ${sessionId}`);
+          } else {
+            // Add welcome message for new sessions
+            const welcomeMessage = getContextualWelcomeMessage(currentContext, clientData);
+            const welcomeMsg: RevyMessage = {
+              id: crypto.randomUUID(),
+              sender: 'revy',
+              content: welcomeMessage,
+              timestamp: new Date().toISOString(),
+            };
+            setMessages([welcomeMsg]);
+            
+            // Save welcome message to database
+            try {
+              await supabase.from('revy_chat_messages').insert({
+                session_id: sessionId,
+                sender: 'revy',
+                content: welcomeMessage
+              });
+            } catch (saveError) {
+              console.error('Error saving welcome message:', saveError);
+            }
           }
         } catch (error) {
           console.error('Error loading messages:', error);
@@ -85,7 +106,7 @@ const SmartReviAssistant = ({
     };
 
     loadPreviousMessages();
-  }, [sessionId, session?.user?.id]);
+  }, [sessionId, session?.user?.id, currentContext, clientData]);
 
   // Add context change effect to show visual feedback
   useEffect(() => {
@@ -93,6 +114,33 @@ const SmartReviAssistant = ({
       console.log(`🔄 AI-Revi context changed to: ${currentContext}${selectedVariant ? ` with variant: ${selectedVariant.name}` : ''}`);
     }
   }, [currentContext, selectedVariant, embedded, onContextChange]);
+
+  // Function to get contextual welcome message
+  const getContextualWelcomeMessage = (ctx: RevyContext, client?: any) => {
+    const clientName = client?.company_name || client?.name || 'klienten';
+    
+    switch (ctx) {
+      case 'client-detail':
+        return `Hei! Jeg er AI-Revi, din smarte revisjonsassistent. Jeg kan hjelpe deg med analyse av ${clientName}, dokumentgjennomgang, risikovurdering og mye mer. Hva vil du vite om denne klienten?
+
+🏷️ **EMNER:** Klientanalyse, Dokumenter, Risikovurdering, Revisjonsplanlegging`;
+        
+      case 'documentation':
+        return `Hei! Jeg er AI-Revi, din dokumentanalyse-ekspert. Jeg kan hjelpe deg med å analysere, kategorisere og kvalitetssikre dokumenter for ${clientName}. Spør meg om dokumenttyper, kategorisering eller kvalitetsvurderinger.
+
+🏷️ **EMNER:** Dokumentanalyse, Kategorisering, Kvalitetssikring, Dokumenttyper`;
+        
+      case 'audit-actions':
+        return `Hei! Jeg er AI-Revi, din revisjonshandlings-assistent. Jeg kan hjelpe deg med planlegging og gjennomføring av revisjonshandlinger for ${clientName}, ISA-standarder og kvalitetssikring.
+
+🏷️ **EMNER:** Revisjonshandlinger, ISA-standarder, Planlegging, Kvalitetssikring`;
+        
+      default:
+        return `Hei! Jeg er AI-Revi, din smarte revisjonsassistent. Jeg kan hjelpe deg med revisjon, regnskapsføring, dokumentanalyse og mye mer. Hvordan kan jeg hjelpe deg i dag?
+
+🏷️ **EMNER:** Revisjon, Regnskapsføring, Dokumenter, Rådgivning`;
+    }
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInput(e.target.value);
