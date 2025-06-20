@@ -15,7 +15,7 @@ export async function fetchEnhancedClientContext(clientId: string) {
       .select(`
         *,
         risk_areas(*),
-        client_audit_actions(
+        client_audit_actions!client_audit_actions_client_id_fkey(
           name,
           description,
           status,
@@ -124,12 +124,25 @@ export async function searchDocumentContent(clientId: string, query: string) {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Search in document text and summaries
+    // Search in document text and summaries with intelligent pattern matching
+    const searchTerms = extractSearchTerms(query);
+    let searchPattern = '';
+    
+    // Build search pattern for multiple terms
+    if (searchTerms.length > 0) {
+      const patterns = searchTerms.map(term => 
+        `extracted_text.ilike.%${term}%,ai_analysis_summary.ilike.%${term}%,file_name.ilike.%${term}%`
+      );
+      searchPattern = patterns.join(',');
+    } else {
+      searchPattern = `extracted_text.ilike.%${query}%,ai_analysis_summary.ilike.%${query}%,file_name.ilike.%${query}%`;
+    }
+
     const { data: documents, error } = await supabase
       .from('client_documents_files')
-      .select('id, file_name, category, ai_analysis_summary, extracted_text, ai_confidence_score')
+      .select('id, file_name, category, ai_analysis_summary, extracted_text, ai_confidence_score, created_at')
       .eq('client_id', clientId)
-      .or(`extracted_text.ilike.%${query}%,ai_analysis_summary.ilike.%${query}%,file_name.ilike.%${query}%`)
+      .or(searchPattern)
       .limit(10);
 
     if (error) {
@@ -146,7 +159,8 @@ export async function searchDocumentContent(clientId: string, query: string) {
       relevantText: doc.extracted_text 
         ? extractRelevantText(doc.extracted_text, query)
         : null,
-      fullContent: doc.extracted_text // Include full content for detailed analysis
+      fullContent: doc.extracted_text, // Include full content for detailed analysis
+      uploadDate: doc.created_at
     }));
 
   } catch (error) {
@@ -179,10 +193,11 @@ export async function findDocumentByReference(clientId: string, reference: strin
       return null;
     }
 
-    // Find best matching document
-    const bestMatch = findBestDocumentMatch(documents || [], identifiers);
+    // Find best matching document using enhanced scoring
+    const bestMatch = findBestDocumentMatch(documents || [], identifiers, reference);
     
     if (bestMatch) {
+      console.log('✅ Found specific document match:', bestMatch.file_name);
       return {
         id: bestMatch.id,
         fileName: bestMatch.file_name,
@@ -194,6 +209,7 @@ export async function findDocumentByReference(clientId: string, reference: strin
       };
     }
 
+    console.log('❌ No specific document found for reference:', reference);
     return null;
   } catch (error) {
     console.error('Failed to find document by reference:', error);
@@ -201,10 +217,20 @@ export async function findDocumentByReference(clientId: string, reference: strin
   }
 }
 
+// Helper functions
+function extractSearchTerms(query: string): string[] {
+  // Extract meaningful search terms from the query
+  const words = query.toLowerCase().split(/\s+/);
+  return words.filter(word => 
+    word.length > 2 && 
+    !['hva', 'står', 'på', 'i', 'av', 'til', 'fra', 'med', 'for', 'som', 'det', 'er', 'den', 'kan', 'jeg', 'du'].includes(word)
+  );
+}
+
 function extractDocumentIdentifiers(reference: string): string[] {
   const identifiers = [];
   
-  // Extract numbers (like invoice numbers)
+  // Extract numbers (like invoice numbers, document numbers)
   const numbers = reference.match(/\d+/g);
   if (numbers) {
     identifiers.push(...numbers);
@@ -219,30 +245,48 @@ function extractDocumentIdentifiers(reference: string): string[] {
   return identifiers;
 }
 
-function findBestDocumentMatch(documents: any[], identifiers: string[]): any | null {
+function findBestDocumentMatch(documents: any[], identifiers: string[], originalQuery: string): any | null {
   let bestMatch = null;
   let bestScore = 0;
   
   for (const doc of documents) {
     let score = 0;
-    const searchText = `${doc.file_name} ${doc.ai_analysis_summary || ''} ${doc.extracted_text || ''}`.toLowerCase();
+    const fileName = doc.file_name?.toLowerCase() || '';
+    const summary = doc.ai_analysis_summary?.toLowerCase() || '';
+    const extractedText = doc.extracted_text?.toLowerCase() || '';
     
+    // Score for identifier matches
     for (const identifier of identifiers) {
-      if (searchText.includes(identifier.toLowerCase())) {
-        // Boost score for exact filename matches
-        if (doc.file_name.toLowerCase().includes(identifier.toLowerCase())) {
-          score += 10;
-        }
-        // Medium score for summary matches
-        else if (doc.ai_analysis_summary?.toLowerCase().includes(identifier.toLowerCase())) {
-          score += 5;
-        }
-        // Lower score for content matches
-        else {
-          score += 1;
-        }
+      const id = identifier.toLowerCase();
+      
+      // High score for exact filename matches
+      if (fileName.includes(id)) {
+        score += 15;
+      }
+      // Medium score for summary matches
+      if (summary.includes(id)) {
+        score += 8;
+      }
+      // Lower score for content matches
+      if (extractedText.includes(id)) {
+        score += 3;
       }
     }
+    
+    // Bonus for document types mentioned in query
+    if (originalQuery.toLowerCase().includes('faktura') && fileName.includes('faktura')) {
+      score += 10;
+    }
+    if (originalQuery.toLowerCase().includes('rapport') && fileName.includes('rapport')) {
+      score += 10;
+    }
+    
+    // Boost for documents with extracted text
+    if (extractedText.length > 0) {
+      score += 2;
+    }
+    
+    console.log(`📊 Document ${fileName} scored: ${score}`);
     
     if (score > bestScore) {
       bestScore = score;
@@ -250,7 +294,8 @@ function findBestDocumentMatch(documents: any[], identifiers: string[]): any | n
     }
   }
   
-  return bestScore > 0 ? bestMatch : null;
+  console.log(`🎯 Best match: ${bestMatch?.file_name} with score: ${bestScore}`);
+  return bestScore > 5 ? bestMatch : null; // Minimum threshold for matches
 }
 
 function extractRelevantText(text: string, query: string): string {
@@ -258,12 +303,33 @@ function extractRelevantText(text: string, query: string): string {
   
   const queryLower = query.toLowerCase();
   const textLower = text.toLowerCase();
-  const index = textLower.indexOf(queryLower);
   
-  if (index === -1) return text.substring(0, 200) + '...';
+  // Try to find the query terms in the text
+  const searchTerms = extractSearchTerms(query);
+  let bestIndex = -1;
+  let bestTerm = '';
   
-  const start = Math.max(0, index - 100);
-  const end = Math.min(text.length, index + query.length + 100);
+  for (const term of searchTerms) {
+    const index = textLower.indexOf(term.toLowerCase());
+    if (index !== -1) {
+      bestIndex = index;
+      bestTerm = term;
+      break;
+    }
+  }
   
-  return '...' + text.substring(start, end) + '...';
+  if (bestIndex === -1) {
+    // If no specific terms found, return beginning of text
+    return text.substring(0, 200) + '...';
+  }
+  
+  // Extract context around the found term
+  const start = Math.max(0, bestIndex - 100);
+  const end = Math.min(text.length, bestIndex + bestTerm.length + 100);
+  
+  let result = text.substring(start, end);
+  if (start > 0) result = '...' + result;
+  if (end < text.length) result = result + '...';
+  
+  return result;
 }
