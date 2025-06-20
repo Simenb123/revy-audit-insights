@@ -12,6 +12,7 @@ import { TooltipProvider, Tooltip, TooltipContent, TooltipTrigger } from "@/comp
 import SmartReviAssistant from '@/components/Revy/SmartRevyAssistant';
 import { useLocation, useParams } from 'react-router-dom';
 import { useClientDetails } from '@/hooks/useClientDetails';
+import { useClientDocuments } from '@/hooks/useClientDocuments';
 import { RevyContext } from '@/types/revio';
 
 interface RightSidebarProps {
@@ -24,6 +25,7 @@ const RightSidebar = ({ isCollapsed = false, onToggle }: RightSidebarProps) => {
   const location = useLocation();
   const { orgNumber } = useParams<{ orgNumber: string }>();
   const { data: clientData } = useClientDetails(orgNumber || '');
+  const { documents } = useClientDocuments(clientData?.id || '');
 
   // Determine context based on current route
   const getContextFromRoute = (): RevyContext => {
@@ -40,6 +42,22 @@ const RightSidebar = ({ isCollapsed = false, onToggle }: RightSidebarProps) => {
   };
 
   const currentContext = getContextFromRoute();
+
+  // Enhance client data with documents for AI context
+  const enhancedClientData = clientData ? {
+    ...clientData,
+    documents: documents || [],
+    documentSummary: {
+      totalDocuments: documents?.length || 0,
+      categories: [...new Set(documents?.map(d => d.category).filter(Boolean))] || [],
+      subjectAreas: [...new Set(documents?.map(d => d.subject_area).filter(Boolean))] || [],
+      recentDocuments: documents?.slice(0, 5).map(d => ({
+        name: d.file_name,
+        category: d.category,
+        uploadDate: d.created_at
+      })) || []
+    }
+  } : null;
 
   if (isCollapsed) {
     return (
@@ -69,7 +87,7 @@ const RightSidebar = ({ isCollapsed = false, onToggle }: RightSidebarProps) => {
   }
 
   return (
-    <div className="h-full flex flex-col w-full overflow-hidden bg-background">
+    <div className="h-full flex flex-col w-full bg-background overflow-hidden">
       {/* Expanded Header */}
       <div className="border-b border-border flex items-center justify-between p-4 flex-shrink-0">
         <div className="flex items-center gap-2">
@@ -87,11 +105,11 @@ const RightSidebar = ({ isCollapsed = false, onToggle }: RightSidebarProps) => {
         </Button>
       </div>
       
-      {/* SmartReviAssistant Content */}
+      {/* SmartReviAssistant Content - Fixed height and scroll */}
       <div className="flex-1 min-h-0 overflow-hidden">
         <SmartReviAssistant
           embedded={true}
-          clientData={clientData}
+          clientData={enhancedClientData}
           userRole="revisor"
           context={currentContext}
         />

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -115,23 +114,45 @@ const SmartReviAssistant = ({
     }
   }, [currentContext, selectedVariant, embedded, onContextChange]);
 
-  // Function to get contextual welcome message
+  // Function to get contextual welcome message with enhanced client data
   const getContextualWelcomeMessage = (ctx: RevyContext, client?: any) => {
     const clientName = client?.company_name || client?.name || 'klienten';
+    const docCount = client?.documentSummary?.totalDocuments || 0;
+    const categories = client?.documentSummary?.categories || [];
+    const recentDocs = client?.documentSummary?.recentDocuments || [];
     
     switch (ctx) {
       case 'client-detail':
-        return `Hei! Jeg er AI-Revi, din smarte revisjonsassistent. Jeg kan hjelpe deg med analyse av ${clientName}, dokumentgjennomgang, risikovurdering og mye mer. Hva vil du vite om denne klienten?
+        return `Hei! Jeg er AI-Revi, din smarte revisjonsassistent. Jeg kan hjelpe deg med analyse av ${clientName}.
+
+📊 **KLIENTOVERSIKT:**
+- ${docCount} dokumenter tilgjengelig
+- Kategorier: ${categories.length > 0 ? categories.join(', ') : 'Ingen kategorier ennå'}
+- Siste dokumenter: ${recentDocs.length > 0 ? recentDocs.map(d => d.name).join(', ') : 'Ingen dokumenter ennå'}
+
+Jeg kan hjelpe deg med klientanalyse, dokumentgjennomgang, risikovurdering og revisjonsplanlegging. Hva vil du vite om denne klienten?
 
 🏷️ **EMNER:** Klientanalyse, Dokumenter, Risikovurdering, Revisjonsplanlegging`;
         
       case 'documentation':
-        return `Hei! Jeg er AI-Revi, din dokumentanalyse-ekspert. Jeg kan hjelpe deg med å analysere, kategorisere og kvalitetssikre dokumenter for ${clientName}. Spør meg om dokumenttyper, kategorisering eller kvalitetsvurderinger.
+        return `Hei! Jeg er AI-Revi, din dokumentanalyse-ekspert for ${clientName}.
+
+📁 **DOKUMENTSTATUS:**
+- ${docCount} dokumenter i systemet
+- Kategorier: ${categories.length > 0 ? categories.join(', ') : 'Venter på kategorisering'}
+
+Jeg kan hjelpe deg med å analysere, kategorisere og kvalitetssikre dokumenter. Spør meg om dokumenttyper, kategorisering eller kvalitetsvurderinger.
 
 🏷️ **EMNER:** Dokumentanalyse, Kategorisering, Kvalitetssikring, Dokumenttyper`;
         
       case 'audit-actions':
-        return `Hei! Jeg er AI-Revi, din revisjonshandlings-assistent. Jeg kan hjelpe deg med planlegging og gjennomføring av revisjonshandlinger for ${clientName}, ISA-standarder og kvalitetssikring.
+        return `Hei! Jeg er AI-Revi, din revisjonshandlings-assistent for ${clientName}.
+
+📋 **REVISJONSKONTEXT:**
+- Klient: ${clientName}
+- ${docCount} dokumenter tilgjengelig for analyse
+
+Jeg kan hjelpe deg med planlegging og gjennomføring av revisjonshandlinger, ISA-standarder og kvalitetssikring.
 
 🏷️ **EMNER:** Revisjonshandlinger, ISA-standarder, Planlegging, Kvalitetssikring`;
         
@@ -278,8 +299,8 @@ const SmartReviAssistant = ({
           </div>
         </div>
         
-        {/* Messages */}
-        <div className="flex-1 min-h-0">
+        {/* Messages - Fixed height with proper scroll */}
+        <div className="flex-1 min-h-0 overflow-hidden">
           <RevyMessageList 
             messages={messages} 
             isTyping={isLoading} 

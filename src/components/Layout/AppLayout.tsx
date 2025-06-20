@@ -35,7 +35,7 @@ const AppLayout = () => {
       />
       
       {/* Main Layout Below Header */}
-      <div className="flex-1 flex">
+      <div className="flex-1 flex h-[calc(100vh-3.5rem)]">
         {/* Left Sidebar */}
         <div className={`${isSidebarCollapsed ? 'w-16' : 'w-64'} transition-all duration-300 flex-shrink-0`}>
           <Sidebar isCollapsed={isSidebarCollapsed} onToggle={toggleSidebar} />
@@ -46,9 +46,9 @@ const AppLayout = () => {
           <Outlet />
         </main>
 
-        {/* Right Sidebar - Desktop only */}
+        {/* Right Sidebar - Desktop only - Made wider and with proper height constraints */}
         {!isMobile && (
-          <div className={`${isRightSidebarCollapsed ? 'w-16' : 'w-80'} border-l border-border flex-shrink-0 transition-all duration-300`}>
+          <div className={`${isRightSidebarCollapsed ? 'w-16' : 'w-[480px]'} border-l border-border flex-shrink-0 transition-all duration-300 h-full`}>
             <RightSidebar 
               isCollapsed={isRightSidebarCollapsed} 
               onToggle={toggleRightSidebar} 
