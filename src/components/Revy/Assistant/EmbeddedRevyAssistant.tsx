@@ -6,6 +6,7 @@ import { Send, Loader2 } from 'lucide-react';
 import { useIsMobile } from "@/hooks/use-mobile";
 import KnowledgeStatusIndicator from '../KnowledgeStatusIndicator';
 import RevyAvatar from '../RevyAvatar';
+import AIRevyVariantSelector from '@/components/AI/AIRevyVariantSelector';
 import { RevyMessageList } from './RevyMessageList';
 import { RevyMessage } from '@/types/revio';
 
@@ -32,6 +33,11 @@ const EmbeddedRevyAssistant = ({
 }: EmbeddedRevyAssistantProps) => {
   const isMobile = useIsMobile();
 
+  const handleVariantChange = (variant: any) => {
+    console.log('🔄 Variant changed in embedded assistant:', variant.name);
+    // The variant change will be handled by the parent component
+  };
+
   return (
     <div className="flex flex-col h-full bg-background">
       {/* Header with context indicator */}
@@ -52,6 +58,16 @@ const EmbeddedRevyAssistant = ({
             </p>
           </div>
         </div>
+        
+        {/* AI Variant Selector - Compact version for embedded */}
+        <div className="mt-2">
+          <AIRevyVariantSelector 
+            currentContext="client-detail"
+            onVariantChange={handleVariantChange}
+            compact={true}
+          />
+        </div>
+        
         <div className="mt-2">
           <KnowledgeStatusIndicator />
         </div>

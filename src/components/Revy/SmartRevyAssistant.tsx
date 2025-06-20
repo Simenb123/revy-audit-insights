@@ -4,6 +4,7 @@ import { RevyContext } from '@/types/revio';
 import EmbeddedRevyAssistant from './Assistant/EmbeddedRevyAssistant';
 import StandaloneRevyAssistant from './Assistant/StandaloneRevyAssistant';
 import { useRevyMessageHandling } from './Assistant/useRevyMessageHandling';
+import { useAIRevyVariants } from '@/hooks/useAIRevyVariants';
 
 interface SmartReviAssistantProps {
   embedded?: boolean;
@@ -24,6 +25,12 @@ const SmartReviAssistant = ({
 }: SmartReviAssistantProps) => {
   const currentContext = context;
 
+  // Use AI-Revi variants hook to get available variants and selection
+  const { variants, selectedVariant: autoSelectedVariant, switchVariant } = useAIRevyVariants(currentContext);
+  
+  // Use provided selectedVariant or fallback to auto-selected
+  const activeVariant = selectedVariant || autoSelectedVariant;
+
   const {
     messages,
     input,
@@ -35,15 +42,15 @@ const SmartReviAssistant = ({
     context: currentContext,
     clientData,
     userRole,
-    selectedVariant
+    selectedVariant: activeVariant
   });
 
   // Add context change effect to show visual feedback
   useEffect(() => {
     if (embedded && onContextChange) {
-      console.log(`🔄 AI-Revi context changed to: ${currentContext}${selectedVariant ? ` with variant: ${selectedVariant.name}` : ''}`);
+      console.log(`🔄 AI-Revi context changed to: ${currentContext}${activeVariant ? ` with variant: ${activeVariant.name}` : ''}`);
     }
-  }, [currentContext, selectedVariant, embedded, onContextChange]);
+  }, [currentContext, activeVariant, embedded, onContextChange]);
 
   // Get context display name for user feedback
   const getContextDisplayName = (ctx: RevyContext) => {
@@ -67,7 +74,7 @@ const SmartReviAssistant = ({
         messages={messages}
         input={input}
         isLoading={isLoading}
-        selectedVariant={selectedVariant}
+        selectedVariant={activeVariant}
         contextDisplayName={contextDisplayName}
         onInputChange={handleInputChange}
         onKeyDown={handleKeyDown}
@@ -81,7 +88,7 @@ const SmartReviAssistant = ({
       messages={messages}
       input={input}
       isLoading={isLoading}
-      selectedVariant={selectedVariant}
+      selectedVariant={activeVariant}
       contextDisplayName={contextDisplayName}
       onInputChange={handleInputChange}
       onKeyDown={handleKeyDown}

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Send, Loader2 } from 'lucide-react';
 import KnowledgeStatusIndicator from '../KnowledgeStatusIndicator';
 import RevyAvatar from '../RevyAvatar';
+import AIRevyVariantSelector from '@/components/AI/AIRevyVariantSelector';
 import { RevyMessageList } from './RevyMessageList';
 import { RevyMessage } from '@/types/revio';
 
@@ -30,6 +31,12 @@ const StandaloneRevyAssistant = ({
   onKeyDown,
   onSendMessage
 }: StandaloneRevyAssistantProps) => {
+  
+  const handleVariantChange = (variant: any) => {
+    console.log('🔄 Variant changed in standalone assistant:', variant.name);
+    // The variant change will be handled by the parent component
+  };
+
   return (
     <Card className="flex flex-col w-full max-w-2xl mx-auto h-[600px]">
       <CardHeader className="pb-3">
@@ -42,6 +49,14 @@ const StandaloneRevyAssistant = ({
             </p>
           </div>
         </div>
+        
+        {/* AI Variant Selector - Full version for standalone */}
+        <AIRevyVariantSelector 
+          currentContext="general"
+          onVariantChange={handleVariantChange}
+          compact={false}
+        />
+        
         <KnowledgeStatusIndicator />
       </CardHeader>
       <CardContent className="p-0 h-full flex-grow flex flex-col">
