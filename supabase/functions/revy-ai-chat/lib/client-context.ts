@@ -68,6 +68,7 @@ export async function fetchEnhancedClientContext(clientId: string) {
         summary: doc.ai_analysis_summary,
         confidence: doc.ai_confidence_score,
         textPreview,
+        fullContent: doc.extracted_text, // Include full content for AI analysis
         hasText: !!doc.extracted_text,
         size: doc.file_size,
         type: doc.mime_type,
@@ -144,13 +145,112 @@ export async function searchDocumentContent(clientId: string, query: string) {
       confidence: doc.ai_confidence_score,
       relevantText: doc.extracted_text 
         ? extractRelevantText(doc.extracted_text, query)
-        : null
+        : null,
+      fullContent: doc.extracted_text // Include full content for detailed analysis
     }));
 
   } catch (error) {
     console.error('Failed to search document content:', error);
     return [];
   }
+}
+
+export async function findDocumentByReference(clientId: string, reference: string) {
+  console.log('🔍 Finding document by reference in edge function:', clientId, reference);
+  
+  try {
+    const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.49.4');
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    // Extract potential identifiers from reference
+    const identifiers = extractDocumentIdentifiers(reference);
+    
+    // Get all documents for this client
+    const { data: documents, error } = await supabase
+      .from('client_documents_files')
+      .select('id, file_name, category, ai_analysis_summary, extracted_text, ai_confidence_score, created_at')
+      .eq('client_id', clientId);
+
+    if (error) {
+      console.error('Error fetching documents:', error);
+      return null;
+    }
+
+    // Find best matching document
+    const bestMatch = findBestDocumentMatch(documents || [], identifiers);
+    
+    if (bestMatch) {
+      return {
+        id: bestMatch.id,
+        fileName: bestMatch.file_name,
+        category: bestMatch.category,
+        summary: bestMatch.ai_analysis_summary,
+        confidence: bestMatch.ai_confidence_score,
+        fullContent: bestMatch.extracted_text,
+        uploadDate: bestMatch.created_at
+      };
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Failed to find document by reference:', error);
+    return null;
+  }
+}
+
+function extractDocumentIdentifiers(reference: string): string[] {
+  const identifiers = [];
+  
+  // Extract numbers (like invoice numbers)
+  const numbers = reference.match(/\d+/g);
+  if (numbers) {
+    identifiers.push(...numbers);
+  }
+  
+  // Extract key terms
+  const terms = reference.toLowerCase().split(/\s+/).filter(term => 
+    term.length > 2 && !['på', 'i', 'av', 'til', 'fra', 'med', 'for', 'som', 'hva', 'står', 'det', 'er', 'den'].includes(term)
+  );
+  identifiers.push(...terms);
+  
+  return identifiers;
+}
+
+function findBestDocumentMatch(documents: any[], identifiers: string[]): any | null {
+  let bestMatch = null;
+  let bestScore = 0;
+  
+  for (const doc of documents) {
+    let score = 0;
+    const searchText = `${doc.file_name} ${doc.ai_analysis_summary || ''} ${doc.extracted_text || ''}`.toLowerCase();
+    
+    for (const identifier of identifiers) {
+      if (searchText.includes(identifier.toLowerCase())) {
+        // Boost score for exact filename matches
+        if (doc.file_name.toLowerCase().includes(identifier.toLowerCase())) {
+          score += 10;
+        }
+        // Medium score for summary matches
+        else if (doc.ai_analysis_summary?.toLowerCase().includes(identifier.toLowerCase())) {
+          score += 5;
+        }
+        // Lower score for content matches
+        else {
+          score += 1;
+        }
+      }
+    }
+    
+    if (score > bestScore) {
+      bestScore = score;
+      bestMatch = doc;
+    }
+  }
+  
+  return bestScore > 0 ? bestMatch : null;
 }
 
 function extractRelevantText(text: string, query: string): string {

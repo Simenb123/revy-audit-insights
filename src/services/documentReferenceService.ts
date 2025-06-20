@@ -10,6 +10,7 @@ export interface DocumentReference {
   textPreview?: string;
   uploadDate: string;
   relevantText?: string;
+  fullContent?: string;
 }
 
 export const searchClientDocuments = async (
@@ -39,12 +40,56 @@ export const searchClientDocuments = async (
       confidence: doc.ai_confidence_score,
       textPreview: doc.extracted_text ? doc.extracted_text.substring(0, 200) + '...' : undefined,
       uploadDate: doc.created_at,
-      relevantText: extractRelevantText(doc.extracted_text, query)
+      relevantText: extractRelevantText(doc.extracted_text, query),
+      fullContent: doc.extracted_text
     }));
 
   } catch (error) {
     console.error('💥 Failed to search client documents:', error);
     return [];
+  }
+};
+
+export const findDocumentByReference = async (
+  clientId: string,
+  reference: string
+): Promise<DocumentReference | null> => {
+  try {
+    console.log('🔍 Finding document by reference:', { clientId, reference });
+    
+    // Extract potential document identifiers from reference
+    const referencePatterns = extractDocumentIdentifiers(reference);
+    
+    const { data, error } = await supabase
+      .from('client_documents_files')
+      .select('id, file_name, category, ai_analysis_summary, extracted_text, ai_confidence_score, created_at')
+      .eq('client_id', clientId);
+
+    if (error) {
+      console.error('❌ Error finding document:', error);
+      return null;
+    }
+
+    // Find best matching document
+    const bestMatch = findBestDocumentMatch(data || [], referencePatterns);
+    
+    if (bestMatch) {
+      return {
+        id: bestMatch.id,
+        fileName: bestMatch.file_name,
+        category: bestMatch.category,
+        summary: bestMatch.ai_analysis_summary,
+        confidence: bestMatch.ai_confidence_score,
+        textPreview: bestMatch.extracted_text ? bestMatch.extracted_text.substring(0, 500) + '...' : undefined,
+        uploadDate: bestMatch.created_at,
+        fullContent: bestMatch.extracted_text
+      };
+    }
+
+    return null;
+  } catch (error) {
+    console.error('💥 Failed to find document by reference:', error);
+    return null;
   }
 };
 
@@ -69,6 +114,7 @@ export const getDocumentById = async (documentId: string): Promise<DocumentRefer
       confidence: data.ai_confidence_score,
       textPreview: data.extracted_text ? data.extracted_text.substring(0, 500) + '...' : undefined,
       uploadDate: data.created_at,
+      fullContent: data.extracted_text
     };
 
   } catch (error) {
@@ -76,6 +122,59 @@ export const getDocumentById = async (documentId: string): Promise<DocumentRefer
     return null;
   }
 };
+
+// Helper functions
+function extractDocumentIdentifiers(reference: string): string[] {
+  const identifiers = [];
+  
+  // Extract numbers (like invoice numbers)
+  const numbers = reference.match(/\d+/g);
+  if (numbers) {
+    identifiers.push(...numbers);
+  }
+  
+  // Extract key terms
+  const terms = reference.toLowerCase().split(/\s+/).filter(term => 
+    term.length > 2 && !['på', 'i', 'av', 'til', 'fra', 'med', 'for', 'som', 'hva', 'står'].includes(term)
+  );
+  identifiers.push(...terms);
+  
+  return identifiers;
+}
+
+function findBestDocumentMatch(documents: any[], identifiers: string[]): any | null {
+  let bestMatch = null;
+  let bestScore = 0;
+  
+  for (const doc of documents) {
+    let score = 0;
+    const searchText = `${doc.file_name} ${doc.ai_analysis_summary || ''} ${doc.extracted_text || ''}`.toLowerCase();
+    
+    for (const identifier of identifiers) {
+      if (searchText.includes(identifier.toLowerCase())) {
+        // Boost score for exact filename matches
+        if (doc.file_name.toLowerCase().includes(identifier.toLowerCase())) {
+          score += 10;
+        }
+        // Medium score for summary matches
+        else if (doc.ai_analysis_summary?.toLowerCase().includes(identifier.toLowerCase())) {
+          score += 5;
+        }
+        // Lower score for content matches
+        else {
+          score += 1;
+        }
+      }
+    }
+    
+    if (score > bestScore) {
+      bestScore = score;
+      bestMatch = doc;
+    }
+  }
+  
+  return bestScore > 0 ? bestMatch : null;
+}
 
 export const analyzeDocumentRelevance = (
   document: any,

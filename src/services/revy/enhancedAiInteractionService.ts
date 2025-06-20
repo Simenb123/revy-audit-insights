@@ -1,6 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { RevyChatMessage } from '@/types/revio';
+import { findDocumentByReference, searchClientDocuments } from '@/services/documentReferenceService';
 
 export const generateEnhancedAIResponseWithVariant = async (
   userMessage: string,
@@ -12,13 +13,55 @@ export const generateEnhancedAIResponseWithVariant = async (
   selectedVariant?: any
 ): Promise<string> => {
   try {
-    console.log('🚀 Generating enhanced AI response with variant:', {
+    console.log('🚀 Generating enhanced AI response with variant and document search:', {
       context,
       userRole,
       variantName: selectedVariant?.name,
       messageLength: userMessage.length,
       hasClientData: !!clientData
     });
+
+    // Check if user is asking about specific documents
+    let documentContext = '';
+    if (clientData?.id && isDocumentQuery(userMessage)) {
+      console.log('📄 Document query detected, searching for relevant documents...');
+      
+      try {
+        // Try to find specific document by reference
+        const specificDoc = await findDocumentByReference(clientData.id, userMessage);
+        
+        if (specificDoc && specificDoc.fullContent) {
+          documentContext = `\n\nDOKUMENTINNHOLD FUNNET:
+Dokument: ${specificDoc.fileName}
+Kategori: ${specificDoc.category || 'Ukategorisert'}
+Sammendrag: ${specificDoc.summary || 'Ikke tilgjengelig'}
+
+INNHOLD:
+${specificDoc.fullContent.substring(0, 2000)}${specificDoc.fullContent.length > 2000 ? '...' : ''}
+
+Basert på dette dokumentet kan du nå svare på brukerens spørsmål.`;
+          
+          console.log('✅ Specific document found and included in context');
+        } else {
+          // Fall back to general document search
+          const relevantDocs = await searchClientDocuments(clientData.id, userMessage);
+          
+          if (relevantDocs.length > 0) {
+            documentContext = `\n\nRELEVANTE DOKUMENTER FUNNET:
+${relevantDocs.slice(0, 3).map(doc => `
+- ${doc.fileName}: ${doc.summary || 'Ingen sammendrag'}
+  ${doc.relevantText ? `Relevant tekst: "${doc.relevantText}"` : ''}
+`).join('')}
+
+Du kan referere til disse dokumentene i ditt svar.`;
+            
+            console.log(`✅ Found ${relevantDocs.length} relevant documents`);
+          }
+        }
+      } catch (docError) {
+        console.error('❌ Error searching for documents:', docError);
+      }
+    }
 
     // Prepare chat history in the correct format
     const formattedHistory = chatHistory.map(msg => ({
@@ -34,22 +77,23 @@ export const generateEnhancedAIResponseWithVariant = async (
       throw new Error('Du må være logget inn for å bruke AI-assistenten');
     }
 
-    // Enhanced request body with variant support
+    // Enhanced request body with variant support and document context
     const requestBody = {
-      message: userMessage,
+      message: userMessage + documentContext,
       context,
       history: formattedHistory,
       clientData,
       userRole,
       sessionId,
       userId: user.id,
-      variant: selectedVariant // Pass the full variant object
+      variant: selectedVariant
     };
 
-    console.log('📤 Sending enhanced request with variant to revy-ai-chat edge function:', {
+    console.log('📤 Sending enhanced request with document context to revy-ai-chat edge function:', {
       variantName: selectedVariant?.name,
       contextType: context,
-      hasVariantPrompt: !!selectedVariant?.system_prompt_template
+      hasVariantPrompt: !!selectedVariant?.system_prompt_template,
+      hasDocumentContext: !!documentContext
     });
 
     // Call the enhanced AI service
@@ -72,9 +116,10 @@ export const generateEnhancedAIResponseWithVariant = async (
       return getFallbackResponse(context, userMessage, selectedVariant);
     }
 
-    console.log('✅ Enhanced AI response received successfully with variant support:', { 
+    console.log('✅ Enhanced AI response received successfully with document context:', { 
       responseLength: response.data.response.length,
-      variantUsed: selectedVariant?.name || 'default'
+      variantUsed: selectedVariant?.name || 'default',
+      hadDocumentContext: !!documentContext
     });
 
     return response.data.response;
@@ -84,6 +129,17 @@ export const generateEnhancedAIResponseWithVariant = async (
     return getFallbackResponse(context, userMessage, selectedVariant);
   }
 };
+
+// Check if the user message is asking about documents
+function isDocumentQuery(message: string): boolean {
+  const documentKeywords = [
+    'dokument', 'faktura', 'rapport', 'fil', 'innhold', 'står på', 'viser',
+    'hva inneholder', 'kan du lese', 'se på', 'analyser', 'gjennomgå'
+  ];
+  
+  const messageLower = message.toLowerCase();
+  return documentKeywords.some(keyword => messageLower.includes(keyword));
+}
 
 // Export the alias for backward compatibility
 export const generateEnhancedAIResponse = generateEnhancedAIResponseWithVariant;
