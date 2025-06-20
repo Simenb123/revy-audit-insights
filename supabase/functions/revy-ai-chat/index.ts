@@ -1,16 +1,17 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { corsHeaders, isOptions, handleCors } from './lib/cors.ts'
-import { buildIntelligentSystemPrompt } from './lib/prompt.ts'
-import { buildEnhancedContext } from './lib/context.ts'
+import { buildIntelligentSystemPromptWithVariant } from './lib/improved-prompt.ts'
+import { buildEnhancedContextWithVariant } from './lib/enhanced-context.ts'
 import { selectOptimalModel, getIntelligentFallback } from './lib/utils.ts'
 import { logUsage } from './lib/logging.ts'
 import { getCachedResponse, cacheResponse } from './lib/cache.ts'
 import { seedArticleTags } from './lib/seed-article-tags.ts'
 import { validateAIResponse } from './lib/response-validator.ts'
+import { getVariantContextualTips } from './lib/variant-handler.ts'
 
 serve(async (req) => {
-  console.log('🤖 AI-Revy Chat function started');
+  console.log('🤖 AI-Revi Chat function started with enhanced variant support');
   
   if (isOptions(req)) {
     return handleCors();
@@ -18,15 +19,25 @@ serve(async (req) => {
 
   try {
     const requestBody = await req.json();
-    const { message, context = 'general', history = [], clientData, userRole, sessionId, userId } = requestBody;
+    const { 
+      message, 
+      context = 'general', 
+      history = [], 
+      clientData, 
+      userRole, 
+      sessionId, 
+      userId,
+      variant: selectedVariant
+    } = requestBody;
     
-    console.log('📝 Request received:', {
+    console.log('📝 Enhanced request received:', {
       message: `${message.substring(0, 50)}...`,
       context,
       userRole,
       userId: `${userId?.substring(0, 8)}...`,
       hasClientData: !!clientData,
-      historyLength: history.length
+      historyLength: history.length,
+      variantName: selectedVariant?.name || 'default'
     });
 
     // Check if this is a knowledge-related query and if we should seed tags
@@ -41,15 +52,22 @@ serve(async (req) => {
       }
     }
 
-    // Check cache first
-    const cacheKey = JSON.stringify({ message, context, clientData, userRole });
+    // Check cache first (include variant in cache key)
+    const cacheKey = JSON.stringify({ 
+      message, 
+      context, 
+      clientData, 
+      userRole, 
+      variantName: selectedVariant?.name 
+    });
     const cachedResponse = await getCachedResponse(cacheKey, userId);
     
     if (cachedResponse) {
-      console.log('✅ Cache hit!', { requestHash: cachedResponse.requestHash?.substring(0, 16) + '...' });
+      console.log('✅ Cache hit for variant-aware request!', { 
+        requestHash: cachedResponse.requestHash?.substring(0, 16) + '...',
+        variantName: selectedVariant?.name
+      });
       
-      // CRITICAL: ALWAYS validate cached responses too
-      console.log('🔧 Validating cached response for proper tag format...');
       const validation = validateAIResponse(cachedResponse.response);
       const finalResponse = validation.fixedResponse || cachedResponse.response;
       
@@ -60,36 +78,44 @@ serve(async (req) => {
       });
     }
     
-    console.log('🧐 Cache miss, proceeding to generate new response.');
+    console.log('🧐 Cache miss for variant request, proceeding to generate new response.');
 
-    // Build enhanced context with improved search and article mappings
-    const enhancedContext = await buildEnhancedContext(message, context, clientData);
+    // Build enhanced context with variant support
+    const enhancedContext = await buildEnhancedContextWithVariant(
+      message, 
+      context, 
+      clientData,
+      selectedVariant
+    );
     
-    console.log('🧠 Enhanced context built:', {
+    console.log('🧠 Enhanced variant-aware context built:', {
       knowledgeArticleCount: enhancedContext.knowledge?.length || 0,
       articleTagMappingCount: Object.keys(enhancedContext.articleTagMapping || {}).length,
       hasClientContext: !!enhancedContext.clientContext,
-      isGuestMode: !userId
+      isGuestMode: !userId,
+      variantName: selectedVariant?.name,
+      variantDescription: selectedVariant?.description
     });
 
     // Select optimal model
     const selectedModel = selectOptimalModel(message, context, !userId);
-    console.log('🎯 Selected model:', selectedModel);
+    console.log('🎯 Selected model:', selectedModel, 'for variant:', selectedVariant?.name);
 
-    // Build system prompt with article mappings and explicit tag instructions
-    const systemPrompt = await buildIntelligentSystemPrompt(
+    // Build system prompt with variant-specific enhancements
+    const systemPrompt = await buildIntelligentSystemPromptWithVariant(
       context,
       clientData,
       userRole,
       enhancedContext,
-      !userId
+      !userId,
+      selectedVariant
     );
 
-    // Add explicit tag instruction to ensure AI includes them
+    // Add explicit tag instruction
     const enhancedSystemPrompt = systemPrompt + '\n\nIMPORTANT: ALWAYS end your response with a line: "🏷️ **EMNER:** [list relevant Norwegian tags separated by commas]". This is required for proper UI functionality.';
 
     const startTime = Date.now();
-    console.log('🚀 Calling OpenAI API with enhanced tag instructions...');
+    console.log('🚀 Calling OpenAI API with variant-enhanced prompt...');
 
     // Call OpenAI
     const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -109,7 +135,7 @@ serve(async (req) => {
           { role: 'user', content: message }
         ],
         max_tokens: 1000,
-        temperature: 0.3,
+        temperature: selectedVariant?.name === 'methodology-expert' ? 0.1 : 0.3, // More precise for methodology
         stream: false,
       }),
     });
@@ -129,29 +155,38 @@ serve(async (req) => {
       throw new Error('No response content from OpenAI');
     }
 
-    // Inject article mappings into response metadata for frontend parsing
+    // Inject article mappings and variant info into response metadata
     if (enhancedContext.articleTagMapping && Object.keys(enhancedContext.articleTagMapping).length > 0) {
       aiResponse += `\n\n<!-- ARTICLE_MAPPINGS: ${JSON.stringify(enhancedContext.articleTagMapping)} -->`;
       console.log('📎 Injected article mappings into response');
     }
 
-    // 🚨 CRITICAL FIX: ALWAYS validate and fix the AI response to guarantee proper tags
-    console.log('🔧 ENFORCING response validation and tag standardization...');
-    const validation = validateAIResponse(aiResponse);
-    
-    // ALWAYS use the fixed response to ensure standardized format
-    if (validation.fixedResponse) {
-      aiResponse = validation.fixedResponse;
-      console.log('✅ Response was standardized with guaranteed tag format');
+    if (selectedVariant) {
+      aiResponse += `\n\n<!-- VARIANT_INFO: ${JSON.stringify({
+        name: selectedVariant.name,
+        display_name: selectedVariant.display_name,
+        specialization: selectedVariant.description
+      })} -->`;
+      console.log('🎭 Injected variant info into response');
     }
 
-    console.log('✅ AI response generated with GUARANTEED clickable tags:', {
+    // Validate and fix the AI response
+    console.log('🔧 ENFORCING response validation with variant awareness...');
+    const validation = validateAIResponse(aiResponse);
+    
+    if (validation.fixedResponse) {
+      aiResponse = validation.fixedResponse;
+      console.log('✅ Response was standardized with guaranteed tag format for variant:', selectedVariant?.name);
+    }
+
+    console.log('✅ Variant-aware AI response generated:', {
       responseLength: aiResponse.length,
       usage: data.usage,
       responseTime: `${responseTime}ms`,
       isGuestMode: !userId,
       hasStandardizedTags: /🏷️\s*\*\*[Ee][Mm][Nn][Ee][Rr]:?\*\*/.test(aiResponse),
-      hasArticleMappings: aiResponse.includes('ARTICLE_MAPPINGS')
+      hasArticleMappings: aiResponse.includes('ARTICLE_MAPPINGS'),
+      variantUsed: selectedVariant?.name || 'default'
     });
 
     // Log usage if user is authenticated
@@ -167,19 +202,19 @@ serve(async (req) => {
           clientId: clientData?.id,
           responseTimeMs: responseTime,
           sessionId,
-          contextType: context
+          contextType: context + (selectedVariant ? `_${selectedVariant.name}` : '')
         });
-        console.log('📊 Usage logged successfully');
+        console.log('📊 Usage logged successfully with variant info');
       } catch (error) {
         console.error('❌ Failed to log usage:', error);
       }
     }
 
-    // Cache the response (with guaranteed tags and article mappings)
+    // Cache the response with variant awareness
     if (userId) {
       try {
         await cacheResponse(cacheKey, aiResponse, userId, clientData?.id, selectedModel);
-        console.log('✅ Response cached successfully with guaranteed clickable tags');
+        console.log('✅ Variant-aware response cached successfully');
       } catch (error) {
         console.error('❌ Failed to cache response:', error);
       }
@@ -190,10 +225,20 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('💥 Function error:', error);
+    console.error('💥 Function error with variant support:', error);
     
-    // Even fallback responses must have proper tags!
-    let fallbackResponse = getIntelligentFallback(await req.json().catch(() => ({})));
+    // Enhanced fallback response with variant awareness
+    const requestData = await req.json().catch(() => ({}));
+    let fallbackResponse = getIntelligentFallback(requestData);
+    
+    // Add variant-specific fallback context
+    if (requestData.variant) {
+      const variantTip = getVariantContextualTips(requestData.variant, requestData.context, requestData.clientData);
+      if (variantTip) {
+        fallbackResponse += `\n\n💡 **${requestData.variant.display_name} Tips:** ${variantTip}`;
+      }
+    }
+    
     console.log('🔧 Validating fallback response for proper tag format...');
     const validation = validateAIResponse(fallbackResponse);
     if (validation.fixedResponse) {

@@ -1,7 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { RevyChatMessage } from '@/types/revio';
-import { generateSmartDocumentPrompt } from '@/services/documentAIService';
 
 export const generateEnhancedAIResponseWithVariant = async (
   userMessage: string,
@@ -17,16 +16,9 @@ export const generateEnhancedAIResponseWithVariant = async (
       context,
       userRole,
       variantName: selectedVariant?.name,
-      messageLength: userMessage.length
+      messageLength: userMessage.length,
+      hasClientData: !!clientData
     });
-
-    // Build enhanced context for better responses
-    const enhancedPrompt = buildEnhancedSystemPrompt(
-      context,
-      clientData,
-      userRole,
-      selectedVariant
-    );
 
     // Prepare chat history in the correct format
     const formattedHistory = chatHistory.map(msg => ({
@@ -35,125 +27,123 @@ export const generateEnhancedAIResponseWithVariant = async (
       timestamp: msg.created_at
     }));
 
-    // Call the AI service
+    // Get current user for authentication
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      console.error('❌ Authentication error in enhanced AI response:', userError?.message || 'No user found');
+      throw new Error('Du må være logget inn for å bruke AI-assistenten');
+    }
+
+    // Enhanced request body with variant support
+    const requestBody = {
+      message: userMessage,
+      context,
+      history: formattedHistory,
+      clientData,
+      userRole,
+      sessionId,
+      userId: user.id,
+      variant: selectedVariant // Pass the full variant object
+    };
+
+    console.log('📤 Sending enhanced request with variant to revy-ai-chat edge function:', {
+      variantName: selectedVariant?.name,
+      contextType: context,
+      hasVariantPrompt: !!selectedVariant?.system_prompt_template
+    });
+
+    // Call the enhanced AI service
     const response = await supabase.functions.invoke('revy-ai-chat', {
-      body: {
-        message: userMessage,
-        context,
-        history: formattedHistory,
-        clientData,
-        userRole,
-        sessionId,
-        variant: selectedVariant
-      }
+      body: requestBody
     });
 
     if (response.error) {
-      throw new Error(response.error.message);
+      console.error('❌ Enhanced AI service error:', response.error);
+      throw new Error(response.error.message || 'AI-tjenesten returnerte en feil');
     }
 
-    return response.data?.response || 'Beklager, jeg kunne ikke generere et svar akkurat nå.';
+    if (response.data?.isError) {
+      console.error('❌ AI function returned error:', response.data.error);
+      return response.data.response || getFallbackResponse(context, userMessage, selectedVariant);
+    }
+
+    if (!response.data || !response.data.response) {
+      console.error('❌ Invalid response structure from enhanced AI function:', response.data);
+      return getFallbackResponse(context, userMessage, selectedVariant);
+    }
+
+    console.log('✅ Enhanced AI response received successfully with variant support:', { 
+      responseLength: response.data.response.length,
+      variantUsed: selectedVariant?.name || 'default'
+    });
+
+    return response.data.response;
 
   } catch (error) {
-    console.error('Enhanced AI response generation failed:', error);
-    return getFallbackResponse(context, userMessage);
+    console.error('💥 Enhanced AI response generation failed:', error);
+    return getFallbackResponse(context, userMessage, selectedVariant);
   }
 };
 
 // Export the alias for backward compatibility
 export const generateEnhancedAIResponse = generateEnhancedAIResponseWithVariant;
 
-const buildEnhancedSystemPrompt = (
-  context: string,
-  clientData?: any,
-  userRole?: string,
-  selectedVariant?: any
-): string => {
-  let basePrompt = `Du er AI-Revi, en ekspert AI-assistent for revisjon og regnskapsføring. Du hjelper revisorer med praktiske oppgaver og gir konkrete, handlingsrettede råd.
-
-KONTEKST: ${getContextDisplayName(context)}
-BRUKERROLLE: ${userRole || 'Ansatt'}`;
-
-  // Add variant-specific instructions
-  if (selectedVariant?.system_prompt_template) {
-    basePrompt += `\n\nSPESIALISTINSTRUKSJONER (${selectedVariant.display_name}):\n${selectedVariant.system_prompt_template}`;
-  }
-
-  // Add context-specific instructions
-  switch (context) {
-    case 'documentation':
-      basePrompt += `\n\nDOKUMENTKONTEKST:
-- Fokuser på dokumentanalyse, kategorisering og kvalitetssikring
-- Gi konkrete forslag til forbedringer
-- Identifiser manglende dokumenter eller kategorier
-- Hjelp med organisering og struktur
-- Foreslå relevante revisjonshandlinger basert på dokumenter`;
-      break;
-      
-    case 'audit-actions':
-      basePrompt += `\n\nREVISJONSHANDLINGER:
-- Hjelp med planlegging og gjennomføring av revisjonshandlinger
-- Foreslå handlinger basert på risikovurdering
-- Gi veiledning om ISA-standarder
-- Hjelp med dokumentasjonskrav
-- Kvalitetssikring av arbeid`;
-      break;
-      
-    case 'client-detail':
-      basePrompt += `\n\nKLIENTDETALJER:
-- Analyser klientinformasjon og identifiser risikoområder
-- Foreslå tilpassede revisjonsstrategier
-- Hjelp med bransjeforståelse
-- Identifiser kompleksitetsområder
-- Gi råd om ressursallokering`;
-      break;
-  }
-
-  // Add client-specific context
-  if (clientData) {
-    basePrompt += `\n\nKLIENTINFORMASJON:
-- Selskap: ${clientData.company_name || clientData.name}
-- Bransje: ${clientData.industry || 'Ikke spesifisert'}
-- Fase: ${clientData.phase || 'Ikke spesifisert'}`;
-    
-    if (clientData.documentContext) {
-      const stats = clientData.documentContext.documentStats;
-      basePrompt += `\n- Dokumenter: ${stats.total} totalt, ${stats.qualityScore}% kvalitetsscore`;
+// Enhanced fallback response with variant awareness
+const getFallbackResponse = (context: string, userMessage: string, selectedVariant?: any): string => {
+  const baseMessage = "Beklager, jeg opplever tekniske problemer akkurat nå.";
+  
+  let variantSpecificHelp = '';
+  if (selectedVariant) {
+    switch (selectedVariant.name) {
+      case 'methodology-expert':
+        variantSpecificHelp = `Som din metodikk-ekspert kan jeg normalt hjelpe med:
+- ISA-standarder og revisjonsmetodikk
+- Faglige prosedyrer og best practice
+- Systematiske tilnærminger til revisjon
+- Kvalitetssikring av revisjonsarbeid`;
+        break;
+      case 'professional-knowledge':
+        variantSpecificHelp = `Som din fagekspert kan jeg normalt hjelpe med:
+- Dybdegående fagkunnskap om revisjon
+- Regnskapsføring og standarder
+- Lovverk og forskrifter
+- Teoretiske aspekter og faglig forståelse`;
+        break;
+      case 'client-guide':
+        variantSpecificHelp = `Som din klient-veileder kan jeg normalt hjelpe med:
+- Praktisk gjennomføring av denne klientens revisjon
+- Klient-spesifikke utfordringer og løsninger
+- Prioritering av revisjonshandlinger
+- Neste steg i revisjonsprosessen`;
+        break;
+      case 'technical-support':
+        variantSpecificHelp = `Som din tekniske støtte kan jeg normalt hjelpe med:
+- Veiledning om systemfunksjoner
+- Feilsøking og problemer
+- Arbeidsflyt og beste praksis
+- Praktisk bruk av verktøyene`;
+        break;
     }
   }
 
-  basePrompt += `\n\nINSTRUKSJONER:
-1. Gi alltid konkrete, handlingsrettede råd
-2. Referer til relevante ISA-standarder når relevant
-3. Bruk norsk revisjonsterminologi
-4. Vær presis og profesjonell
-5. Foreslå neste steg eller oppfølgingshandlinger
-6. Tilpass svaret til brukerens kompetansenivå og rolle
-
-Svar på norsk med mindre brukeren spør på engelsk.`;
-
-  return basePrompt;
-};
-
-const getContextDisplayName = (context: string): string => {
-  switch (context) {
-    case 'documentation': return 'Dokumentanalyse';
-    case 'audit-actions': return 'Revisjonshandlinger';
-    case 'client-detail': return 'Klientdetaljer';
-    case 'planning': return 'Planlegging';
-    case 'execution': return 'Gjennomføring';
-    case 'completion': return 'Avslutning';
-    default: return 'Generell assistanse';
-  }
-};
-
-const getFallbackResponse = (context: string, userMessage: string): string => {
-  const contextResponses = {
-    documentation: 'Jeg kan hjelpe deg med dokumentanalyse og kategorisering. Kan du være mer spesifikk om hva du trenger hjelp med?',
-    'audit-actions': 'Jeg kan veilede deg om revisjonshandlinger og ISA-standarder. Hvilket område vil du fokusere på?',
-    'client-detail': 'Jeg kan analysere klientinformasjon og foreslå revisjonsstrategier. Hva vil du vite mer om?'
+  const contextSpecificHelp = {
+    'risk-assessment': 'I mellomtiden kan du se på ISA 315-standarden for risikovurdering og planlegge revisjonshandlinger basert på identifiserte risikoområder.',
+    'documentation': 'Du kan fortsette med dokumentasjon i henhold til ISA 230-kravene mens jeg blir tilgjengelig igjen.',
+    'client-detail': 'Du kan gjennomgå klientinformasjon og tidligere revisjoner mens jeg løser tekniske problemer.',
+    'general': 'Du kan fortsette med ditt revisjonsarbeid og komme tilbake til meg senere.'
   };
 
-  return contextResponses[context as keyof typeof contextResponses] || 
-    'Jeg er her for å hjelpe deg med revisjon og regnskapsføring. Kan du utdype spørsmålet ditt?';
+  const contextHelp = contextSpecificHelp[context as keyof typeof contextSpecificHelp] || contextSpecificHelp.general;
+  
+  let response = `${baseMessage}`;
+  
+  if (variantSpecificHelp) {
+    response += `\n\n${variantSpecificHelp}`;
+  }
+  
+  response += `\n\n${contextHelp}`;
+  response += `\n\n💡 **Tips:** Prøv igjen om noen minutter, eller kontakt support hvis problemet vedvarer.`;
+  response += `\n\n🏷️ **EMNER:** Feilmeldinger, Support, ${selectedVariant?.name || 'Generell'} assistanse`;
+  
+  return response;
 };
