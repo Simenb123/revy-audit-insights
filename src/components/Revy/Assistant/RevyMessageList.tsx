@@ -33,14 +33,14 @@ export const RevyMessageList: React.FC<RevyMessageListProps> = ({
     if (!message.metadata?.documentReferences) return [];
     
     return message.metadata.documentReferences.map((ref: any) => ({
-      id: ref.id,
-      fileName: ref.fileName || ref.file_name,
-      category: ref.category,
-      summary: ref.summary || ref.ai_analysis_summary,
-      confidence: ref.confidence || ref.ai_confidence_score,
-      textPreview: ref.textPreview,
-      uploadDate: ref.uploadDate || ref.created_at,
-      relevantText: ref.relevantText
+      id: String(ref.id || ''),
+      fileName: String(ref.fileName || ref.file_name || ''),
+      category: ref.category ? String(ref.category) : undefined,
+      summary: ref.summary || ref.ai_analysis_summary ? String(ref.summary || ref.ai_analysis_summary) : undefined,
+      confidence: typeof ref.confidence === 'number' ? ref.confidence : (typeof ref.ai_confidence_score === 'number' ? ref.ai_confidence_score : undefined),
+      textPreview: ref.textPreview ? String(ref.textPreview) : undefined,
+      uploadDate: String(ref.uploadDate || ref.created_at || ''),
+      relevantText: ref.relevantText ? String(ref.relevantText) : undefined
     }));
   };
 
