@@ -1,76 +1,45 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { 
   MessageSquare, 
   X,
   PanelRightClose,
-  PanelRightOpen,
-  Send,
-  Loader2
+  PanelRightOpen
 } from 'lucide-react';
 import { useIsMobile } from "@/hooks/use-mobile";
 import { TooltipProvider, Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import SmartReviAssistant from '@/components/Revy/SmartRevyAssistant';
+import { useLocation, useParams } from 'react-router-dom';
+import { useClientDetails } from '@/hooks/useClientDetails';
+import { RevyContext } from '@/types/revio';
 
 interface RightSidebarProps {
   isCollapsed?: boolean;
   onToggle: () => void;
 }
 
-interface Message {
-  id: number;
-  sender: 'revy' | 'user';
-  content: string;
-  timestamp: string;
-}
-
 const RightSidebar = ({ isCollapsed = false, onToggle }: RightSidebarProps) => {
   const isMobile = useIsMobile();
-  const [message, setMessage] = useState('');
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: 1,
-      sender: 'revy',
-      content: 'Hei! Jeg er AI-Revi assistenten. Hvordan kan jeg hjelpe deg i dag?',
-      timestamp: new Date().toISOString()
-    }
-  ]);
-  const [isLoading, setIsLoading] = useState(false);
+  const location = useLocation();
+  const { orgNumber } = useParams<{ orgNumber: string }>();
+  const { data: clientData } = useClientDetails(orgNumber || '');
 
-  const handleSendMessage = () => {
-    if (!message.trim() || isLoading) return;
-    
-    const userMessage: Message = {
-      id: Date.now(),
-      sender: 'user',
-      content: message,
-      timestamp: new Date().toISOString()
-    };
-    
-    setMessages(prev => [...prev, userMessage]);
-    setMessage('');
-    setIsLoading(true);
-    
-    // Simulate AI response
-    setTimeout(() => {
-      const aiResponse: Message = {
-        id: Date.now() + 1,
-        sender: 'revy',
-        content: 'Takk for spørsmålet ditt! Jeg er her for å hjelpe deg med revisjonsarbeid.',
-        timestamp: new Date().toISOString()
-      };
-      setMessages(prev => [...prev, aiResponse]);
-      setIsLoading(false);
-    }, 1000);
+  // Determine context based on current route
+  const getContextFromRoute = (): RevyContext => {
+    if (location.pathname.includes('/klienter/') && orgNumber) {
+      return 'client-detail';
+    }
+    if (location.pathname.includes('/dokumenter')) {
+      return 'documentation';
+    }
+    if (location.pathname.includes('/handlinger')) {
+      return 'audit-actions';
+    }
+    return 'general';
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
-  };
+  const currentContext = getContextFromRoute();
 
   if (isCollapsed) {
     return (
@@ -118,63 +87,14 @@ const RightSidebar = ({ isCollapsed = false, onToggle }: RightSidebarProps) => {
         </Button>
       </div>
       
-      {/* Messages Area */}
-      <div className="flex-1 min-h-0 p-4 overflow-y-auto">
-        <div className="space-y-4">
-          {messages.map((msg) => (
-            <div
-              key={msg.id}
-              className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              <div
-                className={`max-w-[85%] p-3 rounded-lg ${
-                  msg.sender === 'user'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-blue-50 text-blue-900'
-                }`}
-              >
-                <p className="text-sm">{msg.content}</p>
-              </div>
-            </div>
-          ))}
-          {isLoading && (
-            <div className="flex justify-start">
-              <div className="bg-blue-50 p-3 rounded-lg">
-                <div className="flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
-                  <span className="text-sm text-blue-900">AI-Revi skriver...</span>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-      
-      {/* Input Area */}
-      <div className="border-t border-border p-4 flex-shrink-0">
-        <div className="flex gap-2">
-          <Input
-            type="text"
-            placeholder="Skriv din melding..."
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            onKeyDown={handleKeyDown}
-            disabled={isLoading}
-            className="flex-1 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-          />
-          <Button 
-            size="sm" 
-            onClick={handleSendMessage}
-            disabled={isLoading || !message.trim()}
-            className="px-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
-          >
-            {isLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Send className="h-4 w-4" />
-            )}
-          </Button>
-        </div>
+      {/* SmartReviAssistant Content */}
+      <div className="flex-1 min-h-0 overflow-hidden">
+        <SmartReviAssistant
+          embedded={true}
+          clientData={clientData}
+          userRole="revisor"
+          context={currentContext}
+        />
       </div>
     </div>
   );
