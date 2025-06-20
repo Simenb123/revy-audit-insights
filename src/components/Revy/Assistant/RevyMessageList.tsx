@@ -7,6 +7,7 @@ import DocumentReferenceViewer from '@/components/ClientDocuments/DocumentRefere
 import DocumentAnalysisIndicator from './DocumentAnalysisIndicator';
 import { RevyMessage } from '@/types/revio';
 import { User, Bot } from 'lucide-react';
+import { useParams } from 'react-router-dom';
 
 interface RevyMessageListProps {
   messages: RevyMessage[];
@@ -22,6 +23,7 @@ export const RevyMessageList: React.FC<RevyMessageListProps> = ({
   isAnalyzingDocuments = false
 }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { clientId } = useParams();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -115,6 +117,7 @@ export const RevyMessageList: React.FC<RevyMessageListProps> = ({
                           documents={documentRefs}
                           title="Refererte dokumenter"
                           maxHeight="300px"
+                          clientId={clientId}
                         />
                       )}
                     </div>

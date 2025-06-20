@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { useClientDocuments } from '@/hooks/useClientDocuments';
 import { 
   FileText, 
   ChevronDown, 
@@ -29,14 +30,17 @@ interface DocumentReferenceViewerProps {
   documents: DocumentReference[];
   title?: string;
   maxHeight?: string;
+  clientId?: string;
 }
 
 const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
   documents,
   title = "Refererte dokumenter",
-  maxHeight = "400px"
+  maxHeight = "400px",
+  clientId
 }) => {
   const [expandedDocs, setExpandedDocs] = useState<Set<string>>(new Set());
+  const { getDocumentUrl } = useClientDocuments(clientId || '');
 
   const toggleExpanded = (docId: string) => {
     const newExpanded = new Set(expandedDocs);
@@ -46,6 +50,30 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
       newExpanded.add(docId);
     }
     setExpandedDocs(newExpanded);
+  };
+
+  const handleViewDocument = async (docId: string) => {
+    // Find the document by ID and try to open it
+    try {
+      // For now, we'll show an alert with the document ID
+      // In a real implementation, this would open a document viewer
+      console.log('Viewing document:', docId);
+      alert(`Funksjonalitet for å vise dokument ${docId} kommer snart!`);
+    } catch (error) {
+      console.error('Error viewing document:', error);
+      alert('Kunne ikke åpne dokumentet');
+    }
+  };
+
+  const handleOpenDocument = async (docId: string) => {
+    try {
+      // For now, we'll show an alert
+      console.log('Opening document:', docId);
+      alert(`Funksjonalitet for å åpne dokument ${docId} i ny fane kommer snart!`);
+    } catch (error) {
+      console.error('Error opening document:', error);
+      alert('Kunne ikke åpne dokumentet');
+    }
   };
 
   const getConfidenceColor = (confidence?: number) => {
@@ -116,10 +144,26 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
                       </div>
                       
                       <div className="flex items-center gap-1 ml-2">
-                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0">
+                        <Button 
+                          size="sm" 
+                          variant="ghost" 
+                          className="h-6 w-6 p-0"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleViewDocument(doc.id);
+                          }}
+                        >
                           <Eye className="h-3 w-3" />
                         </Button>
-                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0">
+                        <Button 
+                          size="sm" 
+                          variant="ghost" 
+                          className="h-6 w-6 p-0"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenDocument(doc.id);
+                          }}
+                        >
                           <ExternalLink className="h-3 w-3" />
                         </Button>
                       </div>
@@ -156,11 +200,21 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
                       
                       {/* Action buttons */}
                       <div className="flex gap-2">
-                        <Button size="sm" variant="outline" className="text-xs">
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="text-xs"
+                          onClick={() => handleViewDocument(doc.id)}
+                        >
                           <Eye className="h-3 w-3 mr-1" />
                           Vis dokument
                         </Button>
-                        <Button size="sm" variant="outline" className="text-xs">
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="text-xs"
+                          onClick={() => handleOpenDocument(doc.id)}
+                        >
                           <ExternalLink className="h-3 w-3 mr-1" />
                           Åpne
                         </Button>
