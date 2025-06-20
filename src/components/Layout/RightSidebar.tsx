@@ -48,14 +48,14 @@ const RightSidebar = ({ isCollapsed = false, onToggle }: RightSidebarProps) => {
     ...clientData,
     documents: documents || [],
     documentSummary: {
-      totalDocuments: documents?.length || 0,
-      categories: [...new Set(documents?.map(d => d.category).filter(Boolean))] || [],
-      subjectAreas: [...new Set(documents?.map(d => d.subject_area).filter(Boolean))] || [],
-      recentDocuments: documents?.slice(0, 5).map(d => ({
+      totalDocuments: (documents || []).length,
+      categories: [...new Set((documents || []).map(d => d.category).filter(Boolean))],
+      subjectAreas: [...new Set((documents || []).map(d => d.subject_area).filter(Boolean))],
+      recentDocuments: (documents || []).slice(0, 5).map(d => ({
         name: d.file_name,
         category: d.category,
         uploadDate: d.created_at
-      })) || []
+      }))
     }
   } : null;
 

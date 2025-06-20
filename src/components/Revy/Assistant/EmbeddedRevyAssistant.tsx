@@ -1,66 +1,100 @@
+
 import React from 'react';
-import { Badge } from "@/components/ui/badge";
-import { Sparkles } from 'lucide-react';
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Send, Loader2 } from 'lucide-react';
+import { useIsMobile } from "@/hooks/use-mobile";
+import KnowledgeStatusIndicator from '../KnowledgeStatusIndicator';
+import RevyAvatar from '../RevyAvatar';
 import { RevyMessageList } from './RevyMessageList';
-import { RevyInput } from './RevyInput';
 import { RevyMessage } from '@/types/revio';
 
 interface EmbeddedRevyAssistantProps {
   messages: RevyMessage[];
-  isTyping: boolean;
-  message: string;
-  setMessage: (value: string) => void;
-  handleSendMessage: () => void;
+  input: string;
+  isLoading: boolean;
+  selectedVariant?: any;
+  contextDisplayName: string;
+  onInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+  onSendMessage: () => void;
 }
 
-const RevySuggestions = ({ onSuggestionClick }: { onSuggestionClick: (suggestion: string) => void }) => {
-  const suggestions = [
-    "Hvordan legger jeg til en ny klient?",
-    "Hva er ISA 315?",
-    "Vis meg revisjonshandlinger for denne klienten",
-    "Hvordan bruker jeg Revio effektivt?"
-  ];
+const EmbeddedRevyAssistant = ({
+  messages,
+  input,
+  isLoading,
+  selectedVariant,
+  contextDisplayName,
+  onInputChange,
+  onKeyDown,
+  onSendMessage
+}: EmbeddedRevyAssistantProps) => {
+  const isMobile = useIsMobile();
 
   return (
-    <div className="p-2 border-t bg-gray-50">
-      <div className="space-y-1">
-        {suggestions.slice(0, 2).map((suggestion, index) => (
-          <button
-            key={index}
-            onClick={() => onSuggestionClick(suggestion)}
-            className="text-xs text-blue-600 hover:text-blue-800 block truncate text-left w-full p-1 hover:bg-blue-50 rounded"
-          >
-            💡 {suggestion}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-export const EmbeddedRevyAssistant = ({ messages, isTyping, message, setMessage, handleSendMessage }: EmbeddedRevyAssistantProps) => {
-  const inputProps = { message, setMessage, handleSendMessage, isTyping, isEmbedded: true };
-
-  return (
-    <div className="h-full flex flex-col bg-white border rounded-lg overflow-hidden shadow-sm">
-      <div className="p-3 bg-gradient-to-r from-blue-50 to-purple-50 border-b flex-shrink-0">
-        <div className="flex items-center gap-2 text-sm">
-          <Sparkles className="h-4 w-4 text-purple-500" />
-          <span className="text-gray-800 font-semibold">Revy Assistent</span>
-          <Badge variant="secondary" className="text-xs font-medium bg-white">Smart</Badge>
+    <div className="flex flex-col h-full bg-background">
+      {/* Header with context indicator */}
+      <div className={`border-b border-border flex-shrink-0 ${isMobile ? 'p-3' : 'p-4'}`}>
+        <div className="flex items-center gap-3">
+          <RevyAvatar />
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <h3 className={`font-semibold ${isMobile ? 'text-sm' : 'text-base'}`}>AI-Revi</h3>
+              {selectedVariant && (
+                <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">
+                  {selectedVariant.display_name.replace('AI-Revi ', '')}
+                </span>
+              )}
+            </div>
+            <p className={`text-muted-foreground ${isMobile ? 'text-xs' : 'text-sm'}`}>
+              {contextDisplayName} - {selectedVariant?.description || 'Din smarte revisjonsassistent'}
+            </p>
+          </div>
+        </div>
+        <div className="mt-2">
+          <KnowledgeStatusIndicator />
         </div>
       </div>
-
-      <div className="flex-1 min-h-0">
-        <RevyMessageList messages={messages} isTyping={isTyping} isEmbedded />
+      
+      {/* Messages - Fixed height with proper scroll */}
+      <div className="flex-1 min-h-0 overflow-hidden">
+        <RevyMessageList 
+          messages={messages} 
+          isTyping={isLoading} 
+          isEmbedded={true}
+        />
       </div>
       
-      <div className="flex-shrink-0">
-        {messages.length <= 2 && (
-          <RevySuggestions onSuggestionClick={setMessage} />
-        )}
-        <RevyInput {...inputProps} />
+      {/* Input */}
+      <div className={`border-t border-border bg-background flex-shrink-0 ${isMobile ? 'p-3' : 'p-4'}`}>
+        <div className="flex items-center space-x-2">
+          <Input
+            type="text"
+            placeholder={`Spør ${selectedVariant?.display_name || 'AI-Revi'} om ${contextDisplayName.toLowerCase()}...`}
+            value={input}
+            onChange={onInputChange}
+            onKeyDown={onKeyDown}
+            disabled={isLoading}
+            className={`flex-grow ${isMobile ? 'text-sm h-10' : ''}`}
+          />
+          <Button 
+            type="submit" 
+            onClick={onSendMessage} 
+            disabled={isLoading || !input.trim()}
+            size={isMobile ? 'sm' : 'default'}
+            className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+          >
+            {isLoading ? (
+              <Loader2 className={`animate-spin ${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
+            ) : (
+              <Send className={isMobile ? 'h-3 w-3' : 'h-4 w-4'} />
+            )}
+          </Button>
+        </div>
       </div>
     </div>
   );
 };
+
+export default EmbeddedRevyAssistant;
