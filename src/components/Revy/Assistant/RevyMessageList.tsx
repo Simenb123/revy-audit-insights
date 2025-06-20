@@ -1,7 +1,7 @@
 
 import React, { useEffect, useRef } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { MessageContentParser } from '@/components/Revy/MessageContentParser';
+import { MessageContentParser } from './MessageContentParser';
 import RevyAvatar from '../RevyAvatar';
 import DocumentReferenceViewer from '@/components/ClientDocuments/DocumentReferenceViewer';
 import { RevyMessage } from '@/types/revio';
