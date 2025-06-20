@@ -1,225 +1,145 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
-
-interface DocumentAnalysisRequest {
-  documentId: string;
-  fileContent?: string;
-  fileName: string;
-  mimeType: string;
-}
-
-interface AIAnalysisResult {
-  documentType: {
-    name: string;
-    confidence: number;
-  };
-  detectedSystem?: string;
-  extractedMetadata: {
-    period_year?: number;
-    period_month?: number;
-    period_start?: string;
-    period_end?: string;
-    amount_fields?: any;
-    column_mappings?: any;
-  };
-  suggestedTags: string[];
-  qualityScore: number;
-  processingNotes: string[];
-}
+import { corsHeaders } from '../revy-ai-chat/lib/cors.ts'
 
 serve(async (req) => {
+  console.log('📄 Enhanced Document AI function started');
+  
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
+    const { document_text, file_name, client_id, variant_config } = await req.json();
+    
+    console.log('📝 Processing document analysis:', {
+      fileName: file_name,
+      clientId: client_id,
+      hasText: !!document_text,
+      textLength: document_text?.length || 0,
+      hasVariant: !!variant_config
+    });
 
-    const { documentId, fileName, mimeType, fileContent }: DocumentAnalysisRequest = await req.json()
+    // Build analysis prompt based on variant
+    let analysisPrompt = `Analyser følgende dokument og gi en detaljert vurdering:
 
-    console.log(`Analyzing document: ${fileName} (${mimeType})`)
+DOKUMENT: ${file_name}
+INNHOLD:
+${document_text.substring(0, 4000)}${document_text.length > 4000 ? '...' : ''}
 
-    // Fetch document types for pattern matching
-    const { data: documentTypes } = await supabaseClient
-      .from('document_types')
-      .select('*')
+Gi meg følgende informasjon som JSON:
+{
+  "suggested_category": "kategori",
+  "confidence_score": 0.95,
+  "analysis_summary": "detaljert sammendrag",
+  "suggested_subject_areas": ["område1", "område2"],
+  "isa_standard_references": ["ISA 315", "ISA 330"],
+  "revision_phase_relevance": {
+    "planning": 0.8,
+    "execution": 0.9,
+    "completion": 0.3
+  },
+  "key_information": {
+    "amounts": ["beløp funnet"],
+    "dates": ["datoer funnet"],
+    "entities": ["personer/selskaper"]
+  },
+  "risk_indicators": ["høy", "medium", "lav"],
+  "audit_implications": "hva dette betyr for revisjonen"
+}`;
 
-    // AI Analysis Logic
-    const analysisResult = await analyzeDocument(fileName, fileContent, documentTypes)
-
-    // Store analysis results
-    await supabaseClient
-      .from('document_metadata')
-      .upsert({
-        document_id: documentId,
-        document_type_id: await getDocumentTypeId(analysisResult.documentType.name, supabaseClient),
-        detected_system: analysisResult.detectedSystem,
-        period_year: analysisResult.extractedMetadata.period_year,
-        period_month: analysisResult.extractedMetadata.period_month,
-        period_start: analysisResult.extractedMetadata.period_start,
-        period_end: analysisResult.extractedMetadata.period_end,
-        amount_fields: analysisResult.extractedMetadata.amount_fields,
-        column_mappings: analysisResult.extractedMetadata.column_mappings,
-        validation_status: analysisResult.qualityScore > 0.8 ? 'validated' : 'pending',
-        quality_score: analysisResult.qualityScore,
-        processing_notes: analysisResult.processingNotes.join('; ')
-      })
-
-    // Auto-assign tags based on AI analysis
-    for (const tagName of analysisResult.suggestedTags) {
-      const { data: tag } = await supabaseClient
-        .from('document_tags')
-        .select('id')
-        .eq('name', tagName)
-        .single()
-
-      if (tag) {
-        await supabaseClient
-          .from('document_tag_assignments')
-          .upsert({
-            document_id: documentId,
-            tag_id: tag.id,
-            assigned_by_ai: true,
-            confidence_score: analysisResult.qualityScore
-          })
-      }
+    // Enhance prompt based on variant
+    if (variant_config?.name === 'methodology-expert') {
+      analysisPrompt += `\n\nSPESIELL FOKUS (Metodikk-ekspert):
+- Identifiser relevante ISA-standarder
+- Vurder metodiske tilnærminger
+- Foreslå revisjonshandlinger basert på innholdet`;
+    } else if (variant_config?.name === 'client-guide') {
+      analysisPrompt += `\n\nSPESIELL FOKUS (Klient-veileder):
+- Hvordan påvirker dette den spesifikke klientens revisjon?
+- Konkrete handlinger revisoren bør ta
+- Prioritering basert på klientens risikoprofil`;
     }
+
+    // Call OpenAI for analysis
+    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          { 
+            role: 'system', 
+            content: 'Du er en ekspert på dokumentanalyse for revisjon. Returner alltid gyldig JSON.' 
+          },
+          { role: 'user', content: analysisPrompt }
+        ],
+        max_tokens: 1000,
+        temperature: 0.3,
+      }),
+    });
+
+    if (!openaiResponse.ok) {
+      throw new Error(`OpenAI API error: ${openaiResponse.status}`);
+    }
+
+    const data = await openaiResponse.json();
+    let analysisText = data.choices?.[0]?.message?.content;
+
+    if (!analysisText) {
+      throw new Error('No analysis content from OpenAI');
+    }
+
+    // Try to parse JSON from response
+    let analysisResult;
+    try {
+      // Extract JSON from response if it's wrapped in text
+      const jsonMatch = analysisText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        analysisResult = JSON.parse(jsonMatch[0]);
+      } else {
+        throw new Error('No JSON found in response');
+      }
+    } catch (parseError) {
+      console.error('Failed to parse analysis JSON:', parseError);
+      // Fallback to basic analysis
+      analysisResult = {
+        suggested_category: 'Ukategorisert',
+        confidence_score: 0.5,
+        analysis_summary: analysisText.substring(0, 500),
+        suggested_subject_areas: [],
+        isa_standard_references: [],
+        revision_phase_relevance: { planning: 0.5, execution: 0.5, completion: 0.3 },
+        key_information: { amounts: [], dates: [], entities: [] },
+        risk_indicators: ['medium'],
+        audit_implications: 'Krever nærmere vurdering'
+      };
+    }
+
+    console.log('✅ Document analysis completed:', {
+      category: analysisResult.suggested_category,
+      confidence: analysisResult.confidence_score,
+      subjectAreas: analysisResult.suggested_subject_areas?.length || 0
+    });
 
     return new Response(JSON.stringify(analysisResult), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    });
 
   } catch (error) {
-    console.error('Error in enhanced document AI:', error)
-    return new Response(JSON.stringify({ error: error.message }), {
+    console.error('💥 Document analysis error:', error);
+    
+    return new Response(JSON.stringify({ 
+      error: error.message,
+      suggested_category: 'Ukategorisert',
+      confidence_score: 0.3,
+      analysis_summary: 'Automatisk analyse feilet'
+    }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    });
   }
-})
-
-async function analyzeDocument(
-  fileName: string, 
-  fileContent: string | undefined, 
-  documentTypes: any[]
-): Promise<AIAnalysisResult> {
-  const lowerFileName = fileName.toLowerCase()
-  const processingNotes: string[] = []
-
-  // Document Type Detection
-  let bestMatch = { name: 'unknown', confidence: 0.3 }
-  
-  for (const docType of documentTypes) {
-    let confidence = 0
-    
-    // Check file pattern hints
-    for (const hint of docType.file_pattern_hints) {
-      if (lowerFileName.includes(hint.toLowerCase())) {
-        confidence += 0.3
-      }
-    }
-    
-    // Additional pattern matching
-    if (docType.name === 'hovedbok' && (lowerFileName.includes('hovedbok') || lowerFileName.includes('general_ledger'))) {
-      confidence += 0.4
-    } else if (docType.name === 'saldobalanse' && (lowerFileName.includes('saldo') || lowerFileName.includes('trial_balance'))) {
-      confidence += 0.4
-    } else if (docType.name === 'lonnslipp' && (lowerFileName.includes('lonn') || lowerFileName.includes('payslip'))) {
-      confidence += 0.4
-    } else if (docType.name === 'faktura' && (lowerFileName.includes('faktura') || lowerFileName.includes('invoice'))) {
-      confidence += 0.4
-    }
-    
-    if (confidence > bestMatch.confidence) {
-      bestMatch = { name: docType.name, confidence: Math.min(confidence, 0.95) }
-    }
-  }
-
-  processingNotes.push(`Detected document type: ${bestMatch.name} with ${Math.round(bestMatch.confidence * 100)}% confidence`)
-
-  // System Detection
-  let detectedSystem: string | undefined
-  if (lowerFileName.includes('visma')) {
-    detectedSystem = 'visma_business'
-  } else if (lowerFileName.includes('poweroffice')) {
-    detectedSystem = 'poweroffice'
-  } else if (lowerFileName.includes('tripletex')) {
-    detectedSystem = 'tripletex'
-  } else if (lowerFileName.includes('fiken')) {
-    detectedSystem = 'fiken'
-  }
-
-  if (detectedSystem) {
-    processingNotes.push(`Detected accounting system: ${detectedSystem}`)
-  }
-
-  // Period Extraction
-  const currentYear = new Date().getFullYear()
-  const yearMatch = fileName.match(/20\d{2}/)
-  const monthMatch = fileName.match(/(?:jan|feb|mar|apr|mai|jun|jul|aug|sep|okt|nov|des|\d{1,2})/i)
-  
-  const extractedMetadata: AIAnalysisResult['extractedMetadata'] = {
-    period_year: yearMatch ? parseInt(yearMatch[0]) : currentYear,
-    period_month: monthMatch ? getMonthNumber(monthMatch[0]) : new Date().getMonth() + 1
-  }
-
-  // Tag Suggestions
-  const suggestedTags: string[] = ['automated']
-  
-  if (bestMatch.confidence > 0.9) {
-    suggestedTags.push('reviewed')
-  } else if (bestMatch.confidence < 0.7) {
-    suggestedTags.push('manual_review')
-  }
-
-  if (extractedMetadata.period_month === 12) {
-    suggestedTags.push('year_end')
-  }
-
-  // Quality Score Calculation
-  let qualityScore = bestMatch.confidence
-  if (detectedSystem) qualityScore += 0.1
-  if (extractedMetadata.period_year && extractedMetadata.period_month) qualityScore += 0.1
-  qualityScore = Math.min(qualityScore, 1.0)
-
-  return {
-    documentType: bestMatch,
-    detectedSystem,
-    extractedMetadata,
-    suggestedTags,
-    qualityScore,
-    processingNotes
-  }
-}
-
-async function getDocumentTypeId(typeName: string, supabaseClient: any): Promise<string | null> {
-  const { data } = await supabaseClient
-    .from('document_types')
-    .select('id')
-    .eq('name', typeName)
-    .single()
-  
-  return data?.id || null
-}
-
-function getMonthNumber(monthStr: string): number {
-  const monthMap: { [key: string]: number } = {
-    'jan': 1, 'feb': 2, 'mar': 3, 'apr': 4, 'mai': 5, 'jun': 6,
-    'jul': 7, 'aug': 8, 'sep': 9, 'okt': 10, 'nov': 11, 'des': 12
-  }
-  
-  const month = monthMap[monthStr.toLowerCase()]
-  if (month) return month
-  
-  const numMonth = parseInt(monthStr)
-  return (numMonth >= 1 && numMonth <= 12) ? numMonth : new Date().getMonth() + 1
-}
+});

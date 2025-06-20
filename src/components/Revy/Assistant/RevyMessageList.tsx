@@ -1,10 +1,11 @@
 
 import React, { useEffect, useRef } from 'react';
-import { Loader2 } from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { MessageContentParser } from '@/components/Revy/MessageContentParser';
 import RevyAvatar from '../RevyAvatar';
+import DocumentReferenceViewer from '@/components/ClientDocuments/DocumentReferenceViewer';
 import { RevyMessage } from '@/types/revio';
-import { RevyMessageItem } from './RevyMessageItem';
-import { useIsMobile } from "@/hooks/use-mobile";
+import { User, Bot } from 'lucide-react';
 
 interface RevyMessageListProps {
   messages: RevyMessage[];
@@ -12,77 +13,98 @@ interface RevyMessageListProps {
   isEmbedded?: boolean;
 }
 
-export const RevyMessageList = ({ messages, isTyping, isEmbedded = false }: RevyMessageListProps) => {
+export const RevyMessageList: React.FC<RevyMessageListProps> = ({
+  messages,
+  isTyping,
+  isEmbedded = false
+}) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const isMobile = useIsMobile();
-  
-  const revyMessageContainerClass = "flex items-start gap-3";
-  const revyMessageClass = isEmbedded
-    ? "bg-white border border-gray-100 p-3 rounded-xl rounded-bl-sm shadow-sm"
-    : "bg-white border border-gray-100 p-4 rounded-2xl rounded-bl-sm shadow-sm";
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   useEffect(() => {
     scrollToBottom();
   }, [messages, isTyping]);
 
+  // Extract document references from message metadata
+  const extractDocumentReferences = (message: RevyMessage) => {
+    if (!message.metadata?.documentReferences) return [];
+    
+    return message.metadata.documentReferences.map((ref: any) => ({
+      id: ref.id,
+      fileName: ref.fileName || ref.file_name,
+      category: ref.category,
+      summary: ref.summary || ref.ai_analysis_summary,
+      confidence: ref.confidence || ref.ai_confidence_score,
+      textPreview: ref.textPreview,
+      uploadDate: ref.uploadDate || ref.created_at,
+      relevantText: ref.relevantText
+    }));
+  };
+
   return (
-    <div className="h-full overflow-y-auto">
-      <div className={`space-y-6 ${isMobile ? 'p-4' : 'p-6'} bg-gradient-to-b from-gray-50/30 to-gray-50/60`}>
-        {messages.length === 0 && (
-          <div className="text-center py-12 animate-fade-in">
-            <div className="mb-6">
-              <RevyAvatar size="lg" className="mx-auto mb-4" />
-            </div>
-            <div className="max-w-md mx-auto">
-              <h3 className={`font-semibold text-gray-900 mb-2 ${isEmbedded ? 'text-base' : 'text-lg'}`}>
-                Hei! Jeg er AI-Revy
-              </h3>
-              <p className={`text-gray-600 leading-relaxed mb-4 ${isEmbedded ? 'text-sm' : 'text-base'}`}>
-                Jeg er din smarte revisjonsassistent. Spør meg om revisjon, ISA-standarder, 
-                regnskap eller andre faglige spørsmål. Jeg har tilgang til oppdatert fagstoff 
-                og kan hjelpe deg med komplekse revisjonsutfordringer.
-              </p>
-              <div className="mt-4 flex flex-wrap gap-2 justify-center">
-                {['Revisjon av inntekter', 'ISA 315', 'Materialitet', 'Risikovurdering'].map((suggestion, index) => (
-                  <span 
-                    key={index}
-                    className="px-3 py-2 bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800 rounded-full text-sm font-medium cursor-pointer hover:from-blue-200 hover:to-blue-300 transition-all duration-200 shadow-sm hover:shadow-md border border-blue-200"
-                    onClick={() => {
-                      console.log('🏷️ Suggestion clicked:', suggestion);
-                      // Future: Add functionality to fill input with suggestion
-                    }}
-                  >
-                    {suggestion}
-                  </span>
-                ))}
-              </div>
-            </div>
+    <ScrollArea className={`flex-1 ${isEmbedded ? 'h-full' : 'h-96'} w-full`}>
+      <div className="space-y-4 p-4">
+        {messages.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <RevyAvatar size="lg" />
+            <h3 className="mt-4 text-lg font-semibold text-gray-900">
+              Hei! Jeg er AI-Revi
+            </h3>
+            <p className="mt-2 text-sm text-gray-600 max-w-sm">
+              Din smarte revisjonsassistent. Jeg kan hjelpe deg med revisjon, 
+              dokumentanalyse og mye mer. Hvordan kan jeg hjelpe deg i dag?
+            </p>
           </div>
+        ) : (
+          messages.map((message) => {
+            const documentRefs = extractDocumentReferences(message);
+            
+            return (
+              <div key={message.id} className="flex gap-3">
+                {message.sender === 'user' ? (
+                  <div className="flex items-start gap-3 justify-end w-full">
+                    <div className="bg-blue-500 text-white p-3 rounded-lg max-w-xs lg:max-w-md">
+                      <p className="text-sm">{message.content}</p>
+                    </div>
+                    <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
+                      <User className="w-4 h-4 text-white" />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-start gap-3 w-full">
+                    <RevyAvatar />
+                    <div className="flex-1 space-y-3">
+                      <div className="bg-gray-100 p-3 rounded-lg">
+                        <MessageContentParser content={message.content} />
+                      </div>
+                      
+                      {/* Show document references if available */}
+                      {documentRefs.length > 0 && (
+                        <DocumentReferenceViewer 
+                          documents={documentRefs}
+                          title="Refererte dokumenter"
+                          maxHeight="300px"
+                        />
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })
         )}
         
-        {messages.map((msg, index) => (
-          <div key={msg.id} className="transform transition-all duration-300">
-            <RevyMessageItem message={msg} isEmbedded={isEmbedded} />
-          </div>
-        ))}
-        
         {isTyping && (
-          <div className="flex justify-start animate-fade-in">
-            <div className={`${revyMessageContainerClass} ${isEmbedded ? 'max-w-[90%]' : 'max-w-[88%]'}`}>
-              <RevyAvatar size={isEmbedded ? 'xs' : 'sm'} className="flex-shrink-0 mt-1" />
-              <div className={`${revyMessageClass} flex items-center gap-3`}>
-                <div className="flex space-x-1">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
-                </div>
-                <span className={`text-gray-600 ${isEmbedded ? 'text-sm' : 'text-base'}`}>
-                  AI-Revy analyserer...
-                </span>
+          <div className="flex items-start gap-3">
+            <RevyAvatar />
+            <div className="bg-gray-100 p-3 rounded-lg">
+              <div className="flex space-x-1">
+                <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"></div>
+                <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
               </div>
             </div>
           </div>
@@ -90,6 +112,6 @@ export const RevyMessageList = ({ messages, isTyping, isEmbedded = false }: Revy
         
         <div ref={messagesEndRef} />
       </div>
-    </div>
+    </ScrollArea>
   );
 };
