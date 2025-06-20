@@ -52,24 +52,72 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
     setExpandedDocs(newExpanded);
   };
 
-  const handleViewDocument = async (docId: string) => {
-    // Find the document by ID and try to open it
+  const handleViewDocument = async (docId: string, fileName: string) => {
     try {
-      // For now, we'll show an alert with the document ID
-      // In a real implementation, this would open a document viewer
-      console.log('Viewing document:', docId);
-      alert(`Funksjonalitet for å vise dokument ${docId} kommer snart!`);
+      console.log('Viewing document:', docId, fileName);
+      
+      // Find the document data
+      const { data: documentData, error } = await import('@/integrations/supabase/client').then(({ supabase }) =>
+        supabase
+          .from('client_documents_files')
+          .select('file_path')
+          .eq('id', docId)
+          .single()
+      );
+
+      if (error || !documentData) {
+        console.error('Error fetching document data:', error);
+        alert('Kunne ikke hente dokumentdata');
+        return;
+      }
+
+      // Get the document URL
+      const url = await getDocumentUrl(documentData.file_path);
+      if (url) {
+        // Open in a new tab/window for viewing
+        window.open(url, '_blank');
+      } else {
+        alert('Kunne ikke hente dokument-URL');
+      }
     } catch (error) {
       console.error('Error viewing document:', error);
-      alert('Kunne ikke åpne dokumentet');
+      alert('Kunne ikke åpne dokumentet for visning');
     }
   };
 
-  const handleOpenDocument = async (docId: string) => {
+  const handleOpenDocument = async (docId: string, fileName: string) => {
     try {
-      // For now, we'll show an alert
-      console.log('Opening document:', docId);
-      alert(`Funksjonalitet for å åpne dokument ${docId} i ny fane kommer snart!`);
+      console.log('Opening document:', docId, fileName);
+      
+      // Find the document data
+      const { data: documentData, error } = await import('@/integrations/supabase/client').then(({ supabase }) =>
+        supabase
+          .from('client_documents_files')
+          .select('file_path')
+          .eq('id', docId)
+          .single()
+      );
+
+      if (error || !documentData) {
+        console.error('Error fetching document data:', error);
+        alert('Kunne ikke hente dokumentdata');
+        return;
+      }
+
+      // Get the document URL
+      const url = await getDocumentUrl(documentData.file_path);
+      if (url) {
+        // Download the document
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = fileName;
+        link.target = '_blank';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } else {
+        alert('Kunne ikke hente dokument-URL');
+      }
     } catch (error) {
       console.error('Error opening document:', error);
       alert('Kunne ikke åpne dokumentet');
@@ -150,7 +198,7 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
                           className="h-6 w-6 p-0"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleViewDocument(doc.id);
+                            handleViewDocument(doc.id, doc.fileName);
                           }}
                         >
                           <Eye className="h-3 w-3" />
@@ -161,7 +209,7 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
                           className="h-6 w-6 p-0"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleOpenDocument(doc.id);
+                            handleOpenDocument(doc.id, doc.fileName);
                           }}
                         >
                           <ExternalLink className="h-3 w-3" />
@@ -204,7 +252,7 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
                           size="sm" 
                           variant="outline" 
                           className="text-xs"
-                          onClick={() => handleViewDocument(doc.id)}
+                          onClick={() => handleViewDocument(doc.id, doc.fileName)}
                         >
                           <Eye className="h-3 w-3 mr-1" />
                           Vis dokument
@@ -213,7 +261,7 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
                           size="sm" 
                           variant="outline" 
                           className="text-xs"
-                          onClick={() => handleOpenDocument(doc.id)}
+                          onClick={() => handleOpenDocument(doc.id, doc.fileName)}
                         >
                           <ExternalLink className="h-3 w-3 mr-1" />
                           Åpne
