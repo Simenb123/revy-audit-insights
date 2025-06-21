@@ -10,7 +10,6 @@ import {
   FileText, 
   ChevronDown, 
   ChevronRight, 
-  ExternalLink,
   Eye,
   Calendar,
   BarChart3,
@@ -46,7 +45,6 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
   clientId
 }) => {
   const [expandedDocs, setExpandedDocs] = useState<Set<string>>(new Set());
-  const [loadingDocs, setLoadingDocs] = useState<Set<string>>(new Set());
   const [operationStatus, setOperationStatus] = useState<Record<string, 'success' | 'error' | 'loading'>>({});
   const { getDocumentUrl, downloadDocument, triggerTextExtraction } = useClientDocuments(clientId || '');
 
@@ -58,18 +56,6 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
       newExpanded.add(docId);
     }
     setExpandedDocs(newExpanded);
-  };
-
-  const setLoading = (docId: string, isLoading: boolean) => {
-    setLoadingDocs(prev => {
-      const newSet = new Set(prev);
-      if (isLoading) {
-        newSet.add(docId);
-      } else {
-        newSet.delete(docId);
-      }
-      return newSet;
-    });
   };
 
   const setOperationResult = (docId: string, status: 'success' | 'error' | 'loading') => {
@@ -93,7 +79,6 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
       return;
     }
 
-    setLoading(docId, true);
     setOperationResult(docId, 'loading');
     
     try {
@@ -152,8 +137,6 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
       console.error('Error viewing document:', error);
       setOperationResult(docId, 'error');
       toast.error('Kunne ikke åpne dokumentet for visning');
-    } finally {
-      setLoading(docId, false);
     }
   };
 
@@ -163,7 +146,6 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
       return;
     }
 
-    setLoading(docId, true);
     setOperationResult(docId, 'loading');
     
     try {
@@ -192,8 +174,6 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
       console.error('Error downloading document:', error);
       setOperationResult(docId, 'error');
       toast.error('Kunne ikke laste ned dokumentet');
-    } finally {
-      setLoading(docId, false);
     }
   };
 
@@ -203,7 +183,6 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
       return;
     }
 
-    setLoading(docId, true);
     setOperationResult(docId, 'loading');
     
     try {
@@ -223,15 +202,20 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
         return;
       }
 
+      console.log('🔄 Starting text extraction with data:', {
+        docId,
+        filePath: documentData.file_path,
+        mimeType: documentData.mime_type
+      });
+
       await triggerTextExtraction(docId, documentData.file_path, documentData.mime_type);
       setOperationResult(docId, 'success');
+      toast.success('Tekstekstraksjon startet på nytt');
       
     } catch (error) {
       console.error('Error retrying text extraction:', error);
       setOperationResult(docId, 'error');
       toast.error('Kunne ikke starte tekstekstraksjon på nytt');
-    } finally {
-      setLoading(docId, false);
     }
   };
 
@@ -278,9 +262,9 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
         <div className="space-y-2" style={{ maxHeight, overflowY: 'auto' }}>
           {documents.map((doc) => {
             const isExpanded = expandedDocs.has(doc.id);
-            const isLoading = loadingDocs.has(doc.id);
             const hasNoText = !doc.textPreview || doc.textPreview === 'Tekstinnhold ikke tilgjengelig';
             const statusIcon = getOperationStatusIcon(doc.id);
+            const isLoading = operationStatus[doc.id] === 'loading';
             
             return (
               <Collapsible key={doc.id} open={isExpanded}>

@@ -94,16 +94,25 @@ export const useClientDocuments = (clientId: string) => {
     }
   });
 
-  // Trigger text extraction for a document
-  const triggerTextExtraction = async (documentId: string, filePath: string, mimeType: string) => {
-    try {
-      console.log('🔄 Triggering text extraction for document:', documentId);
+  // Create a mutation for text extraction to handle it properly
+  const textExtractionMutation = useMutation({
+    mutationFn: async ({ documentId, filePath, mimeType }: { 
+      documentId: string; 
+      filePath: string; 
+      mimeType: string; 
+    }) => {
+      console.log('🔄 Starting text extraction mutation for document:', documentId);
       
       // Update status to processing first
-      await supabase
+      const { error: updateError } = await supabase
         .from('client_documents_files')
         .update({ text_extraction_status: 'processing' })
         .eq('id', documentId);
+
+      if (updateError) {
+        console.error('Error updating status to processing:', updateError);
+        throw new Error(`Failed to update status: ${updateError.message}`);
+      }
 
       // Call the PDF text extractor function
       const { data, error } = await supabase.functions.invoke('pdf-text-extractor', {
@@ -112,6 +121,8 @@ export const useClientDocuments = (clientId: string) => {
       
       if (error) {
         console.error('PDF text extraction failed:', error);
+        
+        // Update status to failed
         await supabase
           .from('client_documents_files')
           .update({ 
@@ -120,23 +131,31 @@ export const useClientDocuments = (clientId: string) => {
           })
           .eq('id', documentId);
         
-        toast.error('Tekstekstraksjon feilet');
-      } else {
-        console.log('✅ Text extraction request sent successfully:', data);
-        toast.success('Tekstekstraksjon startet');
+        throw new Error(`Text extraction failed: ${error.message}`);
       }
-      
+
+      console.log('✅ Text extraction request sent successfully:', data);
+      return data;
+    },
+    onSuccess: () => {
+      toast.success('Tekstekstraksjon startet');
       // Refetch documents to update UI
       setTimeout(() => refetch(), 2000);
-      
-    } catch (error) {
-      console.error('Error triggering text extraction:', error);
-      await supabase
-        .from('client_documents_files')
-        .update({ text_extraction_status: 'failed' })
-        .eq('id', documentId);
-      
+    },
+    onError: (error) => {
+      console.error('Text extraction error:', error);
       toast.error('Kunne ikke starte tekstekstraksjon');
+      // Refetch to update status
+      refetch();
+    }
+  });
+
+  // Trigger text extraction for a document
+  const triggerTextExtraction = async (documentId: string, filePath: string, mimeType: string) => {
+    try {
+      await textExtractionMutation.mutateAsync({ documentId, filePath, mimeType });
+    } catch (error) {
+      console.error('Error in triggerTextExtraction:', error);
     }
   };
 
@@ -339,7 +358,7 @@ export const useClientDocuments = (clientId: string) => {
   return {
     documents,
     categories,
-    isLoading: documentsLoading || isLoading,
+    isLoading: documentsLoading || isLoading || textExtractionMutation.isPending,
     refetch,
     uploadDocument,
     deleteDocument,
