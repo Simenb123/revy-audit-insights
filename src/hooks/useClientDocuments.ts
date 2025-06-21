@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -94,7 +93,7 @@ export const useClientDocuments = (clientId: string) => {
     }
   });
 
-  // Create a mutation for text extraction to handle it properly
+  // Enhanced text extraction mutation with better error handling
   const textExtractionMutation = useMutation({
     mutationFn: async ({ documentId, filePath, mimeType }: { 
       documentId: string; 
@@ -121,30 +120,21 @@ export const useClientDocuments = (clientId: string) => {
       
       if (error) {
         console.error('PDF text extraction failed:', error);
-        
-        // Update status to failed
-        await supabase
-          .from('client_documents_files')
-          .update({ 
-            text_extraction_status: 'failed',
-            extracted_text: `[Extraction failed: ${error.message}]`
-          })
-          .eq('id', documentId);
-        
         throw new Error(`Text extraction failed: ${error.message}`);
       }
 
-      console.log('✅ Text extraction request sent successfully:', data);
+      console.log('✅ Text extraction completed successfully:', data);
       return data;
     },
-    onSuccess: () => {
-      toast.success('Tekstekstraksjon startet');
+    onSuccess: (data) => {
+      console.log('✅ Text extraction mutation successful:', data);
+      toast.success('Tekstekstraksjon fullført!');
       // Refetch documents to update UI
-      setTimeout(() => refetch(), 2000);
+      setTimeout(() => refetch(), 1000);
     },
     onError: (error) => {
       console.error('Text extraction error:', error);
-      toast.error('Kunne ikke starte tekstekstraksjon');
+      toast.error(`Tekstekstraksjon feilet: ${error.message}`);
       // Refetch to update status
       refetch();
     }
@@ -364,6 +354,6 @@ export const useClientDocuments = (clientId: string) => {
     deleteDocument,
     getDocumentUrl,
     downloadDocument,
-    triggerTextExtraction
+    triggerTextExtraction: textExtractionMutation.mutateAsync
   };
 };

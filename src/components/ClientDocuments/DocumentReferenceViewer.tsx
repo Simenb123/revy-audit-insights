@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -210,12 +209,11 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
 
       await triggerTextExtraction(docId, documentData.file_path, documentData.mime_type);
       setOperationResult(docId, 'success');
-      toast.success('Tekstekstraksjon startet på nytt');
       
     } catch (error) {
       console.error('Error retrying text extraction:', error);
       setOperationResult(docId, 'error');
-      toast.error('Kunne ikke starte tekstekstraksjon på nytt');
+      toast.error(`Tekstekstraksjon feilet: ${error.message}`);
     }
   };
 
