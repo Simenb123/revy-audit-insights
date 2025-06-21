@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -244,7 +243,7 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
                               </Badge>
                             )}
                             {docDebugInfo?.error && (
-                              <AlertCircle className="h-3 w-3 text-red-500" title={docDebugInfo.error} />
+                              <AlertCircle className="h-3 w-3 text-red-500" />
                             )}
                           </div>
                           
