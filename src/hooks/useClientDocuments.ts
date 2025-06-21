@@ -1,8 +1,8 @@
-
 import { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { isDevelopment } from '@/utils/networkHelpers';
 
 export interface ClientDocument {
   id: string;
@@ -183,7 +183,7 @@ export const useClientDocuments = (clientId: string) => {
     }
   });
 
-  // Get signed URL for document viewing
+  // Get signed URL for document viewing with better error handling
   const getDocumentUrl = useCallback(async (filePath: string) => {
     try {
       console.log('Getting document URL for path:', filePath);
@@ -194,6 +194,24 @@ export const useClientDocuments = (clientId: string) => {
 
       if (error) {
         console.error('Error creating signed URL:', error);
+        
+        // Try alternative approach for development
+        if (isDevelopment()) {
+          console.warn('Development environment: Trying alternative URL approach');
+          try {
+            const { data: publicData, error: publicError } = await supabase.storage
+              .from('client-documents')
+              .getPublicUrl(filePath);
+            
+            if (!publicError && publicData?.publicUrl) {
+              console.log('Using public URL as fallback');
+              return publicData.publicUrl;
+            }
+          } catch (fallbackError) {
+            console.warn('Fallback approach also failed:', fallbackError);
+          }
+        }
+        
         return null;
       }
 
