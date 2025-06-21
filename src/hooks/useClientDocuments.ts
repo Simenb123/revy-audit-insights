@@ -52,6 +52,8 @@ export const useClientDocuments = (clientId: string) => {
     queryFn: async () => {
       if (!clientId) return [];
       
+      console.log('📄 Fetching documents for client:', clientId);
+      
       const { data, error } = await supabase
         .from('client_documents_files')
         .select('*')
@@ -63,10 +65,92 @@ export const useClientDocuments = (clientId: string) => {
         throw error;
       }
 
+      // Check for documents missing text extraction
+      const needsExtraction = data?.filter(d => 
+        !d.extracted_text && 
+        d.text_extraction_status !== 'processing' && 
+        d.text_extraction_status !== 'failed'
+      ) || [];
+      
+      if (needsExtraction.length > 0) {
+        console.log(`📄 Found ${needsExtraction.length} documents needing text extraction`);
+        // Trigger text extraction for these documents
+        needsExtraction.forEach(doc => {
+          triggerTextExtraction(doc.id, doc.file_path, doc.mime_type);
+        });
+      }
+
       return data as ClientDocument[];
     },
-    enabled: !!clientId
+    enabled: !!clientId,
+    refetchInterval: (query) => {
+      // Refetch every 10 seconds if there are documents being processed
+      const data = query.state.data as ClientDocument[] | undefined;
+      const hasProcessing = data?.some(doc => 
+        doc.text_extraction_status === 'processing' || 
+        (!doc.extracted_text && !doc.text_extraction_status)
+      );
+      return hasProcessing ? 10000 : false;
+    }
   });
+
+  // Trigger text extraction for a document
+  const triggerTextExtraction = async (documentId: string, filePath: string, mimeType: string) => {
+    try {
+      console.log('🔄 Triggering text extraction for document:', documentId);
+      
+      // Update status to processing
+      await supabase
+        .from('client_documents_files')
+        .update({ text_extraction_status: 'processing' })
+        .eq('id', documentId);
+
+      // Call appropriate extraction based on file type
+      if (mimeType?.includes('pdf')) {
+        // Use PDF text extractor
+        const { error } = await supabase.functions.invoke('pdf-text-extractor', {
+          body: { documentId }
+        });
+        
+        if (error) {
+          console.error('PDF text extraction failed:', error);
+          await supabase
+            .from('client_documents_files')
+            .update({ text_extraction_status: 'failed' })
+            .eq('id', documentId);
+        }
+      } else if (mimeType?.includes('text/') || mimeType?.includes('application/json')) {
+        // Handle text files directly
+        try {
+          const { data: fileData, error: downloadError } = await supabase.storage
+            .from('client-documents')
+            .download(filePath);
+
+          if (!downloadError && fileData) {
+            const textContent = await fileData.text();
+            await supabase
+              .from('client_documents_files')
+              .update({ 
+                extracted_text: textContent,
+                text_extraction_status: 'completed'
+              })
+              .eq('id', documentId);
+            
+            console.log('✅ Text extraction completed for:', documentId);
+          }
+        } catch (error) {
+          console.error('Text extraction failed:', error);
+          await supabase
+            .from('client_documents_files')
+            .update({ text_extraction_status: 'failed' })
+            .eq('id', documentId);
+        }
+      }
+      
+    } catch (error) {
+      console.error('Error triggering text extraction:', error);
+    }
+  };
 
   // Fetch document categories
   const { data: categories = [] } = useQuery({
@@ -86,7 +170,7 @@ export const useClientDocuments = (clientId: string) => {
     }
   });
 
-  // Upload document mutation
+  // Upload document mutation with auto text extraction
   const uploadDocument = useMutation({
     mutationFn: async ({ file, clientId, category, subjectArea }: {
       file: File;
@@ -118,7 +202,8 @@ export const useClientDocuments = (clientId: string) => {
           file_size: file.size,
           mime_type: file.type,
           category: category,
-          subject_area: subjectArea
+          subject_area: subjectArea,
+          text_extraction_status: 'pending'
         })
         .select()
         .single();
@@ -127,11 +212,16 @@ export const useClientDocuments = (clientId: string) => {
         throw new Error(`Database error: ${dbError.message}`);
       }
 
+      // Trigger text extraction immediately
+      setTimeout(() => {
+        triggerTextExtraction(data.id, filePath, file.type);
+      }, 1000);
+
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['client-documents', clientId] });
-      toast.success('Dokument lastet opp');
+      toast.success('Dokument lastet opp og tekstekstraksjon startet');
     },
     onError: (error) => {
       console.error('Upload error:', error);
@@ -184,10 +274,10 @@ export const useClientDocuments = (clientId: string) => {
     }
   });
 
-  // Get signed URL for document viewing with better error handling
+  // Get signed URL for document viewing with enhanced error handling
   const getDocumentUrl = useCallback(async (filePath: string) => {
     try {
-      console.log('Getting document URL for path:', filePath);
+      console.log('📄 Getting document URL for path:', filePath);
       
       const { data, error } = await supabase.storage
         .from('client-documents')
@@ -216,7 +306,7 @@ export const useClientDocuments = (clientId: string) => {
         return null;
       }
 
-      console.log('Successfully created signed URL');
+      console.log('✅ Successfully created signed URL');
       return data.signedUrl;
     } catch (error) {
       console.error('Error in getDocumentUrl:', error);
@@ -227,7 +317,7 @@ export const useClientDocuments = (clientId: string) => {
   // Download document
   const downloadDocument = useCallback(async (filePath: string, fileName: string) => {
     try {
-      console.log('Downloading document:', filePath, fileName);
+      console.log('📄 Downloading document:', filePath, fileName);
       
       const { data, error } = await supabase.storage
         .from('client-documents')
@@ -248,7 +338,7 @@ export const useClientDocuments = (clientId: string) => {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
 
-      console.log('Document downloaded successfully');
+      console.log('✅ Document downloaded successfully');
     } catch (error) {
       console.error('Error in downloadDocument:', error);
       throw error;
@@ -263,6 +353,7 @@ export const useClientDocuments = (clientId: string) => {
     uploadDocument,
     deleteDocument,
     getDocumentUrl,
-    downloadDocument
+    downloadDocument,
+    triggerTextExtraction
   };
 };

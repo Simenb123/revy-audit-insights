@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,7 +15,8 @@ import {
   Calendar,
   BarChart3,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  RefreshCw
 } from 'lucide-react';
 
 interface DocumentReference {
@@ -44,7 +46,7 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
   const [expandedDocs, setExpandedDocs] = useState<Set<string>>(new Set());
   const [loadingDocs, setLoadingDocs] = useState<Set<string>>(new Set());
   const [debugInfo, setDebugInfo] = useState<Record<string, any>>({});
-  const { getDocumentUrl, downloadDocument } = useClientDocuments(clientId || '');
+  const { getDocumentUrl, downloadDocument, triggerTextExtraction } = useClientDocuments(clientId || '');
 
   const toggleExpanded = (docId: string) => {
     const newExpanded = new Set(expandedDocs);
@@ -83,13 +85,13 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
     updateDebugInfo(docId, { action: 'viewing', timestamp: new Date().toISOString() });
     
     try {
-      console.log('Viewing document:', { docId, fileName, clientId });
+      console.log('📄 Viewing document:', { docId, fileName, clientId });
       
       // Fetch document data
       const { supabase } = await import('@/integrations/supabase/client');
       const { data: documentData, error } = await supabase
         .from('client_documents_files')
-        .select('file_path, file_name, mime_type')
+        .select('file_path, file_name, mime_type, extracted_text, text_extraction_status')
         .eq('id', docId)
         .single();
 
@@ -100,19 +102,31 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
         return;
       }
 
-      console.log('Document data retrieved:', documentData);
+      console.log('📄 Document data retrieved:', { 
+        fileName: documentData.file_name,
+        hasText: !!documentData.extracted_text,
+        status: documentData.text_extraction_status
+      });
       updateDebugInfo(docId, { documentData });
+
+      // Check if document has text content
+      if (!documentData.extracted_text && documentData.text_extraction_status !== 'processing') {
+        console.log('📄 No text content, triggering extraction...');
+        toast.info('Tekstinnhold mangler, starter ekstraksjon...');
+        await triggerTextExtraction(docId, documentData.file_path, documentData.mime_type);
+        updateDebugInfo(docId, { textExtractionTriggered: true });
+      }
 
       // Get document URL
       const url = await getDocumentUrl(documentData.file_path);
-      console.log('Document URL result:', url);
-      updateDebugInfo(docId, { url, urlGenerated: !!url });
+      console.log('📄 Document URL result:', !!url);
+      updateDebugInfo(docId, { url: !!url, urlGenerated: !!url });
 
       if (url) {
         // Check if URL is accessible
         try {
           const response = await fetch(url, { method: 'HEAD' });
-          console.log('URL accessibility check:', response.status);
+          console.log('📄 URL accessibility check:', response.status);
           updateDebugInfo(docId, { urlAccessible: response.ok, statusCode: response.status });
           
           if (response.ok) {
@@ -151,7 +165,7 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
     updateDebugInfo(docId, { action: 'downloading', timestamp: new Date().toISOString() });
     
     try {
-      console.log('Downloading document:', { docId, fileName, clientId });
+      console.log('📥 Downloading document:', { docId, fileName, clientId });
       
       // Fetch document data
       const { supabase } = await import('@/integrations/supabase/client');
@@ -178,6 +192,44 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
       console.error('Error downloading document:', error);
       updateDebugInfo(docId, { error: error instanceof Error ? error.message : 'Unknown error' });
       toast.error('Kunne ikke laste ned dokumentet');
+    } finally {
+      setLoading(docId, false);
+    }
+  };
+
+  const handleRetryTextExtraction = async (docId: string, fileName: string) => {
+    if (!clientId) {
+      toast.error('Klient-ID mangler');
+      return;
+    }
+
+    setLoading(docId, true);
+    updateDebugInfo(docId, { action: 'retrying_extraction', timestamp: new Date().toISOString() });
+    
+    try {
+      console.log('🔄 Retrying text extraction for:', { docId, fileName });
+      
+      const { supabase } = await import('@/integrations/supabase/client');
+      const { data: documentData, error } = await supabase
+        .from('client_documents_files')
+        .select('file_path, mime_type')
+        .eq('id', docId)
+        .single();
+
+      if (error || !documentData) {
+        console.error('Error fetching document data:', error);
+        toast.error('Kunne ikke hente dokumentdata');
+        return;
+      }
+
+      await triggerTextExtraction(docId, documentData.file_path, documentData.mime_type);
+      toast.success('Tekstekstraksjon startet på nytt');
+      updateDebugInfo(docId, { retrySuccess: true });
+      
+    } catch (error) {
+      console.error('Error retrying text extraction:', error);
+      updateDebugInfo(docId, { error: error instanceof Error ? error.message : 'Unknown error' });
+      toast.error('Kunne ikke starte tekstekstraksjon på nytt');
     } finally {
       setLoading(docId, false);
     }
@@ -214,6 +266,7 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
             const isExpanded = expandedDocs.has(doc.id);
             const isLoading = loadingDocs.has(doc.id);
             const docDebugInfo = debugInfo[doc.id];
+            const hasNoText = !doc.textPreview || doc.textPreview === 'Tekstinnhold ikke tilgjengelig';
             
             return (
               <Collapsible key={doc.id} open={isExpanded}>
@@ -240,6 +293,11 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
                                 className={`text-xs ${getConfidenceColor(doc.confidence)}`}
                               >
                                 {Math.round(doc.confidence * 100)}%
+                              </Badge>
+                            )}
+                            {hasNoText && (
+                              <Badge variant="outline" className="text-xs bg-yellow-50 text-yellow-700">
+                                Ingen tekst
                               </Badge>
                             )}
                             {docDebugInfo?.error && (
@@ -290,11 +348,7 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
                           disabled={isLoading}
                           title="Last ned dokument"
                         >
-                          {isLoading ? (
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                          ) : (
-                            <ExternalLink className="h-3 w-3" />
-                          )}
+                          <ExternalLink className="h-3 w-3" />
                         </Button>
                       </div>
                     </div>
@@ -339,7 +393,7 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
                       )}
                       
                       {/* Action buttons */}
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 flex-wrap">
                         <Button 
                           size="sm" 
                           variant="outline" 
@@ -360,6 +414,18 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
                           <ExternalLink className="h-3 w-3 mr-1" />
                           Last ned
                         </Button>
+                        {hasNoText && (
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="text-xs"
+                            onClick={() => handleRetryTextExtraction(doc.id, doc.fileName)}
+                            disabled={isLoading}
+                          >
+                            <RefreshCw className="h-3 w-3 mr-1" />
+                            Ekstrahér tekst
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </CollapsibleContent>
