@@ -14,7 +14,8 @@ import {
   Eye,
   Calendar,
   BarChart3,
-  Loader2
+  Loader2,
+  AlertCircle
 } from 'lucide-react';
 
 interface DocumentReference {
@@ -43,6 +44,7 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
 }) => {
   const [expandedDocs, setExpandedDocs] = useState<Set<string>>(new Set());
   const [loadingDocs, setLoadingDocs] = useState<Set<string>>(new Set());
+  const [debugInfo, setDebugInfo] = useState<Record<string, any>>({});
   const { getDocumentUrl, downloadDocument } = useClientDocuments(clientId || '');
 
   const toggleExpanded = (docId: string) => {
@@ -67,60 +69,92 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
     });
   };
 
+  const updateDebugInfo = (docId: string, info: any) => {
+    setDebugInfo(prev => ({ ...prev, [docId]: { ...prev[docId], ...info } }));
+  };
+
   const handleViewDocument = async (docId: string, fileName: string) => {
     if (!clientId) {
       toast.error('Klient-ID mangler');
+      console.error('ClientId is missing for document viewing');
       return;
     }
 
     setLoading(docId, true);
+    updateDebugInfo(docId, { action: 'viewing', timestamp: new Date().toISOString() });
     
     try {
-      console.log('Viewing document:', docId, fileName);
+      console.log('Viewing document:', { docId, fileName, clientId });
       
-      // Find the document data
+      // Fetch document data
       const { supabase } = await import('@/integrations/supabase/client');
       const { data: documentData, error } = await supabase
         .from('client_documents_files')
-        .select('file_path')
+        .select('file_path, file_name, mime_type')
         .eq('id', docId)
         .single();
 
       if (error || !documentData) {
         console.error('Error fetching document data:', error);
+        updateDebugInfo(docId, { error: error?.message || 'No document data' });
         toast.error('Kunne ikke hente dokumentdata');
         return;
       }
 
-      // Get the document URL
+      console.log('Document data retrieved:', documentData);
+      updateDebugInfo(docId, { documentData });
+
+      // Get document URL
       const url = await getDocumentUrl(documentData.file_path);
+      console.log('Document URL result:', url);
+      updateDebugInfo(docId, { url, urlGenerated: !!url });
+
       if (url) {
-        // Open in a new tab/window for viewing
-        window.open(url, '_blank');
-        toast.success('Dokumentet åpnes i ny fane');
+        // Check if URL is accessible
+        try {
+          const response = await fetch(url, { method: 'HEAD' });
+          console.log('URL accessibility check:', response.status);
+          updateDebugInfo(docId, { urlAccessible: response.ok, statusCode: response.status });
+          
+          if (response.ok) {
+            window.open(url, '_blank', 'noopener,noreferrer');
+            toast.success('Dokumentet åpnes i ny fane');
+          } else {
+            toast.error(`Dokument ikke tilgjengelig (${response.status})`);
+          }
+        } catch (fetchError) {
+          console.warn('Could not verify URL accessibility, trying to open anyway:', fetchError);
+          // Try to open anyway - might work despite fetch failing
+          window.open(url, '_blank', 'noopener,noreferrer');
+          toast.success('Forsøker å åpne dokument...');
+        }
       } else {
-        toast.error('Kunne ikke hente dokument-URL. Kontroller at dokumentet eksisterer.');
+        console.error('Could not generate document URL');
+        updateDebugInfo(docId, { error: 'Could not generate URL' });
+        toast.error('Kunne ikke generere dokument-URL');
       }
     } catch (error) {
       console.error('Error viewing document:', error);
+      updateDebugInfo(docId, { error: error instanceof Error ? error.message : 'Unknown error' });
       toast.error('Kunne ikke åpne dokumentet for visning');
     } finally {
       setLoading(docId, false);
     }
   };
 
-  const handleOpenDocument = async (docId: string, fileName: string) => {
+  const handleDownloadDocument = async (docId: string, fileName: string) => {
     if (!clientId) {
       toast.error('Klient-ID mangler');
       return;
     }
 
     setLoading(docId, true);
+    updateDebugInfo(docId, { action: 'downloading', timestamp: new Date().toISOString() });
     
     try {
-      console.log('Downloading document:', docId, fileName);
+      console.log('Downloading document:', { docId, fileName, clientId });
       
-      // Find the document data
+      // Fetch document data
       const { supabase } = await import('@/integrations/supabase/client');
       const { data: documentData, error } = await supabase
         .from('client_documents_files')
@@ -130,15 +164,20 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
 
       if (error || !documentData) {
         console.error('Error fetching document data:', error);
+        updateDebugInfo(docId, { error: error?.message || 'No document data' });
         toast.error('Kunne ikke hente dokumentdata');
         return;
       }
 
+      updateDebugInfo(docId, { documentData });
+
       // Download the document directly
       await downloadDocument(documentData.file_path, fileName);
       toast.success('Dokument lastes ned');
+      updateDebugInfo(docId, { downloadSuccess: true });
     } catch (error) {
       console.error('Error downloading document:', error);
+      updateDebugInfo(docId, { error: error instanceof Error ? error.message : 'Unknown error' });
       toast.error('Kunne ikke laste ned dokumentet');
     } finally {
       setLoading(docId, false);
@@ -153,7 +192,13 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
   };
 
   if (!documents || documents.length === 0) {
-    return null;
+    return (
+      <Card className="w-full">
+        <CardContent className="p-6 text-center text-muted-foreground">
+          Ingen dokumenter funnet
+        </CardContent>
+      </Card>
+    );
   }
 
   return (
@@ -169,6 +214,7 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
           {documents.map((doc) => {
             const isExpanded = expandedDocs.has(doc.id);
             const isLoading = loadingDocs.has(doc.id);
+            const docDebugInfo = debugInfo[doc.id];
             
             return (
               <Collapsible key={doc.id} open={isExpanded}>
@@ -197,6 +243,9 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
                                 {Math.round(doc.confidence * 100)}%
                               </Badge>
                             )}
+                            {docDebugInfo?.error && (
+                              <AlertCircle className="h-3 w-3 text-red-500" title={docDebugInfo.error} />
+                            )}
                           </div>
                           
                           {doc.category && (
@@ -223,6 +272,7 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
                             handleViewDocument(doc.id, doc.fileName);
                           }}
                           disabled={isLoading}
+                          title="Vis dokument"
                         >
                           {isLoading ? (
                             <Loader2 className="h-3 w-3 animate-spin" />
@@ -236,9 +286,10 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
                           className="h-6 w-6 p-0"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleOpenDocument(doc.id, doc.fileName);
+                            handleDownloadDocument(doc.id, doc.fileName);
                           }}
                           disabled={isLoading}
+                          title="Last ned dokument"
                         >
                           {isLoading ? (
                             <Loader2 className="h-3 w-3 animate-spin" />
@@ -266,6 +317,16 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
                         )}
                       </div>
                       
+                      {/* Debug information */}
+                      {docDebugInfo && process.env.NODE_ENV === 'development' && (
+                        <details className="text-xs">
+                          <summary className="cursor-pointer text-gray-500">Debug info</summary>
+                          <pre className="mt-1 p-2 bg-gray-100 rounded text-xs overflow-auto">
+                            {JSON.stringify(docDebugInfo, null, 2)}
+                          </pre>
+                        </details>
+                      )}
+                      
                       {/* Relevant text preview */}
                       {(doc.relevantText || doc.textPreview) && (
                         <div className="bg-gray-50 rounded p-2">
@@ -285,6 +346,7 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
                           variant="outline" 
                           className="text-xs"
                           onClick={() => handleViewDocument(doc.id, doc.fileName)}
+                          disabled={isLoading}
                         >
                           <Eye className="h-3 w-3 mr-1" />
                           Vis dokument
@@ -293,10 +355,11 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
                           size="sm" 
                           variant="outline" 
                           className="text-xs"
-                          onClick={() => handleOpenDocument(doc.id, doc.fileName)}
+                          onClick={() => handleDownloadDocument(doc.id, doc.fileName)}
+                          disabled={isLoading}
                         >
                           <ExternalLink className="h-3 w-3 mr-1" />
-                          Åpne
+                          Last ned
                         </Button>
                       </div>
                     </div>
