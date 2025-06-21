@@ -17,7 +17,8 @@ import {
   Loader2,
   AlertCircle,
   RefreshCw,
-  CheckCircle2
+  CheckCircle2,
+  Download
 } from 'lucide-react';
 
 interface DocumentReference {
@@ -89,7 +90,6 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
   const handleViewDocument = async (docId: string, fileName: string) => {
     if (!clientId) {
       toast.error('Klient-ID mangler');
-      console.error('ClientId is missing for document viewing');
       return;
     }
 
@@ -120,29 +120,11 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
         status: documentData.text_extraction_status
       });
 
-      // Check if document has text content
-      if (!documentData.extracted_text && documentData.text_extraction_status !== 'processing') {
-        console.log('📄 No text content, triggering extraction...');
-        toast.info('Tekstinnhold mangler, starter ekstraksjon...');
-        await triggerTextExtraction(docId, documentData.file_path, documentData.mime_type);
-      }
-
-      // Get document URL with retry logic
-      let url: string | null = null;
-      let retryCount = 0;
-      const maxRetries = 3;
-
-      while (!url && retryCount < maxRetries) {
-        url = await getDocumentUrl(documentData.file_path);
-        if (!url) {
-          retryCount++;
-          console.warn(`URL generation attempt ${retryCount} failed, retrying...`);
-          await new Promise(resolve => setTimeout(resolve, 1000 * retryCount)); // Progressive delay
-        }
-      }
-
+      // Get document URL
+      const url = await getDocumentUrl(documentData.file_path);
+      
       if (url) {
-        // Test URL accessibility before opening
+        // Test URL accessibility
         try {
           const response = await fetch(url, { method: 'HEAD' });
           console.log('📄 URL accessibility check:', response.status);
@@ -162,9 +144,9 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
           setOperationResult(docId, 'success');
         }
       } else {
-        console.error('Could not generate document URL after retries');
+        console.error('Could not generate document URL');
         setOperationResult(docId, 'error');
-        toast.error('Kunne ikke generere dokument-URL etter flere forsøk');
+        toast.error('Kunne ikke generere dokument-URL');
       }
     } catch (error) {
       console.error('Error viewing document:', error);
@@ -202,26 +184,10 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
         return;
       }
 
-      // Download the document directly with retry logic
-      let downloadSuccess = false;
-      let retryCount = 0;
-      const maxRetries = 2;
-
-      while (!downloadSuccess && retryCount < maxRetries) {
-        try {
-          await downloadDocument(documentData.file_path, fileName);
-          downloadSuccess = true;
-          toast.success('Dokument lastes ned');
-          setOperationResult(docId, 'success');
-        } catch (downloadError) {
-          retryCount++;
-          console.error(`Download attempt ${retryCount} failed:`, downloadError);
-          if (retryCount >= maxRetries) {
-            throw downloadError;
-          }
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        }
-      }
+      // Download the document
+      await downloadDocument(documentData.file_path, fileName);
+      setOperationResult(docId, 'success');
+      
     } catch (error) {
       console.error('Error downloading document:', error);
       setOperationResult(docId, 'error');
@@ -258,7 +224,6 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
       }
 
       await triggerTextExtraction(docId, documentData.file_path, documentData.mime_type);
-      toast.success('Tekstekstraksjon startet på nytt');
       setOperationResult(docId, 'success');
       
     } catch (error) {
@@ -395,7 +360,7 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
                           disabled={isLoading}
                           title="Last ned dokument"
                         >
-                          <ExternalLink className="h-3 w-3" />
+                          <Download className="h-3 w-3" />
                         </Button>
                       </div>
                     </div>
@@ -448,7 +413,7 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
                           onClick={() => handleDownloadDocument(doc.id, doc.fileName)}
                           disabled={isLoading}
                         >
-                          <ExternalLink className="h-3 w-3 mr-1" />
+                          <Download className="h-3 w-3 mr-1" />
                           Last ned
                         </Button>
                         {hasNoText && (

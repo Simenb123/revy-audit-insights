@@ -65,18 +65,19 @@ export const useClientDocuments = (clientId: string) => {
         throw error;
       }
 
-      // Check for documents missing text extraction
+      // Check for documents missing text extraction and trigger it
       const needsExtraction = data?.filter(d => 
         !d.extracted_text && 
         d.text_extraction_status !== 'processing' && 
-        d.text_extraction_status !== 'failed'
+        d.text_extraction_status !== 'failed' &&
+        d.mime_type?.includes('pdf')
       ) || [];
       
       if (needsExtraction.length > 0) {
         console.log(`📄 Found ${needsExtraction.length} documents needing text extraction`);
-        // Trigger text extraction for these documents
+        // Trigger text extraction for these documents asynchronously
         needsExtraction.forEach(doc => {
-          triggerTextExtraction(doc.id, doc.file_path, doc.mime_type);
+          setTimeout(() => triggerTextExtraction(doc.id, doc.file_path, doc.mime_type), 1000);
         });
       }
 
@@ -87,8 +88,7 @@ export const useClientDocuments = (clientId: string) => {
       // Refetch every 10 seconds if there are documents being processed
       const data = query.state.data as ClientDocument[] | undefined;
       const hasProcessing = data?.some(doc => 
-        doc.text_extraction_status === 'processing' || 
-        (!doc.extracted_text && !doc.text_extraction_status)
+        doc.text_extraction_status === 'processing'
       );
       return hasProcessing ? 10000 : false;
     }
@@ -99,56 +99,44 @@ export const useClientDocuments = (clientId: string) => {
     try {
       console.log('🔄 Triggering text extraction for document:', documentId);
       
-      // Update status to processing
+      // Update status to processing first
       await supabase
         .from('client_documents_files')
         .update({ text_extraction_status: 'processing' })
         .eq('id', documentId);
 
-      // Call appropriate extraction based on file type
-      if (mimeType?.includes('pdf')) {
-        // Use PDF text extractor
-        const { error } = await supabase.functions.invoke('pdf-text-extractor', {
-          body: { documentId }
-        });
+      // Call the PDF text extractor function
+      const { data, error } = await supabase.functions.invoke('pdf-text-extractor', {
+        body: { documentId }
+      });
+      
+      if (error) {
+        console.error('PDF text extraction failed:', error);
+        await supabase
+          .from('client_documents_files')
+          .update({ 
+            text_extraction_status: 'failed',
+            extracted_text: `[Extraction failed: ${error.message}]`
+          })
+          .eq('id', documentId);
         
-        if (error) {
-          console.error('PDF text extraction failed:', error);
-          await supabase
-            .from('client_documents_files')
-            .update({ text_extraction_status: 'failed' })
-            .eq('id', documentId);
-        }
-      } else if (mimeType?.includes('text/') || mimeType?.includes('application/json')) {
-        // Handle text files directly
-        try {
-          const { data: fileData, error: downloadError } = await supabase.storage
-            .from('client-documents')
-            .download(filePath);
-
-          if (!downloadError && fileData) {
-            const textContent = await fileData.text();
-            await supabase
-              .from('client_documents_files')
-              .update({ 
-                extracted_text: textContent,
-                text_extraction_status: 'completed'
-              })
-              .eq('id', documentId);
-            
-            console.log('✅ Text extraction completed for:', documentId);
-          }
-        } catch (error) {
-          console.error('Text extraction failed:', error);
-          await supabase
-            .from('client_documents_files')
-            .update({ text_extraction_status: 'failed' })
-            .eq('id', documentId);
-        }
+        toast.error('Tekstekstraksjon feilet');
+      } else {
+        console.log('✅ Text extraction request sent successfully:', data);
+        toast.success('Tekstekstraksjon startet');
       }
+      
+      // Refetch documents to update UI
+      setTimeout(() => refetch(), 2000);
       
     } catch (error) {
       console.error('Error triggering text extraction:', error);
+      await supabase
+        .from('client_documents_files')
+        .update({ text_extraction_status: 'failed' })
+        .eq('id', documentId);
+      
+      toast.error('Kunne ikke starte tekstekstraksjon');
     }
   };
 
@@ -170,7 +158,7 @@ export const useClientDocuments = (clientId: string) => {
     }
   });
 
-  // Upload document mutation with auto text extraction
+  // Upload document mutation
   const uploadDocument = useMutation({
     mutationFn: async ({ file, clientId, category, subjectArea }: {
       file: File;
@@ -183,11 +171,14 @@ export const useClientDocuments = (clientId: string) => {
       const fileName = `${Date.now()}.${fileExt}`;
       const filePath = `${clientId}/${fileName}`;
 
+      console.log('📤 Uploading file to storage:', filePath);
+
       const { error: uploadError } = await supabase.storage
         .from('client-documents')
         .upload(filePath, file);
 
       if (uploadError) {
+        console.error('Storage upload error:', uploadError);
         throw new Error(`Upload failed: ${uploadError.message}`);
       }
 
@@ -209,19 +200,24 @@ export const useClientDocuments = (clientId: string) => {
         .single();
 
       if (dbError) {
+        console.error('Database insert error:', dbError);
         throw new Error(`Database error: ${dbError.message}`);
       }
 
-      // Trigger text extraction immediately
-      setTimeout(() => {
-        triggerTextExtraction(data.id, filePath, file.type);
-      }, 1000);
+      console.log('✅ Document metadata saved:', data);
+
+      // Trigger text extraction for PDFs
+      if (file.type === 'application/pdf') {
+        setTimeout(() => {
+          triggerTextExtraction(data.id, filePath, file.type);
+        }, 1000);
+      }
 
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['client-documents', clientId] });
-      toast.success('Dokument lastet opp og tekstekstraksjon startet');
+      toast.success('Dokument lastet opp');
     },
     onError: (error) => {
       console.error('Upload error:', error);
@@ -274,58 +270,51 @@ export const useClientDocuments = (clientId: string) => {
     }
   });
 
-  // Get signed URL for document viewing with enhanced error handling
+  // Get signed URL for document viewing with improved error handling
   const getDocumentUrl = useCallback(async (filePath: string) => {
     try {
       console.log('📄 Getting document URL for path:', filePath);
       
+      // Ensure the file path is clean (no leading slashes)
+      const cleanPath = filePath.startsWith('/') ? filePath.substring(1) : filePath;
+      
       const { data, error } = await supabase.storage
         .from('client-documents')
-        .createSignedUrl(filePath, 3600); // 1 hour expiry
+        .createSignedUrl(cleanPath, 3600); // 1 hour expiry
 
       if (error) {
         console.error('Error creating signed URL:', error);
-        
-        // Try alternative approach for development
-        if (isDevelopment()) {
-          console.warn('Development environment: Trying alternative URL approach');
-          try {
-            const { data: publicData } = supabase.storage
-              .from('client-documents')
-              .getPublicUrl(filePath);
-            
-            if (publicData?.publicUrl) {
-              console.log('Using public URL as fallback');
-              return publicData.publicUrl;
-            }
-          } catch (fallbackError) {
-            console.warn('Fallback approach also failed:', fallbackError);
-          }
-        }
-        
-        return null;
+        throw error;
+      }
+
+      if (!data?.signedUrl) {
+        throw new Error('No signed URL returned');
       }
 
       console.log('✅ Successfully created signed URL');
       return data.signedUrl;
     } catch (error) {
       console.error('Error in getDocumentUrl:', error);
+      toast.error('Kunne ikke generere dokument-URL');
       return null;
     }
   }, []);
 
-  // Download document
+  // Download document with improved error handling
   const downloadDocument = useCallback(async (filePath: string, fileName: string) => {
     try {
       console.log('📄 Downloading document:', filePath, fileName);
       
+      // Clean the file path
+      const cleanPath = filePath.startsWith('/') ? filePath.substring(1) : filePath;
+      
       const { data, error } = await supabase.storage
         .from('client-documents')
-        .download(filePath);
+        .download(cleanPath);
 
       if (error) {
         console.error('Error downloading document:', error);
-        throw new Error('Could not download document');
+        throw error;
       }
 
       // Create blob URL and trigger download
@@ -339,8 +328,10 @@ export const useClientDocuments = (clientId: string) => {
       URL.revokeObjectURL(url);
 
       console.log('✅ Document downloaded successfully');
+      toast.success('Dokument lastet ned');
     } catch (error) {
       console.error('Error in downloadDocument:', error);
+      toast.error('Kunne ikke laste ned dokumentet');
       throw error;
     }
   }, []);
