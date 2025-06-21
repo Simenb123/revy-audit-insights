@@ -10,6 +10,8 @@ import { AlertTriangle } from 'lucide-react';
 
 const AppLayout = () => {
   const [showSecurityWarning, setShowSecurityWarning] = useState(false);
+  const [leftSidebarCollapsed, setLeftSidebarCollapsed] = useState(false);
+  const [rightSidebarCollapsed, setRightSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     // Check for development environment issues
@@ -39,7 +41,10 @@ const AppLayout = () => {
       <AppHeader />
       
       <div className="flex">
-        <Sidebar />
+        <Sidebar 
+          isCollapsed={leftSidebarCollapsed}
+          onToggle={() => setLeftSidebarCollapsed(!leftSidebarCollapsed)}
+        />
         
         <main className="flex-1 overflow-auto">
           <div className="container mx-auto px-4 py-6">
@@ -47,7 +52,10 @@ const AppLayout = () => {
           </div>
         </main>
         
-        <RightSidebar />
+        <RightSidebar 
+          isCollapsed={rightSidebarCollapsed}
+          onToggle={() => setRightSidebarCollapsed(!rightSidebarCollapsed)}
+        />
       </div>
     </div>
   );

@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -199,11 +200,11 @@ export const useClientDocuments = (clientId: string) => {
         if (isDevelopment()) {
           console.warn('Development environment: Trying alternative URL approach');
           try {
-            const { data: publicData, error: publicError } = await supabase.storage
+            const { data: publicData } = supabase.storage
               .from('client-documents')
               .getPublicUrl(filePath);
             
-            if (!publicError && publicData?.publicUrl) {
+            if (publicData?.publicUrl) {
               console.log('Using public URL as fallback');
               return publicData.publicUrl;
             }
