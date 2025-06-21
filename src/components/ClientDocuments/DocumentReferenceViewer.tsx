@@ -16,7 +16,8 @@ import {
   BarChart3,
   Loader2,
   AlertCircle,
-  RefreshCw
+  RefreshCw,
+  CheckCircle2
 } from 'lucide-react';
 
 interface DocumentReference {
@@ -45,7 +46,7 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
 }) => {
   const [expandedDocs, setExpandedDocs] = useState<Set<string>>(new Set());
   const [loadingDocs, setLoadingDocs] = useState<Set<string>>(new Set());
-  const [debugInfo, setDebugInfo] = useState<Record<string, any>>({});
+  const [operationStatus, setOperationStatus] = useState<Record<string, 'success' | 'error' | 'loading'>>({});
   const { getDocumentUrl, downloadDocument, triggerTextExtraction } = useClientDocuments(clientId || '');
 
   const toggleExpanded = (docId: string) => {
@@ -70,8 +71,19 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
     });
   };
 
-  const updateDebugInfo = (docId: string, info: any) => {
-    setDebugInfo(prev => ({ ...prev, [docId]: { ...prev[docId], ...info } }));
+  const setOperationResult = (docId: string, status: 'success' | 'error' | 'loading') => {
+    setOperationStatus(prev => ({ ...prev, [docId]: status }));
+    
+    // Clear status after 3 seconds
+    if (status !== 'loading') {
+      setTimeout(() => {
+        setOperationStatus(prev => {
+          const newStatus = { ...prev };
+          delete newStatus[docId];
+          return newStatus;
+        });
+      }, 3000);
+    }
   };
 
   const handleViewDocument = async (docId: string, fileName: string) => {
@@ -82,7 +94,7 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
     }
 
     setLoading(docId, true);
-    updateDebugInfo(docId, { action: 'viewing', timestamp: new Date().toISOString() });
+    setOperationResult(docId, 'loading');
     
     try {
       console.log('📄 Viewing document:', { docId, fileName, clientId });
@@ -97,7 +109,7 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
 
       if (error || !documentData) {
         console.error('Error fetching document data:', error);
-        updateDebugInfo(docId, { error: error?.message || 'No document data' });
+        setOperationResult(docId, 'error');
         toast.error('Kunne ikke hente dokumentdata');
         return;
       }
@@ -107,48 +119,56 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
         hasText: !!documentData.extracted_text,
         status: documentData.text_extraction_status
       });
-      updateDebugInfo(docId, { documentData });
 
       // Check if document has text content
       if (!documentData.extracted_text && documentData.text_extraction_status !== 'processing') {
         console.log('📄 No text content, triggering extraction...');
         toast.info('Tekstinnhold mangler, starter ekstraksjon...');
         await triggerTextExtraction(docId, documentData.file_path, documentData.mime_type);
-        updateDebugInfo(docId, { textExtractionTriggered: true });
       }
 
-      // Get document URL
-      const url = await getDocumentUrl(documentData.file_path);
-      console.log('📄 Document URL result:', !!url);
-      updateDebugInfo(docId, { url: !!url, urlGenerated: !!url });
+      // Get document URL with retry logic
+      let url: string | null = null;
+      let retryCount = 0;
+      const maxRetries = 3;
+
+      while (!url && retryCount < maxRetries) {
+        url = await getDocumentUrl(documentData.file_path);
+        if (!url) {
+          retryCount++;
+          console.warn(`URL generation attempt ${retryCount} failed, retrying...`);
+          await new Promise(resolve => setTimeout(resolve, 1000 * retryCount)); // Progressive delay
+        }
+      }
 
       if (url) {
-        // Check if URL is accessible
+        // Test URL accessibility before opening
         try {
           const response = await fetch(url, { method: 'HEAD' });
           console.log('📄 URL accessibility check:', response.status);
-          updateDebugInfo(docId, { urlAccessible: response.ok, statusCode: response.status });
           
           if (response.ok) {
             window.open(url, '_blank', 'noopener,noreferrer');
             toast.success('Dokumentet åpnes i ny fane');
+            setOperationResult(docId, 'success');
           } else {
-            toast.error(`Dokument ikke tilgjengelig (${response.status})`);
+            throw new Error(`Document not accessible (${response.status})`);
           }
         } catch (fetchError) {
           console.warn('Could not verify URL accessibility, trying to open anyway:', fetchError);
           // Try to open anyway - might work despite fetch failing
           window.open(url, '_blank', 'noopener,noreferrer');
           toast.success('Forsøker å åpne dokument...');
+          setOperationResult(docId, 'success');
         }
       } else {
-        console.error('Could not generate document URL');
-        updateDebugInfo(docId, { error: 'Could not generate URL' });
-        toast.error('Kunne ikke generere dokument-URL');
+        console.error('Could not generate document URL after retries');
+        setOperationResult(docId, 'error');
+        toast.error('Kunne ikke generere dokument-URL etter flere forsøk');
       }
     } catch (error) {
       console.error('Error viewing document:', error);
-      updateDebugInfo(docId, { error: error instanceof Error ? error.message : 'Unknown error' });
+      setOperationResult(docId, 'error');
       toast.error('Kunne ikke åpne dokumentet for visning');
     } finally {
       setLoading(docId, false);
@@ -162,7 +182,7 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
     }
 
     setLoading(docId, true);
-    updateDebugInfo(docId, { action: 'downloading', timestamp: new Date().toISOString() });
+    setOperationResult(docId, 'loading');
     
     try {
       console.log('📥 Downloading document:', { docId, fileName, clientId });
@@ -177,20 +197,34 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
 
       if (error || !documentData) {
         console.error('Error fetching document data:', error);
-        updateDebugInfo(docId, { error: error?.message || 'No document data' });
+        setOperationResult(docId, 'error');
         toast.error('Kunne ikke hente dokumentdata');
         return;
       }
 
-      updateDebugInfo(docId, { documentData });
+      // Download the document directly with retry logic
+      let downloadSuccess = false;
+      let retryCount = 0;
+      const maxRetries = 2;
 
-      // Download the document directly
-      await downloadDocument(documentData.file_path, fileName);
-      toast.success('Dokument lastes ned');
-      updateDebugInfo(docId, { downloadSuccess: true });
+      while (!downloadSuccess && retryCount < maxRetries) {
+        try {
+          await downloadDocument(documentData.file_path, fileName);
+          downloadSuccess = true;
+          toast.success('Dokument lastes ned');
+          setOperationResult(docId, 'success');
+        } catch (downloadError) {
+          retryCount++;
+          console.error(`Download attempt ${retryCount} failed:`, downloadError);
+          if (retryCount >= maxRetries) {
+            throw downloadError;
+          }
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      }
     } catch (error) {
       console.error('Error downloading document:', error);
-      updateDebugInfo(docId, { error: error instanceof Error ? error.message : 'Unknown error' });
+      setOperationResult(docId, 'error');
       toast.error('Kunne ikke laste ned dokumentet');
     } finally {
       setLoading(docId, false);
@@ -204,7 +238,7 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
     }
 
     setLoading(docId, true);
-    updateDebugInfo(docId, { action: 'retrying_extraction', timestamp: new Date().toISOString() });
+    setOperationResult(docId, 'loading');
     
     try {
       console.log('🔄 Retrying text extraction for:', { docId, fileName });
@@ -218,17 +252,18 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
 
       if (error || !documentData) {
         console.error('Error fetching document data:', error);
+        setOperationResult(docId, 'error');
         toast.error('Kunne ikke hente dokumentdata');
         return;
       }
 
       await triggerTextExtraction(docId, documentData.file_path, documentData.mime_type);
       toast.success('Tekstekstraksjon startet på nytt');
-      updateDebugInfo(docId, { retrySuccess: true });
+      setOperationResult(docId, 'success');
       
     } catch (error) {
       console.error('Error retrying text extraction:', error);
-      updateDebugInfo(docId, { error: error instanceof Error ? error.message : 'Unknown error' });
+      setOperationResult(docId, 'error');
       toast.error('Kunne ikke starte tekstekstraksjon på nytt');
     } finally {
       setLoading(docId, false);
@@ -240,6 +275,20 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
     if (confidence >= 0.8) return 'bg-green-100 text-green-800';
     if (confidence >= 0.6) return 'bg-yellow-100 text-yellow-800';
     return 'bg-red-100 text-red-800';
+  };
+
+  const getOperationStatusIcon = (docId: string) => {
+    const status = operationStatus[docId];
+    switch (status) {
+      case 'loading':
+        return <Loader2 className="h-3 w-3 animate-spin text-blue-500" />;
+      case 'success':
+        return <CheckCircle2 className="h-3 w-3 text-green-500" />;
+      case 'error':
+        return <AlertCircle className="h-3 w-3 text-red-500" />;
+      default:
+        return null;
+    }
   };
 
   if (!documents || documents.length === 0) {
@@ -265,8 +314,8 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
           {documents.map((doc) => {
             const isExpanded = expandedDocs.has(doc.id);
             const isLoading = loadingDocs.has(doc.id);
-            const docDebugInfo = debugInfo[doc.id];
             const hasNoText = !doc.textPreview || doc.textPreview === 'Tekstinnhold ikke tilgjengelig';
+            const statusIcon = getOperationStatusIcon(doc.id);
             
             return (
               <Collapsible key={doc.id} open={isExpanded}>
@@ -283,7 +332,7 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
                           <ChevronRight className="h-4 w-4 mt-0.5 text-gray-500 flex-shrink-0" />
                         )}
                         <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2 mb-1">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
                             <span className="font-medium text-sm truncate">
                               {doc.fileName}
                             </span>
@@ -300,9 +349,7 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
                                 Ingen tekst
                               </Badge>
                             )}
-                            {docDebugInfo?.error && (
-                              <AlertCircle className="h-3 w-3 text-red-500" />
-                            )}
+                            {statusIcon}
                           </div>
                           
                           {doc.category && (
@@ -369,16 +416,6 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
                           </div>
                         )}
                       </div>
-                      
-                      {/* Debug information */}
-                      {docDebugInfo && process.env.NODE_ENV === 'development' && (
-                        <details className="text-xs">
-                          <summary className="cursor-pointer text-gray-500">Debug info</summary>
-                          <pre className="mt-1 p-2 bg-gray-100 rounded text-xs overflow-auto">
-                            {JSON.stringify(docDebugInfo, null, 2)}
-                          </pre>
-                        </details>
-                      )}
                       
                       {/* Relevant text preview */}
                       {(doc.relevantText || doc.textPreview) && (

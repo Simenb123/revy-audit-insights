@@ -36,6 +36,7 @@ const SIDEBAR_WIDTHS = {
 const RightSidebar = ({ isCollapsed = false, onToggle }: RightSidebarProps) => {
   const [sidebarSize, setSidebarSize] = useState<SidebarSize>('normal');
   const [isPeekMode, setIsPeekMode] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const isMobile = useIsMobile();
   const location = useLocation();
   const { orgNumber } = useParams<{ orgNumber: string }>();
@@ -77,11 +78,17 @@ const RightSidebar = ({ isCollapsed = false, onToggle }: RightSidebarProps) => {
   const handleSizeChange = useCallback((size: SidebarSize) => {
     setSidebarSize(size);
     setIsPeekMode(false);
+    setIsSettingsOpen(false);
   }, []);
 
   const togglePeekMode = useCallback(() => {
     setIsPeekMode(!isPeekMode);
+    setIsSettingsOpen(false);
   }, [isPeekMode]);
+
+  const toggleSettings = useCallback(() => {
+    setIsSettingsOpen(!isSettingsOpen);
+  }, [isSettingsOpen]);
 
   // Auto-collapse on mobile
   React.useEffect(() => {
@@ -130,7 +137,7 @@ const RightSidebar = ({ isCollapsed = false, onToggle }: RightSidebarProps) => {
 
   return (
     <div className={cn(
-      "h-full bg-background border-l border-border flex flex-col overflow-hidden transition-all duration-300",
+      "h-full bg-background border-l border-border flex flex-col overflow-hidden transition-all duration-300 relative",
       SIDEBAR_WIDTHS[sidebarSize],
       isPeekMode && "shadow-lg z-10"
     )}>
@@ -175,41 +182,44 @@ const RightSidebar = ({ isCollapsed = false, onToggle }: RightSidebarProps) => {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-6 w-6 hover:bg-accent group"
+                      className="h-6 w-6 hover:bg-accent"
+                      onClick={toggleSettings}
                     >
                       <Settings className="h-3 w-3" />
                     </Button>
-                    <div className="absolute right-0 top-full mt-1 bg-popover border rounded-md shadow-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                      <div className="p-2 space-y-1 min-w-[120px]">
-                        <button
-                          onClick={() => handleSizeChange('compact')}
-                          className={cn(
-                            "w-full text-left px-2 py-1 text-xs rounded hover:bg-accent",
-                            sidebarSize === 'compact' && "bg-accent"
-                          )}
-                        >
-                          Kompakt (256px)
-                        </button>
-                        <button
-                          onClick={() => handleSizeChange('normal')}
-                          className={cn(
-                            "w-full text-left px-2 py-1 text-xs rounded hover:bg-accent",
-                            sidebarSize === 'normal' && "bg-accent"
-                          )}
-                        >
-                          Normal (320px)
-                        </button>
-                        <button
-                          onClick={() => handleSizeChange('wide')}
-                          className={cn(
-                            "w-full text-left px-2 py-1 text-xs rounded hover:bg-accent",
-                            sidebarSize === 'wide' && "bg-accent"
-                          )}
-                        >
-                          Bred (384px)
-                        </button>
+                    {isSettingsOpen && (
+                      <div className="absolute right-0 top-full mt-1 bg-popover border rounded-md shadow-lg z-50 min-w-[140px]">
+                        <div className="p-2 space-y-1">
+                          <button
+                            onClick={() => handleSizeChange('compact')}
+                            className={cn(
+                              "w-full text-left px-3 py-2 text-xs rounded hover:bg-accent transition-colors",
+                              sidebarSize === 'compact' && "bg-accent"
+                            )}
+                          >
+                            Kompakt (256px)
+                          </button>
+                          <button
+                            onClick={() => handleSizeChange('normal')}
+                            className={cn(
+                              "w-full text-left px-3 py-2 text-xs rounded hover:bg-accent transition-colors",
+                              sidebarSize === 'normal' && "bg-accent"
+                            )}
+                          >
+                            Normal (320px)
+                          </button>
+                          <button
+                            onClick={() => handleSizeChange('wide')}
+                            className={cn(
+                              "w-full text-left px-3 py-2 text-xs rounded hover:bg-accent transition-colors",
+                              sidebarSize === 'wide' && "bg-accent"
+                            )}
+                          >
+                            Bred (384px)
+                          </button>
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="left">
@@ -252,6 +262,14 @@ const RightSidebar = ({ isCollapsed = false, onToggle }: RightSidebarProps) => {
           context={currentContext}
         />
       </div>
+
+      {/* Click outside to close settings */}
+      {isSettingsOpen && (
+        <div 
+          className="fixed inset-0 z-40" 
+          onClick={() => setIsSettingsOpen(false)}
+        />
+      )}
     </div>
   );
 };
