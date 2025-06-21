@@ -1,297 +1,65 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+
+import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-
-export interface ClientDocument {
-  id: string;
-  client_id: string;
-  user_id: string;
-  file_name: string;
-  file_path: string;
-  file_size: number;
-  mime_type: string;
-  category?: string;
-  subject_area?: string;
-  ai_suggested_category?: string;
-  ai_confidence_score?: number;
-  ai_analysis_summary?: string;
-  manual_category_override?: boolean;
-  created_at: string;
-  updated_at: string;
-  extracted_text?: string;
-  text_extraction_status?: string;
-}
-
-export interface DocumentCategory {
-  id: string;
-  subject_area: string;
-  category_name: string;
-  description?: string;
-  expected_file_patterns: string[];
-  is_standard: boolean;
-  created_at: string;
-}
 
 export const useClientDocuments = (clientId: string) => {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Fetch documents for client
-  const { data: documents = [], isLoading, refetch } = useQuery({
-    queryKey: ['client-documents', clientId],
-    queryFn: async () => {
-      if (!clientId) return [];
+  const getDocumentUrl = useCallback(async (filePath: string) => {
+    try {
+      console.log('Getting document URL for path:', filePath);
       
-      console.log('=== FETCHING DOCUMENTS FOR CLIENT:', clientId, '===');
-      const { data, error } = await supabase
-        .from('client_documents_files')
-        .select('*')
-        .eq('client_id', clientId)
-        .order('created_at', { ascending: false });
-      
-      if (error) {
-        console.error('Error fetching documents:', error);
-        throw error;
-      }
-      
-      console.log('Fetched documents:', data?.length || 0);
-      return data as ClientDocument[];
-    },
-    enabled: !!clientId
-  });
-
-  // Fetch document categories
-  const { data: categories = [] } = useQuery({
-    queryKey: ['document-categories'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('document_categories')
-        .select('*')
-        .order('subject_area', { ascending: true });
-      
-      if (error) throw error;
-      return data as DocumentCategory[];
-    }
-  });
-
-  // Upload document
-  const uploadDocument = useMutation({
-    mutationFn: async (data: {
-      file: File;
-      clientId: string;
-      category?: string;
-      subjectArea?: string;
-    }) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
-
-      // Upload file to storage
-      const fileExt = data.file.name.split('.').pop() || '';
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const filePath = `${user.id}/${data.clientId}/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
+      // Get signed URL for the document with longer expiry
+      const { data, error } = await supabase.storage
         .from('client-documents')
-        .upload(filePath, data.file, {
-          cacheControl: '3600',
-          upsert: false
-        });
+        .createSignedUrl(filePath, 3600); // 1 hour expiry
 
-      if (uploadError) {
-        throw new Error(`Upload failed: ${uploadError.message}`);
+      if (error) {
+        console.error('Error creating signed URL:', error);
+        return null;
       }
 
-      // Create document record with AI categorization
-      const suggestedCategory = await categorizeDocument(data.file.name, categories);
-      
-      const { data: document, error: insertError } = await supabase
-        .from('client_documents_files')
-        .insert({
-          client_id: data.clientId,
-          user_id: user.id,
-          file_name: data.file.name,
-          file_path: filePath,
-          file_size: data.file.size,
-          mime_type: data.file.type,
-          category: data.category || suggestedCategory?.category,
-          subject_area: data.subjectArea || suggestedCategory?.subjectArea,
-          ai_suggested_category: suggestedCategory?.category,
-          ai_confidence_score: suggestedCategory?.confidence,
-          text_extraction_status: 'pending'
-        })
-        .select('*')
-        .single();
-
-      if (insertError) {
-        await supabase.storage.from('client-documents').remove([filePath]);
-        throw new Error(`Failed to create document record: ${insertError.message}`);
-      }
-
-      // Trigger text extraction for supported file types
-      if (['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'].includes(data.file.type)) {
-        supabase.functions.invoke('document-text-extractor', {
-          body: { documentId: document.id },
-        }).catch(err => {
-          console.error("Failed to invoke text extractor function:", err);
-        });
-      }
-
-      return document;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['client-documents'] });
-      toast({
-        title: "Dokument lastet opp!",
-        description: "Dokumentet er lagret og behandling har startet.",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Upload feilet",
-        description: error.message,
-        variant: "destructive"
-      });
-    }
-  });
-
-  // Delete document - IMPROVED VERSION
-  const deleteDocument = useMutation({
-    mutationFn: async (documentId: string) => {
-      console.log('=== ATTEMPTING TO DELETE DOCUMENT ===');
-      console.log('Document ID:', documentId);
-      console.log('Available documents:', documents.map(d => ({ id: d.id, name: d.file_name })));
-      
-      const document = documents.find(d => d.id === documentId);
-      if (!document) {
-        console.error('Document not found in local cache');
-        // Try to fetch fresh data
-        const { data: freshDoc, error: fetchError } = await supabase
-          .from('client_documents_files')
-          .select('*')
-          .eq('id', documentId)
-          .single();
-        
-        if (fetchError || !freshDoc) {
-          console.error('Document not found in database either:', fetchError);
-          throw new Error('Dokumentet ble ikke funnet');
-        }
-        
-        console.log('Found document in database:', freshDoc.file_name);
-        
-        // Delete the document record
-        const { error: deleteError } = await supabase
-          .from('client_documents_files')
-          .delete()
-          .eq('id', documentId);
-
-        if (deleteError) {
-          console.error('Delete error:', deleteError);
-          throw new Error(`Kunne ikke slette dokument: ${deleteError.message}`);
-        }
-
-        // Also delete the file from storage
-        if (freshDoc.file_path) {
-          const { error: storageError } = await supabase.storage
-            .from('client-documents')
-            .remove([freshDoc.file_path]);
-
-          if (storageError) {
-            console.warn('Could not delete file from storage:', storageError);
-          }
-        }
-
-        return documentId;
-      }
-
-      console.log('Deleting document:', document.file_name);
-      
-      // Delete the document record
-      const { error: deleteError } = await supabase
-        .from('client_documents_files')
-        .delete()
-        .eq('id', documentId);
-
-      if (deleteError) {
-        console.error('Delete error:', deleteError);
-        throw new Error(`Kunne ikke slette dokument: ${deleteError.message}`);
-      }
-
-      // Also delete the file from storage
-      if (document.file_path) {
-        const { error: storageError } = await supabase.storage
-          .from('client-documents')
-          .remove([document.file_path]);
-
-        if (storageError) {
-          console.warn('Could not delete file from storage:', storageError);
-        }
-      }
-
-      console.log('Document deleted successfully');
-      return documentId;
-    },
-    onSuccess: (deletedId) => {
-      console.log('=== DELETE SUCCESS ===');
-      queryClient.invalidateQueries({ queryKey: ['client-documents'] });
-      toast({
-        title: "Dokument slettet",
-        description: "Dokumentet er fjernet.",
-      });
-    },
-    onError: (error) => {
-      console.error('=== DELETE ERROR ===');
-      console.error('Delete mutation error:', error);
-      toast({
-        title: "Kunne ikke slette",
-        description: error.message,
-        variant: "destructive"
-      });
-    }
-  });
-
-  // Get document URL
-  const getDocumentUrl = async (filePath: string): Promise<string | null> => {
-    const { data, error } = await supabase.storage
-      .from('client-documents')
-      .createSignedUrl(filePath, 60 * 15); // 15 minutes
-
-    if (error) {
-      console.error('Error creating signed URL:', error);
+      console.log('Successfully created signed URL');
+      return data.signedUrl;
+    } catch (error) {
+      console.error('Error in getDocumentUrl:', error);
       return null;
     }
-    return data.signedUrl;
-  };
+  }, []);
+
+  const downloadDocument = useCallback(async (filePath: string, fileName: string) => {
+    try {
+      console.log('Downloading document:', filePath, fileName);
+      
+      const { data, error } = await supabase.storage
+        .from('client-documents')
+        .download(filePath);
+
+      if (error) {
+        console.error('Error downloading document:', error);
+        throw new Error('Could not download document');
+      }
+
+      // Create blob URL and trigger download
+      const url = URL.createObjectURL(data);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      console.log('Document downloaded successfully');
+    } catch (error) {
+      console.error('Error in downloadDocument:', error);
+      throw error;
+    }
+  }, []);
 
   return {
-    documents,
-    categories,
     isLoading,
-    uploadDocument,
-    deleteDocument,
     getDocumentUrl,
-    refetch
+    downloadDocument
   };
 };
-
-// Helper function to categorize documents based on filename
-async function categorizeDocument(fileName: string, categories: DocumentCategory[]) {
-  const lowerFileName = fileName.toLowerCase();
-  
-  for (const category of categories) {
-    for (const pattern of category.expected_file_patterns) {
-      if (lowerFileName.includes(pattern.toLowerCase())) {
-        return {
-          category: category.category_name,
-          subjectArea: category.subject_area,
-          confidence: 0.8 // High confidence for pattern match
-        };
-      }
-    }
-  }
-  
-  return {
-    category: null,
-    subjectArea: null,
-    confidence: 0
-  };
-}

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -40,7 +39,7 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
   clientId
 }) => {
   const [expandedDocs, setExpandedDocs] = useState<Set<string>>(new Set());
-  const { getDocumentUrl } = useClientDocuments(clientId || '');
+  const { getDocumentUrl, downloadDocument } = useClientDocuments(clientId || '');
 
   const toggleExpanded = (docId: string) => {
     const newExpanded = new Set(expandedDocs);
@@ -77,7 +76,7 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
         // Open in a new tab/window for viewing
         window.open(url, '_blank');
       } else {
-        alert('Kunne ikke hente dokument-URL');
+        alert('Kunne ikke hente dokument-URL. Kontroller at dokumentet eksisterer i storage.');
       }
     } catch (error) {
       console.error('Error viewing document:', error);
@@ -104,23 +103,11 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
         return;
       }
 
-      // Get the document URL
-      const url = await getDocumentUrl(documentData.file_path);
-      if (url) {
-        // Download the document
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = fileName;
-        link.target = '_blank';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      } else {
-        alert('Kunne ikke hente dokument-URL');
-      }
+      // Download the document directly
+      await downloadDocument(documentData.file_path, fileName);
     } catch (error) {
       console.error('Error opening document:', error);
-      alert('Kunne ikke åpne dokumentet');
+      alert('Kunne ikke laste ned dokumentet');
     }
   };
 
