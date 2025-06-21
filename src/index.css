@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -36,7 +37,9 @@
     --sidebar-border: 175 20% 50%;
     --sidebar-ring: 174 57% 80%;
 
-    --sidebar-width: 4.5rem;
+    /* Fixed sidebar width variables */
+    --sidebar-width: 16rem;
+    --sidebar-width-collapsed: 4rem;
     --sidebar-width-icon: 3rem;
 
     --revio-100: 174 57% 95%;
@@ -91,6 +94,39 @@
 
   .revy-assistant-container [role="alert"] {
     display: none;
+  }
+
+  /* Ensure proper layout constraints */
+  .layout-container {
+    display: flex;
+    width: 100%;
+    min-height: 100vh;
+  }
+  
+  .sidebar-left {
+    flex-shrink: 0;
+    width: var(--sidebar-width);
+    transition: width 300ms ease-in-out;
+  }
+  
+  .sidebar-left.collapsed {
+    width: var(--sidebar-width-collapsed);
+  }
+  
+  .sidebar-right {
+    flex-shrink: 0;
+    width: 20rem; /* 320px - fixed width for right sidebar */
+    transition: width 300ms ease-in-out;
+  }
+  
+  .sidebar-right.collapsed {
+    width: var(--sidebar-width-collapsed);
+  }
+  
+  .main-content {
+    flex: 1;
+    min-width: 0; /* Prevents flex item from overflowing */
+    overflow: auto;
   }
 }
 

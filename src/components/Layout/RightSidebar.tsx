@@ -61,9 +61,8 @@ const RightSidebar = ({ isCollapsed = false, onToggle }: RightSidebarProps) => {
 
   if (isCollapsed) {
     return (
-      <div className="h-full flex flex-col w-full overflow-hidden bg-background">
-        {/* Collapsed Content - Only the chat icon */}
-        <div className="flex-1 min-h-0 p-2 flex justify-center items-center">
+      <div className="h-full w-full bg-background border-l border-border flex flex-col">
+        <div className="flex-1 min-h-0 p-2 flex justify-center items-start pt-4">
           <TooltipProvider delayDuration={0}>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -73,11 +72,11 @@ const RightSidebar = ({ isCollapsed = false, onToggle }: RightSidebarProps) => {
                   onClick={onToggle}
                   className="h-8 w-8 hover:bg-accent"
                 >
-                  <MessageSquare className="h-4 w-4 text-blue-600" />
+                  <PanelRightOpen className="h-4 w-4 text-blue-600" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="left">
-                AI-Revi Assistant
+                Åpne AI-Revi Assistant
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
@@ -87,25 +86,25 @@ const RightSidebar = ({ isCollapsed = false, onToggle }: RightSidebarProps) => {
   }
 
   return (
-    <div className="h-full flex flex-col w-full bg-background overflow-hidden">
-      {/* Expanded Header */}
+    <div className="h-full w-full bg-background border-l border-border flex flex-col overflow-hidden">
+      {/* Header */}
       <div className="border-b border-border flex items-center justify-between p-4 flex-shrink-0">
-        <div className="flex items-center gap-2">
-          <MessageSquare className="h-5 w-5 text-blue-600" />
-          <h3 className="font-semibold text-base">AI-Revi Assistant</h3>
+        <div className="flex items-center gap-2 min-w-0">
+          <MessageSquare className="h-5 w-5 text-blue-600 flex-shrink-0" />
+          <h3 className="font-semibold text-base truncate">AI-Revi Assistant</h3>
         </div>
         <Button
           variant="ghost"
           size="icon"
           onClick={onToggle}
-          className="h-8 w-8 hover:bg-accent"
+          className="h-8 w-8 hover:bg-accent flex-shrink-0"
           title={isMobile ? "Lukk" : "Trekk inn AI-assistant"}
         >
           {isMobile ? <X className="h-4 w-4" /> : <PanelRightClose className="h-4 w-4" />}
         </Button>
       </div>
       
-      {/* SmartReviAssistant Content - Fixed height and scroll */}
+      {/* SmartReviAssistant Content */}
       <div className="flex-1 min-h-0 overflow-hidden">
         <SmartReviAssistant
           embedded={true}
