@@ -187,27 +187,8 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
     try {
       console.log('🔄 Retrying text extraction for:', { docId, fileName });
       
-      const { supabase } = await import('@/integrations/supabase/client');
-      const { data: documentData, error } = await supabase
-        .from('client_documents_files')
-        .select('file_path, mime_type')
-        .eq('id', docId)
-        .single();
-
-      if (error || !documentData) {
-        console.error('Error fetching document data:', error);
-        setOperationResult(docId, 'error');
-        toast.error('Kunne ikke hente dokumentdata');
-        return;
-      }
-
-      console.log('🔄 Starting text extraction with data:', {
-        docId,
-        filePath: documentData.file_path,
-        mimeType: documentData.mime_type
-      });
-
-      await triggerTextExtraction(docId, documentData.file_path, documentData.mime_type);
+      // Call triggerTextExtraction with only documentId
+      await triggerTextExtraction(docId);
       setOperationResult(docId, 'success');
       
     } catch (error) {
