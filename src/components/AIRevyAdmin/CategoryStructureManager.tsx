@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -267,7 +266,7 @@ const CategoryTreeItem = ({
   );
 };
 
-const CategoryForm = ({ category, onSubmit }) => {
+const CategoryForm = ({ category, onSubmit }: { category?: any; onSubmit: any }) => {
   const [formData, setFormData] = useState({
     name: category?.name || '',
     description: category?.description || '',

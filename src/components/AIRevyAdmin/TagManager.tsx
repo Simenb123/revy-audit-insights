@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -273,7 +272,7 @@ const TagCard = ({ tag, onSelect, onEdit, onDelete, selected }) => {
   );
 };
 
-const TagForm = ({ tag, onSubmit, categories }) => {
+const TagForm = ({ tag, onSubmit, categories }: { tag?: any; onSubmit: any; categories: any }) => {
   const [formData, setFormData] = useState({
     name: tag?.name || '',
     description: tag?.description || '',

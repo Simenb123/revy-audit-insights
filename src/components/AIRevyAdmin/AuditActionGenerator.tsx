@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -288,7 +287,7 @@ const ActionCard = ({ action }) => {
   );
 };
 
-const ActionForm = ({ action, onSubmit }) => {
+const ActionForm = ({ action, onSubmit }: { action?: any; onSubmit: any }) => {
   const [formData, setFormData] = useState({
     name: action?.name || '',
     description: action?.description || '',
@@ -429,7 +428,7 @@ const ActionForm = ({ action, onSubmit }) => {
   );
 };
 
-const ActionGeneratorForm = ({ onSubmit }) => {
+const ActionGeneratorForm = ({ onSubmit }: { onSubmit: any }) => {
   const [generatorData, setGeneratorData] = useState({
     client_type: '',
     industry: '',
@@ -510,7 +509,7 @@ const ActionGeneratorForm = ({ onSubmit }) => {
           <Checkbox 
             id="include_controls"
             checked={generatorData.include_controls}
-            onCheckedChange={(checked) => setGeneratorData(prev => ({ ...prev, include_controls: checked }))}
+            onCheckedChange={(checked) => setGeneratorData(prev => ({ ...prev, include_controls: Boolean(checked) }))}
           />
           <Label htmlFor="include_controls">Kontrolltester</Label>
         </div>
@@ -518,7 +517,7 @@ const ActionGeneratorForm = ({ onSubmit }) => {
           <Checkbox 
             id="include_substantive"
             checked={generatorData.include_substantive}
-            onCheckedChange={(checked) => setGeneratorData(prev => ({ ...prev, include_substantive: checked }))}
+            onCheckedChange={(checked) => setGeneratorData(prev => ({ ...prev, include_substantive: Boolean(checked) }))}
           />
           <Label htmlFor="include_substantive">Substanshandlinger</Label>
         </div>

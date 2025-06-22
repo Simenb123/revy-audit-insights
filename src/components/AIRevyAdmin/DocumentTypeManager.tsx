@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -222,7 +221,7 @@ const DocumentTypeCard = ({ type, onSelect, onEdit, onDelete, selected }) => {
   );
 };
 
-const DocumentTypeForm = ({ type, onSubmit }) => {
+const DocumentTypeForm = ({ type, onSubmit }: { type?: any; onSubmit: any }) => {
   const [formData, setFormData] = useState({
     name: type?.name || '',
     display_name: type?.display_name || '',
@@ -299,7 +298,7 @@ const DocumentTypeForm = ({ type, onSubmit }) => {
           <Checkbox 
             id="is_standard"
             checked={formData.is_standard}
-            onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_standard: checked }))}
+            onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_standard: Boolean(checked) }))}
           />
           <Label htmlFor="is_standard">Standard type</Label>
         </div>

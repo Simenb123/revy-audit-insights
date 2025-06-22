@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -284,7 +283,7 @@ const SubjectAreaCard = ({ area, onSelect, onEdit, onDelete, onToggleActive, onM
   );
 };
 
-const SubjectAreaForm = ({ area, onSubmit, colorOptions, iconOptions }) => {
+const SubjectAreaForm = ({ area, onSubmit, colorOptions, iconOptions }: { area?: any; onSubmit: any; colorOptions: any; iconOptions: any }) => {
   const [formData, setFormData] = useState({
     name: area?.name || '',
     display_name: area?.display_name || '',
@@ -394,7 +393,7 @@ const SubjectAreaForm = ({ area, onSubmit, colorOptions, iconOptions }) => {
         <Checkbox 
           id="is_active"
           checked={formData.is_active}
-          onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_active: checked }))}
+          onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_active: Boolean(checked) }))}
         />
         <Label htmlFor="is_active">Aktiv</Label>
       </div>
