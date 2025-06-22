@@ -33,7 +33,10 @@ serve(async (req) => {
     // 1. Set status to 'processing'
     const { error: statusError } = await supabaseAdmin
       .from('client_documents_files')
-      .update({ text_extraction_status: 'processing' })
+      .update({ 
+        text_extraction_status: 'processing',
+        updated_at: new Date().toISOString()
+      })
       .eq('id', documentId);
 
     if (statusError) {
@@ -53,35 +56,93 @@ serve(async (req) => {
 
     console.log('📄 Document found:', document.file_name, 'at path:', document.file_path);
 
-    // 3. For now, simulate successful text extraction with placeholder text
-    // In a real implementation, you would use a PDF parsing library
+    // 3. Download and extract text from the file
     let extractedText = '';
     
-    if (document.mime_type === 'application/pdf') {
-      // Simulate PDF text extraction - replace with actual PDF parsing
-      extractedText = `Tekstinnhold fra ${document.file_name}\n\nDette er placeholder tekst til PDF-parsing bibliotek blir implementert.\n\nFaktura detaljer ville være tilgjengelig her etter faktisk tekstekstraksjon.`;
-      console.log('📄 Simulated PDF text extraction completed');
-    } else if (document.mime_type?.includes('text/') || document.mime_type?.includes('application/json')) {
-      // For text files, we could actually read the content
-      try {
-        const { data: fileData, error: downloadError } = await supabaseAdmin.storage
-          .from('client-documents')
-          .download(document.file_path);
+    try {
+      console.log('📥 Downloading file from storage...');
+      const { data: fileData, error: downloadError } = await supabaseAdmin.storage
+        .from('client-documents')
+        .download(document.file_path);
 
-        if (downloadError || !fileData) {
-          console.error('Storage download error:', downloadError);
-          throw new Error(`Failed to download file: ${downloadError?.message || 'No data'}`);
+      if (downloadError || !fileData) {
+        console.error('Storage download error:', downloadError);
+        throw new Error(`Failed to download file: ${downloadError?.message || 'No data'}`);
+      }
+      
+      console.log('📄 File downloaded successfully, size:', fileData.size, 'bytes');
+
+      if (document.mime_type === 'application/pdf') {
+        console.log('📄 Processing PDF file...');
+        
+        // Convert blob to ArrayBuffer for PDF processing
+        const arrayBuffer = await fileData.arrayBuffer();
+        const uint8Array = new Uint8Array(arrayBuffer);
+        
+        // Simple PDF text extraction - look for text between "BT" and "ET" markers
+        const pdfText = new TextDecoder().decode(uint8Array);
+        const textMatches = pdfText.match(/BT\s*(.*?)\s*ET/gs);
+        
+        if (textMatches && textMatches.length > 0) {
+          // Extract and clean text from PDF text objects
+          const extractedParts = textMatches.map(match => {
+            // Remove PDF operators and extract readable text
+            return match
+              .replace(/BT|ET/g, '')
+              .replace(/\/\w+\s+\d+(\.\d+)?\s+Tf/g, '') // Font declarations
+              .replace(/\d+(\.\d+)?\s+\d+(\.\d+)?\s+Td/g, '') // Text positioning
+              .replace(/\d+(\.\d+)?\s+TL/g, '') // Leading
+              .replace(/\[|\]/g, '') // Array brackets
+              .replace(/\((.*?)\)\s*Tj/g, '$1') // Text showing operators
+              .replace(/\s+/g, ' ') // Normalize whitespace
+              .trim();
+          }).filter(text => text.length > 0);
+          
+          extractedText = extractedParts.join('\n\n').trim();
+          
+          if (extractedText.length > 0) {
+            console.log('✅ Successfully extracted text from PDF, length:', extractedText.length);
+          } else {
+            // Fallback: try to extract any readable text
+            const readableText = pdfText
+              .replace(/[^\x20-\x7E\s]/g, '') // Keep only printable ASCII
+              .replace(/\s+/g, ' ')
+              .trim();
+            
+            if (readableText.length > 50) {
+              extractedText = readableText.substring(0, 2000) + (readableText.length > 2000 ? '...' : '');
+              console.log('⚠️ Used fallback text extraction, length:', extractedText.length);
+            } else {
+              throw new Error('No readable text found in PDF');
+            }
+          }
+        } else {
+          throw new Error('No text content found in PDF structure');
         }
         
+      } else if (document.mime_type?.includes('text/') || document.mime_type?.includes('application/json')) {
+        // For text files, read directly
         extractedText = await fileData.text();
-        console.log('📄 Text file processed successfully');
-      } catch (error) {
-        console.error('Error processing text file:', error);
-        extractedText = `Kunne ikke lese tekstfil: ${error.message}`;
+        console.log('📄 Text file processed successfully, length:', extractedText.length);
+      } else {
+        throw new Error(`Unsupported file type: ${document.mime_type}`);
       }
-    } else {
-      console.log('📄 File type not supported for text extraction:', document.mime_type);
-      extractedText = `[Filtype ${document.mime_type} - tekstekstraksjon ikke støttet ennå]`;
+
+      // Validate extracted text
+      if (!extractedText || extractedText.trim().length === 0) {
+        throw new Error('No text content extracted from file');
+      }
+
+      // Limit text length to prevent database issues
+      const maxLength = 50000; // 50KB limit
+      if (extractedText.length > maxLength) {
+        extractedText = extractedText.substring(0, maxLength) + '\n\n[Text truncated due to length limit]';
+        console.log('⚠️ Text truncated to fit database limits');
+      }
+
+    } catch (extractionError) {
+      console.error('❌ Text extraction failed:', extractionError);
+      throw new Error(`Text extraction failed: ${extractionError.message}`);
     }
 
     // 4. Update document with extracted text and 'completed' status
@@ -90,6 +151,7 @@ serve(async (req) => {
       .update({
         extracted_text: extractedText,
         text_extraction_status: 'completed',
+        updated_at: new Date().toISOString()
       })
       .eq('id', documentId);
 
@@ -99,13 +161,15 @@ serve(async (req) => {
     }
     
     console.log('✅ Text extraction completed successfully for document:', documentId);
+    console.log('📊 Extracted text length:', extractedText.length, 'characters');
     
     return new Response(JSON.stringify({ 
       success: true, 
       documentId,
       textLength: extractedText.length,
       fileType: document.mime_type,
-      message: 'Text extraction completed successfully'
+      message: 'Text extraction completed successfully',
+      preview: extractedText.substring(0, 200) + (extractedText.length > 200 ? '...' : '')
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
@@ -122,7 +186,8 @@ serve(async (req) => {
             );
             await supabaseAdmin.from('client_documents_files').update({
                 text_extraction_status: 'failed',
-                extracted_text: `[Ekstraksjon feilet: ${error.message}]`
+                extracted_text: `[Tekstekstraksjon feilet: ${error.message}]`,
+                updated_at: new Date().toISOString()
             }).eq('id', documentId);
             
             console.log('🔄 Status updated to failed for document:', documentId);
@@ -133,7 +198,8 @@ serve(async (req) => {
     
     return new Response(JSON.stringify({ 
       error: error.message,
-      documentId: documentId || 'unknown'
+      documentId: documentId || 'unknown',
+      details: 'Check function logs for more information'
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

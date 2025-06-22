@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -188,28 +187,10 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
     try {
       console.log('🔄 Retrying text extraction for:', { docId, fileName });
       
-      // Fetch document data to get filePath and mimeType
-      const { supabase } = await import('@/integrations/supabase/client');
-      const { data: documentData, error } = await supabase
-        .from('client_documents_files')
-        .select('file_path, mime_type')
-        .eq('id', docId)
-        .single();
-
-      if (error || !documentData) {
-        console.error('Error fetching document data:', error);
-        setOperationResult(docId, 'error');
-        toast.error('Kunne ikke hente dokumentdata');
-        return;
-      }
-
-      // Call triggerTextExtraction with the correct object parameter
-      await triggerTextExtraction({
-        documentId: docId,
-        filePath: documentData.file_path,
-        mimeType: documentData.mime_type
-      });
+      // Call triggerTextExtraction with only documentId (simplified)
+      await triggerTextExtraction(docId);
       setOperationResult(docId, 'success');
+      toast.success('Tekstekstraksjon startet på nytt');
       
     } catch (error) {
       console.error('Error retrying text extraction:', error);

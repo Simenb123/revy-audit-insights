@@ -64,48 +64,34 @@ export const useClientDocuments = (clientId: string) => {
         throw error;
       }
 
-      // Check for documents missing text extraction and trigger it
-      const needsExtraction = data?.filter(d => 
-        !d.extracted_text && 
-        d.text_extraction_status !== 'processing' && 
-        d.text_extraction_status !== 'failed' &&
-        d.mime_type?.includes('pdf')
-      ) || [];
-      
-      if (needsExtraction.length > 0) {
-        console.log(`📄 Found ${needsExtraction.length} documents needing text extraction`);
-        // Trigger text extraction for these documents asynchronously
-        needsExtraction.forEach(doc => {
-          setTimeout(() => triggerTextExtraction(doc.id, doc.file_path, doc.mime_type), 1000);
-        });
-      }
-
       return data as ClientDocument[];
     },
     enabled: !!clientId,
     refetchInterval: (query) => {
-      // Refetch every 10 seconds if there are documents being processed
+      // Refetch every 5 seconds if there are documents being processed
       const data = query.state.data as ClientDocument[] | undefined;
       const hasProcessing = data?.some(doc => 
-        doc.text_extraction_status === 'processing'
+        doc.text_extraction_status === 'processing' || doc.text_extraction_status === 'pending'
       );
-      return hasProcessing ? 10000 : false;
+      return hasProcessing ? 5000 : false;
     }
   });
 
-  // Enhanced text extraction mutation with better error handling
+  // Enhanced text extraction mutation with retry logic
   const textExtractionMutation = useMutation({
-    mutationFn: async ({ documentId, filePath, mimeType }: { 
+    mutationFn: async ({ documentId, retryCount = 0 }: { 
       documentId: string; 
-      filePath: string; 
-      mimeType: string; 
+      retryCount?: number;
     }) => {
-      console.log('🔄 Starting text extraction mutation for document:', documentId);
+      console.log(`🔄 Starting text extraction attempt ${retryCount + 1} for document:`, documentId);
       
       // Update status to processing first
       const { error: updateError } = await supabase
         .from('client_documents_files')
-        .update({ text_extraction_status: 'processing' })
+        .update({ 
+          text_extraction_status: 'processing',
+          updated_at: new Date().toISOString()
+        })
         .eq('id', documentId);
 
       if (updateError) {
@@ -113,26 +99,40 @@ export const useClientDocuments = (clientId: string) => {
         throw new Error(`Failed to update status: ${updateError.message}`);
       }
 
-      // Call the PDF text extractor function
+      // Call the PDF text extractor function with retry logic
       const { data, error } = await supabase.functions.invoke('pdf-text-extractor', {
         body: { documentId }
       });
       
       if (error) {
         console.error('PDF text extraction failed:', error);
+        
+        // Retry logic for temporary failures
+        if (retryCount < 2 && (error.message?.includes('timeout') || error.message?.includes('network'))) {
+          console.log(`🔄 Retrying extraction (attempt ${retryCount + 2}/3) in 2 seconds...`);
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          return textExtractionMutation.mutateAsync({ documentId, retryCount: retryCount + 1 });
+        }
+        
         throw new Error(`Text extraction failed: ${error.message}`);
       }
 
       console.log('✅ Text extraction completed successfully:', data);
       return data;
     },
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
       console.log('✅ Text extraction mutation successful:', data);
-      toast.success('Tekstekstraksjon fullført!');
+      
+      if (data?.textLength > 0) {
+        toast.success(`Tekstekstraksjon fullført! Ekstraherte ${data.textLength} tegn.`);
+      } else {
+        toast.success('Tekstekstraksjon fullført!');
+      }
+      
       // Refetch documents to update UI
       setTimeout(() => refetch(), 1000);
     },
-    onError: (error) => {
+    onError: (error, variables) => {
       console.error('Text extraction error:', error);
       toast.error(`Tekstekstraksjon feilet: ${error.message}`);
       // Refetch to update status
@@ -141,9 +141,9 @@ export const useClientDocuments = (clientId: string) => {
   });
 
   // Trigger text extraction for a document
-  const triggerTextExtraction = async (documentId: string, filePath: string, mimeType: string) => {
+  const triggerTextExtraction = async (documentId: string) => {
     try {
-      await textExtractionMutation.mutateAsync({ documentId, filePath, mimeType });
+      await textExtractionMutation.mutateAsync({ documentId });
     } catch (error) {
       console.error('Error in triggerTextExtraction:', error);
     }
@@ -215,10 +215,10 @@ export const useClientDocuments = (clientId: string) => {
 
       console.log('✅ Document metadata saved:', data);
 
-      // Trigger text extraction for PDFs
-      if (file.type === 'application/pdf') {
+      // Trigger text extraction for PDFs and text files
+      if (file.type === 'application/pdf' || file.type?.includes('text/')) {
         setTimeout(() => {
-          triggerTextExtraction(data.id, filePath, file.type);
+          triggerTextExtraction(data.id);
         }, 1000);
       }
 
@@ -354,6 +354,6 @@ export const useClientDocuments = (clientId: string) => {
     deleteDocument,
     getDocumentUrl,
     downloadDocument,
-    triggerTextExtraction: textExtractionMutation.mutateAsync
+    triggerTextExtraction
   };
 };
