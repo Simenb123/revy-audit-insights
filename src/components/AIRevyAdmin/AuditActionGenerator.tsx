@@ -9,6 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import { Brain, Plus, Loader2, Save } from 'lucide-react';
 import { useCreateAuditActionTemplate } from '@/hooks/useAuditActions';
 import { toast } from '@/hooks/use-toast';
+import { useSubjectAreas } from '@/hooks/knowledge/useSubjectAreas';
+import { useAuditActionTemplatesPreview } from '@/hooks/knowledge/useAuditActionTemplatesPreview';
 
 interface FormData {
   name: string;
@@ -21,13 +23,18 @@ interface FormData {
 }
 
 const AuditActionGenerator = () => {
-  const [selectedSubjectArea, setSelectedSubjectArea] = useState('sales');
+  const [selectedSubjectArea, setSelectedSubjectArea] = useState('');
   const [selectedActionType, setSelectedActionType] = useState('substantive');
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   
   const createTemplate = useCreateAuditActionTemplate();
+  const { data: subjectAreas, isLoading: subjectAreasLoading } = useSubjectAreas();
+  const { data: previewTemplates, isLoading: templatesLoading } = useAuditActionTemplatesPreview(
+    selectedSubjectArea || undefined, 
+    5
+  );
 
   const [formData, setFormData] = useState<FormData>({
     name: '',
@@ -39,20 +46,6 @@ const AuditActionGenerator = () => {
     risk_level: 'medium'
   });
 
-  const subjectAreas = [
-    { value: 'sales', label: 'Inntekter/Salg' },
-    { value: 'payroll', label: 'Lønn' },
-    { value: 'operating_expenses', label: 'Andre driftskostnader' },
-    { value: 'inventory', label: 'Varelager' },
-    { value: 'finance', label: 'Finans' },
-    { value: 'banking', label: 'Banktransaksjoner' },
-    { value: 'fixed_assets', label: 'Anleggsmidler' },
-    { value: 'receivables', label: 'Kundefordringer' },
-    { value: 'payables', label: 'Leverandørgjeld' },
-    { value: 'equity', label: 'Egenkapital' },
-    { value: 'other', label: 'Annet' }
-  ];
-
   const actionTypes = [
     { value: 'substantive', label: 'Substansiell testing' },
     { value: 'analytical', label: 'Analytiske handlinger' },
@@ -62,17 +55,28 @@ const AuditActionGenerator = () => {
   ];
 
   const handleGenerateWithAI = async () => {
+    if (!selectedSubjectArea) {
+      toast({
+        title: "Velg fagområde",
+        description: "Du må velge et fagområde før du kan generere en handling med AI.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsGenerating(true);
     try {
       // Simuler AI-generering for nå
       await new Promise(resolve => setTimeout(resolve, 2000));
       
+      const selectedArea = subjectAreas?.find(area => area.name === selectedSubjectArea);
+      
       const aiSuggestion: FormData = {
-        name: `AI-generert handling for ${subjectAreas.find(s => s.value === selectedSubjectArea)?.label}`,
-        description: 'AI-generert beskrivelse basert på best practices',
-        objective: 'Sikre nøyaktighet og fullstendighet av...',
-        procedures: '1. Gjennomgå dokumentasjon\n2. Utfør testing\n3. Dokumenter funn',
-        documentation_requirements: 'Arbeidspapirer, testresultater, konklusjoner',
+        name: `AI-generert handling for ${selectedArea?.display_name || selectedSubjectArea}`,
+        description: `AI-generert beskrivelse basert på best practices for ${selectedArea?.display_name || selectedSubjectArea}`,
+        objective: `Sikre nøyaktighet og fullstendighet av ${selectedArea?.display_name || selectedSubjectArea}`,
+        procedures: '1. Gjennomgå relevant dokumentasjon\n2. Utfør nødvendig testing\n3. Dokumenter funn og konklusjoner\n4. Vurder eventuelle justeringer',
+        documentation_requirements: 'Arbeidspapirer, testresultater, konklusjoner og eventuelle oppfølgingsnotater',
         estimated_hours: 4,
         risk_level: 'medium'
       };
@@ -109,6 +113,15 @@ const AuditActionGenerator = () => {
   };
 
   const handleSave = async () => {
+    if (!selectedSubjectArea) {
+      toast({
+        title: "Velg fagområde",
+        description: "Du må velge et fagområde før du kan lagre handlingen.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
       console.log('Creating action:', {
         ...formData,
@@ -148,6 +161,19 @@ const AuditActionGenerator = () => {
       console.error('Error creating action:', error);
     }
   };
+
+  if (subjectAreasLoading) {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="flex items-center justify-center py-8">
+            <Loader2 className="w-6 h-6 animate-spin mr-2" />
+            <span>Laster fagområder...</span>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (showCreateForm) {
     return (
@@ -276,12 +302,12 @@ const AuditActionGenerator = () => {
               <Label>Fagområde</Label>
               <Select value={selectedSubjectArea} onValueChange={setSelectedSubjectArea}>
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Velg fagområde" />
                 </SelectTrigger>
                 <SelectContent>
-                  {subjectAreas.map((area) => (
-                    <SelectItem key={area.value} value={area.value}>
-                      {area.label}
+                  {subjectAreas?.map((area) => (
+                    <SelectItem key={area.id} value={area.name}>
+                      {area.display_name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -310,7 +336,7 @@ const AuditActionGenerator = () => {
             <Input
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Søk handlinger..."
+              placeholder="Søk eksisterende handlinger..."
             />
           </div>
 
@@ -319,7 +345,7 @@ const AuditActionGenerator = () => {
               {selectedSubjectArea && selectedActionType && (
                 <div className="flex gap-2">
                   <Badge variant="outline">
-                    {subjectAreas.find(s => s.value === selectedSubjectArea)?.label}
+                    {subjectAreas?.find(s => s.name === selectedSubjectArea)?.display_name}
                   </Badge>
                   <Badge variant="outline">
                     {actionTypes.find(t => t.value === selectedActionType)?.label}
@@ -331,7 +357,7 @@ const AuditActionGenerator = () => {
             <div className="flex gap-2">
               <Button 
                 onClick={handleGenerateWithAI} 
-                disabled={isGenerating}
+                disabled={isGenerating || !selectedSubjectArea}
                 className="gap-2"
               >
                 {isGenerating ? (
@@ -348,27 +374,69 @@ const AuditActionGenerator = () => {
             </div>
           </div>
 
-          {selectedSubjectArea === 'sales' && (
+          {/* Show existing templates for selected subject area */}
+          {selectedSubjectArea && previewTemplates && previewTemplates.length > 0 && (
             <div className="mt-6 p-4 border rounded-lg">
-              <h3 className="font-medium mb-2">Gjennomføring - Inntekter/Salg</h3>
-              <p className="text-sm text-muted-foreground mb-4">1 handlinger</p>
+              <h3 className="font-medium mb-2">
+                Eksisterende handlinger - {subjectAreas?.find(s => s.name === selectedSubjectArea)?.display_name}
+              </h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                {previewTemplates.length} handlinger funnet
+              </p>
               
-              <div className="border rounded p-3">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-medium text-sm">Salgsinntekter - Utvalgstest</h4>
-                  <div className="flex gap-1">
-                    <Badge variant="destructive" className="text-xs">Høy</Badge>
-                    <Badge variant="outline" className="text-xs">System</Badge>
+              <div className="space-y-3">
+                {templatesLoading ? (
+                  <div className="flex items-center justify-center py-4">
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    <span>Laster handlinger...</span>
                   </div>
-                </div>
-                <p className="text-xs text-muted-foreground mb-2">
-                  Utfører utvalgstest av salgstransaksjoner for å sikre korrekt inntektsføring
-                </p>
-                <div className="flex gap-2 text-xs text-muted-foreground">
-                  <span>Type: substantive</span>
-                  <span>Estimert: 4t</span>
-                </div>
+                ) : (
+                  previewTemplates.map((template) => (
+                    <div key={template.id} className="border rounded p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="font-medium text-sm">{template.name}</h4>
+                        <div className="flex gap-1">
+                          {template.risk_level && (
+                            <Badge 
+                              variant={
+                                template.risk_level === 'high' ? 'destructive' : 
+                                template.risk_level === 'medium' ? 'default' : 'secondary'
+                              } 
+                              className="text-xs"
+                            >
+                              {template.risk_level === 'high' ? 'Høy' : 
+                               template.risk_level === 'medium' ? 'Medium' : 'Lav'}
+                            </Badge>
+                          )}
+                          {template.is_system_template && (
+                            <Badge variant="outline" className="text-xs">System</Badge>
+                          )}
+                        </div>
+                      </div>
+                      {template.description && (
+                        <p className="text-xs text-muted-foreground mb-2">
+                          {template.description}
+                        </p>
+                      )}
+                      <div className="flex gap-2 text-xs text-muted-foreground">
+                        <span>Type: {actionTypes.find(t => t.value === template.action_type)?.label || template.action_type}</span>
+                        {template.estimated_hours && (
+                          <span>Estimert: {template.estimated_hours}t</span>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
+            </div>
+          )}
+
+          {selectedSubjectArea && (!previewTemplates || previewTemplates.length === 0) && !templatesLoading && (
+            <div className="mt-6 p-4 border rounded-lg text-center">
+              <p className="text-sm text-muted-foreground">
+                Ingen eksisterende handlinger funnet for {subjectAreas?.find(s => s.name === selectedSubjectArea)?.display_name}.
+                Bruk AI Generator eller opprett en ny handling manuelt.
+              </p>
             </div>
           )}
         </CardContent>
