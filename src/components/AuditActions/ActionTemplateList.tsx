@@ -1,11 +1,11 @@
 
 import React from 'react';
-import { AuditActionTemplate, AuditSubjectArea } from '@/types/audit-actions';
+import { AuditActionTemplate } from '@/types/audit-actions';
 import FlexibleActionTemplateList from './FlexibleActionTemplateList';
 
 interface ActionTemplateListProps {
   templates: AuditActionTemplate[];
-  selectedArea: AuditSubjectArea;
+  selectedArea: string;
   onCopyToClient?: (templateIds: string[]) => void;
   onEditTemplate?: (template: AuditActionTemplate) => void;
 }
