@@ -51,6 +51,7 @@ export const useRecentArticles = (limit = 5) => {
         .select(`
           id,
           title,
+          slug,
           summary,
           created_at,
           updated_at,
