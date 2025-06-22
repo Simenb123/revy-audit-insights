@@ -3,12 +3,11 @@ import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useSubjectAreas } from '@/hooks/knowledge/useSubjectAreas';
-import { AuditSubjectArea } from '@/types/audit-actions';
 import { Loader2 } from 'lucide-react';
 
 interface SubjectAreaNavProps {
-  selectedArea: AuditSubjectArea;
-  onAreaSelect: (area: AuditSubjectArea) => void;
+  selectedArea: string;
+  onAreaSelect: (area: string) => void;
   actionCounts?: Record<string, number>;
 }
 
@@ -42,7 +41,7 @@ const SubjectAreaNav = ({ selectedArea, onAreaSelect, actionCounts = {} }: Subje
           <Button
             key={area.id}
             variant={isSelected ? "default" : "outline"}
-            onClick={() => onAreaSelect(area.name as AuditSubjectArea)}
+            onClick={() => onAreaSelect(area.name)}
             className="flex flex-col items-center gap-2 h-auto p-4 text-center"
             style={{
               backgroundColor: isSelected ? area.color : undefined,
