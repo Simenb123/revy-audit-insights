@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -52,8 +51,11 @@ const WorkingPaperGenerator = ({
         ...section,
         content: section.type === 'text' ? '' : undefined,
         items: section.type === 'checklist' ? 
-          (section.items || []).map((item: string) => ({ text: item, checked: false })) : 
-          undefined,
+          (section.items || []).map((item: any) => 
+            typeof item === 'string' 
+              ? { text: item, checked: false }
+              : { text: item.text || '', checked: item.checked || false }
+          ) : undefined,
         tableData: section.type === 'table' ? [{}] : undefined
       }))
     };
