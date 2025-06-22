@@ -32,8 +32,8 @@ interface AIMetadataSuggestionsProps {
     summary?: string;
   }) => void;
   availableCategories: Array<{ id: string; name: string }>;
-  availableContentTypes: Array<{ id: string; name: string; display_name: string }>;
-  availableSubjectAreas: Array<{ id: string; name: string; display_name: string }>;
+  availableContentTypes: Array<{ id: string; name: string; display_name: string; color?: string }>;
+  availableSubjectAreas: Array<{ id: string; name: string; display_name: string; color?: string }>;
 }
 
 const AIMetadataSuggestions = ({
@@ -268,7 +268,7 @@ VIKTIG: Svar kun med gyldig JSON, ingen ekstra tekst eller formatering.`,
                           <div className="flex items-center gap-2">
                             <div 
                               className="w-3 h-3 rounded" 
-                              style={{ backgroundColor: type.color }}
+                              style={{ backgroundColor: type.color || '#3B82F6' }}
                             />
                             {type.display_name}
                           </div>
@@ -364,7 +364,7 @@ VIKTIG: Svar kun med gyldig JSON, ingen ekstra tekst eller formatering.`,
                       >
                         <div 
                           className="w-3 h-3 rounded" 
-                          style={{ backgroundColor: area.color }}
+                          style={{ backgroundColor: area.color || '#10B981' }}
                         />
                         {area.display_name}
                       </Label>
