@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -35,6 +36,17 @@ export interface DocumentCategory {
   expected_file_patterns: string[];
   is_standard?: boolean;
   created_at: string;
+}
+
+// Add interface for text extraction response
+interface TextExtractionResponse {
+  success: boolean;
+  documentId: string;
+  textLength?: number;
+  fileType?: string;
+  message?: string;
+  preview?: string;
+  error?: string;
 }
 
 export const useClientDocuments = (clientId: string) => {
@@ -78,11 +90,8 @@ export const useClientDocuments = (clientId: string) => {
   });
 
   // Enhanced text extraction mutation with retry logic
-  const textExtractionMutation = useMutation({
-    mutationFn: async ({ documentId, retryCount = 0 }: { 
-      documentId: string; 
-      retryCount?: number;
-    }) => {
+  const textExtractionMutation = useMutation<TextExtractionResponse, Error, { documentId: string; retryCount?: number }>({
+    mutationFn: async ({ documentId, retryCount = 0 }) => {
       console.log(`🔄 Starting text extraction attempt ${retryCount + 1} for document:`, documentId);
       
       // Update status to processing first
@@ -118,12 +127,12 @@ export const useClientDocuments = (clientId: string) => {
       }
 
       console.log('✅ Text extraction completed successfully:', data);
-      return data;
+      return data as TextExtractionResponse;
     },
-    onSuccess: (data, variables) => {
+    onSuccess: (data) => {
       console.log('✅ Text extraction mutation successful:', data);
       
-      if (data?.textLength > 0) {
+      if (data?.textLength && data.textLength > 0) {
         toast.success(`Tekstekstraksjon fullført! Ekstraherte ${data.textLength} tegn.`);
       } else {
         toast.success('Tekstekstraksjon fullført!');
@@ -132,7 +141,7 @@ export const useClientDocuments = (clientId: string) => {
       // Refetch documents to update UI
       setTimeout(() => refetch(), 1000);
     },
-    onError: (error, variables) => {
+    onError: (error) => {
       console.error('Text extraction error:', error);
       toast.error(`Tekstekstraksjon feilet: ${error.message}`);
       // Refetch to update status
@@ -140,7 +149,7 @@ export const useClientDocuments = (clientId: string) => {
     }
   });
 
-  // Trigger text extraction for a document
+  // Trigger text extraction for a document (simplified API)
   const triggerTextExtraction = async (documentId: string) => {
     try {
       await textExtractionMutation.mutateAsync({ documentId });
