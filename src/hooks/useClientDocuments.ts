@@ -52,14 +52,15 @@ export const useClientDocuments = (clientId: string) => {
   const [isLoading, setIsLoading] = useState(false);
   const queryClient = useQueryClient();
 
-  // Enhanced validation for clientId
-  console.log('📄 [USE_CLIENT_DOCUMENTS] Hook called with clientId:', clientId);
+  // Enhanced validation for clientId with better logging
+  console.log('📄 [USE_CLIENT_DOCUMENTS] Hook initialized with clientId:', clientId);
   
-  if (!clientId || clientId === 'undefined') {
-    console.error('❌ [USE_CLIENT_DOCUMENTS] Invalid clientId provided:', clientId);
+  if (!clientId || clientId === 'undefined' || clientId === 'null') {
+    console.error('❌ [USE_CLIENT_DOCUMENTS] Invalid clientId provided:', { clientId, type: typeof clientId });
+    // Don't throw here, just log and let the query handle it
   }
 
-  // Fetch documents
+  // Fetch documents with better error handling
   const {
     data: documents = [],
     isLoading: documentsLoading,
@@ -67,12 +68,12 @@ export const useClientDocuments = (clientId: string) => {
   } = useQuery({
     queryKey: ['client-documents', clientId],
     queryFn: async () => {
-      if (!clientId || clientId === 'undefined') {
-        console.error('❌ [USE_CLIENT_DOCUMENTS] Cannot fetch documents without valid clientId');
+      if (!clientId || clientId === 'undefined' || clientId === 'null') {
+        console.error('❌ [USE_CLIENT_DOCUMENTS] Cannot fetch documents without valid clientId:', clientId);
         return [];
       }
       
-      console.log('📄 Fetching documents for client:', clientId);
+      console.log('📄 [USE_CLIENT_DOCUMENTS] Fetching documents for client:', clientId);
       
       const { data, error } = await supabase
         .from('client_documents_files')
@@ -81,44 +82,53 @@ export const useClientDocuments = (clientId: string) => {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching documents:', error);
+        console.error('❌ [USE_CLIENT_DOCUMENTS] Error fetching documents:', error);
         throw error;
       }
 
-      console.log('✅ Documents fetched:', data?.length || 0);
+      console.log('✅ [USE_CLIENT_DOCUMENTS] Documents fetched successfully:', {
+        count: data?.length || 0,
+        withExtractedText: data?.filter(d => d.extracted_text && !d.extracted_text.startsWith('[Kunne ikke')).length || 0
+      });
+      
       return data as ClientDocument[];
     },
-    enabled: !!(clientId && clientId !== 'undefined'),
+    enabled: !!(clientId && clientId !== 'undefined' && clientId !== 'null'),
     refetchInterval: (query) => {
-      // Refetch every 5 seconds if there are documents being processed
+      // More intelligent refetch logic
       const data = query.state.data as ClientDocument[] | undefined;
       const hasProcessing = data?.some(doc => 
         doc.text_extraction_status === 'processing' || doc.text_extraction_status === 'pending'
       );
-      return hasProcessing ? 5000 : false;
+      
+      if (hasProcessing) {
+        console.log('🔄 [USE_CLIENT_DOCUMENTS] Documents still processing, will refetch in 3 seconds');
+        return 3000;
+      }
+      
+      return false;
     }
   });
 
-  // Enhanced text extraction mutation using the new edge function
+  // Enhanced text extraction mutation with better retry logic
   const textExtractionMutation = useMutation<TextExtractionResponse, Error, { documentId: string; retryCount?: number }>({
     mutationFn: async ({ documentId, retryCount = 0 }) => {
-      console.log(`🔄 [ENHANCED_TEXT_EXTRACTION] Starting for document:`, documentId);
-      console.log(`🔄 [ENHANCED_TEXT_EXTRACTION] Attempt ${retryCount + 1}/3`);
+      console.log(`🔄 [TEXT_EXTRACTION] Starting extraction for document: ${documentId} (attempt ${retryCount + 1}/3)`);
       
       try {
-        // Validate inputs
-        if (!documentId) {
+        // Enhanced validation
+        if (!documentId || documentId === 'undefined') {
           throw new Error('DocumentId er påkrevd men mangler');
         }
 
-        if (!clientId || clientId === 'undefined') {
+        if (!clientId || clientId === 'undefined' || clientId === 'null') {
           throw new Error('ClientId er påkrevd men mangler');
         }
 
-        console.log('✅ [ENHANCED_TEXT_EXTRACTION] Input validation passed');
+        console.log('✅ [TEXT_EXTRACTION] Input validation passed');
 
-        // Update status to processing first
-        console.log('🔄 [ENHANCED_TEXT_EXTRACTION] Updating document status...');
+        // Update status to processing immediately for better UX
+        console.log('🔄 [TEXT_EXTRACTION] Updating document status to processing...');
         const { error: updateError } = await supabase
           .from('client_documents_files')
           .update({ 
@@ -128,56 +138,76 @@ export const useClientDocuments = (clientId: string) => {
           .eq('id', documentId);
 
         if (updateError) {
-          console.error('❌ [ENHANCED_TEXT_EXTRACTION] Status update failed:', updateError);
+          console.error('❌ [TEXT_EXTRACTION] Status update failed:', updateError);
           throw new Error(`Status update feilet: ${updateError.message}`);
         }
 
-        console.log('✅ [ENHANCED_TEXT_EXTRACTION] Status updated to processing');
+        console.log('✅ [TEXT_EXTRACTION] Status updated, calling enhanced extraction function...');
 
-        // Call the enhanced edge function
-        console.log('🚀 [ENHANCED_TEXT_EXTRACTION] Calling enhanced edge function...');
+        // Call the enhanced edge function with timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minute timeout
         
-        const functionResponse = await supabase.functions.invoke('enhanced-pdf-text-extractor', {
-          body: { documentId },
-          headers: {
-            'Content-Type': 'application/json'
+        try {
+          const functionResponse = await supabase.functions.invoke('enhanced-pdf-text-extractor', {
+            body: { documentId },
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          });
+
+          clearTimeout(timeoutId);
+          
+          console.log('📄 [TEXT_EXTRACTION] Function response received:', {
+            hasError: !!functionResponse.error,
+            hasData: !!functionResponse.data,
+            errorMessage: functionResponse.error?.message
+          });
+          
+          if (functionResponse.error) {
+            console.error('❌ [TEXT_EXTRACTION] Function error:', functionResponse.error);
+            throw new Error(`Edge function feil: ${functionResponse.error.message || 'Ukjent feil'}`);
           }
-        });
 
-        console.log('📄 [ENHANCED_TEXT_EXTRACTION] Function response:', functionResponse);
-        
-        if (functionResponse.error) {
-          console.error('❌ [ENHANCED_TEXT_EXTRACTION] Function error:', functionResponse.error);
-          throw new Error(`Edge function feil: ${functionResponse.error.message || functionResponse.error}`);
+          if (!functionResponse.data) {
+            console.error('❌ [TEXT_EXTRACTION] No data in response');
+            throw new Error('Ingen data returnert fra tekstekstraksjon');
+          }
+
+          const { data } = functionResponse;
+          console.log('📊 [TEXT_EXTRACTION] Function result:', {
+            success: data.success,
+            textLength: data.textLength,
+            extractionMethod: data.extractionMethod,
+            fileName: data.fileName
+          });
+
+          if (!data.success) {
+            console.error('❌ [TEXT_EXTRACTION] Function indicates failure:', data.error);
+            throw new Error(data.error || 'Tekstekstraksjon feilet');
+          }
+
+          console.log('✅ [TEXT_EXTRACTION] Extraction completed successfully');
+          return data as TextExtractionResponse;
+
+        } catch (fetchError) {
+          clearTimeout(timeoutId);
+          throw fetchError;
         }
-
-        if (!functionResponse.data) {
-          console.error('❌ [ENHANCED_TEXT_EXTRACTION] No data in response');
-          throw new Error('Ingen data returnert fra tekstekstraksjon');
-        }
-
-        const { data } = functionResponse;
-        console.log('📊 [ENHANCED_TEXT_EXTRACTION] Function data:', data);
-
-        if (!data.success) {
-          console.error('❌ [ENHANCED_TEXT_EXTRACTION] Function indicates failure:', data);
-          throw new Error(data.error || 'Tekstekstraksjon indikerte feil');
-        }
-
-        console.log('✅ [ENHANCED_TEXT_EXTRACTION] Extraction successful');
-        return data as TextExtractionResponse;
 
       } catch (error) {
-        console.error('❌ [ENHANCED_TEXT_EXTRACTION] Error:', error);
+        console.error('❌ [TEXT_EXTRACTION] Error in attempt', retryCount + 1, ':', error.message);
         
-        // Enhanced retry logic
+        // Enhanced retry logic with better error classification
         if (retryCount < 2) {
           const retryableErrors = [
             'timeout',
             'network',
             'FunctionsHttpError',
             'AbortError',
-            'fetch'
+            'fetch',
+            'ECONNRESET',
+            'ETIMEDOUT'
           ];
           
           const isRetryable = retryableErrors.some(errorType => 
@@ -185,15 +215,16 @@ export const useClientDocuments = (clientId: string) => {
           );
           
           if (isRetryable) {
-            console.log(`🔄 [ENHANCED_TEXT_EXTRACTION] Retrying in 3 seconds (attempt ${retryCount + 2}/3)...`);
-            await new Promise(resolve => setTimeout(resolve, 3000));
+            const delay = Math.pow(2, retryCount) * 2000; // Exponential backoff: 2s, 4s
+            console.log(`🔄 [TEXT_EXTRACTION] Retrying in ${delay}ms (attempt ${retryCount + 2}/3)...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
             return textExtractionMutation.mutateAsync({ documentId, retryCount: retryCount + 1 });
           }
         }
         
-        // Update status to failed
+        // Update status to failed with detailed error info
         try {
-          console.log('🔄 [ENHANCED_TEXT_EXTRACTION] Updating status to failed...');
+          console.log('🔄 [TEXT_EXTRACTION] Updating status to failed...');
           await supabase
             .from('client_documents_files')
             .update({ 
@@ -202,71 +233,87 @@ export const useClientDocuments = (clientId: string) => {
               updated_at: new Date().toISOString()
             })
             .eq('id', documentId);
-          console.log('✅ [ENHANCED_TEXT_EXTRACTION] Status updated to failed');
+          console.log('✅ [TEXT_EXTRACTION] Status updated to failed');
         } catch (updateError) {
-          console.error('❌ [ENHANCED_TEXT_EXTRACTION] Failed to update status:', updateError);
+          console.error('❌ [TEXT_EXTRACTION] Failed to update error status:', updateError);
         }
         
         throw error;
       }
     },
     onSuccess: (data) => {
-      console.log('🎉 [ENHANCED_TEXT_EXTRACTION] Mutation successful:', data);
+      console.log('🎉 [TEXT_EXTRACTION] Mutation successful:', {
+        documentId: data.documentId,
+        textLength: data.textLength,
+        extractionMethod: data.extractionMethod
+      });
       
       if (data?.textLength && data.textLength > 0) {
-        toast.success(`✅ Avansert tekstekstraksjon fullført! Ekstraherte ${data.textLength} tegn.`, {
-          duration: 5000,
+        toast.success(`✅ Avansert tekstekstraksjon fullført!`, {
+          description: `Ekstraherte ${data.textLength} tegn med ${data.extractionMethod || 'ukjent metode'}.`,
+          duration: 8000,
         });
       } else {
         toast.success('✅ Dokumentbehandling fullført!', {
-          duration: 5000,
+          description: 'Dokumentet ble behandlet, men lite tekst ble funnet.',
+          duration: 6000,
         });
       }
       
       // Refetch documents to update UI
-      setTimeout(() => refetch(), 1000);
+      setTimeout(() => {
+        console.log('🔄 [TEXT_EXTRACTION] Refetching documents after successful extraction');
+        refetch();
+      }, 1000);
     },
     onError: (error) => {
-      console.error('💥 [ENHANCED_TEXT_EXTRACTION] Final error:', error);
+      console.error('💥 [TEXT_EXTRACTION] Final error after retries:', error);
       
-      // Enhanced error messages
+      // Enhanced error messages based on error type
       let errorMessage = 'Avansert tekstekstraksjon feilet';
       let errorDescription = error.message;
       
       if (error.message?.includes('ClientId er påkrevd')) {
         errorMessage = '👤 Klient ID mangler';
-        errorDescription = 'Kunde-informasjon er ikke tilgjengelig. Prøv å laste siden på nytt.';
+        errorDescription = 'Kunde-informasjon er ikke tilgjengelig. Last siden på nytt.';
       } else if (error.message?.includes('DocumentId er påkrevd')) {
         errorMessage = '📄 Dokument ID mangler';
         errorDescription = 'Kunne ikke identifisere dokumentet som skal prosesseres.';
+      } else if (error.message?.includes('OpenAI')) {
+        errorMessage = '🤖 AI-tjeneste utilgjengelig';
+        errorDescription = 'OpenAI API er ikke tilgjengelig. Prøv igjen senere.';
+      } else if (error.message?.includes('timeout')) {
+        errorMessage = '⏱️ Prosessering tok for lang tid';
+        errorDescription = 'Dokumentet er for stort eller komplekst. Prøv et mindre dokument.';
       }
       
       toast.error(errorMessage, {
         description: errorDescription,
-        duration: 8000,
+        duration: 10000,
         action: {
           label: 'Prøv igjen',
           onClick: () => {
-            // User can manually retry
+            console.log('🔄 [TEXT_EXTRACTION] User requested manual retry');
           }
         }
       });
       
-      refetch();
+      // Refetch to update UI state
+      setTimeout(() => refetch(), 2000);
     }
   });
 
-  // Enhanced trigger function
+  // Enhanced trigger function with better validation
   const triggerTextExtraction = async (documentId: string) => {
     console.log('🎯 [TRIGGER_EXTRACTION] Called with:', { documentId, clientId });
     
-    if (!documentId) {
-      console.error('❌ [TRIGGER_EXTRACTION] No documentId provided');
+    if (!documentId || documentId === 'undefined') {
+      console.error('❌ [TRIGGER_EXTRACTION] No valid documentId provided');
       toast.error('❌ Dokument-ID mangler');
       return;
     }
     
-    if (!clientId || clientId === 'undefined') {
+    if (!clientId || clientId === 'undefined' || clientId === 'null') {
       console.error('❌ [TRIGGER_EXTRACTION] No valid clientId available');
       toast.error('❌ Klient-ID mangler', {
         description: 'Last siden på nytt for å løse problemet.',
@@ -276,17 +323,17 @@ export const useClientDocuments = (clientId: string) => {
     }
     
     try {
-      console.log('🚀 [TRIGGER_EXTRACTION] Starting enhanced extraction...');
+      console.log('🚀 [TRIGGER_EXTRACTION] Starting enhanced extraction with improved AI...');
       
       toast.info('🤖 Starter avansert tekstekstraksjon...', {
-        description: 'Bruker AI for å lese og analysere dokumentet.',
-        duration: 3000
+        description: 'Bruker AI for å lese og analysere dokumentet grundig.',
+        duration: 4000
       });
       
       await textExtractionMutation.mutateAsync({ documentId });
       
     } catch (error) {
-      console.error('❌ [TRIGGER_EXTRACTION] Error:', error);
+      console.error('❌ [TRIGGER_EXTRACTION] Trigger error:', error);
     }
   };
 

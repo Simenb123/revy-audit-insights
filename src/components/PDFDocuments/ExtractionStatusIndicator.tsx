@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
-import { AlertCircle, CheckCircle, Clock, RefreshCw, FileText } from 'lucide-react';
+import { AlertCircle, CheckCircle, Clock, RefreshCw, FileText, Eye } from 'lucide-react';
 import { PDFDocument } from '@/types/pdf';
 
 interface ExtractionStatusIndicatorProps {
@@ -12,39 +12,48 @@ const ExtractionStatusIndicator = ({ document }: ExtractionStatusIndicatorProps)
   const getStatusInfo = () => {
     switch (document.text_extraction_status) {
       case 'completed':
+        // Check if we actually have meaningful extracted text
+        const hasRealText = document.extracted_text && 
+          !Array.isArray(document.extracted_text) &&
+          typeof document.extracted_text === 'string' &&
+          document.extracted_text.length > 50 &&
+          !document.extracted_text.startsWith('[Kunne ikke');
+        
         return {
-          icon: CheckCircle,
-          color: 'bg-green-100 text-green-800',
-          text: 'Tekst ekstrahert',
-          description: 'AI kan nå lese dette dokumentet'
+          icon: hasRealText ? CheckCircle : Eye,
+          color: hasRealText ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800',
+          text: hasRealText ? 'AI kan lese' : 'Begrenset tekst',
+          description: hasRealText 
+            ? 'AI kan nå lese og analysere dette dokumentet'
+            : 'Lite tekst funnet - kan være skannet eller bildebasert'
         };
       case 'processing':
         return {
           icon: RefreshCw,
           color: 'bg-blue-100 text-blue-800',
-          text: 'Prosesserer...',
-          description: 'Ekstraherer tekst med AI'
+          text: 'AI leser...',
+          description: 'Avansert AI-analyse pågår med OpenAI Vision'
         };
       case 'pending':
         return {
           icon: Clock,
           color: 'bg-yellow-100 text-yellow-800',
           text: 'Venter',
-          description: 'Klar for tekstekstraksjon'
+          description: 'Klar for AI-assistert tekstekstraksjon'
         };
       case 'failed':
         return {
           icon: AlertCircle,
           color: 'bg-red-100 text-red-800',
           text: 'Feilet',
-          description: 'Tekstekstraksjon feilet'
+          description: 'AI-tekstekstraksjon feilet - prøv igjen'
         };
       default:
         return {
           icon: FileText,
           color: 'bg-gray-100 text-gray-800',
           text: 'Ikke prosessert',
-          description: 'Tekst ikke ekstrahert ennå'
+          description: 'Trykk "Ekstraher innhold" for AI-analyse'
         };
     }
   };
