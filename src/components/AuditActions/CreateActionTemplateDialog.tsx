@@ -1,46 +1,32 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
-import CreateActionTemplateForm from './CreateActionTemplateForm';
-import { AuditSubjectArea } from '@/types/audit-actions';
 
 interface CreateActionTemplateDialogProps {
-  selectedArea?: AuditSubjectArea;
-  trigger?: React.ReactNode;
+  selectedArea?: string;
+  trigger: React.ReactNode;
 }
 
 const CreateActionTemplateDialog = ({ selectedArea, trigger }: CreateActionTemplateDialogProps) => {
-  const [open, setOpen] = useState(false);
-
-  const handleSuccess = () => {
-    setOpen(false);
-  };
-
-  const handleCancel = () => {
-    setOpen(false);
-  };
-
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog>
       <DialogTrigger asChild>
-        {trigger || (
-          <Button size="sm" variant="outline">
-            <Plus className="w-4 h-4 mr-2" />
-            Ny handlingsmal
-          </Button>
-        )}
+        {trigger}
       </DialogTrigger>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>Opprett ny handlingsmal</DialogTitle>
         </DialogHeader>
-        <CreateActionTemplateForm 
-          selectedArea={selectedArea}
-          onSuccess={handleSuccess}
-          onCancel={handleCancel}
-        />
+        <div className="p-4">
+          <p className="text-sm text-muted-foreground">
+            Funksjonalitet for å opprette nye handlingsmaler kommer snart.
+          </p>
+          {selectedArea && (
+            <p className="text-xs text-muted-foreground mt-2">
+              Område: {selectedArea}
+            </p>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   );
