@@ -61,31 +61,6 @@ export const useClientDocuments = (clientId: string) => {
     console.error('❌ [USE_CLIENT_DOCUMENTS] Invalid clientId provided:', { clientId, type: typeof clientId });
   }
 
-  // Create the client-documents storage bucket if it doesn't exist
-  const ensureStorageBucket = async () => {
-    try {
-      const { data: buckets } = await supabase.storage.listBuckets();
-      const bucketExists = buckets?.some(bucket => bucket.name === 'client-documents');
-      
-      if (!bucketExists) {
-        console.log('📄 Creating client-documents storage bucket...');
-        const { error } = await supabase.storage.createBucket('client-documents', {
-          public: false,
-          allowedMimeTypes: ['application/pdf', 'image/*', 'text/*', 'application/vnd.openxmlformats-officedocument.*'],
-          fileSizeLimit: 52428800 // 50MB
-        });
-        
-        if (error) {
-          console.error('❌ Failed to create storage bucket:', error);
-        } else {
-          console.log('✅ Storage bucket created successfully');
-        }
-      }
-    } catch (error) {
-      console.error('❌ Error checking storage bucket:', error);
-    }
-  };
-
   // Fetch documents with better error handling
   const {
     data: documents = [],
@@ -379,7 +354,7 @@ export const useClientDocuments = (clientId: string) => {
     }
   });
 
-  // Upload document mutation with improved error handling
+  // Upload document mutation with improved file path structure for new storage policies
   const uploadDocument = useMutation({
     mutationFn: async ({ file, clientId, category, subjectArea }: {
       file: File;
@@ -394,16 +369,13 @@ export const useClientDocuments = (clientId: string) => {
         clientId
       });
 
-      // Ensure storage bucket exists
-      await ensureStorageBucket();
-
       // Get current user
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       if (authError || !user) {
         throw new Error('Du må være logget inn for å laste opp dokumenter');
       }
 
-      // Upload file to storage with improved path structure
+      // Create file path with improved structure for new storage policies
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
       const filePath = `${clientId}/${fileName}`;
