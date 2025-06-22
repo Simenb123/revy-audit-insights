@@ -64,6 +64,63 @@ export type Database = {
           },
         ]
       }
+      action_ai_metadata: {
+        Row: {
+          action_template_id: string | null
+          ai_variant_id: string | null
+          common_issues: Json | null
+          created_at: string
+          estimated_complexity: number | null
+          id: string
+          quality_checkpoints: Json | null
+          risk_indicators: Json | null
+          specialized_prompt: string | null
+          typical_documents: Json | null
+          updated_at: string
+        }
+        Insert: {
+          action_template_id?: string | null
+          ai_variant_id?: string | null
+          common_issues?: Json | null
+          created_at?: string
+          estimated_complexity?: number | null
+          id?: string
+          quality_checkpoints?: Json | null
+          risk_indicators?: Json | null
+          specialized_prompt?: string | null
+          typical_documents?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          action_template_id?: string | null
+          ai_variant_id?: string | null
+          common_issues?: Json | null
+          created_at?: string
+          estimated_complexity?: number | null
+          id?: string
+          quality_checkpoints?: Json | null
+          risk_indicators?: Json | null
+          specialized_prompt?: string | null
+          typical_documents?: Json | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "action_ai_metadata_action_template_id_fkey"
+            columns: ["action_template_id"]
+            isOneToOne: true
+            referencedRelation: "audit_action_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "action_ai_metadata_ai_variant_id_fkey"
+            columns: ["ai_variant_id"]
+            isOneToOne: false
+            referencedRelation: "ai_revy_variants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       action_groups: {
         Row: {
           audit_firm_id: string | null
@@ -508,6 +565,87 @@ export type Database = {
             columns: ["subject_area_id"]
             isOneToOne: false
             referencedRelation: "subject_areas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_action_document_mappings: {
+        Row: {
+          action_template_id: string | null
+          created_at: string
+          document_requirement_id: string | null
+          id: string
+          is_mandatory: boolean
+          timing: string | null
+        }
+        Insert: {
+          action_template_id?: string | null
+          created_at?: string
+          document_requirement_id?: string | null
+          id?: string
+          is_mandatory?: boolean
+          timing?: string | null
+        }
+        Update: {
+          action_template_id?: string | null
+          created_at?: string
+          document_requirement_id?: string | null
+          id?: string
+          is_mandatory?: boolean
+          timing?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_action_document_mappings_action_template_id_fkey"
+            columns: ["action_template_id"]
+            isOneToOne: false
+            referencedRelation: "audit_action_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_action_document_mappings_document_requirement_id_fkey"
+            columns: ["document_requirement_id"]
+            isOneToOne: false
+            referencedRelation: "document_requirements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_action_isa_mappings: {
+        Row: {
+          action_template_id: string | null
+          created_at: string
+          id: string
+          isa_standard_id: string | null
+          relevance_level: string
+        }
+        Insert: {
+          action_template_id?: string | null
+          created_at?: string
+          id?: string
+          isa_standard_id?: string | null
+          relevance_level?: string
+        }
+        Update: {
+          action_template_id?: string | null
+          created_at?: string
+          id?: string
+          isa_standard_id?: string | null
+          relevance_level?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_action_isa_mappings_action_template_id_fkey"
+            columns: ["action_template_id"]
+            isOneToOne: false
+            referencedRelation: "audit_action_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_action_isa_mappings_isa_standard_id_fkey"
+            columns: ["isa_standard_id"]
+            isOneToOne: false
+            referencedRelation: "isa_standards"
             referencedColumns: ["id"]
           },
         ]
@@ -1632,6 +1770,45 @@ export type Database = {
           },
         ]
       }
+      document_requirements: {
+        Row: {
+          audit_phases: string[] | null
+          created_at: string
+          description: string | null
+          document_type: string
+          file_pattern_hints: string[] | null
+          id: string
+          is_mandatory: boolean
+          name: string
+          subject_area: string | null
+          updated_at: string
+        }
+        Insert: {
+          audit_phases?: string[] | null
+          created_at?: string
+          description?: string | null
+          document_type: string
+          file_pattern_hints?: string[] | null
+          id?: string
+          is_mandatory?: boolean
+          name: string
+          subject_area?: string | null
+          updated_at?: string
+        }
+        Update: {
+          audit_phases?: string[] | null
+          created_at?: string
+          description?: string | null
+          document_type?: string
+          file_pattern_hints?: string[] | null
+          id?: string
+          is_mandatory?: boolean
+          name?: string
+          subject_area?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       document_tag_assignments: {
         Row: {
           assigned_by_ai: boolean | null
@@ -1930,6 +2107,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      isa_standards: {
+        Row: {
+          category: string | null
+          created_at: string
+          description: string | null
+          effective_date: string | null
+          id: string
+          is_active: boolean
+          isa_number: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          effective_date?: string | null
+          id?: string
+          is_active?: boolean
+          isa_number: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          effective_date?: string | null
+          id?: string
+          is_active?: boolean
+          isa_number?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       knowledge_article_tags: {
         Row: {
@@ -3476,6 +3689,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      working_paper_templates: {
+        Row: {
+          action_type: string
+          audit_firm_id: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_system_template: boolean
+          name: string
+          subject_area: string
+          template_structure: Json
+          updated_at: string
+        }
+        Insert: {
+          action_type: string
+          audit_firm_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_system_template?: boolean
+          name: string
+          subject_area: string
+          template_structure?: Json
+          updated_at?: string
+        }
+        Update: {
+          action_type?: string
+          audit_firm_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_system_template?: boolean
+          name?: string
+          subject_area?: string
+          template_structure?: Json
+          updated_at?: string
+        }
+        Relationships: []
       }
     }
     Views: {
