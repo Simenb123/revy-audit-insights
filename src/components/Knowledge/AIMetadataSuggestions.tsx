@@ -12,6 +12,7 @@ interface SuggestionResult {
   suggested_subject_areas: string[];
   suggested_category: string;
   suggested_content_type: string;
+  suggested_summary: string;
   confidence_score: number;
   reasoning: string;
 }
@@ -25,6 +26,7 @@ interface AIMetadataSuggestionsProps {
     subjectAreaIds: string[];
     categoryId: string;
     contentTypeId: string;
+    summary?: string;
   }) => void;
   availableCategories: Array<{ id: string; name: string }>;
   availableContentTypes: Array<{ id: string; name: string; display_name: string }>;
@@ -44,6 +46,7 @@ const AIMetadataSuggestions = ({
   const [isLoading, setIsLoading] = useState(false);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedSubjectAreas, setSelectedSubjectAreas] = useState<string[]>([]);
+  const [useSuggestedSummary, setUseSuggestedSummary] = useState(true);
 
   const generateSuggestions = async () => {
     if (!title && !content) {
@@ -71,6 +74,7 @@ Analyser innholdet og returner kun ren JSON uten ekstra tekst:
   "suggested_subject_areas": ["område1", "område2"],
   "suggested_category": "kategori_navn",
   "suggested_content_type": "innholdstype_navn",
+  "suggested_summary": "Et kort og konsist sammendrag av artikkelens hovedinnhold (1-2 setninger)",
   "confidence_score": 0.85,
   "reasoning": "Forklaring av valgene"
 }
@@ -109,6 +113,7 @@ VIKTIG: Svar kun med gyldig JSON, ingen ekstra tekst eller formatering.`,
           setSuggestions(result);
           setSelectedTags(result.suggested_tags || []);
           setSelectedSubjectAreas(result.suggested_subject_areas || []);
+          setUseSuggestedSummary(!!result.suggested_summary);
           toast.success('AI-forslag generert');
         } catch (parseError) {
           console.error('JSON Parse Error:', parseError, 'Raw JSON:', jsonMatch[0]);
@@ -155,7 +160,8 @@ VIKTIG: Svar kun med gyldig JSON, ingen ekstra tekst eller formatering.`,
       tags: selectedTags,
       subjectAreaIds,
       categoryId,
-      contentTypeId
+      contentTypeId,
+      summary: useSuggestedSummary ? suggestions.suggested_summary : undefined
     });
 
     toast.success('Forslag anvendt på artikkelen');
@@ -235,6 +241,36 @@ VIKTIG: Svar kun med gyldig JSON, ingen ekstra tekst eller formatering.`,
                 </label>
                 <p className="text-sm">{suggestions.suggested_content_type}</p>
               </div>
+
+              {suggestions.suggested_summary && (
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <label className="text-sm font-medium text-muted-foreground">
+                      Foreslått sammendrag:
+                    </label>
+                    <Badge
+                      variant={useSuggestedSummary ? "default" : "outline"}
+                      className="cursor-pointer text-xs"
+                      onClick={() => setUseSuggestedSummary(!useSuggestedSummary)}
+                    >
+                      {useSuggestedSummary ? (
+                        <>
+                          <Check className="h-3 w-3 mr-1" />
+                          Bruk
+                        </>
+                      ) : (
+                        <>
+                          <X className="h-3 w-3 mr-1" />
+                          Ikke bruk
+                        </>
+                      )}
+                    </Badge>
+                  </div>
+                  <p className="text-sm bg-background p-2 rounded border">
+                    {suggestions.suggested_summary}
+                  </p>
+                </div>
+              )}
 
               <div>
                 <label className="text-sm font-medium text-muted-foreground">

@@ -160,11 +160,12 @@ const ArticleEditor = () => {
     }
   }, [contentTypes, form]);
 
-  const handleApplyAISuggestions = ({ tags, subjectAreaIds, categoryId, contentTypeId }: {
+  const handleApplyAISuggestions = ({ tags, subjectAreaIds, categoryId, contentTypeId, summary }: {
     tags: string[];
     subjectAreaIds: string[];
     categoryId: string;
     contentTypeId: string;
+    summary?: string;
   }) => {
     // Apply suggestions to form
     if (tags.length > 0) {
@@ -178,6 +179,9 @@ const ArticleEditor = () => {
     }
     if (contentTypeId) {
       form.setValue("contentTypeId", contentTypeId);
+    }
+    if (summary) {
+      form.setValue("summary", summary);
     }
   };
 
