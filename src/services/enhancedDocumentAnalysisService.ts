@@ -1,13 +1,17 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { AIRevyVariant } from '@/hooks/useAIRevyVariants';
 
 export interface DocumentAnalysisInput {
   documentId: string;
-  extractedText: string;
   fileName: string;
+  extractedText: string;
   clientId: string;
-  variant?: AIRevyVariant;
+  variant?: any;
+  auditActionContext?: {
+    actionTemplateId?: string;
+    subjectArea?: string;
+    actionType?: string;
+  };
 }
 
 export interface DocumentAnalysisResult {
@@ -17,94 +21,81 @@ export interface DocumentAnalysisResult {
   aiAnalysisSummary: string;
   aiSuggestedSubjectAreas: string[];
   aiIsaStandardReferences: string[];
-  aiRevisionPhaseRelevance: Record<string, number>;
+  relevantAuditActions: Array<{
+    actionTemplateId: string;
+    actionName: string;
+    relevanceScore: number;
+    suggestedUse: string;
+  }>;
+  qualityIndicators: {
+    completeness: number;
+    clarity: number;
+    relevance: number;
+    overall: number;
+  };
+  extractedKeyData: Record<string, any>;
 }
 
 export const analyzeDocumentWithAI = async (input: DocumentAnalysisInput): Promise<DocumentAnalysisResult> => {
+  console.log('🔍 Starting enhanced document analysis with audit action context...');
+  
   try {
-    const response = await supabase.functions.invoke('enhanced-document-ai', {
+    const { data, error } = await supabase.functions.invoke('enhanced-document-ai', {
       body: {
-        document_text: input.extractedText,
-        file_name: input.fileName,
-        client_id: input.clientId,
-        variant_config: input.variant ? {
-          name: input.variant.name,
-          system_prompt: input.variant.system_prompt_template,
-          context_requirements: input.variant.context_requirements
-        } : undefined
+        documentId: input.documentId,
+        fileName: input.fileName,
+        extractedText: input.extractedText,
+        clientId: input.clientId,
+        variant: input.variant,
+        auditActionContext: input.auditActionContext,
+        analysisType: 'comprehensive'
       }
     });
 
-    if (response.error) {
-      throw new Error(response.error.message);
-    }
+    if (error) throw error;
 
-    const result = response.data;
-    
-    return {
-      documentId: input.documentId,
-      aiSuggestedCategory: result.suggested_category || 'Ukategorisert',
-      aiConfidenceScore: result.confidence_score || 0.5,
-      aiAnalysisSummary: result.analysis_summary || 'Automatisk analyse fullført',
-      aiSuggestedSubjectAreas: result.suggested_subject_areas || [],
-      aiIsaStandardReferences: result.isa_standard_references || [],
-      aiRevisionPhaseRelevance: result.revision_phase_relevance || {}
-    };
+    console.log('✅ Enhanced document analysis completed');
+    return data;
     
   } catch (error) {
-    console.error('AI document analysis failed:', error);
-    throw new Error('Kunne ikke analysere dokumentet med AI');
+    console.error('❌ Enhanced document analysis failed:', error);
+    throw error;
   }
 };
 
-export const updateDocumentWithAnalysis = async (result: DocumentAnalysisResult) => {
+export const updateDocumentWithAnalysis = async (result: DocumentAnalysisResult): Promise<void> => {
+  console.log('💾 Updating document with enhanced analysis results...');
+  
   try {
     const { error } = await supabase
       .from('client_documents_files')
       .update({
-        ai_suggested_category: result.aiSuggestedCategory,
+        category: result.aiSuggestedCategory,
         ai_confidence_score: result.aiConfidenceScore,
         ai_analysis_summary: result.aiAnalysisSummary,
         ai_suggested_subject_areas: result.aiSuggestedSubjectAreas,
         ai_isa_standard_references: result.aiIsaStandardReferences,
-        ai_revision_phase_relevance: result.aiRevisionPhaseRelevance,
         updated_at: new Date().toISOString()
       })
       .eq('id', result.documentId);
 
-    if (error) {
-      throw error;
-    }
+    if (error) throw error;
+
+    // Store detailed analysis results separately for audit action linking
+    await supabase
+      .from('document_analysis_results')
+      .upsert({
+        document_id: result.documentId,
+        relevant_audit_actions: result.relevantAuditActions,
+        quality_indicators: result.qualityIndicators,
+        extracted_key_data: result.extractedKeyData,
+        analysis_timestamp: new Date().toISOString()
+      });
+
+    console.log('✅ Document analysis results stored successfully');
     
   } catch (error) {
-    console.error('Failed to update document with analysis:', error);
-    throw new Error('Kunne ikke oppdatere dokumentet med analyseresultater');
+    console.error('❌ Failed to update document with analysis:', error);
+    throw error;
   }
-};
-
-export const analyzeBulkDocuments = async (
-  documents: Array<{ id: string; extracted_text: string; file_name: string; client_id: string }>,
-  variant?: AIRevyVariant
-): Promise<DocumentAnalysisResult[]> => {
-  const results = [];
-  
-  for (const doc of documents) {
-    try {
-      const result = await analyzeDocumentWithAI({
-        documentId: doc.id,
-        extractedText: doc.extracted_text || '',
-        fileName: doc.file_name,
-        clientId: doc.client_id,
-        variant
-      });
-      
-      await updateDocumentWithAnalysis(result);
-      results.push(result);
-      
-    } catch (error) {
-      console.error(`Failed to analyze document ${doc.id}:`, error);
-    }
-  }
-  
-  return results;
 };
