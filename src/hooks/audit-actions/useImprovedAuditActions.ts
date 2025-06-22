@@ -2,14 +2,14 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import type { AuditSubjectArea, AuditActionType, AuditPhase, RiskLevel } from '@/types/audit-actions';
+import type { AuditSubjectArea, ActionType, AuditPhase, RiskLevel } from '@/types/audit-actions';
 
 export interface ImprovedAuditActionTemplate {
   id: string;
   name: string;
   description: string;
   subject_area: AuditSubjectArea;
-  action_type: AuditActionType;
+  action_type: ActionType;
   objective?: string;
   procedures: string;
   documentation_requirements?: string;

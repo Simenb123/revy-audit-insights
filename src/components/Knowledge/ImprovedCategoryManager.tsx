@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -22,6 +21,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import type { AuditPhase } from '@/types/audit-actions';
 
 interface Category {
   id: string;
@@ -30,9 +30,18 @@ interface Category {
   icon?: string;
   parent_category_id?: string;
   display_order: number;
-  applicable_phases?: string[];
+  applicable_phases?: AuditPhase[];
   article_count?: number;
   children?: Category[];
+}
+
+interface CategoryFormData {
+  name: string;
+  description: string;
+  icon: string;
+  parent_category_id: string;
+  display_order: number;
+  applicable_phases: AuditPhase[];
 }
 
 const ImprovedCategoryManager = () => {
@@ -94,10 +103,20 @@ const ImprovedCategoryManager = () => {
   });
 
   const createCategory = useMutation({
-    mutationFn: async (category: Omit<Category, 'id' | 'article_count' | 'children'>) => {
+    mutationFn: async (categoryData: CategoryFormData) => {
+      // Convert to database format, removing extra properties
+      const dbData = {
+        name: categoryData.name,
+        description: categoryData.description || null,
+        icon: categoryData.icon || null,
+        parent_category_id: categoryData.parent_category_id || null,
+        display_order: categoryData.display_order,
+        applicable_phases: categoryData.applicable_phases
+      };
+      
       const { data, error } = await supabase
         .from('knowledge_categories')
-        .insert(category)
+        .insert(dbData)
         .select()
         .single();
       
@@ -115,10 +134,20 @@ const ImprovedCategoryManager = () => {
   });
 
   const updateCategory = useMutation({
-    mutationFn: async ({ id, ...updates }: Partial<Category> & { id: string }) => {
+    mutationFn: async ({ id, ...updates }: Partial<CategoryFormData> & { id: string }) => {
+      // Only include database fields, excluding UI-only properties
+      const dbUpdates = {
+        name: updates.name,
+        description: updates.description || null,
+        icon: updates.icon || null,
+        parent_category_id: updates.parent_category_id || null,
+        display_order: updates.display_order,
+        applicable_phases: updates.applicable_phases
+      };
+      
       const { data, error } = await supabase
         .from('knowledge_categories')
-        .update(updates)
+        .update(dbUpdates)
         .eq('id', id)
         .select()
         .single();
@@ -332,10 +361,10 @@ const CategoryForm = ({
   categories 
 }: { 
   category?: Category | null; 
-  onSubmit: (data: any) => void;
+  onSubmit: (data: CategoryFormData) => void;
   categories: Category[];
 }) => {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<CategoryFormData>({
     name: category?.name || '',
     description: category?.description || '',
     icon: category?.icon || '',
@@ -346,10 +375,7 @@ const CategoryForm = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit({
-      ...formData,
-      parent_category_id: formData.parent_category_id || null
-    });
+    onSubmit(formData);
   };
 
   const flattenCategories = (cats: Category[]): Category[] => {

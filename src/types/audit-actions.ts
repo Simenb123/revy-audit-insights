@@ -1,3 +1,4 @@
+
 export type AuditSubjectArea = 
   | 'sales'
   | 'payroll'
@@ -20,6 +21,16 @@ export type ActionType =
   | 'inspection'
   | 'recalculation'
   | 'confirmation';
+
+// Add the missing AuditActionType alias for backward compatibility
+export type AuditActionType = ActionType;
+
+// Add the missing RiskLevel type
+export type RiskLevel = 
+  | 'low'
+  | 'medium'
+  | 'high'
+  | 'critical';
 
 export type ActionStatus = 
   | 'not_started'
