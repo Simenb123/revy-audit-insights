@@ -14,8 +14,28 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  let requestBody: any;
   try {
-    const { documentId } = await req.json();
+    // Parse request body once and store it
+    requestBody = await req.json();
+    console.log('📄 Request body parsed successfully:', { hasDocumentId: !!requestBody?.documentId });
+  } catch (parseError) {
+    console.error('❌ Failed to parse request body:', parseError);
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: 'Invalid JSON in request body',
+        details: parseError.message
+      }),
+      { 
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
+    );
+  }
+
+  try {
+    const { documentId } = requestBody;
     
     console.log('📄 Processing document:', documentId);
     
@@ -285,8 +305,8 @@ serve(async (req) => {
   } catch (error) {
     console.error('💥 Enhanced PDF extraction error:', error);
     
-    // Try to update document status to failed
-    if (error.message !== 'DocumentId er påkrevd') {
+    // Try to update document status to failed (only if we have a documentId)
+    if (requestBody?.documentId) {
       try {
         const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
         const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -299,7 +319,7 @@ serve(async (req) => {
             extracted_text: `[Tekstekstraksjon feilet: ${error.message}]`,
             updated_at: new Date().toISOString()
           })
-          .eq('id', (await req.json())?.documentId);
+          .eq('id', requestBody.documentId);
         
         console.log('✅ Status updated to failed');
       } catch (updateError) {

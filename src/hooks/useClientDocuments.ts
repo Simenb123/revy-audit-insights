@@ -57,8 +57,20 @@ export const useClientDocuments = (clientId: string) => {
   // Enhanced validation for clientId with better logging
   console.log('📄 [USE_CLIENT_DOCUMENTS] Hook initialized with clientId:', clientId);
   
-  if (!clientId || clientId === 'undefined' || clientId === 'null') {
-    console.error('❌ [USE_CLIENT_DOCUMENTS] Invalid clientId provided:', { clientId, type: typeof clientId });
+  // Improved clientId validation with proper type checking
+  const isValidClientId = clientId && 
+    typeof clientId === 'string' && 
+    clientId !== 'undefined' && 
+    clientId !== 'null' && 
+    clientId.trim().length > 0;
+  
+  if (!isValidClientId) {
+    console.error('❌ [USE_CLIENT_DOCUMENTS] Invalid clientId provided:', { 
+      clientId, 
+      type: typeof clientId,
+      isString: typeof clientId === 'string',
+      length: clientId?.length
+    });
   }
 
   // Fetch documents with better error handling
@@ -69,7 +81,7 @@ export const useClientDocuments = (clientId: string) => {
   } = useQuery({
     queryKey: ['client-documents', clientId],
     queryFn: async () => {
-      if (!clientId || clientId === 'undefined' || clientId === 'null') {
+      if (!isValidClientId) {
         console.error('❌ [USE_CLIENT_DOCUMENTS] Cannot fetch documents without valid clientId:', clientId);
         return [];
       }
@@ -94,7 +106,7 @@ export const useClientDocuments = (clientId: string) => {
       
       return data as ClientDocument[];
     },
-    enabled: !!(clientId && clientId !== 'undefined' && clientId !== 'null'),
+    enabled: isValidClientId,
     refetchInterval: (query) => {
       const data = query.state.data as ClientDocument[] | undefined;
       const hasProcessing = data?.some(doc => 
@@ -110,7 +122,7 @@ export const useClientDocuments = (clientId: string) => {
     }
   });
 
-  // Enhanced text extraction mutation with better retry logic
+  // Enhanced text extraction mutation with better retry logic and error handling
   const textExtractionMutation = useMutation<TextExtractionResponse, Error, { documentId: string; retryCount?: number }>({
     mutationFn: async ({ documentId, retryCount = 0 }) => {
       console.log(`🔄 [TEXT_EXTRACTION] Starting extraction for document: ${documentId} (attempt ${retryCount + 1}/3)`);
@@ -120,8 +132,8 @@ export const useClientDocuments = (clientId: string) => {
           throw new Error('DocumentId er påkrevd men mangler');
         }
 
-        if (!clientId || clientId === 'undefined' || clientId === 'null') {
-          throw new Error('ClientId er påkrevd men mangler');
+        if (!isValidClientId) {
+          throw new Error('ClientId er påkrevd men mangler eller er ugyldig');
         }
 
         console.log('✅ [TEXT_EXTRACTION] Input validation passed');
@@ -312,9 +324,9 @@ export const useClientDocuments = (clientId: string) => {
       return;
     }
     
-    if (!clientId || clientId === 'undefined' || clientId === 'null') {
+    if (!isValidClientId) {
       console.error('❌ [TRIGGER_EXTRACTION] No valid clientId available');
-      toast.error('❌ Klient-ID mangler', {
+      toast.error('❌ Klient-ID mangler eller er ugyldig', {
         description: 'Last siden på nytt for å løse problemet.',
         duration: 5000
       });
