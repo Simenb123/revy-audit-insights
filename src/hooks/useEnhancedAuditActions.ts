@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -283,6 +282,72 @@ export function useCreateActionAIMetadata() {
       toast({
         title: "Feil ved opprettelse",
         description: "Kunne ikke opprette AI-metadata.",
+        variant: "destructive",
+      });
+    }
+  });
+}
+
+export function useCreateWorkingPaperTemplate() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (template: Omit<WorkingPaperTemplate, 'id' | 'created_at' | 'updated_at'>) => {
+      const { data, error } = await supabase
+        .from('working_paper_templates')
+        .insert(template)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['working-paper-templates', variables.subject_area, variables.action_type] });
+      queryClient.invalidateQueries({ queryKey: ['working-paper-templates'] });
+      toast({
+        title: "Arbeidspapir-mal opprettet",
+        description: "Den nye malen er nå tilgjengelig for bruk.",
+      });
+    },
+    onError: (error) => {
+      console.error('Error creating working paper template:', error);
+      toast({
+        title: "Feil ved opprettelse",
+        description: "Kunne ikke opprette arbeidspapir-malen.",
+        variant: "destructive",
+      });
+    }
+  });
+}
+
+export function useUpdateWorkingPaperTemplate() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, updates }: { id: string; updates: Partial<WorkingPaperTemplate> }) => {
+      const { data, error } = await supabase
+        .from('working_paper_templates')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['working-paper-templates'] });
+      toast({
+        title: "Mal oppdatert",
+        description: "Arbeidspapir-malen er oppdatert.",
+      });
+    },
+    onError: (error) => {
+      console.error('Error updating working paper template:', error);
+      toast({
+        title: "Feil ved oppdatering",
+        description: "Kunne ikke oppdatere malen.",
         variant: "destructive",
       });
     }
