@@ -54,6 +54,36 @@ const AuditActionGenerator = () => {
     { value: 'documentation', label: 'Dokumentasjon' }
   ];
 
+  // Map subject area names to the correct enum values used in the database
+  const getSubjectAreaEnumValue = (subjectAreaName: string): string => {
+    const mapping: Record<string, string> = {
+      'salg': 'sales',
+      'sales': 'sales',
+      'lønn': 'payroll', 
+      'payroll': 'payroll',
+      'driftskostnader': 'operating_expenses',
+      'operating_expenses': 'operating_expenses',
+      'varelager': 'inventory',
+      'inventory': 'inventory',
+      'finans': 'finance',
+      'finance': 'finance',
+      'bank': 'banking',
+      'banking': 'banking',
+      'anleggsmidler': 'fixed_assets',
+      'fixed_assets': 'fixed_assets',
+      'kundefordringer': 'receivables',
+      'receivables': 'receivables',
+      'leverandørgjeld': 'payables',
+      'payables': 'payables',
+      'egenkapital': 'equity',
+      'equity': 'equity',
+      'annet': 'other',
+      'other': 'other'
+    };
+    
+    return mapping[subjectAreaName] || subjectAreaName;
+  };
+
   const handleGenerateWithAI = async () => {
     if (!selectedSubjectArea) {
       toast({
@@ -123,9 +153,12 @@ const AuditActionGenerator = () => {
     }
 
     try {
-      console.log('Creating action:', {
+      // Convert the selected subject area to the correct enum value
+      const enumSubjectArea = getSubjectAreaEnumValue(selectedSubjectArea);
+      
+      console.log('Creating action with enum value:', {
         ...formData,
-        subject_area: selectedSubjectArea,
+        subject_area: enumSubjectArea,
         action_type: selectedActionType,
         phase: 'execution',
         applicable_phases: ['execution']
@@ -134,7 +167,7 @@ const AuditActionGenerator = () => {
       await createTemplate.mutateAsync({
         name: formData.name,
         description: formData.description,
-        subject_area: selectedSubjectArea as any,
+        subject_area: enumSubjectArea as any,
         action_type: selectedActionType as any,
         objective: formData.objective,
         procedures: formData.procedures,
