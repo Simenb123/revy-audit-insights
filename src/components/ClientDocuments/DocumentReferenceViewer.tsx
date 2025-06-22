@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,7 +16,8 @@ import {
   AlertCircle,
   RefreshCw,
   CheckCircle2,
-  Download
+  Download,
+  AlertTriangle
 } from 'lucide-react';
 
 interface DocumentReference {
@@ -80,7 +80,10 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
     console.log('🎯 [VIEWER] View document clicked:', { docId, fileName, clientId });
     
     if (!clientId) {
-      toast.error('Klient-ID mangler');
+      toast.error('❌ Klient-ID mangler', {
+        description: 'Kunde-informasjon er ikke tilgjengelig.',
+        duration: 5000
+      });
       return;
     }
 
@@ -100,7 +103,10 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
       if (error || !documentData) {
         console.error('❌ [VIEWER] Error fetching document data:', error);
         setOperationResult(docId, 'error');
-        toast.error('Kunne ikke hente dokumentdata');
+        toast.error('❌ Kunne ikke hente dokumentdata', {
+          description: error?.message || 'Ukjent database feil',
+          duration: 5000
+        });
         return;
       }
 
@@ -116,17 +122,25 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
       if (url) {
         console.log('✅ [VIEWER] Opening document in new tab');
         window.open(url, '_blank', 'noopener,noreferrer');
-        toast.success('Dokumentet åpnes i ny fane');
+        toast.success('✅ Dokumentet åpnes i ny fane', {
+          duration: 3000
+        });
         setOperationResult(docId, 'success');
       } else {
         console.error('❌ [VIEWER] Could not generate document URL');
         setOperationResult(docId, 'error');
-        toast.error('Kunne ikke generere dokument-URL');
+        toast.error('❌ Kunne ikke generere dokument-URL', {
+          description: 'Filen kan være skadet eller utilgjengelig.',
+          duration: 5000
+        });
       }
     } catch (error) {
       console.error('❌ [VIEWER] Error viewing document:', error);
       setOperationResult(docId, 'error');
-      toast.error('Kunne ikke åpne dokumentet for visning');
+      toast.error('❌ Kunne ikke åpne dokumentet', {
+        description: 'En uventet feil oppstod ved åpning av dokumentet.',
+        duration: 5000
+      });
     }
   };
 
@@ -137,7 +151,10 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
     console.log('📥 [VIEWER] Download document clicked:', { docId, fileName, clientId });
     
     if (!clientId) {
-      toast.error('Klient-ID mangler');
+      toast.error('❌ Klient-ID mangler', {
+        description: 'Kunde-informasjon er ikke tilgjengelig.',
+        duration: 5000
+      });
       return;
     }
 
@@ -157,7 +174,10 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
       if (error || !documentData) {
         console.error('❌ [VIEWER] Error fetching document data:', error);
         setOperationResult(docId, 'error');
-        toast.error('Kunne ikke hente dokumentdata');
+        toast.error('❌ Kunne ikke hente dokumentdata', {
+          description: error?.message || 'Database feil',
+          duration: 5000
+        });
         return;
       }
 
@@ -168,7 +188,10 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
     } catch (error) {
       console.error('❌ [VIEWER] Error downloading document:', error);
       setOperationResult(docId, 'error');
-      toast.error('Kunne ikke laste ned dokumentet');
+      toast.error('❌ Nedlasting feilet', {
+        description: 'Kunne ikke laste ned dokumentet.',
+        duration: 5000
+      });
     }
   };
 
@@ -179,26 +202,33 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
     console.log('🔄 [VIEWER] Retry text extraction clicked:', { docId, fileName, clientId });
     
     if (!clientId) {
-      toast.error('Klient-ID mangler');
+      toast.error('❌ Klient-ID mangler', {
+        description: 'Kunde-informasjon er ikke tilgjengelig.',
+        duration: 5000
+      });
       return;
     }
 
     setOperationResult(docId, 'loading');
     
     try {
-      console.log('🔄 [VIEWER] Starting text extraction...');
+      console.log('🔄 [VIEWER] Starting text extraction retry...');
       
-      // Call triggerTextExtraction with only documentId (simplified)
+      // Show immediate feedback
+      toast.info('🔄 Starter tekstekstraksjon på nytt...', {
+        description: 'Dette kan ta opp til et minutt.',
+        duration: 3000
+      });
+      
       await triggerTextExtraction(docId);
       
-      console.log('✅ [VIEWER] Text extraction started successfully');
+      console.log('✅ [VIEWER] Text extraction retry initiated successfully');
       setOperationResult(docId, 'success');
-      toast.success('Tekstekstraksjon startet på nytt');
       
     } catch (error) {
       console.error('❌ [VIEWER] Error retrying text extraction:', error);
       setOperationResult(docId, 'error');
-      toast.error(`Tekstekstraksjon feilet: ${error.message}`);
+      // Error toast is handled in the hook, so we don't need to show another one here
     }
   };
 
@@ -227,7 +257,8 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
     return (
       <Card className="w-full">
         <CardContent className="p-6 text-center text-muted-foreground">
-          Ingen dokumenter funnet
+          <FileText className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+          <p>Ingen dokumenter funnet</p>
         </CardContent>
       </Card>
     );
@@ -277,7 +308,8 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
                               </Badge>
                             )}
                             {hasNoText && (
-                              <Badge variant="outline" className="text-xs bg-yellow-50 text-yellow-700">
+                              <Badge variant="outline" className="text-xs bg-yellow-50 text-yellow-700 border-yellow-200">
+                                <AlertTriangle className="h-3 w-3 mr-1" />
                                 Ingen tekst
                               </Badge>
                             )}
@@ -302,7 +334,7 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
                         <Button 
                           size="sm" 
                           variant="ghost" 
-                          className="h-6 w-6 p-0"
+                          className="h-6 w-6 p-0 hover:bg-blue-100"
                           onClick={(e) => handleViewDocument(e, doc.id, doc.fileName)}
                           disabled={isLoading}
                           title="Vis dokument"
@@ -316,7 +348,7 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
                         <Button 
                           size="sm" 
                           variant="ghost" 
-                          className="h-6 w-6 p-0"
+                          className="h-6 w-6 p-0 hover:bg-green-100"
                           onClick={(e) => handleDownloadDocument(e, doc.id, doc.fileName)}
                           disabled={isLoading}
                           title="Last ned dokument"
@@ -360,7 +392,7 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
                         <Button 
                           size="sm" 
                           variant="outline" 
-                          className="text-xs"
+                          className="text-xs hover:bg-blue-50"
                           onClick={(e) => handleViewDocument(e, doc.id, doc.fileName)}
                           disabled={isLoading}
                         >
@@ -370,7 +402,7 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
                         <Button 
                           size="sm" 
                           variant="outline" 
-                          className="text-xs"
+                          className="text-xs hover:bg-green-50"
                           onClick={(e) => handleDownloadDocument(e, doc.id, doc.fileName)}
                           disabled={isLoading}
                         >
@@ -381,7 +413,7 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
                           <Button 
                             size="sm" 
                             variant="outline" 
-                            className="text-xs"
+                            className="text-xs hover:bg-orange-50 border-orange-200 text-orange-700"
                             onClick={(e) => handleRetryTextExtraction(e, doc.id, doc.fileName)}
                             disabled={isLoading}
                           >
