@@ -11,6 +11,7 @@ import SearchResults from '@/components/Knowledge/SearchResults';
 import PDFUploadManager from '@/components/Knowledge/PDFUploadManager';
 import KnowledgeAdminPanel from '@/components/Knowledge/KnowledgeAdminPanel';
 import SecretTrainingArea from '@/components/Knowledge/SecretTrainingArea';
+import AuditActionGenerator from '@/components/AIRevyAdmin/AuditActionGenerator';
 
 const KnowledgeBase = () => {
   return (
@@ -28,6 +29,7 @@ const KnowledgeBase = () => {
         <Route path="/upload" element={<PDFUploadManager />} />
         <Route path="/admin" element={<KnowledgeAdminPanel />} />
         <Route path="/hemmelig-ai-trening" element={<SecretTrainingArea />} />
+        <Route path="/revisjonshandlinger" element={<AuditActionGenerator />} />
       </Routes>
     </div>
   );
