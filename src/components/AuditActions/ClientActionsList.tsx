@@ -5,14 +5,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Search, Plus, Filter } from 'lucide-react';
-import { ClientAuditAction, AuditSubjectArea } from '@/types/audit-actions';
+import { ClientAuditAction } from '@/types/audit-actions';
 import ActionStatusBadge from './ActionStatusBadge';
 import ActionQuickActions from './ActionQuickActions';
 import ActionProgressIndicator from './ActionProgressIndicator';
 
 interface ClientActionsListProps {
   actions: ClientAuditAction[];
-  selectedArea: AuditSubjectArea;
+  selectedArea: string;
 }
 
 const ClientActionsList = ({ actions, selectedArea }: ClientActionsListProps) => {
