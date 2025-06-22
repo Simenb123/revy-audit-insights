@@ -1,31 +1,12 @@
-
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  FileText, 
-  Upload, 
-  Search, 
-  Filter,
-  Brain,
-  BarChart3,
-  Settings,
-  FolderOpen,
-  Zap,
-  MessageSquare,
-  Lightbulb
-} from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { useClientDocuments } from '@/hooks/useClientDocuments';
-import DocumentUploader from './DocumentUploader';
-import DocumentList from './DocumentList';
-import SmartDocumentSearch from './SmartDocumentSearch';
-import SmartCategoryPanel from './SmartCategoryPanel';
-import BulkCategoryManager from './BulkCategoryManager';
-import AdvancedDocumentWorkflow from './AdvancedDocumentWorkflow';
-import EnhancedDocumentAnalyzer from './EnhancedDocumentAnalyzer';
-import DocumentInsights from './DocumentInsights';
+import DocumentReferenceViewer from './DocumentReferenceViewer';
+import EnhancedDocumentUploader from './EnhancedDocumentUploader';
+import { Upload, FileText, Filter, Search, BarChart3 } from 'lucide-react';
 
 interface ImprovedClientDocumentManagerProps {
   clientId: string;
@@ -36,232 +17,215 @@ const ImprovedClientDocumentManager: React.FC<ImprovedClientDocumentManagerProps
   clientId,
   clientName
 }) => {
-  const [activeTab, setActiveTab] = useState('overview');
-  const { documents, isLoading, refetch, categories } = useClientDocuments(clientId);
-  const [selectedDocuments, setSelectedDocuments] = useState<any[]>([]);
+  console.log('📁 [CLIENT_DOC_MANAGER] Props received:', { clientId, clientName });
+  
+  const { documents, isLoading, categories } = useClientDocuments(clientId);
+  const [selectedTab, setSelectedTab] = useState('all');
 
-  // Create documentsByCategory as derived data
-  const documentsByCategory = useMemo(() => {
-    if (!documents) return {};
-    
-    return documents.reduce((acc, doc) => {
-      const category = doc.category || 'uncategorized';
-      if (!acc[category]) {
-        acc[category] = [];
-      }
-      acc[category].push(doc);
-      return acc;
-    }, {} as Record<string, typeof documents>);
-  }, [documents]);
-
-  // Mock AI suggestions for SmartCategoryPanel
-  const mockAISuggestions = [
-    {
-      category: 'Hovedbok',
-      confidence: 0.9,
-      reasoning: 'Dokumentet inneholder kontoplaner og posteringer',
-      keywords: ['hovedbok', 'konto', 'postering']
-    }
-  ];
-
-  const handleAcceptSuggestion = (category: string) => {
-    console.log('Accepted suggestion:', category);
+  const filterDocuments = (category: string) => {
+    if (category === 'all') return documents;
+    if (category === 'no-text') return documents.filter(doc => 
+      !doc.extracted_text || doc.text_extraction_status === 'failed'
+    );
+    if (category === 'processing') return documents.filter(doc => 
+      doc.text_extraction_status === 'processing'
+    );
+    return documents.filter(doc => doc.category === category || doc.subject_area === category);
   };
 
-  const handleRejectSuggestion = (category: string) => {
-    console.log('Rejected suggestion:', category);
+  const filteredDocuments = filterDocuments(selectedTab);
+
+  const stats = {
+    total: documents.length,
+    withText: documents.filter(doc => doc.extracted_text && doc.text_extraction_status === 'completed').length,
+    processing: documents.filter(doc => doc.text_extraction_status === 'processing').length,
+    failed: documents.filter(doc => doc.text_extraction_status === 'failed').length
   };
 
-  const handleCloseManager = () => {
-    setSelectedDocuments([]);
-  };
-
-  const handleUpdateDocuments = () => {
-    refetch();
-    setSelectedDocuments([]);
-  };
-
-  const tabs = [
-    {
-      id: 'overview',
-      label: 'Oversikt',
-      icon: FileText,
-      content: (
-        <div className="space-y-6">
-          <DocumentInsights 
-            documents={documents || []}
-            clientId={clientId}
-            context="documentation"
-          />
-          <DocumentUploader 
-            clientId={clientId}
-            categories={categories || []}
-          />
-          <DocumentList 
-            documents={documents || []}
-            documentsByCategory={documentsByCategory || {}}
-            isLoading={isLoading}
-          />
-        </div>
-      )
-    },
-    {
-      id: 'ai-insights',
-      label: 'AI-Innsikt',
-      icon: Brain,
-      content: (
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Brain className="h-5 w-5 text-purple-600" />
-                Dokumentanalyse med AI-Revi
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <MessageSquare className="h-5 w-5 text-blue-600" />
-                  <span className="font-medium text-blue-900">Bruk AI-Revi i høyre sidebar</span>
-                </div>
-                <p className="text-sm text-blue-700">
-                  AI-Revi i sidebar vil automatisk tilpasse seg dokumentkonteksten når du er på denne siden. 
-                  Åpne høyre sidebar for å få hjelp med dokumentanalyse og kategorisering.
-                </p>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="p-3 bg-blue-50 rounded-lg">
-                  <p className="text-sm font-medium">Totalt dokumenter</p>
-                  <p className="text-lg font-bold text-blue-600">{documents?.length || 0}</p>
-                </div>
-                <div className="p-3 bg-green-50 rounded-lg">
-                  <p className="text-sm font-medium">Kategoriserte</p>
-                  <p className="text-lg font-bold text-green-600">{documents?.filter(d => d.category).length || 0}</p>
-                </div>
-                <div className="p-3 bg-yellow-50 rounded-lg">
-                  <p className="text-sm font-medium">Trenger gjennomgang</p>
-                  <p className="text-lg font-bold text-yellow-600">{documents?.filter(d => !d.category).length || 0}</p>
-                </div>
-                <div className="p-3 bg-purple-50 rounded-lg">
-                  <p className="text-sm font-medium">AI-sikkerhet</p>
-                  <p className="text-lg font-bold text-purple-600">
-                    {documents?.length ? Math.round((documents.filter(d => d.ai_confidence_score && d.ai_confidence_score >= 0.8).length / documents.length) * 100) : 0}%
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <DocumentInsights 
-            documents={documents || []}
-            clientId={clientId}
-            context="documentation"
-          />
-        </div>
-      )
-    },
-    {
-      id: 'enhanced-analysis',
-      label: 'AI-Analyse',
-      icon: Brain,
-      content: (
-        <EnhancedDocumentAnalyzer 
-          clientId={clientId}
-        />
-      )
-    },
-    {
-      id: 'search',
-      label: 'Smart Søk',
-      icon: Search,
-      content: (
-        <SmartDocumentSearch clientId={clientId} />
-      )
-    },
-    {
-      id: 'categories',
-      label: 'Kategorier',
-      icon: Filter,
-      content: (
-        <SmartCategoryPanel 
-          suggestions={mockAISuggestions}
-          onAccept={handleAcceptSuggestion}
-          onReject={handleRejectSuggestion}
-          isVisible={true}
-        />
-      )
-    },
-    {
-      id: 'bulk-edit',
-      label: 'Bulk Endring',
-      icon: FolderOpen,
-      content: selectedDocuments.length > 0 ? (
-        <BulkCategoryManager 
-          selectedDocuments={selectedDocuments}
-          categories={categories || []}
-          onClose={handleCloseManager}
-          onUpdate={handleUpdateDocuments}
-        />
-      ) : (
-        <div className="text-center text-muted-foreground p-8">
-          Velg dokumenter fra oversikten for å bruke bulk-endring
-        </div>
-      )
-    },
-    {
-      id: 'workflows',
-      label: 'Arbeidsflyt',
-      icon: Zap,
-      content: (
-        <AdvancedDocumentWorkflow clientId={clientId} />
-      )
-    },
-    {
-      id: 'reports',
-      label: 'Rapporter',
-      icon: BarChart3,
-      content: (
-        <div>Kommer snart...</div>
-      )
-    },
-    {
-      id: 'settings',
-      label: 'Innstillinger',
-      icon: Settings,
-      content: (
-        <div>Kommer snart...</div>
-      )
-    }
-  ];
+  if (isLoading) {
+    return (
+      <Card>
+        <CardContent className="p-6 text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-2 text-sm text-gray-600">Laster dokumenter...</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <FileText className="h-5 w-5" />
-          Dokumenter for {clientName}
-        </CardTitle>
-        <p className="text-sm text-muted-foreground">
-          Administrer og organiser klientdokumenter med AI-Revi assistanse i høyre sidebar
-        </p>
-      </CardHeader>
-      <CardContent>
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4 lg:grid-cols-9">
-            {tabs.map((tab) => (
-              <TabsTrigger key={tab.id} value={tab.id} className="flex items-center space-x-1 text-xs">
-                <tab.icon className="h-3 w-3" />
-                <span className="hidden sm:inline">{tab.label}</span>
-              </TabsTrigger>
-            ))}
-          </TabsList>
-          {tabs.map((tab) => (
-            <TabsContent key={tab.id} value={tab.id}>
-              {tab.content}
-            </TabsContent>
-          ))}
-        </Tabs>
-      </CardContent>
-    </Card>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Dokumenter</h2>
+          <p className="text-sm text-gray-600">{clientName}</p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm">
+            <Search className="h-4 w-4 mr-2" />
+            Søk
+          </Button>
+          <Button variant="outline" size="sm">
+            <Filter className="h-4 w-4 mr-2" />
+            Filter
+          </Button>
+        </div>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <FileText className="h-4 w-4 text-blue-600" />
+              <span className="text-sm font-medium">Totalt</span>
+            </div>
+            <p className="text-2xl font-bold">{stats.total}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <BarChart3 className="h-4 w-4 text-green-600" />
+              <span className="text-sm font-medium">Med tekst</span>
+            </div>
+            <p className="text-2xl font-bold text-green-600">{stats.withText}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <div className="h-4 w-4 rounded-full bg-yellow-500" />
+              <span className="text-sm font-medium">Prosesserer</span>
+            </div>
+            <p className="text-2xl font-bold text-yellow-600">{stats.processing}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <div className="h-4 w-4 rounded-full bg-red-500" />
+              <span className="text-sm font-medium">Feilet</span>
+            </div>
+            <p className="text-2xl font-bold text-red-600">{stats.failed}</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Tabs */}
+      <Tabs value={selectedTab} onValueChange={setSelectedTab}>
+        <TabsList className="grid grid-cols-6 w-full">
+          <TabsTrigger value="all">
+            Alle ({documents.length})
+          </TabsTrigger>
+          <TabsTrigger value="lønn">
+            Lønn ({documents.filter(d => d.subject_area === 'lønn').length})
+          </TabsTrigger>
+          <TabsTrigger value="no-text">
+            Ingen tekst ({stats.failed})
+          </TabsTrigger>
+          <TabsTrigger value="processing">
+            Prosesserer ({stats.processing})
+          </TabsTrigger>
+          <TabsTrigger value="upload">
+            <Upload className="h-4 w-4 mr-2" />
+            Last opp
+          </TabsTrigger>
+          <TabsTrigger value="insights">
+            Innsikt
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="all">
+          <DocumentReferenceViewer 
+            documents={filteredDocuments.map(doc => ({
+              id: doc.id,
+              fileName: doc.file_name,
+              category: doc.category,
+              summary: doc.ai_analysis_summary,
+              confidence: doc.ai_confidence_score,
+              textPreview: doc.extracted_text?.substring(0, 200),
+              uploadDate: doc.created_at,
+              relevantText: doc.extracted_text?.substring(0, 300)
+            }))}
+            title="Alle dokumenter"
+            clientId={clientId}
+          />
+        </TabsContent>
+
+        <TabsContent value="lønn">
+          <DocumentReferenceViewer 
+            documents={filteredDocuments.map(doc => ({
+              id: doc.id,
+              fileName: doc.file_name,
+              category: doc.category,
+              summary: doc.ai_analysis_summary,
+              confidence: doc.ai_confidence_score,
+              textPreview: doc.extracted_text?.substring(0, 200),
+              uploadDate: doc.created_at,
+              relevantText: doc.extracted_text?.substring(0, 300)
+            }))}
+            title="Lønn dokumenter"
+            clientId={clientId}
+          />
+        </TabsContent>
+
+        <TabsContent value="no-text">
+          <DocumentReferenceViewer 
+            documents={filteredDocuments.map(doc => ({
+              id: doc.id,
+              fileName: doc.file_name,
+              category: doc.category,
+              summary: doc.ai_analysis_summary,
+              confidence: doc.ai_confidence_score,
+              textPreview: doc.extracted_text?.substring(0, 200),
+              uploadDate: doc.created_at,
+              relevantText: doc.extracted_text?.substring(0, 300)
+            }))}
+            title="Dokumenter uten tekst"
+            clientId={clientId}
+          />
+        </TabsContent>
+
+        <TabsContent value="processing">
+          <DocumentReferenceViewer 
+            documents={filteredDocuments.map(doc => ({
+              id: doc.id,
+              fileName: doc.file_name,
+              category: doc.category,
+              summary: doc.ai_analysis_summary,
+              confidence: doc.ai_confidence_score,
+              textPreview: doc.extracted_text?.substring(0, 200),
+              uploadDate: doc.created_at,
+              relevantText: doc.extracted_text?.substring(0, 300)
+            }))}
+            title="Dokumenter som prosesseres"
+            clientId={clientId}
+          />
+        </TabsContent>
+
+        <TabsContent value="upload">
+          <EnhancedDocumentUploader 
+            clientId={clientId}
+            onUploadComplete={() => {
+              // Refresh will happen automatically via useClientDocuments
+            }}
+          />
+        </TabsContent>
+
+        <TabsContent value="insights">
+          <Card>
+            <CardHeader>
+              <CardTitle>Dokumentinnsikt</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-600">Dokumentanalyse og innsikt kommer snart...</p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 };
 

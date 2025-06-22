@@ -8,6 +8,8 @@ interface DocumentsTabProps {
 }
 
 const DocumentsTab = ({ client }: DocumentsTabProps) => {
+  console.log('📋 [DOCUMENTS_TAB] Client ID being passed:', client.id);
+  
   return (
     <div className="space-y-6">
       <ImprovedClientDocumentManager 
