@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,6 +10,16 @@ import { Brain, Plus, Loader2, Save } from 'lucide-react';
 import { useCreateAuditActionTemplate } from '@/hooks/useAuditActions';
 import { toast } from '@/hooks/use-toast';
 
+interface FormData {
+  name: string;
+  description: string;
+  objective: string;
+  procedures: string;
+  documentation_requirements: string;
+  estimated_hours: number;
+  risk_level: 'low' | 'medium' | 'high';
+}
+
 const AuditActionGenerator = () => {
   const [selectedSubjectArea, setSelectedSubjectArea] = useState('sales');
   const [selectedActionType, setSelectedActionType] = useState('substantive');
@@ -20,14 +29,14 @@ const AuditActionGenerator = () => {
   
   const createTemplate = useCreateAuditActionTemplate();
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     name: '',
     description: '',
     objective: '',
     procedures: '',
     documentation_requirements: '',
     estimated_hours: 0,
-    risk_level: 'medium' as const
+    risk_level: 'medium'
   });
 
   const subjectAreas = [
@@ -58,14 +67,14 @@ const AuditActionGenerator = () => {
       // Simuler AI-generering for nå
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      const aiSuggestion = {
+      const aiSuggestion: FormData = {
         name: `AI-generert handling for ${subjectAreas.find(s => s.value === selectedSubjectArea)?.label}`,
         description: 'AI-generert beskrivelse basert på best practices',
         objective: 'Sikre nøyaktighet og fullstendighet av...',
         procedures: '1. Gjennomgå dokumentasjon\n2. Utfør testing\n3. Dokumenter funn',
         documentation_requirements: 'Arbeidspapirer, testresultater, konklusjoner',
         estimated_hours: 4,
-        risk_level: 'medium' as const
+        risk_level: 'medium'
       };
       
       setFormData(aiSuggestion);
