@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { 
   MessageSquare, 
@@ -8,7 +8,8 @@ import {
   PanelRightOpen,
   Settings,
   Maximize2,
-  Minimize2
+  Minimize2,
+  GripVertical
 } from 'lucide-react';
 import { useIsMobile } from "@/hooks/use-mobile";
 import { TooltipProvider, Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -22,14 +23,18 @@ import { cn } from '@/lib/utils';
 interface RightSidebarProps {
   isCollapsed?: boolean;
   onToggle: () => void;
+  width: number;
+  onWidthChange: (width: number) => void;
 }
 
 type SidebarSize = 'compact' | 'normal' | 'wide';
 
-const RightSidebar = ({ isCollapsed = false, onToggle }: RightSidebarProps) => {
+const RightSidebar = ({ isCollapsed = false, onToggle, width, onWidthChange }: RightSidebarProps) => {
   const [sidebarSize, setSidebarSize] = useState<SidebarSize>('normal');
   const [isPeekMode, setIsPeekMode] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isResizing, setIsResizing] = useState(false);
+  const resizeHandleRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
   const location = useLocation();
   const { orgNumber } = useParams<{ orgNumber: string }>();
@@ -68,11 +73,45 @@ const RightSidebar = ({ isCollapsed = false, onToggle }: RightSidebarProps) => {
     }
   } : null;
 
+  // Resize functionality
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    if (isCollapsed) return;
+    
+    e.preventDefault();
+    setIsResizing(true);
+    
+    const startX = e.clientX;
+    const startWidth = width;
+    
+    const handleMouseMove = (e: MouseEvent) => {
+      const deltaX = startX - e.clientX; // Reverse delta since we're resizing from the right
+      const newWidth = Math.max(280, Math.min(window.innerWidth - 320, startWidth + deltaX)); // Min 280px, max leaves 320px for left sidebar
+      onWidthChange(newWidth);
+    };
+    
+    const handleMouseUp = () => {
+      setIsResizing(false);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+    
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  }, [isCollapsed, width, onWidthChange]);
+
   const handleSizeChange = useCallback((size: SidebarSize) => {
     setSidebarSize(size);
     setIsPeekMode(false);
     setIsSettingsOpen(false);
-  }, []);
+    
+    // Adjust width based on size preset
+    const sizeWidths = {
+      compact: 280,
+      normal: 400,
+      wide: 600
+    };
+    onWidthChange(sizeWidths[size]);
+  }, [onWidthChange]);
 
   const togglePeekMode = useCallback(() => {
     setIsPeekMode(!isPeekMode);
@@ -84,7 +123,7 @@ const RightSidebar = ({ isCollapsed = false, onToggle }: RightSidebarProps) => {
   }, [isSettingsOpen]);
 
   // Auto-collapse on mobile
-  React.useEffect(() => {
+  useEffect(() => {
     if (isMobile && !isCollapsed) {
       onToggle();
     }
@@ -94,7 +133,7 @@ const RightSidebar = ({ isCollapsed = false, onToggle }: RightSidebarProps) => {
     return (
       <div className="h-full w-full bg-background border-l border-border flex flex-col relative">
         {/* Toggle button positioned on the left side inside the sidebar */}
-        <div className="absolute top-4 left-2 z-10">
+        <div className="absolute top-4 left-2 z-20">
           <TooltipProvider delayDuration={0}>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -136,8 +175,24 @@ const RightSidebar = ({ isCollapsed = false, onToggle }: RightSidebarProps) => {
       "h-full w-full bg-background border-l border-border flex flex-col overflow-hidden relative",
       isPeekMode && "shadow-lg z-10"
     )}>
+      {/* Resize handle - only visible when not collapsed */}
+      {!isCollapsed && !isMobile && (
+        <div
+          ref={resizeHandleRef}
+          className={cn(
+            "absolute left-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-500/20 transition-colors z-30 group",
+            isResizing && "bg-blue-500/30"
+          )}
+          onMouseDown={handleMouseDown}
+        >
+          <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <GripVertical className="h-4 w-4 text-muted-foreground" />
+          </div>
+        </div>
+      )}
+
       {/* Toggle button positioned on the left side inside the sidebar */}
-      <div className="absolute top-4 left-2 z-10">
+      <div className="absolute top-4 left-2 z-20">
         <Button
           variant="ghost"
           size="icon"
@@ -205,7 +260,7 @@ const RightSidebar = ({ isCollapsed = false, onToggle }: RightSidebarProps) => {
                               sidebarSize === 'compact' && "bg-accent"
                             )}
                           >
-                            Kompakt
+                            Kompakt (280px)
                           </button>
                           <button
                             onClick={() => handleSizeChange('normal')}
@@ -214,7 +269,7 @@ const RightSidebar = ({ isCollapsed = false, onToggle }: RightSidebarProps) => {
                               sidebarSize === 'normal' && "bg-accent"
                             )}
                           >
-                            Normal
+                            Normal (400px)
                           </button>
                           <button
                             onClick={() => handleSizeChange('wide')}
@@ -223,7 +278,7 @@ const RightSidebar = ({ isCollapsed = false, onToggle }: RightSidebarProps) => {
                               sidebarSize === 'wide' && "bg-accent"
                             )}
                           >
-                            Bred
+                            Bred (600px)
                           </button>
                         </div>
                       </div>
