@@ -206,6 +206,7 @@ const EnhancedActionTemplateView = ({
               <ActionAIAssistant 
                 actionTemplateId={template.id}
                 metadata={template.ai_metadata}
+                actionTemplate={template}
               />
             </TabsContent>
           </Tabs>
