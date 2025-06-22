@@ -43,9 +43,10 @@ const DocumentsTab = ({ client }: DocumentsTabProps) => {
           🤖 AI-Drevet Dokumenthåndtering
         </h3>
         <div className="text-blue-700 text-sm space-y-1">
-          <p>• Dokumenter analyseres automatisk av avansert AI-teknologi</p>
-          <p>• AI-Revi kan nå lese, forstå og analysere PDF-innhold i detalj</p>
-          <p>• Få intelligente svar basert på dine dokumenter</p>
+          <p>• Last opp dokumenter og AI vil automatisk lese og analysere innholdet</p>
+          <p>• OpenAI Vision API gjør det mulig å lese både tekst og skannet innhold</p>
+          <p>• Spør AI-Revi om dine dokumenter for å få intelligente svar</p>
+          <p>• Dokumenter kategoriseres automatisk etter revisjonsområder</p>
         </div>
       </div>
       

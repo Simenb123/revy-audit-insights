@@ -1,8 +1,8 @@
+
 import { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { isDevelopment } from '@/utils/networkHelpers';
 
 export interface ClientDocument {
   id: string;
@@ -37,14 +37,16 @@ export interface DocumentCategory {
   created_at: string;
 }
 
-// Add interface for text extraction response
+// Enhanced interface for text extraction response
 interface TextExtractionResponse {
   success: boolean;
   documentId: string;
+  fileName?: string;
   textLength?: number;
-  fileType?: string;
-  message?: string;
+  extractionMethod?: string;
+  hasAiAnalysis?: boolean;
   preview?: string;
+  message?: string;
   error?: string;
 }
 
@@ -57,8 +59,32 @@ export const useClientDocuments = (clientId: string) => {
   
   if (!clientId || clientId === 'undefined' || clientId === 'null') {
     console.error('❌ [USE_CLIENT_DOCUMENTS] Invalid clientId provided:', { clientId, type: typeof clientId });
-    // Don't throw here, just log and let the query handle it
   }
+
+  // Create the client-documents storage bucket if it doesn't exist
+  const ensureStorageBucket = async () => {
+    try {
+      const { data: buckets } = await supabase.storage.listBuckets();
+      const bucketExists = buckets?.some(bucket => bucket.name === 'client-documents');
+      
+      if (!bucketExists) {
+        console.log('📄 Creating client-documents storage bucket...');
+        const { error } = await supabase.storage.createBucket('client-documents', {
+          public: false,
+          allowedMimeTypes: ['application/pdf', 'image/*', 'text/*', 'application/vnd.openxmlformats-officedocument.*'],
+          fileSizeLimit: 52428800 // 50MB
+        });
+        
+        if (error) {
+          console.error('❌ Failed to create storage bucket:', error);
+        } else {
+          console.log('✅ Storage bucket created successfully');
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error checking storage bucket:', error);
+    }
+  };
 
   // Fetch documents with better error handling
   const {
@@ -95,7 +121,6 @@ export const useClientDocuments = (clientId: string) => {
     },
     enabled: !!(clientId && clientId !== 'undefined' && clientId !== 'null'),
     refetchInterval: (query) => {
-      // More intelligent refetch logic
       const data = query.state.data as ClientDocument[] | undefined;
       const hasProcessing = data?.some(doc => 
         doc.text_extraction_status === 'processing' || doc.text_extraction_status === 'pending'
@@ -116,7 +141,6 @@ export const useClientDocuments = (clientId: string) => {
       console.log(`🔄 [TEXT_EXTRACTION] Starting extraction for document: ${documentId} (attempt ${retryCount + 1}/3)`);
       
       try {
-        // Enhanced validation
         if (!documentId || documentId === 'undefined') {
           throw new Error('DocumentId er påkrevd men mangler');
         }
@@ -250,7 +274,7 @@ export const useClientDocuments = (clientId: string) => {
       
       if (data?.textLength && data.textLength > 0) {
         toast.success(`✅ Avansert tekstekstraksjon fullført!`, {
-          description: `Ekstraherte ${data.textLength} tegn med ${data.extractionMethod || 'ukjent metode'}.`,
+          description: `Ekstraherte ${data.textLength} tegn med ${data.extractionMethod || 'AI Vision'}.`,
           duration: 8000,
         });
       } else {
@@ -337,7 +361,7 @@ export const useClientDocuments = (clientId: string) => {
     }
   };
 
-  // Fetch document categories
+  // Fetch document categories and subject areas from database
   const { data: categories = [] } = useQuery({
     queryKey: ['document-categories'],
     queryFn: async () => {
@@ -355,7 +379,7 @@ export const useClientDocuments = (clientId: string) => {
     }
   });
 
-  // Upload document mutation
+  // Upload document mutation with improved error handling
   const uploadDocument = useMutation({
     mutationFn: async ({ file, clientId, category, subjectArea }: {
       file: File;
@@ -363,16 +387,35 @@ export const useClientDocuments = (clientId: string) => {
       category?: string;
       subjectArea?: string;
     }) => {
-      // Upload file to storage
+      console.log('📤 [UPLOAD] Starting file upload:', {
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type,
+        clientId
+      });
+
+      // Ensure storage bucket exists
+      await ensureStorageBucket();
+
+      // Get current user
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) {
+        throw new Error('Du må være logget inn for å laste opp dokumenter');
+      }
+
+      // Upload file to storage with improved path structure
       const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}.${fileExt}`;
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
       const filePath = `${clientId}/${fileName}`;
 
       console.log('📤 Uploading file to storage:', filePath);
 
       const { error: uploadError } = await supabase.storage
         .from('client-documents')
-        .upload(filePath, file);
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
 
       if (uploadError) {
         console.error('Storage upload error:', uploadError);
@@ -384,7 +427,7 @@ export const useClientDocuments = (clientId: string) => {
         .from('client_documents_files')
         .insert({
           client_id: clientId,
-          user_id: (await supabase.auth.getUser()).data.user?.id,
+          user_id: user.id,
           file_name: file.name,
           file_path: filePath,
           file_size: file.size,
@@ -398,27 +441,36 @@ export const useClientDocuments = (clientId: string) => {
 
       if (dbError) {
         console.error('Database insert error:', dbError);
+        // Clean up uploaded file
+        await supabase.storage
+          .from('client-documents')
+          .remove([filePath]);
         throw new Error(`Database error: ${dbError.message}`);
       }
 
       console.log('✅ Document metadata saved:', data);
 
-      // Trigger text extraction for PDFs and text files
-      if (file.type === 'application/pdf' || file.type?.includes('text/')) {
-        setTimeout(() => {
-          triggerTextExtraction(data.id);
-        }, 1000);
-      }
+      // Automatically trigger text extraction for supported file types
+      setTimeout(() => {
+        console.log('🤖 Auto-triggering text extraction for uploaded document...');
+        triggerTextExtraction(data.id);
+      }, 1000);
 
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['client-documents', clientId] });
-      toast.success('Dokument lastet opp');
+      toast.success('✅ Dokument lastet opp!', {
+        description: 'AI vil automatisk starte tekstekstraksjon.',
+        duration: 5000
+      });
     },
     onError: (error) => {
       console.error('Upload error:', error);
-      toast.error('Feil ved opplasting av dokument');
+      toast.error('❌ Feil ved opplasting', {
+        description: error.message,
+        duration: 8000
+      });
     }
   });
 

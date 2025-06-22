@@ -14,7 +14,6 @@ const ExtractionStatusIndicator = ({ document }: ExtractionStatusIndicatorProps)
       case 'completed':
         // Check if we actually have meaningful extracted text
         const hasRealText = document.extracted_text && 
-          !Array.isArray(document.extracted_text) &&
           typeof document.extracted_text === 'string' &&
           document.extracted_text.length > 50 &&
           !document.extracted_text.startsWith('[Kunne ikke');
