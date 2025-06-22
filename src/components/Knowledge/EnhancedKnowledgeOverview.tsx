@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -61,6 +60,7 @@ const EnhancedKnowledgeOverview = () => {
 
   // Transform knowledge stats into categories display
   const categories = knowledgeStats?.map(category => ({
+    id: category.id,
     name: category.name,
     count: category.article_count,
     description: category.description || 'Fagartikler og ressurser',
@@ -70,6 +70,7 @@ const EnhancedKnowledgeOverview = () => {
   // Add subject areas as categories if we have audit action data
   if (subjectAreas && totalActionTemplates && totalActionTemplates > 0) {
     categories.push({
+      id: 'audit-actions',
       name: 'Revisjonshandlinger',
       count: totalActionTemplates,
       description: 'Standardiserte handlingsmaler',
@@ -90,6 +91,14 @@ const EnhancedKnowledgeOverview = () => {
     };
     return colorMap[name] || 'bg-gray-100 text-gray-800';
   }
+
+  const handleCategoryClick = (category: any) => {
+    if (category.id === 'audit-actions') {
+      navigate('/fag/revisjonshandlinger');
+    } else {
+      navigate(`/fag/kategori/${category.id}`);
+    }
+  };
 
   if (statsLoading || totalLoading) {
     return (
@@ -152,7 +161,11 @@ const EnhancedKnowledgeOverview = () => {
       {categories.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {categories.map((category, index) => (
-            <Card key={index} className="hover:shadow-lg transition-shadow cursor-pointer">
+            <Card 
+              key={category.id || index} 
+              className="hover:shadow-lg transition-shadow cursor-pointer"
+              onClick={() => handleCategoryClick(category)}
+            >
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg">{category.name}</CardTitle>
@@ -204,7 +217,11 @@ const EnhancedKnowledgeOverview = () => {
                 </div>
               ) : (
                 recentArticles.map((article) => (
-                  <div key={article.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
+                  <div 
+                    key={article.id} 
+                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 cursor-pointer"
+                    onClick={() => navigate(`/fag/artikkel/${article.slug}`)}
+                  >
                     <div className="flex-1">
                       <h4 className="font-medium text-gray-900">{article.title}</h4>
                       {article.summary && (
