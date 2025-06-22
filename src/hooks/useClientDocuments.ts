@@ -88,10 +88,10 @@ export const useClientDocuments = (clientId: string) => {
     }
   });
 
-  // Enhanced text extraction mutation with improved debugging
+  // Enhanced text extraction mutation with improved error handling and timeout
   const textExtractionMutation = useMutation<TextExtractionResponse, Error, { documentId: string; retryCount?: number }>({
     mutationFn: async ({ documentId, retryCount = 0 }) => {
-      console.log(`🔄 [DEBUG] Starting text extraction attempt ${retryCount + 1} for document:`, documentId);
+      console.log(`🔄 [TEXT_EXTRACTION] Starting attempt ${retryCount + 1} for document:`, documentId);
       
       try {
         // Update status to processing first
@@ -104,40 +104,62 @@ export const useClientDocuments = (clientId: string) => {
           .eq('id', documentId);
 
         if (updateError) {
-          console.error('❌ [DEBUG] Error updating status to processing:', updateError);
+          console.error('❌ [TEXT_EXTRACTION] Error updating status to processing:', updateError);
           throw new Error(`Failed to update status: ${updateError.message}`);
         }
 
-        console.log('✅ [DEBUG] Status updated to processing, calling edge function...');
+        console.log('✅ [TEXT_EXTRACTION] Status updated to processing, calling edge function...');
 
-        // Call the PDF text extractor function with improved error handling
-        const { data, error } = await supabase.functions.invoke('pdf-text-extractor', {
-          body: { documentId }
-        });
-        
-        console.log('📄 [DEBUG] Edge function response:', { data, error });
-        
-        if (error) {
-          console.error('❌ [DEBUG] Edge function error:', error);
+        // Call the PDF text extractor function with timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
+        try {
+          const { data, error } = await supabase.functions.invoke('pdf-text-extractor', {
+            body: { documentId },
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          });
           
-          // Retry logic for temporary failures
-          if (retryCount < 2 && (error.message?.includes('timeout') || error.message?.includes('network'))) {
-            console.log(`🔄 [DEBUG] Retrying extraction (attempt ${retryCount + 2}/3) in 2 seconds...`);
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            return textExtractionMutation.mutateAsync({ documentId, retryCount: retryCount + 1 });
+          clearTimeout(timeoutId);
+          
+          console.log('📄 [TEXT_EXTRACTION] Edge function response:', { data, error });
+          
+          if (error) {
+            console.error('❌ [TEXT_EXTRACTION] Edge function error:', error);
+            
+            // Retry logic for temporary failures
+            if (retryCount < 2 && (error.message?.includes('timeout') || error.message?.includes('network') || error.message?.includes('FunctionsHttpError'))) {
+              console.log(`🔄 [TEXT_EXTRACTION] Retrying extraction (attempt ${retryCount + 2}/3) in 2 seconds...`);
+              await new Promise(resolve => setTimeout(resolve, 2000));
+              return textExtractionMutation.mutateAsync({ documentId, retryCount: retryCount + 1 });
+            }
+            
+            throw new Error(`Edge function error: ${error.message || 'Unknown error'}`);
           }
-          
-          throw new Error(`Text extraction failed: ${error.message}`);
+
+          if (!data) {
+            throw new Error('No data returned from text extraction function');
+          }
+
+          if (!data.success) {
+            throw new Error(data.error || 'Text extraction failed');
+          }
+
+          console.log('✅ [TEXT_EXTRACTION] Extraction completed successfully:', data);
+          return data as TextExtractionResponse;
+
+        } catch (fetchError) {
+          clearTimeout(timeoutId);
+          if (fetchError.name === 'AbortError') {
+            throw new Error('Text extraction timed out (30 seconds)');
+          }
+          throw fetchError;
         }
 
-        if (!data) {
-          throw new Error('No data returned from text extraction function');
-        }
-
-        console.log('✅ [DEBUG] Text extraction completed successfully:', data);
-        return data as TextExtractionResponse;
       } catch (error) {
-        console.error('❌ [DEBUG] Text extraction mutation error:', error);
+        console.error('❌ [TEXT_EXTRACTION] Mutation error:', error);
         
         // Update status to failed in the database
         try {
@@ -150,27 +172,38 @@ export const useClientDocuments = (clientId: string) => {
             })
             .eq('id', documentId);
         } catch (updateError) {
-          console.error('❌ [DEBUG] Failed to update status to failed:', updateError);
+          console.error('❌ [TEXT_EXTRACTION] Failed to update status to failed:', updateError);
         }
         
         throw error;
       }
     },
     onSuccess: (data) => {
-      console.log('✅ [DEBUG] Text extraction mutation successful:', data);
+      console.log('✅ [TEXT_EXTRACTION] Mutation successful:', data);
       
       if (data?.textLength && data.textLength > 0) {
-        toast.success(`Tekstekstraksjon fullført! Ekstraherte ${data.textLength} tegn.`);
+        toast.success(`✅ Tekstekstraksjon fullført! Ekstraherte ${data.textLength} tegn.`);
       } else {
-        toast.success('Tekstekstraksjon fullført!');
+        toast.success('✅ Tekstekstraksjon fullført!');
       }
       
       // Refetch documents to update UI
       setTimeout(() => refetch(), 1000);
     },
     onError: (error) => {
-      console.error('❌ [DEBUG] Text extraction error:', error);
-      toast.error(`Tekstekstraksjon feilet: ${error.message}`);
+      console.error('❌ [TEXT_EXTRACTION] Final error:', error);
+      
+      // Show specific error messages
+      if (error.message?.includes('timeout')) {
+        toast.error('⏱️ Tekstekstraksjon tok for lang tid. Prøv igjen senere.');
+      } else if (error.message?.includes('FunctionsHttpError')) {
+        toast.error('🔧 Edge function feil. Sjekk at PDF-text-extractor kjører.');
+      } else if (error.message?.includes('No data returned')) {
+        toast.error('📄 Ingen respons fra tekstekstraksjon. Prøv igjen.');
+      } else {
+        toast.error(`❌ Tekstekstraksjon feilet: ${error.message}`);
+      }
+      
       // Refetch to update status
       refetch();
     }
@@ -178,11 +211,19 @@ export const useClientDocuments = (clientId: string) => {
 
   // Trigger text extraction for a document (simplified API)
   const triggerTextExtraction = async (documentId: string) => {
-    console.log('🎯 [DEBUG] triggerTextExtraction called for document:', documentId);
+    console.log('🎯 [TEXT_EXTRACTION] triggerTextExtraction called for document:', documentId);
+    
+    if (!documentId) {
+      toast.error('❌ Dokument-ID mangler');
+      return;
+    }
+    
     try {
+      toast.info('🔄 Starter tekstekstraksjon...');
       await textExtractionMutation.mutateAsync({ documentId });
     } catch (error) {
-      console.error('❌ [DEBUG] Error in triggerTextExtraction:', error);
+      console.error('❌ [TEXT_EXTRACTION] Error in triggerTextExtraction:', error);
+      // Error toast is handled in onError callback
     }
   };
 
