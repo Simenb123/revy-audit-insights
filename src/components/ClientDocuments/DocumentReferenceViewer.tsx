@@ -182,18 +182,21 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
       return;
     }
 
+    console.log('🎯 [COMPONENT] handleRetryTextExtraction called:', { docId, fileName, clientId });
     setOperationResult(docId, 'loading');
     
     try {
-      console.log('🔄 Retrying text extraction for:', { docId, fileName });
+      console.log('🔄 [COMPONENT] Calling triggerTextExtraction...');
       
       // Call triggerTextExtraction with only documentId (simplified)
       await triggerTextExtraction(docId);
+      
+      console.log('✅ [COMPONENT] triggerTextExtraction completed successfully');
       setOperationResult(docId, 'success');
       toast.success('Tekstekstraksjon startet på nytt');
       
     } catch (error) {
-      console.error('Error retrying text extraction:', error);
+      console.error('❌ [COMPONENT] Error retrying text extraction:', error);
       setOperationResult(docId, 'error');
       toast.error(`Tekstekstraksjon feilet: ${error.message}`);
     }

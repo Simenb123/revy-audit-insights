@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -89,48 +88,76 @@ export const useClientDocuments = (clientId: string) => {
     }
   });
 
-  // Enhanced text extraction mutation with retry logic
+  // Enhanced text extraction mutation with improved debugging
   const textExtractionMutation = useMutation<TextExtractionResponse, Error, { documentId: string; retryCount?: number }>({
     mutationFn: async ({ documentId, retryCount = 0 }) => {
-      console.log(`🔄 Starting text extraction attempt ${retryCount + 1} for document:`, documentId);
+      console.log(`🔄 [DEBUG] Starting text extraction attempt ${retryCount + 1} for document:`, documentId);
       
-      // Update status to processing first
-      const { error: updateError } = await supabase
-        .from('client_documents_files')
-        .update({ 
-          text_extraction_status: 'processing',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', documentId);
+      try {
+        // Update status to processing first
+        const { error: updateError } = await supabase
+          .from('client_documents_files')
+          .update({ 
+            text_extraction_status: 'processing',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', documentId);
 
-      if (updateError) {
-        console.error('Error updating status to processing:', updateError);
-        throw new Error(`Failed to update status: ${updateError.message}`);
-      }
+        if (updateError) {
+          console.error('❌ [DEBUG] Error updating status to processing:', updateError);
+          throw new Error(`Failed to update status: ${updateError.message}`);
+        }
 
-      // Call the PDF text extractor function with retry logic
-      const { data, error } = await supabase.functions.invoke('pdf-text-extractor', {
-        body: { documentId }
-      });
-      
-      if (error) {
-        console.error('PDF text extraction failed:', error);
+        console.log('✅ [DEBUG] Status updated to processing, calling edge function...');
+
+        // Call the PDF text extractor function with improved error handling
+        const { data, error } = await supabase.functions.invoke('pdf-text-extractor', {
+          body: { documentId }
+        });
         
-        // Retry logic for temporary failures
-        if (retryCount < 2 && (error.message?.includes('timeout') || error.message?.includes('network'))) {
-          console.log(`🔄 Retrying extraction (attempt ${retryCount + 2}/3) in 2 seconds...`);
-          await new Promise(resolve => setTimeout(resolve, 2000));
-          return textExtractionMutation.mutateAsync({ documentId, retryCount: retryCount + 1 });
+        console.log('📄 [DEBUG] Edge function response:', { data, error });
+        
+        if (error) {
+          console.error('❌ [DEBUG] Edge function error:', error);
+          
+          // Retry logic for temporary failures
+          if (retryCount < 2 && (error.message?.includes('timeout') || error.message?.includes('network'))) {
+            console.log(`🔄 [DEBUG] Retrying extraction (attempt ${retryCount + 2}/3) in 2 seconds...`);
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            return textExtractionMutation.mutateAsync({ documentId, retryCount: retryCount + 1 });
+          }
+          
+          throw new Error(`Text extraction failed: ${error.message}`);
+        }
+
+        if (!data) {
+          throw new Error('No data returned from text extraction function');
+        }
+
+        console.log('✅ [DEBUG] Text extraction completed successfully:', data);
+        return data as TextExtractionResponse;
+      } catch (error) {
+        console.error('❌ [DEBUG] Text extraction mutation error:', error);
+        
+        // Update status to failed in the database
+        try {
+          await supabase
+            .from('client_documents_files')
+            .update({ 
+              text_extraction_status: 'failed',
+              extracted_text: `[Tekstekstraksjon feilet: ${error.message}]`,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', documentId);
+        } catch (updateError) {
+          console.error('❌ [DEBUG] Failed to update status to failed:', updateError);
         }
         
-        throw new Error(`Text extraction failed: ${error.message}`);
+        throw error;
       }
-
-      console.log('✅ Text extraction completed successfully:', data);
-      return data as TextExtractionResponse;
     },
     onSuccess: (data) => {
-      console.log('✅ Text extraction mutation successful:', data);
+      console.log('✅ [DEBUG] Text extraction mutation successful:', data);
       
       if (data?.textLength && data.textLength > 0) {
         toast.success(`Tekstekstraksjon fullført! Ekstraherte ${data.textLength} tegn.`);
@@ -142,7 +169,7 @@ export const useClientDocuments = (clientId: string) => {
       setTimeout(() => refetch(), 1000);
     },
     onError: (error) => {
-      console.error('Text extraction error:', error);
+      console.error('❌ [DEBUG] Text extraction error:', error);
       toast.error(`Tekstekstraksjon feilet: ${error.message}`);
       // Refetch to update status
       refetch();
@@ -151,10 +178,11 @@ export const useClientDocuments = (clientId: string) => {
 
   // Trigger text extraction for a document (simplified API)
   const triggerTextExtraction = async (documentId: string) => {
+    console.log('🎯 [DEBUG] triggerTextExtraction called for document:', documentId);
     try {
       await textExtractionMutation.mutateAsync({ documentId });
     } catch (error) {
-      console.error('Error in triggerTextExtraction:', error);
+      console.error('❌ [DEBUG] Error in triggerTextExtraction:', error);
     }
   };
 
