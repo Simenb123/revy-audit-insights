@@ -11,6 +11,7 @@ import { useCreateAuditActionTemplate } from '@/hooks/useAuditActions';
 import { toast } from '@/hooks/use-toast';
 import { useSubjectAreas } from '@/hooks/knowledge/useSubjectAreas';
 import { useAuditActionTemplatesPreview } from '@/hooks/knowledge/useAuditActionTemplatesPreview';
+import { useAuth } from '@/components/Auth/AuthProvider';
 
 interface FormData {
   name: string;
@@ -23,6 +24,8 @@ interface FormData {
 }
 
 const AuditActionGenerator = () => {
+  const { session } = useAuth();
+  
   const [selectedSubjectArea, setSelectedSubjectArea] = useState('');
   const [selectedActionType, setSelectedActionType] = useState('substantive');
   const [searchTerm, setSearchTerm] = useState('');
@@ -152,6 +155,15 @@ const AuditActionGenerator = () => {
       return;
     }
 
+    if (!session?.user?.id) {
+      toast({
+        title: "Ikke autentisert",
+        description: "Du må være logget inn for å lagre handlinger.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
       // Convert the selected subject area to the correct enum value
       const enumSubjectArea = getSubjectAreaEnumValue(selectedSubjectArea);
@@ -161,7 +173,8 @@ const AuditActionGenerator = () => {
         subject_area: enumSubjectArea,
         action_type: selectedActionType,
         phase: 'execution',
-        applicable_phases: ['execution']
+        applicable_phases: ['execution'],
+        created_by: session.user.id
       });
 
       await createTemplate.mutateAsync({
@@ -177,7 +190,8 @@ const AuditActionGenerator = () => {
         applicable_phases: ['execution'],
         sort_order: 0,
         is_system_template: false,
-        is_active: true
+        is_active: true,
+        created_by: session.user.id
       });
 
       setShowCreateForm(false);
