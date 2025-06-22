@@ -23,7 +23,8 @@ export const useSubjectAreas = () => {
       const { data, error } = await supabase
         .from('subject_areas')
         .select('*')
-        .order('sort_order');
+        .eq('is_active', true)
+        .order('sort_order, display_name');
       
       if (error) throw error;
       return data as SubjectArea[];
@@ -85,17 +86,6 @@ export const useDeleteSubjectArea = () => {
   
   return useMutation({
     mutationFn: async (id: string) => {
-      // Check if subject area is in use
-      const { data: articlesInUse } = await supabase
-        .from('article_subject_areas')
-        .select('id')
-        .eq('subject_area_id', id)
-        .limit(1);
-      
-      if (articlesInUse && articlesInUse.length > 0) {
-        throw new Error('Kan ikke slette emneområde som er i bruk av artikler');
-      }
-      
       const { error } = await supabase
         .from('subject_areas')
         .delete()

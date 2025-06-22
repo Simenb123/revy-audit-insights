@@ -23,6 +23,7 @@ export const useContentTypes = () => {
       const { data, error } = await supabase
         .from('content_types')
         .select('*')
+        .eq('is_active', true)
         .order('sort_order');
       
       if (error) throw error;
@@ -85,17 +86,6 @@ export const useDeleteContentType = () => {
   
   return useMutation({
     mutationFn: async (id: string) => {
-      // Check if content type is in use
-      const { data: articlesInUse } = await supabase
-        .from('knowledge_articles')
-        .select('id')
-        .eq('content_type_id', id)
-        .limit(1);
-      
-      if (articlesInUse && articlesInUse.length > 0) {
-        throw new Error('Kan ikke slette innholdstype som er i bruk av artikler');
-      }
-      
       const { error } = await supabase
         .from('content_types')
         .delete()
