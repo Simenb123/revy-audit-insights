@@ -142,6 +142,8 @@ export const useClientDocuments = (clientId: string) => {
         console.log('🔄 [TEXT_EXTRACTION] Preparing edge function call...');
         console.log('📋 [TEXT_EXTRACTION] Function name: pdf-text-extractor');
         console.log('📋 [TEXT_EXTRACTION] Payload:', { documentId });
+        console.log('📋 [TEXT_EXTRACTION] Supabase URL:', supabase.supabaseUrl ? 'Present' : 'Missing');
+        console.log('📋 [TEXT_EXTRACTION] Supabase Key:', supabase.supabaseKey ? 'Present' : 'Missing');
 
         // Step 5: Call edge function with comprehensive error handling
         const controller = new AbortController();
@@ -153,6 +155,7 @@ export const useClientDocuments = (clientId: string) => {
         let functionResponse;
         try {
           console.log('🚀 [TEXT_EXTRACTION] Invoking edge function...');
+          console.log('🔍 [TEXT_EXTRACTION] Making supabase.functions.invoke call now...');
           
           const startTime = Date.now();
           functionResponse = await supabase.functions.invoke('pdf-text-extractor', {
@@ -171,6 +174,9 @@ export const useClientDocuments = (clientId: string) => {
         } catch (invokeError) {
           clearTimeout(timeoutId);
           console.error('❌ [TEXT_EXTRACTION] Edge function invoke failed:', invokeError);
+          console.error('❌ [TEXT_EXTRACTION] Error name:', invokeError.name);
+          console.error('❌ [TEXT_EXTRACTION] Error message:', invokeError.message);
+          console.error('❌ [TEXT_EXTRACTION] Error stack:', invokeError.stack);
           
           // Detailed error analysis
           if (invokeError.name === 'AbortError') {
@@ -183,6 +189,10 @@ export const useClientDocuments = (clientId: string) => {
           
           if (invokeError.message?.includes('network')) {
             throw new Error(`Nettverksfeil ved kall til edge function: ${invokeError.message}`);
+          }
+          
+          if (invokeError.message?.includes('404')) {
+            throw new Error('Edge function "pdf-text-extractor" ikke funnet - sjekk at den er deployet');
           }
           
           throw new Error(`Edge function invoke feilet: ${invokeError.message || 'Ukjent feil'}`);
@@ -288,6 +298,9 @@ export const useClientDocuments = (clientId: string) => {
       } else if (error.message?.includes('FunctionsHttpError')) {
         errorMessage = '🔧 Edge function feil';
         errorDescription = 'Pdf-text-extractor edge function svarer ikke. Sjekk at den er deployet.';
+      } else if (error.message?.includes('ikke funnet')) {
+        errorMessage = '📄 Edge function ikke funnet';
+        errorDescription = 'Edge function "pdf-text-extractor" er ikke deployet eller tilgjengelig.';
       } else if (error.message?.includes('DocumentId er påkrevd')) {
         errorMessage = '📄 Dokument ID mangler';
         errorDescription = 'Kunne ikke identifisere dokumentet som skal prosesseres.';
