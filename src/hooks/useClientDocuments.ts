@@ -142,8 +142,7 @@ export const useClientDocuments = (clientId: string) => {
         console.log('🔄 [TEXT_EXTRACTION] Preparing edge function call...');
         console.log('📋 [TEXT_EXTRACTION] Function name: pdf-text-extractor');
         console.log('📋 [TEXT_EXTRACTION] Payload:', { documentId });
-        console.log('📋 [TEXT_EXTRACTION] Supabase URL:', supabase.supabaseUrl ? 'Present' : 'Missing');
-        console.log('📋 [TEXT_EXTRACTION] Supabase Key:', supabase.supabaseKey ? 'Present' : 'Missing');
+        console.log('📋 [TEXT_EXTRACTION] Environment: ', isDevelopment() ? 'Development' : 'Production');
 
         // Step 5: Call edge function with comprehensive error handling
         const controller = new AbortController();
