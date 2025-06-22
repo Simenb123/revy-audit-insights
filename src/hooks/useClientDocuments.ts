@@ -57,12 +57,16 @@ export const useClientDocuments = (clientId: string) => {
   // Enhanced validation for clientId with better logging
   console.log('📄 [USE_CLIENT_DOCUMENTS] Hook initialized with clientId:', clientId);
   
-  // Improved clientId validation with proper type checking
-  const isValidClientId = clientId && 
-    typeof clientId === 'string' && 
-    clientId !== 'undefined' && 
-    clientId !== 'null' && 
-    clientId.trim().length > 0;
+  // Helper function to validate clientId - this creates a stable function
+  const validateClientId = useCallback((id: string) => {
+    return id && 
+      typeof id === 'string' && 
+      id !== 'undefined' && 
+      id !== 'null' && 
+      id.trim().length > 0;
+  }, []);
+
+  const isValidClientId = validateClientId(clientId);
   
   if (!isValidClientId) {
     console.error('❌ [USE_CLIENT_DOCUMENTS] Invalid clientId provided:', { 
@@ -81,7 +85,7 @@ export const useClientDocuments = (clientId: string) => {
   } = useQuery({
     queryKey: ['client-documents', clientId],
     queryFn: async () => {
-      if (!isValidClientId) {
+      if (!validateClientId(clientId)) {
         console.error('❌ [USE_CLIENT_DOCUMENTS] Cannot fetch documents without valid clientId:', clientId);
         return [];
       }
@@ -106,7 +110,7 @@ export const useClientDocuments = (clientId: string) => {
       
       return data as ClientDocument[];
     },
-    enabled: isValidClientId,
+    enabled: () => validateClientId(clientId),
     refetchInterval: (query) => {
       const data = query.state.data as ClientDocument[] | undefined;
       const hasProcessing = data?.some(doc => 
@@ -132,7 +136,7 @@ export const useClientDocuments = (clientId: string) => {
           throw new Error('DocumentId er påkrevd men mangler');
         }
 
-        if (!isValidClientId) {
+        if (!validateClientId(clientId)) {
           throw new Error('ClientId er påkrevd men mangler eller er ugyldig');
         }
 
@@ -324,7 +328,7 @@ export const useClientDocuments = (clientId: string) => {
       return;
     }
     
-    if (!isValidClientId) {
+    if (!validateClientId(clientId)) {
       console.error('❌ [TRIGGER_EXTRACTION] No valid clientId available');
       toast.error('❌ Klient-ID mangler eller er ugyldig', {
         description: 'Last siden på nytt for å løse problemet.',
