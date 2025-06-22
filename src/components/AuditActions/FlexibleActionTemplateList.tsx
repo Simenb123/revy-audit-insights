@@ -7,7 +7,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { AuditActionTemplate } from '@/types/audit-actions';
+import { AuditActionTemplate, AuditPhase } from '@/types/audit-actions';
 import { Copy, Edit, Search, Filter } from 'lucide-react';
 import { useSubjectAreas } from '@/hooks/knowledge/useSubjectAreas';
 import { useTags } from '@/hooks/knowledge/useTags';
@@ -43,7 +43,7 @@ const FlexibleActionTemplateList = ({
       template.procedures.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRisk = riskFilter === 'all' || template.risk_level === riskFilter;
     const matchesPhase = phaseFilter === 'all' || 
-      template.applicable_phases.includes(phaseFilter);
+      template.applicable_phases.includes(phaseFilter as AuditPhase);
     
     return matchesArea && matchesSearch && matchesRisk && matchesPhase;
   });
@@ -139,9 +139,10 @@ const FlexibleActionTemplateList = ({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Alle faser</SelectItem>
+                  <SelectItem value="engagement">Engasjement</SelectItem>
                   <SelectItem value="planning">Planlegging</SelectItem>
                   <SelectItem value="execution">Utførelse</SelectItem>
-                  <SelectItem value="completion">Avslutning</SelectItem>
+                  <SelectItem value="conclusion">Avslutning</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -222,9 +223,10 @@ const FlexibleActionTemplateList = ({
                         )}
                         {template.applicable_phases.map(phase => (
                           <Badge key={phase} variant="secondary" className="text-xs">
-                            {phase === 'planning' ? 'Planlegging' : 
+                            {phase === 'engagement' ? 'Engasjement' :
+                             phase === 'planning' ? 'Planlegging' : 
                              phase === 'execution' ? 'Utførelse' : 
-                             phase === 'completion' ? 'Avslutning' : phase}
+                             phase === 'conclusion' ? 'Avslutning' : phase}
                           </Badge>
                         ))}
                         {template.is_system_template && (
