@@ -399,10 +399,21 @@ const ArticleEditor = () => {
             {isEditing ? "Rediger artikkel" : "Ny artikkel"}
           </h1>
         </div>
-        <Button variant="outline" onClick={() => navigate('/fag')}>
-          <X className="w-4 h-4 mr-2" />
-          Avbryt
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button 
+            type="submit" 
+            disabled={saveMutation.isPending}
+            onClick={form.handleSubmit(onSubmit)}
+            className="flex items-center gap-2"
+          >
+            <Save className="w-4 h-4" />
+            {saveMutation.isPending ? "Lagrer..." : "Lagre"}
+          </Button>
+          <Button variant="outline" onClick={() => navigate('/fag')}>
+            <X className="w-4 h-4 mr-2" />
+            Avbryt
+          </Button>
+        </div>
       </div>
 
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -633,13 +644,6 @@ const ArticleEditor = () => {
               onTagsChange={(tags) => form.setValue("tags", tags)}
             />
           </div>
-        </div>
-
-        <div className="flex justify-end gap-2">
-          <Button type="submit" disabled={saveMutation.isPending}>
-            <Save className="w-4 h-4 mr-2" />
-            {saveMutation.isPending ? "Lagrer..." : "Lagre"}
-          </Button>
         </div>
       </form>
     </div>
