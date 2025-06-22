@@ -65,7 +65,7 @@ Tilgjengelige kategorier: ${availableCategories.map(c => c.name).join(', ')}
 Tilgjengelige innholdstyper: ${availableContentTypes.map(c => c.display_name).join(', ')}
 Tilgjengelige emneområder: ${availableSubjectAreas.map(s => s.display_name).join(', ')}
 
-Analyser innholdet og returner JSON med:
+Analyser innholdet og returner kun ren JSON uten ekstra tekst:
 {
   "suggested_tags": ["tag1", "tag2", "tag3"],
   "suggested_subject_areas": ["område1", "område2"],
@@ -75,7 +75,7 @@ Analyser innholdet og returner JSON med:
   "reasoning": "Forklaring av valgene"
 }
 
-Bruk kun kategorier, innholdstyper og emneområder fra listene over.`,
+VIKTIG: Svar kun med gyldig JSON, ingen ekstra tekst eller formatering.`,
           context: 'knowledge',
           variant: {
             name: 'methodology-expert',
@@ -87,17 +87,36 @@ Bruk kun kategorier, innholdstyper og emneområder fra listene over.`,
 
       if (error) throw error;
 
-      // Extract JSON from AI response
+      // Try to extract JSON from the response
       const responseText = data.response;
-      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+      console.log('AI Response:', responseText);
+      
+      // Look for JSON in the response
+      let jsonMatch = responseText.match(/\{[\s\S]*?\}/);
+      
+      if (!jsonMatch) {
+        // Try to find JSON that might span multiple lines
+        const jsonStart = responseText.indexOf('{');
+        const jsonEnd = responseText.lastIndexOf('}');
+        if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
+          jsonMatch = [responseText.substring(jsonStart, jsonEnd + 1)];
+        }
+      }
       
       if (jsonMatch) {
-        const result = JSON.parse(jsonMatch[0]);
-        setSuggestions(result);
-        setSelectedTags(result.suggested_tags || []);
-        setSelectedSubjectAreas(result.suggested_subject_areas || []);
+        try {
+          const result = JSON.parse(jsonMatch[0]);
+          setSuggestions(result);
+          setSelectedTags(result.suggested_tags || []);
+          setSelectedSubjectAreas(result.suggested_subject_areas || []);
+          toast.success('AI-forslag generert');
+        } catch (parseError) {
+          console.error('JSON Parse Error:', parseError, 'Raw JSON:', jsonMatch[0]);
+          throw new Error('Kunne ikke parse AI-svar som JSON');
+        }
       } else {
-        throw new Error('Kunne ikke parse AI-svar');
+        console.error('No JSON found in response:', responseText);
+        throw new Error('Ingen gyldig JSON funnet i AI-svar');
       }
 
     } catch (error) {
@@ -123,7 +142,7 @@ Bruk kun kategorier, innholdstyper og emneområder fra listene over.`,
     )?.id || '';
 
     // Map subject area names to IDs
-    const subjectAreaIds = suggestions.suggested_subject_areas
+    const subjectAreaIds = selectedSubjectAreas
       .map(areaName => 
         availableSubjectAreas.find(
           area => area.display_name.toLowerCase() === areaName.toLowerCase() ||
@@ -134,11 +153,7 @@ Bruk kun kategorier, innholdstyper og emneområder fra listene over.`,
 
     onApplySuggestions({
       tags: selectedTags,
-      subjectAreaIds: selectedSubjectAreas.map(areaName => 
-        availableSubjectAreas.find(
-          area => area.display_name.toLowerCase() === areaName.toLowerCase()
-        )?.id
-      ).filter(Boolean) as string[],
+      subjectAreaIds,
       categoryId,
       contentTypeId
     });

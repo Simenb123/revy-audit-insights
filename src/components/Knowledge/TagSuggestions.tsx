@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Search, Plus } from 'lucide-react';
-import { useUnifiedTags } from '@/hooks/knowledge/useUnifiedTags';
+import { useUnifiedTags, useCreateTag } from '@/hooks/knowledge/useUnifiedTags';
 
 interface TagSuggestionsProps {
   currentTags: string;
@@ -21,6 +21,7 @@ const TagSuggestions = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [newTagName, setNewTagName] = useState('');
   const { data: availableTags = [] } = useUnifiedTags();
+  const createTagMutation = useCreateTag();
 
   const currentTagList = currentTags
     .split(',')
@@ -44,11 +45,40 @@ const TagSuggestions = ({
     onTagsChange(newTags.join(', '));
   };
 
-  const handleCreateNewTag = () => {
-    if (newTagName.trim() && onCreateNewTag) {
-      onCreateNewTag(newTagName.trim());
+  const handleCreateNewTag = async () => {
+    if (!newTagName.trim()) return;
+
+    try {
+      // Check if tag already exists
+      const existingTag = availableTags.find(
+        tag => tag.display_name.toLowerCase() === newTagName.trim().toLowerCase()
+      );
+
+      if (existingTag) {
+        addTag(existingTag.display_name);
+        setNewTagName('');
+        return;
+      }
+
+      // Create new tag
+      await createTagMutation.mutateAsync({
+        name: newTagName.trim().toLowerCase().replace(/\s+/g, '_'),
+        display_name: newTagName.trim(),
+        color: '#3B82F6', // Default blue color
+        category: 'custom',
+        sort_order: 999,
+        is_active: true
+      });
+
+      // Add to current tags
       addTag(newTagName.trim());
       setNewTagName('');
+
+      if (onCreateNewTag) {
+        onCreateNewTag(newTagName.trim());
+      }
+    } catch (error) {
+      console.error('Error creating tag:', error);
     }
   };
 
@@ -86,6 +116,28 @@ const TagSuggestions = ({
           </div>
         )}
 
+        {/* Create new tag */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-muted-foreground">
+            Opprett ny tag:
+          </label>
+          <div className="flex gap-2">
+            <Input
+              placeholder="Navn på ny tag..."
+              value={newTagName}
+              onChange={(e) => setNewTagName(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleCreateNewTag()}
+            />
+            <Button 
+              onClick={handleCreateNewTag}
+              disabled={!newTagName.trim() || createTagMutation.isPending}
+              size="sm"
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+
         {/* Search tags */}
         <div className="space-y-2">
           <div className="relative">
@@ -119,30 +171,6 @@ const TagSuggestions = ({
             </div>
           )}
         </div>
-
-        {/* Create new tag */}
-        {onCreateNewTag && (
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-muted-foreground">
-              Opprett ny tag:
-            </label>
-            <div className="flex gap-2">
-              <Input
-                placeholder="Navn på ny tag..."
-                value={newTagName}
-                onChange={(e) => setNewTagName(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleCreateNewTag()}
-              />
-              <Button 
-                onClick={handleCreateNewTag}
-                disabled={!newTagName.trim()}
-                size="sm"
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        )}
 
         {/* Popular tags */}
         {!searchTerm && popularTags.length > 0 && (

@@ -63,6 +63,31 @@ export const useUnifiedTags = (category?: string) => {
   });
 };
 
+// Create a new tag
+export const useCreateTag = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (tag: Omit<UnifiedTag, 'id' | 'created_at' | 'updated_at' | 'usage_count'>) => {
+      const { data, error } = await supabase
+        .from('tags')
+        .insert(tag)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['unified-tags'] });
+      toast.success('Ny tag opprettet');
+    },
+    onError: (error: any) => {
+      toast.error('Feil ved opprettelse: ' + error.message);
+    }
+  });
+};
+
 // Hook for legacy article tags (for backward compatibility)
 export const useArticleTagsLegacy = (articleId?: string) => {
   return useQuery({
