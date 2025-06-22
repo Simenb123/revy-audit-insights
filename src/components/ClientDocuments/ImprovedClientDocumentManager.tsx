@@ -1,228 +1,119 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+
+import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Upload, FileText, Brain, Zap } from 'lucide-react';
 import { useClientDocuments } from '@/hooks/useClientDocuments';
-import DocumentReferenceViewer from './DocumentReferenceViewer';
-import EnhancedDocumentUploader from './EnhancedDocumentUploader';
-import { Upload, FileText, Filter, Search, BarChart3 } from 'lucide-react';
+import DocumentUploader from './DocumentUploader';
+import EnhancedDocumentList from './EnhancedDocumentList';
 
 interface ImprovedClientDocumentManagerProps {
   clientId: string;
-  clientName: string;
+  clientName?: string;
 }
 
 const ImprovedClientDocumentManager: React.FC<ImprovedClientDocumentManagerProps> = ({
   clientId,
   clientName
 }) => {
-  console.log('📁 [CLIENT_DOC_MANAGER] Props received:', { clientId, clientName });
-  
-  const { documents, isLoading, categories } = useClientDocuments(clientId);
-  const [selectedTab, setSelectedTab] = useState('all');
+  const { documents, categories, isLoading, triggerTextExtraction } = useClientDocuments(clientId);
 
-  const filterDocuments = (category: string) => {
-    if (category === 'all') return documents;
-    if (category === 'no-text') return documents.filter(doc => 
-      !doc.extracted_text || doc.text_extraction_status === 'failed'
+  const handleBulkTextExtraction = () => {
+    const documentsNeedingExtraction = documents.filter(doc => 
+      doc.text_extraction_status === 'pending' || 
+      doc.text_extraction_status === 'failed' ||
+      doc.text_extraction_status === null
     );
-    if (category === 'processing') return documents.filter(doc => 
-      doc.text_extraction_status === 'processing'
-    );
-    return documents.filter(doc => doc.category === category || doc.subject_area === category);
+    
+    documentsNeedingExtraction.forEach(doc => {
+      triggerTextExtraction(doc.id);
+    });
   };
 
-  const filteredDocuments = filterDocuments(selectedTab);
-
-  const stats = {
-    total: documents.length,
-    withText: documents.filter(doc => doc.extracted_text && doc.text_extraction_status === 'completed').length,
-    processing: documents.filter(doc => doc.text_extraction_status === 'processing').length,
-    failed: documents.filter(doc => doc.text_extraction_status === 'failed').length
+  const getExtractionStats = () => {
+    const total = documents.length;
+    const completed = documents.filter(d => d.text_extraction_status === 'completed').length;
+    const processing = documents.filter(d => d.text_extraction_status === 'processing').length;
+    const failed = documents.filter(d => d.text_extraction_status === 'failed').length;
+    const pending = total - completed - processing - failed;
+    
+    return { total, completed, processing, failed, pending };
   };
 
-  if (isLoading) {
-    return (
-      <Card>
-        <CardContent className="p-6 text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-2 text-sm text-gray-600">Laster dokumenter...</p>
-        </CardContent>
-      </Card>
-    );
-  }
+  const stats = getExtractionStats();
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Dokumenter</h2>
-          <p className="text-sm text-gray-600">{clientName}</p>
+      {/* AI Status Overview */}
+      {documents.length > 0 && (
+        <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-medium text-purple-900 mb-2 flex items-center gap-2">
+                <Brain className="h-5 w-5" />
+                AI-Status for {clientName || 'klient'}
+              </h3>
+              <div className="text-sm text-purple-700 space-y-1">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div>
+                    <span className="font-medium text-green-700">{stats.completed}</span>
+                    <span className="text-green-600"> AI kan lese</span>
+                  </div>
+                  <div>
+                    <span className="font-medium text-blue-700">{stats.processing}</span>
+                    <span className="text-blue-600"> prosesserer</span>
+                  </div>
+                  <div>
+                    <span className="font-medium text-yellow-700">{stats.pending}</span>
+                    <span className="text-yellow-600"> venter</span>
+                  </div>
+                  <div>
+                    <span className="font-medium text-red-700">{stats.failed}</span>
+                    <span className="text-red-600"> feilet</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {(stats.pending > 0 || stats.failed > 0) && (
+              <Button 
+                onClick={handleBulkTextExtraction}
+                className="flex items-center gap-2"
+                disabled={isLoading}
+              >
+                <Zap className="h-4 w-4" />
+                Prosesser alle ({stats.pending + stats.failed})
+              </Button>
+            )}
+          </div>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm">
-            <Search className="h-4 w-4 mr-2" />
-            Søk
-          </Button>
-          <Button variant="outline" size="sm">
-            <Filter className="h-4 w-4 mr-2" />
-            Filter
-          </Button>
-        </div>
-      </div>
+      )}
 
-      {/* Stats */}
-      <div className="grid grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <FileText className="h-4 w-4 text-blue-600" />
-              <span className="text-sm font-medium">Totalt</span>
-            </div>
-            <p className="text-2xl font-bold">{stats.total}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <BarChart3 className="h-4 w-4 text-green-600" />
-              <span className="text-sm font-medium">Med tekst</span>
-            </div>
-            <p className="text-2xl font-bold text-green-600">{stats.withText}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <div className="h-4 w-4 rounded-full bg-yellow-500" />
-              <span className="text-sm font-medium">Prosesserer</span>
-            </div>
-            <p className="text-2xl font-bold text-yellow-600">{stats.processing}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <div className="h-4 w-4 rounded-full bg-red-500" />
-              <span className="text-sm font-medium">Feilet</span>
-            </div>
-            <p className="text-2xl font-bold text-red-600">{stats.failed}</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Tabs */}
-      <Tabs value={selectedTab} onValueChange={setSelectedTab}>
-        <TabsList className="grid grid-cols-6 w-full">
-          <TabsTrigger value="all">
-            Alle ({documents.length})
+      <Tabs defaultValue="documents" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="documents" className="flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            Dokumenter ({documents.length})
           </TabsTrigger>
-          <TabsTrigger value="lønn">
-            Lønn ({documents.filter(d => d.subject_area === 'lønn').length})
-          </TabsTrigger>
-          <TabsTrigger value="no-text">
-            Ingen tekst ({stats.failed})
-          </TabsTrigger>
-          <TabsTrigger value="processing">
-            Prosesserer ({stats.processing})
-          </TabsTrigger>
-          <TabsTrigger value="upload">
-            <Upload className="h-4 w-4 mr-2" />
+          <TabsTrigger value="upload" className="flex items-center gap-2">
+            <Upload className="h-4 w-4" />
             Last opp
-          </TabsTrigger>
-          <TabsTrigger value="insights">
-            Innsikt
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="all">
-          <DocumentReferenceViewer 
-            documents={filteredDocuments.map(doc => ({
-              id: doc.id,
-              fileName: doc.file_name,
-              category: doc.category,
-              summary: doc.ai_analysis_summary,
-              confidence: doc.ai_confidence_score,
-              textPreview: doc.extracted_text?.substring(0, 200),
-              uploadDate: doc.created_at,
-              relevantText: doc.extracted_text?.substring(0, 300)
-            }))}
-            title="Alle dokumenter"
+        <TabsContent value="documents" className="space-y-6">
+          <EnhancedDocumentList 
+            documents={documents}
+            isLoading={isLoading}
             clientId={clientId}
           />
         </TabsContent>
 
-        <TabsContent value="lønn">
-          <DocumentReferenceViewer 
-            documents={filteredDocuments.map(doc => ({
-              id: doc.id,
-              fileName: doc.file_name,
-              category: doc.category,
-              summary: doc.ai_analysis_summary,
-              confidence: doc.ai_confidence_score,
-              textPreview: doc.extracted_text?.substring(0, 200),
-              uploadDate: doc.created_at,
-              relevantText: doc.extracted_text?.substring(0, 300)
-            }))}
-            title="Lønn dokumenter"
+        <TabsContent value="upload" className="space-y-6">
+          <DocumentUploader 
             clientId={clientId}
+            categories={categories}
           />
-        </TabsContent>
-
-        <TabsContent value="no-text">
-          <DocumentReferenceViewer 
-            documents={filteredDocuments.map(doc => ({
-              id: doc.id,
-              fileName: doc.file_name,
-              category: doc.category,
-              summary: doc.ai_analysis_summary,
-              confidence: doc.ai_confidence_score,
-              textPreview: doc.extracted_text?.substring(0, 200),
-              uploadDate: doc.created_at,
-              relevantText: doc.extracted_text?.substring(0, 300)
-            }))}
-            title="Dokumenter uten tekst"
-            clientId={clientId}
-          />
-        </TabsContent>
-
-        <TabsContent value="processing">
-          <DocumentReferenceViewer 
-            documents={filteredDocuments.map(doc => ({
-              id: doc.id,
-              fileName: doc.file_name,
-              category: doc.category,
-              summary: doc.ai_analysis_summary,
-              confidence: doc.ai_confidence_score,
-              textPreview: doc.extracted_text?.substring(0, 200),
-              uploadDate: doc.created_at,
-              relevantText: doc.extracted_text?.substring(0, 300)
-            }))}
-            title="Dokumenter som prosesseres"
-            clientId={clientId}
-          />
-        </TabsContent>
-
-        <TabsContent value="upload">
-          <EnhancedDocumentUploader 
-            clientId={clientId}
-            onUploadComplete={() => {
-              // Refresh will happen automatically via useClientDocuments
-            }}
-          />
-        </TabsContent>
-
-        <TabsContent value="insights">
-          <Card>
-            <CardHeader>
-              <CardTitle>Dokumentinnsikt</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-600">Dokumentanalyse og innsikt kommer snart...</p>
-            </CardContent>
-          </Card>
         </TabsContent>
       </Tabs>
     </div>

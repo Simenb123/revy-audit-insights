@@ -8,47 +8,50 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-  console.log('🔧 Enhanced PDF text extractor started with improved debugging');
+  console.log('🔧 Enhanced PDF text extractor started - v2.0 with improved error handling');
   
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
-  let requestBody: any;
-  try {
-    // Parse request body once and store it
-    requestBody = await req.json();
-    console.log('📄 Request body parsed successfully:', { hasDocumentId: !!requestBody?.documentId });
-  } catch (parseError) {
-    console.error('❌ Failed to parse request body:', parseError);
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: 'Invalid JSON in request body',
-        details: parseError.message
-      }),
-      { 
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
-    );
-  }
+  let requestBody: any = null;
+  let documentId: string | null = null;
 
   try {
-    const { documentId } = requestBody;
+    // Robust request body parsing with multiple fallbacks
+    const rawBody = await req.text();
+    console.log('📄 Raw request body received:', rawBody.substring(0, 200));
     
-    console.log('📄 Processing document:', documentId);
+    if (!rawBody || rawBody.trim() === '') {
+      throw new Error('Request body is empty');
+    }
+
+    try {
+      requestBody = JSON.parse(rawBody);
+      console.log('✅ Request body parsed successfully:', { hasDocumentId: !!requestBody?.documentId });
+    } catch (parseError) {
+      console.error('❌ JSON parsing failed:', parseError.message);
+      throw new Error(`Invalid JSON in request body: ${parseError.message}`);
+    }
+
+    documentId = requestBody?.documentId;
     
     if (!documentId) {
-      console.error('❌ DocumentId er påkrevd men mangler');
+      console.error('❌ DocumentId missing from request');
       throw new Error('DocumentId er påkrevd');
     }
 
-    // Initialize Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    console.log('📄 Processing document:', documentId);
 
+    // Initialize Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error('Supabase configuration missing');
+    }
+    
+    const supabase = createClient(supabaseUrl, supabaseKey);
     console.log('✅ Supabase client initialized');
 
     // Get document from database
@@ -59,7 +62,7 @@ serve(async (req) => {
       .single();
 
     if (docError || !document) {
-      console.error('❌ Kunne ikke finne dokument:', docError?.message);
+      console.error('❌ Document not found:', docError?.message);
       throw new Error(`Kunne ikke finne dokument: ${docError?.message}`);
     }
 
@@ -72,13 +75,18 @@ serve(async (req) => {
 
     // Update status to processing
     console.log('🔄 Updating status to processing...');
-    await supabase
+    const { error: updateError } = await supabase
       .from('client_documents_files')
       .update({ 
         text_extraction_status: 'processing',
         updated_at: new Date().toISOString()
       })
       .eq('id', documentId);
+
+    if (updateError) {
+      console.error('❌ Status update failed:', updateError);
+      throw new Error(`Status update failed: ${updateError.message}`);
+    }
 
     console.log('✅ Status updated to processing');
 
@@ -89,29 +97,29 @@ serve(async (req) => {
       .download(document.file_path);
 
     if (downloadError || !fileData) {
-      console.error('❌ Kunne ikke laste ned fil:', downloadError?.message);
+      console.error('❌ File download failed:', downloadError?.message);
       throw new Error(`Kunne ikke laste ned fil: ${downloadError?.message}`);
     }
 
     console.log('✅ File downloaded successfully, size:', fileData.size);
 
     let extractedText = '';
-    let extractionMethod = '';
+    let extractionMethod = 'Unknown';
+    let aiAnalysis = '';
     
     // Check if OpenAI API key is available
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
     console.log('🔑 OpenAI API key available:', !!openaiApiKey);
 
-    // Method 1: Try OpenAI Vision API for PDF reading (best quality)
+    // Enhanced text extraction based on file type
     if (document.mime_type === 'application/pdf' && openaiApiKey) {
-      console.log('🤖 Attempting OpenAI Vision API for PDF text extraction...');
+      console.log('🤖 Attempting OpenAI Vision API for PDF...');
       
       try {
-        // Convert PDF to base64
         const arrayBuffer = await fileData.arrayBuffer();
         const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
         
-        console.log('📸 PDF converted to base64, size:', base64.length);
+        console.log('📸 PDF converted to base64, attempting Vision API...');
 
         const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
@@ -127,7 +135,7 @@ serve(async (req) => {
                 content: [
                   {
                     type: 'text',
-                    text: 'Les dette PDF-dokumentet nøye og ekstraher ALL tekst. Behold formatering, tabeller, overskrifter og struktur så godt som mulig. Inkluder alle tall, datoer og detaljer. Returner kun den rene teksten uten kommentarer eller tilleggsinformasjon.'
+                    text: 'Les dette PDF-dokumentet nøye og ekstraher ALL tekst. Behold formatering, tabeller, overskrifter og struktur så godt som mulig. Inkluder alle tall, datoer og detaljer. Returner kun den rene teksten uten kommentarer.'
                   },
                   {
                     type: 'image_url',
@@ -144,84 +152,79 @@ serve(async (req) => {
           }),
         });
 
-        console.log('📡 OpenAI API response status:', openaiResponse.status);
-
         if (openaiResponse.ok) {
           const aiResult = await openaiResponse.json();
           extractedText = aiResult.choices[0]?.message?.content || '';
           extractionMethod = 'OpenAI Vision API';
-          console.log('✅ OpenAI Vision extraction successful:', {
-            textLength: extractedText.length,
-            preview: extractedText.substring(0, 200) + '...'
-          });
+          console.log('✅ OpenAI Vision extraction successful:', extractedText.length, 'characters');
         } else {
-          const errorText = await openaiResponse.text();
-          console.error('❌ OpenAI Vision API error:', errorText);
+          const errorData = await openaiResponse.text();
+          console.error('❌ OpenAI Vision API error:', openaiResponse.status, errorData);
           throw new Error(`OpenAI API error: ${openaiResponse.status}`);
         }
       } catch (error) {
         console.error('❌ OpenAI Vision extraction failed:', error.message);
-        // Continue to fallback method
+        extractedText = `[OpenAI Vision feilet: ${error.message}]`;
+        extractionMethod = 'OpenAI Vision Failed';
       }
     }
 
-    // Method 2: Fallback - Simple text extraction for PDFs
-    if (!extractedText && document.mime_type === 'application/pdf') {
-      console.log('📖 Attempting fallback PDF text extraction...');
-      
+    // Handle Excel/CSV files
+    else if (document.mime_type?.includes('spreadsheet') || document.mime_type?.includes('excel') || document.mime_type?.includes('csv')) {
+      console.log('📊 Processing Excel/CSV file...');
       try {
-        // Simple text extraction from PDF
-        const arrayBuffer = await fileData.arrayBuffer();
-        const uint8Array = new Uint8Array(arrayBuffer);
-        const text = new TextDecoder().decode(uint8Array);
-        
-        // Look for text content patterns in PDF
-        const textMatches = text.match(/\((.*?)\)\s*Tj/g);
-        if (textMatches && textMatches.length > 0) {
-          extractedText = textMatches
-            .map(match => match.replace(/\(|\)\s*Tj/g, ''))
-            .join(' ')
-            .replace(/\\[rn]/g, '\n')
-            .trim();
-          extractionMethod = 'PDF Text Parsing';
-          console.log('✅ Fallback PDF extraction successful:', extractedText.length, 'characters');
+        if (document.mime_type.includes('csv')) {
+          extractedText = await fileData.text();
+          extractionMethod = 'CSV Text Reading';
         } else {
-          // Try simple string extraction
-          const readableText = text
-            .replace(/[^\x20-\x7E\s]/g, ' ')
-            .replace(/\s+/g, ' ')
-            .trim();
-          
-          if (readableText.length > 100) {
-            extractedText = readableText.substring(0, 2000);
-            extractionMethod = 'Simple Text Extraction';
-            console.log('✅ Simple text extraction completed:', extractedText.length, 'characters');
-          }
+          // For Excel files, provide basic info
+          extractedText = `Excel-fil: ${document.file_name}\nFilstørrelse: ${(document.file_size / 1024).toFixed(1)} KB\nType: ${document.mime_type}\n\n[Dette er en Excel-fil. For full analyse, åpne filen i Excel eller konverter til CSV-format.]`;
+          extractionMethod = 'Excel Metadata';
         }
+        console.log('✅ Spreadsheet processing completed:', extractedText.length, 'characters');
       } catch (error) {
-        console.error('❌ Fallback PDF extraction failed:', error.message);
+        console.error('❌ Spreadsheet processing failed:', error.message);
+        extractedText = `[Kunne ikke lese regneark: ${error.message}]`;
+        extractionMethod = 'Spreadsheet Failed';
       }
     }
 
-    // Method 3: Handle text files and other formats
-    if (!extractedText && (document.mime_type?.includes('text/') || document.mime_type?.includes('application/json'))) {
-      console.log('📝 Extracting text from text-based file...');
-      extractedText = await fileData.text();
-      extractionMethod = 'Direct Text Reading';
-      console.log('✅ Text file extraction completed:', extractedText.length, 'characters');
+    // Handle text files
+    else if (document.mime_type?.includes('text/')) {
+      console.log('📝 Processing text file...');
+      try {
+        extractedText = await fileData.text();
+        extractionMethod = 'Direct Text Reading';
+        console.log('✅ Text file processing completed:', extractedText.length, 'characters');
+      } catch (error) {
+        console.error('❌ Text file processing failed:', error.message);
+        extractedText = `[Kunne ikke lese tekstfil: ${error.message}]`;
+        extractionMethod = 'Text Reading Failed';
+      }
     }
 
-    // If still no text, provide informative message
+    // If no extraction method worked
     if (!extractedText || extractedText.trim().length < 10) {
       console.log('⚠️ No meaningful text extracted, setting informative message');
-      extractedText = `[Kunne ikke ekstraktere tekst fra denne filen. Filtype: ${document.mime_type}. ${!openaiApiKey ? 'OpenAI API-nøkkel mangler for avansert PDF-lesing.' : 'Filen kan være skannet, passordbeskyttet eller inneholde kun bilder.'}]`;
+      extractedText = `[Kunne ikke ekstraktere tekst fra denne filen]
+      
+Filtype: ${document.mime_type}
+Filnavn: ${document.file_name}
+Størrelse: ${(document.file_size / 1024 / 1024).toFixed(2)} MB
+
+${!openaiApiKey ? '⚠️ OpenAI API-nøkkel mangler for avansert PDF-lesing.' : ''}
+
+Mulige årsaker:
+- Filen er skannet og inneholder kun bilder
+- Filen er passordbeskyttet
+- Filformat støttes ikke fullt ut
+- Filen er tom eller skadet`;
       extractionMethod = 'No extraction possible';
     }
 
-    // Enhanced AI analysis if we have meaningful text
-    let aiAnalysis = '';
+    // Generate AI analysis if we have meaningful text
     if (extractedText && extractedText.length > 50 && !extractedText.startsWith('[Kunne ikke') && openaiApiKey) {
-      console.log('🧠 Generating AI analysis of extracted text...');
+      console.log('🧠 Generating AI analysis...');
       
       try {
         const analysisResponse = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -259,8 +262,8 @@ serve(async (req) => {
       }
     }
 
-    // Update document with extracted text and analysis
-    console.log('💾 Saving extracted text and analysis to database...');
+    // Update document with results
+    console.log('💾 Saving results to database...');
     const updateData = {
       extracted_text: extractedText,
       text_extraction_status: 'completed',
@@ -268,60 +271,59 @@ serve(async (req) => {
       updated_at: new Date().toISOString()
     };
 
-    const { error: updateError } = await supabase
+    const { error: finalUpdateError } = await supabase
       .from('client_documents_files')
       .update(updateData)
       .eq('id', documentId);
 
-    if (updateError) {
-      console.error('❌ Kunne ikke oppdatere dokument:', updateError.message);
-      throw new Error(`Kunne ikke oppdatere dokument: ${updateError.message}`);
+    if (finalUpdateError) {
+      console.error('❌ Final update failed:', finalUpdateError.message);
+      throw new Error(`Final update failed: ${finalUpdateError.message}`);
     }
 
-    console.log('🎉 Document processing completed successfully!');
-    console.log('📊 Final results:', {
+    console.log('🎉 Text extraction completed successfully!');
+    
+    const response = {
+      success: true,
       documentId,
       fileName: document.file_name,
       textLength: extractedText.length,
       extractionMethod,
       hasAiAnalysis: !!aiAnalysis,
-      success: true
-    });
+      preview: extractedText.substring(0, 300) + (extractedText.length > 300 ? '...' : ''),
+      message: 'Tekstekstraksjon fullført med suksess'
+    };
+
+    console.log('📊 Final results:', response);
 
     return new Response(
-      JSON.stringify({
-        success: true,
-        documentId,
-        fileName: document.file_name,
-        textLength: extractedText.length,
-        extractionMethod,
-        hasAiAnalysis: !!aiAnalysis,
-        preview: extractedText.substring(0, 300) + (extractedText.length > 300 ? '...' : ''),
-        message: 'Avansert tekstekstraksjon fullført med suksess'
-      }),
+      JSON.stringify(response),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
-    console.error('💥 Enhanced PDF extraction error:', error);
+    console.error('💥 Text extraction error:', error.message);
     
-    // Try to update document status to failed (only if we have a documentId)
-    if (requestBody?.documentId) {
+    // Try to update document status to failed if we have a documentId
+    if (documentId) {
       try {
-        const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-        const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-        const supabase = createClient(supabaseUrl, supabaseKey);
+        const supabaseUrl = Deno.env.get('SUPABASE_URL');
+        const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
         
-        await supabase
-          .from('client_documents_files')
-          .update({ 
-            text_extraction_status: 'failed',
-            extracted_text: `[Tekstekstraksjon feilet: ${error.message}]`,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', requestBody.documentId);
-        
-        console.log('✅ Status updated to failed');
+        if (supabaseUrl && supabaseKey) {
+          const supabase = createClient(supabaseUrl, supabaseKey);
+          
+          await supabase
+            .from('client_documents_files')
+            .update({ 
+              text_extraction_status: 'failed',
+              extracted_text: `[Tekstekstraksjon feilet: ${error.message}]`,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', documentId);
+          
+          console.log('✅ Status updated to failed');
+        }
       } catch (updateError) {
         console.error('❌ Failed to update error status:', updateError);
       }
@@ -331,7 +333,7 @@ serve(async (req) => {
       JSON.stringify({
         success: false,
         error: error.message,
-        details: 'Se server logs for mer detaljert feilsøking'
+        details: 'Tekstekstraksjon feilet - se server logs for detaljer'
       }),
       { 
         status: 500,
