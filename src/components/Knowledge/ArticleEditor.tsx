@@ -224,6 +224,44 @@ const ArticleEditor = () => {
     return `${baseSlug}-${Date.now().toString().slice(-6)}`;
   };
 
+  // Helper function to create tags in unified system
+  const createTagsInUnifiedSystem = async (tagNames: string[]) => {
+    for (const tagName of tagNames) {
+      if (!tagName.trim()) continue;
+      
+      try {
+        // Check if tag already exists in unified system
+        const { data: existingTag } = await supabase
+          .from('tags')
+          .select('id')
+          .eq('name', tagName.trim().toLowerCase().replace(/\s+/g, '_'))
+          .single();
+
+        if (!existingTag) {
+          // Create new tag in unified system
+          const { error: tagError } = await supabase
+            .from('tags')
+            .insert({
+              name: tagName.trim().toLowerCase().replace(/\s+/g, '_'),
+              display_name: tagName.trim(),
+              color: '#3B82F6', // Default blue color
+              category: 'article',
+              sort_order: 999,
+              is_active: true
+            });
+
+          if (tagError) {
+            console.error('Error creating tag in unified system:', tagError);
+          } else {
+            console.log(`Created new tag in unified system: ${tagName.trim()}`);
+          }
+        }
+      } catch (error) {
+        console.error('Error checking/creating tag:', error);
+      }
+    }
+  };
+
   const saveMutation = useMutation({
     mutationFn: async (data: ArticleFormData) => {
       if (!session?.user?.id) throw new Error("Not authenticated");
@@ -252,6 +290,19 @@ const ArticleEditor = () => {
       // Get the content type name from the selected ID
       const selectedContentType = contentTypes.find(ct => ct.id === data.contentTypeId);
       
+      // Process tags and create them in unified system
+      const tagNames = data.tags
+        ? data.tags
+            .split(",")
+            .map((tag) => tag.trim())
+            .filter(Boolean)
+        : [];
+
+      // Create tags in unified system before saving article
+      if (tagNames.length > 0) {
+        await createTagsInUnifiedSystem(tagNames);
+      }
+      
       const articleData = {
         title: data.title.trim(),
         slug: finalSlug,
@@ -260,12 +311,7 @@ const ArticleEditor = () => {
         category_id: data.categoryId,
         content_type_id: data.contentTypeId || null, // Store the ID
         content_type: selectedContentType?.name || null, // Store the legacy field as well for compatibility
-        tags: data.tags
-          ? data.tags
-              .split(",")
-              .map((tag) => tag.trim())
-              .filter(Boolean)
-          : null,
+        tags: tagNames.length > 0 ? tagNames : null,
         status: data.status,
         author_id: session.user.id,
         published_at:
