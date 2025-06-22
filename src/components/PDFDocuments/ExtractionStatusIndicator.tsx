@@ -13,10 +13,11 @@ const ExtractionStatusIndicator = ({ document }: ExtractionStatusIndicatorProps)
     switch (document.text_extraction_status) {
       case 'completed':
         // Check if we actually have meaningful extracted text
-        const hasRealText = document.extracted_text && 
-          typeof document.extracted_text === 'string' &&
-          document.extracted_text.length > 50 &&
-          !document.extracted_text.startsWith('[Kunne ikke');
+        const extractedText = document.extracted_text;
+        const hasRealText = extractedText && 
+          typeof extractedText === 'string' &&
+          extractedText.length > 50 &&
+          !extractedText.startsWith('[Kunne ikke');
         
         return {
           icon: hasRealText ? CheckCircle : Eye,
