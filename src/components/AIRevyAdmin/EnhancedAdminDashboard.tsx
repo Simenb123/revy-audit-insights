@@ -16,7 +16,9 @@ import {
   Database,
   Sparkles,
   Workflow,
-  Shield
+  Shield,
+  Hash,
+  Link2
 } from 'lucide-react';
 import PromptEditor from './PromptEditor';
 import KnowledgeMonitor from './KnowledgeMonitor';
@@ -29,6 +31,9 @@ import AuditActionGenerator from './AuditActionGenerator';
 import TagManager from './TagManager';
 import DatabaseTools from './DatabaseTools';
 import WorkflowManager from './WorkflowManager';
+import TagManagerComponent from './TagManagerComponent';
+import EnhancedContentTypeManager from './EnhancedContentTypeManager';
+import EnhancedSubjectAreaManager from './EnhancedSubjectAreaManager';
 
 const EnhancedAdminDashboard = () => {
   return (
@@ -47,35 +52,39 @@ const EnhancedAdminDashboard = () => {
         </Badge>
       </div>
 
-      <Tabs defaultValue="prompts" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-9">
-          <TabsTrigger value="prompts" className="flex items-center gap-2">
-            <Settings className="h-4 w-4" />
-            Prompts
-          </TabsTrigger>
-          <TabsTrigger value="categories" className="flex items-center gap-2">
-            <FolderTree className="h-4 w-4" />
-            Kategorier
-          </TabsTrigger>
+      <Tabs defaultValue="subject-areas" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-10">
           <TabsTrigger value="subject-areas" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
             Emner
           </TabsTrigger>
+          <TabsTrigger value="content-types" className="flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            Typer
+          </TabsTrigger>
+          <TabsTrigger value="tags" className="flex items-center gap-2">
+            <Hash className="h-4 w-4" />
+            Tags
+          </TabsTrigger>
+          <TabsTrigger value="connections" className="flex items-center gap-2">
+            <Link2 className="h-4 w-4" />
+            Koblinger
+          </TabsTrigger>
           <TabsTrigger value="document-types" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
-            Dokumenttyper
+            Dok.typer
           </TabsTrigger>
           <TabsTrigger value="audit-actions" className="flex items-center gap-2">
             <ListChecks className="h-4 w-4" />
             Handlinger
           </TabsTrigger>
-          <TabsTrigger value="tags" className="flex items-center gap-2">
-            <Tags className="h-4 w-4" />
-            Tags
+          <TabsTrigger value="categories" className="flex items-center gap-2">
+            <FolderTree className="h-4 w-4" />
+            Kategorier
           </TabsTrigger>
-          <TabsTrigger value="workflow" className="flex items-center gap-2">
-            <Workflow className="h-4 w-4" />
-            Arbeidsflyt
+          <TabsTrigger value="prompts" className="flex items-center gap-2">
+            <Settings className="h-4 w-4" />
+            Prompts
           </TabsTrigger>
           <TabsTrigger value="database" className="flex items-center gap-2">
             <Database className="h-4 w-4" />
@@ -86,6 +95,80 @@ const EnhancedAdminDashboard = () => {
             Analyser
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="subject-areas">
+          <Card>
+            <CardHeader>
+              <CardTitle>Emneområde Administrasjon</CardTitle>
+              <CardDescription>
+                Hovedkobling for alt innhold - emneområder kobler sammen artikler, handlinger og dokumenter
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <EnhancedSubjectAreaManager />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="content-types">
+          <Card>
+            <CardHeader>
+              <CardTitle>Innholdstype Administrasjon</CardTitle>
+              <CardDescription>
+                Administrer innholdstyper som fagartikkel, ISA-standard, lov, forskrift osv.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <EnhancedContentTypeManager />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="tags">
+          <Card>
+            <CardHeader>
+              <CardTitle>Tag System Administrasjon</CardTitle>
+              <CardDescription>
+                Sentralisert tag-system for strukturert klassifisering på tvers av alle innholdstyper
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <TagManagerComponent />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="connections">
+          <Card>
+            <CardHeader>
+              <CardTitle>Koblingsadministrasjon</CardTitle>
+              <CardDescription>
+                Administrer koblinger mellom emneområder, innholdstyper, tags og andre elementer
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center text-muted-foreground py-8">
+                <Link2 className="h-8 w-8 mx-auto mb-2" />
+                <h3 className="font-medium">Koblingsverktøy</h3>
+                <p className="text-sm">
+                  Her vil du administrere alle koblinger mellom de ulike systemkomponentene.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="document-types">
+          <DocumentTypeManager />
+        </TabsContent>
+
+        <TabsContent value="audit-actions">
+          <AuditActionGenerator />
+        </TabsContent>
+
+        <TabsContent value="categories">
+          <CategoryStructureManager />
+        </TabsContent>
 
         <TabsContent value="prompts">
           <Card>
@@ -99,30 +182,6 @@ const EnhancedAdminDashboard = () => {
               <PromptEditor />
             </CardContent>
           </Card>
-        </TabsContent>
-
-        <TabsContent value="categories">
-          <CategoryStructureManager />
-        </TabsContent>
-
-        <TabsContent value="subject-areas">
-          <SubjectAreaManager />
-        </TabsContent>
-
-        <TabsContent value="document-types">
-          <DocumentTypeManager />
-        </TabsContent>
-
-        <TabsContent value="audit-actions">
-          <AuditActionGenerator />
-        </TabsContent>
-
-        <TabsContent value="tags">
-          <TagManager />
-        </TabsContent>
-
-        <TabsContent value="workflow">
-          <WorkflowManager />
         </TabsContent>
 
         <TabsContent value="database">

@@ -42,9 +42,50 @@ export interface SubjectArea {
   updated_at: string;
 }
 
+export interface Tag {
+  id: string;
+  name: string;
+  display_name: string;
+  description?: string;
+  color: string;
+  category?: string;
+  sort_order: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface ArticleSubjectArea {
   id: string;
   article_id: string;
+  subject_area_id: string;
+  created_at: string;
+}
+
+export interface ArticleTag {
+  id: string;
+  article_id: string;
+  tag_id: string;
+  created_at: string;
+}
+
+export interface AuditActionSubjectArea {
+  id: string;
+  action_template_id: string;
+  subject_area_id: string;
+  created_at: string;
+}
+
+export interface AuditActionTag {
+  id: string;
+  action_template_id: string;
+  tag_id: string;
+  created_at: string;
+}
+
+export interface DocumentTypeSubjectArea {
+  id: string;
+  document_type_id: string;
   subject_area_id: string;
   created_at: string;
 }
@@ -67,6 +108,7 @@ export interface KnowledgeArticle {
   category?: Partial<KnowledgeCategory>;
   content_type_entity?: Partial<ContentTypeEntity>;
   subject_areas?: SubjectArea[];
+  article_tags?: Tag[];
   embedding?: any;
   reference_code?: string;
   content_type?: ContentType; // Legacy field for backward compatibility

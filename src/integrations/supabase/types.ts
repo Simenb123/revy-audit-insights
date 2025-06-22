@@ -512,6 +512,78 @@ export type Database = {
           },
         ]
       }
+      audit_action_subject_areas: {
+        Row: {
+          action_template_id: string | null
+          created_at: string
+          id: string
+          subject_area_id: string | null
+        }
+        Insert: {
+          action_template_id?: string | null
+          created_at?: string
+          id?: string
+          subject_area_id?: string | null
+        }
+        Update: {
+          action_template_id?: string | null
+          created_at?: string
+          id?: string
+          subject_area_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_action_subject_areas_action_template_id_fkey"
+            columns: ["action_template_id"]
+            isOneToOne: false
+            referencedRelation: "audit_action_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_action_subject_areas_subject_area_id_fkey"
+            columns: ["subject_area_id"]
+            isOneToOne: false
+            referencedRelation: "subject_areas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_action_tags: {
+        Row: {
+          action_template_id: string | null
+          created_at: string
+          id: string
+          tag_id: string | null
+        }
+        Insert: {
+          action_template_id?: string | null
+          created_at?: string
+          id?: string
+          tag_id?: string | null
+        }
+        Update: {
+          action_template_id?: string | null
+          created_at?: string
+          id?: string
+          tag_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_action_tags_action_template_id_fkey"
+            columns: ["action_template_id"]
+            isOneToOne: false
+            referencedRelation: "audit_action_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_action_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_action_templates: {
         Row: {
           action_type: Database["public"]["Enums"]["action_type"]
@@ -1674,6 +1746,42 @@ export type Database = {
           },
         ]
       }
+      document_type_subject_areas: {
+        Row: {
+          created_at: string
+          document_type_id: string | null
+          id: string
+          subject_area_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          document_type_id?: string | null
+          id?: string
+          subject_area_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          document_type_id?: string | null
+          id?: string
+          subject_area_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_type_subject_areas_document_type_id_fkey"
+            columns: ["document_type_id"]
+            isOneToOne: false
+            referencedRelation: "document_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_type_subject_areas_subject_area_id_fkey"
+            columns: ["subject_area_id"]
+            isOneToOne: false
+            referencedRelation: "subject_areas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       document_types: {
         Row: {
           created_at: string
@@ -1819,6 +1927,42 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      knowledge_article_tags: {
+        Row: {
+          article_id: string | null
+          created_at: string
+          id: string
+          tag_id: string | null
+        }
+        Insert: {
+          article_id?: string | null
+          created_at?: string
+          id?: string
+          tag_id?: string | null
+        }
+        Update: {
+          article_id?: string | null
+          created_at?: string
+          id?: string
+          tag_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knowledge_article_tags_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "knowledge_article_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "tags"
             referencedColumns: ["id"]
           },
         ]
@@ -2796,6 +2940,45 @@ export type Database = {
           description?: string | null
           display_name?: string
           icon?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      tags: {
+        Row: {
+          category: string | null
+          color: string
+          created_at: string
+          description: string | null
+          display_name: string
+          id: string
+          is_active: boolean
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          color?: string
+          created_at?: string
+          description?: string | null
+          display_name: string
+          id?: string
+          is_active?: boolean
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          color?: string
+          created_at?: string
+          description?: string | null
+          display_name?: string
           id?: string
           is_active?: boolean
           name?: string
