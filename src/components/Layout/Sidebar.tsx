@@ -20,9 +20,9 @@ const Sidebar = ({ isCollapsed, onToggle }: SidebarProps) => {
   const isClientContext = location.pathname.includes('/klienter/') && orgNumber;
 
   return (
-    <div className="h-full w-full bg-sidebar border-r border-sidebar-border flex flex-col">
-      {/* Header with toggle */}
-      <div className="p-4 border-b border-sidebar-border flex-shrink-0">
+    <div className="h-full w-full bg-sidebar border-r border-sidebar-border flex flex-col relative">
+      {/* Toggle button positioned on the right side inside the sidebar */}
+      <div className="absolute top-4 right-2 z-10">
         <Button
           variant="ghost"
           size="icon"
@@ -35,7 +35,7 @@ const Sidebar = ({ isCollapsed, onToggle }: SidebarProps) => {
       </div>
       
       {/* Navigation Content - Scrollable */}
-      <div className="flex-1 min-h-0 p-4 overflow-y-auto">
+      <div className="flex-1 min-h-0 p-4 pt-14 overflow-y-auto">
         {isClientContext ? (
           <ClientNav />
         ) : (

@@ -7,6 +7,7 @@ import RightSidebar from './RightSidebar';
 import { isDevelopment, isSecureContext } from '@/utils/networkHelpers';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertTriangle } from 'lucide-react';
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 
 const AppLayout = () => {
   const [showSecurityWarning, setShowSecurityWarning] = useState(false);
@@ -40,46 +41,51 @@ const AppLayout = () => {
       
       <AppHeader />
       
-      <div className="flex flex-1 relative">
-        {/* Left Sidebar - Fixed position */}
-        <div 
-          className={`fixed left-0 top-16 bottom-0 z-40 transition-all duration-300 ${
-            leftSidebarCollapsed ? 'w-16' : 'w-64'
-          }`}
-          style={{ height: 'calc(100vh - 4rem)' }}
-        >
-          <Sidebar 
-            isCollapsed={leftSidebarCollapsed}
-            onToggle={() => setLeftSidebarCollapsed(!leftSidebarCollapsed)}
-          />
-        </div>
-        
-        {/* Main Content Area - Adjusted for fixed sidebars */}
-        <main 
-          className="flex-1 overflow-auto bg-white transition-all duration-300"
-          style={{ 
-            marginLeft: leftSidebarCollapsed ? '4rem' : '16rem',
-            marginRight: rightSidebarCollapsed ? '4rem' : '20rem',
-            height: 'calc(100vh - 4rem)'
-          }}
-        >
-          <div className="container mx-auto px-4 py-6 max-w-none">
-            <Outlet />
-          </div>
-        </main>
-        
-        {/* Right Sidebar - Fixed position */}
-        <div 
-          className={`fixed right-0 top-16 bottom-0 z-40 transition-all duration-300 ${
-            rightSidebarCollapsed ? 'w-16' : 'w-80'
-          }`}
-          style={{ height: 'calc(100vh - 4rem)' }}
-        >
-          <RightSidebar 
-            isCollapsed={rightSidebarCollapsed}
-            onToggle={() => setRightSidebarCollapsed(!rightSidebarCollapsed)}
-          />
-        </div>
+      <div className="flex-1" style={{ height: 'calc(100vh - 4rem)' }}>
+        <ResizablePanelGroup direction="horizontal" className="h-full">
+          {/* Left Sidebar Panel */}
+          <ResizablePanel 
+            defaultSize={leftSidebarCollapsed ? 4 : 16} 
+            minSize={4} 
+            maxSize={25}
+            className="min-w-16"
+          >
+            <Sidebar 
+              isCollapsed={leftSidebarCollapsed}
+              onToggle={() => setLeftSidebarCollapsed(!leftSidebarCollapsed)}
+            />
+          </ResizablePanel>
+          
+          {!leftSidebarCollapsed && (
+            <ResizableHandle withHandle className="w-2 bg-border hover:bg-accent transition-colors" />
+          )}
+          
+          {/* Main Content Panel */}
+          <ResizablePanel defaultSize={60} minSize={30}>
+            <main className="h-full overflow-auto bg-white">
+              <div className="container mx-auto px-4 py-6 max-w-none">
+                <Outlet />
+              </div>
+            </main>
+          </ResizablePanel>
+          
+          {!rightSidebarCollapsed && (
+            <ResizableHandle withHandle className="w-2 bg-border hover:bg-accent transition-colors" />
+          )}
+          
+          {/* Right Sidebar Panel */}
+          <ResizablePanel 
+            defaultSize={rightSidebarCollapsed ? 4 : 24} 
+            minSize={4} 
+            maxSize={50}
+            className="min-w-16"
+          >
+            <RightSidebar 
+              isCollapsed={rightSidebarCollapsed}
+              onToggle={() => setRightSidebarCollapsed(!rightSidebarCollapsed)}
+            />
+          </ResizablePanel>
+        </ResizablePanelGroup>
       </div>
     </div>
   );

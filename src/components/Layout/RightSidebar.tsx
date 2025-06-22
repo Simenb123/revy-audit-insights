@@ -26,13 +26,6 @@ interface RightSidebarProps {
 
 type SidebarSize = 'compact' | 'normal' | 'wide';
 
-const SIDEBAR_WIDTHS = {
-  compact: 'w-64',    // 256px
-  normal: 'w-80',     // 320px  
-  wide: 'w-96',       // 384px
-  collapsed: 'w-16'   // 64px
-};
-
 const RightSidebar = ({ isCollapsed = false, onToggle }: RightSidebarProps) => {
   const [sidebarSize, setSidebarSize] = useState<SidebarSize>('normal');
   const [isPeekMode, setIsPeekMode] = useState(false);
@@ -99,8 +92,9 @@ const RightSidebar = ({ isCollapsed = false, onToggle }: RightSidebarProps) => {
 
   if (isCollapsed) {
     return (
-      <div className="h-full w-16 bg-background border-l border-border flex flex-col">
-        <div className="flex-1 min-h-0 p-2 flex flex-col items-center gap-2 pt-4">
+      <div className="h-full w-full bg-background border-l border-border flex flex-col relative">
+        {/* Toggle button positioned on the left side inside the sidebar */}
+        <div className="absolute top-4 left-2 z-10">
           <TooltipProvider delayDuration={0}>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -118,10 +112,12 @@ const RightSidebar = ({ isCollapsed = false, onToggle }: RightSidebarProps) => {
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
+        </div>
 
-          {/* Quick indicators when collapsed */}
+        {/* Quick indicators when collapsed */}
+        <div className="flex-1 min-h-0 p-2 flex flex-col items-center gap-2 pt-14">
           {enhancedClientData && (
-            <div className="flex flex-col items-center gap-1 mt-4">
+            <div className="flex flex-col items-center gap-1">
               <div className="h-2 w-2 rounded-full bg-green-500" title="Klient aktiv" />
               {enhancedClientData.documentSummary.totalDocuments > 0 && (
                 <div className="text-xs text-muted-foreground">
@@ -137,12 +133,24 @@ const RightSidebar = ({ isCollapsed = false, onToggle }: RightSidebarProps) => {
 
   return (
     <div className={cn(
-      "h-full bg-background border-l border-border flex flex-col overflow-hidden transition-all duration-300 relative",
-      SIDEBAR_WIDTHS[sidebarSize],
+      "h-full w-full bg-background border-l border-border flex flex-col overflow-hidden relative",
       isPeekMode && "shadow-lg z-10"
     )}>
+      {/* Toggle button positioned on the left side inside the sidebar */}
+      <div className="absolute top-4 left-2 z-10">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onToggle}
+          className="h-8 w-8 hover:bg-accent flex-shrink-0"
+          title={isMobile ? "Lukk" : "Trekk inn AI-assistant"}
+        >
+          {isMobile ? <X className="h-4 w-4" /> : <PanelRightClose className="h-4 w-4" />}
+        </Button>
+      </div>
+
       {/* Enhanced Header */}
-      <div className="border-b border-border flex items-center justify-between p-3 flex-shrink-0">
+      <div className="border-b border-border flex items-center justify-between p-3 pl-12 flex-shrink-0">
         <div className="flex items-center gap-2 min-w-0 flex-1">
           <MessageSquare className="h-4 w-4 text-blue-600 flex-shrink-0" />
           <h3 className="font-medium text-sm truncate">AI-Revi Assistant</h3>
@@ -197,7 +205,7 @@ const RightSidebar = ({ isCollapsed = false, onToggle }: RightSidebarProps) => {
                               sidebarSize === 'compact' && "bg-accent"
                             )}
                           >
-                            Kompakt (256px)
+                            Kompakt
                           </button>
                           <button
                             onClick={() => handleSizeChange('normal')}
@@ -206,7 +214,7 @@ const RightSidebar = ({ isCollapsed = false, onToggle }: RightSidebarProps) => {
                               sidebarSize === 'normal' && "bg-accent"
                             )}
                           >
-                            Normal (320px)
+                            Normal
                           </button>
                           <button
                             onClick={() => handleSizeChange('wide')}
@@ -215,7 +223,7 @@ const RightSidebar = ({ isCollapsed = false, onToggle }: RightSidebarProps) => {
                               sidebarSize === 'wide' && "bg-accent"
                             )}
                           >
-                            Bred (384px)
+                            Bred
                           </button>
                         </div>
                       </div>
@@ -228,16 +236,6 @@ const RightSidebar = ({ isCollapsed = false, onToggle }: RightSidebarProps) => {
               </Tooltip>
             </TooltipProvider>
           )}
-
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onToggle}
-            className="h-6 w-6 hover:bg-accent flex-shrink-0"
-            title={isMobile ? "Lukk" : "Trekk inn AI-assistant"}
-          >
-            {isMobile ? <X className="h-3 w-3" /> : <PanelRightClose className="h-3 w-3" />}
-          </Button>
         </div>
       </div>
 
