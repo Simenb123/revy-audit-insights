@@ -1,11 +1,11 @@
 
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
-import { Upload, FileText, Brain, Zap } from 'lucide-react';
+import { Upload, FileText, Brain } from 'lucide-react';
 import { useClientDocuments } from '@/hooks/useClientDocuments';
 import DocumentUploader from './DocumentUploader';
 import EnhancedDocumentList from './EnhancedDocumentList';
+import BulkTextExtraction from './BulkTextExtraction';
 
 interface ImprovedClientDocumentManagerProps {
   clientId: string;
@@ -16,19 +16,7 @@ const ImprovedClientDocumentManager: React.FC<ImprovedClientDocumentManagerProps
   clientId,
   clientName
 }) => {
-  const { documents, categories, isLoading, triggerTextExtraction } = useClientDocuments(clientId);
-
-  const handleBulkTextExtraction = () => {
-    const documentsNeedingExtraction = documents.filter(doc => 
-      doc.text_extraction_status === 'pending' || 
-      doc.text_extraction_status === 'failed' ||
-      doc.text_extraction_status === null
-    );
-    
-    documentsNeedingExtraction.forEach(doc => {
-      triggerTextExtraction(doc.id);
-    });
-  };
+  const { documents, categories, isLoading, refetch } = useClientDocuments(clientId);
 
   const getExtractionStats = () => {
     const total = documents.length;
@@ -42,6 +30,10 @@ const ImprovedClientDocumentManager: React.FC<ImprovedClientDocumentManagerProps
 
   const stats = getExtractionStats();
 
+  const handleDocumentUpdate = () => {
+    refetch();
+  };
+
   return (
     <div className="space-y-6">
       {/* AI Status Overview */}
@@ -51,7 +43,7 @@ const ImprovedClientDocumentManager: React.FC<ImprovedClientDocumentManagerProps
             <div>
               <h3 className="font-medium text-purple-900 mb-2 flex items-center gap-2">
                 <Brain className="h-5 w-5" />
-                AI-Status for {clientName || 'klient'}
+                🚀 Frontend AI-Prosessering for {clientName || 'klient'}
               </h3>
               <div className="text-sm text-purple-700 space-y-1">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -74,19 +66,16 @@ const ImprovedClientDocumentManager: React.FC<ImprovedClientDocumentManagerProps
                 </div>
               </div>
             </div>
-            
-            {(stats.pending > 0 || stats.failed > 0) && (
-              <Button 
-                onClick={handleBulkTextExtraction}
-                className="flex items-center gap-2"
-                disabled={isLoading}
-              >
-                <Zap className="h-4 w-4" />
-                Prosesser alle ({stats.pending + stats.failed})
-              </Button>
-            )}
           </div>
         </div>
+      )}
+
+      {/* Bulk Processing */}
+      {documents.length > 0 && (
+        <BulkTextExtraction 
+          documents={documents}
+          onUpdate={handleDocumentUpdate}
+        />
       )}
 
       <Tabs defaultValue="documents" className="space-y-6">
@@ -106,6 +95,7 @@ const ImprovedClientDocumentManager: React.FC<ImprovedClientDocumentManagerProps
             documents={documents}
             isLoading={isLoading}
             clientId={clientId}
+            onUpdate={handleDocumentUpdate}
           />
         </TabsContent>
 

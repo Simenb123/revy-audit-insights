@@ -5,24 +5,25 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { FileText, Download, Trash2, Search, Calendar, Zap } from 'lucide-react';
+import { FileText, Download, Trash2, Search, Calendar } from 'lucide-react';
 import { ClientDocument, useClientDocuments } from '@/hooks/useClientDocuments';
 import { formatDistanceToNow } from 'date-fns';
 import { nb } from 'date-fns/locale';
-import DocumentStatusIndicator from './DocumentStatusIndicator';
+import FrontendDocumentProcessor from './FrontendDocumentProcessor';
 
 interface EnhancedDocumentListProps {
   documents: ClientDocument[];
   isLoading: boolean;
   clientId: string;
+  onUpdate?: () => void;
 }
 
-const EnhancedDocumentList = ({ documents, isLoading, clientId }: EnhancedDocumentListProps) => {
+const EnhancedDocumentList = ({ documents, isLoading, clientId, onUpdate }: EnhancedDocumentListProps) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   
-  const { deleteDocument, getDocumentUrl, triggerTextExtraction } = useClientDocuments(clientId);
+  const { deleteDocument, getDocumentUrl } = useClientDocuments(clientId);
 
   const filteredDocuments = documents.filter(doc => {
     const matchesSearch = doc.file_name.toLowerCase().includes(searchTerm.toLowerCase());
@@ -41,10 +42,6 @@ const EnhancedDocumentList = ({ documents, isLoading, clientId }: EnhancedDocume
     link.href = url;
     link.download = document.file_name;
     link.click();
-  };
-
-  const handleRetryExtraction = (documentId: string) => {
-    triggerTextExtraction(documentId);
   };
 
   const getFileIcon = (mimeType: string) => {
@@ -75,19 +72,19 @@ const EnhancedDocumentList = ({ documents, isLoading, clientId }: EnhancedDocume
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
           <div className="text-2xl font-bold text-green-700">{getStatsForStatus('completed')}</div>
-          <div className="text-sm text-green-600">AI kan lese</div>
+          <div className="text-sm text-green-600">✅ AI kan lese</div>
         </div>
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
           <div className="text-2xl font-bold text-blue-700">{getStatsForStatus('processing')}</div>
-          <div className="text-sm text-blue-600">Prosesserer</div>
+          <div className="text-sm text-blue-600">🔄 Prosesserer</div>
         </div>
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-center">
           <div className="text-2xl font-bold text-yellow-700">{getStatsForStatus('pending')}</div>
-          <div className="text-sm text-yellow-600">Venter</div>
+          <div className="text-sm text-yellow-600">⏳ Venter</div>
         </div>
         <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-center">
           <div className="text-2xl font-bold text-red-700">{getStatsForStatus('failed')}</div>
-          <div className="text-sm text-red-600">Feilet</div>
+          <div className="text-sm text-red-600">❌ Feilet</div>
         </div>
       </div>
 
@@ -100,7 +97,7 @@ const EnhancedDocumentList = ({ documents, isLoading, clientId }: EnhancedDocume
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
@@ -137,19 +134,6 @@ const EnhancedDocumentList = ({ documents, isLoading, clientId }: EnhancedDocume
                 <SelectItem value="failed">Feilet</SelectItem>
               </SelectContent>
             </Select>
-
-            <Button 
-              variant="outline" 
-              onClick={() => {
-                const pendingDocs = documents.filter(d => d.text_extraction_status === 'pending' || d.text_extraction_status === 'failed');
-                pendingDocs.forEach(doc => triggerTextExtraction(doc.id));
-              }}
-              disabled={documents.filter(d => d.text_extraction_status === 'pending' || d.text_extraction_status === 'failed').length === 0}
-              className="flex items-center gap-2"
-            >
-              <Zap className="h-4 w-4" />
-              Prosesser alle
-            </Button>
           </div>
         </CardContent>
       </Card>
@@ -189,9 +173,9 @@ const EnhancedDocumentList = ({ documents, isLoading, clientId }: EnhancedDocume
                       </div>
                       
                       <div className="flex flex-wrap gap-2 mt-2">
-                        <DocumentStatusIndicator 
+                        <FrontendDocumentProcessor 
                           document={document}
-                          onRetryExtraction={handleRetryExtraction}
+                          onUpdate={onUpdate}
                         />
                         
                         {document.category && (
