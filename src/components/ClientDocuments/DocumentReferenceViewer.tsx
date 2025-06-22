@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -72,7 +73,12 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
     }
   };
 
-  const handleViewDocument = async (docId: string, fileName: string) => {
+  const handleViewDocument = async (event: React.MouseEvent, docId: string, fileName: string) => {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    console.log('🎯 [VIEWER] View document clicked:', { docId, fileName, clientId });
+    
     if (!clientId) {
       toast.error('Klient-ID mangler');
       return;
@@ -81,7 +87,7 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
     setOperationResult(docId, 'loading');
     
     try {
-      console.log('📄 Viewing document:', { docId, fileName, clientId });
+      console.log('📄 [VIEWER] Fetching document data...');
       
       // Fetch document data
       const { supabase } = await import('@/integrations/supabase/client');
@@ -92,13 +98,13 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
         .single();
 
       if (error || !documentData) {
-        console.error('Error fetching document data:', error);
+        console.error('❌ [VIEWER] Error fetching document data:', error);
         setOperationResult(docId, 'error');
         toast.error('Kunne ikke hente dokumentdata');
         return;
       }
 
-      console.log('📄 Document data retrieved:', { 
+      console.log('✅ [VIEWER] Document data retrieved:', { 
         fileName: documentData.file_name,
         hasText: !!documentData.extracted_text,
         status: documentData.text_extraction_status
@@ -108,38 +114,28 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
       const url = await getDocumentUrl(documentData.file_path);
       
       if (url) {
-        // Test URL accessibility
-        try {
-          const response = await fetch(url, { method: 'HEAD' });
-          console.log('📄 URL accessibility check:', response.status);
-          
-          if (response.ok) {
-            window.open(url, '_blank', 'noopener,noreferrer');
-            toast.success('Dokumentet åpnes i ny fane');
-            setOperationResult(docId, 'success');
-          } else {
-            throw new Error(`Document not accessible (${response.status})`);
-          }
-        } catch (fetchError) {
-          console.warn('Could not verify URL accessibility, trying to open anyway:', fetchError);
-          // Try to open anyway - might work despite fetch failing
-          window.open(url, '_blank', 'noopener,noreferrer');
-          toast.success('Forsøker å åpne dokument...');
-          setOperationResult(docId, 'success');
-        }
+        console.log('✅ [VIEWER] Opening document in new tab');
+        window.open(url, '_blank', 'noopener,noreferrer');
+        toast.success('Dokumentet åpnes i ny fane');
+        setOperationResult(docId, 'success');
       } else {
-        console.error('Could not generate document URL');
+        console.error('❌ [VIEWER] Could not generate document URL');
         setOperationResult(docId, 'error');
         toast.error('Kunne ikke generere dokument-URL');
       }
     } catch (error) {
-      console.error('Error viewing document:', error);
+      console.error('❌ [VIEWER] Error viewing document:', error);
       setOperationResult(docId, 'error');
       toast.error('Kunne ikke åpne dokumentet for visning');
     }
   };
 
-  const handleDownloadDocument = async (docId: string, fileName: string) => {
+  const handleDownloadDocument = async (event: React.MouseEvent, docId: string, fileName: string) => {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    console.log('📥 [VIEWER] Download document clicked:', { docId, fileName, clientId });
+    
     if (!clientId) {
       toast.error('Klient-ID mangler');
       return;
@@ -148,7 +144,7 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
     setOperationResult(docId, 'loading');
     
     try {
-      console.log('📥 Downloading document:', { docId, fileName, clientId });
+      console.log('📥 [VIEWER] Fetching document data for download...');
       
       // Fetch document data
       const { supabase } = await import('@/integrations/supabase/client');
@@ -159,7 +155,7 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
         .single();
 
       if (error || !documentData) {
-        console.error('Error fetching document data:', error);
+        console.error('❌ [VIEWER] Error fetching document data:', error);
         setOperationResult(docId, 'error');
         toast.error('Kunne ikke hente dokumentdata');
         return;
@@ -170,33 +166,37 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
       setOperationResult(docId, 'success');
       
     } catch (error) {
-      console.error('Error downloading document:', error);
+      console.error('❌ [VIEWER] Error downloading document:', error);
       setOperationResult(docId, 'error');
       toast.error('Kunne ikke laste ned dokumentet');
     }
   };
 
-  const handleRetryTextExtraction = async (docId: string, fileName: string) => {
+  const handleRetryTextExtraction = async (event: React.MouseEvent, docId: string, fileName: string) => {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    console.log('🔄 [VIEWER] Retry text extraction clicked:', { docId, fileName, clientId });
+    
     if (!clientId) {
       toast.error('Klient-ID mangler');
       return;
     }
 
-    console.log('🎯 [COMPONENT] handleRetryTextExtraction called:', { docId, fileName, clientId });
     setOperationResult(docId, 'loading');
     
     try {
-      console.log('🔄 [COMPONENT] Calling triggerTextExtraction...');
+      console.log('🔄 [VIEWER] Starting text extraction...');
       
       // Call triggerTextExtraction with only documentId (simplified)
       await triggerTextExtraction(docId);
       
-      console.log('✅ [COMPONENT] triggerTextExtraction completed successfully');
+      console.log('✅ [VIEWER] Text extraction started successfully');
       setOperationResult(docId, 'success');
       toast.success('Tekstekstraksjon startet på nytt');
       
     } catch (error) {
-      console.error('❌ [COMPONENT] Error retrying text extraction:', error);
+      console.error('❌ [VIEWER] Error retrying text extraction:', error);
       setOperationResult(docId, 'error');
       toast.error(`Tekstekstraksjon feilet: ${error.message}`);
     }
@@ -303,14 +303,11 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
                           size="sm" 
                           variant="ghost" 
                           className="h-6 w-6 p-0"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleViewDocument(doc.id, doc.fileName);
-                          }}
+                          onClick={(e) => handleViewDocument(e, doc.id, doc.fileName)}
                           disabled={isLoading}
                           title="Vis dokument"
                         >
-                          {isLoading ? (
+                          {isLoading && operationStatus[doc.id] === 'loading' ? (
                             <Loader2 className="h-3 w-3 animate-spin" />
                           ) : (
                             <Eye className="h-3 w-3" />
@@ -320,10 +317,7 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
                           size="sm" 
                           variant="ghost" 
                           className="h-6 w-6 p-0"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDownloadDocument(doc.id, doc.fileName);
-                          }}
+                          onClick={(e) => handleDownloadDocument(e, doc.id, doc.fileName)}
                           disabled={isLoading}
                           title="Last ned dokument"
                         >
@@ -367,7 +361,7 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
                           size="sm" 
                           variant="outline" 
                           className="text-xs"
-                          onClick={() => handleViewDocument(doc.id, doc.fileName)}
+                          onClick={(e) => handleViewDocument(e, doc.id, doc.fileName)}
                           disabled={isLoading}
                         >
                           <Eye className="h-3 w-3 mr-1" />
@@ -377,7 +371,7 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
                           size="sm" 
                           variant="outline" 
                           className="text-xs"
-                          onClick={() => handleDownloadDocument(doc.id, doc.fileName)}
+                          onClick={(e) => handleDownloadDocument(e, doc.id, doc.fileName)}
                           disabled={isLoading}
                         >
                           <Download className="h-3 w-3 mr-1" />
@@ -388,7 +382,7 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
                             size="sm" 
                             variant="outline" 
                             className="text-xs"
-                            onClick={() => handleRetryTextExtraction(doc.id, doc.fileName)}
+                            onClick={(e) => handleRetryTextExtraction(e, doc.id, doc.fileName)}
                             disabled={isLoading}
                           >
                             <RefreshCw className="h-3 w-3 mr-1" />
