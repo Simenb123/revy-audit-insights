@@ -77,43 +77,10 @@ export const useClientTextExtraction = () => {
 
   const generateAIAnalysis = async (text: string, fileName: string): Promise<string> => {
     try {
-      const openaiApiKey = await supabase.rpc('get_secret', { secret_name: 'OPENAI_API_KEY' });
-      
-      if (!openaiApiKey.data) {
-        console.log('OpenAI API key not available, skipping AI analysis');
-        return '';
-      }
-
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${openaiApiKey.data}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'gpt-4o-mini',
-          messages: [
-            {
-              role: 'system',
-              content: 'Du er en norsk revisjonsekspert. Analyser dokumentet og gi et kort, presist sammendrag på norsk (max 300 ord) som fokuserer på revisjonsrelevant innhold som: beløp, datoer, transaksjoner, regnskapsposter, kontrakter, eller andre revisjonsrelevante detaljer.'
-            },
-            {
-              role: 'user',
-              content: `Analyser dette dokumentet og gi et detaljert sammendrag:\n\nFilnavn: ${fileName}\n\nInnhold:\n${text.substring(0, 4000)}`
-            }
-          ],
-          max_tokens: 400,
-          temperature: 0.2
-        }),
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        return result.choices[0]?.message?.content || '';
-      } else {
-        console.error('OpenAI API error:', response.status);
-        return '';
-      }
+      // For now, we'll use a placeholder since we don't have access to the OpenAI key via RPC
+      // In a real implementation, this would be handled via an edge function
+      console.log('AI analysis skipped - OpenAI key not available in frontend');
+      return '';
     } catch (error) {
       console.error('AI analysis error:', error);
       return '';
@@ -152,8 +119,14 @@ export const useClientTextExtraction = () => {
         throw new Error('Kunne ikke laste ned fil');
       }
 
+      // Convert Blob to File
+      const file = new File([fileData], document.file_name, {
+        type: document.mime_type,
+        lastModified: Date.now(),
+      });
+
       // Extract text
-      const extractedText = await extractTextFromFile(fileData);
+      const extractedText = await extractTextFromFile(file);
       let extractionMethod = 'Frontend ekstrasjon';
 
       if (!extractedText || extractedText.trim().length < 10) {
