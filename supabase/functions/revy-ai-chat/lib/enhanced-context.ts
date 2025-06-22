@@ -1,97 +1,123 @@
+// deno-lint-ignore-file no-explicit-any
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { searchClientDocuments, DocumentSearchResult } from './document-search.ts';
 
-import { searchKnowledgeIntelligently } from './improved-knowledge.ts';
-import { fetchEnhancedClientContext, searchDocumentContent, findDocumentByReference } from './client-context.ts';
+export interface EnhancedContext {
+  knowledge: any;
+  articleTagMapping: Record<string, string[]>;
+  clientContext: any;
+  documentSearchResults: DocumentSearchResult | null;
+}
 
-export async function buildEnhancedContextWithVariant(
-  message: string, 
-  context: string, 
-  clientData: any | null, 
-  selectedVariant?: any
-) {
-  console.log('🏗️ Building enhanced context with variant and document search support:', {
-    context,
-    variantName: selectedVariant?.name,
-    hasClientData: !!clientData
+export const buildEnhancedContextWithVariant = async (
+  message: string,
+  context: string,
+  clientData: any,
+  variant: any
+) => {
+  console.log('🏗️ Building enhanced context with variant and document search support:', { 
+    context, 
+    variantName: variant?.name, 
+    hasClientData: !!clientData 
   });
-  
-  try {
-    // Use the improved knowledge search that returns both articles and tag mappings
-    const knowledgePromise = searchKnowledgeIntelligently(message, context);
-    
-    const clientContextPromise = (clientData && clientData.id) 
-      ? fetchEnhancedClientContext(clientData.id) 
-      : Promise.resolve(null);
 
-    // Check if this is a document-related query and search for relevant documents
-    let documentSearchResults = null;
-    if (clientData && clientData.id && isDocumentQuery(message)) {
-      console.log('📄 Document query detected, searching for specific documents...');
-      
-      try {
-        // Try to find specific document by reference first
-        const specificDoc = await findDocumentByReference(clientData.id, message);
-        
-        if (specificDoc && specificDoc.fullContent) {
-          documentSearchResults = {
-            specificDocument: specificDoc,
-            generalDocuments: []
-          };
-          console.log('✅ Found specific document with content:', specificDoc.fileName);
-        } else {
-          // Fall back to general document search
-          const generalDocs = await searchDocumentContent(clientData.id, message);
-          documentSearchResults = {
-            specificDocument: null,
-            generalDocuments: generalDocs || []
-          };
-          console.log(`✅ Found ${generalDocs?.length || 0} relevant documents`);
-        }
-      } catch (docError) {
-        console.error('❌ Error searching for documents:', docError);
-      }
-    }
+  // Initialize Supabase for document search
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const supabase = createClient(supabaseUrl, supabaseKey);
+
+  const enhancedContext: any = {
+    knowledge: null,
+    articleTagMapping: {},
+    clientContext: null,
+    documentSearchResults: null
+  };
+
+  try {
+    // 1. Get knowledge articles (existing functionality)
+    console.log('🔍 Starting intelligent knowledge search with enhanced content type support...');
     
-    const [knowledgeResult, clientContext] = await Promise.all([
-      knowledgePromise,
-      clientContextPromise
-    ]);
-    
-    console.log('✅ Enhanced context built with variant and document search support:', { 
-      hasKnowledge: !!knowledgeResult && knowledgeResult.articles.length > 0,
-      knowledgeCount: knowledgeResult?.articles.length || 0,
-      tagMappingCount: Object.keys(knowledgeResult?.tagToArticleMap || {}).length,
-      hasClientContext: !!clientContext,
-      variantName: selectedVariant?.name,
-      hasDocumentSearchResults: !!documentSearchResults,
-      specificDocumentFound: !!documentSearchResults?.specificDocument,
-      generalDocumentsFound: documentSearchResults?.generalDocuments?.length || 0
+    const knowledgeResponse = await fetch(`${supabaseUrl}/functions/v1/knowledge-search`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${supabaseKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        message,
+        context,
+        limit: 15
+      })
     });
 
-    return { 
-      knowledge: knowledgeResult?.articles || [], 
-      articleTagMapping: knowledgeResult?.tagToArticleMap || {},
-      clientContext,
-      documentSearchResults
-    };
-  } catch (err) {
-    console.error("Error building enhanced context:", err);
-    return { 
-      knowledge: null, 
-      clientContext: null, 
-      articleTagMapping: {},
-      documentSearchResults: null
-    };
-  }
-}
+    if (knowledgeResponse.ok) {
+      const knowledgeData = await knowledgeResponse.json();
+      if (knowledgeData.articles && Array.isArray(knowledgeData.articles)) {
+        enhancedContext.knowledge = knowledgeData.articles;
+        enhancedContext.articleTagMapping = knowledgeData.tagMapping || {};
+        console.log('✅ Enhanced context built with variant and document search support:', {
+          hasKnowledge: true,
+          knowledgeCount: knowledgeData.articles.length,
+          tagMappingCount: Object.keys(knowledgeData.tagMapping || {}).length,
+          hasClientContext: !!clientData,
+          variantName: variant?.name,
+          hasDocumentSearchResults: false,
+          specificDocumentFound: false,
+          generalDocumentsFound: 0
+        });
+      }
+    }
 
-// Helper function to detect document queries
-function isDocumentQuery(message: string): boolean {
-  const documentKeywords = [
-    'dokument', 'faktura', 'rapport', 'fil', 'innhold', 'står på', 'viser',
-    'hva inneholder', 'kan du lese', 'se på', 'analyser', 'gjennomgå',
-    'nummer', 'kvitering', 'bilag', 'regning', 'hva står på'
-  ];
-  
-  const messageLower = message.toLowerCase();
-  return documentKeywords.some(keyword => messageLower.includes(keyword));
-}
+    // 2. Search client documents if available
+    if (clientData?.id) {
+      console.log('📄 Searching client documents for relevant content...');
+      
+      try {
+        // Import and use document search
+        const { searchClientDocuments } = await import('./document-search.ts');
+        const documentResults = await searchClientDocuments(message, clientData, supabase);
+        
+        if (documentResults) {
+          enhancedContext.documentSearchResults = documentResults;
+          console.log('📄 Document search results:', {
+            hasSpecificDocument: !!documentResults.specificDocument,
+            generalDocumentsCount: documentResults.generalDocuments?.length || 0
+          });
+        }
+      } catch (docError) {
+        console.error('❌ Document search error:', docError);
+        // Continue without document results
+      }
+    }
+
+    // 3. Build client context
+    if (clientData) {
+      enhancedContext.clientContext = {
+        company_name: clientData.company_name || clientData.name,
+        org_number: clientData.org_number,
+        industry: clientData.industry,
+        phase: clientData.phase,
+        documents: clientData.documents || [],
+        documentSummary: clientData.documentSummary || {}
+      };
+    }
+
+    console.log('🧠 Enhanced variant-aware context built with document support:', {
+      knowledgeArticleCount: enhancedContext.knowledge?.length || 0,
+      articleTagMappingCount: Object.keys(enhancedContext.articleTagMapping || {}).length,
+      hasClientContext: !!enhancedContext.clientContext,
+      hasDocumentResults: !!enhancedContext.documentSearchResults,
+      specificDocumentFound: !!enhancedContext.documentSearchResults?.specificDocument,
+      generalDocumentsFound: enhancedContext.documentSearchResults?.generalDocuments?.length || 0,
+      isGuestMode: !Deno.env.get('SUPABASE_USER_ID'),
+      variantName: variant?.name,
+      variantDescription: variant?.description
+    });
+
+    return enhancedContext;
+
+  } catch (error) {
+    console.error('❌ Error building enhanced context:', error);
+    return enhancedContext;
+  }
+};
