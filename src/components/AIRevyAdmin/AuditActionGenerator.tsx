@@ -60,31 +60,20 @@ const AuditActionGenerator = () => {
   // Map subject area names to the correct enum values used in the database
   const getSubjectAreaEnumValue = (subjectAreaName: string): string => {
     const mapping: Record<string, string> = {
-      'salg': 'sales',
-      'sales': 'sales',
-      'lønn': 'payroll', 
-      'payroll': 'payroll',
-      'driftskostnader': 'operating_expenses',
-      'operating_expenses': 'operating_expenses',
-      'varelager': 'inventory',
-      'inventory': 'inventory',
-      'finans': 'finance',
-      'finance': 'finance',
-      'bank': 'banking',
-      'banking': 'banking',
-      'anleggsmidler': 'fixed_assets',
-      'fixed_assets': 'fixed_assets',
-      'kundefordringer': 'receivables',
-      'receivables': 'receivables',
-      'leverandørgjeld': 'payables',
-      'payables': 'payables',
-      'egenkapital': 'equity',
-      'equity': 'equity',
-      'annet': 'other',
-      'other': 'other'
+      'Inntekter/Salg': 'sales',
+      'Lønn': 'payroll', 
+      'Andre driftskostnader': 'operating_expenses',
+      'Varelager': 'inventory',
+      'Finans': 'finance',
+      'Banktransaksjoner': 'banking',
+      'Investeringer/Anleggsmidler': 'fixed_assets',
+      'Kundefordringer': 'receivables',
+      'Leverandørgjeld': 'payables',
+      'Egenkapital': 'equity',
+      'Nærstående transaksjoner': 'other'
     };
     
-    return mapping[subjectAreaName] || subjectAreaName;
+    return mapping[subjectAreaName] || 'other';
   };
 
   const handleGenerateWithAI = async () => {
@@ -353,7 +342,7 @@ const AuditActionGenerator = () => {
                 </SelectTrigger>
                 <SelectContent>
                   {subjectAreas?.map((area) => (
-                    <SelectItem key={area.id} value={area.name}>
+                    <SelectItem key={area.id} value={area.display_name}>
                       {area.display_name}
                     </SelectItem>
                   ))}
@@ -392,7 +381,7 @@ const AuditActionGenerator = () => {
               {selectedSubjectArea && selectedActionType && (
                 <div className="flex gap-2">
                   <Badge variant="outline">
-                    {subjectAreas?.find(s => s.name === selectedSubjectArea)?.display_name}
+                    {selectedSubjectArea}
                   </Badge>
                   <Badge variant="outline">
                     {actionTypes.find(t => t.value === selectedActionType)?.label}
@@ -425,7 +414,7 @@ const AuditActionGenerator = () => {
           {selectedSubjectArea && previewTemplates && previewTemplates.length > 0 && (
             <div className="mt-6 p-4 border rounded-lg">
               <h3 className="font-medium mb-2">
-                Eksisterende handlinger - {subjectAreas?.find(s => s.name === selectedSubjectArea)?.display_name}
+                Eksisterende handlinger - {selectedSubjectArea}
               </h3>
               <p className="text-sm text-muted-foreground mb-4">
                 {previewTemplates.length} handlinger funnet
@@ -481,7 +470,7 @@ const AuditActionGenerator = () => {
           {selectedSubjectArea && (!previewTemplates || previewTemplates.length === 0) && !templatesLoading && (
             <div className="mt-6 p-4 border rounded-lg text-center">
               <p className="text-sm text-muted-foreground">
-                Ingen eksisterende handlinger funnet for {subjectAreas?.find(s => s.name === selectedSubjectArea)?.display_name}.
+                Ingen eksisterende handlinger funnet for {selectedSubjectArea}.
                 Bruk AI Generator eller opprett en ny handling manuelt.
               </p>
             </div>
