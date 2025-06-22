@@ -8,16 +8,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FileText, Link, Brain, CheckCircle, AlertTriangle, Target } from 'lucide-react';
 import { useEnhancedClientDocuments } from '@/hooks/useEnhancedClientDocuments';
 import { useEnhancedDocumentAnalysis } from '@/hooks/useEnhancedDocumentAnalysis';
-import { useEnhancedAuditActions } from '@/hooks/useEnhancedAuditActions';
+import { useEnhancedAuditActionTemplates } from '@/hooks/useEnhancedAuditActions';
 
 interface IntelligentDocumentLinkerProps {
   clientId: string;
+  selectedDocumentId?: string;
 }
 
-const IntelligentDocumentLinker = ({ clientId }: IntelligentDocumentLinkerProps) => {
+const IntelligentDocumentLinker = ({ clientId, selectedDocumentId }: IntelligentDocumentLinkerProps) => {
   const { documents, getCategorizeionStats, getDocumentsByConfidence } = useEnhancedClientDocuments(clientId);
   const { analyzeDocument, analyzeBatch, isAnalyzing } = useEnhancedDocumentAnalysis();
-  const { templates } = useEnhancedAuditActions();
+  const { data: templates } = useEnhancedAuditActionTemplates();
   const [activeTab, setActiveTab] = useState('overview');
 
   const stats = getCategorizeionStats();

@@ -81,17 +81,6 @@ export const updateDocumentWithAnalysis = async (result: DocumentAnalysisResult)
 
     if (error) throw error;
 
-    // Store detailed analysis results separately for audit action linking
-    await supabase
-      .from('document_analysis_results')
-      .upsert({
-        document_id: result.documentId,
-        relevant_audit_actions: result.relevantAuditActions,
-        quality_indicators: result.qualityIndicators,
-        extracted_key_data: result.extractedKeyData,
-        analysis_timestamp: new Date().toISOString()
-      });
-
     console.log('✅ Document analysis results stored successfully');
     
   } catch (error) {

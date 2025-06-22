@@ -353,3 +353,9 @@ export function useUpdateWorkingPaperTemplate() {
     }
   });
 }
+
+export function useEnhancedAuditActions() {
+  return {
+    templates: useEnhancedAuditActionTemplates()
+  };
+}
