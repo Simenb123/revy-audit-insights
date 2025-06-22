@@ -1,6 +1,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import type { AuditSubjectArea } from '@/types/audit-actions';
 
 export const useAuditActionTemplatesPreview = (subjectArea?: string, limit = 5) => {
   return useQuery({
@@ -22,7 +23,14 @@ export const useAuditActionTemplatesPreview = (subjectArea?: string, limit = 5) 
         .order('created_at', { ascending: false });
 
       if (subjectArea) {
-        query = query.eq('subject_area', subjectArea);
+        // Map the subject area name to enum value
+        const mappedSubjectArea = mapSubjectAreaName(subjectArea);
+        if (mappedSubjectArea) {
+          query = query.eq('subject_area', mappedSubjectArea);
+        } else {
+          // If no mapping found, return empty array
+          return [];
+        }
       }
 
       query = query.limit(limit);
@@ -49,3 +57,33 @@ export const useAuditActionTemplateCount = () => {
     }
   });
 };
+
+// Helper function to map subject area names to enum values
+function mapSubjectAreaName(name: string): AuditSubjectArea | null {
+  const mapping: Record<string, AuditSubjectArea> = {
+    'Salg': 'sales',
+    'Sales': 'sales',
+    'Lønn': 'payroll',
+    'Payroll': 'payroll',
+    'Driftskostnader': 'operating_expenses',
+    'Operating Expenses': 'operating_expenses',
+    'Varelager': 'inventory',
+    'Inventory': 'inventory',
+    'Finans': 'finance',
+    'Finance': 'finance',
+    'Bank': 'banking',
+    'Banking': 'banking',
+    'Anleggsmidler': 'fixed_assets',
+    'Fixed Assets': 'fixed_assets',
+    'Kundefordringer': 'receivables',
+    'Receivables': 'receivables',
+    'Leverandørgjeld': 'payables',
+    'Payables': 'payables',
+    'Egenkapital': 'equity',
+    'Equity': 'equity',
+    'Annet': 'other',
+    'Other': 'other'
+  };
+
+  return mapping[name] || null;
+}
