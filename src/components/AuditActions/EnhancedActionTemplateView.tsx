@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -13,13 +12,13 @@ import ActionAIAssistant from './ActionAIAssistant';
 interface EnhancedActionTemplateViewProps {
   template: EnhancedAuditActionTemplate;
   onCopyToClient?: (templateId: string) => void;
-  onEdit?: (template: EnhancedAuditActionTemplate) => void;
+  onEditTemplate?: (template: EnhancedAuditActionTemplate) => void;
 }
 
 const EnhancedActionTemplateView = ({ 
   template, 
   onCopyToClient, 
-  onEdit 
+  onEditTemplate 
 }: EnhancedActionTemplateViewProps) => {
   const [activeTab, setActiveTab] = useState('overview');
 
@@ -104,11 +103,11 @@ const EnhancedActionTemplateView = ({
           </div>
           
           <div className="flex gap-2 ml-4">
-            {onEdit && (
+            {onEditTemplate && (
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => onEdit(template)}
+                onClick={() => onEditTemplate(template)}
               >
                 Rediger
               </Button>
