@@ -3,6 +3,9 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import { Sparkles, Check, X, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -46,6 +49,8 @@ const AIMetadataSuggestions = ({
   const [isLoading, setIsLoading] = useState(false);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedSubjectAreas, setSelectedSubjectAreas] = useState<string[]>([]);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
+  const [selectedContentTypeId, setSelectedContentTypeId] = useState<string>('');
   const [useSuggestedSummary, setUseSuggestedSummary] = useState(true);
 
   const generateSuggestions = async () => {
@@ -114,6 +119,19 @@ VIKTIG: Svar kun med gyldig JSON, ingen ekstra tekst eller formatering.`,
           setSelectedTags(result.suggested_tags || []);
           setSelectedSubjectAreas(result.suggested_subject_areas || []);
           setUseSuggestedSummary(!!result.suggested_summary);
+          
+          // Map category and content type names to IDs
+          const categoryId = availableCategories.find(
+            c => c.name.toLowerCase() === result.suggested_category.toLowerCase()
+          )?.id || '';
+          setSelectedCategoryId(categoryId);
+
+          const contentTypeId = availableContentTypes.find(
+            ct => ct.display_name.toLowerCase() === result.suggested_content_type.toLowerCase() ||
+                  ct.name.toLowerCase() === result.suggested_content_type.toLowerCase()
+          )?.id || '';
+          setSelectedContentTypeId(contentTypeId);
+          
           toast.success('AI-forslag generert');
         } catch (parseError) {
           console.error('JSON Parse Error:', parseError, 'Raw JSON:', jsonMatch[0]);
@@ -135,17 +153,6 @@ VIKTIG: Svar kun med gyldig JSON, ingen ekstra tekst eller formatering.`,
   const applySuggestions = () => {
     if (!suggestions) return;
 
-    // Map category name to ID
-    const categoryId = availableCategories.find(
-      c => c.name.toLowerCase() === suggestions.suggested_category.toLowerCase()
-    )?.id || '';
-
-    // Map content type name to ID
-    const contentTypeId = availableContentTypes.find(
-      ct => ct.display_name.toLowerCase() === suggestions.suggested_content_type.toLowerCase() ||
-            ct.name.toLowerCase() === suggestions.suggested_content_type.toLowerCase()
-    )?.id || '';
-
     // Map subject area names to IDs
     const subjectAreaIds = selectedSubjectAreas
       .map(areaName => 
@@ -159,8 +166,8 @@ VIKTIG: Svar kun med gyldig JSON, ingen ekstra tekst eller formatering.`,
     onApplySuggestions({
       tags: selectedTags,
       subjectAreaIds,
-      categoryId,
-      contentTypeId,
+      categoryId: selectedCategoryId,
+      contentTypeId: selectedContentTypeId,
       summary: useSuggestedSummary ? suggestions.suggested_summary : undefined
     });
 
@@ -227,27 +234,57 @@ VIKTIG: Svar kun med gyldig JSON, ingen ekstra tekst eller formatering.`,
               </Badge>
             </div>
 
-            <div className="space-y-3">
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">
-                  Foreslått kategori:
-                </label>
-                <p className="text-sm">{suggestions.suggested_category}</p>
-              </div>
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">
+                    Kategori:
+                  </Label>
+                  <Select value={selectedCategoryId} onValueChange={setSelectedCategoryId}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Velg kategori" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableCategories.map((category) => (
+                        <SelectItem key={category.id} value={category.id}>
+                          {category.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">
-                  Foreslått innholdstype:
-                </label>
-                <p className="text-sm">{suggestions.suggested_content_type}</p>
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">
+                    Innholdstype:
+                  </Label>
+                  <Select value={selectedContentTypeId} onValueChange={setSelectedContentTypeId}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Velg innholdstype" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableContentTypes.map((type) => (
+                        <SelectItem key={type.id} value={type.id}>
+                          <div className="flex items-center gap-2">
+                            <div 
+                              className="w-3 h-3 rounded" 
+                              style={{ backgroundColor: type.color }}
+                            />
+                            {type.display_name}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               {suggestions.suggested_summary && (
                 <div>
                   <div className="flex items-center gap-2 mb-2">
-                    <label className="text-sm font-medium text-muted-foreground">
+                    <Label className="text-sm font-medium text-muted-foreground">
                       Foreslått sammendrag:
-                    </label>
+                    </Label>
                     <Badge
                       variant={useSuggestedSummary ? "default" : "outline"}
                       className="cursor-pointer text-xs"
@@ -273,9 +310,9 @@ VIKTIG: Svar kun med gyldig JSON, ingen ekstra tekst eller formatering.`,
               )}
 
               <div>
-                <label className="text-sm font-medium text-muted-foreground">
+                <Label className="text-sm font-medium text-muted-foreground">
                   Foreslåtte tags:
-                </label>
+                </Label>
                 <div className="flex flex-wrap gap-1 mt-1">
                   {suggestions.suggested_tags.map((tag) => (
                     <Badge
@@ -296,33 +333,51 @@ VIKTIG: Svar kun med gyldig JSON, ingen ekstra tekst eller formatering.`,
               </div>
 
               <div>
-                <label className="text-sm font-medium text-muted-foreground">
+                <Label className="text-sm font-medium text-muted-foreground">
                   Foreslåtte emneområder:
-                </label>
-                <div className="flex flex-wrap gap-1 mt-1">
-                  {suggestions.suggested_subject_areas.map((area) => (
-                    <Badge
-                      key={area}
-                      variant={selectedSubjectAreas.includes(area) ? "default" : "outline"}
-                      className="cursor-pointer"
-                      onClick={() => toggleSubjectArea(area)}
-                    >
-                      {area}
-                      {selectedSubjectAreas.includes(area) ? (
-                        <Check className="h-3 w-3 ml-1" />
-                      ) : (
-                        <X className="h-3 w-3 ml-1" />
-                      )}
-                    </Badge>
+                </Label>
+                <div className="grid grid-cols-2 gap-3 mt-2">
+                  {availableSubjectAreas.map((area) => (
+                    <div key={area.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`suggest-area-${area.id}`}
+                        checked={selectedSubjectAreas.some(selectedArea => 
+                          area.display_name.toLowerCase() === selectedArea.toLowerCase() ||
+                          area.name.toLowerCase() === selectedArea.toLowerCase()
+                        )}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedSubjectAreas(prev => [...prev, area.display_name]);
+                          } else {
+                            setSelectedSubjectAreas(prev => 
+                              prev.filter(selectedArea => 
+                                area.display_name.toLowerCase() !== selectedArea.toLowerCase() &&
+                                area.name.toLowerCase() !== selectedArea.toLowerCase()
+                              )
+                            );
+                          }
+                        }}
+                      />
+                      <Label
+                        htmlFor={`suggest-area-${area.id}`}
+                        className="text-sm font-normal cursor-pointer flex items-center gap-2"
+                      >
+                        <div 
+                          className="w-3 h-3 rounded" 
+                          style={{ backgroundColor: area.color }}
+                        />
+                        {area.display_name}
+                      </Label>
+                    </div>
                   ))}
                 </div>
               </div>
 
               {suggestions.reasoning && (
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <Label className="text-sm font-medium text-muted-foreground">
                     AI-begrunnelse:
-                  </label>
+                  </Label>
                   <p className="text-sm text-muted-foreground mt-1">
                     {suggestions.reasoning}
                   </p>

@@ -1,3 +1,4 @@
+
 import React from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -94,7 +95,10 @@ const ArticleEditor = () => {
 
       const { data: articleData, error: articleError } = await supabase
         .from("knowledge_articles")
-        .select("*")
+        .select(`
+          *,
+          article_subject_areas(subject_area_id)
+        `)
         .eq("id", articleId)
         .single();
 
@@ -102,7 +106,7 @@ const ArticleEditor = () => {
 
       return {
         ...articleData,
-        subject_area_ids: [] // Will be populated when database is updated
+        subject_area_ids: articleData.article_subject_areas?.map((asa: any) => asa.subject_area_id) || []
       } as KnowledgeArticle & { subject_area_ids: string[] };
     },
     enabled: isEditing,
@@ -145,7 +149,7 @@ const ArticleEditor = () => {
         content: article.content || "<p>Skriv artikkelinnholdet her...</p>",
         categoryId: article.category_id || "",
         contentTypeId: contentTypeId,
-        subjectAreaIds: [],
+        subjectAreaIds: article.subject_area_ids || [],
         tags: article.tags?.join(", ") || "",
         status: article.status || "draft",
         reference_code: article.reference_code || "",
@@ -289,6 +293,29 @@ const ArticleEditor = () => {
           throw error;
         }
         savedArticle = result;
+
+        // Update subject area mappings
+        if (data.subjectAreaIds && data.subjectAreaIds.length > 0) {
+          // Delete existing mappings
+          await supabase
+            .from("article_subject_areas")
+            .delete()
+            .eq("article_id", articleId);
+
+          // Insert new mappings
+          const subjectAreaMappings = data.subjectAreaIds.map(subjectAreaId => ({
+            article_id: articleId,
+            subject_area_id: subjectAreaId
+          }));
+
+          const { error: mappingError } = await supabase
+            .from("article_subject_areas")
+            .insert(subjectAreaMappings);
+
+          if (mappingError) {
+            console.error("Subject area mapping error:", mappingError);
+          }
+        }
       } else {
         const { data: result, error } = await supabase
           .from("knowledge_articles")
@@ -305,6 +332,22 @@ const ArticleEditor = () => {
           throw error;
         }
         savedArticle = result;
+
+        // Insert subject area mappings for new articles
+        if (data.subjectAreaIds && data.subjectAreaIds.length > 0) {
+          const subjectAreaMappings = data.subjectAreaIds.map(subjectAreaId => ({
+            article_id: savedArticle.id,
+            subject_area_id: subjectAreaId
+          }));
+
+          const { error: mappingError } = await supabase
+            .from("article_subject_areas")
+            .insert(subjectAreaMappings);
+
+          if (mappingError) {
+            console.error("Subject area mapping error:", mappingError);
+          }
+        }
       }
 
       return savedArticle;
