@@ -10,7 +10,7 @@ import { Brain, Plus, Loader2, Save } from 'lucide-react';
 import { useCreateAuditActionTemplate } from '@/hooks/useAuditActions';
 import { toast } from '@/hooks/use-toast';
 import { useSubjectAreas } from '@/hooks/knowledge/useSubjectAreas';
-import { useAuditActionTemplatesPreview } from '@/hooks/knowledge/useAuditActionTemplatesPreview';
+import { useAuditActionTemplatesBySubjectArea } from '@/hooks/knowledge/useAuditActionTemplatesPreview';
 import { useAuth } from '@/components/Auth/AuthProvider';
 
 interface FormData {
@@ -34,10 +34,7 @@ const AuditActionGenerator = () => {
   
   const createTemplate = useCreateAuditActionTemplate();
   const { data: subjectAreas, isLoading: subjectAreasLoading } = useSubjectAreas();
-  const { data: previewTemplates, isLoading: templatesLoading } = useAuditActionTemplatesPreview(
-    selectedSubjectArea || undefined, 
-    5
-  );
+  const { data: previewTemplates, isLoading: templatesLoading } = useAuditActionTemplatesBySubjectArea();
 
   const [formData, setFormData] = useState<FormData>({
     name: '',
@@ -427,47 +424,55 @@ const AuditActionGenerator = () => {
                     <span>Laster handlinger...</span>
                   </div>
                 ) : (
-                  previewTemplates.map((template) => (
-                    <div key={template.id} className="border rounded p-3">
-                      <div className="flex items-center justify-between mb-2">
-                        <h4 className="font-medium text-sm">{template.name}</h4>
-                        <div className="flex gap-1">
-                          {template.risk_level && (
-                            <Badge 
-                              variant={
-                                template.risk_level === 'high' ? 'destructive' : 
-                                template.risk_level === 'medium' ? 'default' : 'secondary'
-                              } 
-                              className="text-xs"
-                            >
-                              {template.risk_level === 'high' ? 'Høy' : 
-                               template.risk_level === 'medium' ? 'Medium' : 'Lav'}
-                            </Badge>
-                          )}
-                          {template.is_system_template && (
-                            <Badge variant="outline" className="text-xs">System</Badge>
+                  previewTemplates
+                    .filter(template => {
+                      const selectedArea = subjectAreas?.find(area => area.display_name === selectedSubjectArea);
+                      return selectedArea && template.subject_areas?.id === selectedArea.id;
+                    })
+                    .map((template) => (
+                      <div key={template.id} className="border rounded p-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="font-medium text-sm">{template.name}</h4>
+                          <div className="flex gap-1">
+                            {template.risk_level && (
+                              <Badge 
+                                variant={
+                                  template.risk_level === 'high' ? 'destructive' : 
+                                  template.risk_level === 'medium' ? 'default' : 'secondary'
+                                } 
+                                className="text-xs"
+                              >
+                                {template.risk_level === 'high' ? 'Høy' : 
+                                 template.risk_level === 'medium' ? 'Medium' : 'Lav'}
+                              </Badge>
+                            )}
+                            {template.is_system_template && (
+                              <Badge variant="outline" className="text-xs">System</Badge>
+                            )}
+                          </div>
+                        </div>
+                        {template.description && (
+                          <p className="text-xs text-muted-foreground mb-2">
+                            {template.description}
+                          </p>
+                        )}
+                        <div className="flex gap-2 text-xs text-muted-foreground">
+                          <span>Type: {actionTypes.find(t => t.value === template.action_type)?.label || template.action_type}</span>
+                          {template.estimated_hours && (
+                            <span>Estimert: {template.estimated_hours}t</span>
                           )}
                         </div>
                       </div>
-                      {template.description && (
-                        <p className="text-xs text-muted-foreground mb-2">
-                          {template.description}
-                        </p>
-                      )}
-                      <div className="flex gap-2 text-xs text-muted-foreground">
-                        <span>Type: {actionTypes.find(t => t.value === template.action_type)?.label || template.action_type}</span>
-                        {template.estimated_hours && (
-                          <span>Estimert: {template.estimated_hours}t</span>
-                        )}
-                      </div>
-                    </div>
-                  ))
+                    ))
                 )}
               </div>
             </div>
           )}
 
-          {selectedSubjectArea && (!previewTemplates || previewTemplates.length === 0) && !templatesLoading && (
+          {selectedSubjectArea && (!previewTemplates || previewTemplates.filter(template => {
+            const selectedArea = subjectAreas?.find(area => area.display_name === selectedSubjectArea);
+            return selectedArea && template.subject_areas?.id === selectedArea.id;
+          }).length === 0) && !templatesLoading && (
             <div className="mt-6 p-4 border rounded-lg text-center">
               <p className="text-sm text-muted-foreground">
                 Ingen eksisterende handlinger funnet for {selectedSubjectArea}.
