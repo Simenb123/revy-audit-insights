@@ -11,6 +11,8 @@ export interface SearchQuery {
       start: Date;
       end: Date;
     };
+    aiValidated?: boolean;
+    confidenceLevel?: 'low' | 'medium' | 'high';
   };
   limit?: number;
 }
@@ -23,12 +25,26 @@ export interface SearchResult {
   confidence: number;
   relevantText?: string;
   uploadDate: string;
+  document: {
+    id: string;
+    file_name: string;
+    file_path: string;
+    category: string;
+    ai_confidence_score?: number;
+    created_at: string;
+  };
+  relevanceScore: number;
+  matchReasons: string[];
+  suggestedActions?: string[];
 }
 
 export interface SearchSuggestion {
   query: string;
   category: string;
   confidence: number;
+  icon?: string;
+  description?: string;
+  estimatedResults?: number;
 }
 
 export const performSemanticSearch = async (query: SearchQuery): Promise<SearchResult[]> => {
@@ -53,7 +69,18 @@ export const performSemanticSearch = async (query: SearchQuery): Promise<SearchR
       summary: article.summary || '',
       confidence: article.similarity || 0,
       relevantText: article.content?.substring(0, 200) + '...',
-      uploadDate: article.created_at
+      uploadDate: article.created_at,
+      document: {
+        id: article.id,
+        file_name: article.title,
+        file_path: article.file_path || '',
+        category: article.category?.name || 'Ukategorisert',
+        ai_confidence_score: article.similarity || 0,
+        created_at: article.created_at
+      },
+      relevanceScore: article.similarity || 0,
+      matchReasons: ['Semantic similarity', 'Content match'],
+      suggestedActions: article.suggested_actions || []
     }));
     
     console.log('✅ Search results:', results.length);
@@ -68,9 +95,37 @@ export const performSemanticSearch = async (query: SearchQuery): Promise<SearchR
 export const generateSearchSuggestions = async (clientId: string): Promise<SearchSuggestion[]> => {
   // Generate some common search suggestions
   return [
-    { query: 'ISA 315 risikovurdering', category: 'Revisjonsstandarder', confidence: 0.9 },
-    { query: 'regnskapsloven', category: 'Lover og forskrifter', confidence: 0.8 },
-    { query: 'varelager kontroll', category: 'Revisjonshandlinger', confidence: 0.7 },
-    { query: 'årsoppgjør prosedyrer', category: 'Sjekklister', confidence: 0.6 }
+    { 
+      query: 'ISA 315 risikovurdering', 
+      category: 'Revisjonsstandarder', 
+      confidence: 0.9,
+      icon: '📋',
+      description: 'Søk etter ISA 315 risikovurdering dokumenter',
+      estimatedResults: 5
+    },
+    { 
+      query: 'regnskapsloven', 
+      category: 'Lover og forskrifter', 
+      confidence: 0.8,
+      icon: '⚖️',
+      description: 'Finn dokumenter relatert til regnskapsloven',
+      estimatedResults: 8
+    },
+    { 
+      query: 'varelager kontroll', 
+      category: 'Revisjonshandlinger', 
+      confidence: 0.7,
+      icon: '📦',
+      description: 'Søk etter varelager kontrollprosedyrer',
+      estimatedResults: 3
+    },
+    { 
+      query: 'årsoppgjør prosedyrer', 
+      category: 'Sjekklister', 
+      confidence: 0.6,
+      icon: '✅',
+      description: 'Finn årsoppgjør prosedyrer og sjekklister',
+      estimatedResults: 7
+    }
   ];
 };
