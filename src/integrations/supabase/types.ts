@@ -133,6 +133,7 @@ export type Database = {
           name: string
           sort_order: number | null
           subject_area: Database["public"]["Enums"]["audit_subject_area"]
+          subject_area_id: string | null
           updated_at: string
         }
         Insert: {
@@ -146,6 +147,7 @@ export type Database = {
           name: string
           sort_order?: number | null
           subject_area: Database["public"]["Enums"]["audit_subject_area"]
+          subject_area_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -159,6 +161,7 @@ export type Database = {
           name?: string
           sort_order?: number | null
           subject_area?: Database["public"]["Enums"]["audit_subject_area"]
+          subject_area_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -167,6 +170,13 @@ export type Database = {
             columns: ["audit_firm_id"]
             isOneToOne: false
             referencedRelation: "audit_firms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "action_groups_subject_area_id_fkey"
+            columns: ["subject_area_id"]
+            isOneToOne: false
+            referencedRelation: "subject_areas"
             referencedColumns: ["id"]
           },
         ]
@@ -742,6 +752,7 @@ export type Database = {
           risk_level: string | null
           sort_order: number | null
           subject_area: Database["public"]["Enums"]["audit_subject_area"]
+          subject_area_id: string | null
           updated_at: string
         }
         Insert: {
@@ -765,6 +776,7 @@ export type Database = {
           risk_level?: string | null
           sort_order?: number | null
           subject_area: Database["public"]["Enums"]["audit_subject_area"]
+          subject_area_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -788,6 +800,7 @@ export type Database = {
           risk_level?: string | null
           sort_order?: number | null
           subject_area?: Database["public"]["Enums"]["audit_subject_area"]
+          subject_area_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -803,6 +816,13 @@ export type Database = {
             columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "action_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_action_templates_subject_area_id_fkey"
+            columns: ["subject_area_id"]
+            isOneToOne: false
+            referencedRelation: "subject_areas"
             referencedColumns: ["id"]
           },
         ]
@@ -959,6 +979,7 @@ export type Database = {
           sort_order: number | null
           status: Database["public"]["Enums"]["action_status"] | null
           subject_area: Database["public"]["Enums"]["audit_subject_area"]
+          subject_area_id: string | null
           template_id: string | null
           updated_at: string
           work_notes: string | null
@@ -989,6 +1010,7 @@ export type Database = {
           sort_order?: number | null
           status?: Database["public"]["Enums"]["action_status"] | null
           subject_area: Database["public"]["Enums"]["audit_subject_area"]
+          subject_area_id?: string | null
           template_id?: string | null
           updated_at?: string
           work_notes?: string | null
@@ -1019,6 +1041,7 @@ export type Database = {
           sort_order?: number | null
           status?: Database["public"]["Enums"]["action_status"] | null
           subject_area?: Database["public"]["Enums"]["audit_subject_area"]
+          subject_area_id?: string | null
           template_id?: string | null
           updated_at?: string
           work_notes?: string | null
@@ -1043,6 +1066,13 @@ export type Database = {
             columns: ["copied_from_client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_audit_actions_subject_area_id_fkey"
+            columns: ["subject_area_id"]
+            isOneToOne: false
+            referencedRelation: "subject_areas"
             referencedColumns: ["id"]
           },
           {
@@ -3126,6 +3156,7 @@ export type Database = {
           id: string
           is_active: boolean
           name: string
+          parent_subject_area_id: string | null
           sort_order: number
           updated_at: string
         }
@@ -3138,6 +3169,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           name: string
+          parent_subject_area_id?: string | null
           sort_order?: number
           updated_at?: string
         }
@@ -3150,10 +3182,19 @@ export type Database = {
           id?: string
           is_active?: boolean
           name?: string
+          parent_subject_area_id?: string | null
           sort_order?: number
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "subject_areas_parent_subject_area_id_fkey"
+            columns: ["parent_subject_area_id"]
+            isOneToOne: false
+            referencedRelation: "subject_areas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tags: {
         Row: {

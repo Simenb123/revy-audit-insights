@@ -2,8 +2,8 @@
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { useSubjectAreas } from '@/hooks/knowledge/useSubjectAreas';
-import { Loader2 } from 'lucide-react';
+import { useSubjectAreasHierarchical } from '@/hooks/knowledge/useSubjectAreas';
+import { Loader2, ChevronDown, ChevronRight } from 'lucide-react';
 
 interface SubjectAreaNavProps {
   selectedArea: string;
@@ -11,8 +11,101 @@ interface SubjectAreaNavProps {
   actionCounts?: Record<string, number>;
 }
 
+interface SubjectAreaNodeProps {
+  area: any;
+  selectedArea: string;
+  onAreaSelect: (areaId: string) => void;
+  actionCounts: Record<string, number>;
+  level?: number;
+}
+
+const SubjectAreaNode: React.FC<SubjectAreaNodeProps> = ({
+  area,
+  selectedArea,
+  onAreaSelect,
+  actionCounts,
+  level = 0
+}) => {
+  const [isExpanded, setIsExpanded] = React.useState(level === 0);
+  const hasChildren = area.children && area.children.length > 0;
+  const count = actionCounts[area.id] || 0;
+  const isSelected = selectedArea === area.id;
+  
+  const childrenCount = hasChildren ? 
+    area.children.reduce((sum: number, child: any) => 
+      sum + (actionCounts[child.id] || 0), 0
+    ) : 0;
+  
+  const totalCount = count + childrenCount;
+
+  return (
+    <div className="w-full">
+      <Button
+        variant={isSelected ? "default" : "outline"}
+        onClick={() => onAreaSelect(area.id)}
+        className="w-full justify-between text-left h-auto p-3"
+        style={{
+          backgroundColor: isSelected ? area.color : undefined,
+          borderColor: area.color,
+          color: isSelected ? 'white' : area.color,
+          marginLeft: `${level * 16}px`
+        }}
+      >
+        <div className="flex items-center gap-2">
+          {hasChildren && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="p-0 h-auto w-4"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsExpanded(!isExpanded);
+              }}
+            >
+              {isExpanded ? (
+                <ChevronDown className="w-3 h-3" />
+              ) : (
+                <ChevronRight className="w-3 h-3" />
+              )}
+            </Button>
+          )}
+          
+          {area.icon && (
+            <span className="text-lg">{area.icon}</span>
+          )}
+          <span className="font-medium text-sm">{area.display_name}</span>
+        </div>
+        
+        {totalCount > 0 && (
+          <Badge 
+            variant={isSelected ? "secondary" : "default"}
+            className="text-xs"
+          >
+            {totalCount} handlinger
+          </Badge>
+        )}
+      </Button>
+      
+      {hasChildren && isExpanded && (
+        <div className="mt-2 space-y-2">
+          {area.children.map((child: any) => (
+            <SubjectAreaNode
+              key={child.id}
+              area={child}
+              selectedArea={selectedArea}
+              onAreaSelect={onAreaSelect}
+              actionCounts={actionCounts}
+              level={level + 1}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const SubjectAreaNav = ({ selectedArea, onAreaSelect, actionCounts = {} }: SubjectAreaNavProps) => {
-  const { data: subjectAreas, isLoading } = useSubjectAreas();
+  const { data: subjectAreas, isLoading } = useSubjectAreasHierarchical();
 
   if (isLoading) {
     return (
@@ -32,40 +125,16 @@ const SubjectAreaNav = ({ selectedArea, onAreaSelect, actionCounts = {} }: Subje
   }
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-      {subjectAreas.map((area) => {
-        const count = actionCounts[area.name] || 0;
-        const isSelected = selectedArea === area.name;
-        
-        return (
-          <Button
-            key={area.id}
-            variant={isSelected ? "default" : "outline"}
-            onClick={() => onAreaSelect(area.name)}
-            className="flex flex-col items-center gap-2 h-auto p-4 text-center"
-            style={{
-              backgroundColor: isSelected ? area.color : undefined,
-              borderColor: area.color,
-              color: isSelected ? 'white' : area.color
-            }}
-          >
-            <div className="flex items-center gap-2">
-              {area.icon && (
-                <span className="text-lg">{area.icon}</span>
-              )}
-              <span className="font-medium text-sm">{area.display_name}</span>
-            </div>
-            {count > 0 && (
-              <Badge 
-                variant={isSelected ? "secondary" : "default"}
-                className="text-xs"
-              >
-                {count} handlinger
-              </Badge>
-            )}
-          </Button>
-        );
-      })}
+    <div className="space-y-3">
+      {subjectAreas.map((area) => (
+        <SubjectAreaNode
+          key={area.id}
+          area={area}
+          selectedArea={selectedArea}
+          onAreaSelect={onAreaSelect}
+          actionCounts={actionCounts}
+        />
+      ))}
     </div>
   );
 };

@@ -1,7 +1,6 @@
 
 export type ArticleStatus = 'draft' | 'published' | 'archived';
 
-// Fjernet content_type union type siden vi nå bruker content_type_id
 export interface KnowledgeCategory {
   id: string;
   name: string;
@@ -37,8 +36,11 @@ export interface SubjectArea {
   color: string;
   sort_order: number;
   is_active: boolean;
+  parent_subject_area_id?: string;
   created_at: string;
   updated_at: string;
+  children?: SubjectArea[];
+  parent?: SubjectArea;
 }
 
 export interface Tag {
@@ -96,7 +98,7 @@ export interface KnowledgeArticle {
   summary?: string;
   content: string;
   category_id: string;
-  content_type_id: string; // Now required, no more optional
+  content_type_id: string;
   status: ArticleStatus;
   author_id: string;
   view_count: number;
@@ -111,7 +113,6 @@ export interface KnowledgeArticle {
   reference_code?: string;
   valid_from?: string;
   valid_until?: string;
-  // Removed: content_type and tags (migrated to relations)
 }
 
 export interface KnowledgeFavorite {
@@ -140,3 +141,6 @@ export interface ArticleMedia {
   alt_text?: string;
   created_at: string;
 }
+
+// Export ContentType for external usage
+export type ContentType = ContentTypeEntity;
