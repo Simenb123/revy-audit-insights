@@ -44,7 +44,7 @@ const CategoryManager = () => {
       
       const { data, error } = await supabase
         .from('knowledge_articles')
-        .select('id, title, status, tags, category_id')
+        .select('id, title, status, category_id')
         .eq('category_id', selectedCategory.id);
       
       if (error) throw error;
@@ -131,7 +131,7 @@ const CategoryManager = () => {
         console.log('Checking for articles in category...');
         const { data: articlesData, error: articlesError, count: articlesCount } = await supabase
           .from('knowledge_articles')
-          .select('id, title, category_id', { count: 'exact' })
+          .select('id, title, category_id', { count: 'exact', head: true })
           .eq('category_id', categoryId);
         
         if (articlesError) {
@@ -622,15 +622,6 @@ const CategoryManager = () => {
                     <div className="text-sm text-muted-foreground">
                       Status: {article.status}
                     </div>
-                    {article.tags && article.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {article.tags.map((tag) => (
-                          <Badge key={tag} variant="outline" className="text-xs">
-                            {tag}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
                   </div>
                 ))}
               </div>

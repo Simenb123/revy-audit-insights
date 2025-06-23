@@ -88,26 +88,6 @@ export const useCreateTag = () => {
   });
 };
 
-// Hook for legacy article tags (for backward compatibility)
-export const useArticleTagsLegacy = (articleId?: string) => {
-  return useQuery({
-    queryKey: ['article-tags-legacy', articleId],
-    queryFn: async () => {
-      if (!articleId) return [];
-      
-      const { data, error } = await supabase
-        .from('knowledge_articles')
-        .select('tags')
-        .eq('id', articleId)
-        .single();
-      
-      if (error) throw error;
-      return data?.tags || [];
-    },
-    enabled: !!articleId
-  });
-};
-
 // Connect article to unified tag system
 export const useConnectArticleToTag = () => {
   const queryClient = useQueryClient();
@@ -130,29 +110,6 @@ export const useConnectArticleToTag = () => {
     },
     onError: (error: any) => {
       toast.error('Feil ved kobling: ' + error.message);
-    }
-  });
-};
-
-// Update article legacy tags
-export const useUpdateArticleLegacyTags = () => {
-  const queryClient = useQueryClient();
-  
-  return useMutation({
-    mutationFn: async ({ articleId, tags }: { articleId: string; tags: string[] }) => {
-      const { error } = await supabase
-        .from('knowledge_articles')
-        .update({ tags })
-        .eq('id', articleId);
-      
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['article-tags-legacy'] });
-      toast.success('Tags oppdatert');
-    },
-    onError: (error: any) => {
-      toast.error('Feil ved oppdatering: ' + error.message);
     }
   });
 };

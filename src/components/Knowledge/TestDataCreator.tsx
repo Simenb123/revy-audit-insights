@@ -57,8 +57,7 @@ Revisor skal dokumentere:
 
 Standarden er grunnleggende for all revisjonsplanlegging og må forstås grundig av alle revisorer.`,
       category_id: null,
-      reference_code: "ISA 315",
-      tags: ["ISA", "risikovurdering", "planlegging", "internkontroll", "forretningsrisiko"]
+      reference_code: "ISA 315"
     },
     {
       title: "ISA 230 - Revisjonsdokumentasjon",
@@ -119,8 +118,7 @@ For saker som krever betydelig profesjonell dømmekraft skal dokumentasjonen omf
 
 God revisjonsdokumentasjon er grunnleggende for kvalitet i revisjonsarbeidet og beskyttelse mot ansvar.`,
       category_id: null,
-      reference_code: "ISA 230",
-      tags: ["ISA", "dokumentasjon", "arbeidspapirer", "arkivering", "kvalitetskontroll"]
+      reference_code: "ISA 230"
     },
     {
       title: "Materialitetsvurdering i revisjon",
@@ -201,8 +199,7 @@ Dokumenter:
 
 God materialitetsvurdering er kritisk for en effektiv og effektiv revisjon.`,
       category_id: null,
-      reference_code: null,
-      tags: ["materialitet", "planlegging", "risikovurdering", "kvalitetskontroll", "benchmarking"]
+      reference_code: null
     }
   ];
 
@@ -242,10 +239,40 @@ God materialitetsvurdering er kritisk for en effektiv og effektiv revisjon.`,
         categoryId = existingCategories[0].id;
       }
 
+      // Get default content type
+      const { data: contentTypes } = await supabase
+        .from('content_types')
+        .select('id')
+        .eq('name', 'fagartikkel')
+        .limit(1);
+
+      let contentTypeId = null;
+      if (contentTypes && contentTypes.length > 0) {
+        contentTypeId = contentTypes[0].id;
+      } else {
+        // Create default content type if it doesn't exist
+        const { data: newContentType, error: contentTypeError } = await supabase
+          .from('content_types')
+          .insert({
+            name: 'fagartikkel',
+            display_name: 'Fagartikkel',
+            description: 'Standard fagartikkel',
+            icon: 'file-text',
+            color: '#3B82F6',
+            sort_order: 1
+          })
+          .select()
+          .single();
+
+        if (contentTypeError) throw contentTypeError;
+        contentTypeId = newContentType.id;
+      }
+
       // Create test articles
       const articlesToCreate = testArticles.map(article => ({
         ...article,
         category_id: categoryId,
+        content_type_id: contentTypeId,
         author_id: session.user.id,
         status: 'published' as const,
         published_at: new Date().toISOString()

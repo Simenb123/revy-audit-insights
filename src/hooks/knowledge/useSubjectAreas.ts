@@ -16,7 +16,7 @@ export interface SubjectArea {
   created_at: string;
   updated_at: string;
   children?: SubjectArea[];
-  parent?: SubjectArea;
+  parent?: Partial<SubjectArea>;
 }
 
 // Build hierarchical structure from flat array
@@ -82,7 +82,14 @@ export const useSubjectAreas = (hierarchical: boolean = false) => {
         throw error;
       }
 
-      const areas = data || [];
+      const areas = (data || []).map(area => ({
+        ...area,
+        parent: area.parent ? {
+          id: area.parent.id,
+          name: area.parent.name,
+          display_name: area.parent.display_name
+        } : undefined
+      })) as SubjectArea[];
       
       if (hierarchical) {
         return buildHierarchy(areas);
@@ -134,7 +141,15 @@ export const useSubjectAreaById = (id: string) => {
         throw error;
       }
 
-      return data;
+      return {
+        ...data,
+        parent: data.parent ? {
+          id: data.parent.id,
+          name: data.parent.name,
+          display_name: data.parent.display_name
+        } : undefined,
+        children: data.children || []
+      } as SubjectArea;
     },
     enabled: !!id,
     staleTime: 1000 * 60 * 10, // 10 minutes
