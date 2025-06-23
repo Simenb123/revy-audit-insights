@@ -18,6 +18,18 @@ const ImprovedClientDocumentManager: React.FC<ImprovedClientDocumentManagerProps
 }) => {
   const { documents, categories, isLoading, refetch } = useClientDocuments(clientId);
 
+  console.log('📋 [CLIENT_DOC_MANAGER] Rendered with:', {
+    clientId,
+    documentsCount: documents.length,
+    isLoading,
+    documents: documents.map(d => ({
+      id: d.id,
+      fileName: d.file_name,
+      status: d.text_extraction_status,
+      hasText: !!d.extracted_text
+    }))
+  });
+
   const getExtractionStats = () => {
     const total = documents.length;
     const completed = documents.filter(d => d.text_extraction_status === 'completed').length;
@@ -31,6 +43,7 @@ const ImprovedClientDocumentManager: React.FC<ImprovedClientDocumentManagerProps
   const stats = getExtractionStats();
 
   const handleDocumentUpdate = () => {
+    console.log('📋 [CLIENT_DOC_MANAGER] Refreshing documents after update');
     refetch();
   };
 
@@ -70,7 +83,7 @@ const ImprovedClientDocumentManager: React.FC<ImprovedClientDocumentManagerProps
         </div>
       )}
 
-      {/* Bulk Processing */}
+      {/* Bulk Processing - This should now be visible */}
       {documents.length > 0 && (
         <BulkTextExtraction 
           documents={documents}

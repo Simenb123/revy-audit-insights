@@ -18,29 +18,61 @@ const BulkTextExtraction = ({ documents, onUpdate }: BulkTextExtractionProps) =>
   const [currentDocument, setCurrentDocument] = useState<string>('');
   const { extractAndAnalyzeDocument } = useClientTextExtraction();
 
-  const documentsNeedingProcessing = documents.filter(doc => 
-    doc.text_extraction_status === 'pending' || 
-    doc.text_extraction_status === 'failed' ||
-    doc.text_extraction_status === null
-  );
+  console.log('🔄 [BULK_EXTRACTION] Component rendered with:', {
+    totalDocuments: documents.length,
+    documentStatuses: documents.map(d => ({
+      id: d.id,
+      name: d.file_name,
+      status: d.text_extraction_status
+    }))
+  });
+
+  const documentsNeedingProcessing = documents.filter(doc => {
+    const needsProcessing = doc.text_extraction_status === 'pending' || 
+                           doc.text_extraction_status === 'failed' ||
+                           doc.text_extraction_status === null ||
+                           doc.text_extraction_status === undefined;
+    
+    console.log('🔍 [BULK_EXTRACTION] Document check:', {
+      fileName: doc.file_name,
+      status: doc.text_extraction_status,
+      needsProcessing
+    });
+    
+    return needsProcessing;
+  });
+
+  console.log('📊 [BULK_EXTRACTION] Processing status:', {
+    total: documents.length,
+    needingProcessing: documentsNeedingProcessing.length,
+    shouldShowButton: documentsNeedingProcessing.length > 0
+  });
 
   const handleBulkProcessing = async () => {
-    if (documentsNeedingProcessing.length === 0) return;
+    if (documentsNeedingProcessing.length === 0) {
+      console.log('⚠️ [BULK_EXTRACTION] No documents to process');
+      return;
+    }
     
+    console.log('🚀 [BULK_EXTRACTION] Starting bulk processing of', documentsNeedingProcessing.length, 'documents');
     setIsProcessing(true);
     setProgress(0);
     
     for (let i = 0; i < documentsNeedingProcessing.length; i++) {
       const doc = documentsNeedingProcessing[i];
+      console.log('🔄 [BULK_EXTRACTION] Processing document:', doc.file_name);
       setCurrentDocument(doc.file_name);
       
       try {
         await extractAndAnalyzeDocument(doc.id);
+        console.log('✅ [BULK_EXTRACTION] Successfully processed:', doc.file_name);
       } catch (error) {
-        console.error(`Failed to process ${doc.file_name}:`, error);
+        console.error('❌ [BULK_EXTRACTION] Failed to process', doc.file_name, ':', error);
       }
       
-      setProgress(((i + 1) / documentsNeedingProcessing.length) * 100);
+      const newProgress = ((i + 1) / documentsNeedingProcessing.length) * 100;
+      setProgress(newProgress);
+      console.log('📈 [BULK_EXTRACTION] Progress:', newProgress.toFixed(1) + '%');
       
       // Small delay to prevent overwhelming the system
       await new Promise(resolve => setTimeout(resolve, 500));
@@ -48,13 +80,16 @@ const BulkTextExtraction = ({ documents, onUpdate }: BulkTextExtractionProps) =>
     
     setIsProcessing(false);
     setCurrentDocument('');
+    console.log('🎉 [BULK_EXTRACTION] Bulk processing completed');
     
     if (onUpdate) {
       onUpdate();
     }
   };
 
+  // Show success state if no documents need processing
   if (documentsNeedingProcessing.length === 0) {
+    console.log('✅ [BULK_EXTRACTION] All documents processed - showing success state');
     return (
       <Card className="bg-green-50 border-green-200">
         <CardContent className="p-4">
@@ -69,6 +104,8 @@ const BulkTextExtraction = ({ documents, onUpdate }: BulkTextExtractionProps) =>
       </Card>
     );
   }
+
+  console.log('🎯 [BULK_EXTRACTION] Showing processing interface for', documentsNeedingProcessing.length, 'documents');
 
   return (
     <Card className="bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200">
