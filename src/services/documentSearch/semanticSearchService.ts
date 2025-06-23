@@ -74,7 +74,7 @@ export const performSemanticSearch = async (query: SearchQuery): Promise<SearchR
         id: article.id,
         file_name: article.title,
         file_path: article.file_path || '',
-        category: article.category?.name || 'Ukategorisert',
+        category: article.category?.name || 'Ukategoriseret',
         ai_confidence_score: article.similarity || 0,
         created_at: article.created_at
       },

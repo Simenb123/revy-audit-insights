@@ -7,18 +7,20 @@ interface RevyMessageListProps {
   messages: RevyMessage[];
   isTyping: boolean;
   isEmbedded?: boolean;
+  isAnalyzingDocuments?: boolean;
 }
 
 export const RevyMessageList: React.FC<RevyMessageListProps> = ({
   messages,
   isTyping,
-  isEmbedded = false
+  isEmbedded = false,
+  isAnalyzingDocuments = false
 }) => {
   return (
     <div className="flex-1 overflow-y-auto p-4 space-y-4">
       {messages.map((message, index) => (
         <div
-          key={index}
+          key={message.id || index}
           className={`flex ${
             message.sender === 'user' ? 'justify-end' : 'justify-start'
           }`}
@@ -72,7 +74,7 @@ export const RevyMessageList: React.FC<RevyMessageListProps> = ({
             </div>
             <div className="bg-gray-100 text-gray-900 p-3 rounded-lg flex items-center gap-2">
               <Loader2 className="h-4 w-4 animate-spin" />
-              <span>AI-Revi tenker...</span>
+              <span>{isAnalyzingDocuments ? 'Analyserer dokumenter...' : 'AI-Revi tenker...'}</span>
             </div>
           </div>
         </div>

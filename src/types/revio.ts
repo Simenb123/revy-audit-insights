@@ -8,7 +8,7 @@ export interface Client {
   description?: string;
   created_at: string;
   updated_at: string;
-  phase?: 'engagement' | 'planning' | 'execution' | 'completion' | 'reporting';
+  phase?: 'engagement' | 'planning' | 'execution' | 'completion' | 'reporting' | 'overview' | 'risk_assessment';
   tags?: string[];
   is_test_data?: boolean;
   // Additional properties from database
@@ -52,9 +52,10 @@ export interface Client {
 }
 
 export interface RevyMessage {
+  id: string;
   sender: 'user' | 'assistant';
-  content: string;
-  timestamp?: Date;
+  content: string | React.ReactNode;
+  timestamp: Date;
   metadata?: {
     context?: string;
     variant?: string;
@@ -100,6 +101,7 @@ export interface ClientAuditAction {
   status: string;
   created_at: string;
   updated_at: string;
+  subject_area?: string;
 }
 
 export interface Announcement {
@@ -128,7 +130,7 @@ export interface BrregSearchResult {
   registrertIFrivillighetsregisteret: boolean;
 }
 
-export type AuditPhase = 'engagement' | 'planning' | 'execution' | 'completion' | 'reporting';
+export type AuditPhase = 'overview' | 'engagement' | 'planning' | 'risk_assessment' | 'execution' | 'completion' | 'reporting';
 
 export interface RiskArea {
   name: string;
@@ -148,6 +150,26 @@ export interface ClientRole {
   role_type: string;
   from_date?: string;
   to_date?: string;
+}
+
+export interface DocumentVersion {
+  id: string;
+  client_audit_action_id: string;
+  created_by_user_id?: string;
+  created_at: string;
+  content: string;
+  version_name: string;
+  change_source: string;
+  change_description?: string;
+}
+
+export interface PlanningModuleStatus {
+  id: string;
+  client_id: string;
+  module_key: string;
+  status: 'not_started' | 'in_progress' | 'completed';
+  created_at: string;
+  updated_at: string;
 }
 
 // Re-export types from revio.d.ts for compatibility

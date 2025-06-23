@@ -72,7 +72,7 @@ Jeg kan hjelpe deg med klientanalyse, dokumentgjennomgang, risikovurdering og re
 🏷️ **EMNER:** Klientanalyse, Dokumenter, Risikovurdering, Revisjonsplanlegging`;
         
       case 'documentation':
-        return `Hei! Jeg er AI-Revi, din dokumentanalyse-ekspert for ${clientName}.
+        return `Hei! Jeg er AI-Revi, din dokumentanalyse-ekspart for ${clientName}.
 
 📁 **DOKUMENTSTATUS:**
 - ${docCount} dokumenter i systemet
@@ -116,9 +116,9 @@ Jeg kan hjelpe deg med planlegging og gjennomføring av revisjonshandlinger, ISA
           } else if (data && data.length > 0) {
             const loadedMessages: RevyMessage[] = data.map(msg => ({
               id: msg.id,
-              sender: msg.sender as 'user' | 'revy',
+              sender: msg.sender === 'revy' ? 'assistant' : msg.sender as 'user' | 'assistant',
               content: msg.content,
-              timestamp: msg.created_at,
+              timestamp: new Date(msg.created_at),
             }));
             setMessages(loadedMessages);
             console.log(`💬 Loaded ${loadedMessages.length} previous messages from session ${sessionId}`);
@@ -127,9 +127,9 @@ Jeg kan hjelpe deg med planlegging og gjennomføring av revisjonshandlinger, ISA
             const welcomeMessage = getContextualWelcomeMessage(context, clientData);
             const welcomeMsg: RevyMessage = {
               id: crypto.randomUUID(),
-              sender: 'revy',
+              sender: 'assistant',
               content: welcomeMessage,
-              timestamp: new Date().toISOString(),
+              timestamp: new Date(),
             };
             setMessages([welcomeMsg]);
             
@@ -182,7 +182,7 @@ Jeg kan hjelpe deg med planlegging og gjennomføring av revisjonshandlinger, ISA
       id: crypto.randomUUID(),
       sender: 'user',
       content: userMessage,
-      timestamp: new Date().toISOString(),
+      timestamp: new Date(),
     };
 
     const updatedMessages = [...messages, newUserMessage];
@@ -193,11 +193,11 @@ Jeg kan hjelpe deg med planlegging og gjennomføring av revisjonshandlinger, ISA
       
       // Convert RevyMessage[] to RevyChatMessage[] format expected by the enhanced AI service
       const chatHistory: RevyChatMessage[] = updatedMessages.map(msg => ({
-        id: msg.id,
+        id: msg.id || crypto.randomUUID(),
         session_id: sessionId || '',
-        sender: msg.sender,
+        sender: msg.sender === 'assistant' ? 'revy' : msg.sender,
         content: typeof msg.content === 'string' ? msg.content : String(msg.content),
-        created_at: msg.timestamp,
+        created_at: msg.timestamp.toISOString(),
         metadata: {}
       }));
 
@@ -220,9 +220,9 @@ Jeg kan hjelpe deg med planlegging og gjennomføring av revisjonshandlinger, ISA
 
       const aiMessage: RevyMessage = {
         id: crypto.randomUUID(),
-        sender: 'revy',
+        sender: 'assistant',
         content: aiResponse,
-        timestamp: new Date().toISOString(),
+        timestamp: new Date(),
       };
 
       setMessages(prev => [...prev, aiMessage]);
@@ -244,9 +244,9 @@ Jeg kan hjelpe deg med planlegging og gjennomføring av revisjonshandlinger, ISA
       
       const errorMessage: RevyMessage = {
         id: crypto.randomUUID(),
-        sender: 'revy',
+        sender: 'assistant',
         content: 'Beklager, jeg opplever tekniske problemer akkurat nå. Prøv igjen om litt.',
-        timestamp: new Date().toISOString(),
+        timestamp: new Date(),
       };
 
       setMessages(prev => [...prev, errorMessage]);

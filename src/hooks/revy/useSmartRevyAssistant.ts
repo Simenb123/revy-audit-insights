@@ -20,8 +20,8 @@ interface UseSmartReviAssistantProps {
 const mapMessageToUIMessage = (msg: RevyChatMessage): RevyMessage => ({
     id: msg.id,
     content: msg.content,
-    timestamp: msg.created_at,
-    sender: msg.sender,
+    timestamp: new Date(msg.created_at),
+    sender: msg.sender === 'revy' ? 'assistant' : msg.sender as 'user' | 'assistant',
     metadata: msg.metadata
 });
 
@@ -75,7 +75,7 @@ export const useSmartReviAssistant = ({ clientData, userRole, embedded = false }
       }
     } else {
       // For floating, pick the most recent one or create a new one
-      if (sessions.length > 0 && !activeSessionId) {
+      if (sessions.length > 0 &&!activeSessionId) {
         setActiveSessionId(sessions[0].id);
       } else if (sessions.length === 0) {
         handleCreateSession();
