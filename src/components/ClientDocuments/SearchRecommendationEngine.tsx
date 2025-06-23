@@ -49,7 +49,7 @@ const SearchRecommendationEngine: React.FC<SearchRecommendationEngineProps> = ({
 
     // Check for low confidence documents
     const lowConfidenceDocs = documents.filter(d => 
-      d.ai_confidence_score && d.ai_confidence_score < 0.6
+      d.ai_confidence_score && typeof d.ai_confidence_score === 'number' && d.ai_confidence_score < 0.6
     );
     
     if (lowConfidenceDocs.length > 0) {
@@ -101,7 +101,7 @@ const SearchRecommendationEngine: React.FC<SearchRecommendationEngineProps> = ({
 
     // Check for high-quality documents
     const highQualityDocs = documents.filter(d => 
-      d.ai_confidence_score && d.ai_confidence_score >= 0.9
+      d.ai_confidence_score && typeof d.ai_confidence_score === 'number' && d.ai_confidence_score >= 0.9
     );
 
     if (highQualityDocs.length > 0) {
@@ -117,15 +117,17 @@ const SearchRecommendationEngine: React.FC<SearchRecommendationEngineProps> = ({
     }
 
     // Category-based recommendations
-    const categoryStats = documents.reduce((acc, doc) => {
+    const categoryStats: Record<string, number> = {};
+    documents.forEach(doc => {
       if (doc.category) {
-        acc[doc.category] = (acc[doc.category] || 0) + 1;
+        categoryStats[doc.category] = (categoryStats[doc.category] || 0) + 1;
       }
-      return acc;
-    }, {} as Record<string, number>);
+    });
 
-    const topCategory = Object.entries(categoryStats)
-      .sort(([,a], [,b]) => b - a)[0];
+    const topCategoryEntries = Object.entries(categoryStats)
+      .sort(([,a], [,b]) => b - a);
+    
+    const topCategory = topCategoryEntries[0];
 
     if (topCategory && topCategory[1] >= 3) {
       recs.push({

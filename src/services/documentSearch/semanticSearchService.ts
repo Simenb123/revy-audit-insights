@@ -94,7 +94,23 @@ export const performSemanticSearch = async (query: SearchQuery): Promise<SearchR
   const results: SearchResult[] = [];
   const searchTerms = query.term.toLowerCase().split(/\s+/);
 
-  for (const doc of filteredDocs) {
+  for (const rawDoc of filteredDocs) {
+    // Map database document to ClientDocument format
+    const doc: ClientDocument = {
+      ...rawDoc,
+      uploaded_by: rawDoc.user_id, // Map user_id to uploaded_by
+      category: rawDoc.category || '',
+      description: rawDoc.ai_analysis_summary || undefined,
+      subject_area: rawDoc.subject_area || undefined,
+      ai_suggested_category: rawDoc.ai_suggested_category || undefined,
+      ai_confidence_score: rawDoc.ai_confidence_score || undefined,
+      ai_suggested_subject_areas: rawDoc.ai_suggested_subject_areas || undefined,
+      ai_isa_standard_references: rawDoc.ai_isa_standard_references || undefined,
+      ai_revision_phase_relevance: rawDoc.ai_revision_phase_relevance || undefined,
+      manual_category_override: rawDoc.manual_category_override || undefined,
+      text_extraction_status: rawDoc.text_extraction_status as 'pending' | 'processing' | 'completed' | 'failed' || 'pending'
+    };
+
     const matchReasons: string[] = [];
     let relevanceScore = 0;
 
