@@ -44,7 +44,7 @@ export const RevyMessageItem = ({ message, isEmbedded = false }: RevyMessageItem
     );
   }
 
-  if (sender === 'revy') {
+  if (sender === 'assistant') {
     return (
       <div className="flex justify-start animate-fade-in">
         <div className={`flex flex-col items-start ${isEmbedded ? 'max-w-[90%]' : 'max-w-[88%]'}`}>
