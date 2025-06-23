@@ -26,21 +26,21 @@ const EnhancedKnowledgeOverview = () => {
   const { data: totalArticles, isLoading: totalLoading, error: totalError } = useTotalArticleCount();
   const { data: totalActionTemplates, isLoading: templatesLoading, error: templatesError } = useAuditActionTemplateCount();
 
-  console.log('📊 [KNOWLEDGE_OVERVIEW] Loading states:', {
+  console.log('📚 [ENHANCED_OVERVIEW] Component render - Loading states:', {
     statsLoading,
     articlesLoading,
     totalLoading,
     templatesLoading
   });
 
-  console.log('📊 [KNOWLEDGE_OVERVIEW] Data:', {
-    knowledgeStats,
+  console.log('📚 [ENHANCED_OVERVIEW] Component render - Data:', {
+    knowledgeStats: knowledgeStats?.length || 0,
     totalArticles,
     totalActionTemplates,
-    recentArticlesCount: recentArticles?.length
+    recentArticlesCount: recentArticles?.length || 0
   });
 
-  console.log('📊 [KNOWLEDGE_OVERVIEW] Errors:', {
+  console.log('📚 [ENHANCED_OVERVIEW] Component render - Errors:', {
     statsError: statsError?.message,
     articlesError: articlesError?.message,
     totalError: totalError?.message,
@@ -123,6 +123,7 @@ const EnhancedKnowledgeOverview = () => {
 
   // Show loading state
   if (statsLoading || totalLoading) {
+    console.log('📚 [ENHANCED_OVERVIEW] Showing loading state');
     return (
       <div className="space-y-8">
         <div className="text-center space-y-4">
@@ -138,6 +139,7 @@ const EnhancedKnowledgeOverview = () => {
 
   // Show error state if we have critical errors
   if (statsError || totalError) {
+    console.log('📚 [ENHANCED_OVERVIEW] Showing error state');
     return (
       <div className="space-y-8">
         <div className="text-center space-y-4">
@@ -150,6 +152,8 @@ const EnhancedKnowledgeOverview = () => {
       </div>
     );
   }
+
+  console.log('📚 [ENHANCED_OVERVIEW] Rendering main content with categories:', categories.length);
 
   return (
     <div className="space-y-8">

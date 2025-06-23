@@ -6,7 +6,7 @@ export const useKnowledgeStats = () => {
   return useQuery({
     queryKey: ['knowledge-stats'],
     queryFn: async () => {
-      console.log('📊 [KNOWLEDGE_STATS] Fetching categories...');
+      console.log('📊 [KNOWLEDGE_STATS] Starting to fetch categories...');
       
       // Get categories with article counts
       const { data: categories, error: categoriesError } = await supabase
@@ -24,12 +24,17 @@ export const useKnowledgeStats = () => {
         throw categoriesError;
       }
 
-      console.log('📊 [KNOWLEDGE_STATS] Categories fetched:', categories?.length);
+      console.log('📊 [KNOWLEDGE_STATS] Raw categories data:', categories);
+
+      if (!categories || categories.length === 0) {
+        console.log('📊 [KNOWLEDGE_STATS] No categories found, returning empty array');
+        return [];
+      }
 
       // Get article counts per category
       const categoriesWithCounts = await Promise.all(
-        (categories || []).map(async (category) => {
-          console.log('📊 [KNOWLEDGE_STATS] Counting articles for:', category.name);
+        categories.map(async (category) => {
+          console.log('📊 [KNOWLEDGE_STATS] Counting articles for category:', category.name);
           
           const { count, error: countError } = await supabase
             .from('knowledge_articles')
@@ -39,7 +44,11 @@ export const useKnowledgeStats = () => {
 
           if (countError) {
             console.error('📊 [KNOWLEDGE_STATS] Count error for category', category.name, ':', countError);
-            throw countError;
+            // Don't throw, just log and continue with 0 count
+            return {
+              ...category,
+              article_count: 0
+            };
           }
 
           console.log('📊 [KNOWLEDGE_STATS] Article count for', category.name, ':', count);
@@ -51,11 +60,12 @@ export const useKnowledgeStats = () => {
         })
       );
 
-      console.log('📊 [KNOWLEDGE_STATS] Final result:', categoriesWithCounts);
+      console.log('📊 [KNOWLEDGE_STATS] Final categories with counts:', categoriesWithCounts);
       return categoriesWithCounts;
     },
-    retry: 3,
-    retryDelay: 1000
+    retry: 2,
+    retryDelay: 1000,
+    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 };
 
@@ -63,7 +73,7 @@ export const useRecentArticles = (limit = 5) => {
   return useQuery({
     queryKey: ['recent-articles', limit],
     queryFn: async () => {
-      console.log('📊 [RECENT_ARTICLES] Fetching recent articles...');
+      console.log('📊 [RECENT_ARTICLES] Fetching recent articles, limit:', limit);
       
       const { data, error } = await supabase
         .from('knowledge_articles')
@@ -86,11 +96,13 @@ export const useRecentArticles = (limit = 5) => {
         throw error;
       }
 
-      console.log('📊 [RECENT_ARTICLES] Fetched:', data?.length, 'articles');
-      return data;
+      console.log('📊 [RECENT_ARTICLES] Fetched articles:', data?.length || 0);
+      console.log('📊 [RECENT_ARTICLES] Articles data:', data);
+      return data || [];
     },
-    retry: 3,
-    retryDelay: 1000
+    retry: 2,
+    retryDelay: 1000,
+    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 };
 
@@ -113,7 +125,8 @@ export const useTotalArticleCount = () => {
       console.log('📊 [TOTAL_ARTICLES] Total count:', count);
       return count || 0;
     },
-    retry: 3,
-    retryDelay: 1000
+    retry: 2,
+    retryDelay: 1000,
+    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 };
