@@ -26,6 +26,13 @@ export const useAuditActionTemplatesBySubjectArea = () => {
         .select(`
           id,
           name,
+          description,
+          subject_area,
+          action_type,
+          risk_level,
+          estimated_hours,
+          is_system_template,
+          is_active,
           subject_area_id,
           subject_areas!inner(
             id,
