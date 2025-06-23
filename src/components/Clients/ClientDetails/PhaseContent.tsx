@@ -7,6 +7,9 @@ import Overview from './ClientDashboard/Overview';
 import ImprovedClientDocumentManager from '@/components/ClientDocuments/ImprovedClientDocumentManager';
 import { useClientDocuments } from '@/hooks/useClientDocuments';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 
 type Phase = 'engagement' | 'planning' | 'execution' | 'completion' | 'reporting' | 'overview' | 'risk_assessment';
 
@@ -18,11 +21,55 @@ interface PhaseContentProps {
 export const PhaseContent: React.FC<PhaseContentProps> = ({ phase, client }) => {
   const [showDocumentUpload, setShowDocumentUpload] = useState(false);
   
+  console.log('🔍 [PHASE_CONTENT] Rendered with:', {
+    phase,
+    client: client ? {
+      id: client.id,
+      name: client.name,
+      company_name: client.company_name,
+      org_number: client.org_number
+    } : null
+  });
+
   if (!client) {
-    return <div>Laster klient...</div>;
+    return (
+      <div className="p-8 space-y-6">
+        <div className="space-y-4">
+          <Skeleton className="h-8 w-64" />
+          <Skeleton className="h-32 w-full" />
+          <Skeleton className="h-48 w-full" />
+        </div>
+      </div>
+    );
   }
 
-  const { documents } = useClientDocuments(client.id);
+  // Validate that we have a proper client ID
+  if (!client.id || client.id.trim() === '') {
+    console.error('❌ [PHASE_CONTENT] Client ID is missing or empty:', {
+      clientId: client.id,
+      orgNumber: client.org_number,
+      name: client.name
+    });
+    
+    return (
+      <div className="p-8">
+        <Alert variant="destructive" className="max-w-md mx-auto">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Klient-ID mangler. Kan ikke laste dokumenter. Prøv å oppdatere siden eller gå tilbake til klientoversikten.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
+  const { documents, isLoading: documentsLoading } = useClientDocuments(client.id);
+
+  console.log('📄 [PHASE_CONTENT] Documents loaded:', {
+    clientId: client.id,
+    documentsCount: documents.length,
+    isLoading: documentsLoading
+  });
 
   const renderContent = () => {
     switch (phase) {
@@ -45,10 +92,18 @@ export const PhaseContent: React.FC<PhaseContentProps> = ({ phase, client }) => 
               </div>
               
               <div className="lg:col-span-2">
-                <ImprovedClientDocumentManager 
-                  clientId={client.id}
-                  clientName={client.company_name || client.name}
-                />
+                {documentsLoading ? (
+                  <div className="space-y-4">
+                    <Skeleton className="h-8 w-48" />
+                    <Skeleton className="h-32 w-full" />
+                    <Skeleton className="h-48 w-full" />
+                  </div>
+                ) : (
+                  <ImprovedClientDocumentManager 
+                    clientId={client.id}
+                    clientName={client.company_name || client.name}
+                  />
+                )}
               </div>
             </div>
 

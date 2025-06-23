@@ -8,6 +8,13 @@ export function useClientDetails(orgNumber: string) {
   return useQuery({
     queryKey: ['client', orgNumber],
     queryFn: async (): Promise<Client | null> => {
+      console.log('🔍 [USE_CLIENT_DETAILS] Fetching client for orgNumber:', orgNumber);
+      
+      if (!orgNumber || orgNumber.trim() === '') {
+        console.error('❌ [USE_CLIENT_DETAILS] Empty orgNumber provided');
+        throw new Error('Organisasjonsnummer er påkrevd');
+      }
+
       // Fetch client data
       const { data: clientData, error: clientError } = await supabase
         .from('clients')
@@ -16,6 +23,7 @@ export function useClientDetails(orgNumber: string) {
         .single();
 
       if (clientError) {
+        console.error('❌ [USE_CLIENT_DETAILS] Database error:', clientError);
         if (clientError.code !== 'PGRST116') { // No rows returned
           toast({
             title: "Feil ved lasting av klientdata",
@@ -24,6 +32,25 @@ export function useClientDetails(orgNumber: string) {
           });
         }
         return null;
+      }
+
+      if (!clientData) {
+        console.error('❌ [USE_CLIENT_DETAILS] No client data returned');
+        return null;
+      }
+
+      console.log('📋 [USE_CLIENT_DETAILS] Raw client data:', {
+        id: clientData.id,
+        name: clientData.name,
+        company_name: clientData.company_name,
+        org_number: clientData.org_number,
+        phase: clientData.phase
+      });
+
+      // Validate essential fields
+      if (!clientData.id || clientData.id.trim() === '') {
+        console.error('❌ [USE_CLIENT_DETAILS] Client ID is missing or empty:', clientData);
+        throw new Error('Klient-data er ufullstendig (mangler ID)');
       }
 
       // Map database phase values to our AuditPhase type
@@ -88,11 +115,21 @@ export function useClientDetails(orgNumber: string) {
         announcements: [],
       };
 
-      // Fetch risk areas, documents and roles if needed
-      // This could be expanded based on your requirements
+      console.log('✅ [USE_CLIENT_DETAILS] Client successfully transformed:', {
+        id: client.id,
+        name: client.name,
+        company_name: client.company_name,
+        org_number: client.org_number,
+        phase: client.phase
+      });
 
       return client;
     },
+    enabled: !!orgNumber && orgNumber.trim() !== '',
     staleTime: 1000 * 60 * 5, // 5 minutes
+    retry: (failureCount, error) => {
+      console.log('🔄 [USE_CLIENT_DETAILS] Query retry:', { failureCount, error: error.message });
+      return failureCount < 2; // Retry max 2 times
+    }
   });
 }

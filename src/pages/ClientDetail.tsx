@@ -15,16 +15,29 @@ const ClientDetail = () => {
   const { orgNumber } = useParams<{ orgNumber: string }>();
   const [selectedPhase, setSelectedPhase] = useState<AuditPhase>('overview');
 
-  console.log('ClientDetail - orgNumber from params:', orgNumber);
+  console.log('🏢 [CLIENT_DETAIL] Component rendered:', {
+    orgNumber,
+    selectedPhase,
+    currentPath: window.location.pathname
+  });
 
   // Ensure orgNumber exists before making the query
   const { data: client, isLoading, error } = useClientDetails(orgNumber || '');
 
-  console.log('ClientDetail - client data:', client);
-  console.log('ClientDetail - loading state:', isLoading);
-  console.log('ClientDetail - error:', error);
+  console.log('🏢 [CLIENT_DETAIL] Client query result:', {
+    orgNumber,
+    client: client ? {
+      id: client.id,
+      name: client.name,
+      company_name: client.company_name,
+      org_number: client.org_number
+    } : null,
+    isLoading,
+    error: error?.message
+  });
 
   if (!orgNumber) {
+    console.error('❌ [CLIENT_DETAIL] No orgNumber in URL params');
     return (
       <div className="text-center py-12">
         <Alert variant="destructive" className="max-w-md mx-auto">
@@ -38,6 +51,7 @@ const ClientDetail = () => {
   }
 
   if (isLoading) {
+    console.log('⏳ [CLIENT_DETAIL] Loading client data...');
     return (
       <div className="space-y-6 p-6">
         <Skeleton className="h-8 w-64" />
@@ -48,6 +62,7 @@ const ClientDetail = () => {
   }
 
   if (error) {
+    console.error('❌ [CLIENT_DETAIL] Error loading client:', error);
     return (
       <div className="text-center py-12">
         <Alert variant="destructive" className="max-w-md mx-auto">
@@ -61,6 +76,7 @@ const ClientDetail = () => {
   }
 
   if (!client) {
+    console.error('❌ [CLIENT_DETAIL] No client found for orgNumber:', orgNumber);
     return (
       <div className="text-center py-12">
         <Alert variant="destructive" className="max-w-md mx-auto">
@@ -74,7 +90,34 @@ const ClientDetail = () => {
     );
   }
 
+  // Additional validation to ensure we have a valid client ID
+  if (!client.id || client.id.trim() === '') {
+    console.error('❌ [CLIENT_DETAIL] Client loaded but ID is missing:', {
+      client,
+      orgNumber
+    });
+    return (
+      <div className="text-center py-12">
+        <Alert variant="destructive" className="max-w-md mx-auto">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Klient-data er ufullstendig (mangler ID). Prøv å oppdatere siden.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
+  console.log('✅ [CLIENT_DETAIL] Client loaded successfully:', {
+    id: client.id,
+    name: client.name,
+    company_name: client.company_name,
+    org_number: client.org_number,
+    phase: client.phase
+  });
+
   const handlePhaseClick = (phase: AuditPhase) => {
+    console.log('🔄 [CLIENT_DETAIL] Phase changed:', { from: selectedPhase, to: phase });
     setSelectedPhase(phase);
   };
 
