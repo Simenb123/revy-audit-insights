@@ -66,11 +66,7 @@ const FinancialRatios = ({ className }: FinancialRatiosProps) => {
               </div>
               <Progress 
                 value={(ratio.value / ratio.target) * 100} 
-                className={cn(
-                  "h-2",
-                  ratio.value >= ratio.target ? "bg-muted" : 
-                  ratio.value >= ratio.target * 0.8 ? "bg-muted" : "bg-muted"
-                )}
+                className="h-2"
               />
               <div className="flex justify-between text-xs text-muted-foreground">
                 <span>0</span>
