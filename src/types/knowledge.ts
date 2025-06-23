@@ -1,8 +1,7 @@
 
 export type ArticleStatus = 'draft' | 'published' | 'archived';
 
-export type ContentType = 'fagartikkel' | 'isa-standard' | 'nrs-standard' | 'lov' | 'forskrift' | 'forarbeider' | 'dom' | 'revisjonshandlinger';
-
+// Fjernet content_type union type siden vi nå bruker content_type_id
 export interface KnowledgeCategory {
   id: string;
   name: string;
@@ -97,10 +96,9 @@ export interface KnowledgeArticle {
   summary?: string;
   content: string;
   category_id: string;
-  content_type_id?: string;
+  content_type_id: string; // Now required, no more optional
   status: ArticleStatus;
   author_id: string;
-  tags?: string[];
   view_count: number;
   created_at: string;
   updated_at: string;
@@ -111,7 +109,9 @@ export interface KnowledgeArticle {
   article_tags?: Tag[];
   embedding?: any;
   reference_code?: string;
-  content_type?: ContentType; // Legacy field for backward compatibility
+  valid_from?: string;
+  valid_until?: string;
+  // Removed: content_type and tags (migrated to relations)
 }
 
 export interface KnowledgeFavorite {

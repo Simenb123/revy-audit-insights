@@ -1,127 +1,161 @@
 
 import React from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import PDFUploadManager from './PDFUploadManager';
-import ConversionProgress from './ConversionProgress';
-import HelpText from '@/components/HelpText/HelpText';
-import { useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
-import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
+import { FileText, Clock, CheckCircle, AlertCircle, Download } from 'lucide-react';
 
-const PDFConversionWorkflow = () => {
-  const queryClient = useQueryClient();
-  const navigate = useNavigate();
-  const { toast } = useToast();
+interface PDFConversion {
+  id: string;
+  user_id: string;
+  file_name: string;
+  file_path: string;
+  file_size: number;
+  title: string;
+  category_id: string;
+  conversion_type: 'full' | 'summary' | 'checklist';
+  status: 'uploading' | 'processing' | 'completed' | 'failed';
+  progress: number;
+  extracted_text?: string;
+  structured_content?: any;
+  error_message?: string;
+  estimated_time?: number;
+  created_at: string;
+  updated_at: string;
+  completed_at?: string;
+  category?: { name: string };
+}
 
-  const handleUploadComplete = () => {
-    queryClient.invalidateQueries({ queryKey: ['pdf-conversions'] });
-  };
+interface PDFConversionWorkflowProps {
+  conversions?: PDFConversion[];
+  onRetry?: (conversionId: string) => void;
+  onDelete?: (conversionId: string) => void;
+}
 
-  const handlePreview = async (jobId: string) => {
-    console.log('Preview job:', jobId);
-    
-    try {
-      const { data: article, error } = await supabase
-        .from('knowledge_articles')
-        .select('id, slug, title, status')
-        .eq('metadata->pdf_conversion_job_id', jobId)
-        .single();
-      
-      if (error || !article) {
-        console.error('Article not found for job:', jobId, error);
-        toast({
-          title: "Forhåndsvisning ikke tilgjengelig",
-          description: "Kunne ikke finne den konverterte artikkelen. Den kan fortsatt være under prosessering.",
-          variant: "destructive"
-        });
-        return;
-      }
-      
-      if (article.status !== 'published') {
-        toast({
-          title: "Artikkel ikke klar",
-          description: "Artikkelen er fortsatt under prosessering. Prøv igjen om litt.",
-          variant: "default"
-        });
-        return;
-      }
-      
-      console.log('Navigating to article:', article.slug);
-      navigate(`/kunnskapsbase/artikkel/${article.slug}`);
-      
-      toast({
-        title: "Åpner artikkel",
-        description: `Viser konvertert artikkel: ${article.title}`,
-        variant: "default"
-      });
-      
-    } catch (error) {
-      console.error('Error previewing converted article:', error);
-      toast({
-        title: "Feil ved forhåndsvisning",
-        description: "En feil oppstod ved åpning av artikkelen. Prøv igjen.",
-        variant: "destructive"
-      });
+const PDFConversionWorkflow: React.FC<PDFConversionWorkflowProps> = ({ 
+  conversions = [], 
+  onRetry, 
+  onDelete 
+}) => {
+  const getStatusIcon = (status: PDFConversion['status']) => {
+    switch (status) {
+      case 'uploading':
+      case 'processing':
+        return <Clock className="h-4 w-4 text-yellow-500" />;
+      case 'completed':
+        return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case 'failed':
+        return <AlertCircle className="h-4 w-4 text-red-500" />;
+      default:
+        return <FileText className="h-4 w-4 text-gray-400" />;
     }
   };
 
-  const handleRetry = (jobId: string) => {
-    console.log('Retry job:', jobId);
-    queryClient.invalidateQueries({ queryKey: ['pdf-conversions'] });
-    
-    toast({
-      title: "Konvertering startet på nytt",
-      description: "PDF-konverteringen har blitt startet på nytt.",
-      variant: "default"
-    });
+  const getStatusColor = (status: PDFConversion['status']) => {
+    switch (status) {
+      case 'uploading':
+      case 'processing':
+        return 'secondary';
+      case 'completed':
+        return 'default';
+      case 'failed':
+        return 'destructive';
+      default:
+        return 'outline';
+    }
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold mb-2">PDF-konvertering</h2>
-        <p className="text-muted-foreground">
-          Last opp PDF-dokumenter og konverter dem til strukturerte, søkbare artikler
-        </p>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold">PDF-konverteringer</h3>
+        <Badge variant="outline">
+          {conversions.filter(c => c.status === 'completed').length} av {conversions.length} fullført
+        </Badge>
       </div>
 
-      <HelpText variant="info" title="PDF til Strukturerte Artikler">
-        <div className="space-y-2">
-          <p>Denne funksjonen lar deg konvertere PDF-dokumenter til strukturerte artikler som:</p>
-          <ul className="list-disc list-inside space-y-1">
-            <li><strong>Full tekstsøk:</strong> Alt innhold blir søkbart på tvers av systemet</li>
-            <li><strong>AI-integrasjon:</strong> Revy kan sitere spesifikke deler av dokumentene</li>
-            <li><strong>Cross-referencing:</strong> Automatiske lenker mellom relaterte dokumenter</li>
-            <li><strong>Mobile-optimalisert:</strong> Fungerer perfekt på alle enheter</li>
-            <li><strong>Versjonshåndtering:</strong> Enkel oppdatering når dokumenter endres</li>
-            <li><strong>Forhåndsvisning:</strong> Se det konverterte resultatet umiddelbart</li>
-          </ul>
-          <div className="mt-3 p-3 bg-yellow-50 rounded-lg">
-            <p className="text-sm"><strong>Merk:</strong> Konverteringsprosessen kan ta 2-5 minutter avhengig av dokumentstørrelse og kompleksitet. Når konverteringen er ferdig, kan du forhåndsvise den opprettede artikkelen.</p>
-          </div>
-        </div>
-      </HelpText>
+      {conversions.length === 0 ? (
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center text-muted-foreground">
+              <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p>Ingen PDF-konverteringer funnet</p>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-3">
+          {conversions.map((conversion) => (
+            <Card key={conversion.id}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+                <div className="flex items-center gap-2">
+                  {getStatusIcon(conversion.status)}
+                  <CardTitle className="text-sm">{conversion.title}</CardTitle>
+                </div>
+                <Badge variant={getStatusColor(conversion.status)}>
+                  {conversion.status}
+                </Badge>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center justify-between text-sm text-muted-foreground">
+                  <span>{conversion.file_name}</span>
+                  <span>{Math.round(conversion.file_size / 1024)} KB</span>
+                </div>
 
-      <Tabs defaultValue="upload" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="upload">Last opp PDF</TabsTrigger>
-          <TabsTrigger value="progress">
-            Konverteringsstatus
-          </TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="upload" className="space-y-4">
-          <PDFUploadManager onUploadComplete={handleUploadComplete} />
-        </TabsContent>
-        
-        <TabsContent value="progress" className="space-y-4">
-          <ConversionProgress 
-            onPreview={handlePreview}
-            onRetry={handleRetry}
-          />
-        </TabsContent>
-      </Tabs>
+                {(conversion.status === 'uploading' || conversion.status === 'processing') && (
+                  <div className="space-y-2">
+                    <Progress value={conversion.progress} className="w-full" />
+                    <p className="text-xs text-muted-foreground">
+                      {conversion.progress}% fullført
+                      {conversion.estimated_time && ` • Ca. ${conversion.estimated_time} min igjen`}
+                    </p>
+                  </div>
+                )}
+
+                {conversion.status === 'failed' && conversion.error_message && (
+                  <div className="text-sm text-red-600 bg-red-50 p-2 rounded">
+                    {conversion.error_message}
+                  </div>
+                )}
+
+                {conversion.status === 'completed' && (
+                  <div className="flex items-center gap-2">
+                    <Button size="sm" variant="outline">
+                      <Download className="h-3 w-3 mr-1" />
+                      Last ned
+                    </Button>
+                    <span className="text-xs text-green-600">
+                      Fullført {conversion.completed_at && new Date(conversion.completed_at).toLocaleDateString('no-NO')}
+                    </span>
+                  </div>
+                )}
+
+                {conversion.status === 'failed' && onRetry && (
+                  <div className="flex items-center gap-2">
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => onRetry(conversion.id)}
+                    >
+                      Prøv igjen
+                    </Button>
+                    {onDelete && (
+                      <Button 
+                        size="sm" 
+                        variant="destructive" 
+                        onClick={() => onDelete(conversion.id)}
+                      >
+                        Slett
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

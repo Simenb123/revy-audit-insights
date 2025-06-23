@@ -2185,8 +2185,7 @@ export type Database = {
           author_id: string
           category_id: string
           content: string
-          content_type: string | null
-          content_type_id: string | null
+          content_type_id: string
           created_at: string
           embedding: string | null
           id: string
@@ -2195,7 +2194,6 @@ export type Database = {
           slug: string
           status: Database["public"]["Enums"]["article_status"]
           summary: string | null
-          tags: string[] | null
           title: string
           updated_at: string
           valid_from: string | null
@@ -2206,8 +2204,7 @@ export type Database = {
           author_id: string
           category_id: string
           content: string
-          content_type?: string | null
-          content_type_id?: string | null
+          content_type_id: string
           created_at?: string
           embedding?: string | null
           id?: string
@@ -2216,7 +2213,6 @@ export type Database = {
           slug: string
           status?: Database["public"]["Enums"]["article_status"]
           summary?: string | null
-          tags?: string[] | null
           title: string
           updated_at?: string
           valid_from?: string | null
@@ -2227,8 +2223,7 @@ export type Database = {
           author_id?: string
           category_id?: string
           content?: string
-          content_type?: string | null
-          content_type_id?: string | null
+          content_type_id?: string
           created_at?: string
           embedding?: string | null
           id?: string
@@ -2237,7 +2232,6 @@ export type Database = {
           slug?: string
           status?: Database["public"]["Enums"]["article_status"]
           summary?: string | null
-          tags?: string[] | null
           title?: string
           updated_at?: string
           valid_from?: string | null
