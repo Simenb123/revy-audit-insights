@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 export interface SearchQuery {
@@ -51,7 +50,6 @@ export const performSemanticSearch = async (query: SearchQuery): Promise<SearchR
   try {
     console.log('🔍 Performing semantic search with enhanced multi-word support:', query);
     
-    // Call the enhanced knowledge search function
     const { data, error } = await supabase.functions.invoke('knowledge-search', {
       body: { query: query.term }
     });
@@ -63,7 +61,6 @@ export const performSemanticSearch = async (query: SearchQuery): Promise<SearchR
     
     console.log('📊 Enhanced search returned:', data?.length || 0, 'results');
     
-    // Transform the results to match our SearchResult interface
     const results: SearchResult[] = (data || []).map((article: any) => ({
       id: article.id,
       fileName: article.title,

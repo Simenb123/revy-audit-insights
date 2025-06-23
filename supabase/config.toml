@@ -6,6 +6,8 @@
     verify_jwt = true
   [functions.pdf-text-extractor]
     verify_jwt = true
+  [functions.enhanced-pdf-text-extractor]
+    verify_jwt = true
   [functions.revy-ai-chat]
     verify_jwt = false
   [functions.syncKunngjoring]
@@ -15,4 +17,6 @@
   [functions.voice-to-text]
     verify_jwt = true
   [functions.knowledge-search]
+    verify_jwt = true
+  [functions.generate-embeddings]
     verify_jwt = true

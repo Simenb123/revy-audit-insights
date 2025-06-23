@@ -15,7 +15,6 @@ const PDFConversionWorkflow = () => {
   const { toast } = useToast();
 
   const handleUploadComplete = () => {
-    // Refresh the conversion progress data when upload completes
     queryClient.invalidateQueries({ queryKey: ['pdf-conversions'] });
   };
 
@@ -23,7 +22,6 @@ const PDFConversionWorkflow = () => {
     console.log('Preview job:', jobId);
     
     try {
-      // Find the corresponding knowledge article created from this PDF conversion
       const { data: article, error } = await supabase
         .from('knowledge_articles')
         .select('id, slug, title, status')
@@ -49,7 +47,6 @@ const PDFConversionWorkflow = () => {
         return;
       }
       
-      // Navigate to the article view
       console.log('Navigating to article:', article.slug);
       navigate(`/kunnskapsbase/artikkel/${article.slug}`);
       
@@ -71,7 +68,6 @@ const PDFConversionWorkflow = () => {
 
   const handleRetry = (jobId: string) => {
     console.log('Retry job:', jobId);
-    // The retry logic is handled in the ConversionProgress component
     queryClient.invalidateQueries({ queryKey: ['pdf-conversions'] });
     
     toast({
