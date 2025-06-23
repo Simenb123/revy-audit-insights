@@ -27,11 +27,15 @@ export const PhaseContent: React.FC<PhaseContentProps> = ({ phase, client }) => 
       id: client.id,
       name: client.name,
       company_name: client.company_name,
-      org_number: client.org_number
+      org_number: client.org_number,
+      idType: typeof client.id,
+      idLength: client.id?.length,
+      isValidId: !!(client.id && client.id.trim() !== '' && client.id !== 'undefined' && client.id !== 'null')
     } : null
   });
 
   if (!client) {
+    console.log('⚠️ [PHASE_CONTENT] No client provided - showing skeleton');
     return (
       <div className="p-8 space-y-6">
         <div className="space-y-4">
@@ -43,12 +47,14 @@ export const PhaseContent: React.FC<PhaseContentProps> = ({ phase, client }) => 
     );
   }
 
-  // Validate that we have a proper client ID
-  if (!client.id || client.id.trim() === '') {
-    console.error('❌ [PHASE_CONTENT] Client ID is missing or empty:', {
+  // Enhanced validation that we have a proper client ID
+  if (!client.id || client.id.trim() === '' || client.id === 'undefined' || client.id === 'null') {
+    console.error('❌ [PHASE_CONTENT] Client ID is missing, empty, or invalid:', {
       clientId: client.id,
+      clientIdType: typeof client.id,
       orgNumber: client.org_number,
-      name: client.name
+      name: client.name,
+      company_name: client.company_name
     });
     
     return (
@@ -56,17 +62,20 @@ export const PhaseContent: React.FC<PhaseContentProps> = ({ phase, client }) => 
         <Alert variant="destructive" className="max-w-md mx-auto">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            Klient-ID mangler. Kan ikke laste dokumenter. Prøv å oppdatere siden eller gå tilbake til klientoversikten.
+            Klient-ID mangler eller er ugyldig. ID: "{client.id}" (type: {typeof client.id}). 
+            Prøv å oppdatere siden eller gå tilbake til klientoversikten.
           </AlertDescription>
         </Alert>
       </div>
     );
   }
 
+  // Use the client documents hook with enhanced logging
   const { documents, isLoading: documentsLoading } = useClientDocuments(client.id);
 
-  console.log('📄 [PHASE_CONTENT] Documents loaded:', {
+  console.log('📄 [PHASE_CONTENT] Documents loaded with validated client ID:', {
     clientId: client.id,
+    clientIdValid: true,
     documentsCount: documents.length,
     isLoading: documentsLoading
   });

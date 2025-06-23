@@ -47,10 +47,14 @@ export function useClientDetails(orgNumber: string) {
         phase: clientData.phase
       });
 
-      // Validate essential fields
-      if (!clientData.id || clientData.id.trim() === '') {
-        console.error('❌ [USE_CLIENT_DETAILS] Client ID is missing or empty:', clientData);
-        throw new Error('Klient-data er ufullstendig (mangler ID)');
+      // Validate essential fields - ensure we have a proper UUID
+      if (!clientData.id || clientData.id.trim() === '' || clientData.id === 'undefined' || clientData.id === 'null') {
+        console.error('❌ [USE_CLIENT_DETAILS] Client ID is missing, empty, or invalid:', {
+          id: clientData.id,
+          type: typeof clientData.id,
+          rawData: clientData
+        });
+        throw new Error('Klient-data er ufullstendig (mangler gyldig ID)');
       }
 
       // Map database phase values to our AuditPhase type
@@ -67,15 +71,15 @@ export function useClientDetails(orgNumber: string) {
           break;
       }
 
-      // Transform data to match our Client type
+      // Transform data to match our Client type - ensure ID is properly set
       const client: Client = {
         ...clientData,
-        id: clientData.id,
-        name: clientData.name,
-        company_name: clientData.company_name,
-        org_number: clientData.org_number,
+        id: String(clientData.id), // Ensure it's a string
+        name: clientData.name || '',
+        company_name: clientData.company_name || '',
+        org_number: clientData.org_number || '',
         phase: mappedPhase,
-        progress: clientData.progress,
+        progress: clientData.progress || 0,
         department: clientData.department || '',
         contact_person: clientData.contact_person || '',
         chair: clientData.chair || '',
@@ -115,7 +119,16 @@ export function useClientDetails(orgNumber: string) {
         announcements: [],
       };
 
-      console.log('✅ [USE_CLIENT_DETAILS] Client successfully transformed:', {
+      // Final validation that we have a valid ID
+      if (!client.id || client.id.trim() === '' || client.id === 'undefined' || client.id === 'null') {
+        console.error('❌ [USE_CLIENT_DETAILS] Final validation failed - client ID still invalid:', {
+          clientId: client.id,
+          orgNumber: client.org_number
+        });
+        throw new Error('Klient-ID kunne ikke valideres');
+      }
+
+      console.log('✅ [USE_CLIENT_DETAILS] Client successfully transformed with valid ID:', {
         id: client.id,
         name: client.name,
         company_name: client.company_name,
