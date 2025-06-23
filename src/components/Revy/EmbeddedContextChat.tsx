@@ -2,18 +2,17 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import ContextAwareRevyChat from './ContextAwareRevyChat';
+import { Client } from '@/types/revio';
 
 interface EmbeddedContextChatProps {
-  clientId?: string;
-  clientData?: any;
+  client: Client;
   context: string;
   title?: string;
   height?: string;
 }
 
 const EmbeddedContextChat: React.FC<EmbeddedContextChatProps> = ({
-  clientId,
-  clientData,
+  client,
   context,
   title = "AI-Revi Assistanse",
   height = "400px"
@@ -22,11 +21,8 @@ const EmbeddedContextChat: React.FC<EmbeddedContextChatProps> = ({
     <Card className="border-purple-200 bg-purple-50/30">
       <CardContent className="p-4" style={{ height }}>
         <ContextAwareRevyChat
-          clientId={clientId}
-          clientData={clientData}
-          context={context}
-          embedded={true}
-          showVariantSelector={false}
+          client={client}
+          className="h-full"
         />
       </CardContent>
     </Card>

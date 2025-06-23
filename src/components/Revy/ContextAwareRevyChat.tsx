@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,8 +18,8 @@ import {
 } from 'lucide-react';
 import { useClientDocuments } from '@/hooks/useClientDocuments';
 import { Client } from '@/types/revio';
-import { enhancedRevyService } from '@/services/enhancedRevyService';
-import RevyInput from './Assistant/RevyInput';
+import { getEnhancedContextualTips, getContextualSuggestions } from '@/services/enhancedRevyService';
+import { RevyInput } from './Assistant/RevyInput';
 
 interface ContextAwareRevyChatProps {
   client: Client;
@@ -34,6 +35,7 @@ const ContextAwareRevyChat: React.FC<ContextAwareRevyChatProps> = ({
   const { documents } = useClientDocuments(client.id);
   const [messages, setMessages] = useState<Array<{ sender: 'user' | 'assistant'; content: string; timestamp: Date }>>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [message, setMessage] = useState('');
 
   useEffect(() => {
     // Initial greeting with context
@@ -82,35 +84,31 @@ Hva kan jeg hjelpe deg med i dag?`;
     return context.length > 0 ? context.join('\n') : 'Generell revisjonsrådgivning';
   };
 
-  const handleSendMessage = async (content: string) => {
-    if (!content.trim()) return;
+  const handleSendMessage = async () => {
+    if (!message.trim()) return;
 
     const userMessage = {
       sender: 'user' as const,
-      content: content.trim(),
+      content: message.trim(),
       timestamp: new Date()
     };
 
     setMessages(prev => [...prev, userMessage]);
+    setMessage('');
     setIsLoading(true);
 
     try {
-      // Fix: Map user_id to uploaded_by for ClientDocument compatibility
-      const mappedDocuments = documents.map(doc => ({
-        ...doc,
-        uploaded_by: doc.user_id || doc.uploaded_by || ''
-      }));
+      // For now, provide a simple response using the contextual suggestions
+      const suggestions = getContextualSuggestions('client-detail', client);
+      const response = `Basert på informasjonen om ${client.company_name || client.name}, her er noen forslag:
 
-      const response = await enhancedRevyService.getChatResponse(
-        content,
-        client,
-        mappedDocuments,
-        'context-aware'
-      );
+${suggestions.slice(0, 2).map(s => `• ${s}`).join('\n')}
+
+Trenger du mer spesifikk hjelp med noen av disse områdene?`;
 
       const assistantMessage = {
         sender: 'assistant' as const,
-        content: response.content,
+        content: response,
         timestamp: new Date()
       };
 
@@ -191,27 +189,27 @@ Hva kan jeg hjelpe deg med i dag?`;
       
       <CardContent className="flex-1 flex flex-col p-0">
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {messages.map((message, index) => (
+          {messages.map((msg, index) => (
             <div
               key={index}
               className={`flex ${
-                message.sender === 'user' ? 'justify-end' : 'justify-start'
+                msg.sender === 'user' ? 'justify-end' : 'justify-start'
               }`}
             >
               <div
                 className={`max-w-[80%] p-3 rounded-lg ${
-                  message.sender === 'user'
+                  msg.sender === 'user'
                     ? 'bg-blue-600 text-white'
                     : 'bg-gray-100 text-gray-900'
                 }`}
               >
-                <div className="whitespace-pre-wrap">{message.content}</div>
+                <div className="whitespace-pre-wrap">{msg.content}</div>
                 <div
                   className={`text-xs mt-1 opacity-70 ${
-                    message.sender === 'user' ? 'text-blue-100' : 'text-gray-500'
+                    msg.sender === 'user' ? 'text-blue-100' : 'text-gray-500'
                   }`}
                 >
-                  {message.timestamp.toLocaleTimeString('no-NO', {
+                  {msg.timestamp.toLocaleTimeString('no-NO', {
                     hour: '2-digit',
                     minute: '2-digit'
                   })}
@@ -234,8 +232,10 @@ Hva kan jeg hjelpe deg med i dag?`;
         
         <div className="p-4 border-t">
           <RevyInput
-            onSendMessage={handleSendMessage}
-            isLoading={isLoading}
+            message={message}
+            setMessage={setMessage}
+            handleSendMessage={handleSendMessage}
+            isTyping={isLoading}
             placeholder="Spør AI-Revi om noe relatert til denne klienten..."
           />
         </div>
