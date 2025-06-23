@@ -5,8 +5,8 @@ import { toast } from '@/hooks/use-toast';
 import * as pdfjsLib from 'pdfjs-dist';
 import * as XLSX from 'xlsx';
 
-// Set up PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+// Set up PDF.js worker with local path to avoid CORS issues
+pdfjsLib.GlobalWorkerOptions.workerSrc = '/node_modules/pdfjs-dist/build/pdf.worker.min.js';
 
 interface TextExtractionResult {
   text: string;
@@ -19,29 +19,68 @@ export const useClientTextExtraction = () => {
 
   const extractTextFromPDF = async (file: File): Promise<string> => {
     try {
+      console.log('🔄 Starting PDF text extraction for:', file.name);
       const arrayBuffer = await file.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      
+      // Create loading task with better error handling
+      const loadingTask = pdfjsLib.getDocument({ 
+        data: arrayBuffer,
+        verbosity: 0 // Reduce console noise
+      });
+      
+      const pdf = await loadingTask.promise;
+      console.log('📄 PDF loaded successfully, pages:', pdf.numPages);
+      
       let fullText = '';
 
       for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
-        const textContent = await page.getTextContent();
-        const pageText = textContent.items
-          .filter(item => 'str' in item)
-          .map(item => (item as any).str)
-          .join(' ');
-        fullText += pageText + '\n';
+        try {
+          const page = await pdf.getPage(i);
+          const textContent = await page.getTextContent();
+          const pageText = textContent.items
+            .filter(item => 'str' in item)
+            .map(item => (item as any).str)
+            .join(' ');
+          
+          if (pageText.trim()) {
+            fullText += pageText + '\n\n';
+          }
+          
+          console.log(`📖 Extracted text from page ${i}: ${pageText.length} characters`);
+        } catch (pageError) {
+          console.warn(`⚠️ Could not extract text from page ${i}:`, pageError);
+          // Continue with other pages
+        }
       }
 
-      return fullText.trim();
+      const cleanText = fullText.trim();
+      
+      if (cleanText.length < 10) {
+        throw new Error('PDF ser ut til å være scannet eller inneholder lite tekst. Prøv backend-prosessering for bedre resultater.');
+      }
+      
+      console.log('✅ PDF text extraction completed:', cleanText.length, 'characters');
+      return cleanText;
+      
     } catch (error) {
-      console.error('PDF extraction error:', error);
-      throw new Error('Kunne ikke lese PDF-innhold');
+      console.error('❌ PDF extraction error:', error);
+      
+      // More specific error messages
+      if (error.message?.includes('Invalid PDF')) {
+        throw new Error('Filen ser ikke ut til å være en gyldig PDF');
+      } else if (error.message?.includes('worker')) {
+        throw new Error('PDF-prosessering utilgjengelig. Dokumentet vil bli sendt til backend for analyse.');
+      } else if (error.message?.includes('scannet')) {
+        throw error; // Re-throw our custom message
+      } else {
+        throw new Error('Kunne ikke lese PDF-innhold. Prøver backend-prosessering...');
+      }
     }
   };
 
   const extractTextFromExcel = async (file: File): Promise<string> => {
     try {
+      console.log('📊 Starting Excel text extraction for:', file.name);
       const arrayBuffer = await file.arrayBuffer();
       const workbook = XLSX.read(arrayBuffer, { type: 'array' });
       let fullText = '';
@@ -49,17 +88,24 @@ export const useClientTextExtraction = () => {
       workbook.SheetNames.forEach(sheetName => {
         const worksheet = workbook.Sheets[sheetName];
         const csvData = XLSX.utils.sheet_to_csv(worksheet);
-        fullText += `--- ${sheetName} ---\n${csvData}\n\n`;
+        if (csvData.trim()) {
+          fullText += `--- ${sheetName} ---\n${csvData}\n\n`;
+        }
       });
 
-      return fullText.trim();
+      const cleanText = fullText.trim();
+      console.log('✅ Excel extraction completed:', cleanText.length, 'characters');
+      return cleanText;
+      
     } catch (error) {
-      console.error('Excel extraction error:', error);
+      console.error('❌ Excel extraction error:', error);
       throw new Error('Kunne ikke lese Excel-innhold');
     }
   };
 
   const extractTextFromFile = async (file: File): Promise<string> => {
+    console.log('🔍 Extracting text from file:', file.name, 'type:', file.type);
+    
     if (file.type === 'application/pdf') {
       return await extractTextFromPDF(file);
     } else if (
@@ -69,9 +115,53 @@ export const useClientTextExtraction = () => {
     ) {
       return await extractTextFromExcel(file);
     } else if (file.type.startsWith('text/')) {
-      return await file.text();
+      const text = await file.text();
+      console.log('📝 Text file extracted:', text.length, 'characters');
+      return text;
     } else {
       throw new Error('Filtype støttes ikke for tekstekstraksjon');
+    }
+  };
+
+  const fallbackToBackendExtraction = async (documentId: string): Promise<boolean> => {
+    try {
+      console.log('🔄 Falling back to backend extraction for document:', documentId);
+      
+      // Update status to indicate backend processing
+      await supabase
+        .from('client_documents_files')
+        .update({ 
+          text_extraction_status: 'processing',
+          extracted_text: '[Backend prosessering startet...]'
+        })
+        .eq('id', documentId);
+
+      // Call the enhanced PDF text extractor edge function
+      const { error } = await supabase.functions.invoke('enhanced-pdf-text-extractor', {
+        body: { documentId }
+      });
+
+      if (error) {
+        console.error('❌ Backend extraction failed:', error);
+        throw new Error(`Backend-prosessering feilet: ${error.message}`);
+      }
+
+      console.log('✅ Backend extraction initiated successfully');
+      return true;
+      
+    } catch (error) {
+      console.error('❌ Fallback extraction error:', error);
+      
+      // Update with failed status
+      await supabase
+        .from('client_documents_files')
+        .update({ 
+          text_extraction_status: 'failed',
+          extracted_text: `[Både frontend og backend ekstrasjon feilet: ${error.message}]`
+        })
+        .eq('id', documentId);
+      
+      return false;
     }
   };
 
@@ -104,6 +194,8 @@ export const useClientTextExtraction = () => {
         throw new Error('Kunne ikke finne dokument');
       }
 
+      console.log('📋 Processing document:', document.file_name, 'type:', document.mime_type);
+
       // Update status to processing
       await supabase
         .from('client_documents_files')
@@ -125,41 +217,85 @@ export const useClientTextExtraction = () => {
         lastModified: Date.now(),
       });
 
-      // Extract text
-      const extractedText = await extractTextFromFile(file);
+      let extractedText = '';
       let extractionMethod = 'Frontend ekstrasjon';
+      let shouldFallbackToBackend = false;
 
-      if (!extractedText || extractedText.trim().length < 10) {
-        throw new Error('Kunne ikke ekstraktere tekst fra filen');
+      try {
+        // Try frontend extraction first
+        extractedText = await extractTextFromFile(file);
+        
+        if (!extractedText || extractedText.trim().length < 10) {
+          console.log('⚠️ Frontend extraction produced minimal text, trying backend...');
+          shouldFallbackToBackend = true;
+        }
+        
+      } catch (frontendError) {
+        console.log('⚠️ Frontend extraction failed:', frontendError.message);
+        
+        // For PDFs, try backend extraction
+        if (document.mime_type === 'application/pdf') {
+          console.log('🔄 PDF frontend failed, switching to backend extraction...');
+          shouldFallbackToBackend = true;
+        } else {
+          // For non-PDFs, fail immediately
+          throw frontendError;
+        }
       }
 
-      // Generate AI analysis
-      const aiAnalysis = await generateAIAnalysis(extractedText, document.file_name);
-
-      // Update document with results
-      const { error: updateError } = await supabase
-        .from('client_documents_files')
-        .update({
-          extracted_text: extractedText,
-          text_extraction_status: 'completed',
-          ai_analysis_summary: aiAnalysis || null,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', documentId);
-
-      if (updateError) {
-        throw new Error('Kunne ikke lagre resultater');
+      // If we need to fallback to backend (especially for PDFs)
+      if (shouldFallbackToBackend && document.mime_type === 'application/pdf') {
+        console.log('🔄 Initiating backend fallback for PDF...');
+        const success = await fallbackToBackendExtraction(documentId);
+        
+        if (success) {
+          toast({
+            title: "Backend-prosessering startet",
+            description: `PDF-en "${document.file_name}" sendes til backend for avansert tekstekstraksjon`,
+          });
+        } else {
+          toast({
+            title: "Prosessering feilet",
+            description: `Kunne ikke prosessere "${document.file_name}"`,
+            variant: "destructive"
+          });
+        }
+        
+        return success;
       }
 
-      toast({
-        title: "Tekstekstraksjon fullført!",
-        description: `${extractedText.length} tegn ekstraktert fra ${document.file_name}`,
-      });
+      // If we have text from frontend extraction
+      if (extractedText && extractedText.trim().length >= 10) {
+        // Generate AI analysis
+        const aiAnalysis = await generateAIAnalysis(extractedText, document.file_name);
 
-      return true;
+        // Update document with results
+        const { error: updateError } = await supabase
+          .from('client_documents_files')
+          .update({
+            extracted_text: extractedText,
+            text_extraction_status: 'completed',
+            ai_analysis_summary: aiAnalysis || null,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', documentId);
+
+        if (updateError) {
+          throw new Error('Kunne ikke lagre resultater');
+        }
+
+        toast({
+          title: "Tekstekstraksjon fullført!",
+          description: `${extractedText.length} tegn ekstraktert fra ${document.file_name}`,
+        });
+
+        return true;
+      } else {
+        throw new Error('Ingen tekst ekstraktert fra dokument');
+      }
 
     } catch (error) {
-      console.error('Text extraction error:', error);
+      console.error('❌ Text extraction error:', error);
       
       // Update status to failed
       await supabase
