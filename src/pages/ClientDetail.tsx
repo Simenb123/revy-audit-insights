@@ -8,7 +8,7 @@ import { AlertCircle } from 'lucide-react';
 import ClientBreadcrumb from '@/components/Clients/ClientDetails/ClientBreadcrumb';
 import ClientNavigation from '@/components/Clients/ClientDetails/ClientNavigation';
 import RevisionWorkflow from '@/components/Clients/ClientDetails/RevisionWorkflow';
-import { PhaseContent } from '@/components/Clients/ClientDetails/PhaseContent';
+import PhaseContent from '@/components/Clients/ClientDetails/PhaseContent';
 import { AuditPhase } from '@/types/revio';
 
 const ClientDetail = () => {

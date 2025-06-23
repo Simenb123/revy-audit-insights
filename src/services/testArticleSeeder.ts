@@ -33,6 +33,37 @@ export const createTestArticles = async () => {
     categoryId = newCategory.id;
   }
   
+  // Get or create default content type
+  let contentTypeId = '';
+  const { data: existingContentType } = await supabase
+    .from('content_types')
+    .select('id')
+    .eq('name', 'fagartikkel')
+    .single();
+    
+  if (existingContentType) {
+    contentTypeId = existingContentType.id;
+  } else {
+    const { data: newContentType, error: contentTypeError } = await supabase
+      .from('content_types')
+      .insert({
+        name: 'fagartikkel',
+        display_name: 'Fagartikkel',
+        description: 'Standard fagartikkel',
+        icon: 'file-text',
+        color: '#3B82F6',
+        sort_order: 1
+      })
+      .select('id')
+      .single();
+      
+    if (contentTypeError || !newContentType) {
+      console.error('❌ Failed to create content type:', contentTypeError);
+      return;
+    }
+    contentTypeId = newContentType.id;
+  }
+  
   // Get current user ID
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
@@ -74,9 +105,9 @@ export const createTestArticles = async () => {
         </ul>
       `,
       category_id: categoryId,
+      content_type_id: contentTypeId,
       status: 'published' as const,
       author_id: user.id,
-      tags: ['revisjon', 'inntekter', 'isa-315'],
       reference_code: 'ISA 315',
       published_at: new Date().toISOString()
     },
@@ -109,9 +140,9 @@ export const createTestArticles = async () => {
         </ul>
       `,
       category_id: categoryId,
+      content_type_id: contentTypeId,
       status: 'published' as const,
       author_id: user.id,
-      tags: ['isa', 'standarder', 'revisjon', 'prinsipper'],
       reference_code: 'ISA Oversikt',
       published_at: new Date().toISOString()
     },
@@ -163,9 +194,9 @@ export const createTestArticles = async () => {
         </ul>
       `,
       category_id: categoryId,
+      content_type_id: contentTypeId,
       status: 'published' as const,
       author_id: user.id,
-      tags: ['revisjonshandlinger', 'metoder', 'praktisk', 'veiledning'],
       reference_code: 'PRAKSIS-001',
       published_at: new Date().toISOString()
     }
