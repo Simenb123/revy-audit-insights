@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -54,20 +53,29 @@ const CategoryView = () => {
     enabled: !!categoryId
   });
 
-  const { data: articles } = useQuery({
+  const { data: articles = [], isLoading: isLoadingArticles } = useQuery({
     queryKey: ['knowledge-articles', categoryId],
     queryFn: async () => {
-      if (!categoryId) return [];
-      
       const { data, error } = await supabase
         .from('knowledge_articles')
-        .select('*')
+        .select(`
+          *,
+          category:knowledge_categories(name),
+          content_type_entity:content_types(*),
+          article_tags:knowledge_article_tags(
+            id,
+            tag:tags(*)
+          )
+        `)
         .eq('category_id', categoryId)
-        .eq('status', 'published')
-        .order('created_at', { ascending: false });
+        .eq('status', 'published');
       
       if (error) throw error;
-      return data as KnowledgeArticle[];
+      
+      return (data || []).map(article => ({
+        ...article,
+        article_tags: article.article_tags?.map((at: any) => at.tag) || []
+      }));
     },
     enabled: !!categoryId
   });
@@ -155,66 +163,36 @@ const CategoryView = () => {
       )}
 
       {/* Articles */}
-      <div>
-        <h2 className="text-lg font-semibold mb-3">Artikler</h2>
-        {articles && articles.length > 0 ? (
-          <div className="space-y-3">
-            {articles.map((article) => (
-              <Card key={article.id} className="hover:shadow-sm transition-shadow bg-card">
-                <CardContent className="p-4">
-                  <Link to={`/fag/artikkel/${article.slug}`} className="block">
-                    <div className="flex items-start justify-between gap-3 mb-2">
-                      <h3 className="font-medium hover:text-primary transition-colors flex-1">
-                        {article.title}
-                      </h3>
-                      {article.content_type && (
-                        <ContentTypeBadge contentType={article.content_type as ContentType} />
-                      )}
-                    </div>
-                    {article.summary && (
-                      <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                        {article.summary}
-                      </p>
-                    )}
-                  </Link>
-                  <div className="flex items-center gap-4 mt-3">
-                    {article.tags && article.tags.length > 0 && (
-                      <div className="flex gap-1">
-                        {article.tags.slice(0, 3).map((tag) => (
-                          <Badge key={tag} variant="outline" className="text-xs">
-                            {tag}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground ml-auto">
-                      <span className="flex items-center gap-1">
-                        <Eye className="w-3 h-3" />
-                        {article.view_count}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {new Date(article.published_at || article.created_at).toLocaleDateString('nb-NO')}
-                      </span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <Card className="bg-card">
-            <CardContent className="p-6 text-center">
-              <p className="text-muted-foreground">Ingen artikler funnet i denne kategorien.</p>
-              <Button asChild className="mt-3">
-                <Link to="/fag/ny-artikkel" state={{ categoryId }}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Opprett første artikkel
-                </Link>
-              </Button>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {articles.map((article) => (
+          <Card key={article.id} className="hover:shadow-md transition-shadow">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">{article.title}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground mb-4 line-clamp-2">
+                {article.summary || 'Ingen sammendrag tilgjengelig.'}
+              </p>
+              <div className="flex flex-wrap items-center gap-2 mb-2">
+                {article.content_type_entity && (
+                  <ContentTypeBadge contentType={article.content_type_entity} size="sm" />
+                )}
+              </div>
+              {article.article_tags && article.article_tags.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {article.article_tags.slice(0, 3).map((tag: any) => (
+                    <Badge key={tag.id} variant="outline" className="text-xs">
+                      {tag.display_name}
+                    </Badge>
+                  ))}
+                  {article.article_tags.length > 3 && (
+                    <Badge variant="outline" className="text-xs">+{article.article_tags.length - 3}</Badge>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
-        )}
+        ))}
       </div>
     </div>
   );

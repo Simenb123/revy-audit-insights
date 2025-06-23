@@ -1,8 +1,19 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { SubjectArea } from '@/types/knowledge';
+
+export interface SubjectArea {
+  id: string;
+  name: string;
+  display_name: string;
+  description?: string;
+  icon?: string;
+  color: string;
+  sort_order: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
 
 export const useSubjectAreas = () => {
   return useQuery({

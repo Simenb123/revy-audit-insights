@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -132,14 +131,10 @@ const ArticleEditor = () => {
   React.useEffect(() => {
     if (article && !isLoadingArticle) {
       console.log("Setting form values from article:", article);
-      // Find the content type ID based on the article's content_type_id or legacy content_type field
+      // Find the content type ID based on the article's content_type_id
       let contentTypeId = contentTypes.length > 0 ? contentTypes[0]?.id : "";
       if (article.content_type_id) {
         contentTypeId = article.content_type_id;
-      } else if (article.content_type) {
-        // Map legacy content_type to new ID
-        const foundType = contentTypes.find(ct => ct.name === article.content_type);
-        contentTypeId = foundType?.id || (contentTypes.length > 0 ? contentTypes[0]?.id : "");
       }
 
       form.reset({
@@ -150,7 +145,7 @@ const ArticleEditor = () => {
         categoryId: article.category_id || "",
         contentTypeId: contentTypeId,
         subjectAreaIds: article.subject_area_ids || [],
-        tags: article.tags?.join(", ") || "",
+        tags: article.article_tags?.map(tag => tag.display_name).join(", ") || "",
         status: article.status || "draft",
         reference_code: article.reference_code || "",
       });

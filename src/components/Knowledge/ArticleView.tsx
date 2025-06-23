@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -23,7 +22,11 @@ const ArticleView = () => {
         .from('knowledge_articles')
         .select(`
           *,
-          category:knowledge_categories(name, parent_category_id)
+          category:knowledge_categories(name, parent_category_id),
+          article_tags:knowledge_article_tags(
+            id,
+            tag:tags(*)
+          )
         `)
         .eq('slug', slug)
         .single();
@@ -36,7 +39,10 @@ const ArticleView = () => {
         .update({ view_count: data.view_count + 1 })
         .eq('id', data.id);
       
-      return data as KnowledgeArticle & { category: { name: string; parent_category_id?: string } };
+      return {
+        ...data,
+        article_tags: data.article_tags?.map((at: any) => at.tag) || []
+      };
     }
   });
 
@@ -81,8 +87,8 @@ const ArticleView = () => {
     }
   });
 
-  // Check if article is PDF-converted and parse structured content
-  const isPdfConverted = article?.tags?.includes('pdf-konvertert');
+  // Check if article is PDF-converted
+  const isPdfConverted = article?.article_tags?.some((tag: any) => tag.name === 'pdf_konvertert');
   
   const renderStructuredContent = (content: string) => {
     try {
@@ -283,11 +289,11 @@ const ArticleView = () => {
             )}
           </div>
 
-          {article.tags && article.tags.length > 0 && (
+          {article.article_tags && article.article_tags.length > 0 && (
             <div className="flex flex-wrap gap-2 mt-3">
-              {article.tags.map((tag) => (
-                <Badge key={tag} variant="outline">
-                  {tag}
+              {article.article_tags.map((tag: any) => (
+                <Badge key={tag.id} variant="outline">
+                  {tag.display_name}
                 </Badge>
               ))}
             </div>

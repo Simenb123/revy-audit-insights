@@ -11,16 +11,27 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 const searchArticles = async (query: string) => {
   const searchQuery = `%${query}%`;
-  // Search in title, summary, and if the query is contained in the tags array
+  
   const { data, error } = await supabase
     .from('knowledge_articles')
-    .select('*, category:knowledge_categories(name)')
-    .or(`title.ilike.${searchQuery},summary.ilike.${searchQuery},tags.cs.{${query}}`)
+    .select(`
+      *, 
+      category:knowledge_categories(name),
+      article_tags:knowledge_article_tags(
+        id,
+        tag:tags(*)
+      )
+    `)
+    .or(`title.ilike.${searchQuery},summary.ilike.${searchQuery}`)
     .eq('status', 'published')
     .limit(20);
 
   if (error) throw error;
-  return data as (KnowledgeArticle & { category: { name: string } | null })[];
+  
+  return (data || []).map(article => ({
+    ...article,
+    article_tags: article.article_tags?.map((at: any) => at.tag) || []
+  }));
 };
 
 const SearchResults = () => {
@@ -78,7 +89,7 @@ const SearchResults = () => {
                     <p className="text-muted-foreground mb-4 line-clamp-2">{article.summary || 'Ingen sammendrag.'}</p>
                     <div className="flex flex-wrap items-center gap-2">
                       {article.category?.name && <Badge variant="secondary">{article.category.name}</Badge>}
-                      {article.tags?.map(tag => <Badge key={tag} variant="outline">{tag}</Badge>)}
+                      {article.article_tags?.map((tag: any) => <Badge key={tag.id} variant="outline">{tag.display_name}</Badge>)}
                     </div>
                   </CardContent>
                 </Card>
