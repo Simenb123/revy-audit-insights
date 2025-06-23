@@ -167,7 +167,7 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
       const { supabase } = await import('@/integrations/supabase/client');
       const { data: documentData, error } = await supabase
         .from('client_documents_files')
-        .select('file_path')
+        .select('file_path, file_name')
         .eq('id', docId)
         .single();
 
@@ -181,8 +181,21 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
         return;
       }
 
-      // Download the document
-      await downloadDocument(documentData.file_path, fileName);
+      // Fix: Call downloadDocument with a single ClientDocument object
+      const documentForDownload = {
+        id: docId,
+        client_id: clientId,
+        file_name: documentData.file_name,
+        file_path: documentData.file_path,
+        file_size: 0,
+        mime_type: '',
+        category: '',
+        uploaded_by: '',
+        created_at: '',
+        updated_at: ''
+      };
+      
+      await downloadDocument(documentForDownload);
       setOperationResult(docId, 'success');
       
     } catch (error) {

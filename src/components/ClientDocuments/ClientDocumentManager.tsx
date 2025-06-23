@@ -17,12 +17,15 @@ const ClientDocumentManager = ({ clientId, clientName }: ClientDocumentManagerPr
   const { documents, categories, isLoading } = useClientDocuments(clientId);
   const [activeTab, setActiveTab] = useState('upload');
 
-  const documentsByCategory = documents.reduce((acc, doc) => {
+  // Fix: Group documents by category properly
+  const documentsByCategory: Record<string, typeof documents> = {};
+  documents.forEach(doc => {
     const category = doc.category || 'Ukategorisert';
-    if (!acc[category]) acc[category] = [];
-    acc[category].push(doc);
-    return acc;
-  }, {} as Record<string, typeof documents>);
+    if (!documentsByCategory[category]) {
+      documentsByCategory[category] = [];
+    }
+    documentsByCategory[category].push(doc);
+  });
 
   const categoriesWithCounts = categories.map(cat => ({
     ...cat,
