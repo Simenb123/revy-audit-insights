@@ -12,7 +12,7 @@ export interface ClientDocument {
   mime_type: string;
   category: string;
   description?: string;
-  uploaded_by: string;
+  uploaded_by: string; // This maps to user_id from database
   created_at: string;
   updated_at: string;
   extracted_text?: string;
@@ -63,9 +63,18 @@ export const useClientDocuments = (clientId: string) => {
       isLoading: false,
       error: new Error('Invalid client ID'),
       refetch: () => Promise.resolve(),
-      deleteDocument: { mutate: () => {}, isPending: false },
+      deleteDocument: { 
+        mutate: () => {}, 
+        isPending: false,
+        error: null,
+        mutateAsync: async () => {}
+      },
       getDocumentUrl: async () => null,
-      uploadDocument: { mutate: () => {}, isPending: false },
+      uploadDocument: { 
+        mutate: () => {}, 
+        isPending: false,
+        mutateAsync: async () => {}
+      },
       downloadDocument: async () => {},
       triggerTextExtraction: async () => {}
     };
@@ -99,10 +108,43 @@ export const useClientDocuments = (clientId: string) => {
         }))
       });
 
-      return data || [];
+      // Map database fields to ClientDocument interface
+      return (data || []).map(doc => ({
+        ...doc,
+        uploaded_by: doc.user_id, // Map user_id to uploaded_by
+        category: doc.category || '',
+        description: doc.ai_analysis_summary || undefined,
+        subject_area: doc.subject_area || undefined,
+        ai_suggested_category: doc.ai_suggested_category || undefined,
+        ai_confidence_score: doc.ai_confidence_score || undefined,
+        ai_suggested_subject_areas: doc.ai_suggested_subject_areas || undefined,
+        ai_isa_standard_references: doc.ai_isa_standard_references || undefined,
+        ai_revision_phase_relevance: doc.ai_revision_phase_relevance || undefined,
+        manual_category_override: doc.manual_category_override || undefined,
+        text_extraction_status: doc.text_extraction_status as 'pending' | 'processing' | 'completed' | 'failed' || 'pending'
+      }));
     },
     enabled: !!(clientId && clientId.trim() !== '' && clientId !== 'undefined' && clientId !== 'null'),
     staleTime: 1000 * 60 * 2, // 2 minutes
+  });
+
+  // Fetch document categories
+  const { data: categoriesData = [] } = useQuery({
+    queryKey: ['document-categories'],
+    queryFn: async (): Promise<DocumentCategory[]> => {
+      const { data, error } = await supabase
+        .from('document_categories')
+        .select('*')
+        .order('category_name');
+
+      if (error) {
+        console.error('❌ [USE_CLIENT_DOCUMENTS] Categories error:', error);
+        throw error;
+      }
+
+      return data || [];
+    },
+    staleTime: 1000 * 60 * 10, // 10 minutes
   });
 
   // Delete document mutation
@@ -133,7 +175,8 @@ export const useClientDocuments = (clientId: string) => {
 
   // Upload document mutation
   const uploadDocument = useMutation({
-    mutationFn: async (file: File) => {
+    mutationFn: async (params: { file: File; clientId: string; category?: string; subjectArea?: string }) => {
+      const { file, category, subjectArea } = params;
       const fileName = `${Date.now()}-${file.name}`;
       const filePath = `${clientId}/${fileName}`;
       
@@ -153,7 +196,9 @@ export const useClientDocuments = (clientId: string) => {
           file_path: filePath,
           mime_type: file.type,
           file_size: file.size,
-          user_id: 'placeholder-user-id' // This should come from auth
+          user_id: 'placeholder-user-id', // This should come from auth
+          category: category || null,
+          subject_area: subjectArea || null
         });
       
       if (dbError) throw dbError;
@@ -221,20 +266,17 @@ export const useClientDocuments = (clientId: string) => {
     }
   };
 
-  // Get unique categories
-  const categories = [...new Set(documents.map(doc => doc.category))].filter(Boolean);
-
   console.log('📊 [USE_CLIENT_DOCUMENTS] Current state:', {
     clientId,
     documentsCount: documents.length,
-    categoriesCount: categories.length,
+    categoriesCount: categoriesData.length,
     isLoading,
     hasError: !!error
   });
 
   return {
     documents,
-    categories,
+    categories: categoriesData,
     isLoading,
     error,
     refetch,
