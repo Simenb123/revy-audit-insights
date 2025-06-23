@@ -24,16 +24,76 @@ async function getEmbedding(text: string, openAIApiKey: string) {
 }
 
 async function keywordSearch(supabase: any, query: string) {
+  console.log('🔎 Enhanced keyword search for:', query);
+  
+  // Split query into individual words and filter out short words
+  const words = query.toLowerCase().split(/\s+/).filter(word => word.length > 1);
+  console.log('📝 Search words:', words);
+  
+  if (words.length === 0) {
+    return [];
+  }
+  
+  // Build search conditions for multiple words
+  const titleConditions = words.map(word => `title.ilike.%${word}%`).join(',');
+  const summaryConditions = words.map(word => `summary.ilike.%${word}%`).join(',');
+  const contentConditions = words.map(word => `content.ilike.%${word}%`).join(',');
+  const tagConditions = words.map(word => `tags.cs.{${word}}`).join(',');
+  const refConditions = words.map(word => `reference_code.ilike.%${word}%`).join(',');
+  
+  // Combine all search conditions
+  const searchConditions = [
+    titleConditions,
+    summaryConditions, 
+    contentConditions,
+    tagConditions,
+    refConditions
+  ].join(',');
+  
+  console.log('🔍 Search conditions:', searchConditions.substring(0, 200) + '...');
+  
   const { data, error } = await supabase
     .from('knowledge_articles')
     .select('*, category:knowledge_categories(name, id)')
     .eq('status', 'published')
-    .or(`title.ilike.%${query}%,summary.ilike.%${query}%,tags.cs.{${query}}`)
+    .or(searchConditions)
     .order('view_count', { ascending: false })
     .limit(20);
-  if (error) throw error;
-  // The category from the RPC call is JSON, let's match the structure
-  return data.map((article: any) => ({ ...article, similarity: 0, category: article.category ? { name: article.category.name } : null }));
+    
+  if (error) {
+    console.error('❌ Keyword search error:', error);
+    throw error;
+  }
+  
+  console.log(`✅ Keyword search found ${data?.length || 0} articles`);
+  
+  // Calculate relevance score based on word matches
+  return (data || []).map((article: any) => {
+    let relevanceScore = 0;
+    const titleLower = (article.title || '').toLowerCase();
+    const summaryLower = (article.summary || '').toLowerCase();
+    const contentLower = (article.content || '').toLowerCase();
+    const refCodeLower = (article.reference_code || '').toLowerCase();
+    
+    // Score based on matches in different fields
+    words.forEach(word => {
+      if (titleLower.includes(word)) relevanceScore += 5;
+      if (refCodeLower.includes(word)) relevanceScore += 4;
+      if (summaryLower.includes(word)) relevanceScore += 2;
+      if (contentLower.includes(word)) relevanceScore += 1;
+      if (article.tags && Array.isArray(article.tags)) {
+        article.tags.forEach((tag: string) => {
+          if (tag.toLowerCase().includes(word)) relevanceScore += 3;
+        });
+      }
+    });
+    
+    return { 
+      ...article, 
+      similarity: relevanceScore / 10, // Normalize score 
+      category: article.category ? { name: article.category.name } : null 
+    };
+  }).sort((a: any, b: any) => b.similarity - a.similarity);
 }
 
 serve(async (req) => {
@@ -44,6 +104,8 @@ serve(async (req) => {
   try {
     const { query } = await req.json();
     if (!query) throw new Error('Query parameter is required');
+
+    console.log('🔍 Knowledge search for:', query);
 
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -86,6 +148,8 @@ serve(async (req) => {
         }
         return (b.view_count || 0) - (a.view_count || 0);
     });
+
+    console.log(`✅ Returning ${uniqueResults.length} unique search results`);
 
     return new Response(JSON.stringify(uniqueResults.slice(0, 20)), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

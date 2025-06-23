@@ -7,6 +7,79 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Simple DOCX text extraction (basic implementation)
+function extractTextFromDocx(uint8Array: Uint8Array): string {
+  try {
+    const text = new TextDecoder('utf-8', { fatal: false }).decode(uint8Array);
+    
+    // Look for XML text content in DOCX (simplified extraction)
+    const textMatches = text.match(/<w:t[^>]*>([^<]*)<\/w:t>/g);
+    if (textMatches) {
+      const extractedText = textMatches
+        .map(match => match.replace(/<w:t[^>]*>([^<]*)<\/w:t>/, '$1'))
+        .join(' ')
+        .trim();
+      
+      if (extractedText.length > 10) {
+        return extractedText;
+      }
+    }
+    
+    // Fallback: extract readable text
+    const readableText = text
+      .replace(/[^\x20-\x7E\s]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    
+    const words = readableText.match(/[a-zA-ZæøåÆØÅ]{3,}/g)?.slice(0, 500) || [];
+    return words.length > 5 ? words.join(' ') : '[DOCX innhold krever avansert prosessering]';
+  } catch (error) {
+    console.error('DOCX extraction error:', error);
+    return '[Feil ved DOCX tekstekstraksjon]';
+  }
+}
+
+// Simple XLSX text extraction (basic implementation)
+function extractTextFromXlsx(uint8Array: Uint8Array): string {
+  try {
+    const text = new TextDecoder('utf-8', { fatal: false }).decode(uint8Array);
+    
+    // Look for shared strings in XLSX
+    const stringMatches = text.match(/<si><t>([^<]*)<\/t><\/si>/g);
+    if (stringMatches) {
+      const extractedText = stringMatches
+        .map(match => match.replace(/<si><t>([^<]*)<\/t><\/si>/, '$1'))
+        .filter(str => str.length > 0)
+        .slice(0, 100)
+        .join(' ')
+        .trim();
+      
+      if (extractedText.length > 10) {
+        return `Regneark innhold: ${extractedText}`;
+      }
+    }
+    
+    // Look for worksheet data
+    const cellMatches = text.match(/<c[^>]*><v>([^<]*)<\/v><\/c>/g);
+    if (cellMatches) {
+      const cellValues = cellMatches
+        .map(match => match.replace(/<c[^>]*><v>([^<]*)<\/v><\/c>/, '$1'))
+        .filter(val => val && isNaN(Number(val))) // Filter out pure numbers
+        .slice(0, 50)
+        .join(' ');
+      
+      if (cellValues.length > 5) {
+        return `Regneark data: ${cellValues}`;
+      }
+    }
+    
+    return '[XLSX regneark - krever spesialisert prosessering for full tekstekstraksjon]';
+  } catch (error) {
+    console.error('XLSX extraction error:', error);
+    return '[Feil ved XLSX tekstekstraksjon]';
+  }
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -16,7 +89,7 @@ serve(async (req) => {
   let documentId: string | null = null;
   
   try {
-    console.log('📄 [ENHANCED-PDF-EXTRACTOR] Function invoked with improved error handling...');
+    console.log('📄 [ENHANCED-PDF-EXTRACTOR] Function invoked with DOCX/XLSX support...');
     
     // Step 1: Parse and validate request
     let body;
@@ -138,12 +211,12 @@ serve(async (req) => {
       
       console.log('✅ [ENHANCED-PDF-EXTRACTOR] File downloaded successfully, size:', fileData.size, 'bytes');
 
+      // Convert blob to ArrayBuffer for processing
+      const arrayBuffer = await fileData.arrayBuffer();
+      const uint8Array = new Uint8Array(arrayBuffer);
+
       if (document.mime_type === 'application/pdf') {
-        console.log('📄 [ENHANCED-PDF-EXTRACTOR] Processing PDF file with improved methods...');
-        
-        // Convert blob to ArrayBuffer for PDF processing
-        const arrayBuffer = await fileData.arrayBuffer();
-        const uint8Array = new Uint8Array(arrayBuffer);
+        console.log('📄 [ENHANCED-PDF-EXTRACTOR] Processing PDF file...');
         
         // Enhanced PDF text extraction with better stack overflow protection
         console.log('🔍 [ENHANCED-PDF-EXTRACTOR] Using enhanced PDF text extraction...');
@@ -217,14 +290,26 @@ serve(async (req) => {
           extractedText = '[PDF inneholder sannsynligvis kun bilder eller er kryptert. Avansert tekstekstraksjon ikke mulig.]';
         }
         
+      } else if (document.mime_type?.includes('application/vnd.openxmlformats-officedocument.wordprocessingml.document')) {
+        // DOCX processing
+        console.log('📄 [ENHANCED-PDF-EXTRACTOR] Processing DOCX file...');
+        extractedText = extractTextFromDocx(uint8Array);
+        console.log('✅ [ENHANCED-PDF-EXTRACTOR] DOCX processed, length:', extractedText.length);
+        
+      } else if (document.mime_type?.includes('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')) {
+        // XLSX processing
+        console.log('📊 [ENHANCED-PDF-EXTRACTOR] Processing XLSX file...');
+        extractedText = extractTextFromXlsx(uint8Array);
+        console.log('✅ [ENHANCED-PDF-EXTRACTOR] XLSX processed, length:', extractedText.length);
+        
       } else if (document.mime_type?.includes('text/') || document.mime_type?.includes('application/json')) {
         // For text files, read directly
         extractedText = await fileData.text();
         console.log('✅ [ENHANCED-PDF-EXTRACTOR] Text file processed successfully, length:', extractedText.length);
       } else {
-        // For Excel files and others, inform about limitation
-        extractedText = '[Filtype krever spesialisert prosessering. Bruk frontend-ekstrasjon for Excel-filer.]';
-        console.log('ℹ️ [ENHANCED-PDF-EXTRACTOR] File type requires specialized processing:', document.mime_type);
+        // For other file types
+        extractedText = `[Filtype ${document.mime_type} krever spesialisert prosessering. Støttede formater: PDF, DOCX, XLSX, TXT.]`;
+        console.log('ℹ️ [ENHANCED-PDF-EXTRACTOR] Unsupported file type:', document.mime_type);
       }
 
       // Validate extracted text
@@ -284,7 +369,7 @@ serve(async (req) => {
       documentId,
       textLength: extractedText.length,
       fileType: document.mime_type,
-      extractionMethod: 'Enhanced backend processing',
+      extractionMethod: 'Enhanced backend processing with DOCX/XLSX support',
       message: 'Enhanced text extraction completed successfully',
       preview: extractedText.substring(0, 200) + (extractedText.length > 200 ? '...' : '')
     }), {
