@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { useClientDocuments } from '@/hooks/useClientDocuments';
 import { Client } from '@/types/revio';
-import { getEnhancedContextualTips, getContextualSuggestions } from '@/services/enhancedRevyService';
+import { getContextualSuggestions } from '@/services/enhancedRevyService';
 import { RevyInput } from './Assistant/RevyInput';
 
 interface ContextAwareRevyChatProps {
@@ -32,12 +32,21 @@ const ContextAwareRevyChat: React.FC<ContextAwareRevyChatProps> = ({
   onClose,
   className = ''
 }) => {
-  const { documents } = useClientDocuments(client.id);
+  const { documents = [] } = useClientDocuments(client?.id || '');
   const [messages, setMessages] = useState<Array<{ sender: 'user' | 'assistant'; content: string; timestamp: Date }>>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
 
+  // Ensure documents is always an array
+  const safeDocuments = Array.isArray(documents) ? documents : [];
+
   useEffect(() => {
+    // Only initialize if we have a valid client
+    if (!client?.id) {
+      console.warn('⚠️ [CONTEXT_CHAT] No valid client provided');
+      return;
+    }
+
     // Initial greeting with context
     const contextSummary = buildContextSummary();
     const greeting = `Hei! Jeg er AI-Revi, din intelligente revisjonsassistent. 
@@ -53,20 +62,20 @@ Hva kan jeg hjelpe deg med i dag?`;
       content: greeting,
       timestamp: new Date()
     }]);
-  }, [client, documents]);
+  }, [client, safeDocuments]);
 
   const buildContextSummary = () => {
     const context = [];
     
-    if (documents.length > 0) {
-      const highConfidenceDocs = documents.filter(d => 
+    if (safeDocuments.length > 0) {
+      const highConfidenceDocs = safeDocuments.filter(d => 
         d.ai_confidence_score && d.ai_confidence_score >= 0.8
       ).length;
       
-      context.push(`📊 ${documents.length} dokumenter (${highConfidenceDocs} AI-validerte)`);
+      context.push(`📊 ${safeDocuments.length} dokumenter (${highConfidenceDocs} AI-validerte)`);
     }
     
-    if (client.phase) {
+    if (client?.phase) {
       const phaseNames = {
         engagement: 'Oppdrags-fase',
         planning: 'Planlegging',
@@ -77,7 +86,7 @@ Hva kan jeg hjelpe deg med i dag?`;
       context.push(`🎯 Fase: ${phaseNames[client.phase] || client.phase}`);
     }
     
-    if (client.industry) {
+    if (client?.industry) {
       context.push(`🏢 Bransje: ${client.industry}`);
     }
     
@@ -100,7 +109,7 @@ Hva kan jeg hjelpe deg med i dag?`;
     try {
       // For now, provide a simple response using the contextual suggestions
       const suggestions = getContextualSuggestions('client-detail', client);
-      const response = `Basert på informasjonen om ${client.company_name || client.name}, her er noen forslag:
+      const response = `Basert på informasjonen om ${client?.company_name || client?.name}, her er noen forslag:
 
 ${suggestions.slice(0, 2).map(s => `• ${s}`).join('\n')}
 
@@ -130,16 +139,16 @@ Trenger du mer spesifikk hjelp med noen av disse områdene?`;
   const getContextBadges = () => {
     const badges = [];
     
-    if (documents.length > 0) {
+    if (safeDocuments.length > 0) {
       badges.push(
         <Badge key="docs" variant="secondary" className="text-xs">
           <FileText className="h-3 w-3 mr-1" />
-          {documents.length} dokumenter
+          {safeDocuments.length} dokumenter
         </Badge>
       );
     }
     
-    if (client.phase) {
+    if (client?.phase) {
       badges.push(
         <Badge key="phase" variant="outline" className="text-xs">
           <TrendingUp className="h-3 w-3 mr-1" />
@@ -150,6 +159,19 @@ Trenger du mer spesifikk hjelp med noen av disse områdene?`;
     
     return badges;
   };
+
+  // Show error state if no valid client
+  if (!client?.id) {
+    return (
+      <Card className={`h-full flex flex-col ${className}`}>
+        <CardContent className="p-6 text-center">
+          <AlertCircle className="h-8 w-8 mx-auto mb-2 text-red-500" />
+          <p className="text-red-600">Ingen gyldig klient funnet</p>
+          <p className="text-sm text-gray-500 mt-1">Kan ikke vise chat uten klient-informasjon</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className={`h-full flex flex-col ${className}`}>

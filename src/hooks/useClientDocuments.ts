@@ -47,40 +47,23 @@ export const useClientDocuments = (clientId: string) => {
     isNull: clientId === 'null'
   });
 
-  // Enhanced validation
-  if (!clientId || clientId.trim() === '' || clientId === 'undefined' || clientId === 'null') {
+  const queryClient = useQueryClient();
+
+  // Enhanced validation with consistent return structure
+  const isValidClientId = !!(clientId && 
+    clientId.trim() !== '' && 
+    clientId !== 'undefined' && 
+    clientId !== 'null' &&
+    typeof clientId === 'string');
+
+  if (!isValidClientId) {
     console.error('❌ [USE_CLIENT_DOCUMENTS] Invalid clientId provided:', {
       clientId,
       type: typeof clientId,
       isString: typeof clientId === 'string',
       length: clientId?.length
     });
-    
-    // Return empty state for invalid client ID
-    return {
-      documents: [],
-      categories: [],
-      isLoading: false,
-      error: new Error('Invalid client ID'),
-      refetch: () => Promise.resolve(),
-      deleteDocument: { 
-        mutate: () => {}, 
-        isPending: false,
-        error: null,
-        mutateAsync: async () => {}
-      },
-      getDocumentUrl: async () => null,
-      uploadDocument: { 
-        mutate: () => {}, 
-        isPending: false,
-        mutateAsync: async () => {}
-      },
-      downloadDocument: async () => {},
-      triggerTextExtraction: async () => {}
-    };
   }
-
-  const queryClient = useQueryClient();
 
   const { data: documents = [], isLoading, error, refetch } = useQuery({
     queryKey: ['client-documents', clientId],
@@ -124,7 +107,7 @@ export const useClientDocuments = (clientId: string) => {
         text_extraction_status: doc.text_extraction_status as 'pending' | 'processing' | 'completed' | 'failed' || 'pending'
       }));
     },
-    enabled: !!(clientId && clientId.trim() !== '' && clientId !== 'undefined' && clientId !== 'null'),
+    enabled: isValidClientId,
     staleTime: 1000 * 60 * 2, // 2 minutes
   });
 
@@ -268,18 +251,20 @@ export const useClientDocuments = (clientId: string) => {
 
   console.log('📊 [USE_CLIENT_DOCUMENTS] Current state:', {
     clientId,
-    documentsCount: documents.length,
-    categoriesCount: categoriesData.length,
+    isValidClientId,
+    documentsCount: Array.isArray(documents) ? documents.length : 0,
+    categoriesCount: Array.isArray(categoriesData) ? categoriesData.length : 0,
     isLoading,
     hasError: !!error
   });
 
+  // Always return a consistent structure with guaranteed arrays
   return {
-    documents,
-    categories: categoriesData,
-    isLoading,
-    error,
-    refetch,
+    documents: Array.isArray(documents) ? documents : [],
+    categories: Array.isArray(categoriesData) ? categoriesData : [],
+    isLoading: isValidClientId ? isLoading : false,
+    error: isValidClientId ? error : new Error('Invalid client ID'),
+    refetch: isValidClientId ? refetch : () => Promise.resolve(),
     deleteDocument,
     getDocumentUrl,
     uploadDocument,
