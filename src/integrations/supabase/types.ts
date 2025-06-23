@@ -751,7 +751,7 @@ export type Database = {
           procedures: string
           risk_level: string | null
           sort_order: number | null
-          subject_area: Database["public"]["Enums"]["audit_subject_area"]
+          subject_area: Database["public"]["Enums"]["audit_subject_area"] | null
           subject_area_id: string | null
           updated_at: string
         }
@@ -775,7 +775,9 @@ export type Database = {
           procedures: string
           risk_level?: string | null
           sort_order?: number | null
-          subject_area: Database["public"]["Enums"]["audit_subject_area"]
+          subject_area?:
+            | Database["public"]["Enums"]["audit_subject_area"]
+            | null
           subject_area_id?: string | null
           updated_at?: string
         }
@@ -799,7 +801,9 @@ export type Database = {
           procedures?: string
           risk_level?: string | null
           sort_order?: number | null
-          subject_area?: Database["public"]["Enums"]["audit_subject_area"]
+          subject_area?:
+            | Database["public"]["Enums"]["audit_subject_area"]
+            | null
           subject_area_id?: string | null
           updated_at?: string
         }
