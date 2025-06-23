@@ -4,7 +4,7 @@ import { Client } from '@/types/revio';
 import AuditActionsManager from '@/components/AuditActions/AuditActionsManager';
 import { PlanningContainer } from './Planning/PlanningContainer';
 import Overview from './ClientDashboard/Overview';
-import ClientDocumentManager from '@/components/ClientDocuments/ClientDocumentManager';
+import ImprovedClientDocumentManager from '@/components/ClientDocuments/ImprovedClientDocumentManager';
 import { useClientDocuments } from '@/hooks/useClientDocuments';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
@@ -45,7 +45,7 @@ export const PhaseContent: React.FC<PhaseContentProps> = ({ phase, client }) => 
               </div>
               
               <div className="lg:col-span-2">
-                <ClientDocumentManager 
+                <ImprovedClientDocumentManager 
                   clientId={client.id}
                   clientName={client.company_name || client.name}
                 />
@@ -57,7 +57,7 @@ export const PhaseContent: React.FC<PhaseContentProps> = ({ phase, client }) => 
                 <DialogHeader>
                   <DialogTitle>Last opp regnskapsdata</DialogTitle>
                 </DialogHeader>
-                <ClientDocumentManager 
+                <ImprovedClientDocumentManager 
                   clientId={client.id}
                   clientName={client.company_name || client.name}
                 />
