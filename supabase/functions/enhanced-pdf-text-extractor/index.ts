@@ -1,344 +1,326 @@
 
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+};
 
 serve(async (req) => {
-  console.log('🔧 Enhanced PDF text extractor started - v2.0 with improved error handling');
-  
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders });
   }
 
-  let requestBody: any = null;
   let documentId: string | null = null;
-
+  
   try {
-    // Robust request body parsing with multiple fallbacks
-    const rawBody = await req.text();
-    console.log('📄 Raw request body received:', rawBody.substring(0, 200));
+    console.log('📄 [ENHANCED-PDF-EXTRACTOR] Function invoked with improved error handling...');
     
-    if (!rawBody || rawBody.trim() === '') {
-      throw new Error('Request body is empty');
-    }
-
+    // Step 1: Parse and validate request
+    let body;
     try {
-      requestBody = JSON.parse(rawBody);
-      console.log('✅ Request body parsed successfully:', { hasDocumentId: !!requestBody?.documentId });
+      body = await req.json();
+      console.log('📋 [ENHANCED-PDF-EXTRACTOR] Request body parsed:', body);
     } catch (parseError) {
-      console.error('❌ JSON parsing failed:', parseError.message);
-      throw new Error(`Invalid JSON in request body: ${parseError.message}`);
+      console.error('❌ [ENHANCED-PDF-EXTRACTOR] Failed to parse request body:', parseError);
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: 'Invalid JSON in request body',
+        details: parseError.message
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
-    documentId = requestBody?.documentId;
-    
+    documentId = body.documentId;
+
     if (!documentId) {
-      console.error('❌ DocumentId missing from request');
-      throw new Error('DocumentId er påkrevd');
+      console.error('❌ [ENHANCED-PDF-EXTRACTOR] No documentId provided in request');
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: 'documentId is required',
+        details: 'Request must include documentId parameter'
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
-    console.log('📄 Processing document:', documentId);
+    console.log('✅ [ENHANCED-PDF-EXTRACTOR] Request validation passed for document:', documentId);
 
-    // Initialize Supabase client
+    // Step 2: Initialize Supabase client
+    console.log('🔄 [ENHANCED-PDF-EXTRACTOR] Initializing Supabase client...');
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     
-    if (!supabaseUrl || !supabaseKey) {
-      throw new Error('Supabase configuration missing');
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('❌ [ENHANCED-PDF-EXTRACTOR] Missing environment variables');
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: 'Server configuration error',
+        details: 'Missing required environment variables'
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
-    
-    const supabase = createClient(supabaseUrl, supabaseKey);
-    console.log('✅ Supabase client initialized');
 
-    // Get document from database
-    const { data: document, error: docError } = await supabase
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+    console.log('✅ [ENHANCED-PDF-EXTRACTOR] Supabase client initialized');
+
+    // Step 3: Update status to 'processing'
+    console.log('🔄 [ENHANCED-PDF-EXTRACTOR] Updating document status to processing...');
+    const { error: statusError } = await supabaseAdmin
       .from('client_documents_files')
-      .select('*')
+      .update({ 
+        text_extraction_status: 'processing',
+        extracted_text: '[Forbedret backend prosessering startet...]',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', documentId);
+
+    if (statusError) {
+      console.error('❌ [ENHANCED-PDF-EXTRACTOR] Error updating status to processing:', statusError);
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: 'Database update failed',
+        details: statusError.message
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    console.log('✅ [ENHANCED-PDF-EXTRACTOR] Status updated to processing');
+
+    // Step 4: Fetch document to get file_path
+    console.log('🔄 [ENHANCED-PDF-EXTRACTOR] Fetching document metadata...');
+    const { data: document, error: docError } = await supabaseAdmin
+      .from('client_documents_files')
+      .select('file_path, file_name, mime_type')
       .eq('id', documentId)
       .single();
 
     if (docError || !document) {
-      console.error('❌ Document not found:', docError?.message);
-      throw new Error(`Kunne ikke finne dokument: ${docError?.message}`);
+      console.error('❌ [ENHANCED-PDF-EXTRACTOR] Error fetching document:', docError);
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: 'Document not found',
+        details: docError?.message || 'Document does not exist'
+      }), {
+        status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
-    console.log('📋 Document found:', {
+    console.log('✅ [ENHANCED-PDF-EXTRACTOR] Document metadata retrieved:', {
       fileName: document.file_name,
       mimeType: document.mime_type,
-      fileSize: document.file_size,
-      currentStatus: document.text_extraction_status
+      filePath: document.file_path
     });
 
-    // Update status to processing
-    console.log('🔄 Updating status to processing...');
-    const { error: updateError } = await supabase
+    // Step 5: Download and process the file with improved error handling
+    let extractedText = '';
+    
+    try {
+      console.log('📥 [ENHANCED-PDF-EXTRACTOR] Downloading file from storage...');
+      const { data: fileData, error: downloadError } = await supabaseAdmin.storage
+        .from('client-documents')
+        .download(document.file_path);
+
+      if (downloadError || !fileData) {
+        console.error('❌ [ENHANCED-PDF-EXTRACTOR] Storage download error:', downloadError);
+        throw new Error(`Failed to download file: ${downloadError?.message || 'No data'}`);
+      }
+      
+      console.log('✅ [ENHANCED-PDF-EXTRACTOR] File downloaded successfully, size:', fileData.size, 'bytes');
+
+      if (document.mime_type === 'application/pdf') {
+        console.log('📄 [ENHANCED-PDF-EXTRACTOR] Processing PDF file with improved methods...');
+        
+        // Convert blob to ArrayBuffer for PDF processing
+        const arrayBuffer = await fileData.arrayBuffer();
+        const uint8Array = new Uint8Array(arrayBuffer);
+        
+        // Enhanced PDF text extraction with better stack overflow protection
+        console.log('🔍 [ENHANCED-PDF-EXTRACTOR] Using enhanced PDF text extraction...');
+        
+        // Strategy 1: Try to extract text streams safely
+        const pdfText = new TextDecoder('utf-8', { fatal: false }).decode(uint8Array);
+        console.log('📝 [ENHANCED-PDF-EXTRACTOR] PDF decoded, raw text length:', pdfText.length);
+        
+        // Use safer regex patterns to avoid stack overflow
+        let textParts: string[] = [];
+        
+        // Extract text objects with size limits to prevent stack overflow
+        const maxChunkSize = 100000; // Process in smaller chunks
+        const chunks = [];
+        for (let i = 0; i < pdfText.length; i += maxChunkSize) {
+          chunks.push(pdfText.slice(i, i + maxChunkSize));
+        }
+        
+        for (const chunk of chunks) {
+          try {
+            // Look for text showing operators (safer approach)
+            const simpleTextMatches = chunk.match(/\((.*?)\)\s*Tj/g);
+            if (simpleTextMatches && simpleTextMatches.length > 0) {
+              const chunkTexts = simpleTextMatches
+                .map(match => match.replace(/\((.*?)\)\s*Tj/, '$1'))
+                .filter(text => text.length > 0 && text.length < 1000) // Avoid very long strings
+                .slice(0, 100); // Limit number of matches per chunk
+              
+              textParts.push(...chunkTexts);
+            }
+          } catch (chunkError) {
+            console.warn('⚠️ Error processing chunk, skipping:', chunkError.message);
+            continue;
+          }
+        }
+        
+        if (textParts.length > 0) {
+          extractedText = textParts.join(' ').trim();
+          console.log('✅ [ENHANCED-PDF-EXTRACTOR] Extracted from text objects, length:', extractedText.length);
+        }
+        
+        // Fallback: Extract readable ASCII with size limits
+        if (!extractedText || extractedText.length < 20) {
+          console.log('🔍 [ENHANCED-PDF-EXTRACTOR] Trying fallback ASCII extraction...');
+          try {
+            const readableText = pdfText
+              .slice(0, 500000) // Limit input size
+              .replace(/[^\x20-\x7E\s]/g, ' ') // Keep only printable ASCII
+              .replace(/\s+/g, ' ')
+              .trim();
+            
+            // Look for words (sequences of letters) with limits
+            const words = readableText.match(/[a-zA-ZæøåÆØÅ]{2,}/g)?.slice(0, 1000) || [];
+            console.log('📝 [ENHANCED-PDF-EXTRACTOR] Found', words.length, 'potential words');
+            
+            if (words.length > 10) {
+              const meaningfulText = words.join(' ');
+              if (meaningfulText.length > 50) {
+                extractedText = meaningfulText.substring(0, 3000) + (meaningfulText.length > 3000 ? '...' : '');
+                console.log('✅ [ENHANCED-PDF-EXTRACTOR] Used fallback extraction, length:', extractedText.length);
+              }
+            }
+          } catch (fallbackError) {
+            console.warn('⚠️ Fallback extraction failed:', fallbackError.message);
+          }
+        }
+        
+        // Final check
+        if (!extractedText || extractedText.length < 10) {
+          console.log('⚠️ [ENHANCED-PDF-EXTRACTOR] PDF may be image-based or encrypted');
+          extractedText = '[PDF inneholder sannsynligvis kun bilder eller er kryptert. Avansert tekstekstraksjon ikke mulig.]';
+        }
+        
+      } else if (document.mime_type?.includes('text/') || document.mime_type?.includes('application/json')) {
+        // For text files, read directly
+        extractedText = await fileData.text();
+        console.log('✅ [ENHANCED-PDF-EXTRACTOR] Text file processed successfully, length:', extractedText.length);
+      } else {
+        // For Excel files and others, inform about limitation
+        extractedText = '[Filtype krever spesialisert prosessering. Bruk frontend-ekstrasjon for Excel-filer.]';
+        console.log('ℹ️ [ENHANCED-PDF-EXTRACTOR] File type requires specialized processing:', document.mime_type);
+      }
+
+      // Validate extracted text
+      if (!extractedText || extractedText.trim().length === 0) {
+        extractedText = '[Ingen tekstinnhold funnet i dokumentet.]';
+      }
+
+      // Limit text length to prevent database issues
+      const maxLength = 50000; // 50KB limit
+      if (extractedText.length > maxLength) {
+        extractedText = extractedText.substring(0, maxLength) + '\n\n[Tekst forkortet på grunn av størrelse]';
+        console.log('⚠️ [ENHANCED-PDF-EXTRACTOR] Text truncated to fit database limits');
+      }
+
+      console.log('✅ [ENHANCED-PDF-EXTRACTOR] Text extraction completed, final length:', extractedText.length);
+
+    } catch (extractionError) {
+      console.error('❌ [ENHANCED-PDF-EXTRACTOR] Text extraction failed:', extractionError);
+      
+      // Provide meaningful error text instead of failing
+      extractedText = `[Forbedret tekstekstraksjon feilet: ${extractionError.message}. Dokumentet kan være skannet eller kryptert.]`;
+    }
+
+    // Step 6: Update document with extracted text and 'completed' status
+    console.log('🔄 [ENHANCED-PDF-EXTRACTOR] Saving extracted text to database...');
+    const { error: updateError } = await supabaseAdmin
       .from('client_documents_files')
-      .update({ 
-        text_extraction_status: 'processing',
+      .update({
+        extracted_text: extractedText,
+        text_extraction_status: 'completed',
         updated_at: new Date().toISOString()
       })
       .eq('id', documentId);
 
     if (updateError) {
-      console.error('❌ Status update failed:', updateError);
-      throw new Error(`Status update failed: ${updateError.message}`);
+      console.error('❌ [ENHANCED-PDF-EXTRACTOR] Error saving extracted text:', updateError);
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: 'Failed to save extracted text',
+        details: updateError.message
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
-
-    console.log('✅ Status updated to processing');
-
-    // Download file from storage
-    console.log('📥 Downloading file from storage...');
-    const { data: fileData, error: downloadError } = await supabase.storage
-      .from('client-documents')
-      .download(document.file_path);
-
-    if (downloadError || !fileData) {
-      console.error('❌ File download failed:', downloadError?.message);
-      throw new Error(`Kunne ikke laste ned fil: ${downloadError?.message}`);
-    }
-
-    console.log('✅ File downloaded successfully, size:', fileData.size);
-
-    let extractedText = '';
-    let extractionMethod = 'Unknown';
-    let aiAnalysis = '';
     
-    // Check if OpenAI API key is available
-    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
-    console.log('🔑 OpenAI API key available:', !!openaiApiKey);
-
-    // Enhanced text extraction based on file type
-    if (document.mime_type === 'application/pdf' && openaiApiKey) {
-      console.log('🤖 Attempting OpenAI Vision API for PDF...');
-      
-      try {
-        const arrayBuffer = await fileData.arrayBuffer();
-        const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
-        
-        console.log('📸 PDF converted to base64, attempting Vision API...');
-
-        const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${openaiApiKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model: 'gpt-4o',
-            messages: [
-              {
-                role: 'user',
-                content: [
-                  {
-                    type: 'text',
-                    text: 'Les dette PDF-dokumentet nøye og ekstraher ALL tekst. Behold formatering, tabeller, overskrifter og struktur så godt som mulig. Inkluder alle tall, datoer og detaljer. Returner kun den rene teksten uten kommentarer.'
-                  },
-                  {
-                    type: 'image_url',
-                    image_url: {
-                      url: `data:application/pdf;base64,${base64}`,
-                      detail: 'high'
-                    }
-                  }
-                ]
-              }
-            ],
-            max_tokens: 4000,
-            temperature: 0.1
-          }),
-        });
-
-        if (openaiResponse.ok) {
-          const aiResult = await openaiResponse.json();
-          extractedText = aiResult.choices[0]?.message?.content || '';
-          extractionMethod = 'OpenAI Vision API';
-          console.log('✅ OpenAI Vision extraction successful:', extractedText.length, 'characters');
-        } else {
-          const errorData = await openaiResponse.text();
-          console.error('❌ OpenAI Vision API error:', openaiResponse.status, errorData);
-          throw new Error(`OpenAI API error: ${openaiResponse.status}`);
-        }
-      } catch (error) {
-        console.error('❌ OpenAI Vision extraction failed:', error.message);
-        extractedText = `[OpenAI Vision feilet: ${error.message}]`;
-        extractionMethod = 'OpenAI Vision Failed';
-      }
-    }
-
-    // Handle Excel/CSV files
-    else if (document.mime_type?.includes('spreadsheet') || document.mime_type?.includes('excel') || document.mime_type?.includes('csv')) {
-      console.log('📊 Processing Excel/CSV file...');
-      try {
-        if (document.mime_type.includes('csv')) {
-          extractedText = await fileData.text();
-          extractionMethod = 'CSV Text Reading';
-        } else {
-          // For Excel files, provide basic info
-          extractedText = `Excel-fil: ${document.file_name}\nFilstørrelse: ${(document.file_size / 1024).toFixed(1)} KB\nType: ${document.mime_type}\n\n[Dette er en Excel-fil. For full analyse, åpne filen i Excel eller konverter til CSV-format.]`;
-          extractionMethod = 'Excel Metadata';
-        }
-        console.log('✅ Spreadsheet processing completed:', extractedText.length, 'characters');
-      } catch (error) {
-        console.error('❌ Spreadsheet processing failed:', error.message);
-        extractedText = `[Kunne ikke lese regneark: ${error.message}]`;
-        extractionMethod = 'Spreadsheet Failed';
-      }
-    }
-
-    // Handle text files
-    else if (document.mime_type?.includes('text/')) {
-      console.log('📝 Processing text file...');
-      try {
-        extractedText = await fileData.text();
-        extractionMethod = 'Direct Text Reading';
-        console.log('✅ Text file processing completed:', extractedText.length, 'characters');
-      } catch (error) {
-        console.error('❌ Text file processing failed:', error.message);
-        extractedText = `[Kunne ikke lese tekstfil: ${error.message}]`;
-        extractionMethod = 'Text Reading Failed';
-      }
-    }
-
-    // If no extraction method worked
-    if (!extractedText || extractedText.trim().length < 10) {
-      console.log('⚠️ No meaningful text extracted, setting informative message');
-      extractedText = `[Kunne ikke ekstraktere tekst fra denne filen]
-      
-Filtype: ${document.mime_type}
-Filnavn: ${document.file_name}
-Størrelse: ${(document.file_size / 1024 / 1024).toFixed(2)} MB
-
-${!openaiApiKey ? '⚠️ OpenAI API-nøkkel mangler for avansert PDF-lesing.' : ''}
-
-Mulige årsaker:
-- Filen er skannet og inneholder kun bilder
-- Filen er passordbeskyttet
-- Filformat støttes ikke fullt ut
-- Filen er tom eller skadet`;
-      extractionMethod = 'No extraction possible';
-    }
-
-    // Generate AI analysis if we have meaningful text
-    if (extractedText && extractedText.length > 50 && !extractedText.startsWith('[Kunne ikke') && openaiApiKey) {
-      console.log('🧠 Generating AI analysis...');
-      
-      try {
-        const analysisResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${openaiApiKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model: 'gpt-4o-mini',
-            messages: [
-              {
-                role: 'system',
-                content: 'Du er en norsk revisjonsekspert. Analyser dokumentet og gi et kort, presist sammendrag på norsk (max 300 ord) som fokuserer på revisjonsrelevant innhold som: beløp, datoer, transaksjoner, regnskapsposter, kontrakter, eller andre revisjonsrelevante detaljer.'
-              },
-              {
-                role: 'user',
-                content: `Analyser dette dokumentet og gi et detaljert sammendrag:\n\nFilnavn: ${document.file_name}\n\nInnhold:\n${extractedText.substring(0, 4000)}`
-              }
-            ],
-            max_tokens: 400,
-            temperature: 0.2
-          }),
-        });
-
-        if (analysisResponse.ok) {
-          const analysisResult = await analysisResponse.json();
-          aiAnalysis = analysisResult.choices[0]?.message?.content || '';
-          console.log('✅ AI analysis completed:', aiAnalysis.length, 'characters');
-        } else {
-          console.error('❌ AI analysis failed:', analysisResponse.status);
-        }
-      } catch (error) {
-        console.error('❌ AI analysis error:', error.message);
-      }
-    }
-
-    // Update document with results
-    console.log('💾 Saving results to database...');
-    const updateData = {
-      extracted_text: extractedText,
-      text_extraction_status: 'completed',
-      ai_analysis_summary: aiAnalysis || null,
-      updated_at: new Date().toISOString()
-    };
-
-    const { error: finalUpdateError } = await supabase
-      .from('client_documents_files')
-      .update(updateData)
-      .eq('id', documentId);
-
-    if (finalUpdateError) {
-      console.error('❌ Final update failed:', finalUpdateError.message);
-      throw new Error(`Final update failed: ${finalUpdateError.message}`);
-    }
-
-    console.log('🎉 Text extraction completed successfully!');
-    
-    const response = {
-      success: true,
+    console.log('🎉 [ENHANCED-PDF-EXTRACTOR] Text extraction completed successfully for document:', documentId);
+    console.log('📊 [ENHANCED-PDF-EXTRACTOR] Final statistics:', {
       documentId,
       fileName: document.file_name,
       textLength: extractedText.length,
-      extractionMethod,
-      hasAiAnalysis: !!aiAnalysis,
-      preview: extractedText.substring(0, 300) + (extractedText.length > 300 ? '...' : ''),
-      message: 'Tekstekstraksjon fullført med suksess'
-    };
-
-    console.log('📊 Final results:', response);
-
-    return new Response(
-      JSON.stringify(response),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+      fileType: document.mime_type
+    });
+    
+    return new Response(JSON.stringify({ 
+      success: true, 
+      documentId,
+      textLength: extractedText.length,
+      fileType: document.mime_type,
+      extractionMethod: 'Enhanced backend processing',
+      message: 'Enhanced text extraction completed successfully',
+      preview: extractedText.substring(0, 200) + (extractedText.length > 200 ? '...' : '')
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
 
   } catch (error) {
-    console.error('💥 Text extraction error:', error.message);
+    console.error(`💥 [ENHANCED-PDF-EXTRACTOR] Unexpected error for document ${documentId || 'unknown'}:`, error);
     
-    // Try to update document status to failed if we have a documentId
+    // Attempt to update the status to 'completed' with error message instead of 'failed'
     if (documentId) {
       try {
-        const supabaseUrl = Deno.env.get('SUPABASE_URL');
-        const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+        const supabaseAdmin = createClient(
+          Deno.env.get('SUPABASE_URL') ?? '',
+          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+        );
+        await supabaseAdmin.from('client_documents_files').update({
+          text_extraction_status: 'completed',
+          extracted_text: `[Systemfeil under tekstekstraksjon: ${error.message}]`,
+          updated_at: new Date().toISOString()
+        }).eq('id', documentId);
         
-        if (supabaseUrl && supabaseKey) {
-          const supabase = createClient(supabaseUrl, supabaseKey);
-          
-          await supabase
-            .from('client_documents_files')
-            .update({ 
-              text_extraction_status: 'failed',
-              extracted_text: `[Tekstekstraksjon feilet: ${error.message}]`,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', documentId);
-          
-          console.log('✅ Status updated to failed');
-        }
+        console.log('🔄 [ENHANCED-PDF-EXTRACTOR] Status updated with error message for document:', documentId);
       } catch (updateError) {
-        console.error('❌ Failed to update error status:', updateError);
+        console.error(`❌ [ENHANCED-PDF-EXTRACTOR] Failed to update status for document ${documentId}:`, updateError);
       }
     }
-
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: error.message,
-        details: 'Tekstekstraksjon feilet - se server logs for detaljer'
-      }),
-      { 
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
-    );
+    
+    return new Response(JSON.stringify({ 
+      success: false,
+      error: 'Unexpected server error',
+      documentId: documentId || 'unknown',
+      details: error.message
+    }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
 });

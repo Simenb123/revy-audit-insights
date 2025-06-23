@@ -5,8 +5,8 @@ import { toast } from '@/hooks/use-toast';
 import * as pdfjsLib from 'pdfjs-dist';
 import * as XLSX from 'xlsx';
 
-// Set up PDF.js worker with local path to avoid CORS issues
-pdfjsLib.GlobalWorkerOptions.workerSrc = '/node_modules/pdfjs-dist/build/pdf.worker.min.js';
+// Use a CDN that actually works for PDF.js worker
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://unpkg.com/pdfjs-dist@4.8.69/build/pdf.worker.min.mjs';
 
 interface TextExtractionResult {
   text: string;
@@ -22,10 +22,10 @@ export const useClientTextExtraction = () => {
       console.log('🔄 Starting PDF text extraction for:', file.name);
       const arrayBuffer = await file.arrayBuffer();
       
-      // Create loading task with better error handling
       const loadingTask = pdfjsLib.getDocument({ 
         data: arrayBuffer,
-        verbosity: 0 // Reduce console noise
+        verbosity: 0,
+        isOffscreenCanvasSupported: false // Disable offscreen canvas for better compatibility
       });
       
       const pdf = await loadingTask.promise;
@@ -56,7 +56,7 @@ export const useClientTextExtraction = () => {
       const cleanText = fullText.trim();
       
       if (cleanText.length < 10) {
-        throw new Error('PDF ser ut til å være scannet eller inneholder lite tekst. Prøv backend-prosessering for bedre resultater.');
+        throw new Error('PDF ser ut til å være scannet eller inneholder lite tekst. Prøver backend-prosessering...');
       }
       
       console.log('✅ PDF text extraction completed:', cleanText.length, 'characters');
@@ -64,17 +64,7 @@ export const useClientTextExtraction = () => {
       
     } catch (error) {
       console.error('❌ PDF extraction error:', error);
-      
-      // More specific error messages
-      if (error.message?.includes('Invalid PDF')) {
-        throw new Error('Filen ser ikke ut til å være en gyldig PDF');
-      } else if (error.message?.includes('worker')) {
-        throw new Error('PDF-prosessering utilgjengelig. Dokumentet vil bli sendt til backend for analyse.');
-      } else if (error.message?.includes('scannet')) {
-        throw error; // Re-throw our custom message
-      } else {
-        throw new Error('Kunne ikke lese PDF-innhold. Prøver backend-prosessering...');
-      }
+      throw new Error('Frontend PDF-lesing feilet. Sender til backend for avansert prosessering...');
     }
   };
 
@@ -111,7 +101,9 @@ export const useClientTextExtraction = () => {
     } else if (
       file.type.includes('spreadsheet') || 
       file.type.includes('excel') ||
-      file.type === 'text/csv'
+      file.type === 'text/csv' ||
+      file.name.endsWith('.xlsx') ||
+      file.name.endsWith('.xls')
     ) {
       return await extractTextFromExcel(file);
     } else if (file.type.startsWith('text/')) {
@@ -123,9 +115,9 @@ export const useClientTextExtraction = () => {
     }
   };
 
-  const fallbackToBackendExtraction = async (documentId: string): Promise<boolean> => {
+  const callBackendExtraction = async (documentId: string): Promise<boolean> => {
     try {
-      console.log('🔄 Falling back to backend extraction for document:', documentId);
+      console.log('🔄 Calling backend extraction for document:', documentId);
       
       // Update status to indicate backend processing
       await supabase
@@ -137,7 +129,7 @@ export const useClientTextExtraction = () => {
         .eq('id', documentId);
 
       // Call the enhanced PDF text extractor edge function
-      const { error } = await supabase.functions.invoke('enhanced-pdf-text-extractor', {
+      const { data, error } = await supabase.functions.invoke('enhanced-pdf-text-extractor', {
         body: { documentId }
       });
 
@@ -146,18 +138,18 @@ export const useClientTextExtraction = () => {
         throw new Error(`Backend-prosessering feilet: ${error.message}`);
       }
 
-      console.log('✅ Backend extraction initiated successfully');
+      console.log('✅ Backend extraction completed successfully:', data);
       return true;
       
     } catch (error) {
-      console.error('❌ Fallback extraction error:', error);
+      console.error('❌ Backend extraction error:', error);
       
       // Update with failed status
       await supabase
         .from('client_documents_files')
         .update({ 
           text_extraction_status: 'failed',
-          extracted_text: `[Både frontend og backend ekstrasjon feilet: ${error.message}]`
+          extracted_text: `[Backend ekstrasjon feilet: ${error.message}]`
         })
         .eq('id', documentId);
       
@@ -196,6 +188,15 @@ export const useClientTextExtraction = () => {
 
       console.log('📋 Processing document:', document.file_name, 'type:', document.mime_type);
 
+      // Check if document already has error text and needs re-processing
+      const hasErrorText = document.extracted_text?.includes('[OpenAI Vision feilet') || 
+                          document.extracted_text?.includes('[Kunne ikke') ||
+                          document.extracted_text?.includes('Maximum call stack size');
+
+      if (hasErrorText) {
+        console.log('🔄 Document has error text, re-processing with improved method...');
+      }
+
       // Update status to processing
       await supabase
         .from('client_documents_files')
@@ -233,25 +234,27 @@ export const useClientTextExtraction = () => {
       } catch (frontendError) {
         console.log('⚠️ Frontend extraction failed:', frontendError.message);
         
-        // For PDFs, try backend extraction
-        if (document.mime_type === 'application/pdf') {
-          console.log('🔄 PDF frontend failed, switching to backend extraction...');
+        // For PDFs and other supported files, try backend extraction
+        if (document.mime_type === 'application/pdf' || 
+            document.mime_type.includes('excel') || 
+            document.mime_type.includes('spreadsheet')) {
+          console.log('🔄 Switching to backend extraction...');
           shouldFallbackToBackend = true;
         } else {
-          // For non-PDFs, fail immediately
+          // For non-supported files, fail immediately
           throw frontendError;
         }
       }
 
-      // If we need to fallback to backend (especially for PDFs)
-      if (shouldFallbackToBackend && document.mime_type === 'application/pdf') {
-        console.log('🔄 Initiating backend fallback for PDF...');
-        const success = await fallbackToBackendExtraction(documentId);
+      // If we need to fallback to backend
+      if (shouldFallbackToBackend) {
+        console.log('🔄 Initiating backend fallback...');
+        const success = await callBackendExtraction(documentId);
         
         if (success) {
           toast({
             title: "Backend-prosessering startet",
-            description: `PDF-en "${document.file_name}" sendes til backend for avansert tekstekstraksjon`,
+            description: `Dokumentet "${document.file_name}" sendes til backend for avansert tekstekstraksjon`,
           });
         } else {
           toast({

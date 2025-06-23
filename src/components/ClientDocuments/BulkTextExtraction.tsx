@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Zap, Brain, CheckCircle } from 'lucide-react';
+import { Zap, Brain, CheckCircle, AlertTriangle } from 'lucide-react';
 import { ClientDocument } from '@/hooks/useClientDocuments';
 import { useClientTextExtraction } from '@/hooks/useClientTextExtraction';
 
@@ -36,15 +36,16 @@ const BulkTextExtraction = ({ documents, onUpdate }: BulkTextExtractionProps) =>
                                  doc.text_extraction_status === 'pending' || 
                                  doc.text_extraction_status === 'failed';
     
-    // Check if status is completed but text is empty, null, or an error message
-    const hasInvalidText = doc.text_extraction_status === 'completed' && (
-      !doc.extracted_text || 
-      doc.extracted_text.length < 50 ||
-      doc.extracted_text.startsWith('[Kunne ikke') ||
-      doc.extracted_text.startsWith('[Tekstekstraksjon feilet')
+    // Check if status is completed but text contains error messages
+    const hasErrorText = doc.text_extraction_status === 'completed' && doc.extracted_text && (
+      doc.extracted_text.includes('[OpenAI Vision feilet') ||
+      doc.extracted_text.includes('[Kunne ikke') ||
+      doc.extracted_text.includes('Maximum call stack size') ||
+      doc.extracted_text.includes('[Tekstekstraksjon feilet') ||
+      doc.extracted_text.length < 50
     );
     
-    const needsProcessing = statusNeedsProcessing || hasInvalidText;
+    const needsProcessing = statusNeedsProcessing || hasErrorText;
     
     console.log('🔍 [BULK_EXTRACTION] Document check:', {
       fileName: doc.file_name,
@@ -53,16 +54,24 @@ const BulkTextExtraction = ({ documents, onUpdate }: BulkTextExtractionProps) =>
       textLength: doc.extracted_text?.length || 0,
       textPreview: doc.extracted_text?.substring(0, 50) || 'No text',
       statusNeedsProcessing,
-      hasInvalidText,
+      hasErrorText,
       needsProcessing
     });
     
     return needsProcessing;
   });
 
+  const documentsWithErrors = documents.filter(doc => 
+    doc.extracted_text && (
+      doc.extracted_text.includes('[OpenAI Vision feilet') ||
+      doc.extracted_text.includes('Maximum call stack size')
+    )
+  );
+
   console.log('📊 [BULK_EXTRACTION] Processing status:', {
     total: documents.length,
     needingProcessing: documentsNeedingProcessing.length,
+    withErrors: documentsWithErrors.length,
     shouldShowButton: documentsNeedingProcessing.length > 0,
     documentDetails: documentsNeedingProcessing.map(d => ({
       name: d.file_name,
@@ -70,7 +79,7 @@ const BulkTextExtraction = ({ documents, onUpdate }: BulkTextExtractionProps) =>
       reason: !d.text_extraction_status ? 'no status' : 
               d.text_extraction_status === 'pending' ? 'pending' :
               d.text_extraction_status === 'failed' ? 'failed' :
-              'invalid text content'
+              'error text content'
     }))
   });
 
@@ -101,7 +110,7 @@ const BulkTextExtraction = ({ documents, onUpdate }: BulkTextExtractionProps) =>
       console.log('📈 [BULK_EXTRACTION] Progress:', newProgress.toFixed(1) + '%');
       
       // Small delay to prevent overwhelming the system
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 1000));
     }
     
     setIsProcessing(false);
@@ -138,12 +147,18 @@ const BulkTextExtraction = ({ documents, onUpdate }: BulkTextExtractionProps) =>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-purple-900">
           <Brain className="h-5 w-5" />
-          Bulk AI-prosessering
+          Forbedret AI-prosessering
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="text-sm text-purple-700">
-          <strong>{documentsNeedingProcessing.length}</strong> dokumenter venter på AI-prosessering
+          <strong>{documentsNeedingProcessing.length}</strong> dokumenter trenger prosessering
+          {documentsWithErrors.length > 0 && (
+            <div className="flex items-center gap-1 mt-1 text-orange-600">
+              <AlertTriangle className="h-4 w-4" />
+              <span>{documentsWithErrors.length} dokumenter har feilmeldinger som vil bli fikset</span>
+            </div>
+          )}
         </div>
         
         {isProcessing && (
@@ -162,11 +177,11 @@ const BulkTextExtraction = ({ documents, onUpdate }: BulkTextExtractionProps) =>
           className="w-full flex items-center gap-2"
         >
           <Zap className="h-4 w-4" />
-          {isProcessing ? 'Prosesserer...' : `Prosesser alle ${documentsNeedingProcessing.length} dokumenter`}
+          {isProcessing ? 'Prosesserer...' : `Prosesser ${documentsNeedingProcessing.length} dokumenter med forbedret metode`}
         </Button>
         
         <div className="text-xs text-purple-600">
-          💡 Frontend-basert prosessering gir umiddelbare resultater
+          💡 Ny forbedret prosessering som fikser tidligere feil
         </div>
       </CardContent>
     </Card>
