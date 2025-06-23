@@ -81,11 +81,12 @@ const ChartOfAccountsUploader = ({ clientId, onUploadComplete }: ChartOfAccounts
       setProgress(25);
 
       // Create upload batch record
+      const userId = (await supabase.auth.getUser()).data.user?.id;
       const { data: batch, error: batchError } = await supabase
         .from('upload_batches')
         .insert({
           client_id: clientId,
-          user_id: (await supabase.auth.getUser()).data.user?.id!,
+          user_id: userId,
           batch_type: 'chart_of_accounts',
           file_name: file.name,
           file_size: file.size,

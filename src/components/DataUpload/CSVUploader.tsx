@@ -324,7 +324,7 @@ const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
       .from('upload_batches')
       .insert({
         client_id: clientId,
-        user_id: (await supabase.auth.getUser()).data.user?.id!,
+        user_id: (await supabase.auth.getUser()).data.user?.id,
         batch_type: 'general_ledger',
         file_name: fileName,
         file_size: 0,

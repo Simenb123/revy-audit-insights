@@ -100,7 +100,7 @@ const GeneralLedgerUploader = ({ clientId }: GeneralLedgerUploaderProps) => {
         .from('upload_batches')
         .insert({
           client_id: clientId,
-          user_id: (await supabase.auth.getUser()).data.user?.id!,
+          user_id: (await supabase.auth.getUser()).data.user?.id,
           batch_type: 'general_ledger',
           file_name: file.name,
           file_size: file.size,
