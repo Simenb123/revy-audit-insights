@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -156,10 +155,17 @@ export const useClientDocuments = (clientId: string) => {
     }
   });
 
-  // Upload document mutation
+  // Upload document mutation - FIXED: Get actual user ID
   const uploadDocument = useMutation({
     mutationFn: async (params: { file: File; clientId: string; category?: string; subjectArea?: string }) => {
       const { file, category, subjectArea } = params;
+      
+      // Get the authenticated user
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) {
+        throw new Error('User must be authenticated to upload documents');
+      }
+      
       const fileName = `${Date.now()}-${file.name}`;
       const filePath = `${clientId}/${fileName}`;
       
@@ -170,7 +176,7 @@ export const useClientDocuments = (clientId: string) => {
       
       if (uploadError) throw uploadError;
       
-      // Create database record
+      // Create database record with actual user ID
       const { error: dbError } = await supabase
         .from('client_documents_files')
         .insert({
@@ -179,7 +185,7 @@ export const useClientDocuments = (clientId: string) => {
           file_path: filePath,
           mime_type: file.type,
           file_size: file.size,
-          user_id: 'placeholder-user-id', // This should come from auth
+          user_id: user.id, // Use actual authenticated user ID
           category: category || null,
           subject_area: subjectArea || null
         });

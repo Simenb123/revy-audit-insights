@@ -157,12 +157,27 @@ export const useClientTextExtraction = () => {
     }
   };
 
-  const generateAIAnalysis = async (text: string, fileName: string): Promise<string> => {
+  const generateAIAnalysis = async (text: string, fileName: string, documentId: string): Promise<string> => {
     try {
-      // For now, we'll use a placeholder since we don't have access to the OpenAI key via RPC
-      // In a real implementation, this would be handled via an edge function
-      console.log('AI analysis skipped - OpenAI key not available in frontend');
-      return '';
+      console.log('🤖 Generating AI analysis for document:', fileName);
+      
+      // Call our new AI analyzer edge function
+      const { data, error } = await supabase.functions.invoke('document-ai-analyzer', {
+        body: { 
+          documentId,
+          text,
+          fileName 
+        }
+      });
+
+      if (error) {
+        console.error('AI analysis error:', error);
+        return '';
+      }
+
+      console.log('✅ AI analysis completed:', data?.analysis?.substring(0, 100) + '...');
+      return data?.analysis || '';
+      
     } catch (error) {
       console.error('AI analysis error:', error);
       return '';
@@ -269,8 +284,8 @@ export const useClientTextExtraction = () => {
 
       // If we have text from frontend extraction
       if (extractedText && extractedText.trim().length >= 10) {
-        // Generate AI analysis
-        const aiAnalysis = await generateAIAnalysis(extractedText, document.file_name);
+        // Generate AI analysis using our new edge function
+        const aiAnalysis = await generateAIAnalysis(extractedText, document.file_name, documentId);
 
         // Update document with results
         const { error: updateError } = await supabase
