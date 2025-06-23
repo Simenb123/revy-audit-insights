@@ -23,19 +23,37 @@ const BulkTextExtraction = ({ documents, onUpdate }: BulkTextExtractionProps) =>
     documentStatuses: documents.map(d => ({
       id: d.id,
       name: d.file_name,
-      status: d.text_extraction_status
+      status: d.text_extraction_status,
+      hasExtractedText: !!d.extracted_text,
+      extractedTextLength: d.extracted_text?.length || 0
     }))
   });
 
+  // Enhanced logic to determine which documents need processing
   const documentsNeedingProcessing = documents.filter(doc => {
-    const needsProcessing = doc.text_extraction_status === 'pending' || 
-                           doc.text_extraction_status === 'failed' ||
-                           doc.text_extraction_status === null ||
-                           doc.text_extraction_status === undefined;
+    // Check if status is not completed, or if completed but has no real text content
+    const statusNeedsProcessing = !doc.text_extraction_status || 
+                                 doc.text_extraction_status === 'pending' || 
+                                 doc.text_extraction_status === 'failed';
+    
+    // Check if status is completed but text is empty, null, or an error message
+    const hasInvalidText = doc.text_extraction_status === 'completed' && (
+      !doc.extracted_text || 
+      doc.extracted_text.length < 50 ||
+      doc.extracted_text.startsWith('[Kunne ikke') ||
+      doc.extracted_text.startsWith('[Tekstekstraksjon feilet')
+    );
+    
+    const needsProcessing = statusNeedsProcessing || hasInvalidText;
     
     console.log('🔍 [BULK_EXTRACTION] Document check:', {
       fileName: doc.file_name,
       status: doc.text_extraction_status,
+      hasText: !!doc.extracted_text,
+      textLength: doc.extracted_text?.length || 0,
+      textPreview: doc.extracted_text?.substring(0, 50) || 'No text',
+      statusNeedsProcessing,
+      hasInvalidText,
       needsProcessing
     });
     
@@ -45,7 +63,15 @@ const BulkTextExtraction = ({ documents, onUpdate }: BulkTextExtractionProps) =>
   console.log('📊 [BULK_EXTRACTION] Processing status:', {
     total: documents.length,
     needingProcessing: documentsNeedingProcessing.length,
-    shouldShowButton: documentsNeedingProcessing.length > 0
+    shouldShowButton: documentsNeedingProcessing.length > 0,
+    documentDetails: documentsNeedingProcessing.map(d => ({
+      name: d.file_name,
+      status: d.text_extraction_status,
+      reason: !d.text_extraction_status ? 'no status' : 
+              d.text_extraction_status === 'pending' ? 'pending' :
+              d.text_extraction_status === 'failed' ? 'failed' :
+              'invalid text content'
+    }))
   });
 
   const handleBulkProcessing = async () => {
@@ -140,7 +166,7 @@ const BulkTextExtraction = ({ documents, onUpdate }: BulkTextExtractionProps) =>
         </Button>
         
         <div className="text-xs text-purple-600">
-          💡 Frontend-basert prosessering gir umiddelbar feedback og bedre ytelse
+          💡 Frontend-basert prosessering gir umiddelbare resultater
         </div>
       </CardContent>
     </Card>

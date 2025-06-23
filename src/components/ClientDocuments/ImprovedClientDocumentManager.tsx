@@ -3,6 +3,7 @@ import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Upload, FileText, Brain } from 'lucide-react';
 import { useClientDocuments } from '@/hooks/useClientDocuments';
+import { useClientTextExtraction } from '@/hooks/useClientTextExtraction';
 import DocumentUploader from './DocumentUploader';
 import EnhancedDocumentList from './EnhancedDocumentList';
 import BulkTextExtraction from './BulkTextExtraction';
@@ -17,6 +18,9 @@ const ImprovedClientDocumentManager: React.FC<ImprovedClientDocumentManagerProps
   clientName
 }) => {
   const { documents, categories, isLoading, refetch } = useClientDocuments(clientId);
+  
+  // Add the text extraction hook for bulk processing
+  const textExtractionHook = useClientTextExtraction();
 
   console.log('📋 [CLIENT_DOC_MANAGER] Rendered with:', {
     clientId,
@@ -83,7 +87,7 @@ const ImprovedClientDocumentManager: React.FC<ImprovedClientDocumentManagerProps
         </div>
       )}
 
-      {/* Bulk Processing - This should now be visible */}
+      {/* Bulk Processing - Now with enhanced functionality */}
       {documents.length > 0 && (
         <BulkTextExtraction 
           documents={documents}
