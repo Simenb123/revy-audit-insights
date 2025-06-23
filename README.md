@@ -74,10 +74,16 @@ Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-trick
 
 ## Environment variables
 
-The Supabase edge functions rely on a few environment variables. Make sure the following variables are available when deploying or running the functions locally:
+Create a `.env` file and provide the following variables so the frontend can connect to Supabase:
 
 ```bash
 SUPABASE_URL=<your-supabase-project-url>
+SUPABASE_ANON_KEY=<your-anon-key>
+```
+
+The Supabase edge functions also rely on:
+
+```bash
 SUPABASE_SERVICE_ROLE_KEY=<your-service-role-key>
 ```
 
