@@ -104,8 +104,8 @@ export const usePDFConversions = () => {
         throw new Error(`Failed to create conversion record: ${insertError.message}`);
       }
 
-      // Start conversion process
-      const { error: functionError } = await supabase.functions.invoke('pdf-converter', {
+      // Start conversion process using enhanced-pdf-text-extractor
+      const { error: functionError } = await supabase.functions.invoke('enhanced-pdf-text-extractor', {
         body: {
           conversionId: conversion.id,
           filePath,
@@ -166,8 +166,8 @@ export const usePDFConversions = () => {
 
       if (updateError) throw updateError;
 
-      // Start conversion process
-      const { error: functionError } = await supabase.functions.invoke('pdf-converter', {
+      // Start conversion process using enhanced-pdf-text-extractor
+      const { error: functionError } = await supabase.functions.invoke('enhanced-pdf-text-extractor', {
         body: {
           conversionId,
           filePath: conversion.file_path,

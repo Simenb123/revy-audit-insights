@@ -46,6 +46,54 @@ serve(async (req) => {
   }
 
   try {
+    const { article_id } = await req.json();
+    
+    if (article_id) {
+      // Handle single article embedding from trigger
+      console.log(`🚀 Generating embedding for article: ${article_id}`);
+      
+      const { data: article, error: fetchError } = await supabase
+        .from('knowledge_articles')
+        .select('id, title, content')
+        .eq('id', article_id)
+        .eq('status', 'published')
+        .single();
+
+      if (fetchError || !article) {
+        console.error('Article not found:', fetchError);
+        return new Response(JSON.stringify({ error: 'Article not found' }), {
+          status: 404,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Generate embedding for this article
+      const textForEmbedding = `${article.title}\n\n${article.content}`;
+      const embedding = await generateEmbedding(textForEmbedding);
+      
+      // Update article with embedding
+      const { error: updateError } = await supabase
+        .from('knowledge_articles')
+        .update({ embedding })
+        .eq('id', article.id);
+
+      if (updateError) {
+        console.error(`❌ Error updating article ${article.id}:`, updateError);
+        throw updateError;
+      }
+
+      console.log(`✅ Updated embedding for: "${article.title}"`);
+      
+      return new Response(JSON.stringify({ 
+        success: true,
+        article_id,
+        message: 'Embedding generated successfully'
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Batch processing (existing functionality)
     console.log('🚀 Starting embedding generation for articles');
 
     // Get articles that need embeddings
