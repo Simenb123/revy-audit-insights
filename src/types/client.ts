@@ -1,5 +1,5 @@
 
-export type AuditPhase = 'engagement' | 'planning' | 'execution' | 'completion' | 'reporting';
+export type AuditPhase = 'overview' | 'engagement' | 'planning' | 'execution' | 'completion' | 'reporting';
 
 export interface Client {
   id: string;

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Routes, Route, useParams } from 'react-router-dom';
 import { useClientDetails } from '@/hooks/useClientDetails';
@@ -9,7 +8,7 @@ import ClientBreadcrumb from '@/components/Clients/ClientDetails/ClientBreadcrum
 import ClientNavigation from '@/components/Clients/ClientDetails/ClientNavigation';
 import RevisionWorkflow from '@/components/Clients/ClientDetails/RevisionWorkflow';
 import PhaseContent from '@/components/Clients/ClientDetails/PhaseContent';
-import { AuditPhase } from '@/types/revio';
+import { AuditPhase } from '@/types/client';
 
 const ClientDetail = () => {
   const { orgNumber } = useParams<{ orgNumber: string }>();

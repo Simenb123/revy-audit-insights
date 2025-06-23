@@ -1,16 +1,18 @@
+
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import DocumentsContainer from './Documents/DocumentsContainer';
 import PlanningContainer from './Planning/PlanningContainer';
 import ActionsContainer from './Actions/ActionsContainer';
 import { AuditPhase } from '@/types/client';
+import { Client } from '@/types/revio';
 
 interface PhaseContentProps {
-  clientId: string;
   phase: AuditPhase;
+  client: Client;
 }
 
-const PhaseContent: React.FC<PhaseContentProps> = ({ clientId, phase }) => {
+const PhaseContent: React.FC<PhaseContentProps> = ({ phase, client }) => {
   return (
     <Tabs defaultValue="overview" className="w-full">
       <TabsList className="grid w-full grid-cols-4">
@@ -27,15 +29,15 @@ const PhaseContent: React.FC<PhaseContentProps> = ({ clientId, phase }) => {
       </TabsContent>
 
       <TabsContent value="planning">
-        <PlanningContainer clientId={clientId} />
+        <PlanningContainer clientId={client.id} />
       </TabsContent>
 
       <TabsContent value="actions">
-        <ActionsContainer clientId={clientId} />
+        <ActionsContainer clientId={client.id} />
       </TabsContent>
 
       <TabsContent value="documents">
-        <DocumentsContainer clientId={clientId} />
+        <DocumentsContainer clientId={client.id} />
       </TabsContent>
     </Tabs>
   );
