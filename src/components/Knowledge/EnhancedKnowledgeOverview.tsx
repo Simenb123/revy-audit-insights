@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -16,16 +17,35 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useKnowledgeStats, useRecentArticles, useTotalArticleCount } from '@/hooks/knowledge/useKnowledgeStats';
-import { useSubjectAreasWithCounts } from '@/hooks/knowledge/useSubjectAreasWithCounts';
 import { useAuditActionTemplateCount } from '@/hooks/knowledge/useAuditActionTemplatesPreview';
 
 const EnhancedKnowledgeOverview = () => {
   const navigate = useNavigate();
-  const { data: knowledgeStats, isLoading: statsLoading } = useKnowledgeStats();
-  const { data: recentArticles, isLoading: articlesLoading } = useRecentArticles(3);
-  const { data: totalArticles, isLoading: totalLoading } = useTotalArticleCount();
-  const { data: subjectAreas, isLoading: subjectAreasLoading } = useSubjectAreasWithCounts();
-  const { data: totalActionTemplates, isLoading: templatesLoading } = useAuditActionTemplateCount();
+  const { data: knowledgeStats, isLoading: statsLoading, error: statsError } = useKnowledgeStats();
+  const { data: recentArticles, isLoading: articlesLoading, error: articlesError } = useRecentArticles(3);
+  const { data: totalArticles, isLoading: totalLoading, error: totalError } = useTotalArticleCount();
+  const { data: totalActionTemplates, isLoading: templatesLoading, error: templatesError } = useAuditActionTemplateCount();
+
+  console.log('📊 [KNOWLEDGE_OVERVIEW] Loading states:', {
+    statsLoading,
+    articlesLoading,
+    totalLoading,
+    templatesLoading
+  });
+
+  console.log('📊 [KNOWLEDGE_OVERVIEW] Data:', {
+    knowledgeStats,
+    totalArticles,
+    totalActionTemplates,
+    recentArticlesCount: recentArticles?.length
+  });
+
+  console.log('📊 [KNOWLEDGE_OVERVIEW] Errors:', {
+    statsError: statsError?.message,
+    articlesError: articlesError?.message,
+    totalError: totalError?.message,
+    templatesError: templatesError?.message
+  });
 
   const quickActions = [
     {
@@ -68,7 +88,7 @@ const EnhancedKnowledgeOverview = () => {
   })) || [];
 
   // Add subject areas as categories if we have audit action data
-  if (subjectAreas && totalActionTemplates && totalActionTemplates > 0) {
+  if (totalActionTemplates && totalActionTemplates > 0) {
     categories.push({
       id: 'audit-actions',
       name: 'Revisjonshandlinger',
@@ -88,6 +108,7 @@ const EnhancedKnowledgeOverview = () => {
       'App': 'bg-gray-100 text-gray-800',
       'Regnskap': 'bg-yellow-100 text-yellow-800',
       'FAQ': 'bg-gray-100 text-gray-800',
+      'Revisjonstandarder': 'bg-blue-100 text-blue-800',
     };
     return colorMap[name] || 'bg-gray-100 text-gray-800';
   }
@@ -100,6 +121,7 @@ const EnhancedKnowledgeOverview = () => {
     }
   };
 
+  // Show loading state
   if (statsLoading || totalLoading) {
     return (
       <div className="space-y-8">
@@ -108,6 +130,21 @@ const EnhancedKnowledgeOverview = () => {
           <div className="flex items-center justify-center">
             <Loader2 className="w-6 h-6 animate-spin mr-2" />
             <span>Laster fagstoff...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state if we have critical errors
+  if (statsError || totalError) {
+    return (
+      <div className="space-y-8">
+        <div className="text-center space-y-4">
+          <h1 className="text-4xl font-bold text-gray-900">Fagstoff</h1>
+          <div className="text-red-600">
+            <p>Feil ved lasting av fagstoff:</p>
+            <p className="text-sm">{statsError?.message || totalError?.message}</p>
           </div>
         </div>
       </div>

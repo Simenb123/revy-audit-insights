@@ -6,6 +6,8 @@ export const useKnowledgeStats = () => {
   return useQuery({
     queryKey: ['knowledge-stats'],
     queryFn: async () => {
+      console.log('📊 [KNOWLEDGE_STATS] Fetching categories...');
+      
       // Get categories with article counts
       const { data: categories, error: categoriesError } = await supabase
         .from('knowledge_categories')
@@ -17,18 +19,30 @@ export const useKnowledgeStats = () => {
         .is('parent_category_id', null)
         .order('display_order');
 
-      if (categoriesError) throw categoriesError;
+      if (categoriesError) {
+        console.error('📊 [KNOWLEDGE_STATS] Categories error:', categoriesError);
+        throw categoriesError;
+      }
+
+      console.log('📊 [KNOWLEDGE_STATS] Categories fetched:', categories?.length);
 
       // Get article counts per category
       const categoriesWithCounts = await Promise.all(
-        categories.map(async (category) => {
+        (categories || []).map(async (category) => {
+          console.log('📊 [KNOWLEDGE_STATS] Counting articles for:', category.name);
+          
           const { count, error: countError } = await supabase
             .from('knowledge_articles')
             .select('*', { count: 'exact', head: true })
             .eq('category_id', category.id)
             .eq('status', 'published');
 
-          if (countError) throw countError;
+          if (countError) {
+            console.error('📊 [KNOWLEDGE_STATS] Count error for category', category.name, ':', countError);
+            throw countError;
+          }
+
+          console.log('📊 [KNOWLEDGE_STATS] Article count for', category.name, ':', count);
 
           return {
             ...category,
@@ -37,8 +51,11 @@ export const useKnowledgeStats = () => {
         })
       );
 
+      console.log('📊 [KNOWLEDGE_STATS] Final result:', categoriesWithCounts);
       return categoriesWithCounts;
-    }
+    },
+    retry: 3,
+    retryDelay: 1000
   });
 };
 
@@ -46,6 +63,8 @@ export const useRecentArticles = (limit = 5) => {
   return useQuery({
     queryKey: ['recent-articles', limit],
     queryFn: async () => {
+      console.log('📊 [RECENT_ARTICLES] Fetching recent articles...');
+      
       const { data, error } = await supabase
         .from('knowledge_articles')
         .select(`
@@ -62,9 +81,16 @@ export const useRecentArticles = (limit = 5) => {
         .order('created_at', { ascending: false })
         .limit(limit);
 
-      if (error) throw error;
+      if (error) {
+        console.error('📊 [RECENT_ARTICLES] Error:', error);
+        throw error;
+      }
+
+      console.log('📊 [RECENT_ARTICLES] Fetched:', data?.length, 'articles');
       return data;
-    }
+    },
+    retry: 3,
+    retryDelay: 1000
   });
 };
 
@@ -72,13 +98,22 @@ export const useTotalArticleCount = () => {
   return useQuery({
     queryKey: ['total-article-count'],
     queryFn: async () => {
+      console.log('📊 [TOTAL_ARTICLES] Counting total articles...');
+      
       const { count, error } = await supabase
         .from('knowledge_articles')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'published');
 
-      if (error) throw error;
+      if (error) {
+        console.error('📊 [TOTAL_ARTICLES] Error:', error);
+        throw error;
+      }
+
+      console.log('📊 [TOTAL_ARTICLES] Total count:', count);
       return count || 0;
-    }
+    },
+    retry: 3,
+    retryDelay: 1000
   });
 };
