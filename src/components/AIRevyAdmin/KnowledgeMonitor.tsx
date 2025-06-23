@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -168,6 +167,9 @@ const KnowledgeMonitor = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">{stats.withEmbeddings}</div>
+            <div className="text-xs text-muted-foreground">
+              {stats.published > 0 && `${Math.round((stats.withEmbeddings / stats.published) * 100)}% av publiserte`}
+            </div>
           </CardContent>
         </Card>
         
@@ -180,6 +182,43 @@ const KnowledgeMonitor = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Embedding Status Warning */}
+      {stats.published > 0 && stats.withEmbeddings < stats.published && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-600" />
+              <div>
+                <h4 className="font-semibold text-amber-800">
+                  {stats.published - stats.withEmbeddings} artikler mangler embeddings
+                </h4>
+                <p className="text-amber-700 text-sm">
+                  AI-Revi kan ikke finne disse artiklene før embeddings genereres.
+                </p>
+              </div>
+            </div>
+            <Button 
+              variant="outline" 
+              onClick={regenerateEmbeddings}
+              disabled={isLoading}
+              className="border-amber-300 text-amber-700 hover:bg-amber-100"
+            >
+              {isLoading ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Genererer...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Generer embeddings
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+      )}
 
       <Card>
         <CardHeader>
