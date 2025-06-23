@@ -41,10 +41,10 @@ export const useConnectArticleTag = () => {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['article-tags', variables.articleId] });
-      toast.success('Tag koblet til artikkel');
+      toast.success('Tag lagt til artikkel');
     },
     onError: (error: any) => {
-      toast.error('Feil ved kobling: ' + error.message);
+      toast.error('Feil ved tilkobling av tag: ' + error.message);
     }
   });
 };
@@ -67,41 +67,41 @@ export const useDisconnectArticleTag = () => {
       toast.success('Tag fjernet fra artikkel');
     },
     onError: (error: any) => {
-      toast.error('Feil ved fjerning: ' + error.message);
+      toast.error('Feil ved fjerning av tag: ' + error.message);
     }
   });
 };
 
-// Audit Action Tags
-export const useActionTags = (actionId?: string) => {
+// Subject Area connections
+export const useArticleSubjectAreas = (articleId?: string) => {
   return useQuery({
-    queryKey: ['action-tags', actionId],
+    queryKey: ['article-subject-areas', articleId],
     queryFn: async () => {
-      if (!actionId) return [];
+      if (!articleId) return [];
       
       const { data, error } = await supabase
-        .from('audit_action_tags')
+        .from('article_subject_areas')
         .select(`
           *,
-          tag:tag_id (*)
+          subject_area:subject_area_id (*)
         `)
-        .eq('action_template_id', actionId);
+        .eq('article_id', articleId);
       
       if (error) throw error;
       return data;
     },
-    enabled: !!actionId
+    enabled: !!articleId
   });
 };
 
-export const useConnectActionTag = () => {
+export const useConnectArticleSubjectArea = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async ({ actionId, tagId }: { actionId: string; tagId: string }) => {
+    mutationFn: async ({ articleId, subjectAreaId }: { articleId: string; subjectAreaId: string }) => {
       const { data, error } = await supabase
-        .from('audit_action_tags')
-        .insert({ action_template_id: actionId, tag_id: tagId })
+        .from('article_subject_areas')
+        .insert({ article_id: articleId, subject_area_id: subjectAreaId })
         .select()
         .single();
       
@@ -109,34 +109,34 @@ export const useConnectActionTag = () => {
       return data;
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['action-tags', variables.actionId] });
-      toast.success('Tag koblet til handling');
+      queryClient.invalidateQueries({ queryKey: ['article-subject-areas', variables.articleId] });
+      toast.success('Emneområde lagt til artikkel');
     },
     onError: (error: any) => {
-      toast.error('Feil ved kobling: ' + error.message);
+      toast.error('Feil ved tilkobling av emneområde: ' + error.message);
     }
   });
 };
 
-export const useDisconnectActionTag = () => {
+export const useDisconnectArticleSubjectArea = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async ({ actionId, tagId }: { actionId: string; tagId: string }) => {
+    mutationFn: async ({ articleId, subjectAreaId }: { articleId: string; subjectAreaId: string }) => {
       const { error } = await supabase
-        .from('audit_action_tags')
+        .from('article_subject_areas')
         .delete()
-        .eq('action_template_id', actionId)
-        .eq('tag_id', tagId);
+        .eq('article_id', articleId)
+        .eq('subject_area_id', subjectAreaId);
       
       if (error) throw error;
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['action-tags', variables.actionId] });
-      toast.success('Tag fjernet fra handling');
+      queryClient.invalidateQueries({ queryKey: ['article-subject-areas', variables.articleId] });
+      toast.success('Emneområde fjernet fra artikkel');
     },
     onError: (error: any) => {
-      toast.error('Feil ved fjerning: ' + error.message);
+      toast.error('Feil ved fjerning av emneområde: ' + error.message);
     }
   });
 };

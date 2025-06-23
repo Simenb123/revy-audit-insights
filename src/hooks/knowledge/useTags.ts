@@ -19,15 +19,45 @@ export interface Tag {
 export const useTags = () => {
   return useQuery({
     queryKey: ['tags'],
-    queryFn: async () => {
+    queryFn: async (): Promise<Tag[]> => {
       const { data, error } = await supabase
         .from('tags')
         .select('*')
-        .order('category, sort_order');
+        .eq('is_active', true)
+        .order('sort_order', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching tags:', error);
+        throw error;
+      }
+
+      return data || [];
+    },
+    staleTime: 1000 * 60 * 10, // 10 minutes
+  });
+};
+
+export const useTagById = (id: string) => {
+  return useQuery({
+    queryKey: ['tag', id],
+    queryFn: async (): Promise<Tag | null> => {
+      if (!id) return null;
       
-      if (error) throw error;
-      return data as Tag[];
-    }
+      const { data, error } = await supabase
+        .from('tags')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error) {
+        console.error('Error fetching tag:', error);
+        throw error;
+      }
+
+      return data;
+    },
+    enabled: !!id,
+    staleTime: 1000 * 60 * 10, // 10 minutes
   });
 };
 

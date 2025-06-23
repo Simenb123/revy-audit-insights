@@ -2,10 +2,10 @@
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { FileText, Scale, FileCode, Book, Gavel } from 'lucide-react';
-import { ContentType } from '@/types/knowledge';
+import { ContentTypeEntity } from '@/types/knowledge';
 
 interface ContentTypeBadgeProps {
-  contentType: ContentType;
+  contentType: string | ContentTypeEntity;
   size?: 'sm' | 'md' | 'lg';
   showIcon?: boolean;
 }
@@ -41,10 +41,18 @@ const CONTENT_TYPE_CONFIG = {
     icon: FileText,
     className: 'bg-gray-100 text-gray-800 border-gray-200',
   },
+  'hvitvasking': {
+    label: 'Hvitvasking',
+    icon: FileText,
+    className: 'bg-red-100 text-red-800 border-red-200',
+  },
 };
 
 const ContentTypeBadge = ({ contentType, size = 'sm', showIcon = true }: ContentTypeBadgeProps) => {
-  const config = CONTENT_TYPE_CONFIG[contentType] || CONTENT_TYPE_CONFIG.fagartikkel;
+  const contentTypeName = typeof contentType === 'string' ? contentType : contentType?.name || 'fagartikkel';
+  const displayName = typeof contentType === 'string' ? contentType : contentType?.display_name;
+  
+  const config = CONTENT_TYPE_CONFIG[contentTypeName as keyof typeof CONTENT_TYPE_CONFIG] || CONTENT_TYPE_CONFIG.fagartikkel;
   const IconComponent = config.icon;
   
   const sizeClasses = {
@@ -65,7 +73,7 @@ const ContentTypeBadge = ({ contentType, size = 'sm', showIcon = true }: Content
       className={`${config.className} ${sizeClasses[size]} inline-flex items-center gap-1.5 font-medium`}
     >
       {showIcon && <IconComponent className={iconSizes[size]} />}
-      {config.label}
+      {displayName || config.label}
     </Badge>
   );
 };

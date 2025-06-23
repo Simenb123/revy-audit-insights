@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,7 +26,7 @@ const KnowledgeMonitor = () => {
   const loadKnowledgeData = async () => {
     setIsLoading(true);
     try {
-      // Get articles with basic stats
+      // Get articles with basic stats - removed 'tags' column since it no longer exists
       const { data: articlesData, error: articlesError } = await supabase
         .from('knowledge_articles')
         .select(`
@@ -37,8 +38,7 @@ const KnowledgeMonitor = () => {
           published_at,
           view_count,
           reference_code,
-          embedding,
-          tags
+          embedding
         `)
         .order('updated_at', { ascending: false });
 

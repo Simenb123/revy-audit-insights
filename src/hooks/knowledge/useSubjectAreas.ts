@@ -2,33 +2,50 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-
-export interface SubjectArea {
-  id: string;
-  name: string;
-  display_name: string;
-  description?: string;
-  icon?: string;
-  color: string;
-  sort_order: number;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
+import { SubjectArea } from '@/types/knowledge';
 
 export const useSubjectAreas = () => {
   return useQuery({
     queryKey: ['subject-areas'],
-    queryFn: async () => {
+    queryFn: async (): Promise<SubjectArea[]> => {
       const { data, error } = await supabase
         .from('subject_areas')
         .select('*')
         .eq('is_active', true)
-        .order('sort_order, display_name');
+        .order('sort_order', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching subject areas:', error);
+        throw error;
+      }
+
+      return data || [];
+    },
+    staleTime: 1000 * 60 * 10, // 10 minutes
+  });
+};
+
+export const useSubjectAreaById = (id: string) => {
+  return useQuery({
+    queryKey: ['subject-area', id],
+    queryFn: async (): Promise<SubjectArea | null> => {
+      if (!id) return null;
       
-      if (error) throw error;
-      return data as SubjectArea[];
-    }
+      const { data, error } = await supabase
+        .from('subject_areas')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error) {
+        console.error('Error fetching subject area:', error);
+        throw error;
+      }
+
+      return data;
+    },
+    enabled: !!id,
+    staleTime: 1000 * 60 * 10, // 10 minutes
   });
 };
 
