@@ -25,6 +25,8 @@ const RightSidebar = ({ isCollapsed, onToggle, width, onWidthChange }: RightSide
                      location.pathname.includes('/ai-usage') ||
                      location.pathname.includes('/audit-logs');
 
+  console.log('🔍 [RIGHT_SIDEBAR] Is admin page:', isAdminPage);
+
   // If it's an admin page, show admin content
   if (isAdminPage) {
     console.log('🔍 [RIGHT_SIDEBAR] Admin page detected, showing admin content');
@@ -49,17 +51,18 @@ const RightSidebar = ({ isCollapsed, onToggle, width, onWidthChange }: RightSide
 
   console.log('🔍 [RIGHT_SIDEBAR] Extracted clientId:', clientId);
 
+  // If no client ID found and not admin page, don't show sidebar
+  if (!clientId) {
+    console.log('🔍 [RIGHT_SIDEBAR] No client ID found and not admin page, hiding sidebar');
+    return null;
+  }
+
   const {
     documentsCount,
     categoriesCount,
     isLoading,
     error
-  } = useClientDocuments(clientId || undefined);
-
-  // Don't show sidebar if no client ID found and not admin page
-  if (!clientId) {
-    return null;
-  }
+  } = useClientDocuments(clientId);
 
   // Show loading state
   if (isLoading) {

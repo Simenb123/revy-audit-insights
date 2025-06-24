@@ -29,7 +29,7 @@ const MainNavigation = () => {
     { name: 'Dokumenter', href: '/documents', icon: FileText },
     { name: 'Fagstoff', href: '/fag', icon: BookOpen },
     { name: 'AI-bruk', href: '/ai-usage', icon: BarChart3 },
-    { name: 'AI-Revy Admin', href: '/ai-revy-admin', icon: Brain },
+    { name: 'AI Revi Admin', href: '/ai-revy-admin', icon: Brain },
     { name: 'Innstillinger', href: '/organization/settings', icon: Settings },
   ];
 
