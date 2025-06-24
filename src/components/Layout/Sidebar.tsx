@@ -20,7 +20,10 @@ const Sidebar = ({ isCollapsed, onToggle }: SidebarProps) => {
   const isClientContext = location.pathname.includes('/klienter/') && orgNumber;
 
   return (
-    <div className="h-full w-full bg-sidebar border-r border-sidebar-border flex flex-col relative overflow-hidden">
+    <div className={cn(
+      "h-full bg-sidebar border-r border-sidebar-border flex flex-col relative overflow-hidden transition-all duration-300 ease-in-out",
+      isCollapsed ? "w-16" : "w-64"
+    )}>
       {/* Toggle button positioned on the right side inside the sidebar */}
       <div className="absolute top-4 right-2 z-20">
         <Button

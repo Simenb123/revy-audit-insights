@@ -6,8 +6,13 @@ import AppHeader from './AppHeader';
 import ResizableRightSidebar from './ResizableRightSidebar';
 
 const AppLayout = () => {
+  const [isLeftSidebarCollapsed, setIsLeftSidebarCollapsed] = useState(false);
   const [isRightSidebarCollapsed, setIsRightSidebarCollapsed] = useState(false);
   const [rightSidebarWidth, setRightSidebarWidth] = useState(320);
+
+  const toggleLeftSidebar = () => {
+    setIsLeftSidebarCollapsed(!isLeftSidebarCollapsed);
+  };
 
   const toggleRightSidebar = () => {
     setIsRightSidebarCollapsed(!isRightSidebarCollapsed);
@@ -21,8 +26,8 @@ const AppLayout = () => {
     <div className="min-h-screen bg-background w-full">
       <div className="flex h-screen">
         <Sidebar 
-          isCollapsed={false}
-          onToggle={() => {}}
+          isCollapsed={isLeftSidebarCollapsed}
+          onToggle={toggleLeftSidebar}
         />
         <div className="flex-1 flex flex-col overflow-hidden">
           <AppHeader />
