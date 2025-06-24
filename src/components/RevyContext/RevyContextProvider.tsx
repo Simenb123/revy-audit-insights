@@ -60,7 +60,7 @@ export const RevyContextProvider: React.FC<{ children: React.ReactNode }> = ({ c
       newContext = 'client-overview';
     } else if (path.includes('/dashboard')) {
       newContext = 'dashboard';
-    } else if (path.includes('/knowledge')) {
+    } else if (path.includes('/fag') || path.includes('/knowledge')) {
       newContext = 'knowledge-base';
     } else if (path.includes('/teams')) {
       newContext = 'team-management';

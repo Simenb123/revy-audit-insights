@@ -17,19 +17,19 @@ const KnowledgeBase = () => {
   return (
     <div className="container mx-auto py-6 space-y-6">
       <Routes>
-        <Route path="/" element={<KnowledgeOverview />} />
-        <Route path="/kategori/:categoryId" element={<CategoryView />} />
-        <Route path="/artikkel/:slug" element={<ArticleView />} />
-        <Route path="/ny" element={<ArticleEditor />} />
-        <Route path="/ny-artikkel" element={<ArticleEditor />} />
-        <Route path="/rediger/:articleId" element={<ArticleEditor />} />
-        <Route path="/mine" element={<MyArticles />} />
-        <Route path="/favoritter" element={<MyFavorites />} />
-        <Route path="/sok" element={<SearchResults />} />
-        <Route path="/upload" element={<PDFUploadManager />} />
-        <Route path="/admin" element={<KnowledgeAdminPanel />} />
-        <Route path="/hemmelig-ai-trening" element={<SecretTrainingArea />} />
-        <Route path="/revisjonshandlinger" element={<AuditActionGenerator />} />
+        <Route index element={<KnowledgeOverview />} />
+        <Route path="kategori/:categoryId" element={<CategoryView />} />
+        <Route path="artikkel/:slug" element={<ArticleView />} />
+        <Route path="ny" element={<ArticleEditor />} />
+        <Route path="ny-artikkel" element={<ArticleEditor />} />
+        <Route path="rediger/:articleId" element={<ArticleEditor />} />
+        <Route path="mine" element={<MyArticles />} />
+        <Route path="favoritter" element={<MyFavorites />} />
+        <Route path="sok" element={<SearchResults />} />
+        <Route path="upload" element={<PDFUploadManager />} />
+        <Route path="admin" element={<KnowledgeAdminPanel />} />
+        <Route path="hemmelig-ai-trening" element={<SecretTrainingArea />} />
+        <Route path="revisjonshandlinger" element={<AuditActionGenerator />} />
       </Routes>
     </div>
   );
