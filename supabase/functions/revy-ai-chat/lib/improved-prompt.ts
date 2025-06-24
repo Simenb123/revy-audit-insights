@@ -117,14 +117,24 @@ Du hjelper med planlegging og gjennomføring av revisjonshandlinger.
     }
   }
 
-  // Add knowledge context if available
+  // Add knowledge context with link instructions if available
   if (enhancedContext?.knowledge && enhancedContext.knowledge.length > 0) {
     const relevantArticles = enhancedContext.knowledge.slice(0, 3);
     systemPrompt += `\n\nRELEVANTE FAGARTIKLER:
+Du har tilgang til følgende fagartikler som er relevante for spørsmålet:
+
 ${relevantArticles.map((article: any) => `
-- ${article.title}: ${article.summary || 'Ingen sammendrag'}
-  ${article.content ? article.content.substring(0, 300) + '...' : ''}
-`).join('')}`;
+- Tittel: ${article.title}
+  Slug: ${article.slug || 'ukjent'}
+  Sammendrag: ${article.summary || 'Ingen sammendrag'}
+  ${article.content ? `Innhold: ${article.content.substring(0, 300)}...` : ''}
+`).join('')}
+
+VIKTIG FOR ARTIKKELREFERANSER:
+- Når du refererer til disse artiklene i ditt svar, bruk ALLTID lenkeformat: [Artikkelnavn](/fag/artikkel/slug)
+- Eksempel: [ISA 315 - Identifisering og vurdering av risikoforhold](/fag/artikkel/isa-315-risikovurdering)
+- Inkluder relevante artikkellenker naturlig i teksten når de gir merverdi
+- Bruk kun artikler som faktisk er tilgjengelige i listen ovenfor`;
   }
 
   // Add role-specific guidance
