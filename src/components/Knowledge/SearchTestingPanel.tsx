@@ -13,7 +13,8 @@ import {
   CheckCircle, 
   Clock,
   Search,
-  RefreshCw
+  RefreshCw,
+  Shield
 } from 'lucide-react';
 import { KnowledgeSearchDiagnostics, SearchDiagnostic, KnowledgeBaseHealth } from '@/services/knowledge/searchDiagnostics';
 import { toast } from 'sonner';
@@ -25,10 +26,39 @@ const SearchTestingPanel = () => {
   const [isRunningTests, setIsRunningTests] = useState(false);
   const [customQuery, setCustomQuery] = useState('');
   const [isTestingCustom, setIsTestingCustom] = useState(false);
+  const [rlsStatus, setRlsStatus] = useState<'checking' | 'ok' | 'error' | null>(null);
 
   useEffect(() => {
     runHealthCheck();
+    checkRLSConfiguration();
   }, []);
+
+  const checkRLSConfiguration = async () => {
+    setRlsStatus('checking');
+    try {
+      // Test if we can access published articles without authentication
+      const { data, error } = await supabase
+        .from('knowledge_articles')
+        .select('id, title, status')
+        .eq('status', 'published')
+        .limit(1);
+      
+      if (error) {
+        console.error('❌ RLS configuration error:', error);
+        setRlsStatus('error');
+        toast.error('RLS-konfiguration har problemer');
+      } else {
+        console.log('✅ RLS configuration OK, can access published articles');
+        setRlsStatus('ok');
+        if (data && data.length > 0) {
+          toast.success('RLS-konfiguration er korrekt! Søk skal nå fungere.');
+        }
+      }
+    } catch (error) {
+      console.error('❌ RLS test failed:', error);
+      setRlsStatus('error');
+    }
+  };
 
   const runHealthCheck = async () => {
     setIsRunningHealth(true);
@@ -37,12 +67,12 @@ const SearchTestingPanel = () => {
       setHealth(healthData);
       
       if (healthData.searchFunctionStatus === 'working') {
-        toast.success('Knowledge base is healthy!');
+        toast.success('Kunnskapsbase er sunn og søk fungerer!');
       } else {
-        toast.error('Knowledge base has issues');
+        toast.error('Kunnskapsbase har problemer');
       }
     } catch (error) {
-      toast.error('Health check failed');
+      toast.error('Helsesjekk feilet');
       console.error('Health check error:', error);
     } finally {
       setIsRunningHealth(false);
@@ -56,9 +86,9 @@ const SearchTestingPanel = () => {
       setDiagnostics(results);
       
       const successCount = results.filter(r => r.errors.length === 0).length;
-      toast.success(`Completed ${successCount}/${results.length} tests successfully`);
+      toast.success(`Fullført ${successCount}/${results.length} tester med suksess`);
     } catch (error) {
-      toast.error('Synthetic tests failed');
+      toast.error('Syntetiske tester feilet');
       console.error('Synthetic test error:', error);
     } finally {
       setIsRunningTests(false);
@@ -74,12 +104,12 @@ const SearchTestingPanel = () => {
       setDiagnostics(prev => [result, ...prev.slice(0, 9)]); // Keep last 10
       
       if (result.errors.length === 0) {
-        toast.success(`Query returned ${result.totalResults} results in ${result.responseTime}ms`);
+        toast.success(`Søk returnerte ${result.totalResults} resultater på ${result.responseTime}ms`);
       } else {
-        toast.error('Query test failed');
+        toast.error('Søketest feilet');
       }
     } catch (error) {
-      toast.error('Query test failed');
+      toast.error('Søketest feilet');
       console.error('Custom query test error:', error);
     } finally {
       setIsTestingCustom(false);
@@ -89,11 +119,24 @@ const SearchTestingPanel = () => {
   const getHealthBadge = (status: string) => {
     switch (status) {
       case 'working':
-        return <Badge className="bg-green-100 text-green-800"><CheckCircle className="w-3 h-3 mr-1" />Working</Badge>;
+        return <Badge className="bg-green-100 text-green-800"><CheckCircle className="w-3 h-3 mr-1" />Fungerer</Badge>;
       case 'error':
-        return <Badge variant="destructive"><AlertTriangle className="w-3 h-3 mr-1" />Error</Badge>;
+        return <Badge variant="destructive"><AlertTriangle className="w-3 h-3 mr-1" />Feil</Badge>;
       default:
-        return <Badge variant="secondary">Unknown</Badge>;
+        return <Badge variant="secondary">Ukjent</Badge>;
+    }
+  };
+
+  const getRLSBadge = () => {
+    switch (rlsStatus) {
+      case 'checking':
+        return <Badge variant="secondary"><RefreshCw className="w-3 h-3 mr-1 animate-spin" />Sjekker...</Badge>;
+      case 'ok':
+        return <Badge className="bg-green-100 text-green-800"><Shield className="w-3 h-3 mr-1" />RLS OK</Badge>;
+      case 'error':
+        return <Badge variant="destructive"><Shield className="w-3 h-3 mr-1" />RLS Feil</Badge>;
+      default:
+        return <Badge variant="secondary">RLS Ukjent</Badge>;
     }
   };
 
@@ -108,23 +151,28 @@ const SearchTestingPanel = () => {
             <div>
               <CardTitle className="flex items-center gap-2">
                 <Activity className="w-5 h-5" />
-                Knowledge Base Health
+                Kunnskapsbase Helse
               </CardTitle>
-              <CardDescription>Current status and metrics</CardDescription>
+              <CardDescription>Nåværende status og målinger</CardDescription>
             </div>
-            <Button onClick={runHealthCheck} disabled={isRunningHealth} variant="outline">
-              {isRunningHealth ? (
-                <>
-                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                  Checking...
-                </>
-              ) : (
-                <>
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  Refresh
-                </>
-              )}
-            </Button>
+            <div className="flex gap-2">
+              <Button onClick={checkRLSConfiguration} variant="outline" size="sm">
+                Test RLS
+              </Button>
+              <Button onClick={runHealthCheck} disabled={isRunningHealth} variant="outline">
+                {isRunningHealth ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    Sjekker...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Oppdater
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -132,31 +180,47 @@ const SearchTestingPanel = () => {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="text-center">
                 <div className="text-2xl font-bold text-blue-600">{health.totalArticles}</div>
-                <div className="text-sm text-muted-foreground">Total Articles</div>
+                <div className="text-sm text-muted-foreground">Totale Artikler</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-green-600">{health.publishedArticles}</div>
-                <div className="text-sm text-muted-foreground">Published</div>
+                <div className="text-sm text-muted-foreground">Publiserte</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-purple-600">{health.articlesWithEmbeddings}</div>
-                <div className="text-sm text-muted-foreground">With Embeddings</div>
+                <div className="text-sm text-muted-foreground">Med Embeddings</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold">{getHealthBadge(health.searchFunctionStatus)}</div>
-                <div className="text-sm text-muted-foreground">Search Status</div>
+                <div className="text-sm text-muted-foreground">Søkestatus</div>
               </div>
               <div className="col-span-2 md:col-span-4">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm">Embedding Coverage</span>
+                  <span className="text-sm">Embedding Dekning</span>
                   <span className="text-sm">{Math.round(health.embeddingCoverage * 100)}%</span>
                 </div>
                 <Progress value={health.embeddingCoverage * 100} className="h-2" />
               </div>
+              <div className="col-span-2 md:col-span-4 pt-2 border-t">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">RLS Konfigurasjon</span>
+                  {getRLSBadge()}
+                </div>
+                {rlsStatus === 'ok' && (
+                  <p className="text-xs text-green-600 mt-1">
+                    ✅ Publiserte artikler kan nås uten autentisering - søk skal fungere!
+                  </p>
+                )}
+                {rlsStatus === 'error' && (
+                  <p className="text-xs text-red-600 mt-1">
+                    ❌ RLS-policy blokkerer tilgang til publiserte artikler
+                  </p>
+                )}
+              </div>
             </div>
           ) : (
             <div className="text-center py-8 text-muted-foreground">
-              Click refresh to check health status
+              Klikk oppdater for å sjekke helsestatus
             </div>
           )}
         </CardContent>
@@ -168,26 +232,26 @@ const SearchTestingPanel = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Clock className="w-5 h-5" />
-              Performance Metrics
+              Ytelsesmålinger
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="text-center">
                 <div className="text-2xl font-bold">{metrics.avgResponseTime}ms</div>
-                <div className="text-sm text-muted-foreground">Avg Response Time</div>
+                <div className="text-sm text-muted-foreground">Snitt Responstid</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-green-600">{metrics.successRate}%</div>
-                <div className="text-sm text-muted-foreground">Success Rate</div>
+                <div className="text-sm text-muted-foreground">Suksessrate</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold">{metrics.avgResults}</div>
-                <div className="text-sm text-muted-foreground">Avg Results</div>
+                <div className="text-sm text-muted-foreground">Snitt Resultater</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-blue-600">{metrics.totalTests}</div>
-                <div className="text-sm text-muted-foreground">Total Tests</div>
+                <div className="text-sm text-muted-foreground">Totale Tester</div>
               </div>
             </div>
           </CardContent>
@@ -200,10 +264,10 @@ const SearchTestingPanel = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TestTube className="w-5 h-5" />
-              Synthetic Tests
+              Syntetiske Tester
             </CardTitle>
             <CardDescription>
-              Run predefined queries to test search functionality
+              Kjør forhåndsdefinerte søk for å teste søkefunksjonalitet
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -211,12 +275,12 @@ const SearchTestingPanel = () => {
               {isRunningTests ? (
                 <>
                   <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                  Running Tests...
+                  Kjører Tester...
                 </>
               ) : (
                 <>
                   <Play className="w-4 h-4 mr-2" />
-                  Run Synthetic Tests
+                  Kjør Syntetiske Tester
                 </>
               )}
             </Button>
@@ -227,16 +291,16 @@ const SearchTestingPanel = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Search className="w-5 h-5" />
-              Custom Query Test
+              Tilpasset Søketest
             </CardTitle>
             <CardDescription>
-              Test search with your own query
+              Test søk med ditt eget søkeord
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex gap-2">
               <Input
-                placeholder="Enter test query..."
+                placeholder="Skriv inn testsøk... (f.eks. 'ISA 315')"
                 value={customQuery}
                 onChange={(e) => setCustomQuery(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && testCustomQuery()}
@@ -257,8 +321,8 @@ const SearchTestingPanel = () => {
       {diagnostics.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Recent Test Results</CardTitle>
-            <CardDescription>Latest search diagnostics</CardDescription>
+            <CardTitle>Siste Testresultater</CardTitle>
+            <CardDescription>Nyeste søkediagnostikk</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
@@ -267,12 +331,12 @@ const SearchTestingPanel = () => {
                   <div className="flex items-center justify-between mb-2">
                     <span className="font-medium">{diagnostic.query}</span>
                     <div className="flex items-center gap-2">
-                      <Badge variant="outline">{diagnostic.totalResults} results</Badge>
+                      <Badge variant="outline">{diagnostic.totalResults} resultater</Badge>
                       <Badge variant="secondary">{diagnostic.responseTime}ms</Badge>
                       {diagnostic.errors.length > 0 ? (
-                        <Badge variant="destructive">Error</Badge>
+                        <Badge variant="destructive">Feil</Badge>
                       ) : (
-                        <Badge className="bg-green-100 text-green-800">Success</Badge>
+                        <Badge className="bg-green-100 text-green-800">Suksess</Badge>
                       )}
                     </div>
                   </div>
@@ -287,8 +351,8 @@ const SearchTestingPanel = () => {
                     </div>
                   )}
                   <div className="text-xs text-muted-foreground mt-1">
-                    Semantic: {diagnostic.semanticResults} | Keyword: {diagnostic.keywordResults} | 
-                    {' '}{new Date(diagnostic.timestamp).toLocaleTimeString()}
+                    Semantisk: {diagnostic.semanticResults} | Nøkkelord: {diagnostic.keywordResults} | 
+                    {' '}{new Date(diagnostic.timestamp).toLocaleTimeString('nb-NO')}
                   </div>
                 </div>
               ))}
