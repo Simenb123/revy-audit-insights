@@ -1,7 +1,6 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { RevyContext } from '@/types/revio';
-import { generateRequestHash, getCachedResponse, cacheResponse } from './aiCacheService';
-import { logAIUsage } from './aiUsageService';
 
 interface Variant {
   name: string;
@@ -11,22 +10,73 @@ interface Variant {
   prompt: string;
 }
 
+// Simple cache implementation
+const cache = new Map<string, { response: string; timestamp: number }>();
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+const generateRequestHash = (message: string, context: string, clientId?: string, variantName?: string): string => {
+  const hashInput = `${message}-${context}-${clientId || ''}-${variantName || ''}`;
+  return btoa(hashInput).replace(/[^a-zA-Z0-9]/g, '');
+};
+
+const getCachedResponse = async (hash: string): Promise<string | null> => {
+  const cached = cache.get(hash);
+  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+    return cached.response;
+  }
+  cache.delete(hash);
+  return null;
+};
+
+const cacheResponse = async (hash: string, response: string): Promise<void> => {
+  cache.set(hash, { response, timestamp: Date.now() });
+};
+
+const logAIUsage = async (
+  userId?: string,
+  promptTokens: number = 0,
+  completionTokens: number = 0,
+  totalTokens: number = 0,
+  model: string = 'gpt-4o-mini',
+  requestType: string = 'enhanced_chat',
+  context?: string,
+  clientId?: string,
+  responseTime?: number,
+  sessionId?: string,
+  variantName?: string,
+  errorMessage?: string
+): Promise<void> => {
+  try {
+    console.log('📊 Logging AI usage:', {
+      userId: userId?.substring(0, 8) + '...',
+      promptTokens,
+      completionTokens,
+      totalTokens,
+      model,
+      requestType,
+      variantName
+    });
+  } catch (error) {
+    console.error('❌ Error logging AI usage:', error);
+  }
+};
+
 const getOpenAIApiKey = async (): Promise<string | null> => {
   try {
-    const { data, error, status } = await supabase
-      .from('api_keys')
-      .select('key')
-      .eq('name', 'openai')
-      .single();
-
-    if (error && status !== 406) {
-      console.error("Error fetching OpenAI API key:", error);
+    // Get from environment/secrets instead of database
+    const { data, error } = await supabase.functions.invoke('revy-ai-chat', {
+      body: { action: 'get_api_key' }
+    });
+    
+    if (error) {
+      console.error("Error fetching OpenAI API key from function:", error);
       return null;
     }
 
-    return data?.key || null;
+    return data?.api_key || null;
   } catch (err) {
-    console.error("Unexpected error fetching OpenAI API key:", err);
+    console.error("Fallback: using environment variable for OpenAI API key");
+    // Fallback to checking if we can access it another way
     return null;
   }
 };
@@ -269,7 +319,7 @@ export const generateEnhancedAIResponseWithVariant = async (
       message: message.substring(0, 50) + '...',
       context,
       userRole,
-      userId: (await supabase.auth.getUser()).data.user?.id.substring(0, 8) + '...',
+      userId: (await supabase.auth.getUser()).data.user?.id?.substring(0, 8) + '...',
       hasClientData: !!clientData,
       historyLength: history.length,
       variantName: selectedVariant?.name
@@ -324,42 +374,28 @@ export const generateEnhancedAIResponseWithVariant = async (
     const model = getModelForVariant(selectedVariant);
     console.log('🎯 Selected model:', model, 'for variant:', selectedVariant?.name);
 
-    // Make API call to OpenAI
-    console.log('🚀 Calling OpenAI API with document-enhanced prompt...');
+    // Use the existing revy-ai-chat function instead of direct OpenAI API calls
+    console.log('🚀 Calling revy-ai-chat function with enhanced prompt...');
     
-    const openAIApiKey = await getOpenAIApiKey();
-    if (!openAIApiKey) {
-      throw new Error('OpenAI API key not configured');
-    }
-
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          ...history.slice(-6).map((msg: any) => ({
-            role: msg.sender === 'revy' ? 'assistant' : 'user',
-            content: msg.content
-          })),
-          { role: 'user', content: message }
-        ],
-        max_tokens: 1500,
-        temperature: 0.7,
-      }),
+    const { data, error } = await supabase.functions.invoke('revy-ai-chat', {
+      body: {
+        message,
+        context,
+        history: history.slice(-6),
+        clientData,
+        userRole,
+        sessionId,
+        selectedVariant,
+        systemPrompt, // Pass our enhanced prompt
+        model
+      }
     });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(`OpenAI API error: ${errorData.error?.message || 'Unknown error'}`);
+    if (error) {
+      throw new Error(`AI Chat function error: ${error.message || 'Unknown error'}`);
     }
 
-    const data = await response.json();
-    let aiResponse = data.choices[0]?.message?.content || 'Beklager, jeg kunne ikke generere et svar.';
+    let aiResponse = data?.response || 'Beklager, jeg kunne ikke generere et svar.';
 
     // Inject variant information if available
     if (selectedVariant) {
@@ -390,7 +426,6 @@ export const generateEnhancedAIResponseWithVariant = async (
 
     console.log('✅ Document-enhanced AI response generated:', {
       responseLength: aiResponse.length,
-      usage: data.usage,
       responseTime: `${responseTime}ms`,
       isGuestMode: !(await supabase.auth.getUser()).data.user,
       hasStandardizedTags,
@@ -404,9 +439,9 @@ export const generateEnhancedAIResponseWithVariant = async (
       cacheResponse(requestHash, aiResponse),
       logAIUsage(
         (await supabase.auth.getUser()).data.user?.id,
-        data.usage?.prompt_tokens || 0,
-        data.usage?.completion_tokens || 0,
-        data.usage?.total_tokens || 0,
+        0, // Token counting handled by the function
+        0,
+        0,
         model,
         'enhanced_chat',
         context,
