@@ -169,35 +169,6 @@ God dokumentasjon er grunnlag for forsvarlig revisjon.`,
         return;
       }
 
-      // Get or create default content type
-      let { data: contentType, error: contentTypeError } = await supabase
-        .from('content_type_entities')
-        .select('id')
-        .eq('name', 'article')
-        .single();
-
-      if (contentTypeError || !contentType) {
-        // Create default content type
-        const { data: newContentType, error: createError } = await supabase
-          .from('content_type_entities')
-          .insert({
-            name: 'article',
-            display_name: 'Artikkel',
-            description: 'Standard fagartikkel',
-            color: '#3B82F6',
-            sort_order: 1,
-            is_active: true
-          })
-          .select()
-          .single();
-
-        if (createError) {
-          console.error('Feil ved opprettelse av innholdstype:', createError);
-          throw createError;
-        }
-        contentType = newContentType;
-      }
-
       // Create categories if they don't exist
       const categories = ['Revisjonsstandarder', 'Fagartikler'];
       const categoryMap = new Map();
@@ -260,7 +231,6 @@ God dokumentasjon er grunnlag for forsvarlig revisjon.`,
             reference_code: article.reference_code,
             status: article.status,
             category_id: categoryId,
-            content_type_id: contentType.id,
             author_id: user.id,
             published_at: new Date().toISOString(),
             view_count: 0
