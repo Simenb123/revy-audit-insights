@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Link, useNavigate } from 'react-router-dom';
 import { useUserProfile } from '@/hooks/useUserProfile';
-import KnowledgeStatusIndicator from '@/components/Revy/KnowledgeStatusIndicator';
 
 const KnowledgeOverview = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -48,9 +47,6 @@ const KnowledgeOverview = () => {
           </div>
         )}
       </div>
-
-      {/* Knowledge Status Indicator */}
-      <KnowledgeStatusIndicator />
 
       {/* Search */}
       <Card>
@@ -96,7 +92,7 @@ const KnowledgeOverview = () => {
           </Card>
         </Link>
 
-        <Link to="/fag/kategori/fagartikler">
+        <Link to="/fag/kategori/generelle-fagartikler">
           <Card className="hover:bg-muted/50 transition-colors cursor-pointer">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium flex items-center gap-2">

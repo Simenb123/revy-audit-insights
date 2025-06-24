@@ -10,7 +10,10 @@ export const generateEmbeddingsForExistingArticles = async (): Promise<{
   try {
     console.log('🚀 Starting embedding generation for existing articles...');
     
-    const { data, error } = await supabase.functions.invoke('generate-embeddings');
+    // Send empty JSON object instead of no body
+    const { data, error } = await supabase.functions.invoke('generate-embeddings', {
+      body: {}
+    });
     
     if (error) {
       console.error('❌ Error calling generate-embeddings function:', error);

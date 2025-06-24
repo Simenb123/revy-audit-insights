@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { FileText, Users, Calendar, AlertCircle } from 'lucide-react';
 import { useClientDocuments } from '@/hooks/useClientDocuments';
 import AdminSidebarContent from '@/components/AIRevyAdmin/AdminSidebarContent';
+import KnowledgeStatusIndicator from '@/components/Revy/KnowledgeStatusIndicator';
 
 interface RightSidebarProps {
   isCollapsed?: boolean;
@@ -44,6 +45,9 @@ const RightSidebar = ({ isCollapsed, onToggle, width, onWidthChange }: RightSide
     return (
       <div className="w-80 border-l bg-background p-4">
         <div className="space-y-4">
+          {/* Knowledge Status Indicator */}
+          <KnowledgeStatusIndicator />
+          
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">

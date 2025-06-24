@@ -46,7 +46,19 @@ serve(async (req) => {
   }
 
   try {
-    const { article_id } = await req.json();
+    let requestBody = {};
+    
+    // Try to parse JSON body, but handle empty requests gracefully
+    try {
+      const text = await req.text();
+      if (text && text.trim()) {
+        requestBody = JSON.parse(text);
+      }
+    } catch (parseError) {
+      console.log('No JSON body provided, proceeding with batch processing');
+    }
+    
+    const { article_id } = requestBody as { article_id?: string };
     
     if (article_id) {
       // Handle single article embedding from trigger
