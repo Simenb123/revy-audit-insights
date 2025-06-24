@@ -40,45 +40,64 @@ export const useSmartReviAssistant = ({ clientData, userRole, embedded = false }
   const enhancedContext = currentContext;
 
   const handleCreateSession = useCallback(async (title?: string) => {
+    console.log('🔥 Creating new session with title:', title);
     try {
       const newSession = await createSession({
         title: title || `Ny samtale ${new Date().toLocaleDateString()}`,
         context: enhancedContext,
         clientId: clientData?.id,
       });
+      console.log('✅ Session created successfully:', newSession);
       setActiveSessionId(newSession.id);
       
       // Add welcome message to new session
+      const welcomeContent = `Hei! Jeg er AI-Revi, din AI-drevne revisjonsassistent. Hvordan kan jeg hjelpe deg i dag?`;
       await sendMessage({
-        content: `Hei! Jeg er AI-Revi, din AI-drevne revisjonsassistent. Hvordan kan jeg hjelpe deg i dag?`,
+        content: welcomeContent,
         sender: 'revy',
       });
+      console.log('✅ Welcome message sent to new session');
+      
+      return newSession;
     } catch (error) {
+      console.error('❌ Failed to create session:', error);
       toast({ title: "Feil", description: "Kunne ikke opprette en ny samtale.", variant: "destructive" });
+      throw error;
     }
   }, [createSession, enhancedContext, clientData?.id, sendMessage, toast]);
   
   // Enhanced effect to manage sessions with variant context
   useEffect(() => {
-    if (sessionsLoading) return;
+    console.log('🔍 Managing sessions - sessionsLoading:', sessionsLoading, 'sessions.length:', sessions.length, 'activeSessionId:', activeSessionId);
+    
+    if (sessionsLoading) {
+      console.log('⏳ Sessions still loading...');
+      return;
+    }
 
     if (embedded) {
       // For embedded, we want one session per context
       const contextTitle = `Embedded: ${enhancedContext} ${clientData?.id || ''} ${selectedVariant?.name || ''}`;
       const existingSession = sessions.find(s => s.title === contextTitle);
+      console.log('🔍 Looking for embedded session with title:', contextTitle, 'found:', !!existingSession);
+      
       if (existingSession) {
         if (activeSessionId !== existingSession.id) {
+          console.log('✅ Setting active session to existing embedded session:', existingSession.id);
           setActiveSessionId(existingSession.id);
         }
       } else {
-        handleCreateSession(contextTitle);
+        console.log('📝 Creating new embedded session');
+        handleCreateSession(contextTitle).catch(console.error);
       }
     } else {
       // For floating, pick the most recent one or create a new one
-      if (sessions.length > 0 &&!activeSessionId) {
+      if (sessions.length > 0 && !activeSessionId) {
+        console.log('✅ Setting active session to most recent:', sessions[0].id);
         setActiveSessionId(sessions[0].id);
-      } else if (sessions.length === 0) {
-        handleCreateSession();
+      } else if (sessions.length === 0 && !activeSessionId) {
+        console.log('📝 No sessions exist, creating first session');
+        handleCreateSession().catch(console.error);
       }
     }
   }, [sessions, sessionsLoading, embedded, enhancedContext, clientData?.id, activeSessionId, selectedVariant?.name, handleCreateSession]);
@@ -98,27 +117,57 @@ export const useSmartReviAssistant = ({ clientData, userRole, embedded = false }
   }, [enhancedContext, clientData, userRole]);
 
   const handleSendMessage = async () => {
-    console.log('🚀 handleSendMessage called with:', { message, isTyping, activeSessionId });
+    console.log('🚀 handleSendMessage called with:', { 
+      message: message.substring(0, 50) + '...', 
+      isTyping, 
+      activeSessionId,
+      hasMessage: !!message.trim()
+    });
     
-    if (!message.trim() || isTyping || !activeSessionId) {
-      console.log('❌ Aborting send - conditions not met:', { 
-        hasMessage: !!message.trim(), 
-        isTyping, 
-        hasSessionId: !!activeSessionId 
-      });
+    if (!message.trim()) {
+      console.log('❌ No message to send');
       return;
+    }
+
+    if (isTyping) {
+      console.log('❌ Already processing a message');
+      return;
+    }
+    
+    if (!activeSessionId) {
+      console.log('❌ No active session - attempting to create one');
+      try {
+        const newSession = await handleCreateSession();
+        if (!newSession?.id) {
+          console.error('❌ Failed to create session for message');
+          toast({ title: "Feil", description: "Kunne ikke opprette samtale for å sende melding.", variant: "destructive" });
+          return;
+        }
+        // Wait a moment for the session to be set
+        await new Promise(resolve => setTimeout(resolve, 100));
+      } catch (error) {
+        console.error('❌ Could not create session for message:', error);
+        return;
+      }
     }
     
     const userMessageContent = message;
     setMessage('');
     
     const historyBeforeSend = dbMessages;
-    console.log('📝 Sending user message:', userMessageContent);
+    console.log('📝 Sending user message:', userMessageContent.substring(0, 100) + '...');
 
-    await sendMessage({
-      content: userMessageContent,
-      sender: 'user'
-    });
+    try {
+      await sendMessage({
+        content: userMessageContent,
+        sender: 'user'
+      });
+      console.log('✅ User message saved to database');
+    } catch (error) {
+      console.error('❌ Failed to save user message:', error);
+      toast({ title: "Feil", description: "Kunne ikke lagre melding.", variant: "destructive" });
+      return;
+    }
 
     setIsTyping(true);
     console.log('⏳ Set isTyping to true, calling AI service...');
@@ -187,6 +236,11 @@ export const useSmartReviAssistant = ({ clientData, userRole, embedded = false }
         console.log('✅ Fallback message sent successfully');
       } catch (fallbackError) {
         console.error('💥 Failed to send fallback message:', fallbackError);
+        toast({
+          title: "Kritisk feil",
+          description: "Kunne ikke sende feilmelding. Prøv å laste siden på nytt.",
+          variant: "destructive"
+        });
       }
 
       toast({

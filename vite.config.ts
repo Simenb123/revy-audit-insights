@@ -20,10 +20,5 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  envPrefix: ['VITE_', 'SUPABASE_'],
-  define: {
-    // Ensure environment variables are available at build time
-    'import.meta.env.SUPABASE_URL': JSON.stringify(process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL),
-    'import.meta.env.SUPABASE_ANON_KEY': JSON.stringify(process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY),
-  }
+  envPrefix: ['VITE_'],
 }));

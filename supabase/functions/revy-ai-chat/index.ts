@@ -32,7 +32,29 @@ serve(async (req) => {
   }
 
   try {
-    const requestBody = await req.json();
+    let requestBody;
+    try {
+      const bodyText = await req.text();
+      console.log('📝 Raw request body length:', bodyText?.length || 0);
+      
+      if (!bodyText || bodyText.trim() === '') {
+        console.error('❌ Empty request body received');
+        throw new Error('Request body is empty');
+      }
+      
+      requestBody = JSON.parse(bodyText);
+      console.log('✅ Request body parsed successfully');
+    } catch (parseError) {
+      console.error('❌ JSON parsing error:', parseError);
+      return new Response(JSON.stringify({ 
+        error: 'Invalid JSON format in request body',
+        isError: true
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
     const { 
       message, 
       context = 'general', 
@@ -49,7 +71,7 @@ serve(async (req) => {
     } = requestBody;
     
     console.log('📝 Enhanced request received:', {
-      message: `${message.substring(0, 50)}...`,
+      message: `${message?.substring(0, 50) || 'No message'}...`,
       context,
       userRole,
       userId: userId ? `${userId.substring(0, 8)}...` : 'guest',
@@ -58,8 +80,21 @@ serve(async (req) => {
       variantName: selectedVariant?.name || 'default',
       hasSystemPrompt: !!systemPrompt,
       hasKnowledgeArticles: knowledgeArticles.length > 0,
-      knowledgeArticleCount: knowledgeArticles.length
+      knowledgeArticleCount: knowledgeArticles.length,
+      hasMessage: !!message,
+      messageLength: message?.length || 0
     });
+
+    if (!message || message.trim() === '') {
+      console.error('❌ No message provided in request');
+      return new Response(JSON.stringify({ 
+        error: 'Message is required',
+        isError: true
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     // Check OpenAI API key
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
@@ -330,7 +365,10 @@ serve(async (req) => {
     // Enhanced fallback response with variant awareness
     let requestData = {};
     try {
-      requestData = await req.json();
+      const bodyText = await req.text();
+      if (bodyText && bodyText.trim()) {
+        requestData = JSON.parse(bodyText);
+      }
     } catch (e) {
       console.error('❌ Failed to parse request data for fallback:', e.message);
     }
