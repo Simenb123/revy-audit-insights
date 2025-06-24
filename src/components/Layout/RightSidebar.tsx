@@ -6,7 +6,14 @@ import { Badge } from '@/components/ui/badge';
 import { FileText, Users, Calendar, AlertCircle } from 'lucide-react';
 import { useClientDocuments } from '@/hooks/useClientDocuments';
 
-const RightSidebar = () => {
+interface RightSidebarProps {
+  isCollapsed?: boolean;
+  onToggle?: () => void;
+  width?: number;
+  onWidthChange?: (newWidth: number) => void;
+}
+
+const RightSidebar = ({ isCollapsed, onToggle, width, onWidthChange }: RightSidebarProps) => {
   const location = useLocation();
   
   // Extract client ID from URL (org number or UUID)

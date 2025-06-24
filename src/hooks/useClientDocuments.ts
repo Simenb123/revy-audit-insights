@@ -153,6 +153,26 @@ export const useClientDocuments = (clientId: string | undefined) => {
     }
   };
 
+  // Download document function
+  const downloadDocument = async (documentId: string): Promise<void> => {
+    try {
+      console.log('Downloading document:', documentId);
+      // This would need to be implemented with actual download logic
+    } catch (error) {
+      console.error('Error downloading document:', error);
+    }
+  };
+
+  // Trigger text extraction function
+  const triggerTextExtraction = async (documentId: string): Promise<void> => {
+    try {
+      console.log('Triggering text extraction for document:', documentId);
+      // This would need to be implemented with actual text extraction logic
+    } catch (error) {
+      console.error('Error triggering text extraction:', error);
+    }
+  };
+
   const currentState = {
     clientId: clientId || '',
     isValidClientId,
@@ -174,6 +194,8 @@ export const useClientDocuments = (clientId: string | undefined) => {
     refetch: documentsQuery.refetch,
     deleteDocument,
     uploadDocument,
-    getDocumentUrl
+    getDocumentUrl,
+    downloadDocument,
+    triggerTextExtraction
   };
 };
