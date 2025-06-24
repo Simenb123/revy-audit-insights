@@ -59,21 +59,13 @@ async function keywordSearch(supabase: any, query: string) {
     
     console.log('🔍 Search conditions built successfully');
     
-    // Query knowledge_articles with proper JOINs to get tags
+    // Simple query without complex JOINs that were causing errors
     console.log('📊 Executing database query...');
     const { data, error } = await supabase
       .from('knowledge_articles')
       .select(`
         *,
-        category:knowledge_categories(name, id),
-        article_tags:knowledge_article_tags(
-          tag:knowledge_tags(
-            id,
-            name,
-            display_name,
-            color
-          )
-        )
+        category:knowledge_categories(name, id)
       `)
       .eq('status', 'published')
       .or(searchConditions)
@@ -87,7 +79,7 @@ async function keywordSearch(supabase: any, query: string) {
     
     console.log(`✅ Keyword search found ${data?.length || 0} articles`);
     
-    // Calculate relevance score based on word matches and format tags
+    // Calculate relevance score based on word matches
     return (data || []).map((article: any) => {
       let relevanceScore = 0;
       const titleLower = (article.title || '').toLowerCase();
@@ -101,29 +93,11 @@ async function keywordSearch(supabase: any, query: string) {
         if (refCodeLower.includes(word)) relevanceScore += 4;
         if (summaryLower.includes(word)) relevanceScore += 2;
         if (contentLower.includes(word)) relevanceScore += 1;
-        
-        // Check tags from junction table
-        if (article.article_tags && Array.isArray(article.article_tags)) {
-          article.article_tags.forEach((tagRelation: any) => {
-            if (tagRelation.tag) {
-              const tagName = tagRelation.tag.name?.toLowerCase() || '';
-              const tagDisplayName = tagRelation.tag.display_name?.toLowerCase() || '';
-              if (tagName.includes(word) || tagDisplayName.includes(word)) {
-                relevanceScore += 3;
-              }
-            }
-          });
-        }
       });
-      
-      // Transform tags for compatibility with existing code
-      const tags = article.article_tags?.map((tagRelation: any) => 
-        tagRelation.tag?.name || tagRelation.tag?.display_name
-      ).filter(Boolean) || [];
       
       return { 
         ...article, 
-        tags, // Add tags array for compatibility
+        tags: [], // Empty array for now since tag junction table is causing issues
         similarity: Math.min(relevanceScore / 10, 1.0), // Normalize score between 0-1
         category: article.category ? { name: article.category.name } : null 
       };
