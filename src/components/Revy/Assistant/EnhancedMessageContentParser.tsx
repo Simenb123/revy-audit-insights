@@ -23,6 +23,7 @@ const EnhancedMessageContentParser: React.FC<EnhancedMessageContentParserProps> 
   const cleanContent = content
     .replace(/<!-- ARTICLE_MAPPINGS: .*? -->/g, '')
     .replace(/<!-- VARIANT_INFO: .*? -->/g, '')
+    .replace(/<!-- DOCUMENT_REFERENCES: .*? -->/g, '')
     .trim();
 
   return (

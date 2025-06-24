@@ -1,21 +1,53 @@
 
 import React, { useState } from 'react';
-import { Search, BookOpen, Plus, Upload, Settings, Brain } from 'lucide-react';
+import { Search, BookOpen, Plus, Upload, Settings, Brain, Play } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Link, useNavigate } from 'react-router-dom';
 import { useUserProfile } from '@/hooks/useUserProfile';
+import { generateEmbeddingsForExistingArticles } from '@/services/revy/generateEmbeddingsService';
+import { useToast } from '@/hooks/use-toast';
 
 const KnowledgeOverview = () => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [isGeneratingEmbeddings, setIsGeneratingEmbeddings] = useState(false);
   const navigate = useNavigate();
   const { data: userProfile } = useUserProfile();
+  const { toast } = useToast();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
       navigate(`/fag/sok?q=${encodeURIComponent(searchQuery)}`);
+    }
+  };
+
+  const handleGenerateEmbeddings = async () => {
+    setIsGeneratingEmbeddings(true);
+    try {
+      const result = await generateEmbeddingsForExistingArticles();
+      
+      if (result.success) {
+        toast({
+          title: "Kunnskapsbase aktivert!",
+          description: `${result.processed} artikler ble prosessert. AI-Revi kan nå søke i fagstoffet.`,
+        });
+      } else {
+        toast({
+          title: "Feil ved aktivering",
+          description: result.message,
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Feil",
+        description: "Kunne ikke aktivere kunnskapsbasen",
+        variant: "destructive"
+      });
+    } finally {
+      setIsGeneratingEmbeddings(false);
     }
   };
 
@@ -142,8 +174,14 @@ const KnowledgeOverview = () => {
             og gir deg svar basert på oppdatert fagstoff.
           </p>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm">
-              Test AI Revi
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleGenerateEmbeddings}
+              disabled={isGeneratingEmbeddings}
+            >
+              <Play className="h-4 w-4 mr-2" />
+              {isGeneratingEmbeddings ? 'Aktiverer...' : 'Aktiver kunnskapsbase'}
             </Button>
             {canCreateContent && (
               <Link to="/fag/admin">
