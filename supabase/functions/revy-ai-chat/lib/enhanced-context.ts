@@ -1,4 +1,3 @@
-
 // deno-lint-ignore-file no-explicit-any
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { searchClientDocuments, DocumentSearchResult } from './document-search.ts';
@@ -35,10 +34,14 @@ export const buildEnhancedContextWithVariant = async (
   };
 
   try {
-    // 1. Get knowledge articles via knowledge-search function
-    console.log('🔍 Starting knowledge search...');
+    // 1. Get knowledge articles via knowledge-search function with Authorization
+    console.log('🔍 Starting knowledge search with authorization...');
     
     const knowledgeResponse = await supabase.functions.invoke('knowledge-search', {
+      headers: { 
+        Authorization: `Bearer ${supabaseKey}`,
+        'Content-Type': 'application/json'
+      },
       body: { query: message }
     });
 
