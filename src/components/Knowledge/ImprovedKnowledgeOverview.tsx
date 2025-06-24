@@ -24,6 +24,8 @@ import { useRobustAuditActionTemplateCount } from '@/hooks/knowledge/useRobustAu
 const ImprovedKnowledgeOverview = () => {
   const navigate = useNavigate();
   
+  console.log('📚 [IMPROVED_OVERVIEW] Component mounting...');
+  
   const { 
     data: knowledgeStats = [], 
     isLoading: statsLoading, 
@@ -106,6 +108,8 @@ const ImprovedKnowledgeOverview = () => {
 
   // Transform knowledge stats into categories display with safe fallbacks
   const categories = React.useMemo(() => {
+    console.log('📚 [IMPROVED_OVERVIEW] Processing categories with knowledgeStats:', knowledgeStats);
+    
     if (!knowledgeStats || knowledgeStats.length === 0) {
       console.log('📚 [IMPROVED_OVERVIEW] No knowledge stats, creating fallback categories');
       return [
@@ -152,6 +156,7 @@ const ImprovedKnowledgeOverview = () => {
       });
     }
 
+    console.log('📚 [IMPROVED_OVERVIEW] Final transformed categories:', transformedCategories);
     return transformedCategories;
   }, [knowledgeStats, totalActionTemplates]);
 
