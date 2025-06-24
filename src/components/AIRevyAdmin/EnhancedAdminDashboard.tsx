@@ -41,9 +41,9 @@ const EnhancedAdminDashboard = () => {
       <div className="flex items-center gap-3 mb-6">
         <Brain className="h-8 w-8 text-primary" />
         <div>
-          <h1 className="text-3xl font-bold">AI-Revi Administrator</h1>
+          <h1 className="text-3xl font-bold">AI Revi Administrator</h1>
           <p className="text-muted-foreground">
-            Komplett administrasjon av AI-Revi system, database og struktur
+            Komplett administrasjon av AI Revi system, database og struktur
           </p>
         </div>
         <Badge variant="outline" className="ml-auto">

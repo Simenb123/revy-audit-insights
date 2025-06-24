@@ -194,7 +194,7 @@ const KnowledgeMonitor = () => {
                   {stats.published - stats.withEmbeddings} artikler mangler embeddings
                 </h4>
                 <p className="text-amber-700 text-sm">
-                  AI-Revi kan ikke finne disse artiklene før embeddings genereres.
+                  AI Revi kan ikke finne disse artiklene før embeddings genereres.
                 </p>
               </div>
             </div>
