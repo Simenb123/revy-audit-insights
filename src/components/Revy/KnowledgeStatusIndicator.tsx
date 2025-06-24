@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Brain, Database, Zap, AlertTriangle } from 'lucide-react';
+import { Brain, Database, Zap, AlertTriangle, CheckCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
@@ -13,6 +13,7 @@ const KnowledgeStatusIndicator = () => {
   const [embeddedCount, setEmbeddedCount] = useState(0);
   const [isGenerating, setIsGenerating] = useState(false);
   const [searchTestResult, setSearchTestResult] = useState<'pending' | 'success' | 'error'>('pending');
+  const [lastTestError, setLastTestError] = useState<string>('');
 
   const checkEmbeddingStatus = async () => {
     try {
@@ -56,6 +57,8 @@ const KnowledgeStatusIndicator = () => {
   const testKnowledgeSearch = async () => {
     try {
       console.log('🧪 Testing knowledge search functionality...');
+      setSearchTestResult('pending');
+      setLastTestError('');
       
       const { data, error } = await supabase.functions.invoke('knowledge-search', {
         body: { query: 'ISA revisjon' }
@@ -64,16 +67,18 @@ const KnowledgeStatusIndicator = () => {
       if (error) {
         console.error('❌ Knowledge search test failed:', error);
         setSearchTestResult('error');
+        setLastTestError(error.message || 'Unknown error');
       } else if (data && Array.isArray(data) && data.length > 0) {
         console.log('✅ Knowledge search test successful:', data.length, 'results');
         setSearchTestResult('success');
       } else {
-        console.log('⚠️ Knowledge search returned no results');
-        setSearchTestResult('success'); // Still working, just no results
+        console.log('⚠️ Knowledge search returned no results but function works');
+        setSearchTestResult('success'); // Function works, just no results for this query
       }
     } catch (error) {
       console.error('❌ Knowledge search test error:', error);
       setSearchTestResult('error');
+      setLastTestError(error.message || 'Unknown error');
     }
   };
 
@@ -98,6 +103,10 @@ const KnowledgeStatusIndicator = () => {
     }
   };
 
+  const handleRetry = async () => {
+    await checkEmbeddingStatus();
+  };
+
   useEffect(() => {
     checkEmbeddingStatus();
   }, []);
@@ -113,14 +122,30 @@ const KnowledgeStatusIndicator = () => {
       case 'ready':
         return searchTestResult === 'error' ? 
           <Badge variant="destructive"><AlertTriangle className="w-3 h-3 mr-1" />Søk fungerer ikke</Badge> :
-          <Badge variant="default"><Brain className="w-3 h-3 mr-1" />Klar ({embeddedCount} artikler)</Badge>;
+          searchTestResult === 'success' ?
+          <Badge variant="default"><CheckCircle className="w-3 h-3 mr-1" />Klar ({embeddedCount} artikler)</Badge> :
+          <Badge variant="outline"><Brain className="w-3 h-3 mr-1" />Tester søk...</Badge>;
       case 'error':
         return <Badge variant="destructive"><AlertTriangle className="w-3 h-3 mr-1" />Feil ved sjekking</Badge>;
     }
   };
 
+  const getStatusMessage = () => {
+    if (embeddingStatus === 'missing') return 'Kunnskapsbase trenger oppsett';
+    if (embeddingStatus === 'partial') return 'Noen artikler mangler embeddings';
+    if (embeddingStatus === 'error') return 'Feil ved tilgang til kunnskapsbase';
+    if (embeddingStatus === 'ready' && searchTestResult === 'error') {
+      return `Søkefunksjon fungerer ikke: ${lastTestError}`;
+    }
+    if (embeddingStatus === 'ready' && searchTestResult === 'success') {
+      return 'Kunnskapsbase er klar og fungerer!';
+    }
+    return '';
+  };
+
+  // Only show if there's an issue or if we're testing
   if (embeddingStatus === 'ready' && searchTestResult === 'success') {
-    return null; // Don't show when everything is working perfectly
+    return null; // Don't show when everything works perfectly
   }
 
   return (
@@ -129,32 +154,31 @@ const KnowledgeStatusIndicator = () => {
         <div className="flex items-center gap-2">
           {getStatusBadge()}
           <span className="text-sm text-blue-700">
-            {embeddingStatus === 'missing' && 'Kunnskapsbase trenger oppsett'}
-            {embeddingStatus === 'partial' && 'Noen artikler mangler embeddings'}
-            {embeddingStatus === 'error' && 'Feil ved tilgang til kunnskapsbase'}
-            {embeddingStatus === 'ready' && searchTestResult === 'error' && 'Søkefunksjon fungerer ikke'}
+            {getStatusMessage()}
           </span>
         </div>
-        {(embeddingStatus === 'missing' || embeddingStatus === 'partial') && (
-          <Button
-            size="sm"
-            onClick={handleGenerateEmbeddings}
-            disabled={isGenerating}
-            className="text-xs"
-          >
-            {isGenerating ? 'Genererer...' : 'Aktiver kunnskapsbase'}
-          </Button>
-        )}
-        {(embeddingStatus === 'error' || searchTestResult === 'error') && (
-          <Button
-            size="sm"
-            onClick={checkEmbeddingStatus}
-            className="text-xs"
-            variant="outline"
-          >
-            Prøv igjen
-          </Button>
-        )}
+        <div className="flex gap-2">
+          {(embeddingStatus === 'missing' || embeddingStatus === 'partial') && (
+            <Button
+              size="sm"
+              onClick={handleGenerateEmbeddings}
+              disabled={isGenerating}
+              className="text-xs"
+            >
+              {isGenerating ? 'Genererer...' : 'Aktiver kunnskapsbase'}
+            </Button>
+          )}
+          {(embeddingStatus === 'error' || searchTestResult === 'error' || embeddingStatus === 'ready') && (
+            <Button
+              size="sm"
+              onClick={handleRetry}
+              className="text-xs"
+              variant="outline"
+            >
+              Prøv igjen
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );

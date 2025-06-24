@@ -34,27 +34,37 @@ async function keywordSearch(supabase: any, query: string) {
     return [];
   }
   
-  // Build search conditions for multiple words
+  // Build search conditions for multiple words - REMOVED tags column references
   const titleConditions = words.map(word => `title.ilike.%${word}%`).join(',');
   const summaryConditions = words.map(word => `summary.ilike.%${word}%`).join(',');
   const contentConditions = words.map(word => `content.ilike.%${word}%`).join(',');
-  const tagConditions = words.map(word => `tags.cs.{${word}}`).join(',');
   const refConditions = words.map(word => `reference_code.ilike.%${word}%`).join(',');
   
-  // Combine all search conditions
+  // Combine search conditions - NO MORE tags column references
   const searchConditions = [
     titleConditions,
     summaryConditions, 
     contentConditions,
-    tagConditions,
     refConditions
   ].join(',');
   
   console.log('🔍 Search conditions:', searchConditions.substring(0, 200) + '...');
   
+  // Query knowledge_articles with LEFT JOIN to get tags from junction table
   const { data, error } = await supabase
     .from('knowledge_articles')
-    .select('*, category:knowledge_categories(name, id)')
+    .select(`
+      *,
+      category:knowledge_categories(name, id),
+      article_tags:knowledge_article_tags(
+        tag:knowledge_tags(
+          id,
+          name,
+          display_name,
+          color
+        )
+      )
+    `)
     .eq('status', 'published')
     .or(searchConditions)
     .order('view_count', { ascending: false })
@@ -67,7 +77,7 @@ async function keywordSearch(supabase: any, query: string) {
   
   console.log(`✅ Keyword search found ${data?.length || 0} articles`);
   
-  // Calculate relevance score based on word matches
+  // Calculate relevance score based on word matches and format tags
   return (data || []).map((article: any) => {
     let relevanceScore = 0;
     const titleLower = (article.title || '').toLowerCase();
@@ -81,15 +91,29 @@ async function keywordSearch(supabase: any, query: string) {
       if (refCodeLower.includes(word)) relevanceScore += 4;
       if (summaryLower.includes(word)) relevanceScore += 2;
       if (contentLower.includes(word)) relevanceScore += 1;
-      if (article.tags && Array.isArray(article.tags)) {
-        article.tags.forEach((tag: string) => {
-          if (tag.toLowerCase().includes(word)) relevanceScore += 3;
+      
+      // Check tags from junction table
+      if (article.article_tags && Array.isArray(article.article_tags)) {
+        article.article_tags.forEach((tagRelation: any) => {
+          if (tagRelation.tag) {
+            const tagName = tagRelation.tag.name?.toLowerCase() || '';
+            const tagDisplayName = tagRelation.tag.display_name?.toLowerCase() || '';
+            if (tagName.includes(word) || tagDisplayName.includes(word)) {
+              relevanceScore += 3;
+            }
+          }
         });
       }
     });
     
+    // Transform tags for compatibility with existing code
+    const tags = article.article_tags?.map((tagRelation: any) => 
+      tagRelation.tag?.name || tagRelation.tag?.display_name
+    ).filter(Boolean) || [];
+    
     return { 
       ...article, 
+      tags, // Add tags array for compatibility
       similarity: relevanceScore / 10, // Normalize score 
       category: article.category ? { name: article.category.name } : null 
     };
@@ -132,6 +156,7 @@ serve(async (req) => {
           console.error('Semantic search RPC error:', error.message);
         } else {
             semanticResults = data;
+            console.log(`✅ Semantic search found ${semanticResults.length} articles`);
         }
     } catch (e) {
         console.error("Error during semantic search part:", e.message);

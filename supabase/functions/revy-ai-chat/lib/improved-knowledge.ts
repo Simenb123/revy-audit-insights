@@ -1,3 +1,4 @@
+
 import { supabase } from './supabase.ts';
 import { extractIntelligentKeywords } from './utils.ts';
 
@@ -9,7 +10,7 @@ interface KnowledgeSearchResult {
   tags: string[];
   reference_code: string;
   relevanceScore: number;
-  contentType: string; // Enhanced content type classification
+  contentType: string;
 }
 
 interface ArticleTagMapping {
@@ -17,8 +18,8 @@ interface ArticleTagMapping {
   articleTitle: string;
   matchedTags: string[];
   relevanceScore: number;
-  contentType: string; // Enhanced content type
-  category: string; // Enhanced category
+  contentType: string;
+  category: string;
 }
 
 interface EnhancedKnowledgeResult {
@@ -69,10 +70,15 @@ export async function searchKnowledgeIntelligently(
           slug,
           summary,
           content,
-          tags,
           reference_code,
           content_type,
-          category:knowledge_categories(name)
+          category:knowledge_categories(name),
+          article_tags:knowledge_article_tags(
+            tag:knowledge_tags(
+              name,
+              display_name
+            )
+          )
         `)
         .eq('status', 'published')
         .limit(3);
@@ -95,23 +101,19 @@ export async function searchKnowledgeIntelligently(
     // Build search patterns for different approaches
     const searchQueries = [];
     
-    // 1. Title and content text search - enhanced for empty summaries
+    // 1. Title and content text search
     keywords.forEach(keyword => {
       searchQueries.push(`title.ilike.%${keyword}%`);
       searchQueries.push(`content.ilike.%${keyword}%`);
       searchQueries.push(`summary.ilike.%${keyword}%`);
-      // Also search in slug for better matching
       searchQueries.push(`slug.ilike.%${keyword}%`);
     });
 
-    // 2. Tags array search
-    const tagSearches = keywords.map(keyword => `tags.cs.{${keyword}}`);
-    
-    // 3. Reference code search
+    // 2. Reference code search
     const refSearches = keywords.map(keyword => `reference_code.ilike.%${keyword}%`);
 
-    // Combine all search patterns
-    const allSearches = [...searchQueries, ...tagSearches, ...refSearches];
+    // Combine all search patterns (no more direct tags search)
+    const allSearches = [...searchQueries, ...refSearches];
     const searchQuery = allSearches.join(',');
 
     console.log(`🔎 Executing enhanced search with query patterns: ${searchQuery.substring(0, 200)}...`);
@@ -124,10 +126,15 @@ export async function searchKnowledgeIntelligently(
         slug,
         summary,
         content,
-        tags,
         reference_code,
         content_type,
-        category:knowledge_categories(name)
+        category:knowledge_categories(name),
+        article_tags:knowledge_article_tags(
+          tag:knowledge_tags(
+            name,
+            display_name
+          )
+        )
       `)
       .eq('status', 'published')
       .or(searchQuery)
@@ -149,14 +156,13 @@ export async function searchKnowledgeIntelligently(
     const results = articles.map(article => {
       try {
         const categoryName = getCategoryName(article.category);
-        const tagsList = getTagsList(article.tags);
+        const tagsList = getTagsList(article.article_tags);
         const relevanceScore = calculateRelevanceScore(message, article, keywords);
         const contentType = article.content_type || classifyContentType(article, categoryName);
 
         // Create summary from content if missing
         let summary = String(article.summary || '');
         if (!summary && article.content) {
-          // Extract first meaningful paragraph as summary
           const contentText = String(article.content);
           const sentences = contentText.replace(/<[^>]*>/g, '').split(/[.!?]+/);
           summary = sentences.slice(0, 2).join('. ').substring(0, 200) + '...';
@@ -255,7 +261,7 @@ function formatArticleResults(articles: any[]): KnowledgeSearchResult[] {
       summary,
       slug: String(article.slug || ''),
       category: categoryName,
-      tags: getTagsList(article.tags),
+      tags: getTagsList(article.article_tags),
       reference_code: String(article.reference_code || ''),
       relevanceScore: 1,
       contentType
@@ -362,9 +368,11 @@ function getCategoryName(category: any): string {
   return 'Ukategoriseret';
 }
 
-function getTagsList(tags: any): string[] {
-  if (tags && Array.isArray(tags)) {
-    return tags.filter(tag => tag && typeof tag === 'string' && tag.trim().length > 0);
+function getTagsList(articleTags: any): string[] {
+  if (articleTags && Array.isArray(articleTags)) {
+    return articleTags
+      .map(tagRelation => tagRelation.tag?.name || tagRelation.tag?.display_name)
+      .filter(tag => tag && typeof tag === 'string' && tag.trim().length > 0);
   }
   return [];
 }
@@ -392,13 +400,17 @@ function calculateRelevanceScore(message: string, article: any, keywords: string
       });
     }
     
-    // Tags match (medium weight)
-    if (Array.isArray(article.tags)) {
-      const matchingTags = article.tags.filter((tag: string) => 
-        tag && keywords.some(keyword => 
-          tag.toLowerCase().includes(keyword.toLowerCase()) || 
-          keyword.toLowerCase().includes(tag.toLowerCase())
-        )
+    // Tags match (medium weight) - now using proper structure
+    if (Array.isArray(article.article_tags)) {
+      const matchingTags = article.article_tags.filter((tagRelation: any) => 
+        tagRelation.tag && keywords.some(keyword => {
+          const tagName = tagRelation.tag.name?.toLowerCase() || '';
+          const tagDisplayName = tagRelation.tag.display_name?.toLowerCase() || '';
+          return tagName.includes(keyword.toLowerCase()) || 
+                 tagDisplayName.includes(keyword.toLowerCase()) ||
+                 keyword.toLowerCase().includes(tagName) ||
+                 keyword.toLowerCase().includes(tagDisplayName);
+        })
       );
       score += matchingTags.length * 3;
     }
