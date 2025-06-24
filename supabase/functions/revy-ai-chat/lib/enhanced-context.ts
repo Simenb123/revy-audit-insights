@@ -1,3 +1,4 @@
+
 // deno-lint-ignore-file no-explicit-any
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { searchClientDocuments, DocumentSearchResult } from './document-search.ts';
@@ -34,7 +35,7 @@ export const buildEnhancedContextWithVariant = async (
   };
 
   try {
-    // 1. Get knowledge articles (existing functionality)
+    // 1. Get knowledge articles (fixed parameter name)
     console.log('🔍 Starting intelligent knowledge search with enhanced content type support...');
     
     const knowledgeResponse = await fetch(`${supabaseUrl}/functions/v1/knowledge-search`, {
@@ -44,7 +45,7 @@ export const buildEnhancedContextWithVariant = async (
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        message,
+        query: message, // Fixed: was 'message', now 'query'
         context,
         limit: 15
       })
@@ -52,20 +53,30 @@ export const buildEnhancedContextWithVariant = async (
 
     if (knowledgeResponse.ok) {
       const knowledgeData = await knowledgeResponse.json();
+      console.log('📚 Knowledge search response:', {
+        hasArticles: !!knowledgeData.articles,
+        articlesCount: knowledgeData.articles?.length || 0,
+        hasTagMapping: !!knowledgeData.tagMapping
+      });
+
       if (knowledgeData.articles && Array.isArray(knowledgeData.articles)) {
         enhancedContext.knowledge = knowledgeData.articles;
         enhancedContext.articleTagMapping = knowledgeData.tagMapping || {};
-        console.log('✅ Enhanced context built with variant and document search support:', {
-          hasKnowledge: true,
-          knowledgeCount: knowledgeData.articles.length,
-          tagMappingCount: Object.keys(knowledgeData.tagMapping || {}).length,
-          hasClientContext: !!clientData,
-          variantName: variant?.name,
-          hasDocumentSearchResults: false,
-          specificDocumentFound: false,
-          generalDocumentsFound: 0
+        console.log('✅ Knowledge articles loaded successfully:', {
+          articlesCount: knowledgeData.articles.length,
+          tagMappingCount: Object.keys(knowledgeData.tagMapping || {}).length
         });
+      } else {
+        console.log('⚠️ No articles found in knowledge search response');
       }
+    } else {
+      const errorText = await knowledgeResponse.text();
+      console.error('❌ Knowledge search failed:', {
+        status: knowledgeResponse.status,
+        statusText: knowledgeResponse.statusText,
+        error: errorText
+      });
+      // Continue without knowledge - don't fail the entire request
     }
 
     // 2. Search client documents if available
@@ -118,6 +129,7 @@ export const buildEnhancedContextWithVariant = async (
 
   } catch (error) {
     console.error('❌ Error building enhanced context:', error);
+    // Return partial context instead of failing completely
     return enhancedContext;
   }
 };

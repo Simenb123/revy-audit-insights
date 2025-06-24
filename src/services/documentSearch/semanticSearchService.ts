@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 
 export interface SearchQuery {
@@ -51,7 +52,7 @@ export const performSemanticSearch = async (query: SearchQuery): Promise<SearchR
     console.log('🔍 Performing semantic search with enhanced multi-word support:', query);
     
     const { data, error } = await supabase.functions.invoke('knowledge-search', {
-      body: { query: query.term }
+      body: { query: query.term } // Fixed: ensure we use 'query' parameter name
     });
     
     if (error) {
@@ -148,6 +149,34 @@ export const triggerEnhancedTextExtraction = async (documentId: string): Promise
     
   } catch (error) {
     console.error('💥 Enhanced text extraction failed:', error);
+    return false;
+  }
+};
+
+// Test function to verify knowledge search is working
+export const testKnowledgeSearch = async (testQuery: string = 'ISA revisjon'): Promise<boolean> => {
+  try {
+    console.log('🧪 Testing knowledge search with query:', testQuery);
+    
+    const { data, error } = await supabase.functions.invoke('knowledge-search', {
+      body: { query: testQuery }
+    });
+    
+    if (error) {
+      console.error('❌ Knowledge search test failed:', error);
+      return false;
+    }
+    
+    console.log('✅ Knowledge search test result:', {
+      success: true,
+      resultsCount: data?.length || 0,
+      hasResults: Array.isArray(data) && data.length > 0
+    });
+    
+    return true;
+    
+  } catch (error) {
+    console.error('💥 Knowledge search test error:', error);
     return false;
   }
 };
