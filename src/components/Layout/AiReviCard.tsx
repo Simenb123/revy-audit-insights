@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Bot, MessageSquare, X, Maximize2, Minimize2 } from 'lucide-react';
 import { useSmartReviAssistant } from '@/hooks/revy/useSmartReviAssistant';
 import { RevyInput } from '../Revy/Assistant/RevyInput';
-import { RevyMessage } from '../Revy/Assistant/RevyMessage';
+import { RevyMessageList } from '../Revy/Assistant/RevyMessageList';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface AiReviCardProps {
@@ -103,25 +103,11 @@ const AiReviCard: React.FC<AiReviCardProps> = ({
         
         {isExpanded && (
           <div className="flex flex-col h-72">
-            <ScrollArea className="flex-1 pr-2">
-              <div className="space-y-2">
-                {messages.length === 0 ? (
-                  <div className="text-center py-4 text-xs text-muted-foreground">
-                    <Bot className="mx-auto h-8 w-8 mb-2 opacity-50" />
-                    <p>Hei! Jeg er AI-Revi.</p>
-                    <p>Hvordan kan jeg hjelpe deg?</p>
-                  </div>
-                ) : (
-                  messages.map((msg, index) => (
-                    <RevyMessage 
-                      key={index} 
-                      message={msg} 
-                      isEmbedded={true}
-                    />
-                  ))
-                )}
-              </div>
-            </ScrollArea>
+            <RevyMessageList
+              messages={messages}
+              isTyping={isTyping}
+              isEmbedded={true}
+            />
           </div>
         )}
         
