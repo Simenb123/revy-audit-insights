@@ -368,6 +368,7 @@ export const generateEnhancedAIResponseWithVariant = async (
         selectedVariant,
         systemPrompt, // Pass our enhanced prompt with knowledge articles
         model,
+        skipKnowledgeSearch: true, // Skip knowledge search since we already have articles
         // Pass the knowledge articles directly to ensure they're used
         knowledgeArticles: enhancedContextData.knowledgeArticles,
         articleTagMapping: enhancedContextData.articleTagMapping
