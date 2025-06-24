@@ -29,7 +29,7 @@ const RightSidebar = () => {
     categoriesCount,
     isLoading,
     error
-  } = useClientDocuments(clientId);
+  } = useClientDocuments(clientId || undefined);
 
   // Don't show sidebar if no client ID found
   if (!clientId) {

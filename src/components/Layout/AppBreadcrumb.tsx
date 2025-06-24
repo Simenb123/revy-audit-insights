@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { ChevronRight, Home } from 'lucide-react';
@@ -21,7 +20,7 @@ const AppBreadcrumb = () => {
     return null;
   }
 
-  const breadcrumbItems = [
+  const breadcrumbItems: Array<{ name: string; path: string; icon?: React.ComponentType<any> }> = [
     { name: 'Hjem', path: '/', icon: Home }
   ];
 
