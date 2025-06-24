@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { devLog } from '@/utils/devLogger';
@@ -36,19 +35,52 @@ export interface DocumentCategory {
   created_at: string;
 }
 
-export const useClientDocuments = (clientId?: string) => {
+export const useClientDocuments = (clientIdOrOrgNumber?: string) => {
   const queryClient = useQueryClient();
+
+  // Helper query to get client UUID from organization number
+  const clientLookupQuery = useQuery({
+    queryKey: ['client-lookup', clientIdOrOrgNumber],
+    queryFn: async () => {
+      if (!clientIdOrOrgNumber) return null;
+      
+      // If it looks like a UUID (36 chars with dashes), use it directly
+      if (clientIdOrOrgNumber.length === 36 && clientIdOrOrgNumber.includes('-')) {
+        return { id: clientIdOrOrgNumber };
+      }
+      
+      // Otherwise, treat it as an organization number and look up the UUID
+      devLog('Looking up client UUID for org number:', clientIdOrOrgNumber);
+      
+      const { data: client, error } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('org_number', clientIdOrOrgNumber)
+        .single();
+
+      if (error) {
+        devLog('Error looking up client:', error);
+        return null;
+      }
+
+      devLog('Found client UUID:', client?.id);
+      return client;
+    },
+    enabled: !!clientIdOrOrgNumber,
+  });
 
   // Main query for documents
   const documentsQuery = useQuery({
-    queryKey: ['client-documents', clientId],
+    queryKey: ['client-documents', clientLookupQuery.data?.id],
     queryFn: async () => {
+      const clientId = clientLookupQuery.data?.id;
+      
       if (!clientId) {
-        devLog('No client ID provided for document query');
+        devLog('No client ID available for document query');
         return [];
       }
 
-      devLog('Fetching client documents for client:', clientId);
+      devLog('Fetching client documents for client UUID:', clientId);
 
       const { data: documents, error } = await supabase
         .from('client_documents_files')
@@ -64,7 +96,7 @@ export const useClientDocuments = (clientId?: string) => {
       devLog('Client documents fetched:', { count: documents?.length || 0 });
       return documents || [];
     },
-    enabled: !!clientId,
+    enabled: !!clientLookupQuery.data?.id,
   });
 
   // Categories query
@@ -98,7 +130,7 @@ export const useClientDocuments = (clientId?: string) => {
       throw new Error('File upload not implemented');
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['client-documents', clientId] });
+      queryClient.invalidateQueries({ queryKey: ['client-documents', clientLookupQuery.data?.id] });
     },
   });
 
@@ -113,7 +145,7 @@ export const useClientDocuments = (clientId?: string) => {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['client-documents', clientId] });
+      queryClient.invalidateQueries({ queryKey: ['client-documents', clientLookupQuery.data?.id] });
     },
   });
 
@@ -193,8 +225,8 @@ export const useClientDocuments = (clientId?: string) => {
     categoriesCount,
     
     // Loading states
-    isLoading: documentsQuery.isLoading || categoriesQuery.isLoading,
-    error: documentsQuery.error || categoriesQuery.error,
+    isLoading: documentsQuery.isLoading || categoriesQuery.isLoading || clientLookupQuery.isLoading,
+    error: documentsQuery.error || categoriesQuery.error || clientLookupQuery.error,
     
     // Mutations
     uploadDocument,
