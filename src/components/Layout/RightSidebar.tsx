@@ -3,11 +3,13 @@ import React from 'react';
 import { useLocation } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { FileText, Users, Calendar, AlertCircle, Bot } from 'lucide-react';
+import { FileText, Users, Calendar, AlertCircle, ChevronRight, ChevronLeft } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { useClientDocuments } from '@/hooks/useClientDocuments';
 import AdminSidebarContent from '@/components/AIRevyAdmin/AdminSidebarContent';
 import KnowledgeStatusIndicator from '@/components/Revy/KnowledgeStatusIndicator';
-import SmartReviAssistant from '@/components/Revy/SmartReviAssistant';
+import AiReviCard from './AiReviCard';
+import { detectPageType, extractClientId } from './pageDetectionHelpers';
 
 interface RightSidebarProps {
   isCollapsed?: boolean;
@@ -16,35 +18,10 @@ interface RightSidebarProps {
   onWidthChange?: (newWidth: number) => void;
 }
 
-const RightSidebar = ({ isCollapsed, onToggle, width, onWidthChange }: RightSidebarProps) => {
+const RightSidebar = ({ isCollapsed, onToggle, width = 320, onWidthChange }: RightSidebarProps) => {
   const location = useLocation();
-  
-  console.log('🔍 [RIGHT_SIDEBAR] Current path:', location.pathname);
-
-  // Check if we're on an admin page - fixed to handle both with and without hyphens
-  const isAdminPage = location.pathname.startsWith('/ai-revy-admin') || 
-                     location.pathname.startsWith('/user-admin') || 
-                     location.pathname.startsWith('/ai-usage') ||
-                     location.pathname.startsWith('/audit-logs');
-
-  console.log('🔍 [RIGHT_SIDEBAR] Is admin page:', isAdminPage);
-
-  // Check if we're on fagstoff/knowledge pages
-  const isKnowledgePage = location.pathname.startsWith('/fag');
-
-  // Extract client ID from URL (org number or UUID) for client pages
-  const pathSegments = location.pathname.split('/').filter(Boolean);
-  let clientId = '';
-  
-  // Look for org number pattern (9 digits) or UUID in path
-  for (const segment of pathSegments) {
-    if (/^\d{9}$/.test(segment) || /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(segment)) {
-      clientId = segment;
-      break;
-    }
-  }
-
-  console.log('🔍 [RIGHT_SIDEBAR] Extracted clientId:', clientId);
+  const pageType = detectPageType(location.pathname);
+  const clientId = extractClientId(location.pathname);
 
   // Always call useClientDocuments hook to avoid conditional hooks
   const {
@@ -52,24 +29,57 @@ const RightSidebar = ({ isCollapsed, onToggle, width, onWidthChange }: RightSide
     categoriesCount,
     isLoading,
     error
-  } = useClientDocuments(clientId || '');
+  } = useClientDocuments(clientId);
 
-  // If it's an admin page, show admin content
-  if (isAdminPage) {
-    console.log('🔍 [RIGHT_SIDEBAR] Admin page detected, showing admin content');
+  // Handle collapsed state
+  if (isCollapsed) {
     return (
-      <div className="w-80 border-l bg-background p-4">
+      <div className="w-16 border-l bg-background flex flex-col items-center py-4">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onToggle}
+          className="p-2"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+      </div>
+    );
+  }
+
+  // Apply width from props
+  const sidebarStyle = {
+    width: `${width}px`,
+    minWidth: '280px',
+    maxWidth: '600px'
+  };
+
+  // Admin page content
+  if (pageType === 'admin') {
+    return (
+      <div className="border-l bg-background p-4" style={sidebarStyle}>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="font-semibold">Admin</h3>
+          <Button variant="ghost" size="sm" onClick={onToggle}>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
         <AdminSidebarContent />
       </div>
     );
   }
 
-  // Knowledge page sidebar
-  if (isKnowledgePage) {
+  // Knowledge page content
+  if (pageType === 'knowledge') {
     return (
-      <div className="w-80 border-l bg-background p-4">
+      <div className="border-l bg-background p-4" style={sidebarStyle}>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="font-semibold">Kunnskapsbase</h3>
+          <Button variant="ghost" size="sm" onClick={onToggle}>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
         <div className="space-y-4">
-          {/* Knowledge Status Indicator */}
           <KnowledgeStatusIndicator />
           
           <Card>
@@ -93,52 +103,11 @@ const RightSidebar = ({ isCollapsed, onToggle, width, onWidthChange }: RightSide
             </CardContent>
           </Card>
 
-          {/* AI-Revi Assistant for Knowledge Base */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Bot className="w-4 h-4 text-primary" />
-                AI-Revi Assistent
-              </CardTitle>
-              <CardDescription>
-                Spør AI-Revi om fagstoff og artikler
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <SmartReviAssistant 
-                embedded={true}
-                context="knowledge-base"
-              />
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
-
-  // If no client ID found and not on special pages, show general AI assistant
-  if (!clientId) {
-    console.log('🔍 [RIGHT_SIDEBAR] No client ID found, showing general AI assistant');
-    return (
-      <div className="w-80 border-l bg-background p-4">
-        <div className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Bot className="w-4 h-4 text-primary" />
-                AI-Revi Assistent
-              </CardTitle>
-              <CardDescription>
-                Din smarte revisjonsassistent
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <SmartReviAssistant 
-                embedded={true}
-                context="general"
-              />
-            </CardContent>
-          </Card>
+          <AiReviCard 
+            context="knowledge-base"
+            title="AI-Revi Assistent"
+            description="Spør AI-Revi om fagstoff og artikler"
+          />
         </div>
       </div>
     );
@@ -147,7 +116,13 @@ const RightSidebar = ({ isCollapsed, onToggle, width, onWidthChange }: RightSide
   // Show loading state
   if (isLoading) {
     return (
-      <div className="w-80 border-l bg-background p-4">
+      <div className="border-l bg-background p-4" style={sidebarStyle}>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="font-semibold">Laster...</h3>
+          <Button variant="ghost" size="sm" onClick={onToggle}>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
         <div className="space-y-4">
           <div className="h-4 bg-muted animate-pulse rounded" />
           <div className="h-4 bg-muted animate-pulse rounded w-3/4" />
@@ -159,7 +134,13 @@ const RightSidebar = ({ isCollapsed, onToggle, width, onWidthChange }: RightSide
   // Show error state
   if (error) {
     return (
-      <div className="w-80 border-l bg-background p-4">
+      <div className="border-l bg-background p-4" style={sidebarStyle}>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="font-semibold">Feil</h3>
+          <Button variant="ghost" size="sm" onClick={onToggle}>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-destructive">
@@ -177,79 +158,89 @@ const RightSidebar = ({ isCollapsed, onToggle, width, onWidthChange }: RightSide
     );
   }
 
-  // Show client-specific content with AI assistant
+  // Client-specific content or general content
+  const isClientContext = clientId && clientId.length > 0;
+  
   return (
-    <div className="w-80 border-l bg-background p-4">
+    <div className="border-l bg-background p-4" style={sidebarStyle}>
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="font-semibold">
+          {isClientContext ? 'Klient' : 'Assistent'}
+        </h3>
+        <Button variant="ghost" size="sm" onClick={onToggle}>
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
+      
       <div className="space-y-4">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="w-4 h-4" />
-              Dokumenter
-            </CardTitle>
-            <CardDescription>
-              Dokumentstatus for klient
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm">Totalt dokumenter</span>
-              <Badge variant="secondary">{documentsCount}</Badge>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm">Kategorier</span>
-              <Badge variant="outline">{categoriesCount}</Badge>
-            </div>
-          </CardContent>
-        </Card>
+        {isClientContext && (
+          <>
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="w-4 h-4" />
+                  Dokumenter
+                </CardTitle>
+                <CardDescription>
+                  Dokumentstatus for klient
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Totalt dokumenter</span>
+                  <Badge variant="secondary">{documentsCount}</Badge>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Kategorier</span>
+                  <Badge variant="outline">{categoriesCount}</Badge>
+                </div>
+              </CardContent>
+            </Card>
 
-        {/* AI-Revi Assistant for Client Context */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Bot className="w-4 h-4 text-primary" />
-              AI-Revi Assistent
-            </CardTitle>
-            <CardDescription>
-              Klientspesifikk revisjonsassistanse
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <SmartReviAssistant 
-              embedded={true}
+            <AiReviCard 
               context="client-detail"
               clientData={{ id: clientId }}
+              title="AI-Revi Assistent"
+              description="Klientspesifikk revisjonsassistanse"
             />
-          </CardContent>
-        </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="w-4 h-4" />
-              Aktivitet
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Ingen nylig aktivitet
-            </p>
-          </CardContent>
-        </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4" />
+                  Aktivitet
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  Ingen nylig aktivitet
+                </p>
+              </CardContent>
+            </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="w-4 h-4" />
-              Team
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Ingen teammedlemmer tilordnet
-            </p>
-          </CardContent>
-        </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="w-4 h-4" />
+                  Team
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  Ingen teammedlemmer tilordnet
+                </p>
+              </CardContent>
+            </Card>
+          </>
+        )}
+
+        {!isClientContext && (
+          <AiReviCard 
+            context="general"
+            title="AI-Revi Assistent"
+            description="Din smarte revisjonsassistent"
+          />
+        )}
       </div>
     </div>
   );
