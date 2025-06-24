@@ -2,6 +2,7 @@
 import React, { useState, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useClientDocuments } from '@/hooks/useClientDocuments';
+import { useClientLookup } from '@/hooks/useClientLookup';
 import { detectPageType, extractClientId } from './pageDetectionHelpers';
 import ResizableHandle from './ResizableHandle';
 import SidebarHeader from './SidebarHeader';
@@ -29,7 +30,9 @@ const ResizableRightSidebar = ({
   const [isDragging, setIsDragging] = useState(false);
   const location = useLocation();
   const pageType = detectPageType(location.pathname);
-  const clientId = extractClientId(location.pathname);
+  const clientIdOrOrg = extractClientId(location.pathname);
+  const { data: clientLookup } = useClientLookup(clientIdOrOrg);
+  const clientId = clientLookup?.id;
 
   const {
     documentsCount,
