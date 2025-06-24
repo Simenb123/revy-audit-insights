@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Play, RefreshCw, Eye, Clock } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from '@/integrations/supabase/client';
-import SmartRevyAssistant from '@/components/Revy/SmartRevyAssistant';
+import SmartReviAssistant from '@/components/Revy/SmartReviAssistant';
 
 const TestInterface = () => {
   const [testMessage, setTestMessage] = useState('');
@@ -224,7 +223,7 @@ const TestInterface = () => {
             </CardHeader>
             <CardContent>
               <div className="h-[600px] border rounded-lg">
-                <SmartRevyAssistant embedded={true} />
+                <SmartReviAssistant embedded={true} />
               </div>
             </CardContent>
           </Card>

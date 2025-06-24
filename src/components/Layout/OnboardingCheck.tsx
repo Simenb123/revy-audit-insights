@@ -40,7 +40,7 @@ const OnboardingCheck = ({ children }: OnboardingCheckProps) => {
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
         <Card className="w-[400px]">
           <CardHeader className="text-center">
-            <CardTitle>Velkommen til Revio</CardTitle>
+            <CardTitle>Velkommen til AI Revi</CardTitle>
             <CardDescription>
               Logg inn for full tilgang eller prøv som gjest
             </CardDescription>
