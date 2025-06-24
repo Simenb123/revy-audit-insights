@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -144,9 +143,11 @@ export const useClientDocuments = (clientId: string | undefined) => {
   // Get document URL function
   const getDocumentUrl = async (filePath: string): Promise<string | null> => {
     try {
-      // This would need to be implemented with actual storage URL logic
-      console.log('Getting document URL for:', filePath);
-      return null;
+      const { data } = await supabase.storage
+        .from('client-documents')
+        .createSignedUrl(filePath, 3600); // 1 hour expiry
+      
+      return data?.signedUrl || null;
     } catch (error) {
       console.error('Error getting document URL:', error);
       return null;
@@ -156,20 +157,66 @@ export const useClientDocuments = (clientId: string | undefined) => {
   // Download document function
   const downloadDocument = async (documentId: string): Promise<void> => {
     try {
-      console.log('Downloading document:', documentId);
-      // This would need to be implemented with actual download logic
+      console.log('📥 [USE_CLIENT_DOCUMENTS] Starting download for documentId:', documentId);
+      
+      // Get document details first
+      const { data: documentData, error: fetchError } = await supabase
+        .from('client_documents_files')
+        .select('file_path, file_name')
+        .eq('id', documentId)
+        .single();
+
+      if (fetchError || !documentData) {
+        throw new Error(`Failed to fetch document data: ${fetchError?.message}`);
+      }
+
+      console.log('📥 [USE_CLIENT_DOCUMENTS] Document data:', documentData);
+
+      // Get signed URL for download
+      const { data: urlData, error: urlError } = await supabase.storage
+        .from('client-documents')
+        .createSignedUrl(documentData.file_path, 300); // 5 minute expiry for download
+
+      if (urlError || !urlData?.signedUrl) {
+        throw new Error(`Failed to create download URL: ${urlError?.message}`);
+      }
+
+      // Trigger download
+      const link = document.createElement('a');
+      link.href = urlData.signedUrl;
+      link.download = documentData.file_name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      console.log('✅ [USE_CLIENT_DOCUMENTS] Download initiated successfully');
     } catch (error) {
-      console.error('Error downloading document:', error);
+      console.error('❌ [USE_CLIENT_DOCUMENTS] Download error:', error);
+      throw error;
     }
   };
 
   // Trigger text extraction function
   const triggerTextExtraction = async (documentId: string): Promise<void> => {
     try {
-      console.log('Triggering text extraction for document:', documentId);
-      // This would need to be implemented with actual text extraction logic
+      console.log('🔄 [USE_CLIENT_DOCUMENTS] Triggering text extraction for:', documentId);
+      
+      // Call the enhanced PDF text extractor edge function
+      const { data, error } = await supabase.functions.invoke('enhanced-pdf-text-extractor', {
+        body: { documentId }
+      });
+
+      if (error) {
+        throw new Error(`Text extraction failed: ${error.message}`);
+      }
+
+      console.log('✅ [USE_CLIENT_DOCUMENTS] Text extraction triggered successfully');
+      
+      // Invalidate queries to refresh document data
+      queryClient.invalidateQueries({ queryKey: ['client-documents', clientId] });
     } catch (error) {
-      console.error('Error triggering text extraction:', error);
+      console.error('❌ [USE_CLIENT_DOCUMENTS] Text extraction error:', error);
+      throw error;
     }
   };
 

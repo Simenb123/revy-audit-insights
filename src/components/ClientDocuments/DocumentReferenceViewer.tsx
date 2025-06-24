@@ -161,41 +161,10 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
     setOperationResult(docId, 'loading');
     
     try {
-      console.log('📥 [VIEWER] Fetching document data for download...');
+      console.log('📥 [VIEWER] Starting document download...');
       
-      // Fetch document data
-      const { supabase } = await import('@/integrations/supabase/client');
-      const { data: documentData, error } = await supabase
-        .from('client_documents_files')
-        .select('file_path, file_name')
-        .eq('id', docId)
-        .single();
-
-      if (error || !documentData) {
-        console.error('❌ [VIEWER] Error fetching document data:', error);
-        setOperationResult(docId, 'error');
-        toast.error('❌ Kunne ikke hente dokumentdata', {
-          description: error?.message || 'Database feil',
-          duration: 5000
-        });
-        return;
-      }
-
-      // Fix: Call downloadDocument with a single ClientDocument object
-      const documentForDownload = {
-        id: docId,
-        client_id: clientId,
-        file_name: documentData.file_name,
-        file_path: documentData.file_path,
-        file_size: 0,
-        mime_type: '',
-        category: '',
-        uploaded_by: '',
-        created_at: '',
-        updated_at: ''
-      };
-      
-      await downloadDocument(documentForDownload);
+      // Call downloadDocument with just the document ID
+      await downloadDocument(docId);
       setOperationResult(docId, 'success');
       
     } catch (error) {

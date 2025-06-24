@@ -1,3 +1,4 @@
+
 # Welcome to your Lovable project
 
 ## Project info
@@ -74,17 +75,53 @@ Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-trick
 
 ## Environment variables
 
-Create a `.env` file and provide the following variables so the frontend can connect to Supabase:
+Create a `.env` file and provide the following variables so the frontend can connect to Supabase and enable AI functionality:
 
 ```bash
+# Supabase Configuration (Required)
 SUPABASE_URL=<your-supabase-project-url>
 SUPABASE_ANON_KEY=<your-anon-key>
+SUPABASE_SERVICE_ROLE_KEY=<your-service-role-key>
+
+# AI Functionality (Required for AI-Revi assistant)
+OPENAI_API_KEY=<your-openai-api-key>
+
+# Text-to-Speech (Optional)
+ELEVENLABS_API_KEY=<your-elevenlabs-api-key>
 ```
 
-The Supabase edge functions also rely on:
+**Important Notes:**
+- `SUPABASE_SERVICE_ROLE_KEY` is used in the Supabase edge functions to create a client with elevated permissions required for full-text search across protected tables.
+- `OPENAI_API_KEY` is required for the AI-Revi assistant to function properly.
+- `ELEVENLABS_API_KEY` is optional and only needed if you want to enable text-to-speech functionality.
+
+## Running Supabase locally (for development)
+
+If you want to run Supabase locally for development:
 
 ```bash
-SUPABASE_SERVICE_ROLE_KEY=<your-service-role-key>
+# Install Supabase CLI
+npm install -g @supabase/cli
+
+# Start Supabase locally
+supabase start
+
+# Deploy edge functions locally
+supabase functions deploy
+
+# View local Supabase dashboard
+# Open http://localhost:54323 in your browser
 ```
 
-`SUPABASE_SERVICE_ROLE_KEY` is used in the `revy-ai-chat` function to create a Supabase client with elevated permissions required for full-text search across protected tables.
+The local Supabase instance will provide you with local URLs and keys to use in your `.env` file during development.
+
+## Edge Functions
+
+This project uses several Supabase Edge Functions for AI functionality:
+
+- `revy-ai-chat`: Main AI assistant chat functionality
+- `enhanced-pdf-text-extractor`: PDF text extraction
+- `document-ai-analyzer`: Document analysis and categorization
+- `enhanced-document-ai`: Advanced document processing
+
+These functions are automatically deployed when you make changes through Lovable.
