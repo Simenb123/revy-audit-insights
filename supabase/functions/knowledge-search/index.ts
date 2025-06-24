@@ -107,7 +107,6 @@ async function keywordSearch(supabase: any, query: string) {
 function createTagMapping(articles: any[], keywords: string[]) {
   const mapping: Record<string, any> = {};
   
-  // Create mappings for keywords found in articles
   keywords.forEach(keyword => {
     const keywordLower = keyword.toLowerCase();
     let bestMatch = null;
@@ -149,44 +148,53 @@ serve(async (req) => {
   try {
     console.log('🚀 Knowledge search function started');
     
-    // Fix: Safer JSON parsing with error handling
+    // Improved JSON parsing with better error handling
     let requestBody;
     try {
       const bodyText = await req.text();
-      console.log('📝 Raw request body:', bodyText);
+      console.log('📝 Raw request body length:', bodyText?.length || 0);
       
       if (!bodyText || bodyText.trim() === '') {
-        throw new Error('Empty request body');
+        console.log('⚠️ Empty request body received, using fallback');
+        // Return empty results instead of throwing error
+        return new Response(JSON.stringify({
+          articles: [],
+          tagMapping: {},
+          message: 'No query provided'
+        }), {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
       }
       
       requestBody = JSON.parse(bodyText);
     } catch (parseError) {
       console.error('❌ JSON parsing error:', parseError);
+      // Return empty results for malformed JSON instead of error
       return new Response(JSON.stringify({ 
-        error: 'Invalid JSON in request body',
-        details: parseError.message,
         articles: [],
-        tagMapping: {}
+        tagMapping: {},
+        message: 'Invalid JSON format'
       }), {
-        status: 400,
+        status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
     const { query } = requestBody;
-    if (!query) {
-      console.error('❌ No query parameter provided');
+    if (!query || query.trim() === '') {
+      console.log('⚠️ No query parameter provided');
       return new Response(JSON.stringify({
-        error: 'Query parameter is required',
         articles: [],
-        tagMapping: {}
+        tagMapping: {},
+        message: 'Empty query'
       }), {
-        status: 400,
+        status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    console.log('🔍 Knowledge search for query:', query);
+    console.log('🔍 Knowledge search for query:', query.substring(0, 50) + '...');
 
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -267,13 +275,11 @@ serve(async (req) => {
 
     const finalResults = uniqueResults.slice(0, 20);
     
-    // Extract keywords for tag mapping
     const keywords = query.toLowerCase().split(/\s+/).filter(word => word.length > 1);
     const tagMapping = createTagMapping(finalResults, keywords);
     
     console.log(`✅ Returning ${finalResults.length} unique search results with tag mappings`);
 
-    // Return the structure that revy-ai-chat expects
     return new Response(JSON.stringify({
       articles: finalResults,
       tagMapping: tagMapping
@@ -283,13 +289,13 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('💥 Critical error in knowledge-search function:', error);
+    // Return empty results instead of error to prevent breaking the AI chat
     return new Response(JSON.stringify({ 
-      error: error.message,
-      details: 'Knowledge search function encountered an error. Check logs for details.',
       articles: [],
-      tagMapping: {}
+      tagMapping: {},
+      error: 'Knowledge search temporarily unavailable'
     }), {
-      status: 500,
+      status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }

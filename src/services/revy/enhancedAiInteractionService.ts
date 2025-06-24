@@ -97,7 +97,7 @@ const enforceResponseValidation = (response: string, knowledgeArticles: any[], a
   return validatedResponse;
 };
 
-// Enhanced fallback that provides helpful response without OpenAI
+// Enhanced fallback that provides helpful response
 const getIntelligentFallback = (message: string, context: string, selectedVariant?: any): string => {
   const variantContext = selectedVariant ? ` som ${selectedVariant.display_name}` : '';
   
@@ -132,33 +132,35 @@ const buildEnhancedContextWithVariantAndDocuments = async (
   let documentResults: any[] = [];
   let hasSpecificDocumentFound = false;
 
-  // Enhanced knowledge search with better error handling
+  // Enhanced knowledge search with better error handling and mobile support
   if (message && message.trim()) {
     try {
-      console.log('🔍 Starting knowledge search with authorization...');
+      console.log('🔍 Starting knowledge search with proper request format...');
       
       // Get current user session for authorization
       const { data: { session } } = await supabase.auth.getSession();
       
-      const headers: any = {
-        'Content-Type': 'application/json'
+      // Ensure proper JSON request body
+      const requestBody = {
+        query: message.trim()
       };
-      
-      // Add authorization header if we have a session
-      if (session?.access_token) {
-        headers['Authorization'] = `Bearer ${session.access_token}`;
-      }
+
+      console.log('📤 Sending knowledge search request:', requestBody);
 
       const { data, error } = await supabase.functions.invoke('knowledge-search', {
-        body: { query: message },
-        headers
+        body: requestBody,
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token && { 'Authorization': `Bearer ${session.access_token}` })
+        }
       });
 
       if (error) {
         console.error('❌ Knowledge search failed:', error);
-        throw error;
-      } else {
-        // Handle new response structure { articles, tagMapping }
+        // Continue without knowledge base instead of failing
+        console.log('⚠️ Continuing without knowledge base results');
+      } else if (data) {
+        // Handle response structure { articles, tagMapping }
         knowledgeArticles = data?.articles || [];
         articleTagMapping = data?.tagMapping || {};
         
@@ -177,6 +179,7 @@ const buildEnhancedContextWithVariantAndDocuments = async (
     } catch (error) {
       console.error('❌ Knowledge search error:', error);
       // Don't throw here - let the main function handle fallback
+      console.log('⚠️ Knowledge search failed, continuing without it');
     }
   }
 
@@ -288,7 +291,7 @@ export const generateEnhancedAIResponseWithVariant = async (
 
     if (error) {
       console.error('❌ revy-ai-chat function error:', error);
-      // Use intelligent fallback instead of direct OpenAI call
+      // Use intelligent fallback
       const fallbackResponse = getIntelligentFallback(message, context, selectedVariant);
       const validatedResponse = enforceResponseValidation(fallbackResponse, enhancedContextData.knowledgeArticles, enhancedContextData.articleTagMapping);
       await cacheResponse(requestHash, validatedResponse);
@@ -308,29 +311,13 @@ export const generateEnhancedAIResponseWithVariant = async (
 
     const responseTime = Date.now() - startTime;
 
-    // Log response validation
-    console.log('🔍 Validating AI response format...');
-    console.log('📝 Response preview:', aiResponse.substring(0, 150) + '...');
-    
-    const hasStandardizedTags = aiResponse.includes('🏷️ **EMNER:**');
-    const hasArticleMappings = Object.keys(enhancedContextData.articleTagMapping).length > 0;
-    const hasDocumentReferences = enhancedContextData.knowledgeArticles.length > 0;
-    
-    if (hasStandardizedTags) {
-      console.log('✅ Response has some form of EMNER section');
-    }
-    
-    if (hasStandardizedTags && /🏷️\s*\*\*EMNER:\*\*\s+[\w\s,æøåÆØÅ]+$/.test(aiResponse.trim())) {
-      console.log('✅ Response has perfect standardized format');
-    }
-
-    console.log('✅ Document-enhanced AI response generated:', {
+    console.log('✅ Document-enhanced AI response generated successfully:', {
       responseLength: aiResponse.length,
       responseTime: `${responseTime}ms`,
       isGuestMode: !(await supabase.auth.getUser()).data.user,
-      hasStandardizedTags,
-      hasArticleMappings,
-      hasDocumentReferences,
+      hasStandardizedTags: /🏷️\s*\*\*[Ee][Mm][Nn][Ee][Rr]:?\*\*/.test(aiResponse),
+      hasArticleMappings: Object.keys(enhancedContextData.articleTagMapping).length > 0,
+      hasDocumentReferences: enhancedContextData.knowledgeArticles.length > 0,
       variantUsed: selectedVariant?.name || 'default'
     });
 
