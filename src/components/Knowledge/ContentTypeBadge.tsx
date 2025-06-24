@@ -1,79 +1,38 @@
 
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
-import { FileText, Scale, FileCode, Book, Gavel } from 'lucide-react';
-import { ContentTypeEntity } from '@/types/knowledge';
+import { ContentType } from '@/types/knowledge';
 
 interface ContentTypeBadgeProps {
-  contentType: string | ContentTypeEntity;
-  size?: 'sm' | 'md' | 'lg';
-  showIcon?: boolean;
+  contentType: ContentType;
+  size?: 'sm' | 'default';
 }
 
-const CONTENT_TYPE_CONFIG = {
-  'fagartikkel': {
-    label: 'Fagartikkel',
-    icon: FileText,
-    className: 'bg-blue-100 text-blue-800 border-blue-200',
-  },
-  'lov': {
-    label: 'Lov',
-    icon: Scale,
-    className: 'bg-green-100 text-green-800 border-green-200',
-  },
-  'isa-standard': {
-    label: 'ISA-standard',
-    icon: FileCode,
-    className: 'bg-purple-100 text-purple-800 border-purple-200',
-  },
-  'nrs-standard': {
-    label: 'NRS-standard',
-    icon: Book,
-    className: 'bg-indigo-100 text-indigo-800 border-indigo-200',
-  },
-  'forskrift': {
-    label: 'Forskrift',
-    icon: Gavel,
-    className: 'bg-orange-100 text-orange-800 border-orange-200',
-  },
-  'forarbeider': {
-    label: 'Forarbeider',
-    icon: FileText,
-    className: 'bg-gray-100 text-gray-800 border-gray-200',
-  },
-  'hvitvasking': {
-    label: 'Hvitvasking',
-    icon: FileText,
-    className: 'bg-red-100 text-red-800 border-red-200',
-  },
-};
-
-const ContentTypeBadge = ({ contentType, size = 'sm', showIcon = true }: ContentTypeBadgeProps) => {
-  const contentTypeName = typeof contentType === 'string' ? contentType : contentType?.name || 'fagartikkel';
-  const displayName = typeof contentType === 'string' ? contentType : contentType?.display_name;
-  
-  const config = CONTENT_TYPE_CONFIG[contentTypeName as keyof typeof CONTENT_TYPE_CONFIG] || CONTENT_TYPE_CONFIG.fagartikkel;
-  const IconComponent = config.icon;
-  
-  const sizeClasses = {
-    sm: 'text-xs px-2 py-1',
-    md: 'text-sm px-3 py-1.5',
-    lg: 'text-base px-4 py-2',
-  };
-
-  const iconSizes = {
-    sm: 'w-3 h-3',
-    md: 'w-4 h-4',
-    lg: 'w-5 h-5',
+const ContentTypeBadge: React.FC<ContentTypeBadgeProps> = ({ contentType, size = 'default' }) => {
+  const getVariantByType = (name: string) => {
+    switch (name.toLowerCase()) {
+      case 'isa-standard':
+      case 'nrs-standard':
+        return 'default';
+      case 'lov':
+      case 'forskrift':
+        return 'destructive';
+      case 'fagartikkel':
+        return 'secondary';
+      case 'forarbeider':
+        return 'outline';
+      default:
+        return 'secondary';
+    }
   };
 
   return (
     <Badge 
-      variant="outline" 
-      className={`${config.className} ${sizeClasses[size]} inline-flex items-center gap-1.5 font-medium`}
+      variant={getVariantByType(contentType.name)} 
+      className={size === 'sm' ? 'text-xs' : ''}
+      style={{ backgroundColor: contentType.color + '20', color: contentType.color }}
     >
-      {showIcon && <IconComponent className={iconSizes[size]} />}
-      {displayName || config.label}
+      {contentType.display_name}
     </Badge>
   );
 };
