@@ -201,7 +201,7 @@ Jeg kan hjelpe deg med planlegging og gjennomføring av revisjonshandlinger, ISA
         metadata: {}
       }));
 
-      // Use enhanced AI service with dynamic context and variant
+      // Use enhanced AI service - now fully secure with no direct OpenAI calls
       const aiResponse = await generateEnhancedAIResponseWithVariant(
         userMessage,
         context,
@@ -245,7 +245,18 @@ Jeg kan hjelpe deg med planlegging og gjennomføring av revisjonshandlinger, ISA
       const errorMessage: RevyMessage = {
         id: crypto.randomUUID(),
         sender: 'assistant',
-        content: 'Beklager, jeg opplever tekniske problemer akkurat nå. Prøv igjen om litt.',
+        content: `Beklager, jeg opplever tekniske problemer akkurat nå. Dette kan skyldes:
+
+• Nettverksforbindelse problemer
+• Midlertidig utilgjengelighet av AI-tjenester
+• Overbelastning av systemet
+
+**Forslag:**
+• Prøv igjen om litt
+• Sjekk internett-tilkoblingen din
+• Kontakt support hvis problemet vedvarer
+
+🏷️ **EMNER:** Teknisk support, Feilsøking, AI-assistanse`,
         timestamp: new Date(),
       };
 

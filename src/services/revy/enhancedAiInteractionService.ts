@@ -97,60 +97,24 @@ const enforceResponseValidation = (response: string, knowledgeArticles: any[], a
   return validatedResponse;
 };
 
-// Fallback function for direct OpenAI call when knowledge search fails
-const callOpenAIDirectly = async (
-  message: string,
-  context: string,
-  history: any[] = [],
-  clientData?: any,
-  userRole?: string,
-  selectedVariant?: any
-): Promise<string> => {
-  console.log('🔄 Fallback: Calling OpenAI directly');
+// Enhanced fallback that provides helpful response without OpenAI
+const getIntelligentFallback = (message: string, context: string, selectedVariant?: any): string => {
+  const variantContext = selectedVariant ? ` som ${selectedVariant.display_name}` : '';
   
-  const model = getModelForVariant(selectedVariant);
-  let systemPrompt = `Du er AI-Revi, en ekspert innen revisjon og regnskapsføring som jobber for norske revisjonsselskaper.
+  return `Hei! Jeg er AI-Revi${variantContext} og jobber med å løse det tekniske problemet som oppstod.
 
-${selectedVariant ? buildVariantSystemPrompt(selectedVariant, context, clientData, userRole) : ''}
+**Om din forespørsel:** "${message.substring(0, 100)}${message.length > 100 ? '...' : ''}"
 
-**VIKTIGE REGLER:**
-• Svar ALLTID på norsk bokmål
-• Vær spesifikk og praktisk
-• Referer til konkrete ISA-standarder når relevant
-• Gi generelle råd basert på din ekspertise
-• Avslutt ALLTID med emnetagg-seksjon formatert som: "🏷️ **EMNER:** Tag1, Tag2, Tag3"
+Jeg forstår at du spør om **${context}**, og jeg jobber med å få tilgang til kunnskapsbasen for å gi deg et relevant svar.
 
-Kontext: ${context}
-${clientData ? `Klient: ${clientData.company_name || clientData.name}` : ''}`;
+**Midlertidige råd:**
+• Prøv å omformulere spørsmålet ditt
+• Vær mer spesifikk om hva du trenger hjelp til
+• Sjekk om du har tilgang til internett-tilkobling
 
-  try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          ...history.slice(-6).map((msg: any) => ({
-            role: msg.sender === 'user' ? 'user' : 'assistant',
-            content: msg.content
-          })),
-          { role: 'user', content: message }
-        ],
-        max_tokens: 1500,
-        temperature: selectedVariant?.name === 'methodology-expert' ? 0.1 : 0.3,
-      }),
-    });
+Jeg kommer tilbake med et fullstendig svar så snart det tekniske problemet er løst.
 
-    const data = await response.json();
-    return data.choices?.[0]?.message?.content || 'Beklager, jeg kunne ikke generere et svar.';
-  } catch (error) {
-    console.error('❌ Direct OpenAI call failed:', error);
-    return 'Beklager, jeg opplever tekniske problemer akkurat nå. Prøv igjen om litt.';
-  }
+🏷️ **EMNER:** Teknisk support, AI-assistanse, ${context}`;
 };
 
 const buildEnhancedContextWithVariantAndDocuments = async (
@@ -192,7 +156,7 @@ const buildEnhancedContextWithVariantAndDocuments = async (
 
       if (error) {
         console.error('❌ Knowledge search failed:', error);
-        throw error; // Throw to trigger fallback
+        throw error;
       } else {
         // Handle new response structure { articles, tagMapping }
         knowledgeArticles = data?.articles || [];
@@ -244,103 +208,6 @@ const buildEnhancedContextWithVariantAndDocuments = async (
   };
 };
 
-const buildIntelligentSystemPromptWithVariant = (
-  context: string,
-  knowledgeArticles: any[],
-  articleTagMapping: Record<string, any>,
-  clientData?: any,
-  userRole?: string,
-  hasDocumentResults: boolean = false,
-  isGuestMode: boolean = false,
-  selectedVariant?: any
-) => {
-  console.log('🎯 Building intelligent system prompt with variant support:', {
-    context,
-    variantName: selectedVariant?.name,
-    hasClientData: !!clientData,
-    hasKnowledge: knowledgeArticles.length > 0,
-    hasDocumentResults,
-    isGuestMode
-  });
-
-  // Build variant-specific system prompt
-  let variantPrompt = '';
-  if (selectedVariant) {
-    console.log('🎭 Building variant system prompt for:', selectedVariant.name);
-    variantPrompt = buildVariantSystemPrompt(selectedVariant, context, clientData, userRole);
-    console.log('✅ Variant system prompt built for:', selectedVariant.name);
-  }
-
-  // Enhanced knowledge context with better article information
-  let knowledgeContext = '';
-  if (knowledgeArticles.length > 0) {
-    console.log('📚 Building knowledge context with', knowledgeArticles.length, 'articles');
-    
-    knowledgeContext = `
-
-📚 **TILGJENGELIGE FAGARTIKLER** (${knowledgeArticles.length} artikler):
-${knowledgeArticles.map((article, index) => `
-${index + 1}. **${article.title}**
-   - Kategori: ${article.category?.name || 'Ukategoriseret'}
-   - Relevans: ${Math.round((article.similarity || 0) * 100)}%
-   - Referanse: ${article.reference_code || 'Ingen referanse'}
-   - Sammendrag: ${article.summary || 'Ingen sammendrag'}
-   - Publisert: ${article.published_at ? new Date(article.published_at).toLocaleDateString('nb-NO') : 'Ukjent'}
-`).join('')}
-
-Du har nå **DIREKTE TILGANG** til disse artiklene og kan referere til dem spesifikt i dine svar.
-Når brukere spør om spesifikke emner, HENVISE til relevante artikler fra listen ovenfor.
-`;
-  } else {
-    knowledgeContext = `
-
-⚠️ **INGEN FAGARTIKLER FUNNET** for dette søket.
-Du kan fortsatt gi generell rådgivning basiert på din kunnskap om revisjon og regnskapsføring.
-`;
-  }
-
-  // Enhanced article tag mapping context
-  let tagMappingContext = '';
-  if (Object.keys(articleTagMapping).length > 0) {
-    tagMappingContext = `
-
-🏷️ **EMNE-MAPPINGER** (${Object.keys(articleTagMapping).length} mappinger):
-${Object.entries(articleTagMapping).map(([keyword, mapping]: [string, any]) => `
-• **${keyword}** → ${mapping.articleTitle}
-  - Type: ${mapping.contentType}
-  - Kategori: ${mapping.category}
-  - Relevans: ${mapping.relevanceScore}/5
-`).join('')}
-`;
-  }
-
-  const baseSystemPrompt = `Du er AI-Revi, en ekspert innen revisjon og regnskapsføring som jobber for norske revisjonsselskaper.
-
-${variantPrompt}
-
-${knowledgeContext}${tagMappingContext}
-
-**VIKTIGE REGLER:**
-• Svar ALLTID på norsk bokmål
-• Vær spesifikk og praktisk
-• Referer til konkrete ISA-standarder når relevant
-• ${knowledgeArticles.length > 0 ? 'BRUK informasjonen fra fagartiklene ovenfor når du svarer' : 'Gi generelle råd basert på din ekspertise'}
-• Avslutt ALLTID med emnetagg-seksjon formatert som: "🏷️ **EMNER:** Tag1, Tag2, Tag3"
-
-SVARFORMAT:
-- Start med konkret svar på spørsmålet
-- Inkluder relevante detaljer og prosedyrer
-- ${knowledgeArticles.length > 0 ? 'Referer til spesifikke artikler når relevant' : ''}
-- Avslutt med emnetagg-seksjon
-
-Kontext: ${context}
-${clientData ? `Klient: ${clientData.company_name || clientData.name}` : ''}
-${isGuestMode ? 'MODUS: Gjest (begrenset tilgang)' : ''}`;
-
-  console.log('✅ Intelligent system prompt built with variant and document support');
-  return baseSystemPrompt;
-};
-
 export const generateEnhancedAIResponseWithVariant = async (
   message: string,
   context: string,
@@ -381,7 +248,7 @@ export const generateEnhancedAIResponseWithVariant = async (
       history.length,
       userRole,
       selectedVariant,
-      message // Pass the message for knowledge search
+      message
     );
 
     console.log('🧠 Enhanced variant-aware context built with document support:', {
@@ -396,50 +263,11 @@ export const generateEnhancedAIResponseWithVariant = async (
       variantDescription: selectedVariant?.description
     });
 
-    // FALLBACK LOGIC: If no knowledge articles found, use direct OpenAI call
-    if (enhancedContextData.knowledgeArticles.length === 0) {
-      console.log('🔄 No knowledge articles found, falling back to direct OpenAI call');
-      const fallbackResponse = await callOpenAIDirectly(message, context, history, clientData, userRole, selectedVariant);
-      const validatedResponse = enforceResponseValidation(fallbackResponse, [], {});
-      
-      // Cache the fallback response
-      await cacheResponse(requestHash, validatedResponse);
-      
-      const responseTime = Date.now() - startTime;
-      await logAIUsage(
-        (await supabase.auth.getUser()).data.user?.id,
-        0,
-        0, 
-        0,
-        getModelForVariant(selectedVariant),
-        'fallback_chat',
-        context,
-        clientData?.id,
-        responseTime,
-        sessionId,
-        selectedVariant?.name
-      );
-      
-      return validatedResponse;
-    }
-
-    // Build intelligent system prompt with variant support
-    const systemPrompt = buildIntelligentSystemPromptWithVariant(
-      context,
-      enhancedContextData.knowledgeArticles,
-      enhancedContextData.articleTagMapping,
-      clientData,
-      userRole,
-      enhancedContextData.documentResults.length > 0,
-      !(await supabase.auth.getUser()).data.user,
-      selectedVariant
-    );
-
     // Select model based on variant or default
     const model = getModelForVariant(selectedVariant);
     console.log('🎯 Selected model:', model, 'for variant:', selectedVariant?.name);
 
-    // Use the existing revy-ai-chat function with enhanced system prompt
+    // Use the revy-ai-chat function for all AI communication
     console.log('🚀 Calling revy-ai-chat function with enhanced prompt...');
     
     const { data, error } = await supabase.functions.invoke('revy-ai-chat', {
@@ -451,9 +279,7 @@ export const generateEnhancedAIResponseWithVariant = async (
         userRole,
         sessionId,
         selectedVariant,
-        systemPrompt, // Pass our enhanced prompt with knowledge articles
         model,
-        skipKnowledgeSearch: true, // Skip knowledge search since we already have articles
         // Pass the knowledge articles directly to ensure they're used
         knowledgeArticles: enhancedContextData.knowledgeArticles,
         articleTagMapping: enhancedContextData.articleTagMapping
@@ -461,8 +287,9 @@ export const generateEnhancedAIResponseWithVariant = async (
     });
 
     if (error) {
-      console.error('❌ revy-ai-chat function error, falling back to direct OpenAI:', error);
-      const fallbackResponse = await callOpenAIDirectly(message, context, history, clientData, userRole, selectedVariant);
+      console.error('❌ revy-ai-chat function error:', error);
+      // Use intelligent fallback instead of direct OpenAI call
+      const fallbackResponse = getIntelligentFallback(message, context, selectedVariant);
       const validatedResponse = enforceResponseValidation(fallbackResponse, enhancedContextData.knowledgeArticles, enhancedContextData.articleTagMapping);
       await cacheResponse(requestHash, validatedResponse);
       return validatedResponse;
@@ -535,8 +362,8 @@ export const generateEnhancedAIResponseWithVariant = async (
     const responseTime = Date.now() - startTime;
     console.error('💥 Enhanced AI response generation failed, using fallback:', error);
     
-    // FINAL FALLBACK: Direct OpenAI call
-    const fallbackResponse = await callOpenAIDirectly(message, context, history, clientData, userRole, selectedVariant);
+    // SECURE FALLBACK: No direct OpenAI calls
+    const fallbackResponse = getIntelligentFallback(message, context, selectedVariant);
     const validatedResponse = enforceResponseValidation(fallbackResponse, [], {});
     
     // Log error
