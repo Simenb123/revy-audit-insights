@@ -32,7 +32,7 @@ ISA 315 er en sentral standard som krever at revisor identifiserer og vurderer r
 
 Risikovurderingen danner grunnlag for den videre revisjonsplanleggingen.`,
       reference_code: "ISA 315",
-      status: 'published',
+      status: 'published' as const,
       category_name: 'Revisjonsstandarder'
     },
     {
@@ -57,7 +57,7 @@ Materialitet er et sentralt konsept som påvirker alle deler av revisjonsarbeide
 
 Materialitetsvurderingen må oppdateres dersom forholdene endres.`,
       reference_code: "ISA 320",
-      status: 'published',
+      status: 'published' as const,
       category_name: 'Revisjonsstandarder'
     },
     {
@@ -89,7 +89,7 @@ Varelager er ofte et vesentlig og risikofylt område som krever spesiell oppmerk
 
 Varelagerrevisjonen krever både detaljerte tester og analytiske handlinger.`,
       reference_code: null,
-      status: 'published',
+      status: 'published' as const,
       category_name: 'Fagartikler'
     },
     {
@@ -120,7 +120,7 @@ Varelagerrevisjonen krever både detaljerte tester og analytiske handlinger.`,
 
 En systematisk tilnærming sikrer kvalitet i regnskapsavleggelsen.`,
       reference_code: null,
-      status: 'published',
+      status: 'published' as const,
       category_name: 'Fagartikler'
     },
     {
@@ -152,7 +152,7 @@ ISA 230 setter krav til revisjonsregnskapsføring som sikrer sporbarhet og kvali
 
 God dokumentasjon er grunnlag for forsvarlig revisjon.`,
       reference_code: "ISA 230",
-      status: 'published',
+      status: 'published' as const,
       category_name: 'Revisjonsstandarder'
     }
   ];
@@ -162,7 +162,43 @@ God dokumentasjon er grunnlag for forsvarlig revisjon.`,
     try {
       console.log('🚀 Starter opprettelse av testartikler...');
 
-      // Først, opprett kategorier hvis de ikke eksisterer
+      // First, get the current user
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        toast.error('Du må være logget inn for å opprette testdata');
+        return;
+      }
+
+      // Get or create default content type
+      let { data: contentType, error: contentTypeError } = await supabase
+        .from('content_type_entities')
+        .select('id')
+        .eq('name', 'article')
+        .single();
+
+      if (contentTypeError || !contentType) {
+        // Create default content type
+        const { data: newContentType, error: createError } = await supabase
+          .from('content_type_entities')
+          .insert({
+            name: 'article',
+            display_name: 'Artikkel',
+            description: 'Standard fagartikkel',
+            color: '#3B82F6',
+            sort_order: 1,
+            is_active: true
+          })
+          .select()
+          .single();
+
+        if (createError) {
+          console.error('Feil ved opprettelse av innholdstype:', createError);
+          throw createError;
+        }
+        contentType = newContentType;
+      }
+
+      // Create categories if they don't exist
       const categories = ['Revisjonsstandarder', 'Fagartikler'];
       const categoryMap = new Map();
 
@@ -194,12 +230,12 @@ God dokumentasjon er grunnlag for forsvarlig revisjon.`,
         }
       }
 
-      // Deretter, opprett artikler
+      // Create articles
       let createdCount = 0;
       let skippedCount = 0;
 
       for (const article of testArticles) {
-        // Sjekk om artikkelen allerede eksisterer
+        // Check if article already exists
         const { data: existing } = await supabase
           .from('knowledge_articles')
           .select('id')
@@ -224,8 +260,10 @@ God dokumentasjon er grunnlag for forsvarlig revisjon.`,
             reference_code: article.reference_code,
             status: article.status,
             category_id: categoryId,
-            author_id: (await supabase.auth.getUser()).data.user?.id,
-            published_at: new Date().toISOString()
+            content_type_id: contentType.id,
+            author_id: user.id,
+            published_at: new Date().toISOString(),
+            view_count: 0
           });
 
         if (error) {
@@ -237,7 +275,7 @@ God dokumentasjon er grunnlag for forsvarlig revisjon.`,
         console.log(`✅ Opprettet artikkel: "${article.title}"`);
       }
 
-      // Generer embeddings for de nye artiklene
+      // Generate embeddings for the new articles
       console.log('🔄 Genererer embeddings...');
       const { data: embeddingResult, error: embeddingError } = await supabase.functions.invoke('generate-embeddings', {
         body: {}
@@ -245,7 +283,7 @@ God dokumentasjon er grunnlag for forsvarlig revisjon.`,
 
       if (embeddingError) {
         console.error('Feil ved generering av embeddings:', embeddingError);
-        // Ikke kast feil her, siden artiklene er opprettet
+        // Don't throw error here, since articles are created
       } else {
         console.log('✅ Embeddings generert:', embeddingResult);
       }
