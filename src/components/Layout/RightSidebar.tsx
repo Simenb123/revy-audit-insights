@@ -37,6 +37,38 @@ const RightSidebar = ({ isCollapsed, onToggle, width, onWidthChange }: RightSide
     );
   }
 
+  // Check if we're on fagstoff/knowledge pages
+  const isKnowledgePage = location.pathname.startsWith('/fag');
+  
+  if (isKnowledgePage) {
+    return (
+      <div className="w-80 border-l bg-background p-4">
+        <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="w-4 h-4" />
+                Kunnskapsbase
+              </CardTitle>
+              <CardDescription>
+                AI Revi fagstoff og artikler
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm">Status</span>
+                <Badge className="bg-green-100 text-green-800">Aktiv</Badge>
+              </div>
+              <div className="text-xs text-muted-foreground">
+                <p>AI Revi kan svare på spørsmål basert på fagartiklene i kunnskapsbasen.</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
   // Extract client ID from URL (org number or UUID) for client pages
   const pathSegments = location.pathname.split('/').filter(Boolean);
   let clientId = '';
@@ -51,9 +83,9 @@ const RightSidebar = ({ isCollapsed, onToggle, width, onWidthChange }: RightSide
 
   console.log('🔍 [RIGHT_SIDEBAR] Extracted clientId:', clientId);
 
-  // If no client ID found and not admin page, don't show sidebar
+  // If no client ID found and not on special pages, don't show sidebar
   if (!clientId) {
-    console.log('🔍 [RIGHT_SIDEBAR] No client ID found and not admin page, hiding sidebar');
+    console.log('🔍 [RIGHT_SIDEBAR] No client ID found and not on special pages, hiding sidebar');
     return null;
   }
 
