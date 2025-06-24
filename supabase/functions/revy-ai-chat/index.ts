@@ -41,7 +41,7 @@ serve(async (req) => {
       userRole, 
       sessionId, 
       userId,
-      variant: selectedVariant,
+      selectedVariant, // FIXED: Changed from variant: selectedVariant to selectedVariant
       systemPrompt, // Enhanced system prompt from client
       model,
       knowledgeArticles = [], // Knowledge articles from client
@@ -278,10 +278,10 @@ serve(async (req) => {
     let fallbackResponse = getIntelligentFallback(requestData);
     
     // Add variant-specific fallback context
-    if (requestData.variant) {
-      const variantTip = getVariantContextualTips(requestData.variant, requestData.context, requestData.clientData);
+    if (requestData.selectedVariant) {
+      const variantTip = getVariantContextualTips(requestData.selectedVariant, requestData.context, requestData.clientData);
       if (variantTip) {
-        fallbackResponse += `\n\n💡 **${requestData.variant.display_name} Tips:** ${variantTip}`;
+        fallbackResponse += `\n\n💡 **${requestData.selectedVariant.display_name} Tips:** ${variantTip}`;
       }
     }
     

@@ -97,6 +97,62 @@ const enforceResponseValidation = (response: string, knowledgeArticles: any[], a
   return validatedResponse;
 };
 
+// Fallback function for direct OpenAI call when knowledge search fails
+const callOpenAIDirectly = async (
+  message: string,
+  context: string,
+  history: any[] = [],
+  clientData?: any,
+  userRole?: string,
+  selectedVariant?: any
+): Promise<string> => {
+  console.log('🔄 Fallback: Calling OpenAI directly');
+  
+  const model = getModelForVariant(selectedVariant);
+  let systemPrompt = `Du er AI-Revi, en ekspert innen revisjon og regnskapsføring som jobber for norske revisjonsselskaper.
+
+${selectedVariant ? buildVariantSystemPrompt(selectedVariant, context, clientData, userRole) : ''}
+
+**VIKTIGE REGLER:**
+• Svar ALLTID på norsk bokmål
+• Vær spesifikk og praktisk
+• Referer til konkrete ISA-standarder når relevant
+• Gi generelle råd basert på din ekspertise
+• Avslutt ALLTID med emnetagg-seksjon formatert som: "🏷️ **EMNER:** Tag1, Tag2, Tag3"
+
+Kontext: ${context}
+${clientData ? `Klient: ${clientData.company_name || clientData.name}` : ''}`;
+
+  try {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          ...history.slice(-6).map((msg: any) => ({
+            role: msg.sender === 'user' ? 'user' : 'assistant',
+            content: msg.content
+          })),
+          { role: 'user', content: message }
+        ],
+        max_tokens: 1500,
+        temperature: selectedVariant?.name === 'methodology-expert' ? 0.1 : 0.3,
+      }),
+    });
+
+    const data = await response.json();
+    return data.choices?.[0]?.message?.content || 'Beklager, jeg kunne ikke generere et svar.';
+  } catch (error) {
+    console.error('❌ Direct OpenAI call failed:', error);
+    return 'Beklager, jeg opplever tekniske problemer akkurat nå. Prøv igjen om litt.';
+  }
+};
+
 const buildEnhancedContextWithVariantAndDocuments = async (
   context: string,
   clientData?: any,
@@ -136,6 +192,7 @@ const buildEnhancedContextWithVariantAndDocuments = async (
 
       if (error) {
         console.error('❌ Knowledge search failed:', error);
+        throw error; // Throw to trigger fallback
       } else {
         // Handle new response structure { articles, tagMapping }
         knowledgeArticles = data?.articles || [];
@@ -155,6 +212,7 @@ const buildEnhancedContextWithVariantAndDocuments = async (
       }
     } catch (error) {
       console.error('❌ Knowledge search error:', error);
+      // Don't throw here - let the main function handle fallback
     }
   }
 
@@ -237,7 +295,7 @@ Når brukere spør om spesifikke emner, HENVISE til relevante artikler fra liste
     knowledgeContext = `
 
 ⚠️ **INGEN FAGARTIKLER FUNNET** for dette søket.
-Du kan fortsatt gi generell rådgivning basert på din kunnskap om revisjon og regnskapsføring.
+Du kan fortsatt gi generell rådgivning basiert på din kunnskap om revisjon og regnskapsføring.
 `;
   }
 
@@ -338,6 +396,33 @@ export const generateEnhancedAIResponseWithVariant = async (
       variantDescription: selectedVariant?.description
     });
 
+    // FALLBACK LOGIC: If no knowledge articles found, use direct OpenAI call
+    if (enhancedContextData.knowledgeArticles.length === 0) {
+      console.log('🔄 No knowledge articles found, falling back to direct OpenAI call');
+      const fallbackResponse = await callOpenAIDirectly(message, context, history, clientData, userRole, selectedVariant);
+      const validatedResponse = enforceResponseValidation(fallbackResponse, [], {});
+      
+      // Cache the fallback response
+      await cacheResponse(requestHash, validatedResponse);
+      
+      const responseTime = Date.now() - startTime;
+      await logAIUsage(
+        (await supabase.auth.getUser()).data.user?.id,
+        0,
+        0, 
+        0,
+        getModelForVariant(selectedVariant),
+        'fallback_chat',
+        context,
+        clientData?.id,
+        responseTime,
+        sessionId,
+        selectedVariant?.name
+      );
+      
+      return validatedResponse;
+    }
+
     // Build intelligent system prompt with variant support
     const systemPrompt = buildIntelligentSystemPromptWithVariant(
       context,
@@ -376,7 +461,11 @@ export const generateEnhancedAIResponseWithVariant = async (
     });
 
     if (error) {
-      throw new Error(`AI Chat function error: ${error.message || 'Unknown error'}`);
+      console.error('❌ revy-ai-chat function error, falling back to direct OpenAI:', error);
+      const fallbackResponse = await callOpenAIDirectly(message, context, history, clientData, userRole, selectedVariant);
+      const validatedResponse = enforceResponseValidation(fallbackResponse, enhancedContextData.knowledgeArticles, enhancedContextData.articleTagMapping);
+      await cacheResponse(requestHash, validatedResponse);
+      return validatedResponse;
     }
 
     let aiResponse = data?.response || 'Beklager, jeg kunne ikke generere et svar.';
@@ -444,7 +533,11 @@ export const generateEnhancedAIResponseWithVariant = async (
 
   } catch (error) {
     const responseTime = Date.now() - startTime;
-    console.error('💥 Enhanced AI response generation failed:', error);
+    console.error('💥 Enhanced AI response generation failed, using fallback:', error);
+    
+    // FINAL FALLBACK: Direct OpenAI call
+    const fallbackResponse = await callOpenAIDirectly(message, context, history, clientData, userRole, selectedVariant);
+    const validatedResponse = enforceResponseValidation(fallbackResponse, [], {});
     
     // Log error
     await logAIUsage(
@@ -452,8 +545,8 @@ export const generateEnhancedAIResponseWithVariant = async (
       0,
       0,
       0,
-      'gpt-4o-mini',
-      'enhanced_chat',
+      getModelForVariant(selectedVariant),
+      'error_fallback',
       context,
       clientData?.id,
       responseTime,
@@ -462,7 +555,8 @@ export const generateEnhancedAIResponseWithVariant = async (
       error.message
     );
 
-    throw error;
+    await cacheResponse(generateRequestHash(message, context, clientData?.id, selectedVariant?.name), validatedResponse);
+    return validatedResponse;
   }
 };
 
