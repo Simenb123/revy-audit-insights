@@ -1,217 +1,28 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { devLog } from '@/utils/devLogger';
 
-export interface ClientDocument {
-  id: string;
-  client_id: string;
-  user_id: string;
-  file_name: string;
-  file_path: string;
-  file_size: number;
-  mime_type: string;
-  category?: string;
-  subject_area?: string;
-  ai_suggested_category?: string;
-  ai_analysis_summary?: string;
-  ai_confidence_score?: number;
-  manual_category_override?: boolean;
-  extracted_text?: string;
-  text_extraction_status?: string;
-  ai_suggested_subject_areas?: string[];
-  ai_revision_phase_relevance?: any;
-  ai_isa_standard_references?: string[];
-  created_at: string;
-  updated_at: string;
-}
+import { useClientLookup } from './useClientLookup';
+import { useClientDocumentsList } from './useClientDocumentsList';
+import { useDocumentCategories } from './useDocumentCategories';
+import { useDocumentOperations } from './useDocumentOperations';
 
-export interface DocumentCategory {
-  id: string;
-  subject_area: string;
-  category_name: string;
-  description?: string;
-  expected_file_patterns?: string[];
-  is_standard?: boolean;
-  created_at: string;
-}
+// Re-export types for backward compatibility
+export type { ClientDocument } from './useClientDocumentsList';
+export type { DocumentCategory } from './useDocumentCategories';
 
 export const useClientDocuments = (clientIdOrOrgNumber?: string) => {
-  const queryClient = useQueryClient();
+  // Get client UUID from organization number or use directly if it's a UUID
+  const clientLookupQuery = useClientLookup(clientIdOrOrgNumber);
+  const clientId = clientLookupQuery.data?.id;
 
-  // Helper query to get client UUID from organization number
-  const clientLookupQuery = useQuery({
-    queryKey: ['client-lookup', clientIdOrOrgNumber],
-    queryFn: async () => {
-      if (!clientIdOrOrgNumber) return null;
-      
-      // If it looks like a UUID (36 chars with dashes), use it directly
-      if (clientIdOrOrgNumber.length === 36 && clientIdOrOrgNumber.includes('-')) {
-        return { id: clientIdOrOrgNumber };
-      }
-      
-      // Otherwise, treat it as an organization number and look up the UUID
-      devLog('Looking up client UUID for org number:', clientIdOrOrgNumber);
-      
-      const { data: client, error } = await supabase
-        .from('clients')
-        .select('id')
-        .eq('org_number', clientIdOrOrgNumber)
-        .single();
+  // Get documents for the client
+  const documentsQuery = useClientDocumentsList(clientId);
+  
+  // Get available categories
+  const categoriesQuery = useDocumentCategories();
+  
+  // Get document operations
+  const documentOperations = useDocumentOperations(clientId);
 
-      if (error) {
-        devLog('Error looking up client:', error);
-        return null;
-      }
-
-      devLog('Found client UUID:', client?.id);
-      return client;
-    },
-    enabled: !!clientIdOrOrgNumber,
-  });
-
-  // Main query for documents
-  const documentsQuery = useQuery({
-    queryKey: ['client-documents', clientLookupQuery.data?.id],
-    queryFn: async () => {
-      const clientId = clientLookupQuery.data?.id;
-      
-      if (!clientId) {
-        devLog('No client ID available for document query');
-        return [];
-      }
-
-      devLog('Fetching client documents for client UUID:', clientId);
-
-      const { data: documents, error } = await supabase
-        .from('client_documents_files')
-        .select('*')
-        .eq('client_id', clientId)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        devLog('Error fetching client documents:', error);
-        throw error;
-      }
-
-      devLog('Client documents fetched:', { count: documents?.length || 0 });
-      return documents || [];
-    },
-    enabled: !!clientLookupQuery.data?.id,
-  });
-
-  // Categories query
-  const categoriesQuery = useQuery({
-    queryKey: ['document-categories'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('document_categories')
-        .select('*')
-        .order('subject_area', { ascending: true });
-
-      if (error) {
-        devLog('Error fetching document categories:', error);
-        throw error;
-      }
-
-      return data || [];
-    },
-  });
-
-  // Upload mutation
-  const uploadDocument = useMutation({
-    mutationFn: async (params: {
-      file: File;
-      clientId: string;
-      category?: string;
-      subjectArea?: string;
-    }) => {
-      // This would need proper file upload implementation
-      // For now, returning a placeholder
-      throw new Error('File upload not implemented');
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['client-documents', clientLookupQuery.data?.id] });
-    },
-  });
-
-  // Delete mutation
-  const deleteDocument = useMutation({
-    mutationFn: async (documentId: string) => {
-      const { error } = await supabase
-        .from('client_documents_files')
-        .delete()
-        .eq('id', documentId);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['client-documents', clientLookupQuery.data?.id] });
-    },
-  });
-
-  // Download document function
-  const downloadDocument = async (documentId: string) => {
-    try {
-      devLog('Downloading document:', documentId);
-      
-      // Get document data
-      const { data: documentData, error } = await supabase
-        .from('client_documents_files')
-        .select('file_path, file_name')
-        .eq('id', documentId)
-        .single();
-
-      if (error || !documentData) {
-        throw new Error('Document not found');
-      }
-
-      // Get signed URL for download
-      const { data } = await supabase.storage
-        .from('client-documents')
-        .createSignedUrl(documentData.file_path, 3600);
-      
-      if (data?.signedUrl) {
-        // Create a temporary link and trigger download
-        const link = document.createElement('a');
-        link.href = data.signedUrl;
-        link.download = documentData.file_name;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        devLog('Document download initiated:', documentData.file_name);
-      } else {
-        throw new Error('Could not generate download URL');
-      }
-    } catch (error) {
-      devLog('Error downloading document:', error);
-      throw error;
-    }
-  };
-
-  // Get document URL function
-  const getDocumentUrl = async (filePath: string): Promise<string | null> => {
-    try {
-      const { data } = await supabase.storage
-        .from('client-documents')
-        .createSignedUrl(filePath, 3600);
-      
-      return data?.signedUrl || null;
-    } catch (error) {
-      devLog('Error getting document URL:', error);
-      return null;
-    }
-  };
-
-  // Text extraction trigger
-  const triggerTextExtraction = useMutation({
-    mutationFn: async (documentId: string) => {
-      // Placeholder for text extraction trigger
-      devLog('Text extraction triggered for document:', documentId);
-    },
-  });
-
-  // Helper functions
+  // Helper functions and computed values
   const documents = documentsQuery.data || [];
   const categories = categoriesQuery.data || [];
   const documentsCount = documents.length;
@@ -228,14 +39,8 @@ export const useClientDocuments = (clientIdOrOrgNumber?: string) => {
     isLoading: documentsQuery.isLoading || categoriesQuery.isLoading || clientLookupQuery.isLoading,
     error: documentsQuery.error || categoriesQuery.error || clientLookupQuery.error,
     
-    // Mutations
-    uploadDocument,
-    deleteDocument,
-    triggerTextExtraction,
-    
-    // Functions
-    getDocumentUrl,
-    downloadDocument,
+    // Operations from useDocumentOperations
+    ...documentOperations,
     
     // Refetch
     refetch: documentsQuery.refetch,
