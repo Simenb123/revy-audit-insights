@@ -104,6 +104,43 @@ async function keywordSearch(supabase: any, query: string) {
   }
 }
 
+function createTagMapping(articles: any[], keywords: string[]) {
+  const mapping: Record<string, any> = {};
+  
+  // Create mappings for keywords found in articles
+  keywords.forEach(keyword => {
+    const keywordLower = keyword.toLowerCase();
+    let bestMatch = null;
+    let bestScore = 0;
+    
+    articles.forEach(article => {
+      let score = 0;
+      
+      if (article.title && article.title.toLowerCase().includes(keywordLower)) score += 5;
+      if (article.reference_code && article.reference_code.toLowerCase().includes(keywordLower)) score += 4;
+      if (article.summary && article.summary.toLowerCase().includes(keywordLower)) score += 2;
+      
+      if (score > bestScore) {
+        bestScore = score;
+        bestMatch = article;
+      }
+    });
+    
+    if (bestMatch && bestScore > 0) {
+      mapping[keyword] = {
+        articleSlug: bestMatch.slug,
+        articleTitle: bestMatch.title,
+        matchedTags: [],
+        relevanceScore: bestScore,
+        contentType: 'fagartikkel',
+        category: bestMatch.category?.name || 'Ukategoriseret'
+      };
+    }
+  });
+  
+  return mapping;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -148,7 +185,10 @@ serve(async (req) => {
     
     if (!totalCount || totalCount === 0) {
       console.log('⚠️ No published articles found');
-      return new Response(JSON.stringify([]), {
+      return new Response(JSON.stringify({
+        articles: [],
+        tagMapping: {}
+      }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -194,9 +234,18 @@ serve(async (req) => {
     });
 
     const finalResults = uniqueResults.slice(0, 20);
-    console.log(`✅ Returning ${finalResults.length} unique search results`);
+    
+    // Extract keywords for tag mapping
+    const keywords = query.toLowerCase().split(/\s+/).filter(word => word.length > 1);
+    const tagMapping = createTagMapping(finalResults, keywords);
+    
+    console.log(`✅ Returning ${finalResults.length} unique search results with tag mappings`);
 
-    return new Response(JSON.stringify(finalResults), {
+    // Return the structure that revy-ai-chat expects
+    return new Response(JSON.stringify({
+      articles: finalResults,
+      tagMapping: tagMapping
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
@@ -204,7 +253,9 @@ serve(async (req) => {
     console.error('💥 Critical error in knowledge-search function:', error);
     return new Response(JSON.stringify({ 
       error: error.message,
-      details: 'Knowledge search function encountered an error. Check logs for details.'
+      details: 'Knowledge search function encountered an error. Check logs for details.',
+      articles: [],
+      tagMapping: {}
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

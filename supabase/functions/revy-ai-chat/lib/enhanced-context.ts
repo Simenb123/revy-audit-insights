@@ -35,48 +35,32 @@ export const buildEnhancedContextWithVariant = async (
   };
 
   try {
-    // 1. Get knowledge articles (fixed parameter name)
-    console.log('🔍 Starting intelligent knowledge search with enhanced content type support...');
+    // 1. Get knowledge articles via knowledge-search function
+    console.log('🔍 Starting knowledge search...');
     
-    const knowledgeResponse = await fetch(`${supabaseUrl}/functions/v1/knowledge-search`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${supabaseKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        query: message, // Fixed: was 'message', now 'query'
-        context,
-        limit: 15
-      })
+    const knowledgeResponse = await supabase.functions.invoke('knowledge-search', {
+      body: { query: message }
     });
 
-    if (knowledgeResponse.ok) {
-      const knowledgeData = await knowledgeResponse.json();
-      console.log('📚 Knowledge search response:', {
-        hasArticles: !!knowledgeData.articles,
-        articlesCount: knowledgeData.articles?.length || 0,
-        hasTagMapping: !!knowledgeData.tagMapping
+    if (knowledgeResponse.error) {
+      console.error('❌ Knowledge search failed:', knowledgeResponse.error);
+    } else if (knowledgeResponse.data) {
+      console.log('📚 Knowledge search response received:', {
+        hasArticles: !!knowledgeResponse.data.articles,
+        articlesCount: knowledgeResponse.data.articles?.length || 0,
+        hasTagMapping: !!knowledgeResponse.data.tagMapping
       });
 
-      if (knowledgeData.articles && Array.isArray(knowledgeData.articles)) {
-        enhancedContext.knowledge = knowledgeData.articles;
-        enhancedContext.articleTagMapping = knowledgeData.tagMapping || {};
+      if (knowledgeResponse.data.articles && Array.isArray(knowledgeResponse.data.articles)) {
+        enhancedContext.knowledge = knowledgeResponse.data.articles;
+        enhancedContext.articleTagMapping = knowledgeResponse.data.tagMapping || {};
         console.log('✅ Knowledge articles loaded successfully:', {
-          articlesCount: knowledgeData.articles.length,
-          tagMappingCount: Object.keys(knowledgeData.tagMapping || {}).length
+          articlesCount: knowledgeResponse.data.articles.length,
+          tagMappingCount: Object.keys(knowledgeResponse.data.tagMapping || {}).length
         });
       } else {
         console.log('⚠️ No articles found in knowledge search response');
       }
-    } else {
-      const errorText = await knowledgeResponse.text();
-      console.error('❌ Knowledge search failed:', {
-        status: knowledgeResponse.status,
-        statusText: knowledgeResponse.statusText,
-        error: errorText
-      });
-      // Continue without knowledge - don't fail the entire request
     }
 
     // 2. Search client documents if available
@@ -84,8 +68,6 @@ export const buildEnhancedContextWithVariant = async (
       console.log('📄 Searching client documents for relevant content...');
       
       try {
-        // Import and use document search
-        const { searchClientDocuments } = await import('./document-search.ts');
         const documentResults = await searchClientDocuments(message, clientData, supabase);
         
         if (documentResults) {
