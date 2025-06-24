@@ -1,13 +1,7 @@
 
 import { Database } from "@/integrations/supabase/types";
 
-export type RevyMessage = {
-  id: string;
-  sender: 'revy' | 'user';
-  content: string;  // Changed from string | React.ReactNode to just string
-  timestamp: string;
-  metadata?: any;
-};
+// Remove the conflicting RevyMessage type definition since it's already defined in revio.ts
 
 export type RevyContext = 'dashboard' | 'client-overview' | 'client-detail' | 'audit-actions' | 'risk-assessment' | 'documentation' | 'collaboration' | 'communication' | 'team-management' | 'drill-down' | 'mapping' | 'general' | 'accounting-data' | 'analysis' | 'data-upload' | 'knowledge-base';
 
@@ -30,7 +24,6 @@ export type RevyChatMessage = {
   metadata?: any;
   created_at: string;
 };
-
 
 // Re-added missing types to resolve build errors
 export type BrregSearchResult = {
