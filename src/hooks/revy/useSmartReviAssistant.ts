@@ -1,10 +1,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { useLocation } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useRevyContext } from '@/components/RevyContext/RevyContextProvider';
-import { generateAIResponse } from '@/services/revy/aiInteractionService';
-import { generateEnhancedAIResponseWithVariant } from '@/services/revy/enhancedAiInteractionService';
+import { generateSimpleAIResponse } from '@/services/revy/simplifiedAiService';
 import { getEnhancedContextualTips } from '@/services/enhancedRevyService';
 import { useRevyChatSessions } from './useRevyChatSessions';
 import { useRevyChatMessages } from './useRevyChatMessages';
@@ -86,7 +84,6 @@ export const useSmartReviAssistant = ({ clientData, userRole, embedded = false }
   useEffect(() => {
     const fetchTip = async () => {
       try {
-        // Assuming getEnhancedContextualTips might be async and needs to be awaited.
         const tip = await getEnhancedContextualTips(enhancedContext, clientData, userRole);
         setCurrentTip(tip || '');
       } catch (e) {
@@ -113,8 +110,10 @@ export const useSmartReviAssistant = ({ clientData, userRole, embedded = false }
     setIsTyping(true);
     
     try {
-      // Use enhanced AI response with variant support
-      const responseText = await generateEnhancedAIResponseWithVariant(
+      console.log('🚀 Using simplified AI service');
+      
+      // Use simplified AI service
+      const responseText = await generateSimpleAIResponse(
         userMessageContent, 
         enhancedContext,
         historyBeforeSend,
@@ -147,7 +146,7 @@ export const useSmartReviAssistant = ({ clientData, userRole, embedded = false }
     setSelectedVariant(variant);
     // Optionally create a new session when variant changes for better context separation
     if (!embedded) {
-      const variantTitle = `${variant.display_name} - ${new Date().toLocaleDateString()}`;
+      const variantTitle = `${variant?.display_name || 'Standard'} - ${new Date().toLocaleDateString()}`;
       handleCreateSession(variantTitle);
     }
   };
