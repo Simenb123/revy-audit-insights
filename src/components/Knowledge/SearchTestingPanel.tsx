@@ -16,6 +16,7 @@ import {
   RefreshCw,
   Shield
 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import { KnowledgeSearchDiagnostics, SearchDiagnostic, KnowledgeBaseHealth } from '@/services/knowledge/searchDiagnostics';
 import { toast } from 'sonner';
 
