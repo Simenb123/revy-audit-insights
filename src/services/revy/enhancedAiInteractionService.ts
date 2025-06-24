@@ -61,26 +61,6 @@ const logAIUsage = async (
   }
 };
 
-const getOpenAIApiKey = async (): Promise<string | null> => {
-  try {
-    // Get from environment/secrets instead of database
-    const { data, error } = await supabase.functions.invoke('revy-ai-chat', {
-      body: { action: 'get_api_key' }
-    });
-    
-    if (error) {
-      console.error("Error fetching OpenAI API key from function:", error);
-      return null;
-    }
-
-    return data?.api_key || null;
-  } catch (err) {
-    console.error("Fallback: using environment variable for OpenAI API key");
-    // Fallback to checking if we can access it another way
-    return null;
-  }
-};
-
 const getModelForVariant = (selectedVariant?: any): string => {
   if (selectedVariant?.model) {
     return selectedVariant.model;
@@ -374,7 +354,7 @@ export const generateEnhancedAIResponseWithVariant = async (
     const model = getModelForVariant(selectedVariant);
     console.log('🎯 Selected model:', model, 'for variant:', selectedVariant?.name);
 
-    // Use the existing revy-ai-chat function instead of direct OpenAI API calls
+    // Use the existing revy-ai-chat function with enhanced system prompt
     console.log('🚀 Calling revy-ai-chat function with enhanced prompt...');
     
     const { data, error } = await supabase.functions.invoke('revy-ai-chat', {
@@ -386,8 +366,11 @@ export const generateEnhancedAIResponseWithVariant = async (
         userRole,
         sessionId,
         selectedVariant,
-        systemPrompt, // Pass our enhanced prompt
-        model
+        systemPrompt, // Pass our enhanced prompt with knowledge articles
+        model,
+        // Pass the knowledge articles directly to ensure they're used
+        knowledgeArticles: enhancedContextData.knowledgeArticles,
+        articleTagMapping: enhancedContextData.articleTagMapping
       }
     });
 
@@ -483,7 +466,6 @@ export const generateEnhancedAIResponseWithVariant = async (
 };
 
 export {
-  getOpenAIApiKey,
   getModelForVariant,
   buildVariantSystemPrompt,
   enforceResponseValidation

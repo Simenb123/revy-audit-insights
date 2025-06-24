@@ -41,7 +41,11 @@ serve(async (req) => {
       userRole, 
       sessionId, 
       userId,
-      variant: selectedVariant
+      variant: selectedVariant,
+      systemPrompt, // Enhanced system prompt from client
+      model,
+      knowledgeArticles = [], // Knowledge articles from client
+      articleTagMapping = {}
     } = requestBody;
     
     console.log('📝 Enhanced request received:', {
@@ -51,7 +55,10 @@ serve(async (req) => {
       userId: `${userId?.substring(0, 8)}...`,
       hasClientData: !!clientData,
       historyLength: history.length,
-      variantName: selectedVariant?.name || 'default'
+      variantName: selectedVariant?.name || 'default',
+      hasSystemPrompt: !!systemPrompt,
+      hasKnowledgeArticles: knowledgeArticles.length > 0,
+      knowledgeArticleCount: knowledgeArticles.length
     });
 
     // Check if this is a knowledge-related query and if we should seed tags
@@ -94,42 +101,49 @@ serve(async (req) => {
     
     console.log('🧐 Cache miss for variant request, proceeding to generate new response.');
 
-    // Build enhanced context with variant and document support
-    const enhancedContext = await buildEnhancedContextWithVariant(
-      message, 
-      context, 
-      clientData,
-      selectedVariant
-    );
+    // Use the enhanced system prompt if provided, otherwise build context
+    let enhancedSystemPrompt = systemPrompt;
     
-    console.log('🧠 Enhanced variant-aware context built with document support:', {
-      knowledgeArticleCount: enhancedContext.knowledge?.length || 0,
-      articleTagMappingCount: Object.keys(enhancedContext.articleTagMapping || {}).length,
-      hasClientContext: !!enhancedContext.clientContext,
-      hasDocumentResults: !!enhancedContext.documentSearchResults,
-      specificDocumentFound: !!enhancedContext.documentSearchResults?.specificDocument,
-      generalDocumentsFound: enhancedContext.documentSearchResults?.generalDocuments?.length || 0,
-      isGuestMode: !userId,
-      variantName: selectedVariant?.name,
-      variantDescription: selectedVariant?.description
-    });
+    if (!enhancedSystemPrompt) {
+      // Build enhanced context with variant and document support
+      const enhancedContext = await buildEnhancedContextWithVariant(
+        message, 
+        context, 
+        clientData,
+        selectedVariant
+      );
+      
+      console.log('🧠 Enhanced variant-aware context built with document support:', {
+        knowledgeArticleCount: enhancedContext.knowledge?.length || 0,
+        articleTagMappingCount: Object.keys(enhancedContext.articleTagMapping || {}).length,
+        hasClientContext: !!enhancedContext.clientContext,
+        hasDocumentResults: !!enhancedContext.documentSearchResults,
+        specificDocumentFound: !!enhancedContext.documentSearchResults?.specificDocument,
+        generalDocumentsFound: enhancedContext.documentSearchResults?.generalDocuments?.length || 0,
+        isGuestMode: !userId,
+        variantName: selectedVariant?.name,
+        variantDescription: selectedVariant?.description
+      });
+
+      // Build system prompt with variant-specific enhancements and document context
+      enhancedSystemPrompt = await buildIntelligentSystemPromptWithVariant(
+        context,
+        clientData,
+        userRole,
+        enhancedContext,
+        !userId,
+        selectedVariant
+      );
+    } else {
+      console.log('📝 Using provided enhanced system prompt with knowledge articles');
+    }
 
     // Select optimal model
-    const selectedModel = selectOptimalModel(message, context, !userId);
+    const selectedModel = model || selectOptimalModel(message, context, !userId);
     console.log('🎯 Selected model:', selectedModel, 'for variant:', selectedVariant?.name);
 
-    // Build system prompt with variant-specific enhancements and document context
-    const systemPrompt = await buildIntelligentSystemPromptWithVariant(
-      context,
-      clientData,
-      userRole,
-      enhancedContext,
-      !userId,
-      selectedVariant
-    );
-
     // Add explicit tag instruction
-    const enhancedSystemPrompt = systemPrompt + '\n\nIMPORTANT: ALWAYS end your response with a line: "🏷️ **EMNER:** [list relevant Norwegian tags separated by commas]". This is required for proper UI functionality.';
+    enhancedSystemPrompt += '\n\nIMPORTANT: ALWAYS end your response with a line: "🏷️ **EMNER:** [list relevant Norwegian tags separated by commas]". This is required for proper UI functionality.';
 
     const startTime = Date.now();
     console.log('🚀 Calling OpenAI API with document-enhanced prompt...');
@@ -173,8 +187,8 @@ serve(async (req) => {
     }
 
     // Inject article mappings and variant info into response metadata
-    if (enhancedContext.articleTagMapping && Object.keys(enhancedContext.articleTagMapping).length > 0) {
-      aiResponse += `\n\n<!-- ARTICLE_MAPPINGS: ${JSON.stringify(enhancedContext.articleTagMapping)} -->`;
+    if (articleTagMapping && Object.keys(articleTagMapping).length > 0) {
+      aiResponse += `\n\n<!-- ARTICLE_MAPPINGS: ${JSON.stringify(articleTagMapping)} -->`;
       console.log('📎 Injected article mappings into response');
     }
 
@@ -187,39 +201,18 @@ serve(async (req) => {
       console.log('🎭 Injected variant info into response');
     }
 
-    // Add document reference metadata if documents were used
-    if (enhancedContext.documentSearchResults) {
-      const documentRefs = [];
+    // Add knowledge article reference metadata if articles were provided
+    if (knowledgeArticles && knowledgeArticles.length > 0) {
+      const articleRefs = knowledgeArticles.slice(0, 5).map((article: any) => ({
+        id: article.id,
+        title: article.title,
+        category: article.category?.name,
+        similarity: article.similarity,
+        reference_code: article.reference_code
+      }));
       
-      if (enhancedContext.documentSearchResults.specificDocument) {
-        documentRefs.push({
-          id: enhancedContext.documentSearchResults.specificDocument.id,
-          fileName: enhancedContext.documentSearchResults.specificDocument.fileName,
-          category: enhancedContext.documentSearchResults.specificDocument.category,
-          summary: enhancedContext.documentSearchResults.specificDocument.summary,
-          confidence: enhancedContext.documentSearchResults.specificDocument.confidence,
-          uploadDate: enhancedContext.documentSearchResults.specificDocument.uploadDate
-        });
-      }
-      
-      if (enhancedContext.documentSearchResults.generalDocuments) {
-        for (const doc of enhancedContext.documentSearchResults.generalDocuments.slice(0, 3)) {
-          documentRefs.push({
-            id: doc.id,
-            fileName: doc.fileName,
-            category: doc.category,
-            summary: doc.summary,
-            confidence: doc.confidence,
-            relevantText: doc.relevantText,
-            uploadDate: doc.uploadDate
-          });
-        }
-      }
-      
-      if (documentRefs.length > 0) {
-        aiResponse += `\n\n<!-- DOCUMENT_REFERENCES: ${JSON.stringify(documentRefs)} -->`;
-        console.log('📄 Injected document references into response');
-      }
+      aiResponse += `\n\n<!-- KNOWLEDGE_ARTICLES: ${JSON.stringify(articleRefs)} -->`;
+      console.log('📚 Injected knowledge article references into response');
     }
 
     // Validate and fix the AI response
@@ -238,7 +231,7 @@ serve(async (req) => {
       isGuestMode: !userId,
       hasStandardizedTags: /🏷️\s*\*\*[Ee][Mm][Nn][Ee][Rr]:?\*\*/.test(aiResponse),
       hasArticleMappings: aiResponse.includes('ARTICLE_MAPPINGS'),
-      hasDocumentReferences: aiResponse.includes('DOCUMENT_REFERENCES'),
+      hasKnowledgeReferences: aiResponse.includes('KNOWLEDGE_ARTICLES'),
       variantUsed: selectedVariant?.name || 'default'
     });
 
