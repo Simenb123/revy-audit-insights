@@ -41,10 +41,10 @@ serve(async (req) => {
       userRole, 
       sessionId, 
       userId,
-      selectedVariant, // FIXED: Changed from variant: selectedVariant to selectedVariant
-      systemPrompt, // Enhanced system prompt from client
+      selectedVariant,
+      systemPrompt,
       model,
-      knowledgeArticles = [], // Knowledge articles from client
+      knowledgeArticles = [],
       articleTagMapping = {}
     } = requestBody;
     
@@ -52,7 +52,7 @@ serve(async (req) => {
       message: `${message.substring(0, 50)}...`,
       context,
       userRole,
-      userId: `${userId?.substring(0, 8)}...`,
+      userId: userId ? `${userId.substring(0, 8)}...` : 'guest',
       hasClientData: !!clientData,
       historyLength: history.length,
       variantName: selectedVariant?.name || 'default',
@@ -60,6 +60,13 @@ serve(async (req) => {
       hasKnowledgeArticles: knowledgeArticles.length > 0,
       knowledgeArticleCount: knowledgeArticles.length
     });
+
+    // Check OpenAI API key
+    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+    if (!openaiApiKey) {
+      console.error('❌ OPENAI_API_KEY not found in environment');
+      throw new Error('OpenAI API key is not configured');
+    }
 
     // Check if this is a knowledge-related query and if we should seed tags
     const isKnowledgeQuery = /\b(inntekter?|revisjon|isa|fagstoff|artikkel|retningslinje|tags?|emner)\b/i.test(message);
@@ -152,7 +159,7 @@ serve(async (req) => {
     const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
+        'Authorization': `Bearer ${openaiApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -173,7 +180,11 @@ serve(async (req) => {
 
     if (!openaiResponse.ok) {
       const errorText = await openaiResponse.text();
-      console.error('❌ OpenAI API error:', errorText);
+      console.error('❌ OpenAI API error:', {
+        status: openaiResponse.status,
+        statusText: openaiResponse.statusText,
+        error: errorText
+      });
       throw new Error(`OpenAI API error: ${openaiResponse.status} - ${errorText}`);
     }
 
@@ -185,6 +196,12 @@ serve(async (req) => {
       console.error('❌ No content in OpenAI response:', data);
       throw new Error('No response content from OpenAI');
     }
+
+    console.log('📄 Raw AI response received:', {
+      responseLength: aiResponse.length,
+      hasValidContent: aiResponse.trim().length > 0,
+      startsWithGreeting: /^(hei|hallo|god)/i.test(aiResponse.trim())
+    });
 
     // Inject article mappings and variant info into response metadata
     if (articleTagMapping && Object.keys(articleTagMapping).length > 0) {
@@ -224,7 +241,7 @@ serve(async (req) => {
       console.log('✅ Response was standardized with guaranteed tag format and document context');
     }
 
-    console.log('✅ Document-enhanced AI response generated:', {
+    console.log('✅ Document-enhanced AI response generated successfully:', {
       responseLength: aiResponse.length,
       usage: data.usage,
       responseTime: `${responseTime}ms`,
@@ -271,10 +288,20 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('💥 Function error with document support:', error);
+    console.error('💥 Function error with document support:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
     
     // Enhanced fallback response with variant awareness
-    const requestData = await req.json().catch(() => ({}));
+    let requestData = {};
+    try {
+      requestData = await req.json();
+    } catch (e) {
+      console.error('❌ Failed to parse request data for fallback:', e.message);
+    }
+    
     let fallbackResponse = getIntelligentFallback(requestData);
     
     // Add variant-specific fallback context
