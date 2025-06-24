@@ -3,7 +3,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Send } from 'lucide-react';
-import { RevyMessageList } from './RevyMessageList';
+import { EnhancedRevyMessageList } from './EnhancedRevyMessageList';
 import { RevyMessage } from '@/types/revio';
 
 interface EmbeddedRevyAssistantProps {
@@ -47,7 +47,7 @@ const EmbeddedRevyAssistant: React.FC<EmbeddedRevyAssistantProps> = ({
 
       {/* Messages */}
       <div className="flex-1 min-h-0">
-        <RevyMessageList 
+        <EnhancedRevyMessageList 
           messages={messages} 
           isTyping={isLoading}
           isAnalyzingDocuments={isAnalyzingDocuments}

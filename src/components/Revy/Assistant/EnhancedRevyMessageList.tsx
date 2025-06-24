@@ -1,167 +1,89 @@
 
-import React, { useEffect, useRef } from 'react';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Bot, User, Clock, CheckCircle, AlertCircle, Lightbulb } from 'lucide-react';
+import React from 'react';
+import { Brain, User, Loader2 } from 'lucide-react';
 import { RevyMessage } from '@/types/revio';
-import { formatDistanceToNow } from 'date-fns';
-import { nb } from 'date-fns/locale';
+import EnhancedMessageContentParser from './EnhancedMessageContentParser';
+import RevyAvatar from '../RevyAvatar';
 
 interface EnhancedRevyMessageListProps {
   messages: RevyMessage[];
   isTyping: boolean;
-  embedded?: boolean;
+  isEmbedded?: boolean;
+  isAnalyzingDocuments?: boolean;
 }
 
-const EnhancedRevyMessageList: React.FC<EnhancedRevyMessageListProps> = ({
+export const EnhancedRevyMessageList: React.FC<EnhancedRevyMessageListProps> = ({
   messages,
   isTyping,
-  embedded = false
+  isEmbedded = false,
+  isAnalyzingDocuments = false
 }) => {
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages, isTyping]);
-
-  const formatMessageContent = (content: string) => {
-    // Format lists and bullet points
-    const formattedContent = content
-      .replace(/^- (.+)$/gm, '• $1')
-      .replace(/^(\d+)\. (.+)$/gm, '$1. $2')
-      .split('\n')
-      .map((line, index) => {
-        if (line.trim().startsWith('•')) {
-          return <li key={index} className="ml-4">{line.trim().substring(1).trim()}</li>;
-        }
-        if (/^\d+\./.test(line.trim())) {
-          return <li key={index} className="ml-4">{line.trim()}</li>;
-        }
-        if (line.trim() === '') return <br key={index} />;
-        return <p key={index} className="mb-2">{line}</p>;
-      });
-
-    return formattedContent;
-  };
-
-  const getMessageIcon = (sender: string, metadata?: any) => {
-    if (sender === 'user') {
-      return <User className="h-4 w-4 text-blue-600" />;
-    }
-    
-    // AI-Revi with different states
-    if (metadata?.confidence && metadata.confidence < 0.7) {
-      return <AlertCircle className="h-4 w-4 text-yellow-600" />;
-    }
-    
-    return <Bot className="h-4 w-4 text-purple-600" />;
-  };
-
-  const getMessageQuality = (metadata?: any) => {
-    if (!metadata?.confidence) return null;
-    
-    const confidence = metadata.confidence;
-    if (confidence >= 0.9) return { label: 'Høy sikkerhet', color: 'bg-green-100 text-green-800' };
-    if (confidence >= 0.7) return { label: 'Medium sikkerhet', color: 'bg-yellow-100 text-yellow-800' };
-    return { label: 'Lav sikkerhet', color: 'bg-red-100 text-red-800' };
-  };
-
-  if (messages.length === 0 && !isTyping) {
-    return (
-      <div className="flex items-center justify-center py-8 text-center">
-        <div className="space-y-2">
-          <Bot className="h-8 w-8 text-purple-600 mx-auto" />
-          <p className="text-sm text-muted-foreground">
-            Hei! Jeg er AI-Revi, din AI-assistent for revisjon.
-          </p>
-          <p className="text-xs text-muted-foreground">
-            Hvordan kan jeg hjelpe deg i dag?
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-4 pb-4">
-      {messages.map((message) => {
-        const isUser = message.sender === 'user';
-        const quality = getMessageQuality(message.metadata);
-        
-        return (
-          <div key={message.id} className={`flex gap-3 ${isUser ? 'flex-row-reverse' : ''}`}>
-            {/* Avatar */}
-            <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
-              isUser ? 'bg-blue-100' : 'bg-purple-100'
-            }`}>
-              {getMessageIcon(message.sender, message.metadata)}
-            </div>
-
-            {/* Message content */}
-            <div className={`flex-1 max-w-[80%] ${isUser ? 'text-right' : ''}`}>
-              <Card className={`p-3 ${
-                isUser ? 'bg-blue-50 border-blue-200' : 'bg-white border-gray-200'
-              }`}>
-                <div className="space-y-2">
-                  {/* Message header */}
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span className="font-medium">
-                      {isUser ? 'Du' : 'AI-Revi'}
-                    </span>
-                    <span>
-                      {formatDistanceToNow(new Date(message.timestamp), { 
-                        addSuffix: true, 
-                        locale: nb 
-                      })}
-                    </span>
-                  </div>
-
-                  {/* Message content */}
-                  <div className={`prose prose-sm max-w-none ${embedded ? 'text-sm' : ''}`}>
-                    {formatMessageContent(String(message.content))}
-                  </div>
-
-                  {/* Quality indicator for AI responses */}
-                  {!isUser && quality && (
-                    <div className="flex justify-end">
-                      <Badge className={`text-xs ${quality.color}`}>
-                        {quality.label}
-                      </Badge>
-                    </div>
-                  )}
+    <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      {messages.map((message, index) => (
+        <div
+          key={message.id || index}
+          className={`flex ${
+            message.sender === 'user' ? 'justify-end' : 'justify-start'
+          }`}
+        >
+          <div
+            className={`max-w-[80%] flex gap-2 ${
+              message.sender === 'user' ? 'flex-row-reverse' : 'flex-row'
+            }`}
+          >
+            <div className="flex-shrink-0 mt-1">
+              {message.sender === 'user' ? (
+                <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
+                  <User className="h-4 w-4 text-white" />
                 </div>
-              </Card>
+              ) : (
+                <RevyAvatar size={isEmbedded ? 'xs' : 'sm'} />
+              )}
+            </div>
+            <div
+              className={`p-3 rounded-lg ${
+                message.sender === 'user'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-900'
+              }`}
+            >
+              {message.sender === 'user' ? (
+                <div className="whitespace-pre-wrap">{message.content}</div>
+              ) : (
+                <EnhancedMessageContentParser 
+                  content={message.content as string} 
+                  showDocumentContext={!isEmbedded}
+                />
+              )}
+              {message.timestamp && (
+                <div
+                  className={`text-xs mt-1 opacity-70 ${
+                    message.sender === 'user' ? 'text-blue-100' : 'text-gray-500'
+                  }`}
+                >
+                  {new Date(message.timestamp).toLocaleTimeString('no-NO', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </div>
+              )}
             </div>
           </div>
-        );
-      })}
-
-      {/* Typing indicator */}
+        </div>
+      ))}
+      
       {isTyping && (
-        <div className="flex gap-3">
-          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center">
-            <Bot className="h-4 w-4 text-purple-600" />
-          </div>
-          <Card className="p-3 bg-white border-gray-200">
-            <div className="flex items-center gap-2">
-              <div className="flex space-x-1">
-                <div className="w-2 h-2 bg-purple-600 rounded-full animate-bounce"></div>
-                <div className="w-2 h-2 bg-purple-600 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                <div className="w-2 h-2 bg-purple-600 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-              </div>
-              <span className="text-sm text-muted-foreground">AI-Revi skriver...</span>
+        <div className="flex justify-start">
+          <div className="flex gap-2">
+            <RevyAvatar size={isEmbedded ? 'xs' : 'sm'} />
+            <div className="bg-gray-100 text-gray-900 p-3 rounded-lg flex items-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>{isAnalyzingDocuments ? 'Analyserer dokumenter...' : 'AI-Revi tenker...'}</span>
             </div>
-          </Card>
+          </div>
         </div>
       )}
-
-      <div ref={messagesEndRef} />
     </div>
   );
 };
-
-export default EnhancedRevyMessageList;

@@ -1,127 +1,189 @@
 
-# Welcome to your Lovable project
+# AI-Revi - Intelligent Revisjonsassistent
 
-## Project info
+En intelligent AI-drevet revisjonsassistent bygget med React, TypeScript og Supabase.
 
-**URL**: https://lovable.dev/projects/6d75701a-c042-4d77-9e90-d34a13694622
+## 🚀 Kom i gang
 
-## How can I edit this code?
+### Forutsetninger
 
-There are several ways of editing your application.
+- Node.js 18+ 
+- npm eller yarn
+- Supabase konto
 
-**Use Lovable**
+### Installasjon
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/6d75701a-c042-4d77-9e90-d34a13694622) and start prompting.
+1. Klon repositoriet:
+```bash
+git clone <repository-url>
+cd ai-revi
+```
 
-Changes made via Lovable will be committed automatically to this repo.
+2. Installer avhengigheter:
+```bash
+npm install
+```
 
-**Use your preferred IDE**
+3. Konfigurer miljøvariabler:
+```bash
+cp .env.example .env.local
+```
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+Fyll inn:
+- `VITE_SUPABASE_URL` - Din Supabase prosjekt URL
+- `VITE_SUPABASE_ANON_KEY` - Din Supabase anon nøkkel
+- `OPENAI_API_KEY` - OpenAI API nøkkel (for AI-funksjoner)
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+4. Start utviklingsserveren:
+```bash
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+## 📋 Funksjoner
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### AI-Revi Assistent
+- **Intelligent samtale**: AI-drevet revisjonsassistent som kan svare på fagspørsmål
+- **Kontekst-bevisst**: Tilpasser seg ulike revisjonsområder og klienter
+- **Tag-system**: Automatisk generering av emnetags fra AI-responser
+- **Kunnskapsbase-integrasjon**: Søker i fagartikler og ISA-standarder
 
-**Use GitHub Codespaces**
+### AI-Funksjoner
+AI-Revi bruker OpenAI's GPT-modeller og har flere spesialiserte varianter:
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+#### Tag-systemet
+Alle AI-responser inneholder en standardisert "🏷️ **EMNER:**" linje som:
+- Genereres automatisk av AI-en basert på samtaleinnhold
+- Valideres av edge function (`revy-ai-chat`) før sending
+- Parseders til klikkbare badges i frontend
+- Linker til relevante fagartikler i kunnskapsbasen
 
-## What technologies are used for this project?
+Eksempel på AI-respons format:
+```
+Svar på revisjonsSpørsmål...
 
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/6d75701a-c042-4d77-9e90-d34a13694622) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
-
-## Environment variables
-
-Create a `.env` file and provide the following variables so the frontend can connect to Supabase and enable AI functionality:
-
-```bash
-# Supabase Configuration (Required)
-SUPABASE_URL=<your-supabase-project-url>
-SUPABASE_ANON_KEY=<your-anon-key>
-SUPABASE_SERVICE_ROLE_KEY=<your-service-role-key>
-
-# AI Functionality (Required for AI-Revi assistant)
-OPENAI_API_KEY=<your-openai-api-key>
-
-# Text-to-Speech (Optional)
-ELEVENLABS_API_KEY=<your-elevenlabs-api-key>
+🏷️ **EMNER:** Materialitet, Risikivurdering, ISA 315
 ```
 
-**Important Notes:**
-- `SUPABASE_SERVICE_ROLE_KEY` is used in the Supabase edge functions to create a client with elevated permissions required for full-text search across protected tables.
-- `OPENAI_API_KEY` is required for the AI-Revi assistant to function properly.
-- `ELEVENLABS_API_KEY` is optional and only needed if you want to enable text-to-speech functionality.
+Frontend konverterer EMNER-linjen til klikkbare tags som fører brukeren til relevante fagartikler.
 
-## Running Supabase locally (for development)
+#### Kunnskapsbase
+- Fagartikler med embedding-vektorer for semantisk søk
+- Automatisk generering av embeddings ved publisering
+- ISA-standarder og revisjonsveiledninger
+- Intelligent artikkel-matching basert på brukerens spørsmål
 
-If you want to run Supabase locally for development:
+### Klient-administrasjon
+- BRREG-integrasjon for automatisk firmainformasjon
+- Dokumenthåndtering med AI-kategorisering
+- Revisjonshandlinger og malverk
+- Fremdriftssporing og rapportering
 
-```bash
-# Install Supabase CLI
-npm install -g @supabase/cli
+### Brukerroller
+- **Admin**: Full tilgang til alle funksjoner
+- **Partner**: Kan administrere klienter og team
+- **Employee**: Utfører revisjonsarbeid
 
-# Start Supabase locally
-supabase start
+## 🏗️ Arkitektur
 
-# Deploy edge functions locally
-supabase functions deploy
+### Frontend
+- **React 18** med TypeScript
+- **Tailwind CSS** for styling
+- **Shadcn/ui** komponentbibliotek
+- **React Query** for data-håndtering
+- **React Router** for routing
 
-# View local Supabase dashboard
-# Open http://localhost:54323 in your browser
+### Backend
+- **Supabase** som backend-as-a-service
+- **PostgreSQL** database
+- **Row Level Security** for datatilgang
+- **Edge Functions** for AI-integrasjon
+
+### AI-integrasjon
+- **OpenAI GPT-4o-mini** som hovedmodell
+- **Edge Functions** for AI-responsvalidering
+- **Embedding-vektorer** for semantisk søk
+- **Kontekst-bevisst prompting** basert på brukerrolle og data
+
+## 📁 Prosjektstruktur
+
+```
+src/
+├── components/          # React komponenter
+│   ├── AI/             # AI-relaterte komponenter
+│   ├── Revy/           # AI-Revi assistentkomponenter
+│   ├── Layout/         # Layout og navigasjon
+│   ├── Knowledge/      # Kunnskapsbase
+│   └── ui/             # Gjenbrukbare UI-komponenter
+├── hooks/              # Custom React hooks
+├── services/           # API-tjenester og business logic
+├── types/              # TypeScript type-definisjoner
+└── utils/              # Hjelpefunksjoner
+
+supabase/
+├── functions/          # Edge Functions
+├── migrations/         # Database migrasjoner
+└── config.toml         # Supabase konfigurasjon
 ```
 
-The local Supabase instance will provide you with local URLs and keys to use in your `.env` file during development.
+## 🔧 Utvikling
 
-## Edge Functions
+### Debugging
+- Bruk `devLog()` for logging i utviklingsmodus
+- Console logs fjernes automatisk i produksjon
+- Edge Function logs tilgjengelig i Supabase dashboard
 
-This project uses several Supabase Edge Functions for AI functionality:
+### Database
+- Supabase migrasjoner kjøres automatisk
+- RLS-policies sikrer datatilgang
+- Embedding-vektorer for AI-søk
 
-- `revy-ai-chat`: Main AI assistant chat functionality
-- `enhanced-pdf-text-extractor`: PDF text extraction
-- `document-ai-analyzer`: Document analysis and categorization
-- `enhanced-document-ai`: Advanced document processing
+### AI-funksjoner
+- Edge Functions håndterer AI-integrasjon
+- Cached responses for ytelse
+- Kontekst-bevisst prompting
 
-These functions are automatically deployed when you make changes through Lovable.
+## 🚀 Deployment
+
+1. Bygg produksjonsversjon:
+```bash
+npm run build
+```
+
+2. Deploy til Supabase:
+```bash
+supabase deploy
+```
+
+3. Konfigurer miljøvariabler i Supabase dashboard
+
+## 📖 API-dokumentasjon
+
+### Edge Functions
+
+#### `revy-ai-chat`
+Hovedfunksjon for AI-Revi samtaler:
+- Validerer AI-responser for EMNER-format
+- Søker i kunnskapsbase
+- Håndterer kontekst og varianter
+
+#### `generate-embeddings`
+Genererer embedding-vektorer for kunnskapsbase:
+- Prosesserer fagartikler
+- Oppretter søkbare vektorer
+- Aktiverer intelligent søk
+
+## 🤝 Bidrag
+
+1. Fork prosjektet
+2. Opprett feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit endringene (`git commit -m 'Add some AmazingFeature'`)
+4. Push til branch (`git push origin feature/AmazingFeature`)
+5. Åpne en Pull Request
+
+## 📄 Lisens
+
+Dette prosjektet er lisensiert under MIT-lisensen.
+
+## 🆘 Support
+
+For spørsmål eller problemer, åpne en issue på GitHub eller kontakt utviklingsteamet.
