@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { SendIcon, Loader2 } from 'lucide-react';
 
 interface RevyInputProps {
@@ -24,25 +24,35 @@ export const RevyInput = ({
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
+      if (message.trim() && !isTyping) {
+        handleSendMessage();
+      }
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (message.trim() && !isTyping) {
       handleSendMessage();
     }
   };
 
   return (
-    <div className={`p-2 bg-white border-t ${isEmbedded ? '' : 'p-3'}`}>
+    <form onSubmit={handleSubmit} className={`p-2 bg-white border-t ${isEmbedded ? '' : 'p-3'}`}>
       <div className={`flex gap-1 ${isEmbedded ? '' : 'gap-2'}`}>
-        <Input
+        <Textarea
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          className={isEmbedded ? 'flex-1 text-xs h-8' : 'flex-1'}
+          className={`flex-1 resize-none ${isEmbedded ? 'text-xs h-16 min-h-16' : 'min-h-20'}`}
           disabled={isTyping}
+          rows={isEmbedded ? 2 : 3}
         />
         <Button 
+          type="submit"
           size={isEmbedded ? 'sm' : 'icon'}
-          onClick={handleSendMessage} 
-          className={`bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 ${isEmbedded ? 'h-8 w-8 p-0' : ''}`}
+          className={`bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 shrink-0 ${isEmbedded ? 'h-16 w-12 px-2' : 'h-20 w-12'}`}
           disabled={isTyping || !message.trim()}
         >
           {isTyping ? (
@@ -52,6 +62,6 @@ export const RevyInput = ({
           )}
         </Button>
       </div>
-    </div>
+    </form>
   );
 };
