@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/Auth/AuthProvider';
 import { RevyContext, RevyChatMessage, RevyMessage } from '@/types/revio';
-import { generateSimpleAIResponse } from '@/services/revy/simplifiedAiService';
+import { generateEnhancedAIResponseWithVariant } from '@/services/revy/enhancedAiInteractionService';
 
 interface UseRevyMessageHandlingProps {
   context: RevyContext;
@@ -54,17 +54,29 @@ export const useRevyMessageHandling = ({
   // Function to get contextual welcome message with enhanced client data
   const getContextualWelcomeMessage = (ctx: RevyContext, client?: any) => {
     const clientName = client?.company_name || client?.name || 'klienten';
+    const docCount = client?.documentSummary?.totalDocuments || 0;
+    const categories = client?.documentSummary?.categories || [];
+    const recentDocs = client?.documentSummary?.recentDocuments || [];
     
     switch (ctx) {
       case 'client-detail':
         return `Hei! Jeg er AI-Revi, din smarte revisjonsassistent. Jeg kan hjelpe deg med analyse av ${clientName}.
+
+📊 **KLIENTOVERSIKT:**
+- ${docCount} dokumenter tilgjengelig
+- Kategorier: ${categories.length > 0 ? categories.join(', ') : 'Ingen kategorier ennå'}
+- Siste dokumenter: ${recentDocs.length > 0 ? recentDocs.map(d => d.name).join(', ') : 'Ingen dokumenter ennå'}
 
 Jeg kan hjelpe deg med klientanalyse, dokumentgjennomgang, risikovurdering og revisjonsplanlegging. Hva vil du vite om denne klienten?
 
 🏷️ **EMNER:** Klientanalyse, Dokumenter, Risikovurdering, Revisjonsplanlegging`;
         
       case 'documentation':
-        return `Hei! Jeg er AI-Revi, din dokumentanalyse-ekspert for ${clientName}.
+        return `Hei! Jeg er AI-Revi, din dokumentanalyse-ekspart for ${clientName}.
+
+📁 **DOKUMENTSTATUS:**
+- ${docCount} dokumenter i systemet
+- Kategorier: ${categories.length > 0 ? categories.join(', ') : 'Venter på kategorisering'}
 
 Jeg kan hjelpe deg med å analysere, kategorisere og kvalitetssikre dokumenter. Spør meg om dokumenttyper, kategorisering eller kvalitetsvurderinger.
 
@@ -72,6 +84,10 @@ Jeg kan hjelpe deg med å analysere, kategorisere og kvalitetssikre dokumenter. 
         
       case 'audit-actions':
         return `Hei! Jeg er AI-Revi, din revisjonshandlings-assistent for ${clientName}.
+
+📋 **REVISJONSKONTEXT:**
+- Klient: ${clientName}
+- ${docCount} dokumenter tilgjengelig for analyse
 
 Jeg kan hjelpe deg med planlegging og gjennomføring av revisjonshandlinger, ISA-standarder og kvalitetssikring.
 
@@ -173,16 +189,20 @@ Jeg kan hjelpe deg med planlegging og gjennomføring av revisjonshandlinger, ISA
     setMessages(updatedMessages);
 
     try {
-      console.log(`🤖 Generating AI response with simplified service for context: ${context}`);
+      console.log(`🤖 Generating AI response with context: ${context} and variant:`, selectedVariant?.name || 'default');
       
-      // Convert RevyMessage[] to simple history format
-      const chatHistory = updatedMessages.map(msg => ({
+      // Convert RevyMessage[] to RevyChatMessage[] format expected by the enhanced AI service
+      const chatHistory: RevyChatMessage[] = updatedMessages.map(msg => ({
+        id: msg.id || crypto.randomUUID(),
+        session_id: sessionId || '',
         sender: msg.sender === 'assistant' ? 'revy' : msg.sender,
         content: typeof msg.content === 'string' ? msg.content : String(msg.content),
+        created_at: msg.timestamp.toISOString(),
+        metadata: {}
       }));
 
-      // Use simplified AI service
-      const aiResponse = await generateSimpleAIResponse(
+      // Use enhanced AI service with dynamic context and variant
+      const aiResponse = await generateEnhancedAIResponseWithVariant(
         userMessage,
         context,
         chatHistory,
@@ -192,9 +212,9 @@ Jeg kan hjelpe deg med planlegging og gjennomføring av revisjonshandlinger, ISA
         selectedVariant
       );
 
-      console.log('🔍 AI response received:', {
+      console.log('🔍 AI response received with context-aware content:', {
         context: context,
-        variant: selectedVariant?.name || 'default',
+        variant: selectedVariant?.name,
         responseLength: aiResponse.length
       });
 
@@ -225,7 +245,7 @@ Jeg kan hjelpe deg med planlegging og gjennomføring av revisjonshandlinger, ISA
       const errorMessage: RevyMessage = {
         id: crypto.randomUUID(),
         sender: 'assistant',
-        content: 'Beklager, jeg opplever tekniske problemer akkurat nå. Prøv igjen om litt.\n\n🏷️ **EMNER:** Teknisk support, Feilsøking',
+        content: 'Beklager, jeg opplever tekniske problemer akkurat nå. Prøv igjen om litt.',
         timestamp: new Date(),
       };
 
