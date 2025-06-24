@@ -19,11 +19,11 @@ const RightSidebar = ({ isCollapsed, onToggle, width, onWidthChange }: RightSide
   
   console.log('🔍 [RIGHT_SIDEBAR] Current path:', location.pathname);
 
-  // Check if we're on an admin page
-  const isAdminPage = location.pathname.includes('/ai-revy-admin') || 
-                     location.pathname.includes('/user-admin') || 
-                     location.pathname.includes('/ai-usage') ||
-                     location.pathname.includes('/audit-logs');
+  // Check if we're on an admin page - fixed to handle both with and without hyphens
+  const isAdminPage = location.pathname.startsWith('/ai-revy-admin') || 
+                     location.pathname.startsWith('/user-admin') || 
+                     location.pathname.startsWith('/ai-usage') ||
+                     location.pathname.startsWith('/audit-logs');
 
   console.log('🔍 [RIGHT_SIDEBAR] Is admin page:', isAdminPage);
 
