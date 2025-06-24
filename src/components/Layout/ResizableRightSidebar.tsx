@@ -15,12 +15,14 @@ interface ResizableRightSidebarProps {
   isCollapsed?: boolean;
   onToggle?: () => void;
   initialWidth?: number;
+  onWidthChange?: (width: number) => void;
 }
 
 const ResizableRightSidebar = ({ 
   isCollapsed, 
   onToggle, 
-  initialWidth = 320 
+  initialWidth = 320,
+  onWidthChange 
 }: ResizableRightSidebarProps) => {
   const [width, setWidth] = useState(initialWidth);
   const [isDragging, setIsDragging] = useState(false);
@@ -45,7 +47,8 @@ const ResizableRightSidebar = ({
     
     const newWidth = Math.max(280, Math.min(600, window.innerWidth - e.clientX));
     setWidth(newWidth);
-  }, [isDragging]);
+    onWidthChange?.(newWidth);
+  }, [isDragging, onWidthChange]);
 
   const handleMouseUp = useCallback(() => {
     setIsDragging(false);
