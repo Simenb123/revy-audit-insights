@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { FileText, Users, Calendar, AlertCircle } from 'lucide-react';
 import { useClientDocuments } from '@/hooks/useClientDocuments';
+import AdminSidebarContent from '@/components/AIRevyAdmin/AdminSidebarContent';
 
 interface RightSidebarProps {
   isCollapsed?: boolean;
@@ -16,7 +17,25 @@ interface RightSidebarProps {
 const RightSidebar = ({ isCollapsed, onToggle, width, onWidthChange }: RightSidebarProps) => {
   const location = useLocation();
   
-  // Extract client ID from URL (org number or UUID)
+  console.log('🔍 [RIGHT_SIDEBAR] Current path:', location.pathname);
+
+  // Check if we're on an admin page
+  const isAdminPage = location.pathname.includes('/ai-revy-admin') || 
+                     location.pathname.includes('/user-admin') || 
+                     location.pathname.includes('/ai-usage') ||
+                     location.pathname.includes('/audit-logs');
+
+  // If it's an admin page, show admin content
+  if (isAdminPage) {
+    console.log('🔍 [RIGHT_SIDEBAR] Admin page detected, showing admin content');
+    return (
+      <div className="w-80 border-l bg-background p-4">
+        <AdminSidebarContent />
+      </div>
+    );
+  }
+
+  // Extract client ID from URL (org number or UUID) for client pages
   const pathSegments = location.pathname.split('/').filter(Boolean);
   let clientId = '';
   
@@ -28,7 +47,6 @@ const RightSidebar = ({ isCollapsed, onToggle, width, onWidthChange }: RightSide
     }
   }
 
-  console.log('🔍 [RIGHT_SIDEBAR] Current path:', location.pathname);
   console.log('🔍 [RIGHT_SIDEBAR] Extracted clientId:', clientId);
 
   const {
@@ -38,7 +56,7 @@ const RightSidebar = ({ isCollapsed, onToggle, width, onWidthChange }: RightSide
     error
   } = useClientDocuments(clientId || undefined);
 
-  // Don't show sidebar if no client ID found
+  // Don't show sidebar if no client ID found and not admin page
   if (!clientId) {
     return null;
   }
@@ -76,6 +94,7 @@ const RightSidebar = ({ isCollapsed, onToggle, width, onWidthChange }: RightSide
     );
   }
 
+  // Show client-specific content
   return (
     <div className="w-80 border-l bg-background p-4">
       <div className="space-y-4">
