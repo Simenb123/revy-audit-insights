@@ -163,9 +163,13 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
     try {
       console.log('📥 [VIEWER] Starting document download...');
       
-      // Call downloadDocument with just the document ID
+      // Call downloadDocument function
       await downloadDocument(docId);
       setOperationResult(docId, 'success');
+      
+      toast.success('✅ Dokumentet lastes ned', {
+        duration: 3000
+      });
       
     } catch (error) {
       console.error('❌ [VIEWER] Error downloading document:', error);
@@ -202,7 +206,8 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
         duration: 3000
       });
       
-      await triggerTextExtraction(docId);
+      // Call the mutation properly
+      await triggerTextExtraction.mutateAsync(docId);
       
       console.log('✅ [VIEWER] Text extraction retry initiated successfully');
       setOperationResult(docId, 'success');
@@ -210,7 +215,10 @@ const DocumentReferenceViewer: React.FC<DocumentReferenceViewerProps> = ({
     } catch (error) {
       console.error('❌ [VIEWER] Error retrying text extraction:', error);
       setOperationResult(docId, 'error');
-      // Error toast is handled in the hook, so we don't need to show another one here
+      toast.error('❌ Tekstekstraksjon feilet', {
+        description: 'Kunne ikke starte tekstekstraksjon på nytt.',
+        duration: 5000
+      });
     }
   };
 

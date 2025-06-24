@@ -117,6 +117,46 @@ export const useClientDocuments = (clientId?: string) => {
     },
   });
 
+  // Download document function
+  const downloadDocument = async (documentId: string) => {
+    try {
+      devLog('Downloading document:', documentId);
+      
+      // Get document data
+      const { data: documentData, error } = await supabase
+        .from('client_documents_files')
+        .select('file_path, file_name')
+        .eq('id', documentId)
+        .single();
+
+      if (error || !documentData) {
+        throw new Error('Document not found');
+      }
+
+      // Get signed URL for download
+      const { data } = await supabase.storage
+        .from('client-documents')
+        .createSignedUrl(documentData.file_path, 3600);
+      
+      if (data?.signedUrl) {
+        // Create a temporary link and trigger download
+        const link = document.createElement('a');
+        link.href = data.signedUrl;
+        link.download = documentData.file_name;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        devLog('Document download initiated:', documentData.file_name);
+      } else {
+        throw new Error('Could not generate download URL');
+      }
+    } catch (error) {
+      devLog('Error downloading document:', error);
+      throw error;
+    }
+  };
+
   // Get document URL function
   const getDocumentUrl = async (filePath: string): Promise<string | null> => {
     try {
@@ -163,6 +203,7 @@ export const useClientDocuments = (clientId?: string) => {
     
     // Functions
     getDocumentUrl,
+    downloadDocument,
     
     // Refetch
     refetch: documentsQuery.refetch,
