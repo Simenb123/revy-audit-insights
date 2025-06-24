@@ -3819,7 +3819,6 @@ export type Database = {
           category_id: string
           status: Database["public"]["Enums"]["article_status"]
           author_id: string
-          tags: string[]
           view_count: number
           created_at: string
           updated_at: string

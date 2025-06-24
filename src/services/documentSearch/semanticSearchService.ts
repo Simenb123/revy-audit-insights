@@ -1,5 +1,5 @@
-
 import { supabase } from '@/integrations/supabase/client';
+import { performEnhancedSearch } from '@/services/knowledge/enhancedSearchLogging';
 
 export interface SearchQuery {
   term: string;
@@ -49,19 +49,11 @@ export interface SearchSuggestion {
 
 export const performSemanticSearch = async (query: SearchQuery): Promise<SearchResult[]> => {
   try {
-    console.log('🔍 Performing semantic search with enhanced multi-word support:', query);
+    console.log('🔍 Performing enhanced semantic search:', query);
     
-    const { data, error } = await supabase.functions.invoke('knowledge-search', {
-      body: { query: query.term }
-    });
+    // Use the enhanced search with logging
+    const { articles } = await performEnhancedSearch(query.term);
     
-    if (error) {
-      console.error('❌ Knowledge search error:', error);
-      throw new Error('Search failed');
-    }
-    
-    // Handle new response structure { articles, tagMapping }
-    const articles = data?.articles || [];
     console.log('📊 Enhanced search returned:', articles.length, 'results');
     
     const results: SearchResult[] = articles.map((article: any) => ({
@@ -89,7 +81,7 @@ export const performSemanticSearch = async (query: SearchQuery): Promise<SearchR
     return results;
     
   } catch (error) {
-    console.error('💥 Semantic search error:', error);
+    console.error('💥 Enhanced semantic search error:', error);
     throw error;
   }
 };
