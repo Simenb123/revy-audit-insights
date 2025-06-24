@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Brain, Database, Zap, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Brain, Database, Zap, AlertTriangle, CheckCircle, RefreshCw } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
@@ -14,6 +14,7 @@ const KnowledgeStatusIndicator = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [searchTestResult, setSearchTestResult] = useState<'pending' | 'success' | 'error'>('pending');
   const [lastTestError, setLastTestError] = useState<string>('');
+  const [isRetesting, setIsRetesting] = useState(false);
 
   const checkEmbeddingStatus = async () => {
     try {
@@ -39,10 +40,13 @@ const KnowledgeStatusIndicator = () => {
 
       if (totalCount === 0) {
         setEmbeddingStatus('missing');
+        setSearchTestResult('pending');
       } else if (embeddedCount === 0) {
         setEmbeddingStatus('missing');
+        setSearchTestResult('pending');
       } else if (embeddedCount < totalCount) {
         setEmbeddingStatus('partial');
+        await testKnowledgeSearch();
       } else {
         setEmbeddingStatus('ready');
         // Test knowledge search if everything looks good
@@ -51,6 +55,8 @@ const KnowledgeStatusIndicator = () => {
     } catch (error) {
       console.error('❌ Error checking embedding status:', error);
       setEmbeddingStatus('error');
+      setSearchTestResult('error');
+      setLastTestError(error.message || 'Unknown error');
     }
   };
 
@@ -67,18 +73,22 @@ const KnowledgeStatusIndicator = () => {
       if (error) {
         console.error('❌ Knowledge search test failed:', error);
         setSearchTestResult('error');
-        setLastTestError(error.message || 'Unknown error');
+        setLastTestError(error.message || 'Edge function error');
       } else if (data && Array.isArray(data) && data.length > 0) {
         console.log('✅ Knowledge search test successful:', data.length, 'results');
         setSearchTestResult('success');
-      } else {
+      } else if (data && Array.isArray(data) && data.length === 0) {
         console.log('⚠️ Knowledge search returned no results but function works');
         setSearchTestResult('success'); // Function works, just no results for this query
+      } else {
+        console.error('❌ Unexpected response format:', data);
+        setSearchTestResult('error');
+        setLastTestError('Unexpected response format from search function');
       }
     } catch (error) {
       console.error('❌ Knowledge search test error:', error);
       setSearchTestResult('error');
-      setLastTestError(error.message || 'Unknown error');
+      setLastTestError(error.message || 'Network or function error');
     }
   };
 
@@ -104,7 +114,12 @@ const KnowledgeStatusIndicator = () => {
   };
 
   const handleRetry = async () => {
-    await checkEmbeddingStatus();
+    setIsRetesting(true);
+    try {
+      await checkEmbeddingStatus();
+    } finally {
+      setIsRetesting(false);
+    }
   };
 
   useEffect(() => {
@@ -165,17 +180,32 @@ const KnowledgeStatusIndicator = () => {
               disabled={isGenerating}
               className="text-xs"
             >
-              {isGenerating ? 'Genererer...' : 'Aktiver kunnskapsbase'}
+              {isGenerating ? (
+                <>
+                  <RefreshCw className="w-3 h-3 mr-1 animate-spin" />
+                  Genererer...
+                </>
+              ) : (
+                'Aktiver kunnskapsbase'
+              )}
             </Button>
           )}
           {(embeddingStatus === 'error' || searchTestResult === 'error' || embeddingStatus === 'ready') && (
             <Button
               size="sm"
               onClick={handleRetry}
+              disabled={isRetesting}
               className="text-xs"
               variant="outline"
             >
-              Prøv igjen
+              {isRetesting ? (
+                <>
+                  <RefreshCw className="w-3 h-3 mr-1 animate-spin" />
+                  Tester...
+                </>
+              ) : (
+                'Test på nytt'
+              )}
             </Button>
           )}
         </div>

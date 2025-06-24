@@ -1,68 +1,58 @@
 
 import React from 'react';
-import { formatDistanceToNow } from 'date-fns';
-import { nb } from 'date-fns/locale';
 import { RevyMessage } from '@/types/revio';
-import RevyAvatar from '../RevyAvatar';
 import { MessageContentParser } from './MessageContentParser';
+import RevyAvatar from '../RevyAvatar';
+import { User } from 'lucide-react';
 
 interface RevyMessageItemProps {
   message: RevyMessage;
-  isEmbedded?: boolean;
+  isLast?: boolean;
 }
 
-export const RevyMessageItem = ({ message, isEmbedded = false }: RevyMessageItemProps) => {
-  const { sender, content, timestamp } = message;
-
-  const userMessageClass = isEmbedded
-    ? "bg-gradient-to-r from-blue-600 to-blue-700 text-white p-3 rounded-xl shadow-sm"
-    : "bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 rounded-xl shadow-md";
-    
-  const revyMessageContainerClass = "flex items-start gap-3";
-  const revyMessageClass = isEmbedded
-    ? "bg-white border border-gray-100 p-4 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200"
-    : "bg-white border border-gray-100 p-5 rounded-2xl shadow-sm hover:shadow-md transition-all duration-200";
-
-  const formattedTimestamp = timestamp ? formatDistanceToNow(new Date(timestamp), { addSuffix: true, locale: nb }) : '';
-
-  if (sender === 'user') {
-    return (
-      <div className="flex justify-end animate-fade-in">
-        <div className="flex flex-col items-end max-w-[85%]">
-          <div className={`${userMessageClass} rounded-br-sm max-w-full`}>
-            <div className={`break-words ${isEmbedded ? 'text-sm' : 'text-base'}`}>
-              {content}
-            </div>
-          </div>
-          {formattedTimestamp && (
-            <span className={`text-gray-500 mt-2 px-1 ${isEmbedded ? 'text-xs' : 'text-sm'}`}>
-              {formattedTimestamp}
-            </span>
+const RevyMessageItem = ({ message, isLast = false }: RevyMessageItemProps) => {
+  const isAssistant = message.sender === 'assistant';
+  
+  return (
+    <div className={`flex gap-3 ${isAssistant ? 'justify-start' : 'justify-end'} ${isLast ? 'mb-0' : 'mb-4'}`}>
+      {isAssistant && (
+        <div className="flex-shrink-0 self-start">
+          <RevyAvatar size="sm" variant="chat" />
+        </div>
+      )}
+      
+      <div className={`max-w-[80%] ${isAssistant ? 'order-2' : 'order-1'}`}>
+        <div
+          className={`rounded-lg px-4 py-3 ${
+            isAssistant
+              ? 'bg-white border border-gray-200 shadow-sm'
+              : 'bg-blue-600 text-white ml-auto'
+          }`}
+        >
+          {isAssistant ? (
+            <MessageContentParser content={message.content} />
+          ) : (
+            <p className="text-sm whitespace-pre-wrap">{message.content}</p>
           )}
         </div>
-      </div>
-    );
-  }
-
-  if (sender === 'assistant') {
-    return (
-      <div className="flex justify-start animate-fade-in">
-        <div className={`flex flex-col items-start ${isEmbedded ? 'max-w-[90%]' : 'max-w-[88%]'}`}>
-          <div className={revyMessageContainerClass}>
-            <RevyAvatar size={isEmbedded ? 'xs' : 'sm'} className="flex-shrink-0 mt-1" />
-            <div className={`${revyMessageClass} rounded-bl-sm max-w-none flex-1`}>
-              <MessageContentParser content={content as string} isEmbedded={isEmbedded} />
-            </div>
-          </div>
-          {formattedTimestamp && (
-            <span className={`text-gray-500 mt-2 ml-12 px-1 ${isEmbedded ? 'text-xs' : 'text-sm'}`}>
-              {formattedTimestamp}
-            </span>
-          )}
+        
+        <div className={`text-xs text-gray-500 mt-1 ${isAssistant ? 'text-left' : 'text-right'}`}>
+          {message.timestamp.toLocaleTimeString('no-NO', { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+          })}
         </div>
       </div>
-    );
-  }
-
-  return null;
+      
+      {!isAssistant && (
+        <div className="flex-shrink-0 self-start order-2">
+          <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+            <User className="h-4 w-4 text-white" />
+          </div>
+        </div>
+      )}
+    </div>
+  );
 };
+
+export default RevyMessageItem;
