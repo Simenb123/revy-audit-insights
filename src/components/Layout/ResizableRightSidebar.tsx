@@ -10,6 +10,7 @@ import KnowledgeSidebarSection from './KnowledgeSidebarSection';
 import ClientSidebarSection from './ClientSidebarSection';
 import GeneralSidebarSection from './GeneralSidebarSection';
 import LoadingErrorSection from './LoadingErrorSection';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface ResizableRightSidebarProps {
   isCollapsed?: boolean;
@@ -112,14 +113,20 @@ const ResizableRightSidebar = ({
     <div className="relative flex">
       <ResizableHandle onMouseDown={handleMouseDown} />
       
-      <div className="border-l bg-background p-4" style={sidebarStyle}>
+      <div className="border-l bg-background flex flex-col h-full" style={sidebarStyle}>
         <SidebarHeader 
           title={getPageTitle()}
           isCollapsed={isCollapsed}
           onToggle={onToggle}
         />
         
-        {!isCollapsed && renderContent()}
+        {!isCollapsed && (
+          <ScrollArea className="flex-1">
+            <div className="p-4">
+              {renderContent()}
+            </div>
+          </ScrollArea>
+        )}
       </div>
     </div>
   );
