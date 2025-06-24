@@ -54,7 +54,7 @@ export interface Client {
 export interface RevyMessage {
   id: string;
   sender: 'user' | 'assistant';
-  content: string | React.ReactNode;
+  content: string;  // Changed from string | React.ReactNode to just string
   timestamp: Date;
   metadata?: {
     context?: string;

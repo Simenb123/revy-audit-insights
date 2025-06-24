@@ -13,15 +13,6 @@ interface RevyMessageItemProps {
 const RevyMessageItem = ({ message, isLast = false }: RevyMessageItemProps) => {
   const isAssistant = message.sender === 'assistant';
   
-  // Ensure content is always a string for MessageContentParser
-  const getContentAsString = (content: string | React.ReactNode): string => {
-    if (typeof content === 'string') {
-      return content;
-    }
-    // If it's a ReactNode, convert to string representation
-    return String(content);
-  };
-  
   return (
     <div className={`flex gap-3 ${isAssistant ? 'justify-start' : 'justify-end'} ${isLast ? 'mb-0' : 'mb-4'}`}>
       {isAssistant && (
@@ -39,9 +30,9 @@ const RevyMessageItem = ({ message, isLast = false }: RevyMessageItemProps) => {
           }`}
         >
           {isAssistant ? (
-            <MessageContentParser content={getContentAsString(message.content)} />
+            <MessageContentParser content={message.content} />
           ) : (
-            <p className="text-sm whitespace-pre-wrap">{getContentAsString(message.content)}</p>
+            <p className="text-sm whitespace-pre-wrap">{message.content}</p>
           )}
         </div>
         

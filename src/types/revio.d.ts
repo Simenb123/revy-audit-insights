@@ -4,7 +4,7 @@ import { Database } from "@/integrations/supabase/types";
 export type RevyMessage = {
   id: string;
   sender: 'revy' | 'user';
-  content: string | React.ReactNode;
+  content: string;  // Changed from string | React.ReactNode to just string
   timestamp: string;
   metadata?: any;
 };
