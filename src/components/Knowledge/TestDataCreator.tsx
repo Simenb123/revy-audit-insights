@@ -11,7 +11,7 @@ const TestDataCreator = () => {
 
   const testArticles = [
     {
-      slug: "isa-315-risikovurdering",
+      title: "ISA 315 - Risikovurdering",
       summary: "Veiledning for risikovurdering i henhold til ISA 315, inkludert identifisering av risikoområder og planlegging av revisjonsrespons.",
       content: `# ISA 315 - Risikovurdering
 
@@ -35,7 +35,7 @@ Risikovurderingen danner grunnlag for den videre revisjonsplanleggingen.`,
       category_name: 'Revisjonsstandarder'
     },
     {
-      slug: "materialitetsvurdering-revisjon",
+      title: "Materialitetsvurdering i revisjon",
       summary: "Praktisk veiledning for fastsettelse av materialitet, ytelsesmaterialitet og bagatellgrense i revisjonsoppdrag.",
       content: `# Materialitetsvurdering i revisjon
 
@@ -59,7 +59,7 @@ Materialitetsvurderingen må oppdateres dersom forholdene endres.`,
       category_name: 'Revisjonsstandarder'
     },
     {
-      slug: "revisjon-varelager",
+      title: "Revisjon av varelager",
       summary: "Revisjonshandlinger og kontrollprosedyrer for varelager, inkluderd varetelling og verdivurdering.",
       content: `# Revisjon av varelager
 
@@ -90,7 +90,7 @@ Varelagerrevisjonen krever både detaljerte tester og analytiske handlinger.`,
       category_name: 'Fagartikler'
     },
     {
-      slug: "aarsavslutning-regnskap",
+      title: "Årsavslutning og regnskapsavleggelse",
       summary: "Veiledning for årsavslutningsprosessen, inkludert periodiseringer, avsetninger og presentasjon av årsregnskapet.",
       content: `# Årsavslutning og regnskapsavleggelse
 
@@ -120,7 +120,7 @@ En systematisk tilnærming sikrer kvalitet i regnskapsavleggelsen.`,
       category_name: 'Fagartikler'
     },
     {
-      slug: "dokumentasjonskrav-isa-230",
+      title: "Dokumentasjonskrav i revisjon per ISA 230",
       summary: "Krav til revisjonsregnskapsføring og dokumentasjon i henhold til ISA 230, inkludert form, innhold og oppbevaring.",
       content: `# Dokumentasjonskrav i revisjon per ISA 230
 
@@ -234,11 +234,11 @@ God dokumentasjon er grunnlag for forsvarlig revisjon.`,
         const { data: existing } = await supabase
           .from('knowledge_articles')
           .select('id')
-          .eq('slug', article.slug)
+          .eq('title', article.title)
           .single();
 
         if (existing) {
-          console.log(`⏭️ Artikkel "${article.slug}" eksisterer allerede`);
+          console.log(`⏭️ Artikkel "${article.title}" eksisterer allerede`);
           skippedCount++;
           continue;
         }
@@ -248,7 +248,7 @@ God dokumentasjon er grunnlag for forsvarlig revisjon.`,
         const { error } = await supabase
           .from('knowledge_articles')
           .insert({
-            slug: article.slug,
+            title: article.title,
             summary: article.summary,
             content: article.content,
             reference_code: article.reference_code,
@@ -261,12 +261,12 @@ God dokumentasjon er grunnlag for forsvarlig revisjon.`,
           });
 
         if (error) {
-          console.error(`Feil ved opprettelse av "${article.slug}":`, error);
+          console.error(`Feil ved opprettelse av "${article.title}":`, error);
           throw error;
         }
 
         createdCount++;
-        console.log(`✅ Opprettet artikkel: "${article.slug}"`);
+        console.log(`✅ Opprettet artikkel: "${article.title}"`);
       }
 
       // Generate embeddings for the new articles
