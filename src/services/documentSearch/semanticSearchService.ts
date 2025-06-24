@@ -169,10 +169,15 @@ export const testKnowledgeSearch = async (testQuery: string = 'ISA revisjon'): P
       return false;
     }
     
+    // Handle new response structure { articles, tagMapping }
+    const articles = data?.articles || [];
+    const tagMapping = data?.tagMapping || {};
+    
     console.log('✅ Knowledge search test result:', {
       success: true,
-      resultsCount: data?.length || 0,
-      hasResults: Array.isArray(data) && data.length > 0
+      resultsCount: articles.length,
+      hasResults: Array.isArray(articles) && articles.length > 0,
+      hasTagMapping: Object.keys(tagMapping).length > 0
     });
     
     return true;
