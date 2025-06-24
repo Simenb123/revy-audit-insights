@@ -12,6 +12,7 @@ const TestDataCreator = () => {
   const testArticles = [
     {
       title: "ISA 315 - Risikovurdering",
+      slug: "isa-315-risikovurdering",
       summary: "Veiledning for risikovurdering i henhold til ISA 315, inkludert identifisering av risikoområder og planlegging av revisjonsrespons.",
       content: `# ISA 315 - Risikovurdering
 
@@ -36,6 +37,7 @@ Risikovurderingen danner grunnlag for den videre revisjonsplanleggingen.`,
     },
     {
       title: "Materialitetsvurdering i revisjon",
+      slug: "materialitetsvurdering-revisjon",
       summary: "Praktisk veiledning for fastsettelse av materialitet, ytelsesmaterialitet og bagatellgrense i revisjonsoppdrag.",
       content: `# Materialitetsvurdering i revisjon
 
@@ -60,6 +62,7 @@ Materialitetsvurderingen må oppdateres dersom forholdene endres.`,
     },
     {
       title: "Revisjon av varelager",
+      slug: "revisjon-varelager",
       summary: "Revisjonshandlinger og kontrollprosedyrer for varelager, inkluderd varetelling og verdivurdering.",
       content: `# Revisjon av varelager
 
@@ -91,6 +94,7 @@ Varelagerrevisjonen krever både detaljerte tester og analytiske handlinger.`,
     },
     {
       title: "Årsavslutning og regnskapsavleggelse",
+      slug: "aarsavslutning-regnskap",
       summary: "Veiledning for årsavslutningsprosessen, inkludert periodiseringer, avsetninger og presentasjon av årsregnskapet.",
       content: `# Årsavslutning og regnskapsavleggelse
 
@@ -105,7 +109,7 @@ Varelagerrevisjonen krever både detaljerte tester og analytiske handlinger.`,
 
 ## Kvalitetssikring:
 - Analytisk gjennomgang av resultat og balanse
-- Kontroll av nøkkeltall og forhold
+- Kontroll av nøkkeletall og forhold
 - Gjennomgang av usedvanlige transaksjoner
 - Verifisering av compliance med regnskapsstandarder
 
@@ -121,6 +125,7 @@ En systematisk tilnærming sikrer kvalitet i regnskapsavleggelsen.`,
     },
     {
       title: "Dokumentasjonskrav i revisjon per ISA 230",
+      slug: "dokumentasjonskrav-isa-230",
       summary: "Krav til revisjonsregnskapsføring og dokumentasjon i henhold til ISA 230, inkludert form, innhold og oppbevaring.",
       content: `# Dokumentasjonskrav i revisjon per ISA 230
 
@@ -164,7 +169,7 @@ God dokumentasjon er grunnlag for forsvarlig revisjon.`,
         return;
       }
 
-      // Get or create default content type
+      // Create default content type if it doesn't exist
       let { data: contentType, error: contentTypeError } = await supabase
         .from('content_types')
         .select('id')
@@ -249,6 +254,7 @@ God dokumentasjon er grunnlag for forsvarlig revisjon.`,
           .from('knowledge_articles')
           .insert({
             title: article.title,
+            slug: article.slug,
             summary: article.summary,
             content: article.content,
             reference_code: article.reference_code,
