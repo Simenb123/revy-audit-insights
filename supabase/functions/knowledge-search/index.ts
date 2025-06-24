@@ -148,10 +148,42 @@ serve(async (req) => {
 
   try {
     console.log('🚀 Knowledge search function started');
-    const { query } = await req.json();
+    
+    // Fix: Safer JSON parsing with error handling
+    let requestBody;
+    try {
+      const bodyText = await req.text();
+      console.log('📝 Raw request body:', bodyText);
+      
+      if (!bodyText || bodyText.trim() === '') {
+        throw new Error('Empty request body');
+      }
+      
+      requestBody = JSON.parse(bodyText);
+    } catch (parseError) {
+      console.error('❌ JSON parsing error:', parseError);
+      return new Response(JSON.stringify({ 
+        error: 'Invalid JSON in request body',
+        details: parseError.message,
+        articles: [],
+        tagMapping: {}
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const { query } = requestBody;
     if (!query) {
       console.error('❌ No query parameter provided');
-      throw new Error('Query parameter is required');
+      return new Response(JSON.stringify({
+        error: 'Query parameter is required',
+        articles: [],
+        tagMapping: {}
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     console.log('🔍 Knowledge search for query:', query);
