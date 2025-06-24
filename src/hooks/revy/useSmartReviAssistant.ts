@@ -98,12 +98,22 @@ export const useSmartReviAssistant = ({ clientData, userRole, embedded = false }
   }, [enhancedContext, clientData, userRole]);
 
   const handleSendMessage = async () => {
-    if (!message.trim() || isTyping || !activeSessionId) return;
+    console.log('🚀 handleSendMessage called with:', { message, isTyping, activeSessionId });
+    
+    if (!message.trim() || isTyping || !activeSessionId) {
+      console.log('❌ Aborting send - conditions not met:', { 
+        hasMessage: !!message.trim(), 
+        isTyping, 
+        hasSessionId: !!activeSessionId 
+      });
+      return;
+    }
     
     const userMessageContent = message;
     setMessage('');
     
     const historyBeforeSend = dbMessages;
+    console.log('📝 Sending user message:', userMessageContent);
 
     await sendMessage({
       content: userMessageContent,
@@ -111,8 +121,19 @@ export const useSmartReviAssistant = ({ clientData, userRole, embedded = false }
     });
 
     setIsTyping(true);
+    console.log('⏳ Set isTyping to true, calling AI service...');
     
     try {
+      console.log('🤖 Calling generateEnhancedAIResponseWithVariant with params:', {
+        message: userMessageContent.substring(0, 50) + '...',
+        context: enhancedContext,
+        historyLength: historyBeforeSend.length,
+        hasClientData: !!clientData,
+        userRole,
+        sessionId: activeSessionId,
+        variantName: selectedVariant?.name || 'default'
+      });
+
       // Use enhanced AI response with variant support
       const responseText = await generateEnhancedAIResponseWithVariant(
         userMessageContent, 
@@ -124,21 +145,57 @@ export const useSmartReviAssistant = ({ clientData, userRole, embedded = false }
         selectedVariant
       );
       
+      console.log('✅ AI response received:', {
+        responseLength: responseText?.length || 0,
+        responsePreview: responseText?.substring(0, 100) + '...',
+        responseType: typeof responseText,
+        isString: typeof responseText === 'string',
+        isEmpty: !responseText || responseText.trim() === ''
+      });
+
+      if (!responseText || typeof responseText !== 'string' || responseText.trim() === '') {
+        console.error('❌ Invalid AI response received:', responseText);
+        throw new Error('AI returnerte en tom eller ugyldig respons');
+      }
+      
+      console.log('💾 Saving AI response to database...');
       await sendMessage({
         content: responseText,
         sender: 'revy'
       });
+      console.log('✅ AI response saved successfully');
 
     } catch (error) {
+      console.error('💥 Error in handleSendMessage:', error);
+      
       const errorMessage = error instanceof Error ? error.message : 'En ukjent feil oppstod.';
-      const fallbackContent = `Beklager, jeg opplever tekniske problemer akkurat nå. Prøv igjen om litt. (Feil: ${errorMessage})`;
-      await sendMessage({ content: fallbackContent, sender: 'revy' });
+      console.log('🆘 Sending fallback error message:', errorMessage);
+      
+      const fallbackContent = `Beklager, jeg opplever tekniske problemer akkurat nå. Prøv igjen om litt. 
+
+**Feil:** ${errorMessage}
+
+**Feilsøking:**
+• Sjekk internett-tilkoblingen din
+• Prøv å laste siden på nytt
+• Kontakt support hvis problemet vedvarer
+
+🏷️ **EMNER:** Teknisk support, Feilsøking, AI-assistanse`;
+
+      try {
+        await sendMessage({ content: fallbackContent, sender: 'revy' });
+        console.log('✅ Fallback message sent successfully');
+      } catch (fallbackError) {
+        console.error('💥 Failed to send fallback message:', fallbackError);
+      }
+
       toast({
         title: "AI-feil",
         description: errorMessage,
         variant: "destructive"
       });
     } finally {
+      console.log('🔄 Setting isTyping to false');
       setIsTyping(false);
     }
   };

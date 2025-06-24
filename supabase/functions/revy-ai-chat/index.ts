@@ -154,6 +154,12 @@ serve(async (req) => {
 
     const startTime = Date.now();
     console.log('🚀 Calling OpenAI API with document-enhanced prompt...');
+    console.log('📊 OpenAI request details:', {
+      model: selectedModel,
+      messagesCount: history.length + 2, // system + history + user message
+      temperature: selectedVariant?.name === 'methodology-expert' ? 0.1 : 0.3,
+      maxTokens: 1500
+    });
 
     // Call OpenAI
     const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -178,6 +184,8 @@ serve(async (req) => {
       }),
     });
 
+    console.log('📥 OpenAI response status:', openaiResponse.status, openaiResponse.statusText);
+
     if (!openaiResponse.ok) {
       const errorText = await openaiResponse.text();
       console.error('❌ OpenAI API error:', {
@@ -190,7 +198,24 @@ serve(async (req) => {
 
     const data = await openaiResponse.json();
     const responseTime = Date.now() - startTime;
+    
+    console.log('📊 OpenAI response data:', {
+      hasChoices: !!data.choices,
+      choicesLength: data.choices?.length || 0,
+      hasUsage: !!data.usage,
+      usage: data.usage,
+      responseTime: `${responseTime}ms`
+    });
+
     let aiResponse = data.choices?.[0]?.message?.content;
+
+    console.log('🔍 AI response extraction:', {
+      hasAiResponse: !!aiResponse,
+      aiResponseType: typeof aiResponse,
+      aiResponseLength: aiResponse?.length || 0,
+      isEmpty: !aiResponse || aiResponse.trim() === '',
+      preview: aiResponse?.substring(0, 100) || 'N/A'
+    });
 
     if (!aiResponse) {
       console.error('❌ No content in OpenAI response:', data);
@@ -249,7 +274,8 @@ serve(async (req) => {
       hasStandardizedTags: /🏷️\s*\*\*[Ee][Mm][Nn][Ee][Rr]:?\*\*/.test(aiResponse),
       hasArticleMappings: aiResponse.includes('ARTICLE_MAPPINGS'),
       hasKnowledgeReferences: aiResponse.includes('KNOWLEDGE_ARTICLES'),
-      variantUsed: selectedVariant?.name || 'default'
+      variantUsed: selectedVariant?.name || 'default',
+      finalPreview: aiResponse.substring(0, 200) + '...'
     });
 
     // Log usage if user is authenticated
@@ -282,6 +308,13 @@ serve(async (req) => {
         console.error('❌ Failed to cache response:', error);
       }
     }
+
+    console.log('🎯 Returning response to client:', {
+      hasResponse: !!aiResponse,
+      responseLength: aiResponse.length,
+      responseType: typeof aiResponse,
+      isValidString: typeof aiResponse === 'string' && aiResponse.trim().length > 0
+    });
 
     return new Response(JSON.stringify({ response: aiResponse }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -318,6 +351,12 @@ serve(async (req) => {
       fallbackResponse = validation.fixedResponse;
       console.log('✅ Fallback response fixed with guaranteed tags');
     }
+    
+    console.log('🚨 Returning error response:', {
+      hasFallbackResponse: !!fallbackResponse,
+      fallbackLength: fallbackResponse?.length || 0,
+      errorMessage: error.message
+    });
     
     return new Response(JSON.stringify({ 
       response: fallbackResponse,

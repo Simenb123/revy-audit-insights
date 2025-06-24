@@ -222,6 +222,16 @@ export const generateEnhancedAIResponseWithVariant = async (
 ): Promise<string> => {
   const startTime = Date.now();
   
+  console.log('🚀 generateEnhancedAIResponseWithVariant called with:', {
+    message: message.substring(0, 50) + '...',
+    context,
+    userRole,
+    hasClientData: !!clientData,
+    historyLength: history.length,
+    variantName: selectedVariant?.name || 'default',
+    sessionId
+  });
+  
   try {
     console.log('📝 Enhanced request received:', {
       message: message.substring(0, 50) + '...',
@@ -273,20 +283,43 @@ export const generateEnhancedAIResponseWithVariant = async (
     // Use the revy-ai-chat function for all AI communication
     console.log('🚀 Calling revy-ai-chat function with enhanced prompt...');
     
+    const requestPayload = {
+      message,
+      context,
+      history: history.slice(-6),
+      clientData,
+      userRole,
+      sessionId,
+      selectedVariant,
+      model,
+      // Pass the knowledge articles directly to ensure they're used
+      knowledgeArticles: enhancedContextData.knowledgeArticles,
+      articleTagMapping: enhancedContextData.articleTagMapping
+    };
+
+    console.log('📤 Sending request to revy-ai-chat with payload:', {
+      messageLength: message.length,
+      context,
+      historyLength: requestPayload.history.length,
+      hasKnowledgeArticles: requestPayload.knowledgeArticles.length > 0,
+      knowledgeArticleCount: requestPayload.knowledgeArticles.length,
+      hasArticleTagMapping: Object.keys(requestPayload.articleTagMapping).length > 0,
+      variantName: selectedVariant?.name || 'default'
+    });
+    
     const { data, error } = await supabase.functions.invoke('revy-ai-chat', {
-      body: {
-        message,
-        context,
-        history: history.slice(-6),
-        clientData,
-        userRole,
-        sessionId,
-        selectedVariant,
-        model,
-        // Pass the knowledge articles directly to ensure they're used
-        knowledgeArticles: enhancedContextData.knowledgeArticles,
-        articleTagMapping: enhancedContextData.articleTagMapping
-      }
+      body: requestPayload
+    });
+
+    console.log('📥 Response from revy-ai-chat:', {
+      hasData: !!data,
+      hasError: !!error,
+      dataKeys: data ? Object.keys(data) : [],
+      errorMessage: error?.message,
+      dataType: typeof data,
+      responseField: data?.response ? 'present' : 'missing',
+      responseLength: data?.response?.length || 0,
+      responsePreview: data?.response?.substring(0, 100) || 'N/A'
     });
 
     if (error) {
@@ -298,7 +331,30 @@ export const generateEnhancedAIResponseWithVariant = async (
       return validatedResponse;
     }
 
+    if (!data) {
+      console.error('❌ No data received from revy-ai-chat function');
+      const fallbackResponse = getIntelligentFallback(message, context, selectedVariant);
+      const validatedResponse = enforceResponseValidation(fallbackResponse, enhancedContextData.knowledgeArticles, enhancedContextData.articleTagMapping);
+      await cacheResponse(requestHash, validatedResponse);
+      return validatedResponse;
+    }
+
     let aiResponse = data?.response || 'Beklager, jeg kunne ikke generere et svar.';
+    console.log('🤖 AI response extracted:', {
+      responseLength: aiResponse.length,
+      responseType: typeof aiResponse,
+      isEmpty: !aiResponse || aiResponse.trim() === '',
+      hasContent: aiResponse && aiResponse.length > 0,
+      preview: aiResponse.substring(0, 100) + '...'
+    });
+
+    if (!aiResponse || typeof aiResponse !== 'string' || aiResponse.trim() === '') {
+      console.error('❌ Invalid AI response format:', { aiResponse, type: typeof aiResponse });
+      const fallbackResponse = getIntelligentFallback(message, context, selectedVariant);
+      const validatedResponse = enforceResponseValidation(fallbackResponse, enhancedContextData.knowledgeArticles, enhancedContextData.articleTagMapping);
+      await cacheResponse(requestHash, validatedResponse);
+      return validatedResponse;
+    }
 
     // Inject variant information if available
     if (selectedVariant) {
@@ -318,7 +374,8 @@ export const generateEnhancedAIResponseWithVariant = async (
       hasStandardizedTags: /🏷️\s*\*\*[Ee][Mm][Nn][Ee][Rr]:?\*\*/.test(aiResponse),
       hasArticleMappings: Object.keys(enhancedContextData.articleTagMapping).length > 0,
       hasDocumentReferences: enhancedContextData.knowledgeArticles.length > 0,
-      variantUsed: selectedVariant?.name || 'default'
+      variantUsed: selectedVariant?.name || 'default',
+      finalResponsePreview: aiResponse.substring(0, 200) + '...'
     });
 
     // Cache and log the response
@@ -342,6 +399,12 @@ export const generateEnhancedAIResponseWithVariant = async (
     console.log('✅ AI usage logged successfully');
     console.log('📊 Usage logged successfully with variant and document info');
     console.log('✅ Document-enhanced response cached successfully');
+
+    console.log('🎯 Returning final AI response:', {
+      length: aiResponse.length,
+      hasContent: !!aiResponse && aiResponse.trim().length > 0,
+      isString: typeof aiResponse === 'string'
+    });
 
     return aiResponse;
 
