@@ -52,7 +52,7 @@ export const performSemanticSearch = async (query: SearchQuery): Promise<SearchR
     console.log('🔍 Performing semantic search with enhanced multi-word support:', query);
     
     const { data, error } = await supabase.functions.invoke('knowledge-search', {
-      body: { query: query.term } // Fixed: ensure we use 'query' parameter name
+      body: { query: query.term }
     });
     
     if (error) {
@@ -60,9 +60,11 @@ export const performSemanticSearch = async (query: SearchQuery): Promise<SearchR
       throw new Error('Search failed');
     }
     
-    console.log('📊 Enhanced search returned:', data?.length || 0, 'results');
+    // Handle new response structure { articles, tagMapping }
+    const articles = data?.articles || [];
+    console.log('📊 Enhanced search returned:', articles.length, 'results');
     
-    const results: SearchResult[] = (data || []).map((article: any) => ({
+    const results: SearchResult[] = articles.map((article: any) => ({
       id: article.id,
       fileName: article.title,
       category: article.category?.name || 'Ukategoriseret',

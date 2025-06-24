@@ -74,12 +74,14 @@ const KnowledgeStatusIndicator = () => {
         console.error('❌ Knowledge search test failed:', error);
         setSearchTestResult('error');
         setLastTestError(error.message || 'Edge function error');
-      } else if (data && Array.isArray(data) && data.length > 0) {
-        console.log('✅ Knowledge search test successful:', data.length, 'results');
-        setSearchTestResult('success');
-      } else if (data && Array.isArray(data) && data.length === 0) {
-        console.log('⚠️ Knowledge search returned no results but function works');
-        setSearchTestResult('success'); // Function works, just no results for this query
+      } else if (data && data.articles && Array.isArray(data.articles)) {
+        if (data.articles.length > 0) {
+          console.log('✅ Knowledge search test successful:', data.articles.length, 'results');
+          setSearchTestResult('success');
+        } else {
+          console.log('⚠️ Knowledge search returned no results but function works');
+          setSearchTestResult('success'); // Function works, just no results for this query
+        }
       } else {
         console.error('❌ Unexpected response format:', data);
         setSearchTestResult('error');
