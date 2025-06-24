@@ -37,10 +37,10 @@ const RevyMessageItem = ({ message, isLast = false }: RevyMessageItemProps) => {
         </div>
         
         <div className={`text-xs text-gray-500 mt-1 ${isAssistant ? 'text-left' : 'text-right'}`}>
-          {message.timestamp.toLocaleTimeString('no-NO', { 
+          {String(message.timestamp.toLocaleTimeString('no-NO', { 
             hour: '2-digit', 
             minute: '2-digit' 
-          })}
+          }))}
         </div>
       </div>
       

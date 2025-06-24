@@ -33,7 +33,6 @@ async function getEmbedding(text: string, openAIApiKey: string) {
 async function keywordSearch(supabase: any, query: string) {
   console.log('🔎 Enhanced keyword search for:', query);
   
-  // Split query into individual words and filter out short words
   const words = query.toLowerCase().split(/\s+/).filter(word => word.length > 1);
   console.log('📝 Search words:', words);
   
@@ -43,28 +42,27 @@ async function keywordSearch(supabase: any, query: string) {
   }
   
   try {
-    // Build search conditions for multiple words
     const titleConditions = words.map(word => `title.ilike.%${word}%`).join(',');
     const summaryConditions = words.map(word => `summary.ilike.%${word}%`).join(',');
     const contentConditions = words.map(word => `content.ilike.%${word}%`).join(',');
     const refConditions = words.map(word => `reference_code.ilike.%${word}%`).join(',');
     
-    // Combine search conditions
-    const searchConditions = [
-      titleConditions,
-      summaryConditions, 
-      contentConditions,
-      refConditions
-    ].join(',');
+    const searchConditions = [titleConditions, summaryConditions, contentConditions, refConditions].join(',');
     
-    console.log('🔍 Search conditions built successfully');
-    
-    // Simple query without complex JOINs that were causing errors
     console.log('📊 Executing database query...');
     const { data, error } = await supabase
       .from('knowledge_articles')
       .select(`
-        *,
+        id,
+        title,
+        slug,
+        summary,
+        content,
+        reference_code,
+        view_count,
+        created_at,
+        updated_at,
+        published_at,
         category:knowledge_categories(name, id)
       `)
       .eq('status', 'published')
@@ -79,7 +77,6 @@ async function keywordSearch(supabase: any, query: string) {
     
     console.log(`✅ Keyword search found ${data?.length || 0} articles`);
     
-    // Calculate relevance score based on word matches
     return (data || []).map((article: any) => {
       let relevanceScore = 0;
       const titleLower = (article.title || '').toLowerCase();
@@ -87,7 +84,6 @@ async function keywordSearch(supabase: any, query: string) {
       const contentLower = (article.content || '').toLowerCase();
       const refCodeLower = (article.reference_code || '').toLowerCase();
       
-      // Score based on matches in different fields
       words.forEach(word => {
         if (titleLower.includes(word)) relevanceScore += 5;
         if (refCodeLower.includes(word)) relevanceScore += 4;
@@ -97,8 +93,7 @@ async function keywordSearch(supabase: any, query: string) {
       
       return { 
         ...article, 
-        tags: [], // Empty array for now since tag junction table is causing issues
-        similarity: Math.min(relevanceScore / 10, 1.0), // Normalize score between 0-1
+        similarity: Math.min(relevanceScore / 10, 1.0),
         category: article.category ? { name: article.category.name } : null 
       };
     }).sort((a: any, b: any) => b.similarity - a.similarity);
@@ -138,7 +133,6 @@ serve(async (req) => {
         global: { headers: { Authorization: req.headers.get('Authorization')! } }
     });
 
-    // First check if we have any published articles at all
     console.log('📊 Checking total published articles...');
     const { count: totalCount, error: countError } = await supabase
       .from('knowledge_articles')
@@ -161,7 +155,6 @@ serve(async (req) => {
 
     let semanticResults = [];
     
-    // Try semantic search if OpenAI key is available
     if (openAIApiKey) {
       try {
         console.log('🧠 Attempting semantic search...');
@@ -187,15 +180,12 @@ serve(async (req) => {
       console.log('⚠️ No OpenAI API key, skipping semantic search');
     }
     
-    // Always try keyword search as backup
     console.log('🔤 Performing keyword search...');
     const keywordResults = await keywordSearch(supabase, query);
 
-    // Combine and deduplicate results
     const combinedResults = [...(semanticResults || []), ...keywordResults];
     const uniqueResults = Array.from(new Map(combinedResults.map(item => [item.id, item])).values());
     
-    // Sort by similarity score, then by view count
     uniqueResults.sort((a, b) => {
         if (b.similarity !== a.similarity) {
             return b.similarity - a.similarity;

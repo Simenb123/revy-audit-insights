@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { FileText, Users, Calendar, AlertCircle, ChevronRight, ChevronLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { useClientDocuments } from '@/hooks/useClientDocuments';
 import AdminSidebarContent from '@/components/AIRevyAdmin/AdminSidebarContent';
 import KnowledgeStatusIndicator from '@/components/Revy/KnowledgeStatusIndicator';
@@ -57,14 +58,18 @@ const RightSidebar = ({ isCollapsed, onToggle, width = 320, onWidthChange }: Rig
   // Admin page content
   if (pageType === 'admin') {
     return (
-      <div className="border-l bg-background p-4" style={sidebarStyle}>
-        <div className="flex justify-between items-center mb-4">
+      <div className="border-l bg-background flex flex-col h-full" style={sidebarStyle}>
+        <div className="flex justify-between items-center p-4 border-b">
           <h3 className="font-semibold">Admin</h3>
           <Button variant="ghost" size="sm" onClick={onToggle}>
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
-        <AdminSidebarContent />
+        <ScrollArea className="flex-1">
+          <div className="p-4">
+            <AdminSidebarContent />
+          </div>
+        </ScrollArea>
       </div>
     );
   }
@@ -72,43 +77,45 @@ const RightSidebar = ({ isCollapsed, onToggle, width = 320, onWidthChange }: Rig
   // Knowledge page content
   if (pageType === 'knowledge') {
     return (
-      <div className="border-l bg-background p-4" style={sidebarStyle}>
-        <div className="flex justify-between items-center mb-4">
+      <div className="border-l bg-background flex flex-col h-full" style={sidebarStyle}>
+        <div className="flex justify-between items-center p-4 border-b">
           <h3 className="font-semibold">Kunnskapsbase</h3>
           <Button variant="ghost" size="sm" onClick={onToggle}>
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
-        <div className="space-y-4">
-          <KnowledgeStatusIndicator />
-          
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="w-4 h-4" />
-                Kunnskapsbase
-              </CardTitle>
-              <CardDescription>
-                AI Revi fagstoff og artikler
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Status</span>
-                <Badge className="bg-green-100 text-green-800">Aktiv</Badge>
-              </div>
-              <div className="text-xs text-muted-foreground">
-                <p>AI Revi kan svare på spørsmål basert på fagartiklene i kunnskapsbasen.</p>
-              </div>
-            </CardContent>
-          </Card>
+        <ScrollArea className="flex-1">
+          <div className="p-4 space-y-4">
+            <KnowledgeStatusIndicator />
+            
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="w-4 h-4" />
+                  Kunnskapsbase
+                </CardTitle>
+                <CardDescription>
+                  AI Revi fagstoff og artikler
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Status</span>
+                  <Badge className="bg-green-100 text-green-800">Aktiv</Badge>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  <p>AI Revi kan svare på spørsmål basert på fagartiklene i kunnskapsbasen.</p>
+                </div>
+              </CardContent>
+            </Card>
 
-          <AiReviCard 
-            context="knowledge-base"
-            title="AI-Revi Assistent"
-            description="Spør AI-Revi om fagstoff og artikler"
-          />
-        </div>
+            <AiReviCard 
+              context="knowledge-base"
+              title="AI-Revi Assistent"
+              description="Spør AI-Revi om fagstoff og artikler"
+            />
+          </div>
+        </ScrollArea>
       </div>
     );
   }
@@ -116,17 +123,19 @@ const RightSidebar = ({ isCollapsed, onToggle, width = 320, onWidthChange }: Rig
   // Show loading state
   if (isLoading) {
     return (
-      <div className="border-l bg-background p-4" style={sidebarStyle}>
-        <div className="flex justify-between items-center mb-4">
+      <div className="border-l bg-background flex flex-col h-full" style={sidebarStyle}>
+        <div className="flex justify-between items-center p-4 border-b">
           <h3 className="font-semibold">Laster...</h3>
           <Button variant="ghost" size="sm" onClick={onToggle}>
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
-        <div className="space-y-4">
-          <div className="h-4 bg-muted animate-pulse rounded" />
-          <div className="h-4 bg-muted animate-pulse rounded w-3/4" />
-        </div>
+        <ScrollArea className="flex-1">
+          <div className="p-4 space-y-4">
+            <div className="h-4 bg-muted animate-pulse rounded" />
+            <div className="h-4 bg-muted animate-pulse rounded w-3/4" />
+          </div>
+        </ScrollArea>
       </div>
     );
   }
@@ -134,26 +143,30 @@ const RightSidebar = ({ isCollapsed, onToggle, width = 320, onWidthChange }: Rig
   // Show error state
   if (error) {
     return (
-      <div className="border-l bg-background p-4" style={sidebarStyle}>
-        <div className="flex justify-between items-center mb-4">
+      <div className="border-l bg-background flex flex-col h-full" style={sidebarStyle}>
+        <div className="flex justify-between items-center p-4 border-b">
           <h3 className="font-semibold">Feil</h3>
           <Button variant="ghost" size="sm" onClick={onToggle}>
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-destructive">
-              <AlertCircle className="w-4 h-4" />
-              Feil
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Kunne ikke laste dokumentinformasjon
-            </p>
-          </CardContent>
-        </Card>
+        <ScrollArea className="flex-1">
+          <div className="p-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-destructive">
+                  <AlertCircle className="w-4 w-4" />
+                  Feil
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  Kunne ikke laste dokumentinformasjon
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </ScrollArea>
       </div>
     );
   }
@@ -162,8 +175,8 @@ const RightSidebar = ({ isCollapsed, onToggle, width = 320, onWidthChange }: Rig
   const isClientContext = clientId && clientId.length > 0;
   
   return (
-    <div className="border-l bg-background p-4" style={sidebarStyle}>
-      <div className="flex justify-between items-center mb-4">
+    <div className="border-l bg-background flex flex-col h-full" style={sidebarStyle}>
+      <div className="flex justify-between items-center p-4 border-b">
         <h3 className="font-semibold">
           {isClientContext ? 'Klient' : 'Assistent'}
         </h3>
@@ -172,76 +185,78 @@ const RightSidebar = ({ isCollapsed, onToggle, width = 320, onWidthChange }: Rig
         </Button>
       </div>
       
-      <div className="space-y-4">
-        {isClientContext && (
-          <>
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="w-4 h-4" />
-                  Dokumenter
-                </CardTitle>
-                <CardDescription>
-                  Dokumentstatus for klient
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Totalt dokumenter</span>
-                  <Badge variant="secondary">{documentsCount}</Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Kategorier</span>
-                  <Badge variant="outline">{categoriesCount}</Badge>
-                </div>
-              </CardContent>
-            </Card>
+      <ScrollArea className="flex-1">
+        <div className="p-4 space-y-4">
+          {isClientContext && (
+            <>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <FileText className="w-4 h-4" />
+                    Dokumenter
+                  </CardTitle>
+                  <CardDescription>
+                    Dokumentstatus for klient
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Totalt dokumenter</span>
+                    <Badge variant="secondary">{documentsCount}</Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Kategorier</span>
+                    <Badge variant="outline">{categoriesCount}</Badge>
+                  </div>
+                </CardContent>
+              </Card>
 
+              <AiReviCard 
+                context="client-detail"
+                clientData={{ id: clientId }}
+                title="AI-Revi Assistent"
+                description="Klientspesifikk revisjonsassistanse"
+              />
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4" />
+                    Aktivitet
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">
+                    Ingen nylig aktivitet
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="w-4 h-4" />
+                    Team
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">
+                    Ingen teammedlemmer tilordnet
+                  </p>
+                </CardContent>
+              </Card>
+            </>
+          )}
+
+          {!isClientContext && (
             <AiReviCard 
-              context="client-detail"
-              clientData={{ id: clientId }}
+              context="general"
               title="AI-Revi Assistent"
-              description="Klientspesifikk revisjonsassistanse"
+              description="Din smarte revisjonsassistent"
             />
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4" />
-                  Aktivitet
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  Ingen nylig aktivitet
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="w-4 h-4" />
-                  Team
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  Ingen teammedlemmer tilordnet
-                </p>
-              </CardContent>
-            </Card>
-          </>
-        )}
-
-        {!isClientContext && (
-          <AiReviCard 
-            context="general"
-            title="AI-Revi Assistent"
-            description="Din smarte revisjonsassistent"
-          />
-        )}
-      </div>
+          )}
+        </div>
+      </ScrollArea>
     </div>
   );
 };
