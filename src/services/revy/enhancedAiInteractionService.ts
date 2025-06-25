@@ -1,6 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { RevyContext } from '@/types/revio';
+import { toast } from 'sonner';
 
 interface Variant {
   name: string;
@@ -157,6 +158,7 @@ const buildEnhancedContextWithVariantAndDocuments = async (
 
       if (error) {
         console.error('❌ Knowledge search failed:', error);
+        toast.error('Kunne ikke hente fagartikler – prøv igjen senere.');
         // Continue without knowledge base instead of failing
         console.log('⚠️ Continuing without knowledge base results');
       } else if (data) {
