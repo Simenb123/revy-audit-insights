@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Search, Filter, Plus } from 'lucide-react';
 import { useEnhancedAuditActionTemplates } from '@/hooks/useEnhancedAuditActions';
+import { useTemplateFilters } from '@/hooks/audit-actions/useTemplateFilters';
 import { useSubjectAreas } from '@/hooks/knowledge/useSubjectAreas';
 import EnhancedActionTemplateView from './EnhancedActionTemplateView';
 import { EnhancedAuditActionTemplate } from '@/types/enhanced-audit-actions';
@@ -15,37 +16,28 @@ interface EnhancedActionTemplateListProps {
   selectedArea?: string;
   onCopyToClient?: (templateIds: string[]) => void;
   onEditTemplate?: (template: EnhancedAuditActionTemplate) => void;
+  enableAI?: boolean;
 }
 
-const EnhancedActionTemplateList = ({ 
-  selectedArea, 
-  onCopyToClient, 
-  onEditTemplate 
+const EnhancedActionTemplateList = ({
+  selectedArea,
+  onCopyToClient,
+  onEditTemplate,
+  enableAI = true
 }: EnhancedActionTemplateListProps) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [riskFilter, setRiskFilter] = useState<string>('all');
-  const [phaseFilter, setPhaseFilter] = useState<string>('all');
-  const [aiFilter, setAiFilter] = useState<string>('all');
-
   const { data: templates = [], isLoading } = useEnhancedAuditActionTemplates();
+  const {
+    searchTerm,
+    setSearchTerm,
+    riskFilter,
+    setRiskFilter,
+    phaseFilter,
+    setPhaseFilter,
+    aiFilter,
+    setAiFilter,
+    filteredTemplates
+  } = useTemplateFilters(templates, { selectedArea, includeAI: enableAI });
   const { data: subjectAreas } = useSubjectAreas();
-
-  // Filter templates based on all criteria
-  const filteredTemplates = templates.filter(template => {
-    const matchesArea = !selectedArea || template.subject_area === selectedArea;
-    const matchesSearch = !searchTerm || 
-      template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      template.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      template.procedures.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesRisk = riskFilter === 'all' || template.risk_level === riskFilter;
-    const matchesPhase = phaseFilter === 'all' || 
-      template.applicable_phases.includes(phaseFilter);
-    const matchesAI = aiFilter === 'all' || 
-      (aiFilter === 'with_ai' && template.ai_metadata) ||
-      (aiFilter === 'without_ai' && !template.ai_metadata);
-    
-    return matchesArea && matchesSearch && matchesRisk && matchesPhase && matchesAI;
-  });
 
   const getSubjectAreaName = (areaKey: string) => {
     const area = subjectAreas?.find(a => a.name === areaKey);
@@ -114,16 +106,18 @@ const EnhancedActionTemplateList = ({
               </SelectContent>
             </Select>
 
-            <Select value={aiFilter} onValueChange={setAiFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="AI-status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Alle</SelectItem>
-                <SelectItem value="with_ai">Med AI-assistent</SelectItem>
-                <SelectItem value="without_ai">Uten AI-assistent</SelectItem>
-              </SelectContent>
-            </Select>
+            {enableAI && (
+              <Select value={aiFilter} onValueChange={setAiFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="AI-status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Alle</SelectItem>
+                  <SelectItem value="with_ai">Med AI-assistent</SelectItem>
+                  <SelectItem value="without_ai">Uten AI-assistent</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
 
             <div className="text-sm text-muted-foreground flex items-center">
               {filteredTemplates.length} av {templates.length} maler
