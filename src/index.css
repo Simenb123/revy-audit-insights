@@ -85,6 +85,14 @@
     @apply bg-revio-100 text-revio-900 p-4 rounded-2xl rounded-bl-none;
     position: relative;
   }
+
+  .chat-bubble-user {
+    @apply bg-blue-600 text-white p-3 rounded-lg shadow;
+  }
+
+  .chat-bubble-ai {
+    @apply bg-gray-100 text-gray-900 p-3 rounded-lg shadow;
+  }
   
   .chat-bubble-revy::before {
     content: '';
