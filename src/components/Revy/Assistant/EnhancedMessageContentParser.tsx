@@ -17,7 +17,14 @@ const EnhancedMessageContentParser: React.FC<EnhancedMessageContentParserProps> 
   
   // Extract variant info if present
   const variantMatch = content.match(/<!-- VARIANT_INFO: (.*?) -->/);
-  const variantInfo = variantMatch ? JSON.parse(variantMatch[1]) : null;
+  let variantInfo: { display_name: string; specialization: string } | null = null;
+  if (variantMatch) {
+    try {
+      variantInfo = JSON.parse(variantMatch[1]);
+    } catch (e) {
+      console.error('❌ Failed to parse VARIANT_INFO:', e);
+    }
+  }
 
 
   // Extract knowledge article references if present
@@ -84,6 +91,12 @@ const EnhancedMessageContentParser: React.FC<EnhancedMessageContentParserProps> 
                 {article.reference_code && (
                   <span className="text-xs text-gray-500">({article.reference_code})</span>
                 )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {documentReferences.length > 0 && (
         <div className="mt-4 space-y-2">
           <h4 className="text-sm font-medium">Kildedokumenter</h4>

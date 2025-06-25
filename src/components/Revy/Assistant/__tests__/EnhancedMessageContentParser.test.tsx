@@ -26,4 +26,15 @@ describe('EnhancedMessageContentParser', () => {
     );
     expect(screen.queryByText('Refererte artikler:')).not.toBeInTheDocument();
   });
+
+  it('continues rendering when variant info is invalid', () => {
+    const content = 'Svar...\n\n<!-- VARIANT_INFO: {invalid json} -->';
+    render(
+      <MemoryRouter>
+        <EnhancedMessageContentParser content={content} />
+      </MemoryRouter>
+    );
+    expect(screen.getByText('Svar...')).toBeInTheDocument();
+    expect(screen.queryByText('•')).not.toBeInTheDocument();
+  });
 });
