@@ -365,6 +365,10 @@ export const generateEnhancedAIResponseWithVariant = async (
     console.log('🔧 ENFORCING response validation with document-aware content...');
     aiResponse = enforceResponseValidation(aiResponse, enhancedContextData.knowledgeArticles, enhancedContextData.articleTagMapping);
 
+    if (enhancedContextData.knowledgeArticles.length === 0) {
+      aiResponse += '\n\nFant ingen relevante artikler i kunnskapsbasen.';
+    }
+
     const responseTime = Date.now() - startTime;
 
     console.log('✅ Document-enhanced AI response generated successfully:', {
