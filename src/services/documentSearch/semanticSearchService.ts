@@ -1,4 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 import { performEnhancedSearch } from '@/services/knowledge/enhancedSearchLogging';
 
 export interface SearchQuery {
@@ -48,6 +48,10 @@ export interface SearchSuggestion {
 }
 
 export const performSemanticSearch = async (query: SearchQuery): Promise<SearchResult[]> => {
+  if (!isSupabaseConfigured || !supabase) {
+    console.error("Supabase is not configured. Search cannot proceed.");
+    throw new Error("Supabase not initialized");
+  }
   try {
     console.log('🔍 Performing enhanced semantic search:', query);
     
@@ -126,6 +130,10 @@ export const generateSearchSuggestions = async (clientId: string): Promise<Searc
 
 // Helper function to trigger enhanced text extraction for documents
 export const triggerEnhancedTextExtraction = async (documentId: string): Promise<boolean> => {
+  if (!isSupabaseConfigured || !supabase) {
+    console.error("Supabase is not configured. Text extraction cannot proceed.");
+    return false;
+  }
   try {
     console.log('🔄 Triggering enhanced text extraction for document:', documentId);
     
@@ -149,6 +157,10 @@ export const triggerEnhancedTextExtraction = async (documentId: string): Promise
 
 // Test function to verify knowledge search is working
 export const testKnowledgeSearch = async (testQuery: string = 'ISA revisjon'): Promise<boolean> => {
+  if (!isSupabaseConfigured || !supabase) {
+    console.error("Supabase is not configured. Knowledge search cannot proceed.");
+    return false;
+  }
   try {
     console.log('🧪 Testing knowledge search with query:', testQuery);
     

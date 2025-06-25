@@ -1,4 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 
 export interface SearchLogEntry {
   timestamp: string;
@@ -97,6 +97,10 @@ export { EnhancedSearchLogger };
 
 // Enhanced search wrapper that adds logging
 export const performEnhancedSearch = async (query: string): Promise<any> => {
+  if (!isSupabaseConfigured || !supabase) {
+    console.error("Supabase is not configured. Search cannot proceed.");
+    return { articles: [], tagMapping: {} };
+  }
   const startTime = Date.now();
   let logEntry: Partial<SearchLogEntry> = {
     query,

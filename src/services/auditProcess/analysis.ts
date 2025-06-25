@@ -1,6 +1,6 @@
 
 import { Client } from '@/types/revio';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 import { AuditProcessInsight } from '@/types/auditProcess';
 import {
   getNextSteps,
@@ -16,6 +16,10 @@ export const analyzeAuditProcess = async (
   client: Client,
   userRole: string = 'employee'
 ): Promise<AuditProcessInsight> => {
+  if (!isSupabaseConfigured || !supabase) {
+    console.error("Supabase is not configured. Analysis cannot proceed.");
+    throw new Error("Supabase not initialized");
+  }
   try {
     // Get client's audit actions and progress
     const { data: auditActions, error } = await supabase

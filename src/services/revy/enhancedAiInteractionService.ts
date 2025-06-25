@@ -1,5 +1,5 @@
 
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 import { RevyContext } from '@/types/revio';
 import { toast } from 'sonner';
 
@@ -222,6 +222,10 @@ export const generateEnhancedAIResponseWithVariant = async (
   sessionId?: string,
   selectedVariant?: any
 ): Promise<string> => {
+  if (!isSupabaseConfigured || !supabase) {
+    console.error("Supabase is not configured. AI response cannot be generated.");
+    return "Supabase not initialized";
+  }
   const startTime = Date.now();
   
   console.log('🚀 generateEnhancedAIResponseWithVariant called with:', {

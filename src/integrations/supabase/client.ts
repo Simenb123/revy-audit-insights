@@ -1,5 +1,5 @@
 
-import { createClient } from '@supabase/supabase-js'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from './types'
 
 const supabaseUrl =
@@ -16,8 +16,10 @@ export const supabaseServiceRoleKey =
   import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY ||
   undefined
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error(
+export const isSupabaseConfigured = !!(supabaseUrl && supabaseAnonKey)
+
+if (!isSupabaseConfigured) {
+  console.error(
     'Supabase credentials missing. Set SUPABASE_URL and SUPABASE_ANON_KEY.'
   )
 }
@@ -28,4 +30,6 @@ if (!supabaseServiceRoleKey) {
   )
 }
 
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey)
+export const supabase: SupabaseClient<Database> | null = isSupabaseConfigured
+  ? createClient<Database>(supabaseUrl, supabaseAnonKey)
+  : null
