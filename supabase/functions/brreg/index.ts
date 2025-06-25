@@ -1,8 +1,18 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const BRREG_API_BASE = "https://data.brreg.no/enhetsregisteret/api/enheter";
-const BRREG_ROLES_OPEN = "https://data.brreg.no/enhetsregisteret/api/enheter";
+const BRREG_ROLES_OPEN = "https://data.brreg.no/enhetsregisteret/api/roller/enhet";
 const BRREG_ROLES_AUTH = "https://data.brreg.no/enhetsregisteret/autorisert-api/enheter";
+
+function buildFetchOptions(authHeader: string | null) {
+  if (!authHeader) return {};
+  const supabasePrefix = /^Bearer\s+/i;
+  // Skip common Supabase JWTs that start with "Bearer ey"
+  if (supabasePrefix.test(authHeader) && authHeader.slice(7, 9) === 'ey') {
+    return {};
+  }
+  return { headers: { 'Authorization': authHeader } } as RequestInit;
+}
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -41,7 +51,7 @@ serve(async (req) => {
       const searchUrl = `${BRREG_API_BASE}?${searchParams.toString()}`;
       console.log("Searching by name:", searchUrl);
       
-      const fetchOptions = authHeader ? { headers: { 'Authorization': authHeader } } : {};
+      const fetchOptions = buildFetchOptions(authHeader);
       const response = await fetch(searchUrl, fetchOptions);
       
       if (!response.ok) {
@@ -89,7 +99,7 @@ serve(async (req) => {
     // If it's an org number, fetch detailed information
     console.log(`Fetching detailed information for org number: ${query}`);
     
-    const fetchOptions = authHeader ? { headers: { 'Authorization': authHeader } } : {};
+    const fetchOptions = buildFetchOptions(authHeader);
     
     // Fetch the basic organization information
     const baseUrl = `${BRREG_API_BASE}/${query}`;
@@ -197,7 +207,7 @@ serve(async (req) => {
     let roleResponseStatus = 0;
 
     // 1: Åpent endepunkt
-    const openRolesUrl = `${BRREG_ROLES_OPEN}/${query}/roller`;
+    const openRolesUrl = `${BRREG_ROLES_OPEN}/${query}`;
     console.log("ROLES URL (open API):", openRolesUrl);
     
     try {
