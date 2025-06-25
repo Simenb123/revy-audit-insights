@@ -30,7 +30,10 @@ const AppLayout = () => {
           onToggle={toggleLeftSidebar}
         />
         <div className="flex-1 flex flex-col overflow-hidden">
-          <AppHeader />
+          <AppHeader 
+            onToggleRightSidebar={toggleRightSidebar}
+            isRightSidebarCollapsed={isRightSidebarCollapsed}
+          />
           <div className="flex-1 flex overflow-hidden">
             <main className="flex-1 overflow-y-auto">
               <Outlet />
