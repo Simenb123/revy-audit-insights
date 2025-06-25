@@ -1,39 +1,68 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, BookOpen, Plus, Upload, Settings, Brain, Play } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
 import { Link, useNavigate } from 'react-router-dom';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { generateEmbeddingsForExistingArticles } from '@/services/revy/generateEmbeddingsService';
 import { useToast } from '@/hooks/use-toast';
 
-const KnowledgeOverview = () => {
+export interface KnowledgeOverviewProps {
+  extraLogging?: boolean;
+  showAiInfo?: boolean;
+  darkTheme?: boolean;
+}
+
+const KnowledgeOverview = ({
+  extraLogging = false,
+  showAiInfo = true,
+  darkTheme = false
+}: KnowledgeOverviewProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isGeneratingEmbeddings, setIsGeneratingEmbeddings] = useState(false);
   const navigate = useNavigate();
   const { data: userProfile } = useUserProfile();
   const { toast } = useToast();
 
+  useEffect(() => {
+    if (extraLogging) {
+      console.log('[KnowledgeOverview] mounted');
+    }
+  }, [extraLogging]);
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
+      if (extraLogging) {
+        console.log('[KnowledgeOverview] search', searchQuery);
+      }
       navigate(`/fag/sok?q=${encodeURIComponent(searchQuery)}`);
     }
   };
 
   const handleGenerateEmbeddings = async () => {
+    if (extraLogging) {
+      console.log('[KnowledgeOverview] generating embeddings');
+    }
     setIsGeneratingEmbeddings(true);
     try {
       const result = await generateEmbeddingsForExistingArticles();
       
       if (result.success) {
+        if (extraLogging) {
+          console.log('[KnowledgeOverview] embeddings generated', result.processed);
+        }
         toast({
           title: "Kunnskapsbase aktivert!",
           description: `${result.processed} artikler ble prosessert. AI-Revi kan nå søke i fagstoffet.`,
         });
       } else {
+        if (extraLogging) {
+          console.log('[KnowledgeOverview] embedding generation failed', result);
+        }
         toast({
           title: "Feil ved aktivering",
           description: result.message,
@@ -41,6 +70,9 @@ const KnowledgeOverview = () => {
         });
       }
     } catch (error) {
+      if (extraLogging) {
+        console.error('[KnowledgeOverview] embedding generation error', error);
+      }
       toast({
         title: "Feil",
         description: "Kunne ikke aktivere kunnskapsbasen",
@@ -54,7 +86,7 @@ const KnowledgeOverview = () => {
   const canCreateContent = userProfile?.userRole === 'admin' || userProfile?.userRole === 'partner';
 
   return (
-    <div className="space-y-6">
+    <div className={cn("space-y-6", darkTheme && "bg-gray-900 text-white p-4 rounded-lg")}>
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Kunnskapsbase</h1>
@@ -157,43 +189,44 @@ const KnowledgeOverview = () => {
         </Link>
       </div>
 
-      {/* AI Integration */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Brain className="h-5 w-5 text-primary" />
-            AI Revi - Intelligent assistent
-          </CardTitle>
-          <CardDescription>
-            AI Revi kan svare på fagspørsmål basert på kunnskapsbasen
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground mb-4">
-            Når du stiller spørsmål til AI Revi, søker den automatisk gjennom alle fagartiklene 
-            og gir deg svar basert på oppdatert fagstoff.
-          </p>
-          <div className="flex gap-2">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={handleGenerateEmbeddings}
-              disabled={isGeneratingEmbeddings}
-            >
-              <Play className="h-4 w-4 mr-2" />
-              {isGeneratingEmbeddings ? 'Aktiverer...' : 'Aktiver kunnskapsbase'}
-            </Button>
-            {canCreateContent && (
-              <Link to="/fag/admin">
-                <Button variant="outline" size="sm">
-                  <Settings className="h-4 w-4 mr-2" />
-                  Administrer
-                </Button>
-              </Link>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      {showAiInfo && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Brain className="h-5 w-5 text-primary" />
+              AI Revi - Intelligent assistent
+            </CardTitle>
+            <CardDescription>
+              AI Revi kan svare på fagspørsmål basert på kunnskapsbasen
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-4">
+              Når du stiller spørsmål til AI Revi, søker den automatisk gjennom alle fagartiklene
+              og gir deg svar basert på oppdatert fagstoff.
+            </p>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleGenerateEmbeddings}
+                disabled={isGeneratingEmbeddings}
+              >
+                <Play className="h-4 w-4 mr-2" />
+                {isGeneratingEmbeddings ? 'Aktiverer...' : 'Aktiver kunnskapsbase'}
+              </Button>
+              {canCreateContent && (
+                <Link to="/fag/admin">
+                  <Button variant="outline" size="sm">
+                    <Settings className="h-4 w-4 mr-2" />
+                    Administrer
+                  </Button>
+                </Link>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Personal Section */}
       <div className="grid gap-4 md:grid-cols-2">
