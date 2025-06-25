@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { analyzeDocumentWithAI, updateDocumentWithAnalysis } from '@/services/documentAnalysisService';
 import * as pdfjsLib from 'pdfjs-dist';
 import * as XLSX from 'xlsx';
 
@@ -157,27 +158,26 @@ export const useClientTextExtraction = () => {
     }
   };
 
-  const generateAIAnalysis = async (text: string, fileName: string, documentId: string): Promise<string> => {
+  const generateAIAnalysis = async (
+    text: string,
+    fileName: string,
+    documentId: string
+  ): Promise<string> => {
     try {
       console.log('🤖 Generating AI analysis for document:', fileName);
-      
-      // Call our new AI analyzer edge function
-      const { data, error } = await supabase.functions.invoke('document-ai-analyzer', {
-        body: { 
-          documentId,
-          text,
-          fileName 
-        }
+
+      const result = await analyzeDocumentWithAI({
+        documentId,
+        fileName,
+        extractedText: text,
+        clientId: ''
       });
 
-      if (error) {
-        console.error('AI analysis error:', error);
-        return '';
-      }
+      await updateDocumentWithAnalysis(result);
 
-      console.log('✅ AI analysis completed:', data?.analysis?.substring(0, 100) + '...');
-      return data?.analysis || '';
-      
+      console.log('✅ AI analysis completed:', result.aiAnalysisSummary.substring(0, 100) + '...');
+      return result.aiAnalysisSummary;
+
     } catch (error) {
       console.error('AI analysis error:', error);
       return '';
@@ -285,15 +285,13 @@ export const useClientTextExtraction = () => {
       // If we have text from frontend extraction
       if (extractedText && extractedText.trim().length >= 10) {
         // Generate AI analysis using our new edge function
-        const aiAnalysis = await generateAIAnalysis(extractedText, document.file_name, documentId);
+        await generateAIAnalysis(extractedText, document.file_name, documentId);
 
-        // Update document with results
         const { error: updateError } = await supabase
           .from('client_documents_files')
           .update({
             extracted_text: extractedText,
             text_extraction_status: 'completed',
-            ai_analysis_summary: aiAnalysis || null,
             updated_at: new Date().toISOString()
           })
           .eq('id', documentId);

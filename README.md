@@ -70,6 +70,8 @@ For the embedded generation trigger to work properly, you may need to set custom
 4. Copy `.env.example` to `.env.local` and fill in your credentials (optional)
 5. Start the development server: `npm run dev` (it will automatically load `.env.local`)
 
+The `.env.example` file includes a `VITE_USE_ENHANCED_ANALYSIS` flag. Set this to `true` to use the enhanced document AI functions.
+
 ### CI Setup
 
 For automated environments, you can run `scripts/setup-ci.sh` to install dependencies and execute the test suite. This is useful for continuous integration pipelines.

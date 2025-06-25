@@ -1,12 +1,12 @@
 
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { 
-  analyzeDocumentWithAI, 
+import {
+  analyzeDocumentWithAI,
   updateDocumentWithAnalysis,
   DocumentAnalysisInput,
-  DocumentAnalysisResult 
-} from '@/services/enhancedDocumentAnalysisService';
+  DocumentAnalysisResult
+} from '@/services/documentAnalysisService';
 import { useAIRevyVariants } from './useAIRevyVariants';
 
 export const useEnhancedDocumentAnalysis = () => {
