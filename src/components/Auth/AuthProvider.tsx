@@ -1,7 +1,7 @@
 
 import { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 
 interface AuthContextType {
   session: Session | null;
@@ -33,8 +33,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   const refreshSession = async () => {
+    if (!isSupabaseConfigured || !supabase) {
+      console.warn('Supabase not configured. Skipping session refresh.');
+      return;
+    }
     try {
-      const { data: { session }, error } = await supabase.auth.refreshSession();
+      const {
+        data: { session },
+        error,
+      } = await supabase.auth.refreshSession();
       if (error) {
         console.error('Error refreshing session:', error);
       } else {
@@ -47,6 +54,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const signOut = async () => {
+    if (!isSupabaseConfigured || !supabase) {
+      console.warn('Supabase not configured. Skipping sign out.');
+      setSession(null);
+      setUser(null);
+      return;
+    }
     try {
       await supabase.auth.signOut();
       setSession(null);
@@ -57,20 +70,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   useEffect(() => {
+    if (!isSupabaseConfigured || !supabase) {
+      console.warn('Supabase not configured. Skipping auth listeners.');
+      setIsLoading(false);
+      return;
+    }
+
     // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.id);
-        setSession(session);
-        setUser(session?.user ?? null);
-        setIsLoading(false);
-        
-        // Auto-refresh session if it's about to expire
-        if (session && event === 'SIGNED_IN') {
-          setTimeout(refreshSession, 1000 * 60 * 50); // Refresh 10 minutes before expiry
-        }
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event, session?.user?.id);
+      setSession(session);
+      setUser(session?.user ?? null);
+      setIsLoading(false);
+
+      // Auto-refresh session if it's about to expire
+      if (session && event === 'SIGNED_IN') {
+        setTimeout(refreshSession, 1000 * 60 * 50); // Refresh 10 minutes before expiry
       }
-    );
+    });
 
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session }, error }) => {
