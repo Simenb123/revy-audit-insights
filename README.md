@@ -11,6 +11,10 @@ AI Revy is an intelligent audit assistant built for Norwegian audit firms, provi
 - **Client Management**: Organize and track audit clients and engagements
 - **Team Collaboration**: Real-time collaboration tools for audit teams
 
+## Project Overview
+
+For a high-level tour of the architecture and key modules, see [docs/project-overview.md](docs/project-overview.md).
+
 ## Environment Setup
 
 ### Required Environment Variables
