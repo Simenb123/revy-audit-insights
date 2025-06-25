@@ -80,8 +80,8 @@ const EnhancedMessageContentParser: React.FC<EnhancedMessageContentParserProps> 
         <div className="mt-4 border-t pt-2 space-y-1">
           <p className="text-xs text-muted-foreground mb-1">Refererte artikler:</p>
           <ul className="space-y-1 list-disc list-inside">
-            {knowledgeArticles.map((article: any, idx: number) => (
-              <li key={idx} className="text-sm">
+            {knowledgeArticles.map((article: any) => (
+              <li key={article.slug || article.id} className="text-sm">
                 <a
                   href={`/fag/artikkel/${article.slug}`}
                   className="text-blue-600 hover:underline"
