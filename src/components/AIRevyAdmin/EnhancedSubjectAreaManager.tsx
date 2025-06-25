@@ -22,6 +22,7 @@ import {
   Target
 } from 'lucide-react';
 import { useSubjectAreas, useCreateSubjectArea, useUpdateSubjectArea, useDeleteSubjectArea, type SubjectArea } from '@/hooks/knowledge/useSubjectAreas';
+import { colorOptions, iconOptions } from '@/constants/knowledge';
 
 const EnhancedSubjectAreaManager = () => {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -33,18 +34,7 @@ const EnhancedSubjectAreaManager = () => {
   const updateSubjectArea = useUpdateSubjectArea();
   const deleteSubjectArea = useDeleteSubjectArea();
 
-  const colorOptions = [
-    { value: '#10B981', label: 'Grønn', color: '#10B981' },
-    { value: '#3B82F6', label: 'Blå', color: '#3B82F6' },
-    { value: '#8B5CF6', label: 'Lilla', color: '#8B5CF6' },
-    { value: '#F59E0B', label: 'Gul', color: '#F59E0B' },
-    { value: '#EF4444', label: 'Rød', color: '#EF4444' },
-    { value: '#6B7280', label: 'Grå', color: '#6B7280' }
-  ];
 
-  const iconOptions = [
-    '💰', '📦', '👥', '🏦', '🏭', '📊', '🔍', '📋', '💼', '⚖️'
-  ];
 
   const handleCreateArea = async (formData: Omit<SubjectArea, 'id' | 'created_at' | 'updated_at'>) => {
     await createSubjectArea.mutateAsync(formData);

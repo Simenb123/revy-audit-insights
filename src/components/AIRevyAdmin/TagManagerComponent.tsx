@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { colorOptions, tagCategories } from '@/constants/knowledge';
 import { 
   Plus, 
   Edit, 
@@ -30,15 +31,7 @@ const TagManagerComponent = () => {
   const updateTag = useUpdateTag();
   const deleteTag = useDeleteTag();
 
-  const categories = [
-    'all',
-    'isa-standard',
-    'risk-level', 
-    'audit-phase',
-    'content-type',
-    'subject-area',
-    'custom'
-  ];
+  const categories = ['all', ...tagCategories.map((c) => c.value)];
 
   const categoryLabels = {
     'all': 'Alle kategorier',
@@ -236,15 +229,6 @@ const TagForm = ({ tag, onSubmit }: { tag?: TagType | null; onSubmit: (data: any
     onSubmit(formData);
   };
 
-  const colorOptions = [
-    { value: '#3B82F6', label: 'Blå' },
-    { value: '#EF4444', label: 'Rød' },
-    { value: '#10B981', label: 'Grønn' },
-    { value: '#F59E0B', label: 'Gul' },
-    { value: '#8B5CF6', label: 'Lilla' },
-    { value: '#EC4899', label: 'Rosa' },
-    { value: '#6B7280', label: 'Grå' }
-  ];
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -291,12 +275,11 @@ const TagForm = ({ tag, onSubmit }: { tag?: TagType | null; onSubmit: (data: any
               <SelectValue placeholder="Velg kategori" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="isa-standard">ISA Standard</SelectItem>
-              <SelectItem value="risk-level">Risikonivå</SelectItem>
-              <SelectItem value="audit-phase">Revisjonsfase</SelectItem>
-              <SelectItem value="content-type">Innholdstype</SelectItem>
-              <SelectItem value="subject-area">Emneområde</SelectItem>
-              <SelectItem value="custom">Tilpasset</SelectItem>
+              {tagCategories.map((cat) => (
+                <SelectItem key={cat.value} value={cat.value}>
+                  {cat.label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>

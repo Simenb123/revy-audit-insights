@@ -21,6 +21,7 @@ import {
 import { useContentTypes, useCreateContentType, useUpdateContentType, useDeleteContentType, type ContentType } from '@/hooks/knowledge/useContentTypes';
 import { useSubjectAreas } from '@/hooks/knowledge/useSubjectAreas';
 import { useDocumentTypeSubjectAreas, useConnectDocumentTypeSubjectArea, useDisconnectDocumentTypeSubjectArea } from '@/hooks/knowledge/useSubjectAreaConnections';
+import { colorOptions } from '@/constants/knowledge';
 
 const EnhancedContentTypeManager = () => {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -207,14 +208,6 @@ const ContentTypeForm = ({ type, onSubmit }: { type?: ContentType | null; onSubm
     onSubmit(formData);
   };
 
-  const colorOptions = [
-    { value: '#10B981', label: 'Grønn', color: '#10B981' },
-    { value: '#3B82F6', label: 'Blå', color: '#3B82F6' },
-    { value: '#8B5CF6', label: 'Lilla', color: '#8B5CF6' },
-    { value: '#F59E0B', label: 'Gul', color: '#F59E0B' },
-    { value: '#EF4444', label: 'Rød', color: '#EF4444' },
-    { value: '#6B7280', label: 'Grå', color: '#6B7280' }
-  ];
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
