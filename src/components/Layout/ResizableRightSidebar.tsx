@@ -17,6 +17,7 @@ import { motion } from 'framer-motion';
 import { MessageSquare } from 'lucide-react';
 
 import { useRightSidebar } from './RightSidebarContext';
+import RevySidebarFigure from '../Revy/RevySidebarFigure';
 
 const ResizableRightSidebar = () => {
   const { isCollapsed, setIsCollapsed, width, setWidth } = useRightSidebar();
@@ -123,7 +124,8 @@ const ResizableRightSidebar = () => {
               onToggle={toggleCollapsed}
             />
             <ScrollArea className="flex-1">
-              <div className="p-4">
+              <div className="p-4 space-y-4">
+                <RevySidebarFigure />
                 {renderContent()}
               </div>
             </ScrollArea>
