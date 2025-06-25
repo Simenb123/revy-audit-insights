@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Client } from '@/types/revio';
-import ImprovedClientDocumentManager from '@/components/ClientDocuments/ImprovedClientDocumentManager';
+import ClientDocumentManager from '@/components/ClientDocuments/ClientDocumentManager';
 
 interface DocumentsTabProps {
   client: Client;
@@ -50,9 +50,10 @@ const DocumentsTab = ({ client }: DocumentsTabProps) => {
         </div>
       </div>
       
-      <ImprovedClientDocumentManager 
+      <ClientDocumentManager
         clientId={client.id}
         clientName={client.company_name || client.name}
+        enableAI
       />
     </div>
   );
