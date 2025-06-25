@@ -66,8 +66,13 @@ For the embedded generation trigger to work properly, you may need to set custom
 
 1. Clone the repository
 2. Install dependencies: `npm install --legacy-peer-deps`
-3. Copy `.env.example` to `.env.local` and fill in your credentials (optional)
-4. Start the development server: `npm run dev` (it will automatically load `.env.local`)
+3. Run the test suite to verify the setup: `npm test`
+4. Copy `.env.example` to `.env.local` and fill in your credentials (optional)
+5. Start the development server: `npm run dev` (it will automatically load `.env.local`)
+
+### CI Setup
+
+For automated environments, you can run `scripts/setup-ci.sh` to install dependencies and execute the test suite. This is useful for continuous integration pipelines.
 
 ## Deployment
 
