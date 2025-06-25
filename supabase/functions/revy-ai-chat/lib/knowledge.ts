@@ -196,7 +196,20 @@ async function keywordSearch(message: string, context: string) {
     // Get all published articles first
     const { data: allArticles, error } = await supabase
       .from('knowledge_articles')
-      .select('id, title, content, summary, tags, view_count, slug, published_at, created_at, reference_code')
+      .select(`
+        id,
+        title,
+        content,
+        summary,
+        view_count,
+        slug,
+        published_at,
+        created_at,
+        reference_code,
+        article_tags:knowledge_article_tags(
+          tag:tags(name)
+        )
+      `)
       .eq('status', 'published');
 
     if (error) {
@@ -205,14 +218,19 @@ async function keywordSearch(message: string, context: string) {
     }
     
     console.log(`📄 Retrieved ${allArticles?.length || 0} published articles for scoring`);
-    
+
     if (!allArticles || allArticles.length === 0) {
       console.log('❌ No published articles found');
       return null;
     }
 
     // Score and filter articles
-    const scoredArticles = scoreArticleRelevance(allArticles, searchTerms);
+    const articlesWithTags = allArticles.map(article => ({
+      ...article,
+      tags: (article.article_tags || []).map((at: any) => at.tag?.name).filter(Boolean)
+    }));
+
+    const scoredArticles = scoreArticleRelevance(articlesWithTags, searchTerms);
     
     console.log(`📊 After scoring: ${scoredArticles.length} relevant articles`);
     
