@@ -4,22 +4,18 @@ import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import AppHeader from './AppHeader';
 import ResizableRightSidebar from './ResizableRightSidebar';
+import { useRightSidebar } from './RightSidebarContext';
 
 const AppLayout = () => {
   const [isLeftSidebarCollapsed, setIsLeftSidebarCollapsed] = useState(false);
-  const [isRightSidebarCollapsed, setIsRightSidebarCollapsed] = useState(false);
-  const [rightSidebarWidth, setRightSidebarWidth] = useState(320);
+  const { isCollapsed: isRightSidebarCollapsed, setIsCollapsed } = useRightSidebar();
 
   const toggleLeftSidebar = () => {
     setIsLeftSidebarCollapsed(!isLeftSidebarCollapsed);
   };
 
   const toggleRightSidebar = () => {
-    setIsRightSidebarCollapsed(!isRightSidebarCollapsed);
-  };
-
-  const handleRightSidebarWidthChange = (newWidth: number) => {
-    setRightSidebarWidth(newWidth);
+    setIsCollapsed(v => !v);
   };
 
   return (
@@ -40,12 +36,7 @@ const AppLayout = () => {
           <main className="flex-1 overflow-y-auto">
             <Outlet />
           </main>
-          <ResizableRightSidebar
-            isCollapsed={isRightSidebarCollapsed}
-            onToggle={toggleRightSidebar}
-            initialWidth={rightSidebarWidth}
-            onWidthChange={handleRightSidebarWidthChange}
-          />
+          <ResizableRightSidebar />
         </div>
       </div>
     </div>
