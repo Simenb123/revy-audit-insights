@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Upload, FileText, CheckCircle, AlertTriangle } from 'lucide-react';
-import { useDropzone } from 'react-dropzone';
+import FileDropZone from '../../common/FileDropZone';
 import { toast } from 'sonner';
 
 const TrainingDocumentUploader = () => {
@@ -17,18 +17,9 @@ const TrainingDocumentUploader = () => {
   const [description, setDescription] = useState('');
   const [trainingNotes, setTrainingNotes] = useState('');
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    accept: {
-      'application/pdf': ['.pdf'],
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
-      'application/vnd.ms-excel': ['.xls'],
-      'text/csv': ['.csv'],
-      'text/plain': ['.txt']
-    },
-    onDrop: (acceptedFiles) => {
-      setSelectedFiles(prev => [...prev, ...acceptedFiles]);
-    }
-  });
+  const handleFiles = (acceptedFiles: File[]) => {
+    setSelectedFiles(prev => [...prev, ...acceptedFiles]);
+  };
 
   const documentTypes = [
     { value: 'hovedbok', label: 'Hovedbok / General Ledger' },
@@ -107,27 +98,32 @@ const TrainingDocumentUploader = () => {
         </CardHeader>
         <CardContent className="space-y-6">
           {/* File Upload Area */}
-          <div
-            {...getRootProps()}
-            className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
-              isDragActive 
-                ? 'border-blue-400 bg-blue-50' 
-                : 'border-gray-300 hover:border-gray-400'
-            }`}
+          <FileDropZone
+            onFilesSelected={handleFiles}
+            accept={{
+              'application/pdf': ['.pdf'],
+              'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
+              'application/vnd.ms-excel': ['.xls'],
+              'text/csv': ['.csv'],
+              'text/plain': ['.txt'],
+            }}
           >
-            <input {...getInputProps()} />
-            <Upload className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-            {isDragActive ? (
-              <p>Slipp filene her...</p>
-            ) : (
+            {(active) => (
               <div>
-                <p className="text-lg font-medium">Dra og slipp filer her, eller klikk for å velge</p>
-                <p className="text-sm text-gray-500 mt-2">
-                  Støttede formater: PDF, Excel, CSV, TXT
-                </p>
+                <Upload className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                {active ? (
+                  <p>Slipp filene her...</p>
+                ) : (
+                  <div>
+                    <p className="text-lg font-medium">Dra og slipp filer her, eller klikk for å velge</p>
+                    <p className="text-sm text-gray-500 mt-2">
+                      Støttede formater: PDF, Excel, CSV, TXT
+                    </p>
+                  </div>
+                )}
               </div>
             )}
-          </div>
+          </FileDropZone>
 
           {/* Selected Files */}
           {selectedFiles.length > 0 && (

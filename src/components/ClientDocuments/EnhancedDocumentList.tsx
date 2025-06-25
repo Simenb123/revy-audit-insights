@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -7,6 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FileText, Download, Trash2, Search, Calendar } from 'lucide-react';
 import { ClientDocument, useClientDocuments } from '@/hooks/useClientDocuments';
+import { useDocumentFilters } from '@/hooks/useDocumentFilters';
+import { useDownload } from '@/hooks/useDownload';
 import { formatDistanceToNow } from 'date-fns';
 import { nb } from 'date-fns/locale';
 import FrontendDocumentProcessor from './FrontendDocumentProcessor';
@@ -19,30 +21,20 @@ interface EnhancedDocumentListProps {
 }
 
 const EnhancedDocumentList = ({ documents, isLoading, clientId, onUpdate }: EnhancedDocumentListProps) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState('all');
-  
   const { deleteDocument, getDocumentUrl } = useClientDocuments(clientId);
 
-  const filteredDocuments = documents.filter(doc => {
-    const matchesSearch = doc.file_name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = categoryFilter === 'all' || doc.category === categoryFilter;
-    const matchesStatus = statusFilter === 'all' || doc.text_extraction_status === statusFilter;
-    return matchesSearch && matchesCategory && matchesStatus;
-  });
+  const {
+    searchTerm,
+    setSearchTerm,
+    categoryFilter,
+    setCategoryFilter,
+    statusFilter,
+    setStatusFilter,
+    categories,
+    filteredDocuments,
+  } = useDocumentFilters(documents, { enableStatus: true });
 
-  const categories = [...new Set(documents.map(d => d.category).filter(Boolean))];
-
-  const handleDownload = async (document: ClientDocument) => {
-    const url = await getDocumentUrl(document.file_path);
-    if (!url) return;
-    
-    const link = window.document.createElement('a');
-    link.href = url;
-    link.download = document.file_name;
-    link.click();
-  };
+  const handleDownload = useDownload(getDocumentUrl);
 
   const getFileIcon = (mimeType: string) => {
     if (mimeType.includes('pdf')) return '📄';

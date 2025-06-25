@@ -2,23 +2,25 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Upload, FileText, X } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import FileDropZone from '../common/FileDropZone';
 import { useClientDocuments, DocumentCategory } from '@/hooks/useClientDocuments';
 import { toast } from '@/components/ui/use-toast';
 
 interface DocumentUploaderProps {
   clientId: string;
   categories: DocumentCategory[];
+  enableAIProgress?: boolean;
 }
 
-const DocumentUploader = ({ clientId, categories }: DocumentUploaderProps) => {
+const DocumentUploader = ({ clientId, categories, enableAIProgress = false }: DocumentUploaderProps) => {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [selectedSubjectArea, setSelectedSubjectArea] = useState<string>('');
-  const [isDragging, setIsDragging] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
   
   const { uploadDocument } = useClientDocuments(clientId);
 
@@ -27,11 +29,8 @@ const DocumentUploader = ({ clientId, categories }: DocumentUploaderProps) => {
     ? categories.filter(c => c.subject_area === selectedSubjectArea)
     : categories;
 
-  const handleFileSelect = (files: FileList | null) => {
-    if (!files) return;
-    
-    const fileArray = Array.from(files);
-    const validFiles = fileArray.filter(file => {
+  const handleFileSelect = (files: File[]) => {
+    const validFiles = files.filter(file => {
       const validTypes = [
         'application/pdf',
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -45,7 +44,7 @@ const DocumentUploader = ({ clientId, categories }: DocumentUploaderProps) => {
       return validTypes.includes(file.type) && file.size <= 50 * 1024 * 1024; // 50MB limit
     });
 
-    if (validFiles.length !== fileArray.length) {
+    if (validFiles.length !== files.length) {
       toast({
         title: "Noen filer ble ignorert",
         description: "Kun PDF, Word, Excel, CSV og bilderfiler under 50MB er støttet.",
@@ -54,22 +53,17 @@ const DocumentUploader = ({ clientId, categories }: DocumentUploaderProps) => {
     }
 
     setSelectedFiles(prev => [...prev, ...validFiles]);
+    if (enableAIProgress) {
+      setUploadProgress(prev => {
+        const copy = { ...prev };
+        validFiles.forEach(f => {
+          copy[f.name] = 0;
+        });
+        return copy;
+      });
+    }
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = () => {
-    setIsDragging(false);
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-    handleFileSelect(e.dataTransfer.files);
-  };
 
   const removeFile = (index: number) => {
     setSelectedFiles(prev => prev.filter((_, i) => i !== index));
@@ -87,14 +81,23 @@ const DocumentUploader = ({ clientId, categories }: DocumentUploaderProps) => {
 
     for (const file of selectedFiles) {
       try {
+        if (enableAIProgress) {
+          setUploadProgress(prev => ({ ...prev, [file.name]: 25 }));
+        }
         await uploadDocument.mutateAsync({
           file,
           clientId,
           category: selectedCategory || undefined,
           subjectArea: selectedSubjectArea || undefined
         });
+        if (enableAIProgress) {
+          setUploadProgress(prev => ({ ...prev, [file.name]: 100 }));
+        }
       } catch (error) {
         console.error(`Failed to upload ${file.name}:`, error);
+        if (enableAIProgress) {
+          setUploadProgress(prev => ({ ...prev, [file.name]: 0 }));
+        }
       }
     }
 
@@ -102,6 +105,9 @@ const DocumentUploader = ({ clientId, categories }: DocumentUploaderProps) => {
     setSelectedFiles([]);
     setSelectedCategory('');
     setSelectedSubjectArea('');
+    if (enableAIProgress) {
+      setUploadProgress({});
+    }
   };
 
   return (
@@ -114,35 +120,32 @@ const DocumentUploader = ({ clientId, categories }: DocumentUploaderProps) => {
       </CardHeader>
       <CardContent className="space-y-6">
         {/* File drop zone */}
-        <div
-          className={`
-            border-2 border-dashed rounded-lg p-8 text-center transition-colors
-            ${isDragging ? 'border-primary bg-primary/5' : 'border-muted-foreground/25 hover:border-primary/50'}
-            ${uploadDocument.isPending ? 'pointer-events-none opacity-50' : ''}
-          `}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
+        <FileDropZone
+          accept={{
+            'application/pdf': ['.pdf'],
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
+            'application/msword': ['.doc'],
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
+            'application/vnd.ms-excel': ['.xls'],
+            'text/csv': ['.csv'],
+            'image/jpeg': ['.jpg', '.jpeg'],
+            'image/png': ['.png'],
+          }}
+          onFilesSelected={handleFileSelect}
+          className={`${uploadDocument.isPending ? 'pointer-events-none opacity-50' : ''}`}
         >
-          <input
-            type="file"
-            id="document-upload"
-            className="hidden"
-            multiple
-            accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.jpg,.jpeg,.png"
-            onChange={(e) => handleFileSelect(e.target.files)}
-            disabled={uploadDocument.isPending}
-          />
-          <label htmlFor="document-upload" className="cursor-pointer">
-            <FileText className="h-12 w-12 text-primary mx-auto mb-4" />
-            <p className="text-lg font-medium text-foreground mb-2">
-              Dra og slipp filer her, eller klikk for å velge
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Støtter PDF, Word, Excel, CSV og bilder (maks 50MB per fil)
-            </p>
-          </label>
-        </div>
+          {(active) => (
+            <div>
+              <FileText className="h-12 w-12 text-primary mx-auto mb-4" />
+              <p className="text-lg font-medium text-foreground mb-2">
+                {active ? 'Slipp filene' : 'Dra og slipp filer her, eller klikk for å velge'}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Støtter PDF, Word, Excel, CSV og bilder (maks 50MB per fil)
+              </p>
+            </div>
+          )}
+        </FileDropZone>
 
         {/* Selected files */}
         {selectedFiles.length > 0 && (
@@ -169,6 +172,17 @@ const DocumentUploader = ({ clientId, categories }: DocumentUploaderProps) => {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {enableAIProgress && Object.keys(uploadProgress).length > 0 && (
+          <div className="space-y-2">
+            {Object.entries(uploadProgress).map(([name, progress]) => (
+              <div key={name} className="space-y-1">
+                <span className="text-sm">{name}</span>
+                <Progress value={progress} />
+              </div>
+            ))}
           </div>
         )}
 
