@@ -102,6 +102,19 @@ AI-Revi henter automatisk relevante kilder fra kunnskapsartikler og opplastede
 dokumenter. Etter hvert svar fra assistenten vises disse referansene som lenker
 under meldingen, slik at du enkelt kan åpne kilden og verifisere innholdet.
 
+Når AI-Revi finner relevante artikler legger den til en skjult HTML-kommentar i
+svaret med metadata om artiklene. Kommentaren har formatet
+`<!-- KNOWLEDGE_ARTICLES: [...] -->`. Frontend-komponenten leser denne metadataen
+og viser de nevnte artiklene som klikkbare lenker under svaret.
+
+Eksempel på respons fra assistenten:
+
+```html
+Svar fra AI-Revi...
+
+<!-- KNOWLEDGE_ARTICLES: [{"slug":"isa-315","title":"ISA 315"}] -->
+```
+
 Eksempel:
 
 ```
