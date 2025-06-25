@@ -7,7 +7,6 @@ import { Bot, MessageSquare, X, Maximize2, Minimize2 } from 'lucide-react';
 import { useSmartReviAssistant } from '@/hooks/revy/useSmartReviAssistant';
 import { RevyInput } from '../Revy/Assistant/RevyInput';
 import { RevyMessageList } from '../Revy/Assistant/RevyMessageList';
-import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface AiReviCardProps {
   context: string;
@@ -50,9 +49,9 @@ const AiReviCard: React.FC<AiReviCardProps> = ({
     setIsFullscreen(!isFullscreen);
   };
 
-  const cardClasses = `w-full ${
+  const cardClasses = `w-full flex flex-col ${
     isFullscreen ? 'fixed inset-0 z-50 bg-white' : ''
-  } ${isExpanded ? 'h-96' : 'h-auto'} ${className}`;
+  } ${isExpanded ? 'flex-1' : 'h-auto'} ${className}`;
 
   return (
     <Card className={cardClasses}>
@@ -104,7 +103,7 @@ const AiReviCard: React.FC<AiReviCardProps> = ({
         )}
         
         {isExpanded && (
-          <div className="flex flex-col h-72">
+          <div className="flex flex-col flex-1 min-h-0">
             <RevyMessageList
               messages={messages}
               isTyping={isTyping}
