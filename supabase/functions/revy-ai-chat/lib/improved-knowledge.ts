@@ -74,7 +74,7 @@ export async function searchKnowledgeIntelligently(
           content_type,
           category:knowledge_categories(name),
           article_tags:knowledge_article_tags(
-            tag:knowledge_tags(
+            tag:tags(
               name,
               display_name
             )
@@ -130,7 +130,7 @@ export async function searchKnowledgeIntelligently(
         content_type,
         category:knowledge_categories(name),
         article_tags:knowledge_article_tags(
-          tag:knowledge_tags(
+          tag:tags(
             name,
             display_name
           )
