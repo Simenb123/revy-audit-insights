@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { KnowledgeCategory } from '@/types/knowledge';
+import { Category } from '@/types/classification';
 import { TreeView, TreeItem, TreeViewTrigger, TreeViewContent } from '@/components/ui/tree-view';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
@@ -12,14 +12,14 @@ import { Input } from '@/components/ui/input';
 const fetchCategories = async () => {
   const { data, error } = await supabase.from('knowledge_categories').select('*').order('display_order');
   if (error) throw error;
-  return data as KnowledgeCategory[];
+  return data as Category[];
 };
 
-type CategoryTreeNode = Omit<KnowledgeCategory, 'children'> & {
+type CategoryTreeNode = Omit<Category, 'children'> & {
   children: CategoryTreeNode[];
 };
 
-const buildCategoryTree = (categories: KnowledgeCategory[]): CategoryTreeNode[] => {
+const buildCategoryTree = (categories: Category[]): CategoryTreeNode[] => {
   const categoryMap = new Map<string, CategoryTreeNode>();
   categories.forEach(cat => categoryMap.set(cat.id, { ...cat, children: [] }));
 

@@ -1,15 +1,15 @@
 
 import React from 'react';
-import { KnowledgeCategory } from '@/types/knowledge';
+import { Category } from '@/types/classification';
 import { Badge } from '@/components/ui/badge';
 import { Folder, FolderOpen, ChevronRight, ChevronDown } from 'lucide-react';
 
 interface CategoryTreeProps {
-  categories: KnowledgeCategory[];
-  selectedCategory: KnowledgeCategory | null;
+  categories: Category[];
+  selectedCategory: Category | null;
   expandedCategories: Set<string>;
   articlesCount: number;
-  onCategorySelect: (category: KnowledgeCategory) => void;
+  onCategorySelect: (category: Category) => void;
   onToggleCategory: (categoryId: string) => void;
 }
 
@@ -21,7 +21,7 @@ const CategoryTree = ({
   onCategorySelect,
   onToggleCategory
 }: CategoryTreeProps) => {
-  const buildCategoryTree = (categories: KnowledgeCategory[], parentId: string | null = null): KnowledgeCategory[] => {
+  const buildCategoryTree = (categories: Category[], parentId: string | null = null): Category[] => {
     return categories
       .filter(cat => cat.parent_category_id === parentId)
       .sort((a, b) => a.display_order - b.display_order)
@@ -31,7 +31,7 @@ const CategoryTree = ({
       }));
   };
 
-  const renderCategoryTree = (categories: KnowledgeCategory[], depth: number = 0) => {
+  const renderCategoryTree = (categories: Category[], depth: number = 0) => {
     return categories.map((category) => {
       const hasChildren = category.children && category.children.length > 0;
       const isExpanded = expandedCategories.has(category.id);

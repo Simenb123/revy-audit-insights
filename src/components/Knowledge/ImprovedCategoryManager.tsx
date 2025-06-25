@@ -22,18 +22,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { AuditPhase } from '@/types/audit-actions';
-
-interface Category {
-  id: string;
-  name: string;
-  description?: string;
-  icon?: string;
-  parent_category_id?: string;
-  display_order: number;
-  applicable_phases?: AuditPhase[];
-  article_count?: number;
-  children?: Category[];
-}
+import type { Category } from '@/types/classification';
 
 interface CategoryFormData {
   name: string;

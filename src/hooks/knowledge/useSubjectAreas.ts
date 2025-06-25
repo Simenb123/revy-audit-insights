@@ -1,13 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import createTaxonomyHooks, { TaxonomyBase } from './useTaxonomy';
+import createTaxonomyHooks from './useTaxonomy';
+import type { SubjectArea } from '@/types/classification';
 
-export interface SubjectArea extends TaxonomyBase {
-  icon?: string;
-  parent_subject_area_id?: string;
-  children?: SubjectArea[];
-  parent?: Partial<SubjectArea>;
-}
 
 // Build hierarchical structure from flat array
 const buildHierarchy = (areas: SubjectArea[]): SubjectArea[] => {
@@ -104,3 +99,5 @@ export {
   useUpdateSubjectArea,
   useDeleteSubjectArea,
 };
+
+export type { SubjectArea };

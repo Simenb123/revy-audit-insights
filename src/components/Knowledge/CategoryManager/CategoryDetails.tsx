@@ -4,14 +4,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Trash2, Edit, Move, Trash, Loader2 } from 'lucide-react';
-import { KnowledgeCategory } from '@/types/knowledge';
+import { Category } from '@/types/classification';
 
 interface CategoryDetailsProps {
-  selectedCategory: KnowledgeCategory | null;
-  categories: KnowledgeCategory[];
+  selectedCategory: Category | null;
+  categories: Category[];
   articles: any[];
-  editingCategory: KnowledgeCategory | null;
-  onEdit: (category: KnowledgeCategory) => void;
+  editingCategory: Category | null;
+  onEdit: (category: Category) => void;
   onDelete: () => void;
   onDeleteEmptySubcategories: () => void;
   onMoveArticles: () => void;

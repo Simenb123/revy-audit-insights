@@ -23,21 +23,7 @@ interface AdvancedKnowledgeFilterProps {
 }
 
 // Temporary interfaces until database is updated
-interface ContentType {
-  id: string;
-  name: string;
-  display_name: string;
-  color: string;
-  icon?: string;
-}
-
-interface SubjectArea {
-  id: string;
-  name: string;
-  display_name: string;
-  color: string;
-  icon?: string;
-}
+import type { ContentType, SubjectArea } from '@/types/classification';
 
 const AdvancedKnowledgeFilter = ({ onFilterChange, className }: AdvancedKnowledgeFilterProps) => {
   const [filters, setFilters] = useState<FilterState>({
