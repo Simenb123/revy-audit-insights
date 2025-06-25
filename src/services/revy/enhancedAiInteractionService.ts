@@ -479,5 +479,8 @@ export const generateEnhancedAIResponseWithVariant = async (
 export {
   getModelForVariant,
   buildVariantSystemPrompt,
-  enforceResponseValidation
+  enforceResponseValidation,
+  generateRequestHash,
+  getCachedResponse,
+  cacheResponse
 };

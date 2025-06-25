@@ -37,11 +37,15 @@ export const buildEnhancedContextWithVariant = async (
     log('🔍 Starting knowledge search with proper JSON body...');
     
     // Ensure we send proper JSON body to knowledge-search
+    const queryParts = [message, context, clientData?.industry, userRole]
+      .filter(Boolean)
+      .join(' ')
+      .trim();
     const knowledgeRequestBody = {
-      query: message || 'revisjon', // fallback query if message is empty
+      query: queryParts || 'revisjon', // fallback query if everything empty
     };
-    
-    log('📤 Sending knowledge search request:', knowledgeRequestBody);
+
+    log('📤 Sending knowledge search request with context:', knowledgeRequestBody);
 
     const knowledgeResponse = await supabase.functions.invoke('knowledge-search', {
       headers: { 'Content-Type': 'application/json' },
