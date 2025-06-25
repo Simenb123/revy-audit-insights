@@ -10,7 +10,7 @@ import { Brain, Plus, Loader2, Save } from 'lucide-react';
 import { useCreateAuditActionTemplate } from '@/hooks/audit-actions/useActionTemplateCRUD';
 import { toast } from '@/hooks/use-toast';
 import { useSubjectAreas } from '@/hooks/knowledge/useSubjectAreas';
-import { useAuditActionTemplatesBySubjectArea } from '@/hooks/knowledge/useAuditActionTemplatesPreview';
+import { useAuditActionTemplatesBySubjectArea } from '@/hooks/knowledge/useAuditActionTemplates';
 import { useAuth } from '@/components/Auth/AuthProvider';
 
 interface FormData {
