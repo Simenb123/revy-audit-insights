@@ -8,10 +8,13 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const supabase = createClient(
-  Deno.env.get('SUPABASE_URL') ?? '',
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-);
+function getSupabase(req: Request) {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+  const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
+  return createClient(supabaseUrl, supabaseAnonKey, {
+    global: { headers: { Authorization: req.headers.get('Authorization')! } }
+  });
+}
 
 async function analyzeDocumentWithAI(text: string, fileName: string): Promise<string> {
   const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
@@ -63,6 +66,7 @@ serve(async (req) => {
   }
 
   try {
+    const supabase = getSupabase(req);
     const { documentId, text, fileName } = await req.json();
     
     if (!documentId || !text || !fileName) {
