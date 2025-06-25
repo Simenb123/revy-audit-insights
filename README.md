@@ -76,6 +76,10 @@ For the embedded generation trigger to work properly, you may need to set custom
 - Regularly rotate API keys for security
 - Ensure your `.env` file is listed in `.gitignore`
 
+### Service Role Usage
+
+Most edge functions now rely on the caller's JWT instead of the powerful service role key. Only a few functions still require `SUPABASE_SERVICE_ROLE_KEY` due to privileged operations. See [docs/service-role-functions.md](docs/service-role-functions.md) for details.
+
 ## Support
 
 For technical support or questions about AI Revy, please contact the development team.
