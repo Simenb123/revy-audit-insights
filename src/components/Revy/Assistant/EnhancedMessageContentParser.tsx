@@ -73,8 +73,8 @@ const EnhancedMessageContentParser: React.FC<EnhancedMessageContentParserProps> 
         <div className="mt-4 border-t pt-2 space-y-1">
           <p className="text-xs text-muted-foreground mb-1">Refererte artikler:</p>
           <ul className="space-y-1 list-disc list-inside">
-            {knowledgeArticles.map((article: any, idx: number) => (
-              <li key={idx} className="text-sm">
+            {knowledgeArticles.map((article: any) => (
+              <li key={article.slug || article.id} className="text-sm">
                 <a
                   href={`/fag/artikkel/${article.slug}`}
                   className="text-blue-600 hover:underline"
@@ -84,6 +84,12 @@ const EnhancedMessageContentParser: React.FC<EnhancedMessageContentParserProps> 
                 {article.reference_code && (
                   <span className="text-xs text-gray-500">({article.reference_code})</span>
                 )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {documentReferences.length > 0 && (
         <div className="mt-4 space-y-2">
           <h4 className="text-sm font-medium">Kildedokumenter</h4>
