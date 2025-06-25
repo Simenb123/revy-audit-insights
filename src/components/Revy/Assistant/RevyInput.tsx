@@ -38,7 +38,7 @@ export const RevyInput = ({
   };
 
   return (
-    <form onSubmit={handleSubmit} className={`p-2 bg-white border-t ${isEmbedded ? '' : 'p-3'}`}>
+    <form onSubmit={handleSubmit} className={`sticky bottom-0 p-2 bg-white border-t ${isEmbedded ? '' : 'p-3'}`}> 
       <div className={`flex gap-1 ${isEmbedded ? '' : 'gap-2'}`}>
         <Textarea
           value={message}
