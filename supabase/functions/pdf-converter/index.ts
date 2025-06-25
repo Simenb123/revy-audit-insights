@@ -6,11 +6,13 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Initialize Supabase client
-const supabase = createClient(
-  Deno.env.get('SUPABASE_URL') ?? '',
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-);
+function getSupabase(req: Request) {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+  const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
+  return createClient(supabaseUrl, supabaseAnonKey, {
+    global: { headers: { Authorization: req.headers.get('Authorization')! } }
+  });
+}
 
 interface ConversionRequest {
   conversionId: string;
@@ -241,6 +243,7 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const supabase = getSupabase(req);
     const { conversionId, filePath, conversionType, title, categoryId }: ConversionRequest = await req.json();
 
     console.log(`Starting PDF conversion for: ${conversionId} (${conversionType})`);

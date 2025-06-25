@@ -1,6 +1,11 @@
 
 import React, { useState, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { Drawer, DrawerTrigger, DrawerContent } from '@/components/ui/drawer';
+import { Button } from '@/components/ui/button';
+import { MessageSquare } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useClientDocuments } from '@/hooks/useClientDocuments';
 import { useClientLookup } from '@/hooks/useClientLookup';
 import { detectPageType, extractClientId } from './pageDetectionHelpers';
@@ -10,6 +15,7 @@ import AdminSidebarSection from './AdminSidebarSection';
 import KnowledgeSidebarSection from './KnowledgeSidebarSection';
 import ClientSidebarSection from './ClientSidebarSection';
 import GeneralSidebarSection from './GeneralSidebarSection';
+import AssistantSidebar from './AssistantSidebar';
 import LoadingErrorSection from './LoadingErrorSection';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
@@ -19,7 +25,8 @@ import { MessageSquare } from 'lucide-react';
 import { useRightSidebar } from './RightSidebarContext';
 
 const ResizableRightSidebar = () => {
-  const { isCollapsed, setIsCollapsed, width, setWidth } = useRightSidebar();
+  const { isCollapsed, setIsCollapsed, isHidden, setIsHidden, width, setWidth } = useRightSidebar();
+  const isMobile = useIsMobile();
   const [isDragging, setIsDragging] = useState(false);
   const toggleCollapsed = useCallback(() => setIsCollapsed(v => !v), [setIsCollapsed]);
   const location = useLocation();
@@ -100,14 +107,55 @@ const ResizableRightSidebar = () => {
       );
     }
 
+    if (pageType === 'general' || !clientId) {
+      return <AssistantSidebar />;
+    }
+
     return <GeneralSidebarSection />;
   };
+
+  if (isMobile) {
+    return (
+      <Drawer open={!isHidden} onOpenChange={(open) => setIsHidden(!open)}>
+        <DrawerTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="fixed bottom-4 right-4 z-50"
+          >
+            <MessageSquare className="h-5 w-5" />
+          </Button>
+        </DrawerTrigger>
+        <DrawerContent className="p-0">
+          <motion.div
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+            className="h-[90vh] flex flex-col"
+          >
+            <SidebarHeader
+              title={getPageTitle()}
+              isCollapsed={isCollapsed}
+              onToggle={toggleCollapsed}
+            />
+            {!isCollapsed && (
+              <ScrollArea className="flex-1">
+                <div className="p-4">{renderContent()}</div>
+              </ScrollArea>
+            )}
+          </motion.div>
+        </DrawerContent>
+      </Drawer>
+    );
+  }
 
   return (
     <div className="relative flex h-full">
       <ResizableHandle onMouseDown={handleMouseDown} />
 
       <motion.div
+
         className="border-l bg-background flex flex-col h-full overflow-hidden"
         animate={{ width: isCollapsed ? 0 : width }}
         style={{
@@ -116,6 +164,18 @@ const ResizableRightSidebar = () => {
         }}
         transition={{ type: 'spring', stiffness: 250, damping: 30 }}
       >
+
+        className="border-l bg-background flex flex-col h-full"
+        style={sidebarStyle}
+        animate={{ width }}
+        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+      >
+        <SidebarHeader
+          title={getPageTitle()}
+          isCollapsed={isCollapsed}
+          onToggle={toggleCollapsed}
+        />
+
         {!isCollapsed && (
           <>
             <SidebarHeader
@@ -131,6 +191,7 @@ const ResizableRightSidebar = () => {
         )}
       </motion.div>
 
+
       {isCollapsed && (
         <div className="w-[var(--sidebar-width-icon)] border-l bg-background flex flex-col items-center py-4">
           <Button variant="ghost" size="icon" onClick={toggleCollapsed}>
@@ -138,6 +199,7 @@ const ResizableRightSidebar = () => {
           </Button>
         </div>
       )}
+
     </div>
   );
 };

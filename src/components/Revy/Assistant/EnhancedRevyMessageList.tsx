@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Brain, User, Loader2 } from 'lucide-react';
+import { User, Loader2 } from 'lucide-react';
 import { RevyMessage } from '@/types/revio';
 import EnhancedMessageContentParser from './EnhancedMessageContentParser';
 import RevyAvatar from '../RevyAvatar';
@@ -42,11 +42,11 @@ export const EnhancedRevyMessageList: React.FC<EnhancedRevyMessageListProps> = (
               )}
             </div>
             <div
-              className={`p-3 rounded-lg ${
+              className={
                 message.sender === 'user'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-900'
-              }`}
+                  ? 'chat-bubble-user'
+                  : 'chat-bubble-ai'
+              }
             >
               {message.sender === 'user' ? (
                 <div className="whitespace-pre-wrap">{message.content}</div>
@@ -77,7 +77,7 @@ export const EnhancedRevyMessageList: React.FC<EnhancedRevyMessageListProps> = (
         <div className="flex justify-start">
           <div className="flex gap-2">
             <RevyAvatar size={isEmbedded ? 'xs' : 'sm'} />
-            <div className="bg-gray-100 text-gray-900 p-3 rounded-lg flex items-center gap-2">
+            <div className="chat-bubble-ai flex items-center gap-2">
               <Loader2 className="h-4 w-4 animate-spin" />
               <span>{isAnalyzingDocuments ? 'Analyserer dokumenter...' : 'AI-Revi tenker...'}</span>
             </div>
