@@ -3,6 +3,7 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4';
 import { log } from "../_shared/log.ts";
+import { getUserFromRequest, hasPermittedRole } from "../_shared/auth.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -50,6 +51,15 @@ serve(async (req) => {
   }
 
   try {
+    const user = getUserFromRequest(req);
+    const permittedRoles = ['admin', 'partner', 'manager', 'employee'];
+    if (!hasPermittedRole(user, permittedRoles)) {
+      return new Response(JSON.stringify({ error: 'Forbidden' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const supabase = getSupabase(req);
     let requestBody = {};
     
