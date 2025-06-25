@@ -24,12 +24,12 @@ import PromptEditor from './PromptEditor';
 import KnowledgeMonitor from './KnowledgeMonitor';
 import UsageAnalytics from './UsageAnalytics';
 import TestInterface from './TestInterface';
-import CategoryStructureManager from './CategoryStructureManager';
+import CategoryManager from './CategoryManager';
 import DocumentTypeManager from './DocumentTypeManager';
 import AuditActionGenerator from './AuditActionGenerator';
 import DatabaseTools from './DatabaseTools';
 import WorkflowManager from './WorkflowManager';
-import TagManagerComponent from './TagManagerComponent';
+import TagManager from './TagManager';
 import EnhancedContentTypeManager from './EnhancedContentTypeManager';
 import EnhancedSubjectAreaManager from './EnhancedSubjectAreaManager';
 
@@ -131,7 +131,7 @@ const EnhancedAdminDashboard = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <TagManagerComponent />
+              <TagManager />
             </CardContent>
           </Card>
         </TabsContent>
@@ -165,7 +165,7 @@ const EnhancedAdminDashboard = () => {
         </TabsContent>
 
         <TabsContent value="categories">
-          <CategoryStructureManager />
+          <CategoryManager />
         </TabsContent>
 
         <TabsContent value="prompts">

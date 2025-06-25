@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,24 +10,16 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  Plus, 
-  Edit, 
-  Trash2, 
-  FileText, 
-  Link,
-  Target
-} from 'lucide-react';
+import { Edit, Trash2 } from 'lucide-react';
 import createTaxonomyHooks from '@/hooks/knowledge/useTaxonomy';
 import { type ContentType } from '@/hooks/knowledge/useContentTypes';
 import { useSubjectAreas } from '@/hooks/knowledge/useSubjectAreas';
-import { useDocumentTypeSubjectAreas, useConnectDocumentTypeSubjectArea, useDisconnectDocumentTypeSubjectArea } from '@/hooks/knowledge/useSubjectAreaConnections';
+
+import EntityManager from '../EntityManager';
+
+const ContentTypeEntityManager = EntityManager<ContentType>;
 
 const EnhancedContentTypeManager = () => {
-  const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [selectedType, setSelectedType] = useState<ContentType | null>(null);
-
   const {
     useTaxonomies: useContentTypes,
     useCreateTaxonomy: useCreateContentType,
@@ -35,117 +27,46 @@ const EnhancedContentTypeManager = () => {
     useDeleteTaxonomy: useDeleteContentType,
   } = createTaxonomyHooks<ContentType>('content_types', 'Innholdstype');
 
-  const { data: contentTypes = [], isLoading } = useContentTypes();
   const { data: subjectAreas = [] } = useSubjectAreas();
-  const createContentType = useCreateContentType();
-  const updateContentType = useUpdateContentType();
-  const deleteContentType = useDeleteContentType();
-
-  const handleCreateType = async (formData: Omit<ContentType, 'id' | 'created_at' | 'updated_at'>) => {
-    await createContentType.mutateAsync(formData);
-    setCreateDialogOpen(false);
-  };
-
-  const handleEditType = async (formData: Omit<ContentType, 'id' | 'created_at' | 'updated_at'>) => {
-    if (!selectedType) return;
-    await updateContentType.mutateAsync({ id: selectedType.id, ...formData });
-    setEditDialogOpen(false);
-    setSelectedType(null);
-  };
-
-  const handleDeleteType = async (typeId: string) => {
-    await deleteContentType.mutateAsync(typeId);
-  };
-
-  if (isLoading) {
-    return <div>Laster innholdstyper...</div>;
-  }
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <span className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              Innholdstype Administrasjon
-            </span>
-            <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Ny Innholdstype
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Opprett Innholdstype</DialogTitle>
-                </DialogHeader>
-                <ContentTypeForm onSubmit={handleCreateType} />
-              </DialogContent>
-            </Dialog>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4">
-            {contentTypes.map((type) => (
-              <ContentTypeCard 
-                key={type.id} 
-                type={type} 
-                onSelect={setSelectedType}
-                onEdit={() => {
-                  setSelectedType(type);
-                  setEditDialogOpen(true);
-                }}
-                onDelete={() => handleDeleteType(type.id)}
-                selected={selectedType?.id === type.id}
-              />
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Edit Dialog */}
-      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Rediger Innholdstype</DialogTitle>
-          </DialogHeader>
-          <ContentTypeForm 
-            type={selectedType} 
-            onSubmit={handleEditType} 
-          />
-        </DialogContent>
-      </Dialog>
-
-      {/* Type Details with Connections */}
-      {selectedType && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Innholdstype Detaljer og Koblinger</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Tabs defaultValue="details" className="w-full">
-              <TabsList>
-                <TabsTrigger value="details">Detaljer</TabsTrigger>
-                <TabsTrigger value="connections">Koblinger</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="details">
-                <ContentTypeDetails type={selectedType} />
-              </TabsContent>
-              
-              <TabsContent value="connections">
-                <ContentTypeConnections 
-                  contentType={selectedType} 
-                  subjectAreas={subjectAreas}
-                />
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
+    <ContentTypeEntityManager
+      title="Innholdstype Administrasjon"
+      useEntities={useContentTypes}
+      useCreate={useCreateContentType}
+      useUpdate={useUpdateContentType}
+      useDelete={useDeleteContentType}
+      createButtonLabel="Ny Innholdstype"
+      renderCard={(type, handlers) => (
+        <ContentTypeCard
+          type={type}
+          onSelect={handlers.onSelect}
+          onEdit={handlers.onEdit}
+          onDelete={() => handlers.onDelete(type.id)}
+          selected={handlers.selected}
+        />
       )}
-    </div>
+      renderForm={(type, onSubmit) => (
+        <ContentTypeForm type={type} onSubmit={onSubmit} />
+      )}
+      renderDetails={(type) => (
+        <Tabs defaultValue="details" className="w-full">
+          <TabsList>
+            <TabsTrigger value="details">Detaljer</TabsTrigger>
+            <TabsTrigger value="connections">Koblinger</TabsTrigger>
+          </TabsList>
+          <TabsContent value="details">
+            <ContentTypeDetails type={type} />
+          </TabsContent>
+          <TabsContent value="connections">
+            <ContentTypeConnections
+              contentType={type}
+              subjectAreas={subjectAreas}
+            />
+          </TabsContent>
+        </Tabs>
+      )}
+    />
   );
 };
 

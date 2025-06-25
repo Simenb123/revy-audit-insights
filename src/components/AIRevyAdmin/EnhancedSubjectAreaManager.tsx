@@ -9,26 +9,22 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  Plus, 
-  Edit, 
-  Trash2, 
-  Users, 
+import {
+  Edit,
+  Trash2,
   ArrowUp,
   ArrowDown,
   Eye,
-  EyeOff,
-  Link,
-  Target
+  EyeOff
 } from 'lucide-react';
 import createTaxonomyHooks from '@/hooks/knowledge/useTaxonomy';
 import { useSubjectAreas, type SubjectArea } from '@/hooks/knowledge/useSubjectAreas';
 
-const EnhancedSubjectAreaManager = () => {
-  const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [selectedArea, setSelectedArea] = useState<SubjectArea | null>(null);
+import EntityManager from '../EntityManager';
 
+const SubjectAreaEntityManager = EntityManager<SubjectArea>;
+
+const EnhancedSubjectAreaManager = () => {
   const {
     useCreateTaxonomy: useCreateSubjectArea,
     useUpdateTaxonomy: useUpdateSubjectArea,
@@ -36,9 +32,7 @@ const EnhancedSubjectAreaManager = () => {
   } = createTaxonomyHooks<SubjectArea>('subject_areas', 'Emneområde');
 
   const { data: subjectAreas = [], isLoading } = useSubjectAreas();
-  const createSubjectArea = useCreateSubjectArea();
   const updateSubjectArea = useUpdateSubjectArea();
-  const deleteSubjectArea = useDeleteSubjectArea();
 
   const colorOptions = [
     { value: '#10B981', label: 'Grønn', color: '#10B981' },
@@ -53,145 +47,67 @@ const EnhancedSubjectAreaManager = () => {
     '💰', '📦', '👥', '🏦', '🏭', '📊', '🔍', '📋', '💼', '⚖️'
   ];
 
-  const handleCreateArea = async (formData: Omit<SubjectArea, 'id' | 'created_at' | 'updated_at'>) => {
-    await createSubjectArea.mutateAsync(formData);
-    setCreateDialogOpen(false);
-  };
-
-  const handleEditArea = async (formData: Omit<SubjectArea, 'id' | 'created_at' | 'updated_at'>) => {
-    if (!selectedArea) return;
-    await updateSubjectArea.mutateAsync({ id: selectedArea.id, ...formData });
-    setEditDialogOpen(false);
-    setSelectedArea(null);
-  };
-
-  const handleDeleteArea = async (areaId: string) => {
-    await deleteSubjectArea.mutateAsync(areaId);
-  };
-
   const handleToggleActive = async (area: SubjectArea) => {
-    await updateSubjectArea.mutateAsync({ 
-      id: area.id, 
-      is_active: !area.is_active 
+    await updateSubjectArea.mutateAsync({
+      id: area.id,
+      is_active: !area.is_active
     });
   };
 
   const handleMoveArea = async (area: SubjectArea, direction: 'up' | 'down') => {
     const newOrder = direction === 'up' ? area.sort_order - 1 : area.sort_order + 1;
-    await updateSubjectArea.mutateAsync({ 
-      id: area.id, 
-      sort_order: newOrder 
+    await updateSubjectArea.mutateAsync({
+      id: area.id,
+      sort_order: newOrder
     });
   };
 
-  if (isLoading) {
-    return <div>Laster emneområder...</div>;
-  }
-
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <span className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              Emneområde Administrasjon
-            </span>
-            <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Nytt Emneområde
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Opprett Emneområde</DialogTitle>
-                </DialogHeader>
-                <SubjectAreaForm 
-                  onSubmit={handleCreateArea} 
-                  colorOptions={colorOptions} 
-                  iconOptions={iconOptions} 
-                />
-              </DialogContent>
-            </Dialog>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold">Emneområder</h3>
-              <Badge variant="outline">
-                {subjectAreas.filter(a => a.is_active).length} aktive
-              </Badge>
-            </div>
-
-            <div className="grid gap-4">
-              {subjectAreas.map((area) => (
-                <SubjectAreaCard 
-                  key={area.id} 
-                  area={area} 
-                  onSelect={setSelectedArea}
-                  onEdit={() => {
-                    setSelectedArea(area);
-                    setEditDialogOpen(true);
-                  }}
-                  onDelete={() => handleDeleteArea(area.id)}
-                  onToggleActive={() => handleToggleActive(area)}
-                  onMove={handleMoveArea}
-                  selected={selectedArea?.id === area.id}
-                />
-              ))}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Edit Dialog */}
-      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Rediger Emneområde</DialogTitle>
-          </DialogHeader>
-          <SubjectAreaForm 
-            area={selectedArea} 
-            onSubmit={handleEditArea} 
-            colorOptions={colorOptions}
-            iconOptions={iconOptions}
-          />
-        </DialogContent>
-      </Dialog>
-
-      {/* Area Details with Connections */}
-      {selectedArea && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Emneområde Detaljer og Koblinger</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Tabs defaultValue="details" className="w-full">
-              <TabsList>
-                <TabsTrigger value="details">Detaljer</TabsTrigger>
-                <TabsTrigger value="connections">Koblinger</TabsTrigger>
-                <TabsTrigger value="statistics">Statistikk</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="details">
-                <SubjectAreaDetails area={selectedArea} />
-              </TabsContent>
-              
-              <TabsContent value="connections">
-                <SubjectAreaConnections subjectArea={selectedArea} />
-              </TabsContent>
-              
-              <TabsContent value="statistics">
-                <SubjectAreaStatistics subjectArea={selectedArea} />
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
+    <SubjectAreaEntityManager
+      title="Emneområde Administrasjon"
+      useEntities={useSubjectAreas}
+      useCreate={useCreateSubjectArea}
+      useUpdate={useUpdateSubjectArea}
+      useDelete={useDeleteSubjectArea}
+      createButtonLabel="Nytt Emneområde"
+      renderCard={(area, handlers) => (
+        <SubjectAreaCard
+          area={area}
+          onSelect={handlers.onSelect}
+          onEdit={handlers.onEdit}
+          onDelete={() => handlers.onDelete(area.id)}
+          onToggleActive={() => handleToggleActive(area)}
+          onMove={handleMoveArea}
+          selected={handlers.selected}
+        />
       )}
-    </div>
+      renderForm={(area, onSubmit) => (
+        <SubjectAreaForm
+          area={area}
+          onSubmit={onSubmit}
+          colorOptions={colorOptions}
+          iconOptions={iconOptions}
+        />
+      )}
+      renderDetails={(area) => (
+        <Tabs defaultValue="details" className="w-full">
+          <TabsList>
+            <TabsTrigger value="details">Detaljer</TabsTrigger>
+            <TabsTrigger value="connections">Koblinger</TabsTrigger>
+            <TabsTrigger value="statistics">Statistikk</TabsTrigger>
+          </TabsList>
+          <TabsContent value="details">
+            <SubjectAreaDetails area={area} />
+          </TabsContent>
+          <TabsContent value="connections">
+            <SubjectAreaConnections subjectArea={area} />
+          </TabsContent>
+          <TabsContent value="statistics">
+            <SubjectAreaStatistics subjectArea={area} />
+          </TabsContent>
+        </Tabs>
+      )}
+    />
   );
 };
 
