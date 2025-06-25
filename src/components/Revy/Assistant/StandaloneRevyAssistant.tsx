@@ -7,7 +7,7 @@ import { Send, Loader2 } from 'lucide-react';
 import KnowledgeStatusIndicator from '../KnowledgeStatusIndicator';
 import RevyAvatar from '../RevyAvatar';
 import AIRevyVariantSelector from '@/components/AI/AIRevyVariantSelector';
-import { EnhancedRevyMessageList } from './EnhancedRevyMessageList';
+import { RevyMessageList } from './RevyMessageList';
 import { RevyMessage } from '@/types/revio';
 
 interface StandaloneRevyAssistantProps {
@@ -61,10 +61,11 @@ const StandaloneRevyAssistant = ({
       </CardHeader>
       <CardContent className="p-0 h-full flex-grow flex flex-col">
         <div className="flex-1 min-h-0">
-          <EnhancedRevyMessageList 
-            messages={messages} 
-            isTyping={isLoading} 
+          <RevyMessageList
+            messages={messages}
+            isTyping={isLoading}
             isEmbedded={false}
+            advanced
           />
         </div>
         <div className="p-4 border-t flex-shrink-0">

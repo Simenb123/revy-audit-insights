@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Send } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { EnhancedRevyMessageList } from './EnhancedRevyMessageList';
+import { RevyMessageList } from './RevyMessageList';
 import { RevyMessage } from '@/types/revio';
 
 interface EmbeddedRevyAssistantProps {
@@ -50,11 +50,12 @@ const EmbeddedRevyAssistant: React.FC<EmbeddedRevyAssistantProps> = ({
       <div className="flex-1 min-h-0">
         <ScrollArea className="h-full">
           <div className="p-4">
-            <EnhancedRevyMessageList 
-              messages={messages} 
+            <RevyMessageList
+              messages={messages}
               isTyping={isLoading}
               isAnalyzingDocuments={isAnalyzingDocuments}
               isEmbedded={true}
+              advanced
             />
           </div>
         </ScrollArea>
