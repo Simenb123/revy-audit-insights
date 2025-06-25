@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Form } from '@/components/ui/form';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AuditSubjectArea } from '@/types/audit-actions';
-import { useCreateImprovedAuditActionTemplate } from '@/hooks/audit-actions/useImprovedAuditActions';
+import { useCreateAuditActionTemplate } from '@/hooks/audit-actions/useActionTemplateCRUD';
 import { createActionTemplateFormSchema, CreateActionTemplateFormData } from './CreateActionTemplateForm/types';
 import BasicFields from './CreateActionTemplateForm/BasicFields';
 import DetailFields from './CreateActionTemplateForm/DetailFields';
@@ -23,7 +23,7 @@ const ImprovedCreateActionTemplateForm = ({
   onSuccess, 
   onCancel 
 }: ImprovedCreateActionTemplateFormProps) => {
-  const createTemplate = useCreateImprovedAuditActionTemplate();
+  const createTemplate = useCreateAuditActionTemplate();
 
   const form = useForm<CreateActionTemplateFormData>({
     resolver: zodResolver(createActionTemplateFormSchema),

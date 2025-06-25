@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
 import { Form } from '@/components/ui/form';
 import { AuditSubjectArea } from '@/types/audit-actions';
-import { useCreateAuditActionTemplate } from '@/hooks/useAuditActions';
+import { useCreateAuditActionTemplate } from '@/hooks/audit-actions/useActionTemplateCRUD';
 import { createActionTemplateFormSchema, CreateActionTemplateFormData } from './types';
 import BasicFields from './BasicFields';
 import DetailFields from './DetailFields';
