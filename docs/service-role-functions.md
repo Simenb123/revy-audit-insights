@@ -7,3 +7,5 @@ The following edge functions still use `SUPABASE_SERVICE_ROLE_KEY` because they 
 - **revy-ai-chat** (and supporting modules) – accesses knowledge articles and client documents across organizations. The function verifies the caller's JWT and uses the service role key internally to bypass row level security during chat operations.
 
 All other functions now create Supabase clients using the caller's JWT via the `Authorization` header.
+
+Because `verify_jwt = true` is enabled for these functions, callers **must** include a valid Supabase session token in the `Authorization` header formatted as `Bearer <token>`.
