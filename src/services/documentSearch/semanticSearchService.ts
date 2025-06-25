@@ -1,5 +1,6 @@
 import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 import { performEnhancedSearch } from '@/services/knowledge/enhancedSearchLogging';
+import { createTimeoutSignal } from '@/utils/networkHelpers';
 
 export interface SearchQuery {
   term: string;
@@ -84,8 +85,11 @@ export const performSemanticSearch = async (query: SearchQuery): Promise<SearchR
     console.log('✅ Enhanced search results processed:', results.length);
     return results;
     
-  } catch (error) {
+  } catch (error: any) {
     console.error('💥 Enhanced semantic search error:', error);
+    if (error.name === 'AbortError') {
+      throw new Error('Tilkoblingen tok for lang tid, prøv igjen senere');
+    }
     throw error;
   }
 };
@@ -137,9 +141,14 @@ export const triggerEnhancedTextExtraction = async (documentId: string): Promise
   try {
     console.log('🔄 Triggering enhanced text extraction for document:', documentId);
     
+    const { signal, clear } = createTimeoutSignal(20000);
+
     const { data, error } = await supabase.functions.invoke('enhanced-pdf-text-extractor', {
-      body: { documentId }
+      body: { documentId },
+      signal
     });
+
+    clear();
     
     if (error) {
       console.error('❌ Enhanced text extraction error:', error);
@@ -149,8 +158,12 @@ export const triggerEnhancedTextExtraction = async (documentId: string): Promise
     console.log('✅ Enhanced text extraction completed:', data);
     return data?.success || false;
     
-  } catch (error) {
-    console.error('💥 Enhanced text extraction failed:', error);
+  } catch (error: any) {
+    if (error.name === 'AbortError') {
+      console.error('💥 Enhanced text extraction timed out');
+    } else {
+      console.error('💥 Enhanced text extraction failed:', error);
+    }
     return false;
   }
 };
@@ -164,9 +177,14 @@ export const testKnowledgeSearch = async (testQuery: string = 'ISA revisjon'): P
   try {
     console.log('🧪 Testing knowledge search with query:', testQuery);
     
+    const { signal, clear } = createTimeoutSignal(20000);
+
     const { data, error } = await supabase.functions.invoke('knowledge-search', {
-      body: { query: testQuery }
+      body: { query: testQuery },
+      signal
     });
+
+    clear();
     
     if (error) {
       console.error('❌ Knowledge search test failed:', error);
@@ -186,8 +204,12 @@ export const testKnowledgeSearch = async (testQuery: string = 'ISA revisjon'): P
     
     return true;
     
-  } catch (error) {
-    console.error('💥 Knowledge search test error:', error);
+  } catch (error: any) {
+    if (error.name === 'AbortError') {
+      console.error('💥 Knowledge search test timed out');
+    } else {
+      console.error('💥 Knowledge search test error:', error);
+    }
     return false;
   }
 };

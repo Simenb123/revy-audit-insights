@@ -37,3 +37,16 @@ export const createSecureUrl = (url: string) => {
   }
   return url;
 };
+
+/**
+ * Create an AbortSignal that automatically aborts after the given timeout.
+ * Returns the signal and a clear function to cancel the timeout when finished.
+ */
+export const createTimeoutSignal = (timeoutMs: number = 20000) => {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  return {
+    signal: controller.signal,
+    clear: () => clearTimeout(timer)
+  };
+};

@@ -1,4 +1,5 @@
 import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
+import { createTimeoutSignal } from '@/utils/networkHelpers';
 
 export interface DocumentAnalysisInput {
   documentId: string;
@@ -48,46 +49,63 @@ export const analyzeDocumentWithAI = async (
   }
   const useEnhanced = import.meta.env.VITE_USE_ENHANCED_ANALYSIS === 'true';
 
-  if (useEnhanced) {
-    const { data, error } = await supabase.functions.invoke('enhanced-document-ai', {
+  try {
+    if (useEnhanced) {
+      const { signal, clear } = createTimeoutSignal(20000);
+
+      const { data, error } = await supabase.functions.invoke('enhanced-document-ai', {
+        body: {
+          document_text: input.extractedText,
+          file_name: input.fileName,
+          ...(input.clientId ? { client_id: input.clientId } : {}),
+          variant_config: input.variant,
+          audit_action_context: input.auditActionContext,
+        },
+        signal
+      });
+
+      clear();
+
+      if (error) throw error;
+
+      return {
+        documentId: input.documentId,
+        aiAnalysisSummary: data.analysis_summary,
+        aiSuggestedCategory: data.suggested_category,
+        aiConfidenceScore: data.confidence_score,
+        aiSuggestedSubjectAreas: data.suggested_subject_areas,
+        aiIsaStandardReferences: data.isa_standard_references,
+        relevantAuditActions: data.relevant_audit_actions,
+        qualityIndicators: data.quality_indicators,
+        extractedKeyData: data.key_information
+      } as DocumentAnalysisResult;
+    }
+
+    const { signal, clear } = createTimeoutSignal(20000);
+
+    const { data, error } = await supabase.functions.invoke('document-ai-analyzer', {
       body: {
-        document_text: input.extractedText,
-        file_name: input.fileName,
-        ...(input.clientId ? { client_id: input.clientId } : {}),
-        variant_config: input.variant,
-        audit_action_context: input.auditActionContext,
-      }
+        documentId: input.documentId,
+        text: input.extractedText,
+        fileName: input.fileName
+      },
+      signal
     });
+
+    clear();
 
     if (error) throw error;
 
     return {
       documentId: input.documentId,
-      aiAnalysisSummary: data.analysis_summary,
-      aiSuggestedCategory: data.suggested_category,
-      aiConfidenceScore: data.confidence_score,
-      aiSuggestedSubjectAreas: data.suggested_subject_areas,
-      aiIsaStandardReferences: data.isa_standard_references,
-      relevantAuditActions: data.relevant_audit_actions,
-      qualityIndicators: data.quality_indicators,
-      extractedKeyData: data.key_information
+      aiAnalysisSummary: data.analysis || ''
     } as DocumentAnalysisResult;
-  }
-
-  const { data, error } = await supabase.functions.invoke('document-ai-analyzer', {
-    body: {
-      documentId: input.documentId,
-      text: input.extractedText,
-      fileName: input.fileName
+  } catch (error: any) {
+    if (error.name === 'AbortError') {
+      throw new Error('Tilkoblingen tok for lang tid, prøv igjen senere');
     }
-  });
-
-  if (error) throw error;
-
-  return {
-    documentId: input.documentId,
-    aiAnalysisSummary: data.analysis || ''
-  } as DocumentAnalysisResult;
+    throw error;
+  }
 };
 
 export const updateDocumentWithAnalysis = async (

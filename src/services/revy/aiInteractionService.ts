@@ -1,6 +1,7 @@
 
 import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 import { RevyContext, RevyChatMessage } from '@/types/revio';
+import { createTimeoutSignal } from '@/utils/networkHelpers';
 
 // Generate AI response using Supabase Edge Function with enhanced context and knowledge integration
 export const generateAIResponse = async (
@@ -47,9 +48,14 @@ export const generateAIResponse = async (
 
     console.log('📤 Sending request to revy-ai-chat edge function');
 
+    const { signal, clear } = createTimeoutSignal(20000);
+
     const { data, error } = await supabase.functions.invoke('revy-ai-chat', {
-      body: requestBody
+      body: requestBody,
+      signal
     });
+
+    clear();
 
     if (error) {
       console.error('❌ Supabase function invocation error:', error);
@@ -83,8 +89,12 @@ export const generateAIResponse = async (
     console.log('✅ AI response received successfully', { responseLength: data.response.length });
     return data.response;
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('💥 Final catch block in generateAIResponse:', error);
+
+    if (error.name === 'AbortError') {
+      return 'Tilkoblingen tok for lang tid, prøv igjen senere';
+    }
     
     // Enhanced fallback responses based on error type and context
     if (error instanceof Error) {

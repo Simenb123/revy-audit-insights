@@ -1,4 +1,5 @@
 import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
+import { createTimeoutSignal } from '@/utils/networkHelpers';
 
 export interface SearchLogEntry {
   timestamp: string;
@@ -116,9 +117,14 @@ export const performEnhancedSearch = async (query: string): Promise<any> => {
 
     console.log('🔍 Enhanced search starting for:', query);
 
+    const { signal, clear } = createTimeoutSignal(20000);
+
     const { data, error } = await supabase.functions.invoke('knowledge-search', {
-      body: { query }
+      body: { query },
+      signal
     });
+
+    clear();
 
     const responseTime = Date.now() - startTime;
 
@@ -177,7 +183,7 @@ export const performEnhancedSearch = async (query: string): Promise<any> => {
 
     return { articles, tagMapping };
 
-  } catch (error) {
+  } catch (error: any) {
     const responseTime = Date.now() - startTime;
     
     logEntry = {
@@ -189,8 +195,11 @@ export const performEnhancedSearch = async (query: string): Promise<any> => {
     };
 
     EnhancedSearchLogger.logSearch(logEntry as SearchLogEntry);
-    
+
     console.error('❌ Enhanced search failed:', error);
+    if (error.name === 'AbortError') {
+      throw new Error('Tilkoblingen tok for lang tid, prøv igjen senere');
+    }
     throw error;
   }
 };
