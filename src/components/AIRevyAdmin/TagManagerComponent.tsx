@@ -17,7 +17,15 @@ import {
   Filter,
   Hash
 } from 'lucide-react';
-import { useTags, useCreateTag, useUpdateTag, useDeleteTag, type Tag as TagType } from '@/hooks/knowledge/useTags';
+import createTaxonomyHooks from '@/hooks/knowledge/useTaxonomy';
+import { type Tag as TagType } from '@/hooks/knowledge/useTags';
+
+const {
+  useTaxonomies: useTags,
+  useCreateTaxonomy: useCreateTag,
+  useUpdateTaxonomy: useUpdateTag,
+  useDeleteTaxonomy: useDeleteTag,
+} = createTaxonomyHooks<TagType>('tags', 'Tag');
 
 const TagManagerComponent = () => {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);

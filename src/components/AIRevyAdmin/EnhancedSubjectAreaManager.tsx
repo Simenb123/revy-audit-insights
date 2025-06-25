@@ -21,12 +21,19 @@ import {
   Link,
   Target
 } from 'lucide-react';
-import { useSubjectAreas, useCreateSubjectArea, useUpdateSubjectArea, useDeleteSubjectArea, type SubjectArea } from '@/hooks/knowledge/useSubjectAreas';
+import createTaxonomyHooks from '@/hooks/knowledge/useTaxonomy';
+import { useSubjectAreas, type SubjectArea } from '@/hooks/knowledge/useSubjectAreas';
 
 const EnhancedSubjectAreaManager = () => {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedArea, setSelectedArea] = useState<SubjectArea | null>(null);
+
+  const {
+    useCreateTaxonomy: useCreateSubjectArea,
+    useUpdateTaxonomy: useUpdateSubjectArea,
+    useDeleteTaxonomy: useDeleteSubjectArea,
+  } = createTaxonomyHooks<SubjectArea>('subject_areas', 'Emneområde');
 
   const { data: subjectAreas = [], isLoading } = useSubjectAreas();
   const createSubjectArea = useCreateSubjectArea();
