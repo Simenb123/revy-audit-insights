@@ -37,7 +37,7 @@
 
 /* Sidebar CSS Variables */
 :root {
-  --sidebar-width: 16rem; /* 256px */
+  --sidebar-width: 12rem; /* 192px */
   --sidebar-width-collapsed: 4rem; /* 64px */
 }
 
