@@ -17,9 +17,21 @@ const supabaseAnonKey =
   import.meta.env.VITE_SUPABASE_ANON_KEY ||
   DEFAULT_SUPABASE_ANON_KEY
 
+// Service role key for server-side operations (used by edge functions)
+export const supabaseServiceRoleKey =
+  import.meta.env.SUPABASE_SERVICE_ROLE_KEY ||
+  import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY ||
+  undefined
+
 if (!import.meta.env.SUPABASE_URL || !import.meta.env.SUPABASE_ANON_KEY) {
   console.warn(
     'Using built-in Supabase credentials. Set SUPABASE_URL and SUPABASE_ANON_KEY to use your own project.'
+  )
+}
+
+if (!supabaseServiceRoleKey) {
+  console.warn(
+    'SUPABASE_SERVICE_ROLE_KEY not found. Some AI features may not work properly. Set this key for full functionality.'
   )
 }
 
