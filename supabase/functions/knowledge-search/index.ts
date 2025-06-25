@@ -144,7 +144,7 @@ function createTagMapping(articles: any[], keywords: string[]) {
   return mapping;
 }
 
-serve(async (req) => {
+export async function handler(req: Request): Promise<Response> {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -183,13 +183,10 @@ serve(async (req) => {
       requestBody = JSON.parse(bodyText);
     } catch (parseError) {
       console.error('❌ JSON parsing error:', parseError);
-      // Return empty results for malformed JSON instead of error
-      return new Response(JSON.stringify({ 
-        articles: [],
-        tagMapping: {},
-        message: 'Invalid JSON format'
+      return new Response(JSON.stringify({
+        error: 'Invalid JSON format'
       }), {
-        status: 200,
+        status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -303,7 +300,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('💥 Critical error in knowledge-search function:', error);
     // Return empty results instead of error to prevent breaking the AI chat
-    return new Response(JSON.stringify({ 
+    return new Response(JSON.stringify({
       articles: [],
       tagMapping: {},
       error: 'Knowledge search temporarily unavailable'
@@ -312,4 +309,8 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
-});
+}
+
+if (import.meta.main) {
+  serve(handler);
+}
