@@ -2,9 +2,11 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { devLog } from '@/utils/devLogger';
+import { useToast } from '@/hooks/use-toast';
 
 export const useDocumentOperations = (clientId?: string) => {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   // Upload mutation
   const uploadDocument = useMutation({
@@ -14,12 +16,63 @@ export const useDocumentOperations = (clientId?: string) => {
       category?: string;
       subjectArea?: string;
     }) => {
-      // This would need proper file upload implementation
-      // For now, returning a placeholder
-      throw new Error('File upload not implemented');
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      const fileExt = params.file.name.split('.').pop();
+      const randomName = `${Date.now()}-${Math.random()
+        .toString(36)
+        .substring(2)}.${fileExt}`;
+      const filePath = `${user.id}/${randomName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('client-documents')
+        .upload(filePath, params.file, {
+          cacheControl: '3600',
+          upsert: false,
+        });
+
+      if (uploadError) {
+        throw new Error(`Upload failed: ${uploadError.message}`);
+      }
+
+      const { data: document, error: insertError } = await supabase
+        .from('client_documents_files')
+        .insert({
+          client_id: params.clientId,
+          user_id: user.id,
+          file_name: params.file.name,
+          file_path: filePath,
+          file_size: params.file.size,
+          mime_type: params.file.type,
+          category: params.category,
+          subject_area: params.subjectArea,
+        })
+        .select('*')
+        .single();
+
+      if (insertError || !document) {
+        await supabase.storage.from('client-documents').remove([filePath]);
+        throw new Error(insertError?.message || 'Failed to create document');
+      }
+
+      return document;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['client-documents', clientId] });
+      toast({
+        title: 'Dokument lastet opp!',
+        description: `AI-prosessering startet for ${data.file_name}.`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Upload feilet',
+        description: error.message,
+        variant: 'destructive',
+      });
     },
   });
 
@@ -95,8 +148,29 @@ export const useDocumentOperations = (clientId?: string) => {
   // Text extraction trigger
   const triggerTextExtraction = useMutation({
     mutationFn: async (documentId: string) => {
-      // Placeholder for text extraction trigger
+      const { error } = await supabase.functions.invoke('pdf-text-extractor', {
+        body: { documentId },
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
       devLog('Text extraction triggered for document:', documentId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['client-documents', clientId] });
+      toast({
+        title: 'Analyse startet',
+        description: 'Tekstanalyse for dokumentet er satt i gang.',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Feil ved analyse',
+        description: error.message,
+        variant: 'destructive',
+      });
     },
   });
 

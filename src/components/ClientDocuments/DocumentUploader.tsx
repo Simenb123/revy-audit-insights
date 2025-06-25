@@ -20,7 +20,7 @@ const DocumentUploader = ({ clientId, categories }: DocumentUploaderProps) => {
   const [selectedSubjectArea, setSelectedSubjectArea] = useState<string>('');
   const [isDragging, setIsDragging] = useState(false);
   
-  const { uploadDocument } = useClientDocuments(clientId);
+  const { uploadDocument, triggerTextExtraction } = useClientDocuments(clientId);
 
   const subjectAreas = [...new Set(categories.map(c => c.subject_area))];
   const filteredCategories = selectedSubjectArea 
@@ -87,12 +87,16 @@ const DocumentUploader = ({ clientId, categories }: DocumentUploaderProps) => {
 
     for (const file of selectedFiles) {
       try {
-        await uploadDocument.mutateAsync({
+        const document = await uploadDocument.mutateAsync({
           file,
           clientId,
           category: selectedCategory || undefined,
-          subjectArea: selectedSubjectArea || undefined
+          subjectArea: selectedSubjectArea || undefined,
         });
+
+        if (document?.id) {
+          triggerTextExtraction.mutate(document.id);
+        }
       } catch (error) {
         console.error(`Failed to upload ${file.name}:`, error);
       }
