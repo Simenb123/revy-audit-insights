@@ -21,12 +21,13 @@ Create a `.env` file in the root directory with the following variables:
 # Supabase Configuration (Optional - has working defaults)
 VITE_SUPABASE_URL=your_supabase_project_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anonymous_key
+VITE_SUPABASE_FUNCTIONS_URL=your_supabase_functions_url
 
 # OpenAI API Key (Required for AI features)
 OPENAI_API_KEY=your_openai_api_key
 ```
 
-**Note**: The Supabase configuration has working defaults built-in. You only need to set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` if you want to use your own Supabase project.
+**Note**: The Supabase configuration has working defaults built-in. You only need to set `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, and `VITE_SUPABASE_FUNCTIONS_URL` if you want to use your own Supabase project.
 
 ### Getting Your Supabase Credentials (Optional)
 
@@ -55,7 +56,7 @@ For the embedded generation trigger to work properly, you may need to set custom
 ## Installation
 
 1. Clone the repository
-2. Install dependencies: `npm install`
+2. Install dependencies: `npm install --legacy-peer-deps`
 3. Copy `.env.example` to `.env` and fill in your credentials (optional)
 4. Start the development server: `npm run dev`
 

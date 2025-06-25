@@ -44,7 +44,8 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
 
         try {
           console.log(`Fetching data for ${client.name} (${client.org_number})`);
-          const response = await fetch(`https://fxelhfwaoizqyecikscu.functions.supabase.co/brreg`, {
+                const functionsUrl = import.meta.env.VITE_SUPABASE_FUNCTIONS_URL;
+                const response = await fetch(`${functionsUrl}/brreg`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
