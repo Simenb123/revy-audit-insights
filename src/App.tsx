@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/components/Auth/AuthProvider";
 import { RevyContextProvider } from "@/components/RevyContext/RevyContextProvider";
 import AppLayout from "@/components/Layout/AppLayout";
+import { RightSidebarProvider } from "@/components/Layout/RightSidebarContext";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import OrganizationSetup from "./pages/OrganizationSetup";
@@ -44,7 +45,7 @@ function App() {
               <Routes>
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/setup" element={<OrganizationSetup />} />
-                <Route path="/" element={<AppLayout />}>
+                <Route path="/" element={<RightSidebarProvider><AppLayout /></RightSidebarProvider>}>
                   <Route index element={<Index />} />
                   <Route path="dashboard" element={<NavigationDashboard />} />
                   <Route path="clients" element={<ClientsOverview />} />
