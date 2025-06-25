@@ -21,52 +21,39 @@ import {
   Copy
 } from 'lucide-react';
 import { toast } from 'sonner';
+import {
+  useKnowledgeCategories,
+  useCreateKnowledgeCategory,
+  useUpdateKnowledgeCategory,
+  useDeleteKnowledgeCategory,
+} from '@/hooks/knowledge/useKnowledgeCategories';
 
 const CategoryStructureManager = () => {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
 
-  // Mock data - replace with actual data from hooks
-  const categories = [
-    {
-      id: '1',
-      name: 'Revisjon',
-      description: 'Hovedkategori for revisjonsrelaterte artikler',
-      icon: 'folder',
-      display_order: 1,
-      parent_category_id: null,
-      children: [
-        { id: '2', name: 'ISA Standarder', display_order: 1, parent_category_id: '1' },
-        { id: '3', name: 'Revisjonsprosedyrer', display_order: 2, parent_category_id: '1' }
-      ]
-    },
-    {
-      id: '4',
-      name: 'Regnskap',
-      description: 'Regnskapsrelaterte artikler og retningslinjer',
-      icon: 'calculator',
-      display_order: 2,
-      parent_category_id: null,
-      children: []
-    }
-  ];
+  const { data: categories = [], isLoading } = useKnowledgeCategories();
+  const createCategory = useCreateKnowledgeCategory();
+  const updateCategory = useUpdateKnowledgeCategory();
+  const deleteCategory = useDeleteKnowledgeCategory();
 
   const handleCreateCategory = (formData) => {
-    console.log('Creating category:', formData);
-    toast.success('Kategori opprettet');
-    setCreateDialogOpen(false);
+    createCategory.mutate(formData, {
+      onSuccess: () => setCreateDialogOpen(false),
+    });
   };
 
   const handleEditCategory = (formData) => {
-    console.log('Editing category:', formData);
-    toast.success('Kategori oppdatert');
-    setEditDialogOpen(false);
+    if (!selectedCategory) return;
+    updateCategory.mutate(
+      { id: selectedCategory.id, ...formData },
+      { onSuccess: () => setEditDialogOpen(false) }
+    );
   };
 
   const handleDeleteCategory = (categoryId) => {
-    console.log('Deleting category:', categoryId);
-    toast.success('Kategori slettet');
+    deleteCategory.mutate(categoryId);
   };
 
   const handleMoveCategory = (categoryId, direction) => {
@@ -78,6 +65,10 @@ const CategoryStructureManager = () => {
     console.log('Duplicating category:', categoryId);
     toast.success('Kategori duplisert');
   };
+
+  if (isLoading) {
+    return <div>Laster kategorier...</div>;
+  }
 
   return (
     <div className="space-y-6">
