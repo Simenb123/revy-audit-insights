@@ -22,7 +22,7 @@ For a high-level tour of the architecture and key modules, see [docs/project-ove
 Copy `.env.example` to `.env.local` and update the values:
 
 ```env
-# Supabase Configuration (Optional - has working defaults)
+# Supabase Configuration
 SUPABASE_URL=your_supabase_project_url
 SUPABASE_ANON_KEY=your_supabase_anonymous_key
 SUPABASE_FUNCTIONS_URL=your_supabase_functions_url
@@ -33,9 +33,10 @@ SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key_here # used for accessi
 OPENAI_API_KEY=your_openai_api_key
 ```
 
-**Note**: The Supabase configuration has working defaults built-in. You only need to set `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_FUNCTIONS_URL` if you want to use your own Supabase project. `SUPABASE_SERVICE_ROLE_KEY` is required for AI Revy to access internal knowledge articles.
 
-### Getting Your Supabase Credentials (Optional)
+`SUPABASE_URL` and `SUPABASE_ANON_KEY` must be set for the app to connect to Supabase. `SUPABASE_SERVICE_ROLE_KEY` is required for AI Revy to access internal knowledge articles.
+
+### Getting Your Supabase Credentials
 
 1. Go to [Supabase Dashboard](https://supabase.com/dashboard)
 2. Select your project
@@ -64,7 +65,7 @@ For the embedded generation trigger to work properly, you may need to set custom
 
 1. Clone the repository
 2. Install dependencies: `npm install --legacy-peer-deps`
-3. Copy `.env.example` to `.env.local` and fill in your credentials (optional)
+3. Copy `.env.example` to `.env.local` and fill in your credentials
 4. Start the development server: `npm run dev` (it will automatically load `.env.local`)
 
 ## Deployment
