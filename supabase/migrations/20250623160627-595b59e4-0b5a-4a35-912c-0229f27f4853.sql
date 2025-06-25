@@ -15,15 +15,8 @@ BEGIN
     supabase_url := current_setting('app.supabase_url', true);
     supabase_anon_key := current_setting('app.supabase_anon_key', true);
     
-    -- Fallback to hardcoded values if environment variables are not set
-    -- TODO: Remove these fallbacks once environment variables are properly configured
-    IF supabase_url IS NULL OR supabase_url = '' THEN
-      supabase_url := 'https://fxelhfwaoizqyecikscu.supabase.co';
-    END IF;
-    
-    IF supabase_anon_key IS NULL OR supabase_anon_key = '' THEN
-      supabase_anon_key := 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ4ZWxoZndhb2l6cXllY2lrc2N1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUxNjM2NzksImV4cCI6MjA2MDczOTY3OX0.h20hURN-5qCAtI8tZaHpEoCnNmfdhIuYJG3tgXyvKqc';
-    END IF;
+    -- Make sure `app.supabase_url` and `app.supabase_anon_key` are
+    -- configured in your Supabase project settings
     
     -- Call the generate-embeddings function
     PERFORM net.http_post(
