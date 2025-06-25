@@ -6,6 +6,9 @@ root@1cb9b8ccf6f8:/workspace/revy-audit-insights# nl -ba supabase/functions/revy
      4  import { searchClientDocuments, DocumentSearchResult } from './document-
 search.ts';
 
+
+import { searchClientDocuments, DocumentSearchResult } from './document-search.ts';
+
 export interface EnhancedContext {
   knowledge: any;
   articleTagMapping: Record<string, string[]>;
@@ -29,16 +32,12 @@ export const buildEnhancedContextWithVariant = async (
   const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
   const supabase = createClient(supabaseUrl, supabaseKey);
 
-  // Attempt to retrieve the current session token if it exists
-  let authToken = supabaseKey;
-  try {
-    const { data } = await supabase.auth.getSession();
-    if (data?.session?.access_token) {
-      authToken = data.session.access_token;
-    }
-  } catch (sessionError) {
-    console.log('⚠️ No session token available, using service role key');
-  }
+  // Try to get the current session to use its token for downstream requests
+  const {
+    data: { session }
+  } = await supabase.auth.getSession();
+
+  const authToken = session?.access_token || supabaseKey;
 
   const enhancedContext: any = {
     knowledge: null,
