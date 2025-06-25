@@ -21,57 +21,53 @@ const CategoryView = () => {
     return uuidRegex.test(str);
   };
 
-  // If categoryId is not a valid UUID, redirect to knowledge base
-  if (!isValidUUID(categoryId)) {
-    console.warn('Invalid category ID format:', categoryId);
-    return <Navigate to="/fag" replace />;
-  }
+  const validCategoryId = isValidUUID(categoryId)
 
   const { data: category, isLoading: categoryLoading } = useQuery({
     queryKey: ['knowledge-category', categoryId],
     queryFn: async () => {
-      if (!categoryId) throw new Error('Category ID is required');
-      
-      console.log('Fetching category:', categoryId);
+      if (!categoryId) throw new Error('Category ID is required')
+
+      console.log('Fetching category:', categoryId)
       const { data, error } = await supabase
         .from('knowledge_categories')
         .select('*')
         .eq('id', categoryId)
-        .single();
-      
+        .single()
+
       if (error) {
-        console.error('Error fetching category:', error);
-        throw error;
+        console.error('Error fetching category:', error)
+        throw error
       }
-      
-      console.log('Category fetched:', data);
-      return data as KnowledgeCategory;
+
+      console.log('Category fetched:', data)
+      return data as KnowledgeCategory
     },
-    enabled: !!categoryId && isValidUUID(categoryId)
-  });
+    enabled: !!categoryId && validCategoryId
+  })
 
   const { data: subcategories } = useQuery({
     queryKey: ['knowledge-subcategories', categoryId],
     queryFn: async () => {
-      if (!categoryId || !isValidUUID(categoryId)) return [];
-      
+      if (!categoryId || !validCategoryId) return []
+
       const { data, error } = await supabase
         .from('knowledge_categories')
         .select('*')
         .eq('parent_category_id', categoryId)
-        .order('display_order');
-      
-      if (error) throw error;
-      return data as KnowledgeCategory[];
+        .order('display_order')
+
+      if (error) throw error
+      return data as KnowledgeCategory[]
     },
-    enabled: !!categoryId && isValidUUID(categoryId)
-  });
+    enabled: !!categoryId && validCategoryId
+  })
 
   const { data: articles = [], isLoading: isLoadingArticles } = useQuery({
     queryKey: ['knowledge-articles', categoryId],
     queryFn: async () => {
-      if (!categoryId || !isValidUUID(categoryId)) return [];
-      
+      if (!categoryId || !validCategoryId) return []
+
       const { data, error } = await supabase
         .from('knowledge_articles')
         .select(`
@@ -84,17 +80,23 @@ const CategoryView = () => {
           )
         `)
         .eq('category_id', categoryId)
-        .eq('status', 'published');
-      
-      if (error) throw error;
-      
+        .eq('status', 'published')
+
+      if (error) throw error
+
       return (data || []).map(article => ({
         ...article,
         article_tags: article.article_tags?.map((at: any) => at.tag) || []
-      }));
+      }))
     },
-    enabled: !!categoryId && isValidUUID(categoryId)
-  });
+    enabled: !!categoryId && validCategoryId
+  })
+
+  // If categoryId is not a valid UUID, redirect to knowledge base
+  if (!validCategoryId) {
+    console.warn('Invalid category ID format:', categoryId)
+    return <Navigate to="/fag" replace />
+  }
 
   if (categoryLoading) {
     return (
