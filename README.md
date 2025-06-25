@@ -15,27 +15,27 @@ AI Revy is an intelligent audit assistant built for Norwegian audit firms, provi
 
 ### Required Environment Variables
 
-Create a `.env` file in the root directory with the following variables:
+Copy `.env.example` to `.env.local` and update the values:
 
 ```env
 # Supabase Configuration (Optional - has working defaults)
-VITE_SUPABASE_URL=your_supabase_project_url
-VITE_SUPABASE_ANON_KEY=your_supabase_anonymous_key
-VITE_SUPABASE_FUNCTIONS_URL=your_supabase_functions_url
+SUPABASE_URL=your_supabase_project_url
+SUPABASE_ANON_KEY=your_supabase_anonymous_key
+SUPABASE_FUNCTIONS_URL=your_supabase_functions_url
 
 # OpenAI API Key (Required for AI features)
 OPENAI_API_KEY=your_openai_api_key
 ```
 
-**Note**: The Supabase configuration has working defaults built-in. You only need to set `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, and `VITE_SUPABASE_FUNCTIONS_URL` if you want to use your own Supabase project.
+**Note**: The Supabase configuration has working defaults built-in. You only need to set `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_FUNCTIONS_URL` if you want to use your own Supabase project.
 
 ### Getting Your Supabase Credentials (Optional)
 
 1. Go to [Supabase Dashboard](https://supabase.com/dashboard)
 2. Select your project
 3. Go to Settings > API
-4. Copy the "Project URL" for `VITE_SUPABASE_URL`
-5. Copy the "anon/public" key for `VITE_SUPABASE_ANON_KEY`
+4. Copy the "Project URL" for `SUPABASE_URL`
+5. Copy the "anon/public" key for `SUPABASE_ANON_KEY`
 
 ### Getting Your OpenAI API Key
 
@@ -57,8 +57,8 @@ For the embedded generation trigger to work properly, you may need to set custom
 
 1. Clone the repository
 2. Install dependencies: `npm install --legacy-peer-deps`
-3. Copy `.env.example` to `.env` and fill in your credentials (optional)
-4. Start the development server: `npm run dev`
+3. Copy `.env.example` to `.env.local` and fill in your credentials (optional)
+4. Start the development server: `npm run dev` (it will automatically load `.env.local`)
 
 ## Deployment
 
