@@ -1,5 +1,5 @@
 
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 
 export const generateEmbeddingsForExistingArticles = async (): Promise<{
   success: boolean;
@@ -7,6 +7,10 @@ export const generateEmbeddingsForExistingArticles = async (): Promise<{
   errors: number;
   message: string;
 }> => {
+  if (!isSupabaseConfigured || !supabase) {
+    console.error("Supabase is not configured. Cannot generate embeddings.");
+    return { success: false, processed: 0, errors: 1, message: "Supabase not initialized" };
+  }
   try {
     console.log('🚀 Starting embedding generation for existing articles...');
     

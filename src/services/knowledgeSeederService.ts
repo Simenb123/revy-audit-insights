@@ -1,5 +1,5 @@
 
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 
 interface ArticleData {
   title: string;
@@ -15,6 +15,10 @@ interface ArticleData {
 }
 
 export const seedKnowledgeBase = async () => {
+  if (!isSupabaseConfigured || !supabase) {
+    console.error("Supabase is not configured. Seeder cannot proceed.");
+    return;
+  }
   console.log('🌱 Starting knowledge base seeding...');
   
   try {

@@ -1,4 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 
 export interface DocumentAnalysisInput {
   documentId: string;
@@ -42,6 +42,10 @@ export interface DocumentAnalysisResult {
 export const analyzeDocumentWithAI = async (
   input: DocumentAnalysisInput
 ): Promise<DocumentAnalysisResult> => {
+  if (!isSupabaseConfigured || !supabase) {
+    console.error("Supabase is not configured. Document analysis cannot proceed.");
+    throw new Error("Supabase not initialized");
+  }
   const useEnhanced = import.meta.env.VITE_USE_ENHANCED_ANALYSIS === 'true';
 
   if (useEnhanced) {
@@ -89,6 +93,10 @@ export const analyzeDocumentWithAI = async (
 export const updateDocumentWithAnalysis = async (
   result: DocumentAnalysisResult
 ): Promise<void> => {
+  if (!isSupabaseConfigured || !supabase) {
+    console.error("Supabase is not configured. Document update cannot proceed.");
+    throw new Error("Supabase not initialized");
+  }
   const updateData: Record<string, any> = {
     ai_analysis_summary: result.aiAnalysisSummary,
     updated_at: new Date().toISOString()

@@ -1,8 +1,12 @@
 
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 
 // Get AI usage statistics for current user
 export const getAIUsageStats = async (timeframe: 'day' | 'week' | 'month' = 'week') => {
+  if (!isSupabaseConfigured || !supabase) {
+    console.error("Supabase is not configured. Cannot load usage stats.");
+    throw new Error("Supabase not initialized");
+  }
   try {
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
@@ -66,6 +70,10 @@ export const getAIUsageStats = async (timeframe: 'day' | 'week' | 'month' = 'wee
 
 // Get firm-wide AI usage statistics (admin only)
 export const getFirmAIUsageStats = async (timeframe: 'day' | 'week' | 'month' = 'week') => {
+  if (!isSupabaseConfigured || !supabase) {
+    console.error("Supabase is not configured. Cannot load usage stats.");
+    throw new Error("Supabase not initialized");
+  }
   try {
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {

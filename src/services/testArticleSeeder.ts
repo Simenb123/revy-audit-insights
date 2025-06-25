@@ -1,7 +1,11 @@
 
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 
 export const createTestArticles = async () => {
+  if (!isSupabaseConfigured || !supabase) {
+    console.error("Supabase is not configured. Seeder cannot proceed.");
+    return;
+  }
   console.log('🌱 Creating test articles for knowledge base...');
   
   // First get or create a test category

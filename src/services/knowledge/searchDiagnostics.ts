@@ -1,4 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 
 export interface SearchDiagnostic {
   timestamp: string;
@@ -24,6 +24,10 @@ export class KnowledgeSearchDiagnostics {
   private static diagnosticHistory: SearchDiagnostic[] = [];
 
   static async runHealthCheck(): Promise<KnowledgeBaseHealth> {
+    if (!isSupabaseConfigured || !supabase) {
+      console.error("Supabase is not configured. Health check cannot run.");
+      throw new Error("Supabase not initialized");
+    }
     console.log('🏥 Running knowledge base health check...');
     const startTime = Date.now();
 
@@ -81,6 +85,10 @@ export class KnowledgeSearchDiagnostics {
   }
 
   static async runSyntheticQueries(): Promise<SearchDiagnostic[]> {
+    if (!isSupabaseConfigured || !supabase) {
+      console.error("Supabase is not configured. Cannot run synthetic queries.");
+      return [];
+    }
     console.log('🤖 Running synthetic query tests...');
     
     const testQueries = [
@@ -111,6 +119,10 @@ export class KnowledgeSearchDiagnostics {
   }
 
   static async testSingleQuery(query: string): Promise<SearchDiagnostic> {
+    if (!isSupabaseConfigured || !supabase) {
+      console.error("Supabase is not configured. Cannot test query.");
+      return { timestamp: new Date().toISOString(), query, semanticResults: 0, keywordResults: 0, totalResults: 0, responseTime: 0, errors: ["Supabase not initialized"], warnings: [] };
+    }
     console.log(`🔍 Testing query: "${query}"`);
     const startTime = Date.now();
     const errors: string[] = [];

@@ -1,5 +1,5 @@
 
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 
 export interface DocumentReference {
   id: string;
@@ -17,6 +17,10 @@ export const searchClientDocuments = async (
   clientId: string, 
   query: string
 ): Promise<DocumentReference[]> => {
+  if (!isSupabaseConfigured || !supabase) {
+    console.error("Supabase is not configured. Document search cannot proceed.");
+    return [];
+  }
   try {
     console.log('🔍 Searching client documents for:', { clientId, query });
 
@@ -54,6 +58,10 @@ export const findDocumentByReference = async (
   clientId: string,
   reference: string
 ): Promise<DocumentReference | null> => {
+  if (!isSupabaseConfigured || !supabase) {
+    console.error("Supabase is not configured. Document reference lookup cannot proceed.");
+    return null;
+  }
   try {
     console.log('🔍 Finding document by reference:', { clientId, reference });
     
@@ -94,6 +102,10 @@ export const findDocumentByReference = async (
 };
 
 export const getDocumentById = async (documentId: string): Promise<DocumentReference | null> => {
+  if (!isSupabaseConfigured || !supabase) {
+    console.error("Supabase is not configured. Document retrieval cannot proceed.");
+    return null;
+  }
   try {
     const { data, error } = await supabase
       .from('client_documents_files')
