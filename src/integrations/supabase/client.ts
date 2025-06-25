@@ -11,10 +11,10 @@ const supabaseAnonKey =
   import.meta.env.VITE_SUPABASE_ANON_KEY
 
 // Service role key for server-side operations (used by edge functions)
-export const supabaseServiceRoleKey =
-  import.meta.env.SUPABASE_SERVICE_ROLE_KEY ||
-  import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY ||
-  undefined
+export const supabaseServiceRoleKey = typeof window === 'undefined'
+  ? import.meta.env.SUPABASE_SERVICE_ROLE_KEY ||
+    import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY
+  : undefined
 
 export const isSupabaseConfigured = !!(supabaseUrl && supabaseAnonKey)
 
@@ -24,11 +24,6 @@ if (!isSupabaseConfigured) {
   )
 }
 
-if (!supabaseServiceRoleKey) {
-  console.warn(
-    'SUPABASE_SERVICE_ROLE_KEY not found. Some AI features may not work properly. Set this key for full functionality.'
-  )
-}
 
 export const supabase: SupabaseClient<Database> | null = isSupabaseConfigured
   ? createClient<Database>(supabaseUrl, supabaseAnonKey)
