@@ -30,7 +30,7 @@ const AppLayout = () => {
       />
       <div
         className="flex flex-1"
-        style={{ height: "calc(100vh - 3.5rem)" }}
+        style={{ height: "calc(100vh - var(--header-height))" }}
       >
         <Sidebar
           isCollapsed={isLeftSidebarCollapsed}
