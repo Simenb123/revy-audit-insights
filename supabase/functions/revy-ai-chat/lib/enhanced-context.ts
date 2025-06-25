@@ -1,6 +1,6 @@
-     1
-     2  // deno-lint-ignore-file no-explicit-any
-     3  import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
+
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { searchClientDocuments, DocumentSearchResult } from './document-search.ts';
 
 
