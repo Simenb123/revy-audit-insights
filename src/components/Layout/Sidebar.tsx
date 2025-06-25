@@ -25,7 +25,7 @@ const Sidebar = ({ isCollapsed, onToggle }: SidebarProps) => {
       isCollapsed ? "w-16" : "w-64"
     )}>
       {/* Toggle button positioned on the right side inside the sidebar */}
-      <div className="absolute top-4 right-2 z-20">
+      <div className="absolute top-4 right-2 z-40">
         <Button
           variant="ghost"
           size="icon"
