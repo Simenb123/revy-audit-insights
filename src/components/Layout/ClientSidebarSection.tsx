@@ -17,7 +17,7 @@ const ClientSidebarSection: React.FC<ClientSidebarSectionProps> = ({
   categoriesCount
 }) => {
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col h-full space-y-4 pb-4">
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -39,13 +39,6 @@ const ClientSidebarSection: React.FC<ClientSidebarSectionProps> = ({
           </div>
         </CardContent>
       </Card>
-
-      <AiReviCard 
-        context="client-detail"
-        clientData={{ id: clientId }}
-        title="AI-Revi Assistent"
-        description="Klientspesifikk revisjonsassistanse"
-      />
 
       <Card>
         <CardHeader>
@@ -74,6 +67,14 @@ const ClientSidebarSection: React.FC<ClientSidebarSectionProps> = ({
           </p>
         </CardContent>
       </Card>
+
+      <AiReviCard
+        context="client-detail"
+        clientData={{ id: clientId }}
+        title="AI-Revi Assistent"
+        description="Klientspesifikk revisjonsassistanse"
+        className="mt-auto"
+      />
     </div>
   );
 };

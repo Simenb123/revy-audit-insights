@@ -50,13 +50,13 @@ const AiReviCard: React.FC<AiReviCardProps> = ({
     setIsFullscreen(!isFullscreen);
   };
 
-  const cardClasses = isFullscreen 
-    ? "fixed inset-0 z-50 bg-white" 
-    : `${className} ${isExpanded ? 'h-96' : 'h-auto'}`;
+  const cardClasses = `w-full ${
+    isFullscreen ? 'fixed inset-0 z-50 bg-white' : ''
+  } ${isExpanded ? 'h-96' : 'h-auto'} ${className}`;
 
   return (
     <Card className={cardClasses}>
-      <CardHeader className="pb-2">
+      <CardHeader className="p-2 pb-1 space-y-1">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-sm">
             <Bot className="h-4 w-4 text-purple-600" />
@@ -84,14 +84,16 @@ const AiReviCard: React.FC<AiReviCardProps> = ({
           </div>
         </div>
         
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <span>{description}</span>
-          {selectedVariant && (
-            <Badge variant="outline" className="text-xs">
-              {selectedVariant.display_name}
-            </Badge>
-          )}
-        </div>
+        {isExpanded && (
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span>{description}</span>
+            {selectedVariant && (
+              <Badge variant="outline" className="text-xs">
+                {selectedVariant.display_name}
+              </Badge>
+            )}
+          </div>
+        )}
       </CardHeader>
       
       <CardContent className="p-2 space-y-2">
