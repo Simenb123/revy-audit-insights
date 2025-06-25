@@ -2,26 +2,14 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { AuditActionTemplate, ClientAuditAction, ActionGroup, AuditSubjectArea, AuditPhase } from '@/types/audit-actions';
+import { ClientAuditAction, ActionGroup, AuditSubjectArea, AuditPhase } from '@/types/audit-actions';
+export {
+  useAuditActionTemplates,
+  useCreateAuditActionTemplate,
+  useUpdateAuditActionTemplate,
+  useDeleteAuditActionTemplate
+} from '@/hooks/audit-actions/useActionTemplateCRUD';
 
-export function useAuditActionTemplates() {
-  return useQuery({
-    queryKey: ['audit-action-templates'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('audit_action_templates')
-        .select('*')
-        .order('subject_area, sort_order');
-
-      if (error) {
-        console.error('Error fetching audit action templates:', error);
-        throw error;
-      }
-
-      return data as AuditActionTemplate[];
-    }
-  });
-}
 
 export function useActionGroups() {
   return useQuery({
@@ -63,40 +51,6 @@ export function useClientAuditActions(clientId: string) {
   });
 }
 
-export function useCreateAuditActionTemplate() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (template: Omit<AuditActionTemplate, 'id' | 'created_at' | 'updated_at'>) => {
-      const { data, error } = await supabase
-        .from('audit_action_templates')
-        .insert({
-          ...template,
-          applicable_phases: template.applicable_phases
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['audit-action-templates'] });
-      toast({
-        title: "Handlingsmal opprettet",
-        description: "Den nye handlingsmalen er nå tilgjengelig.",
-      });
-    },
-    onError: (error) => {
-      console.error('Error creating audit action template:', error);
-      toast({
-        title: "Feil ved opprettelse",
-        description: "Kunne ikke opprette handlingsmalen.",
-        variant: "destructive",
-      });
-    }
-  });
-}
 
 export function useCreateClientAuditAction() {
   const queryClient = useQueryClient();

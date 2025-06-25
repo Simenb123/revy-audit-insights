@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Brain, Plus, Loader2, Save } from 'lucide-react';
-import { useCreateAuditActionTemplate } from '@/hooks/useAuditActions';
+import { useCreateAuditActionTemplate } from '@/hooks/audit-actions/useActionTemplateCRUD';
 import { toast } from '@/hooks/use-toast';
 import { useSubjectAreas } from '@/hooks/knowledge/useSubjectAreas';
 import { useAuditActionTemplatesBySubjectArea } from '@/hooks/knowledge/useAuditActionTemplatesPreview';
