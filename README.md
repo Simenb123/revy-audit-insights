@@ -80,6 +80,21 @@ For the embedded generation trigger to work properly, you may need to set custom
 - Regularly rotate API keys for security
 - Ensure your `.env` file is listed in `.gitignore`
 
+## Kilder og sporbarhet
+
+AI-Revi henter automatisk relevante kilder fra kunnskapsartikler og opplastede
+dokumenter. Etter hvert svar fra assistenten vises disse referansene som lenker
+under meldingen, slik at du enkelt kan åpne kilden og verifisere innholdet.
+
+Eksempel:
+
+```
+AI-Revi: Husk å dokumentere risikovurderingen i henhold til ISA 315.
+
+Kilder og referanser:
+[ISA 315] [Revisorloven] [balanse_2023.pdf]
+```
+
 ## Support
 
 For technical support or questions about AI Revy, please contact the development team.
