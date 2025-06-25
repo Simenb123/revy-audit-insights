@@ -1,8 +1,7 @@
 
-import { supabase } from './supabase.ts';
 import { log } from '../_shared/log.ts';
 
-export async function seedArticleTags() {
+export async function seedArticleTags(supabase: any) {
   log('🏷️ Adding tags to existing articles using linking table...');
   
   const articles = [

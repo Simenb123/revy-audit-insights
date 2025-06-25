@@ -24,6 +24,7 @@ import { getCachedResponse, cacheResponse } from './lib/cache.ts'
 import { seedArticleTags } from './lib/seed-article-tags.ts'
 import { validateAIResponse } from './lib/response-validator.ts'
 import { getVariantContextualTips } from './lib/variant-handler.ts'
+import { getSupabase } from './lib/supabase.ts'
 
 serve(async (req) => {
   log('🤖 AI-Revi Chat function started with enhanced document reading support');
@@ -33,6 +34,7 @@ serve(async (req) => {
   }
 
   try {
+    const supabase = getSupabase(req)
     let requestBody;
     try {
       const bodyText = await req.text();
@@ -110,7 +112,7 @@ serve(async (req) => {
     if (isKnowledgeQuery) {
       log('🏷️ Knowledge query detected, ensuring article tags are seeded...');
       try {
-        await seedArticleTags();
+        await seedArticleTags(supabase);
       } catch (error) {
         log('⚠️ Tag seeding failed, continuing with query:', error.message);
       }
@@ -124,7 +126,7 @@ serve(async (req) => {
       userRole, 
       variantName: selectedVariant?.name 
     });
-    const cachedResponse = await getCachedResponse(cacheKey, userId);
+    const cachedResponse = await getCachedResponse(supabase, cacheKey, userId);
     
     if (cachedResponse) {
       log('✅ Cache hit for variant-aware request!', { 
@@ -150,8 +152,9 @@ serve(async (req) => {
     if (!enhancedSystemPrompt) {
       // Build enhanced context with variant and document support
       const enhancedContext = await buildEnhancedContextWithVariant(
-        message, 
-        context, 
+        supabase,
+        message,
+        context,
         clientData,
         selectedVariant
       );
@@ -346,7 +349,7 @@ serve(async (req) => {
     // Log usage if user is authenticated
     if (userId && data.usage) {
       try {
-        await logUsage({
+        await logUsage(supabase, {
           userId,
           model: selectedModel,
           promptTokens: data.usage.prompt_tokens,
@@ -367,7 +370,7 @@ serve(async (req) => {
     // Cache the response with variant awareness
     if (userId) {
       try {
-        await cacheResponse(cacheKey, aiResponse, userId, clientData?.id, selectedModel);
+        await cacheResponse(supabase, cacheKey, aiResponse, userId, clientData?.id, selectedModel);
         log('✅ Document-enhanced response cached successfully');
       } catch (error) {
         console.error('❌ Failed to cache response:', error);

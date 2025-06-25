@@ -1,4 +1,3 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { searchClientDocuments, DocumentSearchResult } from './document-search.ts';
 import { log } from '../_shared/log.ts';
 
@@ -10,6 +9,7 @@ export interface EnhancedContext {
 }
 
 export const buildEnhancedContextWithVariant = async (
+  supabase: any,
   message: string,
   context: string,
   clientData: any,
@@ -21,20 +21,7 @@ export const buildEnhancedContextWithVariant = async (
     hasClientData: !!clientData 
   });
 
-  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-  const supabase = createClient(supabaseUrl, supabaseKey);
-
-  // Attempt to retrieve the current session token if it exists
-  let authToken = supabaseKey;
-  try {
-    const { data } = await supabase.auth.getSession();
-    if (data?.session?.access_token) {
-      authToken = data.session.access_token;
-    }
-  } catch (sessionError) {
-    log('⚠️ No session token available, using service role key');
-  }
+  // Authorization header is included in the Supabase client
 
   const enhancedContext: any = {
     knowledge: null,
@@ -55,10 +42,7 @@ export const buildEnhancedContextWithVariant = async (
     log('📤 Sending knowledge search request:', knowledgeRequestBody);
 
     const knowledgeResponse = await supabase.functions.invoke('knowledge-search', {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${authToken}`
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: knowledgeRequestBody
     });
 

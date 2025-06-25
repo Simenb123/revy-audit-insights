@@ -1,9 +1,8 @@
 
-import { supabase } from './supabase.ts';
 import { log } from '../_shared/log.ts';
 
 // Test function to verify knowledge search functionality
-export async function testKnowledgeAccess() {
+export async function testKnowledgeAccess(supabase: any) {
   log('🧪 Testing knowledge database access...');
   
   try {

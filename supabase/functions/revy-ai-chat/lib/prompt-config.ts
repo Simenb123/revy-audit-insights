@@ -1,5 +1,4 @@
 
-import { supabase } from './supabase.ts';
 import { log } from '../_shared/log.ts';
 
 type ContextPrompts = {
@@ -10,7 +9,7 @@ type ContextPrompts = {
   'general': string;
 };
 
-export async function getLatestPromptConfiguration() {
+export async function getLatestPromptConfiguration(supabase: any) {
   try {
     log('🔧 Loading latest prompt configuration from database...');
     

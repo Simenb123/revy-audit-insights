@@ -1,13 +1,7 @@
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 import { log } from '../_shared/log.ts';
 
-const supabase = createClient(
-  Deno.env.get('SUPABASE_URL') ?? '',
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-);
-
-export async function fetchEnhancedClientContext(clientId: string) {
+export async function fetchEnhancedClientContext(supabase: any, clientId: string) {
   log('🔍 Fetching enhanced client context for:', clientId);
   
   try {
@@ -68,7 +62,7 @@ Gjennomsnittlig AI-sikkerhet: ${Math.round(documentInsights.avgConfidence * 100)
   }
 }
 
-export async function searchDocumentContent(clientId: string, query: string) {
+export async function searchDocumentContent(supabase: any, clientId: string, query: string) {
   log('🔍 Searching document content for client:', clientId, 'query:', query);
   
   try {
@@ -109,7 +103,7 @@ export async function searchDocumentContent(clientId: string, query: string) {
   }
 }
 
-export async function findDocumentByReference(clientId: string, reference: string) {
+export async function findDocumentByReference(supabase: any, clientId: string, reference: string) {
   log('🔍 Finding document by reference in edge function:', clientId, reference);
   
   try {

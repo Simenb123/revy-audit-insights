@@ -4,6 +4,5 @@ The following edge functions still use `SUPABASE_SERVICE_ROLE_KEY` because they 
 
 - **syncKunngjoring** – runs as a scheduled job to fetch announcements for all clients and insert them into the database. No user context is available so a service role is required.
 - **setup-storage** – manages creation of the `client-documents` storage bucket. Storage administration requires service role privileges.
-- **revy-ai-chat** (and supporting modules) – accesses knowledge articles and client documents across organizations without verifying JWTs. It relies on the service role key to bypass row level security during chat operations.
 
-All other functions now create Supabase clients using the caller's JWT via the `Authorization` header.
+All other functions, including **revy-ai-chat**, create Supabase clients using the caller's JWT via the `Authorization` header. The service role key should only be used for scheduled jobs or admin-restricted endpoints.

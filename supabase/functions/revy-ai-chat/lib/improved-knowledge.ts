@@ -1,5 +1,4 @@
 
-import { supabase } from './supabase.ts';
 import { extractIntelligentKeywords } from './utils.ts';
 import { log } from '../_shared/log.ts';
 
@@ -33,8 +32,9 @@ interface EnhancedKnowledgeResult {
 }
 
 export async function searchKnowledgeIntelligently(
-  message: string, 
-  context: string, 
+  supabase: any,
+  message: string,
+  context: string,
   clientData?: any
 ): Promise<EnhancedKnowledgeResult> {
   try {

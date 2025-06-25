@@ -1,5 +1,4 @@
 
-import { supabase } from './supabase.ts';
 import { log } from '../_shared/log.ts';
 
 async function getEmbedding(text: string, openAIApiKey: string) {
@@ -129,7 +128,11 @@ export const scoreArticleRelevance = (articles: any[], searchTerms: string[]): a
     .sort((a, b) => b.relevanceScore - a.relevanceScore);
 };
 
-export async function searchRelevantKnowledge(message: string, context: string) {
+export async function searchRelevantKnowledge(
+  supabase: any,
+  message: string,
+  context: string
+) {
   try {
     log(`🔎 Starting knowledge search for: "${message}" in context: "${context}"`);
     
@@ -176,15 +179,19 @@ export async function searchRelevantKnowledge(message: string, context: string) 
     
     // Fallback to improved keyword search
     log('🔄 Using keyword search');
-    return keywordSearch(message, context);
+      return keywordSearch(supabase, message, context);
 
   } catch (error) {
     console.error('💥 Error in searchRelevantKnowledge:', error);
-    return keywordSearch(message, context);
+    return keywordSearch(supabase, message, context);
   }
 }
 
-async function keywordSearch(message: string, context: string) {
+async function keywordSearch(
+  supabase: any,
+  message: string,
+  context: string
+) {
   log(`🔑 Starting keyword search for: "${message}"`);
   
   const searchTerms = extractSearchTerms(message, context);

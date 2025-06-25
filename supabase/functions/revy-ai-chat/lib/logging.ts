@@ -1,5 +1,4 @@
 
-import { supabase } from './supabase.ts';
 import { log } from '../_shared/log.ts';
 
 export interface UsageLogData {
@@ -15,7 +14,7 @@ export interface UsageLogData {
   contextType: string;
 }
 
-export async function logUsage(data: UsageLogData) {
+export async function logUsage(supabase: any, data: UsageLogData) {
   try {
     const { error } = await supabase
       .from('ai_usage_logs')
