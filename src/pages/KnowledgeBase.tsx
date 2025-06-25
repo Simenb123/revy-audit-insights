@@ -14,6 +14,7 @@ import SecretTrainingArea from '@/components/Knowledge/SecretTrainingArea';
 import AuditActionGenerator from '@/components/AIRevyAdmin/AuditActionGenerator';
 
 const KnowledgeBase = () => {
+  const showAdvanced = import.meta.env.VITE_KNOWLEDGE_ADMIN_ADVANCED === 'true';
   return (
     <div className="container mx-auto py-6 space-y-6">
       <Routes>
@@ -27,7 +28,7 @@ const KnowledgeBase = () => {
         <Route path="favoritter" element={<MyFavorites />} />
         <Route path="sok" element={<SearchResults />} />
         <Route path="upload" element={<PDFUploadManager />} />
-        <Route path="admin" element={<KnowledgeAdminPanel />} />
+        <Route path="admin" element={<KnowledgeAdminPanel showAdvanced={showAdvanced} />} />
         <Route path="hemmelig-ai-trening" element={<SecretTrainingArea />} />
         <Route path="revisjonshandlinger" element={<AuditActionGenerator />} />
       </Routes>
