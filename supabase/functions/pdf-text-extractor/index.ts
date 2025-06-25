@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { log } from "../_shared/log.ts";
+import { getSupabase } from "../_shared/supabaseClient.ts";
+import { fetchDocumentMetadata, updateExtractionStatus } from "../_shared/document.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -68,20 +69,16 @@ serve(async (req) => {
       });
     }
 
-    const supabaseAdmin = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: req.headers.get('Authorization')! } }
-    });
+    const supabaseAdmin = getSupabase(req);
     log('✅ [PDF-EXTRACTOR] Supabase client initialized');
 
     // Step 3: Update status to 'processing'
     log('🔄 [PDF-EXTRACTOR] Updating document status to processing...');
-    const { error: statusError } = await supabaseAdmin
-      .from('client_documents_files')
-      .update({ 
-        text_extraction_status: 'processing',
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', documentId);
+    const { error: statusError } = await updateExtractionStatus(
+      supabaseAdmin,
+      documentId,
+      'processing'
+    );
 
     if (statusError) {
       console.error('❌ [PDF-EXTRACTOR] Error updating status to processing:', statusError);
@@ -99,11 +96,10 @@ serve(async (req) => {
 
     // Step 4: Fetch document to get file_path
     log('🔄 [PDF-EXTRACTOR] Fetching document metadata...');
-    const { data: document, error: docError } = await supabaseAdmin
-      .from('client_documents_files')
-      .select('file_path, file_name, mime_type')
-      .eq('id', documentId)
-      .single();
+    const { data: document, error: docError } = await fetchDocumentMetadata(
+      supabaseAdmin,
+      documentId
+    );
 
     if (docError || !document) {
       console.error('❌ [PDF-EXTRACTOR] Error fetching document:', docError);
@@ -257,14 +253,12 @@ serve(async (req) => {
       console.error('❌ [PDF-EXTRACTOR] Text extraction failed:', extractionError);
       
       // Update status to failed
-      await supabaseAdmin
-        .from('client_documents_files')
-        .update({
-          text_extraction_status: 'failed',
-          extracted_text: `[Tekstekstraksjon feilet: ${extractionError.message}]`,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', documentId);
+      await updateExtractionStatus(
+        supabaseAdmin,
+        documentId,
+        'failed',
+        `[Tekstekstraksjon feilet: ${extractionError.message}]`
+      );
 
       return new Response(JSON.stringify({ 
         success: false,
@@ -278,14 +272,12 @@ serve(async (req) => {
 
     // Step 6: Update document with extracted text and 'completed' status
     log('🔄 [PDF-EXTRACTOR] Saving extracted text to database...');
-    const { error: updateError } = await supabaseAdmin
-      .from('client_documents_files')
-      .update({
-        extracted_text: extractedText,
-        text_extraction_status: 'completed',
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', documentId);
+    const { error: updateError } = await updateExtractionStatus(
+      supabaseAdmin,
+      documentId,
+      'completed',
+      extractedText
+    );
 
     if (updateError) {
       console.error('❌ [PDF-EXTRACTOR] Error saving extracted text:', updateError);
@@ -324,16 +316,13 @@ serve(async (req) => {
     // Attempt to update the status to 'failed' if a documentId was available
     if (documentId) {
       try {
-        const supabaseAdmin = createClient(
-          Deno.env.get('SUPABASE_URL') ?? '',
-          Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-          { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
+        const supabaseAdmin = getSupabase(req);
+        await updateExtractionStatus(
+          supabaseAdmin,
+          documentId,
+          'failed',
+          `[Tekstekstraksjon feilet: ${error.message}]`
         );
-        await supabaseAdmin.from('client_documents_files').update({
-          text_extraction_status: 'failed',
-          extracted_text: `[Tekstekstraksjon feilet: ${error.message}]`,
-          updated_at: new Date().toISOString()
-        }).eq('id', documentId);
         
         log('🔄 [PDF-EXTRACTOR] Status updated to failed for document:', documentId);
       } catch (updateError) {
