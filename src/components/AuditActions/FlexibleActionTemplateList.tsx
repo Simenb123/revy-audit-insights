@@ -7,12 +7,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AuditActionTemplate, AuditPhase } from '@/types/audit-actions';
+import { AuditActionTemplate } from '@/types/audit-actions';
 import { Copy, Edit, Search, Filter, Sparkles } from 'lucide-react';
 import { useSubjectAreas } from '@/hooks/knowledge/useSubjectAreas';
 import { useTags } from '@/hooks/knowledge/useTags';
 import CreateActionTemplateDialog from './CreateActionTemplateDialog';
 import EnhancedActionTemplateList from './EnhancedActionTemplateList';
+import { useTemplateFilters } from '@/hooks/audit-actions/useTemplateFilters';
 
 interface FlexibleActionTemplateListProps {
   templates: AuditActionTemplate[];
@@ -28,27 +29,19 @@ const FlexibleActionTemplateList = ({
   onEditTemplate
 }: FlexibleActionTemplateListProps) => {
   const [selectedTemplates, setSelectedTemplates] = useState<string[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [riskFilter, setRiskFilter] = useState<string>('all');
-  const [phaseFilter, setPhaseFilter] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'basic' | 'enhanced'>('enhanced');
 
   const { data: subjectAreas } = useSubjectAreas();
   const { data: tags } = useTags();
-
-  // Filter templates based on all criteria
-  const filteredTemplates = templates.filter(template => {
-    const matchesArea = !selectedArea || template.subject_area === selectedArea;
-    const matchesSearch = !searchTerm || 
-      template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      template.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      template.procedures.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesRisk = riskFilter === 'all' || template.risk_level === riskFilter;
-    const matchesPhase = phaseFilter === 'all' || 
-      template.applicable_phases.includes(phaseFilter as AuditPhase);
-    
-    return matchesArea && matchesSearch && matchesRisk && matchesPhase;
-  });
+  const {
+    searchTerm,
+    setSearchTerm,
+    riskFilter,
+    setRiskFilter,
+    phaseFilter,
+    setPhaseFilter,
+    filteredTemplates
+  } = useTemplateFilters(templates, { selectedArea });
 
   const handleTemplateSelect = (templateId: string, checked: boolean) => {
     if (checked) {
