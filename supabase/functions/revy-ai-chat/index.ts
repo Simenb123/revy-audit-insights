@@ -145,12 +145,13 @@ serve(async (req) => {
 
     // Use the enhanced system prompt if provided, otherwise build context
     let enhancedSystemPrompt = systemPrompt;
+    let enhancedContext: any = null;
     
     if (!enhancedSystemPrompt) {
       // Build enhanced context with variant and document support
-      const enhancedContext = await buildEnhancedContextWithVariant(
-        message, 
-        context, 
+      enhancedContext = await buildEnhancedContextWithVariant(
+        message,
+        context,
         clientData,
         selectedVariant
       );
@@ -287,9 +288,47 @@ serve(async (req) => {
         similarity: article.similarity,
         reference_code: article.reference_code
       }));
-      
+
       aiResponse += `\n\n<!-- KNOWLEDGE_ARTICLES: ${JSON.stringify(articleRefs)} -->`;
       console.log('📚 Injected knowledge article references into response');
+    }
+
+    // Add document reference metadata if available from context
+    if (enhancedContext?.documentSearchResults) {
+      const refs: any[] = [];
+      const { specificDocument, generalDocuments } = enhancedContext.documentSearchResults;
+
+      if (specificDocument) {
+        refs.push({
+          id: specificDocument.id,
+          fileName: specificDocument.fileName,
+          category: specificDocument.category,
+          summary: specificDocument.summary,
+          confidence: specificDocument.confidence,
+          uploadDate: specificDocument.uploadDate,
+          relevantText: specificDocument.extractedText?.substring(0, 200)
+        });
+      }
+
+      if (generalDocuments && generalDocuments.length > 0) {
+        for (const doc of generalDocuments.slice(0, 3)) {
+          refs.push({
+            id: doc.id,
+            fileName: doc.fileName,
+            category: doc.category,
+            summary: doc.summary,
+            confidence: doc.confidence,
+            uploadDate: doc.uploadDate,
+            relevantText: doc.relevantText?.substring(0, 200)
+          });
+        }
+      }
+
+      if (refs.length > 0) {
+        const docInfo = { clientId: clientData?.id, references: refs };
+        aiResponse += `\n\n<!-- DOCUMENT_REFERENCES: ${JSON.stringify(docInfo)} -->`;
+        console.log('📎 Injected document references into response');
+      }
     }
 
     // Validate and fix the AI response

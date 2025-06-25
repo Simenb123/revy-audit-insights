@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { MessageContentParser } from './MessageContentParser';
+import DocumentReferenceViewer from '@/components/ClientDocuments/DocumentReferenceViewer';
 
 interface EnhancedMessageContentParserProps {
   content: string;
@@ -18,6 +19,24 @@ const EnhancedMessageContentParser: React.FC<EnhancedMessageContentParserProps> 
   // Extract variant info if present
   const variantMatch = content.match(/<!-- VARIANT_INFO: (.*?) -->/);
   const variantInfo = variantMatch ? JSON.parse(variantMatch[1]) : null;
+
+  // Extract document references if present
+  let documentReferences: any[] = [];
+  let documentClientId: string | undefined = undefined;
+  const docRefMatch = content.match(/<!-- DOCUMENT_REFERENCES: (.*?) -->/);
+  if (docRefMatch) {
+    try {
+      const parsed = JSON.parse(docRefMatch[1]);
+      if (Array.isArray(parsed)) {
+        documentReferences = parsed;
+      } else {
+        documentReferences = parsed.references || [];
+        documentClientId = parsed.clientId;
+      }
+    } catch (err) {
+      console.error('Failed to parse document references', err);
+    }
+  }
 
   // Clean content for display (remove metadata comments)
   const cleanContent = content
@@ -39,7 +58,7 @@ const EnhancedMessageContentParser: React.FC<EnhancedMessageContentParserProps> 
           </p>
         </div>
       )}
-      
+
       {variantInfo && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 mb-3">
           <div className="flex items-center gap-2 text-blue-700">
@@ -48,7 +67,15 @@ const EnhancedMessageContentParser: React.FC<EnhancedMessageContentParserProps> 
           </div>
         </div>
       )}
-      
+
+      {documentReferences.length > 0 && (
+        <DocumentReferenceViewer
+          documents={documentReferences}
+          clientId={documentClientId}
+          title="Dokumenter fra svaret"
+        />
+      )}
+
       <MessageContentParser content={cleanContent} />
     </div>
   );
