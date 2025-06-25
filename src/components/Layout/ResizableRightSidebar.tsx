@@ -12,6 +12,9 @@ import ClientSidebarSection from './ClientSidebarSection';
 import GeneralSidebarSection from './GeneralSidebarSection';
 import LoadingErrorSection from './LoadingErrorSection';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Button } from '@/components/ui/button';
+import { motion } from 'framer-motion';
+import { MessageSquare } from 'lucide-react';
 
 import { useRightSidebar } from './RightSidebarContext';
 
@@ -73,11 +76,6 @@ const ResizableRightSidebar = () => {
     }
   };
 
-  const sidebarStyle = {
-    width: `${width}px`,
-    minWidth: '280px',
-    maxWidth: '600px'
-  };
 
   const renderContent = () => {
     if (pageType === 'admin') {
@@ -108,22 +106,38 @@ const ResizableRightSidebar = () => {
   return (
     <div className="relative flex h-full">
       <ResizableHandle onMouseDown={handleMouseDown} />
-      
-      <div className="border-l bg-background flex flex-col h-full" style={sidebarStyle}>
-        <SidebarHeader
-          title={getPageTitle()}
-          isCollapsed={isCollapsed}
-          onToggle={toggleCollapsed}
-        />
-        
+
+      <motion.div
+        className="border-l bg-background flex flex-col h-full overflow-hidden"
+        animate={{ width: isCollapsed ? 0 : width }}
+        style={{
+          minWidth: isCollapsed ? 0 : 280,
+          maxWidth: 600
+        }}
+        transition={{ type: 'spring', stiffness: 250, damping: 30 }}
+      >
         {!isCollapsed && (
-          <ScrollArea className="flex-1">
-            <div className="p-4">
-              {renderContent()}
-            </div>
-          </ScrollArea>
+          <>
+            <SidebarHeader
+              title={getPageTitle()}
+              onToggle={toggleCollapsed}
+            />
+            <ScrollArea className="flex-1">
+              <div className="p-4">
+                {renderContent()}
+              </div>
+            </ScrollArea>
+          </>
         )}
-      </div>
+      </motion.div>
+
+      {isCollapsed && (
+        <div className="w-[var(--sidebar-width-icon)] border-l bg-background flex flex-col items-center py-4">
+          <Button variant="ghost" size="icon" onClick={toggleCollapsed}>
+            <MessageSquare className="h-5 w-5" />
+          </Button>
+        </div>
+      )}
     </div>
   );
 };
