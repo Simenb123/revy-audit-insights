@@ -3,11 +3,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { log } from "../_shared/log.ts";
 import { getSupabase } from "../_shared/supabaseClient.ts";
 import { fetchDocumentMetadata, updateExtractionStatus } from "../_shared/document.ts";
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { getCors, handleCors, isOptions } from '../_shared/cors.ts';
 
 // Simple DOCX text extraction (basic implementation)
 function extractTextFromDocx(uint8Array: Uint8Array): string {
@@ -84,8 +80,13 @@ function extractTextFromXlsx(uint8Array: Uint8Array): string {
 
 serve(async (req) => {
   // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+  if (isOptions(req)) {
+    return handleCors(req);
+  }
+
+  const corsHeaders = getCors(req.headers.get('Origin'));
+  if (!corsHeaders) {
+    return new Response('Forbidden', { status: 403 });
   }
 
   let documentId: string | null = null;

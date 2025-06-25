@@ -1,11 +1,7 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { log } from "../_shared/log.ts";
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { getCors, handleCors, isOptions } from '../_shared/cors.ts';
 
 function getSupabase(req: Request) {
   const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
@@ -239,8 +235,13 @@ async function createKnowledgeArticle(conversionData: any, structuredContent: an
 
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+  if (isOptions(req)) {
+    return handleCors(req);
+  }
+
+  const corsHeaders = getCors(req.headers.get('Origin'));
+  if (!corsHeaders) {
+    return new Response('Forbidden', { status: 403 });
   }
 
   try {

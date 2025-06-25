@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { log } from "../_shared/log.ts";
+import { getCors, handleCors, isOptions } from '../_shared/cors.ts';
 
 const BRREG_API_BASE = "https://data.brreg.no/enhetsregisteret/api/enheter";
 const BRREG_ROLES_OPEN = "https://data.brreg.no/enhetsregisteret/api/roller/enhet";
@@ -15,15 +16,16 @@ function buildFetchOptions(authHeader: string | null) {
   return { headers: { 'Authorization': authHeader } } as RequestInit;
 }
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
 
 serve(async (req) => {
   // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+  if (isOptions(req)) {
+    return handleCors(req);
+  }
+
+  const corsHeaders = getCors(req.headers.get('Origin'));
+  if (!corsHeaders) {
+    return new Response('Forbidden', { status: 403 });
   }
 
   try {

@@ -1,19 +1,7 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { log } from "../_shared/log.ts"
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
-
-function isOptions(req: Request): boolean {
-  return req.method === 'OPTIONS'
-}
-
-function handleCors(): Response {
-  return new Response(null, { headers: corsHeaders })
-}
+import { getCors, handleCors, isOptions } from '../_shared/cors.ts'
 
 // Import local modules
 import { buildIntelligentSystemPromptWithVariant } from './lib/improved-prompt.ts'
@@ -29,7 +17,12 @@ serve(async (req) => {
   log('🤖 AI-Revi Chat function started with enhanced document reading support');
   
   if (isOptions(req)) {
-    return handleCors();
+    return handleCors(req);
+  }
+
+  const corsHeaders = getCors(req.headers.get('Origin'));
+  if (!corsHeaders) {
+    return new Response('Forbidden', { status: 403 });
   }
 
   try {

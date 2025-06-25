@@ -2,11 +2,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { log } from "../_shared/log.ts";
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { getCors, handleCors, isOptions } from '../_shared/cors.ts';
 
 interface DocumentCategorizationRequest {
   documentId: string;
@@ -15,8 +11,13 @@ interface DocumentCategorizationRequest {
 }
 
 serve(async (req: Request) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+  if (isOptions(req)) {
+    return handleCors(req);
+  }
+
+  const corsHeaders = getCors(req.headers.get('Origin'));
+  if (!corsHeaders) {
+    return new Response('Forbidden', { status: 403 });
   }
 
   try {

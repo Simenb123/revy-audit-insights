@@ -2,18 +2,17 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { log } from "../_shared/log.ts"
 import { callOpenAI } from "../_shared/openai.ts"
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+import { getCors, handleCors, isOptions } from '../_shared/cors.ts'
 
 serve(async (req) => {
   log('📄 Enhanced Document AI function started');
-  
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+  if (isOptions(req)) {
+    return handleCors(req);
+  }
+
+  const corsHeaders = getCors(req.headers.get('Origin'));
+  if (!corsHeaders) {
+    return new Response('Forbidden', { status: 403 });
   }
 
   try {
