@@ -11,9 +11,9 @@
   [functions.document-ai-analyzer]
     verify_jwt = true
   [functions.revy-ai-chat]
-    verify_jwt = false
+    verify_jwt = true
   [functions.syncKunngjoring]
-    verify_jwt = false
+    verify_jwt = true
   [functions.text-to-speech]
     verify_jwt = true
   [functions.voice-to-text]
