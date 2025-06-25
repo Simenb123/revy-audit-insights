@@ -1,3 +1,4 @@
+
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { searchClientDocuments, DocumentSearchResult } from './document-search.ts';
 import { log } from '../_shared/log.ts';
@@ -37,7 +38,7 @@ export const buildEnhancedContextWithVariant = async (
     log('🔍 Starting knowledge search with proper JSON body...');
     
     // Ensure we send proper JSON body to knowledge-search
-    const queryParts = [message, context, clientData?.industry, userRole]
+    const queryParts = [message, context, clientData?.industry]
       .filter(Boolean)
       .join(' ')
       .trim();
