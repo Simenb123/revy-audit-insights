@@ -1,6 +1,7 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { log } from "../_shared/log.ts"
+import { enforceRateLimit, getRateLimitId } from "../_shared/rateLimiter.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -56,13 +57,13 @@ serve(async (req) => {
       });
     }
     
-    const { 
-      message, 
-      context = 'general', 
-      history = [], 
-      clientData, 
-      userRole, 
-      sessionId, 
+    const {
+      message,
+      context = 'general',
+      history = [],
+      clientData,
+      userRole,
+      sessionId,
       userId,
       selectedVariant,
       systemPrompt,
@@ -70,6 +71,12 @@ serve(async (req) => {
       knowledgeArticles = [],
       articleTagMapping = {}
     } = requestBody;
+
+    const rateLimitResponse = await enforceRateLimit(
+      getRateLimitId(req, { userId }),
+      corsHeaders
+    )
+    if (rateLimitResponse) return rateLimitResponse
     
     log('📝 Enhanced request received:', {
       message: `${message?.substring(0, 50) || 'No message'}...`,
