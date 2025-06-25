@@ -8,7 +8,7 @@ import AiReviCard from './AiReviCard';
 
 const KnowledgeSidebarSection: React.FC = () => {
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col h-full space-y-4 pb-4">
       <KnowledgeStatusIndicator />
       
       <Card>
@@ -32,10 +32,11 @@ const KnowledgeSidebarSection: React.FC = () => {
         </CardContent>
       </Card>
 
-      <AiReviCard 
+      <AiReviCard
         context="knowledge-base"
         title="AI-Revi Assistent"
         description="Spør AI-Revi om fagstoff og artikler"
+        className="mt-auto"
       />
     </div>
   );
