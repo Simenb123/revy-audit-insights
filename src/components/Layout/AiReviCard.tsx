@@ -104,7 +104,7 @@ const AiReviCard: React.FC<AiReviCardProps> = ({
         )}
         
         {isExpanded && (
-          <div className="flex flex-col h-72">
+          <div className="flex flex-col flex-1 overflow-hidden">
             <RevyMessageList
               messages={messages}
               isTyping={isTyping}
@@ -112,15 +112,17 @@ const AiReviCard: React.FC<AiReviCardProps> = ({
             />
           </div>
         )}
-        
-        <RevyInput
-          message={message}
-          setMessage={setMessage}
-          handleSendMessage={handleSendMessage}
-          isTyping={isTyping}
-          isEmbedded={true}
-          placeholder="Spør AI-Revi..."
-        />
+
+        <div className="sticky bottom-0 bg-white border-t">
+          <RevyInput
+            message={message}
+            setMessage={setMessage}
+            handleSendMessage={handleSendMessage}
+            isTyping={isTyping}
+            isEmbedded={true}
+            placeholder="Spør AI-Revi..."
+          />
+        </div>
       </CardContent>
     </Card>
   );
