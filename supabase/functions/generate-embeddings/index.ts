@@ -8,10 +8,13 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const supabase = createClient(
-  Deno.env.get('SUPABASE_URL') ?? '',
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-);
+function getSupabase(req: Request) {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+  const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
+  return createClient(supabaseUrl, supabaseAnonKey, {
+    global: { headers: { Authorization: req.headers.get('Authorization')! } }
+  });
+}
 
 async function generateEmbedding(text: string): Promise<number[]> {
   const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
@@ -46,6 +49,7 @@ serve(async (req) => {
   }
 
   try {
+    const supabase = getSupabase(req);
     let requestBody = {};
     
     // Try to parse JSON body, but handle empty requests gracefully

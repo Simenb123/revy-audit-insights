@@ -9,15 +9,24 @@ import { useRightSidebar } from './RightSidebarContext';
 
 const AppLayout = () => {
   const [isLeftSidebarCollapsed, setIsLeftSidebarCollapsed] = useState(false);
+
   const { isCollapsed: isRightSidebarCollapsed, setIsCollapsed } = useRightSidebar();
   const { isMobileSidebarOpen, openMobileSidebar, closeMobileSidebar } = useMobileSidebar();
+
+  const {
+    isCollapsed: isRightSidebarCollapsed,
+    setIsCollapsed,
+    isHidden: isRightSidebarHidden,
+    setIsHidden
+  } = useRightSidebar();
+
 
   const toggleLeftSidebar = () => {
     setIsLeftSidebarCollapsed(!isLeftSidebarCollapsed);
   };
 
   const toggleRightSidebar = () => {
-    setIsCollapsed(v => !v);
+    setIsHidden(v => !v);
   };
 
   return (
@@ -39,10 +48,13 @@ const AppLayout = () => {
           <main className="flex-1 overflow-y-auto">
             <Outlet />
           </main>
+
           <AssistantSidebar
             isMobileSidebarOpen={isMobileSidebarOpen}
             closeMobileSidebar={closeMobileSidebar}
           />
+
+          {!isRightSidebarHidden && <ResizableRightSidebar />}
         </div>
       </div>
     </div>

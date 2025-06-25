@@ -1,0 +1,10 @@
+[
+  {
+    "id": "m1",
+    "session_id": "s1",
+    "sender": "revy",
+    "content": "Dette er et svar.\n\n<!-- KNOWLEDGE_ARTICLES: [{\"id\":\"a1\",\"title\":\"ISA 315\"},{\"id\":\"a2\",\"title\":\"ISA 330\"}] -->",
+    "metadata": {},
+    "created_at": "2024-01-01T00:00:00Z"
+  }
+]
