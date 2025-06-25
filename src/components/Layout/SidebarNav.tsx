@@ -139,7 +139,7 @@ const SidebarNav = ({ collapsed = false }: SidebarNavProps) => {
         key={item.to}
         to={item.to}
         className={cn(
-          "flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors",
+          "flex items-center gap-3 px-2 py-1 rounded-md text-sm transition-colors",
           active
             ? "bg-sidebar-accent text-sidebar-accent-foreground"
             : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
@@ -160,7 +160,7 @@ const SidebarNav = ({ collapsed = false }: SidebarNavProps) => {
             Hovedmeny
           </h3>
         )}
-        <nav className={cn("space-y-1", collapsed && "flex flex-col items-center space-y-2")}>
+        <nav aria-label="Hovedmeny" className={cn("space-y-1", collapsed && "flex flex-col items-center space-y-2")}>
           {navItems.map((item) => renderMenuItem(item))}
         </nav>
       </div>
@@ -172,7 +172,7 @@ const SidebarNav = ({ collapsed = false }: SidebarNavProps) => {
             System
           </h3>
         )}
-        <nav className={cn("space-y-1", collapsed && "flex flex-col items-center space-y-2")}>
+        <nav aria-label="System" className={cn("space-y-1", collapsed && "flex flex-col items-center space-y-2")}>
           {settingsItems.map((item) => renderMenuItem(item))}
         </nav>
       </div>
