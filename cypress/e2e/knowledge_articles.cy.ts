@@ -16,11 +16,13 @@ const page = `
     const articles = match ? JSON.parse(match[1]) : [];
     if (articles.length) {
       const container = document.createElement('div');
+      container.setAttribute('data-cy', 'kilder');
       container.innerHTML = '<p>Kilder</p>';
       const list = document.createElement('ul');
       articles.forEach(a => {
         const li = document.createElement('li');
         const link = document.createElement('a');
+        link.setAttribute('data-cy', 'kilder-link');
         link.href = '/fag/artikkel/' + a.id;
         link.textContent = a.title;
         li.appendChild(link);
@@ -36,9 +38,11 @@ const page = `
 describe('Knowledge article links', () => {
   it('shows links from metadata in Kilder section', () => {
     cy.visit('data:text/html;charset=utf-8,' + encodeURIComponent(page));
-    cy.contains('Kilder').should('be.visible');
-    cy.get('a').should('have.length', 2);
-    cy.contains('Artikkel 1');
-    cy.contains('Artikkel 2');
+    cy.get('[data-cy="kilder"]').within(() => {
+      cy.contains('Kilder').should('be.visible');
+      cy.get('[data-cy="kilder-link"]').should('have.length', 2);
+      cy.contains('Artikkel 1');
+      cy.contains('Artikkel 2');
+    });
   });
 });
