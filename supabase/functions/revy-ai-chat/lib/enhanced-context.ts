@@ -1,5 +1,10 @@
-@@ -4,71 +4,83 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { searchClientDocuments, DocumentSearchResult } from './document-search.ts';
+root@1cb9b8ccf6f8:/workspace/revy-audit-insights# nl -ba supabase/functions/revy
+-ai-chat/lib/enhanced-context.ts | sed -n '1,20p'
+     1
+     2  // deno-lint-ignore-file no-explicit-any
+     3  import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+     4  import { searchClientDocuments, DocumentSearchResult } from './document-
+search.ts';
 
 export interface EnhancedContext {
   knowledge: any;
