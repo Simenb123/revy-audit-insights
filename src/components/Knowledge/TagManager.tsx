@@ -6,7 +6,10 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Tags, Plus, Trash2, Wand2 } from 'lucide-react';
-import { useTags } from '@/hooks/knowledge/useTags';
+import createTaxonomyHooks from '@/hooks/knowledge/useTaxonomy';
+import { Tag } from '@/hooks/knowledge/useTags';
+
+const { useTaxonomies: useTags } = createTaxonomyHooks<Tag>('tags', 'Tag');
 import { useArticleTags, useConnectArticleTag, useDisconnectArticleTag } from '@/hooks/knowledge/useTagConnections';
 import { useArticlesWithRelations } from '@/hooks/knowledge/useArticleQueries';
 

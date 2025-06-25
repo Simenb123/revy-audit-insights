@@ -8,7 +8,14 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Plus, Edit, Trash2, Eye, EyeOff } from 'lucide-react';
-import { useSubjectAreas, useCreateSubjectArea, useUpdateSubjectArea, useDeleteSubjectArea, SubjectArea } from '@/hooks/knowledge/useSubjectAreas';
+import createTaxonomyHooks from '@/hooks/knowledge/useTaxonomy';
+import { useSubjectAreas, SubjectArea } from '@/hooks/knowledge/useSubjectAreas';
+
+const {
+  useCreateTaxonomy: useCreateSubjectArea,
+  useUpdateTaxonomy: useUpdateSubjectArea,
+  useDeleteTaxonomy: useDeleteSubjectArea,
+} = createTaxonomyHooks<SubjectArea>('subject_areas', 'Emneområde');
 import ConfirmDeleteDialog from './ConfirmDeleteDialog';
 
 const SubjectAreaManager = () => {

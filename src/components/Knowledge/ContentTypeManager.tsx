@@ -8,8 +8,16 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Plus, Edit, Trash2, Eye, EyeOff } from 'lucide-react';
-import { useContentTypes, useCreateContentType, useUpdateContentType, useDeleteContentType, ContentType } from '@/hooks/knowledge/useContentTypes';
+import createTaxonomyHooks from '@/hooks/knowledge/useTaxonomy';
+import { ContentType } from '@/hooks/knowledge/useContentTypes';
 import ConfirmDeleteDialog from './ConfirmDeleteDialog';
+
+const {
+  useTaxonomies: useContentTypes,
+  useCreateTaxonomy: useCreateContentType,
+  useUpdateTaxonomy: useUpdateContentType,
+  useDeleteTaxonomy: useDeleteContentType,
+} = createTaxonomyHooks<ContentType>('content_types', 'Innholdstype');
 
 const ContentTypeManager = () => {
   const [editingType, setEditingType] = useState<ContentType | null>(null);

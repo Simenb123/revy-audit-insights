@@ -18,7 +18,8 @@ import {
   Link,
   Target
 } from 'lucide-react';
-import { useContentTypes, useCreateContentType, useUpdateContentType, useDeleteContentType, type ContentType } from '@/hooks/knowledge/useContentTypes';
+import createTaxonomyHooks from '@/hooks/knowledge/useTaxonomy';
+import { type ContentType } from '@/hooks/knowledge/useContentTypes';
 import { useSubjectAreas } from '@/hooks/knowledge/useSubjectAreas';
 import { useDocumentTypeSubjectAreas, useConnectDocumentTypeSubjectArea, useDisconnectDocumentTypeSubjectArea } from '@/hooks/knowledge/useSubjectAreaConnections';
 
@@ -26,6 +27,13 @@ const EnhancedContentTypeManager = () => {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedType, setSelectedType] = useState<ContentType | null>(null);
+
+  const {
+    useTaxonomies: useContentTypes,
+    useCreateTaxonomy: useCreateContentType,
+    useUpdateTaxonomy: useUpdateContentType,
+    useDeleteTaxonomy: useDeleteContentType,
+  } = createTaxonomyHooks<ContentType>('content_types', 'Innholdstype');
 
   const { data: contentTypes = [], isLoading } = useContentTypes();
   const { data: subjectAreas = [] } = useSubjectAreas();
