@@ -79,6 +79,16 @@ For the embedded generation trigger to work properly, you may need to set custom
 - Use different Supabase projects for development and production
 - Regularly rotate API keys for security
 - Ensure your `.env` file is listed in `.gitignore`
+## Kilder og sporbarhet
+
+AI-Revi legger ved lenker til relevante artikler og dokumenter etter hvert svar. Referansene vises som klikkbare lenker under overskriften "Kilder og referanser" slik at du enkelt kan kontrollere kildene.
+
+**Eksempel**:
+
+> Revisor må dokumentere vurderingene i henhold til ISA 230.
+>
+> Kilder og referanser: [ISA 230](https://example.com/isa-230) | [Internt notat om dokumentasjon](https://example.com/notat.pdf)
+
 
 ### Service Role Usage
 
