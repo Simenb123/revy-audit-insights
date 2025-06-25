@@ -1,5 +1,11 @@
 
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
+// Deno provides fetch and other web APIs out of the box, but when this file is
+// imported in a Node environment (e.g. for unit tests) the remote XHR polyfill
+// is unnecessary and would cause a resolution error. Use a dynamic import so
+// Node simply ignores it.
+if (typeof Deno !== 'undefined') {
+  await import("https://deno.land/x/xhr@0.1.0/mod.ts");
+}
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 
@@ -30,7 +36,7 @@ async function getEmbedding(text: string, openAIApiKey: string) {
   }
 }
 
-async function keywordSearch(supabase: any, query: string) {
+export async function keywordSearch(supabase: any, query: string) {
   console.log('🔎 Enhanced keyword search for:', query);
   
   const words = query.toLowerCase().split(/\s+/).filter(word => word.length > 1);
@@ -104,41 +110,7 @@ async function keywordSearch(supabase: any, query: string) {
   }
 }
 
-function createTagMapping(articles: any[], keywords: string[]) {
-  const mapping: Record<string, any> = {};
-  
-  keywords.forEach(keyword => {
-    const keywordLower = keyword.toLowerCase();
-    let bestMatch = null;
-    let bestScore = 0;
-    
-    articles.forEach(article => {
-      let score = 0;
-      
-      if (article.title && article.title.toLowerCase().includes(keywordLower)) score += 5;
-      if (article.reference_code && article.reference_code.toLowerCase().includes(keywordLower)) score += 4;
-      if (article.summary && article.summary.toLowerCase().includes(keywordLower)) score += 2;
-      
-      if (score > bestScore) {
-        bestScore = score;
-        bestMatch = article;
-      }
-    });
-    
-    if (bestMatch && bestScore > 0) {
-      mapping[keyword] = {
-        articleSlug: bestMatch.slug,
-        articleTitle: bestMatch.title,
-        matchedTags: [],
-        relevanceScore: bestScore,
-        contentType: 'fagartikkel',
-        category: bestMatch.category?.name || 'Ukategoriseret'
-      };
-    }
-  });
-  
-  return mapping;
-}
+export { createTagMapping } from './helpers.ts';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
