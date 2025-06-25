@@ -13,21 +13,12 @@ import GeneralSidebarSection from './GeneralSidebarSection';
 import LoadingErrorSection from './LoadingErrorSection';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
-interface ResizableRightSidebarProps {
-  isCollapsed?: boolean;
-  onToggle?: () => void;
-  initialWidth?: number;
-  onWidthChange?: (width: number) => void;
-}
+import { useRightSidebar } from './RightSidebarContext';
 
-const ResizableRightSidebar = ({ 
-  isCollapsed, 
-  onToggle, 
-  initialWidth = 320,
-  onWidthChange 
-}: ResizableRightSidebarProps) => {
-  const [width, setWidth] = useState(initialWidth);
+const ResizableRightSidebar = () => {
+  const { isCollapsed, setIsCollapsed, width, setWidth } = useRightSidebar();
   const [isDragging, setIsDragging] = useState(false);
+  const toggleCollapsed = useCallback(() => setIsCollapsed(v => !v), [setIsCollapsed]);
   const location = useLocation();
   const pageType = detectPageType(location.pathname);
   const clientIdOrOrg = extractClientId(location.pathname);
@@ -46,13 +37,15 @@ const ResizableRightSidebar = ({
     setIsDragging(true);
   }, []);
 
-  const handleMouseMove = useCallback((e: MouseEvent) => {
-    if (!isDragging) return;
-    
-    const newWidth = Math.max(280, Math.min(600, window.innerWidth - e.clientX));
-    setWidth(newWidth);
-    onWidthChange?.(newWidth);
-  }, [isDragging, onWidthChange]);
+  const handleMouseMove = useCallback(
+    (e: MouseEvent) => {
+      if (!isDragging) return;
+
+      const newWidth = Math.max(280, Math.min(600, window.innerWidth - e.clientX));
+      setWidth(newWidth);
+    },
+    [isDragging, setWidth]
+  );
 
   const handleMouseUp = useCallback(() => {
     setIsDragging(false);
@@ -117,10 +110,10 @@ const ResizableRightSidebar = ({
       <ResizableHandle onMouseDown={handleMouseDown} />
       
       <div className="border-l bg-background flex flex-col h-full" style={sidebarStyle}>
-        <SidebarHeader 
+        <SidebarHeader
           title={getPageTitle()}
           isCollapsed={isCollapsed}
-          onToggle={onToggle}
+          onToggle={toggleCollapsed}
         />
         
         {!isCollapsed && (
