@@ -1,4 +1,12 @@
 import React from 'react';
+import SmartReviAssistant from '@/components/Revy/SmartReviAssistant';
+
+const AssistantSidebar = () => {
+  return (
+    <div className="h-full p-2 overflow-y-auto">
+      <SmartReviAssistant />
+    </div>
+
 import { motion, AnimatePresence } from 'framer-motion';
 import SmartReviAssistant from '@/components/Revy/SmartReviAssistant';
 import RevyAvatar from '@/components/Revy/RevyAvatar';
@@ -43,6 +51,7 @@ const AssistantSidebar: React.FC<AssistantSidebarProps> = ({ isOpen, onClose }) 
         </motion.aside>
       )}
     </AnimatePresence>
+
   );
 };
 
