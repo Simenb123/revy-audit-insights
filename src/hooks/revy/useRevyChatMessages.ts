@@ -1,19 +1,29 @@
 import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/Auth/AuthProvider';
+import { useToast } from '@/hooks/use-toast';
 import { RevyChatMessage } from '@/types/revio';
 
 export const useRevyChatMessages = (sessionId: string | null) => {
   const { session } = useAuth();
+  const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  const supabaseReady = isSupabaseConfigured && !!supabase;
+
+  useEffect(() => {
+    if (!supabaseReady) {
+      toast({ title: 'Supabase is not configured.' });
+    }
+  }, [supabaseReady, toast]);
 
   const queryKey = ['revy-chat-messages', sessionId];
 
   const { data: messages, isLoading } = useQuery({
     queryKey,
     queryFn: async () => {
-      if (!sessionId) return [];
+      if (!supabaseReady || !sessionId) return [];
       const { data, error } = await supabase
         .from('revy_chat_messages')
         .select('*')
@@ -23,14 +33,18 @@ export const useRevyChatMessages = (sessionId: string | null) => {
       if (error) throw error;
       return data as RevyChatMessage[];
     },
-    enabled: !!sessionId && !!session?.user?.id,
+    enabled: !!sessionId && !!session?.user?.id && supabaseReady,
   });
 
   const sendMessageMutation = useMutation({
     mutationFn: async (params: { content: string; sender: 'user' | 'revy', metadata?: any }) => {
+      if (!supabaseReady) {
+        toast({ title: 'Supabase is not configured.' });
+        return;
+      }
       if (!sessionId) throw new Error('No active session');
       if (!session?.user?.id) throw new Error('User not authenticated');
-      
+
       const { data, error } = await supabase
         .from('revy_chat_messages')
         .insert({
@@ -53,9 +67,9 @@ export const useRevyChatMessages = (sessionId: string | null) => {
   });
 
   useEffect(() => {
-    if (!sessionId) return;
+    if (!sessionId || !supabaseReady) return;
 
-    const channel = supabase
+    const channel = supabase!
       .channel(`revy_chat_messages:${sessionId}`)
       .on(
         'postgres_changes',
@@ -79,9 +93,11 @@ export const useRevyChatMessages = (sessionId: string | null) => {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      if (supabaseReady) {
+        supabase!.removeChannel(channel);
+      }
     };
-  }, [sessionId, queryClient, queryKey]);
+  }, [sessionId, queryClient, queryKey, supabaseReady]);
 
   return {
     messages: messages || [],

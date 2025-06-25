@@ -1,16 +1,27 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useEffect } from 'react';
+import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/Auth/AuthProvider';
+import { useToast } from '@/hooks/use-toast';
 import { RevyChatSession } from '@/types/revio';
 
 export const useRevyChatSessions = () => {
   const { session } = useAuth();
+  const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  const supabaseReady = isSupabaseConfigured && !!supabase;
+
+  useEffect(() => {
+    if (!supabaseReady) {
+      toast({ title: 'Supabase is not configured.' });
+    }
+  }, [supabaseReady, toast]);
 
   const { data: sessions, isLoading } = useQuery({
     queryKey: ['revy-chat-sessions', session?.user?.id],
     queryFn: async () => {
-      if (!session?.user?.id) return [];
+      if (!supabaseReady || !session?.user?.id) return [];
       const { data, error } = await supabase
         .from('revy_chat_sessions')
         .select('*')
@@ -20,11 +31,15 @@ export const useRevyChatSessions = () => {
       if (error) throw error;
       return data as RevyChatSession[];
     },
-    enabled: !!session?.user?.id,
+    enabled: !!session?.user?.id && supabaseReady,
   });
 
   const createSessionMutation = useMutation({
     mutationFn: async (params: { title?: string; context?: string; clientId?: string }) => {
+      if (!supabaseReady) {
+        toast({ title: 'Supabase is not configured.' });
+        return;
+      }
       if (!session?.user?.id) throw new Error('User not authenticated');
       const { data, error } = await supabase
         .from('revy_chat_sessions')
