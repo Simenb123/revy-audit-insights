@@ -8,18 +8,11 @@ import AppBreadcrumb from './AppBreadcrumb';
 
 interface AppHeaderProps {
   onToggleRightSidebar?: () => void;
-
   isRightSidebarCollapsed?: boolean;
   onOpenMobileSidebar?: () => void;
 }
 
 const AppHeader = ({ onToggleRightSidebar, isRightSidebarCollapsed, onOpenMobileSidebar }: AppHeaderProps) => {
-
-  isRightSidebarCollapsed?: boolean; // kept for backward compatibility
-}
-
-const AppHeader = ({ onToggleRightSidebar }: AppHeaderProps) => {
-
   const isMobile = useIsMobile();
 
   return (

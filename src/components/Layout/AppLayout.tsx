@@ -18,7 +18,6 @@ const AppLayout = () => {
   } = useRightSidebar();
   const { isMobileSidebarOpen, openMobileSidebar, closeMobileSidebar } = useMobileSidebar();
 
-
   const toggleLeftSidebar = () => {
     setIsLeftSidebarCollapsed(!isLeftSidebarCollapsed);
   };
@@ -51,8 +50,6 @@ const AppLayout = () => {
             isMobileSidebarOpen={isMobileSidebarOpen}
             closeMobileSidebar={closeMobileSidebar}
           />
-
-          {!isRightSidebarHidden && <ResizableRightSidebar />}
         </div>
       </div>
     </div>
