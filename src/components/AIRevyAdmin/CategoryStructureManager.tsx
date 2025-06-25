@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -28,8 +29,26 @@ import {
   useDeleteKnowledgeCategory,
 } from '@/hooks/knowledge/useKnowledgeCategories';
 
+interface Category {
+  id: string;
+  name: string;
+  description?: string;
+  display_order: number;
+  icon?: string;
+  children?: Category[];
+}
+
+interface CategoryFormData {
+  name: string;
+  description: string;
+  icon: string;
+  parent_category_id: string;
+  display_order: number;
+  applicable_phases: string[];
+}
+
 const CategoryStructureManager = () => {
-  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
 
@@ -38,13 +57,13 @@ const CategoryStructureManager = () => {
   const updateCategory = useUpdateKnowledgeCategory();
   const deleteCategory = useDeleteKnowledgeCategory();
 
-  const handleCreateCategory = (formData) => {
+  const handleCreateCategory = (formData: CategoryFormData) => {
     createCategory.mutate(formData, {
       onSuccess: () => setCreateDialogOpen(false),
     });
   };
 
-  const handleEditCategory = (formData) => {
+  const handleEditCategory = (formData: CategoryFormData) => {
     if (!selectedCategory) return;
     updateCategory.mutate(
       { id: selectedCategory.id, ...formData },
@@ -52,16 +71,16 @@ const CategoryStructureManager = () => {
     );
   };
 
-  const handleDeleteCategory = (categoryId) => {
+  const handleDeleteCategory = (categoryId: string) => {
     deleteCategory.mutate(categoryId);
   };
 
-  const handleMoveCategory = (categoryId, direction) => {
+  const handleMoveCategory = (categoryId: string, direction: 'up' | 'down') => {
     console.log('Moving category:', categoryId, direction);
     toast.success('Kategori flyttet');
   };
 
-  const handleDuplicateCategory = (categoryId) => {
+  const handleDuplicateCategory = (categoryId: string) => {
     console.log('Duplicating category:', categoryId);
     toast.success('Kategori duplisert');
   };
@@ -204,7 +223,18 @@ const CategoryStructureManager = () => {
   );
 };
 
-const CategoryTreeItem = ({ 
+interface CategoryTreeItemProps {
+  category: Category;
+  onSelect: (category: Category) => void;
+  onEdit: () => void;
+  onDelete: (id: string) => void;
+  onMove: (id: string, direction: 'up' | 'down') => void;
+  onDuplicate: (id: string) => void;
+  selected: boolean;
+  depth?: number;
+}
+
+const CategoryTreeItem: React.FC<CategoryTreeItemProps> = ({ 
   category, 
   onSelect, 
   onEdit, 
@@ -240,7 +270,7 @@ const CategoryTreeItem = ({
         </div>
       </div>
       
-      {expanded && category.children && category.children.map((child) => (
+      {expanded && category.children && category.children.map((child: Category) => (
         <CategoryTreeItem
           key={child.id}
           category={child}
@@ -257,17 +287,22 @@ const CategoryTreeItem = ({
   );
 };
 
-const CategoryForm = ({ category, onSubmit }: { category?: any; onSubmit: any }) => {
-  const [formData, setFormData] = useState({
+interface CategoryFormProps {
+  category?: Category | null;
+  onSubmit: (formData: CategoryFormData) => void;
+}
+
+const CategoryForm: React.FC<CategoryFormProps> = ({ category, onSubmit }) => {
+  const [formData, setFormData] = useState<CategoryFormData>({
     name: category?.name || '',
     description: category?.description || '',
     icon: category?.icon || '',
-    parent_category_id: category?.parent_category_id || 'none',
+    parent_category_id: 'none',
     display_order: category?.display_order || 0,
-    applicable_phases: category?.applicable_phases || []
+    applicable_phases: []
   });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSubmit(formData);
   };

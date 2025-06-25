@@ -20,6 +20,30 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+type HealthStatus = 'excellent' | 'good' | 'warning' | 'error';
+
+interface DatabaseStats {
+  totalTables: number;
+  totalRecords: number;
+  databaseSize: string;
+  lastBackup: string;
+  health: HealthStatus;
+}
+
+interface TableStat {
+  name: string;
+  records: number;
+  size: string;
+  health: HealthStatus;
+}
+
+interface BackupItem {
+  date: string;
+  size: string;
+  type: string;
+  status: string;
+}
+
 const DatabaseTools = () => {
   const [backupProgress, setBackupProgress] = useState(0);
   const [restoreProgress, setRestoreProgress] = useState(0);
@@ -29,7 +53,7 @@ const DatabaseTools = () => {
   const [isValidating, setIsValidating] = useState(false);
 
   // Mock database statistics
-  const dbStats = {
+  const dbStats: DatabaseStats = {
     totalTables: 45,
     totalRecords: 125684,
     databaseSize: '2.3 GB',
@@ -37,7 +61,7 @@ const DatabaseTools = () => {
     health: 'excellent'
   };
 
-  const tableStats = [
+  const tableStats: TableStat[] = [
     { name: 'knowledge_articles', records: 1245, size: '45 MB', health: 'good' },
     { name: 'client_documents', records: 8934, size: '890 MB', health: 'excellent' },
     { name: 'audit_actions', records: 2346, size: '12 MB', health: 'good' },
@@ -99,7 +123,7 @@ const DatabaseTools = () => {
     }, 400);
   };
 
-  const getHealthColor = (health) => {
+  const getHealthColor = (health: HealthStatus): string => {
     switch (health) {
       case 'excellent': return 'text-green-600';
       case 'good': return 'text-blue-600';
@@ -109,8 +133,8 @@ const DatabaseTools = () => {
     }
   };
 
-  const getHealthBadge = (health) => {
-    const colors = {
+  const getHealthBadge = (health: HealthStatus) => {
+    const colors: Record<HealthStatus, string> = {
       excellent: 'bg-green-100 text-green-800',
       good: 'bg-blue-100 text-blue-800',
       warning: 'bg-yellow-100 text-yellow-800',
@@ -171,7 +195,13 @@ const DatabaseTools = () => {
   );
 };
 
-const DatabaseOverview = ({ stats, tableStats, getHealthBadge }) => {
+interface DatabaseOverviewProps {
+  stats: DatabaseStats;
+  tableStats: TableStat[];
+  getHealthBadge: (health: HealthStatus) => JSX.Element;
+}
+
+const DatabaseOverview: React.FC<DatabaseOverviewProps> = ({ stats, tableStats, getHealthBadge }) => {
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-semibold">Database Oversikt</h3>
@@ -213,7 +243,7 @@ const DatabaseOverview = ({ stats, tableStats, getHealthBadge }) => {
       <div>
         <h4 className="text-md font-semibold mb-3">Største tabeller</h4>
         <div className="space-y-2">
-          {tableStats.map((table) => (
+          {tableStats.map((table: TableStat) => (
             <div key={table.name} className="flex items-center justify-between p-3 border rounded">
               <div className="flex-1">
                 <div className="font-medium">{table.name}</div>
@@ -230,7 +260,16 @@ const DatabaseOverview = ({ stats, tableStats, getHealthBadge }) => {
   );
 };
 
-const BackupRestore = ({ 
+interface BackupRestoreProps {
+  onBackup: () => void;
+  onRestore: () => void;
+  backupProgress: number;
+  restoreProgress: number;
+  isBackingUp: boolean;
+  isRestoring: boolean;
+}
+
+const BackupRestore: React.FC<BackupRestoreProps> = ({ 
   onBackup, 
   onRestore, 
   backupProgress, 
@@ -364,7 +403,13 @@ const BackupRestore = ({
   );
 };
 
-const MaintenanceTools = ({ onValidation, validationProgress, isValidating }) => {
+interface MaintenanceToolsProps {
+  onValidation: () => void;
+  validationProgress: number;
+  isValidating: boolean;
+}
+
+const MaintenanceTools: React.FC<MaintenanceToolsProps> = ({ onValidation, validationProgress, isValidating }) => {
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-semibold">Database Vedlikehold</h3>

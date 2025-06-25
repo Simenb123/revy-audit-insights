@@ -18,7 +18,7 @@ import { Link } from 'react-router-dom';
 
 const AdminSidebarContent = () => {
   return (
-    <Accordion type="multiple" collapsible className="space-y-4">
+    <Accordion type="multiple" className="space-y-4">
       <AccordionItem value="status" className="border-none">
         <Card>
           <CardHeader>

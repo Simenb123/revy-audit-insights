@@ -1,109 +1,98 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import type { Category } from '@/types/classification';
 
-// Build hierarchical structure from flat array
-const buildTree = (cats: Category[], parentId: string | null = null): Category[] => {
-  return cats
-    .filter(c => c.parent_category_id === parentId)
-    .sort((a, b) => a.display_order - b.display_order)
-    .map(c => ({ ...c, children: buildTree(cats, c.id) }));
-};
+export interface KnowledgeCategory {
+  id: string;
+  name: string;
+  description?: string;
+  icon?: string;
+  parent_category_id?: string;
+  display_order: number;
+  applicable_phases?: string[];
+  created_at: string;
+  updated_at: string;
+  children?: KnowledgeCategory[];
+}
 
 export const useKnowledgeCategories = () => {
   return useQuery({
     queryKey: ['knowledge-categories'],
-    queryFn: async (): Promise<Category[]> => {
+    queryFn: async () => {
+      if (!supabase) throw new Error('Supabase not initialized');
+      
       const { data, error } = await supabase
         .from('knowledge_categories')
         .select('*')
-        .order('parent_category_id', { ascending: true })
-        .order('display_order', { ascending: true });
+        .order('display_order');
 
-      if (error) {
-        console.error('Error fetching knowledge categories:', error);
-        throw error;
-      }
-
-      return buildTree(data || []);
+      if (error) throw error;
+      return data as KnowledgeCategory[];
     },
-    staleTime: 1000 * 60 * 10,
   });
 };
 
 export const useCreateKnowledgeCategory = () => {
   const queryClient = useQueryClient();
-
+  
   return useMutation({
-    mutationFn: async (category: Omit<Category, 'id' | 'created_at' | 'updated_at'>) => {
-      const payload = {
-        name: category.name,
-        description: category.description || null,
-        icon: category.icon || null,
-        parent_category_id: category.parent_category_id || null,
-        display_order: category.display_order,
-        applicable_phases: category.applicable_phases || null,
-      };
-
+    mutationFn: async (categoryData: Omit<KnowledgeCategory, 'id' | 'created_at' | 'updated_at'>) => {
+      if (!supabase) throw new Error('Supabase not initialized');
+      
       const { data, error } = await supabase
         .from('knowledge_categories')
-        .insert(payload)
+        .insert(categoryData)
         .select()
         .single();
 
       if (error) throw error;
-      return data as Category;
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['knowledge-categories'] });
       toast.success('Kategori opprettet');
     },
-    onError: (error: any) => {
-      toast.error('Feil ved opprettelse: ' + error.message);
+    onError: (error) => {
+      toast.error('Feil ved opprettelse av kategori: ' + error.message);
     },
   });
 };
 
 export const useUpdateKnowledgeCategory = () => {
   const queryClient = useQueryClient();
-
+  
   return useMutation({
-    mutationFn: async ({ id, ...updates }: Partial<Category> & { id: string }) => {
-      const payload = {
-        name: updates.name,
-        description: updates.description || null,
-        icon: updates.icon || null,
-        parent_category_id: updates.parent_category_id || null,
-        display_order: updates.display_order,
-        applicable_phases: updates.applicable_phases || null,
-      };
-
+    mutationFn: async ({ id, ...updateData }: Partial<KnowledgeCategory> & { id: string }) => {
+      if (!supabase) throw new Error('Supabase not initialized');
+      
       const { data, error } = await supabase
         .from('knowledge_categories')
-        .update(payload)
+        .update(updateData)
         .eq('id', id)
         .select()
         .single();
 
       if (error) throw error;
-      return data as Category;
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['knowledge-categories'] });
       toast.success('Kategori oppdatert');
     },
-    onError: (error: any) => {
-      toast.error('Feil ved oppdatering: ' + error.message);
+    onError: (error) => {
+      toast.error('Feil ved oppdatering av kategori: ' + error.message);
     },
   });
 };
 
 export const useDeleteKnowledgeCategory = () => {
   const queryClient = useQueryClient();
-
+  
   return useMutation({
     mutationFn: async (id: string) => {
+      if (!supabase) throw new Error('Supabase not initialized');
+      
       const { error } = await supabase
         .from('knowledge_categories')
         .delete()
@@ -115,10 +104,8 @@ export const useDeleteKnowledgeCategory = () => {
       queryClient.invalidateQueries({ queryKey: ['knowledge-categories'] });
       toast.success('Kategori slettet');
     },
-    onError: (error: any) => {
-      toast.error('Feil ved sletting: ' + error.message);
+    onError: (error) => {
+      toast.error('Feil ved sletting av kategori: ' + error.message);
     },
   });
 };
-
-export type { Category };
