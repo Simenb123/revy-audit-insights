@@ -2,6 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { log } from "../_shared/log.ts";
 import { getSupabase } from "../_shared/supabaseClient.ts";
 import { fetchDocumentMetadata, updateExtractionStatus } from "../_shared/document.ts";
+import { getUserFromRequest, hasPermittedRole } from "../_shared/auth.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -37,6 +38,15 @@ serve(async (req) => {
     }
 
     documentId = body.documentId;
+
+    const user = getUserFromRequest(req);
+    const permittedRoles = ['admin', 'partner', 'manager', 'employee'];
+    if (!hasPermittedRole(user, permittedRoles)) {
+      return new Response(JSON.stringify({ error: 'Forbidden' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     if (!documentId) {
       console.error('❌ [PDF-EXTRACTOR] No documentId provided in request');
