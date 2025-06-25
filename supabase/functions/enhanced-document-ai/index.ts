@@ -1,6 +1,7 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { log } from "../_shared/log.ts"
+import { callOpenAI } from "../_shared/openai.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -68,31 +69,19 @@ Gi meg følgende informasjon som JSON:
     }
 
     // Call OpenAI for analysis
-    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          { 
-            role: 'system', 
-            content: 'Du er en ekspert på dokumentanalyse for revisjon. Returner alltid gyldig JSON.' 
-          },
-          { role: 'user', content: analysisPrompt }
-        ],
-        max_tokens: 1000,
-        temperature: 0.3,
-      }),
+    const data = await callOpenAI('chat/completions', {
+      model: 'gpt-4o-mini',
+      messages: [
+        {
+          role: 'system',
+          content: 'Du er en ekspert på dokumentanalyse for revisjon. Returner alltid gyldig JSON.'
+        },
+        { role: 'user', content: analysisPrompt }
+      ],
+      max_tokens: 1000,
+      temperature: 0.3,
     });
 
-    if (!openaiResponse.ok) {
-      throw new Error(`OpenAI API error: ${openaiResponse.status}`);
-    }
-
-    const data = await openaiResponse.json();
     let analysisText = data.choices?.[0]?.message?.content;
 
     if (!analysisText) {
