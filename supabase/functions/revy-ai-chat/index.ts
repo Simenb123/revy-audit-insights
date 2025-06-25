@@ -25,7 +25,7 @@ import { seedArticleTags } from './lib/seed-article-tags.ts'
 import { validateAIResponse } from './lib/response-validator.ts'
 import { getVariantContextualTips } from './lib/variant-handler.ts'
 
-serve(async (req) => {
+export const handler = async (req: Request): Promise<Response> => {
   log('🤖 AI-Revi Chat function started with enhanced document reading support');
   
   if (isOptions(req)) {
@@ -435,7 +435,11 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
-});
+};
+
+if (import.meta.main) {
+  serve(handler);
+}
 
 function calculateCost(model: string, promptTokens: number, completionTokens: number): number {
   const costs = {
