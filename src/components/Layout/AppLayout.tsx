@@ -23,28 +23,26 @@ const AppLayout = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background w-full">
-      <div className="flex h-screen">
-        <Sidebar 
+    <div className="min-h-screen bg-background w-full flex flex-col">
+      <AppHeader
+        onToggleRightSidebar={toggleRightSidebar}
+        isRightSidebarCollapsed={isRightSidebarCollapsed}
+      />
+      <div className="flex flex-1">
+        <Sidebar
           isCollapsed={isLeftSidebarCollapsed}
           onToggle={toggleLeftSidebar}
         />
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <AppHeader 
-            onToggleRightSidebar={toggleRightSidebar}
-            isRightSidebarCollapsed={isRightSidebarCollapsed}
+        <div className="flex-1 flex overflow-hidden">
+          <main className="flex-1 overflow-y-auto">
+            <Outlet />
+          </main>
+          <ResizableRightSidebar
+            isCollapsed={isRightSidebarCollapsed}
+            onToggle={toggleRightSidebar}
+            initialWidth={rightSidebarWidth}
+            onWidthChange={handleRightSidebarWidthChange}
           />
-          <div className="flex-1 flex overflow-hidden">
-            <main className="flex-1 overflow-y-auto">
-              <Outlet />
-            </main>
-            <ResizableRightSidebar 
-              isCollapsed={isRightSidebarCollapsed}
-              onToggle={toggleRightSidebar}
-              initialWidth={rightSidebarWidth}
-              onWidthChange={handleRightSidebarWidthChange}
-            />
-          </div>
         </div>
       </div>
     </div>
