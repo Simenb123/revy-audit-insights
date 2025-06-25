@@ -20,5 +20,10 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  envPrefix: ['VITE_', 'SUPABASE_', 'OPENAI_', 'ELEVENLABS_'],
+  envPrefix: [
+    'VITE_',
+    'SUPABASE_URL',
+    'SUPABASE_ANON_KEY',
+    'SUPABASE_FUNCTIONS_URL',
+  ],
 }));
