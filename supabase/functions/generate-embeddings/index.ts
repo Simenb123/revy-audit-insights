@@ -60,14 +60,14 @@ serve(async (req) => {
         requestBody = JSON.parse(text);
       }
     } catch (parseError) {
-      log('No JSON body provided, proceeding with batch processing');
+      log({ message: 'No JSON body provided, proceeding with batch processing' });
     }
     
     const { article_id } = requestBody as { article_id?: string };
     
     if (article_id) {
       // Handle single article embedding from trigger
-      log(`🚀 Generating embedding for article: ${article_id}`);
+      log({ message: `🚀 Generating embedding for article: ${article_id}` });
       
       const { data: article, error: fetchError } = await supabase
         .from('knowledge_articles')
@@ -99,7 +99,7 @@ serve(async (req) => {
         throw updateError;
       }
 
-      log(`✅ Updated embedding for: "${article.title}"`);
+      log({ message: `✅ Updated embedding for: "${article.title}"` });
       
       return new Response(JSON.stringify({ 
         success: true,
@@ -111,7 +111,7 @@ serve(async (req) => {
     }
 
     // Batch processing (existing functionality)
-    log('🚀 Starting embedding generation for articles');
+    log({ message: '🚀 Starting embedding generation for articles' });
 
     // Get articles that need embeddings
     const { data: articles, error: fetchError } = await supabase.rpc('queue_articles_for_embedding');
@@ -122,7 +122,7 @@ serve(async (req) => {
     }
 
     if (!articles || articles.length === 0) {
-      log('✅ No articles need embeddings');
+      log({ message: '✅ No articles need embeddings' });
       return new Response(JSON.stringify({ 
         message: 'No articles need embeddings', 
         processed: 0 

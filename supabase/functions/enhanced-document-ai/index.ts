@@ -10,7 +10,7 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  log('📄 Enhanced Document AI function started');
+  log({ message: '📄 Enhanced Document AI function started' });
   
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -19,7 +19,8 @@ serve(async (req) => {
   try {
     const { document_text, file_name, client_id, variant_config } = await req.json();
     
-    log('📝 Processing document analysis:', {
+    log({
+      message: '📝 Processing document analysis',
       fileName: file_name,
       clientId: client_id,
       hasText: !!document_text,
@@ -114,7 +115,8 @@ Gi meg følgende informasjon som JSON:
       };
     }
 
-    log('✅ Document analysis completed:', {
+    log({
+      message: '✅ Document analysis completed',
       category: analysisResult.suggested_category,
       confidence: analysisResult.confidence_score,
       subjectAreas: analysisResult.suggested_subject_areas?.length || 0

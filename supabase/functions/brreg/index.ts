@@ -38,7 +38,7 @@ serve(async (req) => {
 
     // Get the authorization header from the request
     const authHeader = req.headers.get('authorization');
-    log("Auth header present:", !!authHeader);
+    log({ message: "Auth header present", hasAuth: !!authHeader });
     
     // Check if the query looks like an organization number (9 digits)
     const isOrgNumber = /^\d{9}$/.test(query);
@@ -50,7 +50,7 @@ serve(async (req) => {
         size: '10',
       });
       const searchUrl = `${BRREG_API_BASE}?${searchParams.toString()}`;
-      log("Searching by name:", searchUrl);
+      log({ message: "Searching by name", searchUrl });
       
       const fetchOptions = buildFetchOptions(authHeader);
       const response = await fetch(searchUrl, fetchOptions);
@@ -89,7 +89,7 @@ serve(async (req) => {
       }
       
       const data = await response.json();
-      log("Search data received:", JSON.stringify(data).substring(0, 200) + "...");
+      log({ message: "Search data received", preview: JSON.stringify(data).substring(0, 200) + "..." });
       
       return new Response(
         JSON.stringify(data),
@@ -98,7 +98,7 @@ serve(async (req) => {
     }
     
     // If it's an org number, fetch detailed information
-    log(`Fetching detailed information for org number: ${query}`);
+    log({ message: `Fetching detailed information for org number: ${query}` });
     
     const fetchOptions = buildFetchOptions(authHeader);
     
@@ -209,44 +209,44 @@ serve(async (req) => {
 
     // 1: Åpent endepunkt
     const openRolesUrl = `${BRREG_ROLES_OPEN}/${query}`;
-    log("ROLES URL (open API):", openRolesUrl);
+    log({ message: "ROLES URL (open API)", url: openRolesUrl });
     
     try {
       const rolesOpenResp = await fetch(openRolesUrl, fetchOptions);
       roleEndpointTried = "open";
       roleResponseStatus = rolesOpenResp.status;
       
-      log(`[BRREG] Roller (open API) status: ${rolesOpenResp.status}`);
+      log({ message: `[BRREG] Roller (open API) status`, status: rolesOpenResp.status });
       
       if (rolesOpenResp.ok) {
         const openData = await rolesOpenResp.json();
         rolesData = openData;
         roller = openData.roller || [];
-        log(`[BRREG] Roller (open api) hentet for ${query}: #roller=${roller.length}`);
+        log({ message: `[BRREG] Roller (open api) hentet`, query, count: roller.length });
       } else if (rolesOpenResp.status === 404) {
-        log(`[BRREG] Roller (open API) 404 for ${query}, trying authorized endpoint...`);
+        log({ message: `[BRREG] Roller (open API) 404`, query, note: 'trying authorized endpoint' });
         
         // 2: Fallback til autorisert dersom 404 og evt. Auth header finnes
         const authRolesUrl = `${BRREG_ROLES_AUTH}/${query}/roller`;
-        log("ROLES URL (authorized API):", authRolesUrl);
+        log({ message: "ROLES URL (authorized API)", url: authRolesUrl });
         
         const rolesAuthResp = await fetch(authRolesUrl, fetchOptions);
         roleEndpointTried = "auth";
         roleResponseStatus = rolesAuthResp.status;
         
-        log(`[BRREG] Roller (auth API) status: ${rolesAuthResp.status}`);
+        log({ message: `[BRREG] Roller (auth API) status`, status: rolesAuthResp.status });
         
         if (rolesAuthResp.ok) {
           const authData = await rolesAuthResp.json();
           rolesData = authData;
           roller = authData.roller || [];
-          log(`[BRREG] Roller (autorisert api) hentet for ${query}: #roller=${roller.length}`);
+          log({ message: `[BRREG] Roller (autorisert api) hentet`, query, count: roller.length });
         } else {
-          log(`[BRREG] Roller (autorisert) ${rolesAuthResp.status} for ${query}`);
+          log({ message: `[BRREG] Roller (autorisert)`, status: rolesAuthResp.status, query });
           rolesData = { roller: [] };
         }
       } else {
-        log(`[BRREG] Roller-kall feilet for ${query}: status=${rolesOpenResp.status}`);
+        log({ message: `[BRREG] Roller-kall feilet`, query, status: rolesOpenResp.status });
         rolesData = { roller: [] };
       }
     } catch (err) {
@@ -256,23 +256,23 @@ serve(async (req) => {
 
     // Ekstra logging for feilsøk
     if (query === "922666997") {
-      log("[DEBUG] Rå roller-payload:", JSON.stringify(roller, null, 2));
+      log({ message: "[DEBUG] Rå roller-payload", payload: JSON.stringify(roller, null, 2) });
       if (baseData.kapital) {
-        log('KAPITAL', JSON.stringify(baseData.kapital, null, 2));
+        log({ message: 'KAPITAL', kapital: JSON.stringify(baseData.kapital, null, 2) });
       } else {
-        log('KAPITAL: NOT FOUND in response');
+        log({ message: 'KAPITAL: NOT FOUND in response' });
       }
     }
 
     // — Mapping: CEO, chair, boardMembers —
     const processedRoles = processRolesStrict(roller);
-    log("[BRREG] Processed roles:", JSON.stringify(processedRoles));
+    log({ message: "[BRREG] Processed roles", roles: JSON.stringify(processedRoles) });
     
     // Log the found roles for better debugging
     if (processedRoles.ceo || processedRoles.chair || processedRoles.boardMembers.length > 0) {
-      log(`[BRREG] Saved CEO: ${processedRoles.ceo?.name || 'None'}, Chair: ${processedRoles.chair?.name || 'None'}, boardRoles: ${processedRoles.boardMembers.length}`);
+      log({ message: `[BRREG] Saved CEO`, ceo: processedRoles.ceo?.name || 'None', chair: processedRoles.chair?.name || 'None', boardRoles: processedRoles.boardMembers.length });
     } else {
-      log(`[BRREG] No roles found for ${query}`);
+      log({ message: `[BRREG] No roles found`, query });
     }
     
     // Extract address info (full address array, postnummer, poststed, kommune)
@@ -326,7 +326,8 @@ serve(async (req) => {
     }
 
     // Logg råverdier for sanity check
-    log("[BRREG] Rå kapital-felter:", {
+    log({
+      message: "[BRREG] Rå kapital-felter",
       aksjekapital: baseData.kapital?.aksjekapital,
       aksjekapitalNOK: baseData.kapital?.aksjekapitalNOK,
       innskuddskapital: baseData.kapital?.innskuddskapital,
@@ -335,7 +336,7 @@ serve(async (req) => {
     });
 
     // Logg den faktiske mappingen ut
-    log("Saved capital:", { equity: equityCapital, share: shareCapital });
+    log({ message: "Saved capital", equity: equityCapital, share: shareCapital });
 
     // Build enhanced data object, taking from BRREG mapping table
     const enhancedData = {
@@ -367,7 +368,7 @@ serve(async (req) => {
       roles: processedRoles
     };
 
-    log("Returning enhanced data object");
+    log({ message: "Returning enhanced data object" });
     return new Response(
       JSON.stringify(enhancedData),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
