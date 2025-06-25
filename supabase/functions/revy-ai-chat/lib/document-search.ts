@@ -37,12 +37,13 @@ export async function searchClientDocuments(
     // Fetch all documents for the client with better filtering
     const { data: documents, error } = await supabase
       .from('client_documents_files')
-      .select('*')
+      .select('id, file_name, category, ai_analysis_summary, extracted_text, created_at')
       .eq('client_id', clientData.id)
       .eq('text_extraction_status', 'completed')
       .not('extracted_text', 'is', null)
       .not('extracted_text', 'like', '[Kunne ikke ekstraktere%')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(50);
 
     if (error) {
       console.error('❌ [DOCUMENT_SEARCH] Error fetching documents:', error);

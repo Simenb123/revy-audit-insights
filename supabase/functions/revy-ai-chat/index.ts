@@ -287,9 +287,38 @@ serve(async (req) => {
         similarity: article.similarity,
         reference_code: article.reference_code
       }));
-      
+
       aiResponse += `\n\n<!-- KNOWLEDGE_ARTICLES: ${JSON.stringify(articleRefs)} -->`;
       console.log('📚 Injected knowledge article references into response');
+    }
+
+    // Add document reference metadata if search results are available
+    if (enhancedContext.documentSearchResults) {
+      const docRefs: Array<{ id: string; fileName: string; snippet?: string }> = [];
+
+      if (enhancedContext.documentSearchResults.specificDocument) {
+        const doc = enhancedContext.documentSearchResults.specificDocument;
+        docRefs.push({
+          id: doc.id,
+          fileName: doc.fileName,
+          snippet: doc.extractedText?.substring(0, 200)
+        });
+      }
+
+      if (enhancedContext.documentSearchResults.generalDocuments?.length) {
+        for (const doc of enhancedContext.documentSearchResults.generalDocuments) {
+          docRefs.push({
+            id: doc.id,
+            fileName: doc.fileName,
+            snippet: doc.relevantText?.substring(0, 200)
+          });
+        }
+      }
+
+      if (docRefs.length > 0) {
+        aiResponse += `\n\n<!-- DOCUMENT_REFERENCES: ${JSON.stringify(docRefs)} -->`;
+        console.log('📂 Injected document references into response');
+      }
     }
 
     // Validate and fix the AI response

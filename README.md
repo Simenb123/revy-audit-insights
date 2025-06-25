@@ -22,7 +22,7 @@ For a high-level tour of the architecture and key modules, see [docs/project-ove
 Copy `.env.example` to `.env.local` and update the values:
 
 ```env
-# Supabase Configuration (Optional - has working defaults)
+# Supabase Configuration (Required)
 SUPABASE_URL=your_supabase_project_url
 SUPABASE_ANON_KEY=your_supabase_anonymous_key
 SUPABASE_FUNCTIONS_URL=your_supabase_functions_url
@@ -33,9 +33,9 @@ SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key_here # used for accessi
 OPENAI_API_KEY=your_openai_api_key
 ```
 
-**Note**: The Supabase configuration has working defaults built-in. You only need to set `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_FUNCTIONS_URL` if you want to use your own Supabase project. `SUPABASE_SERVICE_ROLE_KEY` is required for AI Revy to access internal knowledge articles.
+**Note**: You must provide `SUPABASE_URL` and `SUPABASE_ANON_KEY` for the application to connect to Supabase. `SUPABASE_SERVICE_ROLE_KEY` is required for AI Revy to access internal knowledge articles.
 
-### Getting Your Supabase Credentials (Optional)
+### Getting Your Supabase Credentials
 
 1. Go to [Supabase Dashboard](https://supabase.com/dashboard)
 2. Select your project
@@ -79,6 +79,10 @@ For the embedded generation trigger to work properly, you may need to set custom
 - Use different Supabase projects for development and production
 - Regularly rotate API keys for security
 - Ensure your `.env` file is listed in `.gitignore`
+
+### Service Role Usage
+
+Most edge functions now rely on the caller's JWT instead of the powerful service role key. Only a few functions still require `SUPABASE_SERVICE_ROLE_KEY` due to privileged operations. See [docs/service-role-functions.md](docs/service-role-functions.md) for details.
 
 ## Support
 
