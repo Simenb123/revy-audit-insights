@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { log } from "../_shared/log.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -15,13 +16,13 @@ serve(async (req) => {
   let documentId: string | null = null;
   
   try {
-    console.log('📄 [PDF-EXTRACTOR] Function invoked - starting comprehensive processing...');
+    log('📄 [PDF-EXTRACTOR] Function invoked - starting comprehensive processing...');
     
     // Step 1: Parse and validate request
     let body;
     try {
       body = await req.json();
-      console.log('📋 [PDF-EXTRACTOR] Request body parsed:', body);
+      log('📋 [PDF-EXTRACTOR] Request body parsed:', body);
     } catch (parseError) {
       console.error('❌ [PDF-EXTRACTOR] Failed to parse request body:', parseError);
       return new Response(JSON.stringify({ 
@@ -48,10 +49,10 @@ serve(async (req) => {
       });
     }
 
-    console.log('✅ [PDF-EXTRACTOR] Request validation passed for document:', documentId);
+    log('✅ [PDF-EXTRACTOR] Request validation passed for document:', documentId);
 
     // Step 2: Initialize Supabase client
-    console.log('🔄 [PDF-EXTRACTOR] Initializing Supabase client...');
+    log('🔄 [PDF-EXTRACTOR] Initializing Supabase client...');
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
 
@@ -70,10 +71,10 @@ serve(async (req) => {
     const supabaseAdmin = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: req.headers.get('Authorization')! } }
     });
-    console.log('✅ [PDF-EXTRACTOR] Supabase client initialized');
+    log('✅ [PDF-EXTRACTOR] Supabase client initialized');
 
     // Step 3: Update status to 'processing'
-    console.log('🔄 [PDF-EXTRACTOR] Updating document status to processing...');
+    log('🔄 [PDF-EXTRACTOR] Updating document status to processing...');
     const { error: statusError } = await supabaseAdmin
       .from('client_documents_files')
       .update({ 
@@ -94,10 +95,10 @@ serve(async (req) => {
       });
     }
 
-    console.log('✅ [PDF-EXTRACTOR] Status updated to processing');
+    log('✅ [PDF-EXTRACTOR] Status updated to processing');
 
     // Step 4: Fetch document to get file_path
-    console.log('🔄 [PDF-EXTRACTOR] Fetching document metadata...');
+    log('🔄 [PDF-EXTRACTOR] Fetching document metadata...');
     const { data: document, error: docError } = await supabaseAdmin
       .from('client_documents_files')
       .select('file_path, file_name, mime_type')
@@ -116,7 +117,7 @@ serve(async (req) => {
       });
     }
 
-    console.log('✅ [PDF-EXTRACTOR] Document metadata retrieved:', {
+    log('✅ [PDF-EXTRACTOR] Document metadata retrieved:', {
       fileName: document.file_name,
       mimeType: document.mime_type,
       filePath: document.file_path
@@ -126,7 +127,7 @@ serve(async (req) => {
     let extractedText = '';
     
     try {
-      console.log('📥 [PDF-EXTRACTOR] Downloading file from storage...');
+      log('📥 [PDF-EXTRACTOR] Downloading file from storage...');
       const { data: fileData, error: downloadError } = await supabaseAdmin.storage
         .from('client-documents')
         .download(document.file_path);
@@ -136,25 +137,25 @@ serve(async (req) => {
         throw new Error(`Failed to download file: ${downloadError?.message || 'No data'}`);
       }
       
-      console.log('✅ [PDF-EXTRACTOR] File downloaded successfully, size:', fileData.size, 'bytes');
+      log('✅ [PDF-EXTRACTOR] File downloaded successfully, size:', fileData.size, 'bytes');
 
       if (document.mime_type === 'application/pdf') {
-        console.log('📄 [PDF-EXTRACTOR] Processing PDF file...');
+        log('📄 [PDF-EXTRACTOR] Processing PDF file...');
         
         // Convert blob to ArrayBuffer for PDF processing
         const arrayBuffer = await fileData.arrayBuffer();
         const uint8Array = new Uint8Array(arrayBuffer);
         
         // Enhanced PDF text extraction using multiple strategies
-        console.log('🔍 [PDF-EXTRACTOR] Attempting multiple text extraction strategies...');
+        log('🔍 [PDF-EXTRACTOR] Attempting multiple text extraction strategies...');
         
         // Strategy 1: Look for text streams in PDF
         const pdfText = new TextDecoder().decode(uint8Array);
-        console.log('📝 [PDF-EXTRACTOR] PDF raw text length:', pdfText.length);
+        log('📝 [PDF-EXTRACTOR] PDF raw text length:', pdfText.length);
         
         // Strategy 1a: Extract text between stream markers
         const streamMatches = pdfText.match(/stream\s*(.*?)\s*endstream/gs);
-        console.log('🔍 [PDF-EXTRACTOR] Found', streamMatches?.length || 0, 'streams');
+        log('🔍 [PDF-EXTRACTOR] Found', streamMatches?.length || 0, 'streams');
         
         if (streamMatches && streamMatches.length > 0) {
           const streamTexts = streamMatches.map(match => {
@@ -168,15 +169,15 @@ serve(async (req) => {
           
           if (streamTexts.length > 0) {
             extractedText = streamTexts.join('\n\n').trim();
-            console.log('✅ [PDF-EXTRACTOR] Extracted from streams, length:', extractedText.length);
+            log('✅ [PDF-EXTRACTOR] Extracted from streams, length:', extractedText.length);
           }
         }
         
         // Strategy 1b: Look for text objects (BT...ET)
         if (!extractedText || extractedText.length < 50) {
-          console.log('🔍 [PDF-EXTRACTOR] Trying text object extraction...');
+          log('🔍 [PDF-EXTRACTOR] Trying text object extraction...');
           const textMatches = pdfText.match(/BT\s*(.*?)\s*ET/gs);
-          console.log('📝 [PDF-EXTRACTOR] Found', textMatches?.length || 0, 'text objects');
+          log('📝 [PDF-EXTRACTOR] Found', textMatches?.length || 0, 'text objects');
           
           if (textMatches && textMatches.length > 0) {
             const extractedParts = textMatches.map(match => {
@@ -193,14 +194,14 @@ serve(async (req) => {
             
             if (extractedParts.length > 0) {
               extractedText = extractedParts.join('\n\n').trim();
-              console.log('✅ [PDF-EXTRACTOR] Extracted from text objects, length:', extractedText.length);
+              log('✅ [PDF-EXTRACTOR] Extracted from text objects, length:', extractedText.length);
             }
           }
         }
         
         // Strategy 2: Extract any readable ASCII text
         if (!extractedText || extractedText.length < 20) {
-          console.log('🔍 [PDF-EXTRACTOR] Trying fallback ASCII extraction...');
+          log('🔍 [PDF-EXTRACTOR] Trying fallback ASCII extraction...');
           const readableText = pdfText
             .replace(/[^\x20-\x7E\s]/g, ' ') // Keep only printable ASCII
             .replace(/\s+/g, ' ')
@@ -208,7 +209,7 @@ serve(async (req) => {
           
           // Look for words (sequences of letters)
           const words = readableText.match(/[a-zA-ZæøåÆØÅ]{2,}/g) || [];
-          console.log('📝 [PDF-EXTRACTOR] Found', words.length, 'potential words');
+          log('📝 [PDF-EXTRACTOR] Found', words.length, 'potential words');
           
           if (words.length > 10) { // If we found enough words
             // Try to reconstruct meaningful text
@@ -219,21 +220,21 @@ serve(async (req) => {
             
             if (meaningfulText.length > 50) {
               extractedText = meaningfulText.substring(0, 2000) + (meaningfulText.length > 2000 ? '...' : '');
-              console.log('✅ [PDF-EXTRACTOR] Used fallback extraction, length:', extractedText.length);
+              log('✅ [PDF-EXTRACTOR] Used fallback extraction, length:', extractedText.length);
             }
           }
         }
         
         // Final check - if we still don't have good text, report the issue
         if (!extractedText || extractedText.length < 10) {
-          console.log('⚠️ [PDF-EXTRACTOR] PDF may be image-based or encrypted');
+          log('⚠️ [PDF-EXTRACTOR] PDF may be image-based or encrypted');
           extractedText = '[PDF inneholder sannsynligvis kun bilder eller er kryptert. Tekstekstraksjon ikke mulig med enkel metode.]';
         }
         
       } else if (document.mime_type?.includes('text/') || document.mime_type?.includes('application/json')) {
         // For text files, read directly
         extractedText = await fileData.text();
-        console.log('✅ [PDF-EXTRACTOR] Text file processed successfully, length:', extractedText.length);
+        log('✅ [PDF-EXTRACTOR] Text file processed successfully, length:', extractedText.length);
       } else {
         throw new Error(`Unsupported file type: ${document.mime_type}`);
       }
@@ -247,10 +248,10 @@ serve(async (req) => {
       const maxLength = 50000; // 50KB limit
       if (extractedText.length > maxLength) {
         extractedText = extractedText.substring(0, maxLength) + '\n\n[Text truncated due to length limit]';
-        console.log('⚠️ [PDF-EXTRACTOR] Text truncated to fit database limits');
+        log('⚠️ [PDF-EXTRACTOR] Text truncated to fit database limits');
       }
 
-      console.log('✅ [PDF-EXTRACTOR] Text extraction completed, final length:', extractedText.length);
+      log('✅ [PDF-EXTRACTOR] Text extraction completed, final length:', extractedText.length);
 
     } catch (extractionError) {
       console.error('❌ [PDF-EXTRACTOR] Text extraction failed:', extractionError);
@@ -276,7 +277,7 @@ serve(async (req) => {
     }
 
     // Step 6: Update document with extracted text and 'completed' status
-    console.log('🔄 [PDF-EXTRACTOR] Saving extracted text to database...');
+    log('🔄 [PDF-EXTRACTOR] Saving extracted text to database...');
     const { error: updateError } = await supabaseAdmin
       .from('client_documents_files')
       .update({
@@ -298,8 +299,8 @@ serve(async (req) => {
       });
     }
     
-    console.log('🎉 [PDF-EXTRACTOR] Text extraction completed successfully for document:', documentId);
-    console.log('📊 [PDF-EXTRACTOR] Final statistics:', {
+    log('🎉 [PDF-EXTRACTOR] Text extraction completed successfully for document:', documentId);
+    log('📊 [PDF-EXTRACTOR] Final statistics:', {
       documentId,
       fileName: document.file_name,
       textLength: extractedText.length,
@@ -334,7 +335,7 @@ serve(async (req) => {
           updated_at: new Date().toISOString()
         }).eq('id', documentId);
         
-        console.log('🔄 [PDF-EXTRACTOR] Status updated to failed for document:', documentId);
+        log('🔄 [PDF-EXTRACTOR] Status updated to failed for document:', documentId);
       } catch (updateError) {
         console.error(`❌ [PDF-EXTRACTOR] Failed to update status to failed for document ${documentId}:`, updateError);
       }

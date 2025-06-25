@@ -1,5 +1,6 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { log } from "../_shared/log.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -8,7 +9,7 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  console.log('📄 Enhanced Document AI function started');
+  log('📄 Enhanced Document AI function started');
   
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -17,7 +18,7 @@ serve(async (req) => {
   try {
     const { document_text, file_name, client_id, variant_config } = await req.json();
     
-    console.log('📝 Processing document analysis:', {
+    log('📝 Processing document analysis:', {
       fileName: file_name,
       clientId: client_id,
       hasText: !!document_text,
@@ -124,7 +125,7 @@ Gi meg følgende informasjon som JSON:
       };
     }
 
-    console.log('✅ Document analysis completed:', {
+    log('✅ Document analysis completed:', {
       category: analysisResult.suggested_category,
       confidence: analysisResult.confidence_score,
       subjectAreas: analysisResult.suggested_subject_areas?.length || 0

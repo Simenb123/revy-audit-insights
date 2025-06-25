@@ -1,7 +1,9 @@
 
+import { log } from '../_shared/log.ts';
+
 // Improved keyword extraction for Norwegian content
 export function extractIntelligentKeywords(message: string, context: string): string[] {
-  console.log(`🔍 Extracting keywords from: "${message}"`);
+  log(`🔍 Extracting keywords from: "${message}"`);
   const keywords = new Set<string>();
 
   // Norwegian stopwords to exclude
@@ -15,7 +17,7 @@ export function extractIntelligentKeywords(message: string, context: string): st
     
   words.forEach(word => {
     keywords.add(word);
-    console.log(`📝 Added keyword: "${word}"`);
+    log(`📝 Added keyword: "${word}"`);
   });
 
   // Enhanced ISA standards extraction
@@ -25,7 +27,7 @@ export function extractIntelligentKeywords(message: string, context: string): st
       const cleanMatch = match.replace(/\s+/g, ' ').trim().toUpperCase();
       keywords.add(cleanMatch);
       keywords.add('ISA');
-      console.log(`📋 Added ISA term: "${cleanMatch}"`);
+      log(`📋 Added ISA term: "${cleanMatch}"`);
     });
   }
 
@@ -34,7 +36,7 @@ export function extractIntelligentKeywords(message: string, context: string): st
   revisionTerms.forEach(term => {
     if (message.toLowerCase().includes(term)) {
       keywords.add(term);
-      console.log(`🎯 Added revision term: "${term}"`);
+      log(`🎯 Added revision term: "${term}"`);
     }
   });
 
@@ -48,7 +50,7 @@ export function extractIntelligentKeywords(message: string, context: string): st
   }
 
   const finalKeywords = Array.from(keywords);
-  console.log(`✅ Final keywords (${finalKeywords.length}): ${finalKeywords.join(', ')}`);
+  log(`✅ Final keywords (${finalKeywords.length}): ${finalKeywords.join(', ')}`);
   return finalKeywords;
 }
 

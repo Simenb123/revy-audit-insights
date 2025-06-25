@@ -1,9 +1,10 @@
 
 import { supabase } from './supabase.ts';
+import { log } from '../_shared/log.ts';
 
 // Test function to verify knowledge search functionality
 export async function testKnowledgeAccess() {
-  console.log('🧪 Testing knowledge database access...');
+  log('🧪 Testing knowledge database access...');
   
   try {
     // Test basic connection
@@ -17,7 +18,7 @@ export async function testKnowledgeAccess() {
       return { success: false, error: error.message };
     }
     
-    console.log(`✅ Found ${articles?.length || 0} articles in database`);
+    log(`✅ Found ${articles?.length || 0} articles in database`);
     
     // Test published articles specifically
     const { data: publishedArticles, error: publishedError } = await supabase
@@ -31,7 +32,7 @@ export async function testKnowledgeAccess() {
       return { success: false, error: publishedError.message };
     }
     
-    console.log(`✅ Found ${publishedArticles?.length || 0} published articles`);
+    log(`✅ Found ${publishedArticles?.length || 0} published articles`);
     
     return { 
       success: true, 

@@ -1,5 +1,6 @@
 
 import { supabase } from './supabase.ts';
+import { log } from '../_shared/log.ts';
 
 type ContextPrompts = {
   'risk-assessment': string;
@@ -11,7 +12,7 @@ type ContextPrompts = {
 
 export async function getLatestPromptConfiguration() {
   try {
-    console.log('🔧 Loading latest prompt configuration from database...');
+    log('🔧 Loading latest prompt configuration from database...');
     
     const { data: config, error } = await supabase
       .from('ai_prompt_configurations')
@@ -26,11 +27,11 @@ export async function getLatestPromptConfiguration() {
     }
 
     if (!config) {
-      console.log('ℹ️ No prompt configuration found, using defaults');
+      log('ℹ️ No prompt configuration found, using defaults');
       return getDefaultPrompts();
     }
 
-    console.log('✅ Loaded custom prompt configuration');
+    log('✅ Loaded custom prompt configuration');
     return {
       basePrompt: config.base_prompt,
       contextPrompts: config.context_prompts as ContextPrompts

@@ -1,4 +1,6 @@
 
+import { log } from '../_shared/log.ts';
+
 export interface DocumentSearchResult {
   specificDocument?: {
     id: string;
@@ -26,12 +28,12 @@ export async function searchClientDocuments(
   supabase: any
 ): Promise<DocumentSearchResult | null> {
   if (!clientData?.id) {
-    console.log('🔍 No client data available for document search');
+    log('🔍 No client data available for document search');
     return null;
   }
 
-  console.log('📄 [DOCUMENT_SEARCH] Starting search for client:', clientData.id);
-  console.log('📄 [DOCUMENT_SEARCH] Search query:', message.substring(0, 100) + '...');
+  log('📄 [DOCUMENT_SEARCH] Starting search for client:', clientData.id);
+  log('📄 [DOCUMENT_SEARCH] Search query:', message.substring(0, 100) + '...');
 
   try {
     // Fetch all documents for the client with better filtering
@@ -51,17 +53,17 @@ export async function searchClientDocuments(
     }
 
     if (!documents || documents.length === 0) {
-      console.log('📄 [DOCUMENT_SEARCH] No documents with valid extracted text found');
+      log('📄 [DOCUMENT_SEARCH] No documents with valid extracted text found');
       return null;
     }
 
-    console.log(`📄 [DOCUMENT_SEARCH] Found ${documents.length} documents with extracted text to search`);
+    log(`📄 [DOCUMENT_SEARCH] Found ${documents.length} documents with extracted text to search`);
 
     // Enhanced keyword matching and content analysis
     const messageWords = message.toLowerCase().split(/\s+/);
     const searchTerms = messageWords.filter(word => word.length > 2);
     
-    console.log('🔍 [DOCUMENT_SEARCH] Search terms:', searchTerms);
+    log('🔍 [DOCUMENT_SEARCH] Search terms:', searchTerms);
 
     const scoredDocuments = documents.map(doc => {
       const text = (doc.extracted_text || '').toLowerCase();
@@ -128,7 +130,7 @@ export async function searchClientDocuments(
         score += uniqueMatchedTerms.length * 5;
       }
 
-      console.log(`📄 [DOCUMENT_SEARCH] Document "${doc.file_name}": score=${score}, matches=[${matchedTerms.join(', ')}]`);
+      log(`📄 [DOCUMENT_SEARCH] Document "${doc.file_name}": score=${score}, matches=[${matchedTerms.join(', ')}]`);
 
       return {
         ...doc,
@@ -140,12 +142,12 @@ export async function searchClientDocuments(
       .sort((a, b) => b.score - a.score);
 
     if (scoredDocuments.length === 0) {
-      console.log('📄 [DOCUMENT_SEARCH] No relevant documents found based on search terms');
+      log('📄 [DOCUMENT_SEARCH] No relevant documents found based on search terms');
       return null;
     }
 
-    console.log(`📄 [DOCUMENT_SEARCH] Found ${scoredDocuments.length} relevant documents`);
-    console.log('🏆 [DOCUMENT_SEARCH] Top 3 matches:', scoredDocuments.slice(0, 3).map(d => ({
+    log(`📄 [DOCUMENT_SEARCH] Found ${scoredDocuments.length} relevant documents`);
+    log('🏆 [DOCUMENT_SEARCH] Top 3 matches:', scoredDocuments.slice(0, 3).map(d => ({
       name: d.file_name,
       score: d.score,
       matches: d.matchedTerms
@@ -166,7 +168,7 @@ export async function searchClientDocuments(
         extractedText: top.extracted_text?.substring(0, 3000) // More context for AI
       };
       
-      console.log('🎯 [DOCUMENT_SEARCH] Specific document found:', {
+      log('🎯 [DOCUMENT_SEARCH] Specific document found:', {
         fileName: top.file_name,
         confidence: result.specificDocument.confidence,
         textLength: top.extracted_text?.length || 0
@@ -185,10 +187,10 @@ export async function searchClientDocuments(
         uploadDate: doc.created_at
       }));
       
-      console.log('📚 [DOCUMENT_SEARCH] Additional documents:', result.generalDocuments.length);
+      log('📚 [DOCUMENT_SEARCH] Additional documents:', result.generalDocuments.length);
     }
 
-    console.log('✅ [DOCUMENT_SEARCH] Search completed successfully');
+    log('✅ [DOCUMENT_SEARCH] Search completed successfully');
     return result;
 
   } catch (error) {

@@ -2,6 +2,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
+import { log } from "../_shared/log.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -10,7 +11,7 @@ const corsHeaders = {
 
 async function getEmbedding(text: string, openAIApiKey: string) {
   try {
-    console.log('🔄 Getting embedding for text:', text.substring(0, 50) + '...');
+    log('🔄 Getting embedding for text:', text.substring(0, 50) + '...');
     const response = await fetch('https://api.openai.com/v1/embeddings', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${openAIApiKey}`, 'Content-Type': 'application/json' },
@@ -22,7 +23,7 @@ async function getEmbedding(text: string, openAIApiKey: string) {
         throw new Error('Failed to get embedding from OpenAI');
     }
     const data = await response.json();
-    console.log('✅ Embedding generated successfully');
+    log('✅ Embedding generated successfully');
     return data.data[0].embedding;
   } catch (error) {
     console.error('❌ Error getting embedding:', error);
@@ -31,13 +32,13 @@ async function getEmbedding(text: string, openAIApiKey: string) {
 }
 
 async function keywordSearch(supabase: any, query: string) {
-  console.log('🔎 Enhanced keyword search for:', query);
+  log('🔎 Enhanced keyword search for:', query);
   
   const words = query.toLowerCase().split(/\s+/).filter(word => word.length > 1);
-  console.log('📝 Search words:', words);
+  log('📝 Search words:', words);
   
   if (words.length === 0) {
-    console.log('⚠️ No valid search words found');
+    log('⚠️ No valid search words found');
     return [];
   }
   
@@ -49,7 +50,7 @@ async function keywordSearch(supabase: any, query: string) {
     
     const searchConditions = [titleConditions, summaryConditions, contentConditions, refConditions].join(',');
     
-    console.log('📊 Executing database query...');
+    log('📊 Executing database query...');
     const { data, error } = await supabase
       .from('knowledge_articles')
       .select(`
@@ -75,7 +76,7 @@ async function keywordSearch(supabase: any, query: string) {
       throw error;
     }
     
-    console.log(`✅ Keyword search found ${data?.length || 0} articles`);
+    log(`✅ Keyword search found ${data?.length || 0} articles`);
     
     return (data || []).map((article: any) => {
       let relevanceScore = 0;
@@ -146,16 +147,16 @@ serve(async (req) => {
   }
 
   try {
-    console.log('🚀 Knowledge search function started');
+    log('🚀 Knowledge search function started');
     
     // Improved JSON parsing with better error handling
     let requestBody;
     try {
       const bodyText = await req.text();
-      console.log('📝 Raw request body length:', bodyText?.length || 0);
+      log('📝 Raw request body length:', bodyText?.length || 0);
       
       if (!bodyText || bodyText.trim() === '') {
-        console.log('⚠️ Empty request body received, using fallback');
+        log('⚠️ Empty request body received, using fallback');
         // Return empty results instead of throwing error
         return new Response(JSON.stringify({
           articles: [],
@@ -183,7 +184,7 @@ serve(async (req) => {
 
     const { query } = requestBody;
     if (!query || query.trim() === '') {
-      console.log('⚠️ No query parameter provided');
+      log('⚠️ No query parameter provided');
       return new Response(JSON.stringify({
         articles: [],
         tagMapping: {},
@@ -194,7 +195,7 @@ serve(async (req) => {
       });
     }
 
-    console.log('🔍 Knowledge search for query:', query.substring(0, 50) + '...');
+    log('🔍 Knowledge search for query:', query.substring(0, 50) + '...');
 
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -205,12 +206,12 @@ serve(async (req) => {
       throw new Error('Missing Supabase environment variables');
     }
 
-    console.log('🔗 Creating Supabase client...');
+    log('🔗 Creating Supabase client...');
     const supabase = createClient(supabaseUrl, supabaseAnonKey, {
         global: { headers: { Authorization: req.headers.get('Authorization')! } }
     });
 
-    console.log('📊 Checking total published articles...');
+    log('📊 Checking total published articles...');
     const { count: totalCount, error: countError } = await supabase
       .from('knowledge_articles')
       .select('*', { count: 'exact', head: true })
@@ -221,10 +222,10 @@ serve(async (req) => {
       throw countError;
     }
     
-    console.log(`📈 Total published articles: ${totalCount || 0}`);
+    log(`📈 Total published articles: ${totalCount || 0}`);
     
     if (!totalCount || totalCount === 0) {
-      console.log('⚠️ No published articles found');
+      log('⚠️ No published articles found');
       return new Response(JSON.stringify({
         articles: [],
         tagMapping: {}
@@ -237,10 +238,10 @@ serve(async (req) => {
     
     if (openAIApiKey) {
       try {
-        console.log('🧠 Attempting semantic search...');
+        log('🧠 Attempting semantic search...');
         const queryEmbedding = await getEmbedding(query, openAIApiKey);
         
-        console.log('🔍 Calling match_knowledge_articles RPC...');
+        log('🔍 Calling match_knowledge_articles RPC...');
         const { data, error } = await supabase.rpc('match_knowledge_articles', {
           p_query_embedding: queryEmbedding,
           p_match_threshold: 0.7,
@@ -251,16 +252,16 @@ serve(async (req) => {
           console.error('❌ Semantic search RPC error:', error);
         } else {
             semanticResults = data || [];
-            console.log(`✅ Semantic search found ${semanticResults.length} articles`);
+            log(`✅ Semantic search found ${semanticResults.length} articles`);
         }
       } catch (e) {
         console.error("❌ Error during semantic search:", e.message);
       }
     } else {
-      console.log('⚠️ No OpenAI API key, skipping semantic search');
+      log('⚠️ No OpenAI API key, skipping semantic search');
     }
     
-    console.log('🔤 Performing keyword search...');
+    log('🔤 Performing keyword search...');
     const keywordResults = await keywordSearch(supabase, query);
 
     const combinedResults = [...(semanticResults || []), ...keywordResults];
@@ -278,7 +279,7 @@ serve(async (req) => {
     const keywords = query.toLowerCase().split(/\s+/).filter(word => word.length > 1);
     const tagMapping = createTagMapping(finalResults, keywords);
     
-    console.log(`✅ Returning ${finalResults.length} unique search results with tag mappings`);
+    log(`✅ Returning ${finalResults.length} unique search results with tag mappings`);
 
     return new Response(JSON.stringify({
       articles: finalResults,

@@ -1,22 +1,24 @@
 
+import { log } from '../_shared/log.ts';
+
 export function validateAIResponse(response: string): { isValid: boolean; fixedResponse?: string } {
-  console.log('🔍 Validating AI response format...');
-  console.log('📝 Response preview:', response.substring(0, 200) + '...');
+  log('🔍 Validating AI response format...');
+  log('📝 Response preview:', response.substring(0, 200) + '...');
   
   // Check if response has ANY form of EMNER section
   const hasEmnerSection = /🏷️.*[Ee][Mm][Nn][Ee][Rr]|[Ee][Mm][Nn][Ee][Rr]:/i.test(response);
   
   if (hasEmnerSection) {
-    console.log('✅ Response has some form of EMNER section');
+    log('✅ Response has some form of EMNER section');
     
     // Check if it's in the standardized format we want
     const hasStandardFormat = /🏷️\s*\*\*[Ee][Mm][Nn][Ee][Rr]:?\*\*\s*.+/.test(response);
     
     if (hasStandardFormat) {
-      console.log('✅ Response has perfect standardized format');
+      log('✅ Response has perfect standardized format');
       return { isValid: true };
     } else {
-      console.log('🔧 Response has EMNER but not standardized format, fixing...');
+      log('🔧 Response has EMNER but not standardized format, fixing...');
       // Extract existing tags and reformat them
       const existingTags = extractExistingTags(response);
       const fixedResponse = response + '\n\n🏷️ **EMNER:** ' + existingTags.join(', ');
@@ -24,7 +26,7 @@ export function validateAIResponse(response: string): { isValid: boolean; fixedR
     }
   }
   
-  console.log('🔧 Response missing EMNER section, forcing comprehensive tag injection...');
+  log('🔧 Response missing EMNER section, forcing comprehensive tag injection...');
   
   // FORCE intelligent tag injection based on content analysis
   const intelligentTags = extractComprehensiveTags(response);
@@ -40,9 +42,9 @@ export function validateAIResponse(response: string): { isValid: boolean; fixedR
   // FORCE standardized format that the frontend expects
   const fixedResponse = response.trim() + '\n\n🏷️ **EMNER:** ' + finalTags.join(', ');
   
-  console.log('🔧 FORCED tag injection with standardized format');
-  console.log('🏷️ Injected tags:', finalTags.join(', '));
-  console.log('📏 Fixed response length:', fixedResponse.length);
+  log('🔧 FORCED tag injection with standardized format');
+  log('🏷️ Injected tags:', finalTags.join(', '));
+  log('📏 Fixed response length:', fixedResponse.length);
   
   return { isValid: true, fixedResponse };
 }
@@ -66,7 +68,7 @@ function extractExistingTags(response: string): string[] {
         .filter(tag => tag.length > 0 && tag.length < 50);
       
       if (tags.length > 0) {
-        console.log('🔍 Extracted existing tags:', tags);
+        log('🔍 Extracted existing tags:', tags);
         return tags;
       }
     }
@@ -79,7 +81,7 @@ function extractComprehensiveTags(response: string): string[] {
   const tags: string[] = [];
   const responseText = response.toLowerCase();
   
-  console.log('🔍 Extracting tags from response text...');
+  log('🔍 Extracting tags from response text...');
   
   // Enhanced comprehensive mapping with more keywords and better coverage
   const comprehensiveTagMappings = [
@@ -124,7 +126,7 @@ function extractComprehensiveTags(response: string): string[] {
              responseText.includes(keyword.replace('-', ' '));
     });
     if (hasKeyword) {
-      console.log('🏷️ Found keywords:', mapping.keywords.filter(k => responseText.includes(k)), '-> tags:', mapping.tags);
+      log('🏷️ Found keywords:', mapping.keywords.filter(k => responseText.includes(k)), '-> tags:', mapping.tags);
       tags.push(...mapping.tags);
     }
   }
@@ -134,22 +136,22 @@ function extractComprehensiveTags(response: string): string[] {
   
   // If we found specific tags, return top 6
   if (uniqueTags.length > 0) {
-    console.log('✅ Extracted intelligent tags:', uniqueTags.slice(0, 6));
+    log('✅ Extracted intelligent tags:', uniqueTags.slice(0, 6));
     return uniqueTags.slice(0, 6);
   }
   
   // Context-based intelligent fallback based on content analysis
   if (responseText.includes('spørsmål') || responseText.includes('hjelp')) {
-    console.log('🏷️ Using help-based fallback tags');
+    log('🏷️ Using help-based fallback tags');
     return ['Fagspørsmål', 'Veiledning', 'Revisjon'];
   }
   
   if (responseText.includes('start') || responseText.includes('begynn') || responseText.includes('første')) {
-    console.log('🏷️ Using beginner-based fallback tags');
+    log('🏷️ Using beginner-based fallback tags');
     return ['Nybegynner', 'Grunnleggende', 'Revisjon'];
   }
   
   // Ultimate comprehensive fallback - always return meaningful tags
-  console.log('🏷️ Using ultimate fallback tags');
+  log('🏷️ Using ultimate fallback tags');
   return ['Revisjon', 'Fagstoff', 'Regnskap'];
 }

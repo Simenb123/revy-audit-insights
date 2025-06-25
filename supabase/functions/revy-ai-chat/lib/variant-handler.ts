@@ -1,4 +1,6 @@
 
+import { log } from '../_shared/log.ts';
+
 export async function getVariantSystemPrompt(
   variant: any,
   context: string,
@@ -8,7 +10,7 @@ export async function getVariantSystemPrompt(
     return '';
   }
 
-  console.log('🎭 Building variant system prompt for:', variant.name);
+  log('🎭 Building variant system prompt for:', variant.name);
 
   let promptTemplate = variant.system_prompt_template;
 
@@ -21,7 +23,7 @@ export async function getVariantSystemPrompt(
 
   promptTemplate = promptTemplate.replace(/\{context\}/g, context);
 
-  console.log('✅ Variant system prompt built for:', variant.name);
+  log('✅ Variant system prompt built for:', variant.name);
   return promptTemplate;
 }
 

@@ -1,6 +1,7 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { log } from "../_shared/log.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -8,7 +9,7 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-  console.log('🔧 Storage setup function started');
+  log('🔧 Storage setup function started');
   
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -20,7 +21,7 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    console.log('✅ Supabase client initialized');
+    log('✅ Supabase client initialized');
 
     // Check if client-documents bucket exists
     const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
@@ -32,7 +33,7 @@ serve(async (req) => {
     const bucketExists = buckets?.some(bucket => bucket.name === 'client-documents');
     
     if (!bucketExists) {
-      console.log('📁 Creating client-documents storage bucket...');
+      log('📁 Creating client-documents storage bucket...');
       
       const { error: createError } = await supabase.storage.createBucket('client-documents', {
         public: false,
@@ -51,9 +52,9 @@ serve(async (req) => {
         throw new Error(`Failed to create bucket: ${createError.message}`);
       }
 
-      console.log('✅ Storage bucket created successfully');
+      log('✅ Storage bucket created successfully');
     } else {
-      console.log('📁 Storage bucket already exists');
+      log('📁 Storage bucket already exists');
     }
 
     return new Response(
