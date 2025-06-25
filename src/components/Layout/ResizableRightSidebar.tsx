@@ -113,7 +113,7 @@ const ResizableRightSidebar = ({
   };
 
   return (
-    <div className="relative flex">
+    <div className="relative flex h-full">
       <ResizableHandle onMouseDown={handleMouseDown} />
       
       <div className="border-l bg-background flex flex-col h-full" style={sidebarStyle}>
