@@ -57,6 +57,25 @@ async function runSmokeTest() {
       console.log('🟡 Test completed with warnings');
       process.exit(0);
     }
+
+    console.log('\n🔍 Testing knowledge-search with query: "noresults123"');
+    const { data: dataNone, error: errorNone } = await supabase.functions.invoke('knowledge-search', {
+      body: { query: 'noresults123' }
+    });
+
+    if (errorNone) {
+      console.error('❌ Knowledge search failed:', errorNone);
+      process.exit(1);
+    }
+
+    const noneArticles = dataNone?.articles || [];
+    console.log(`📊 No-result search found ${noneArticles.length} articles`);
+    if (noneArticles.length === 0) {
+      console.log('✅ Knowledge search handles empty results correctly');
+    } else {
+      console.error('❌ Expected no articles for "noresults123" query');
+      process.exit(1);
+    }
     
   } catch (error) {
     console.error('❌ SMOKE TEST FAILED:', error.message);
