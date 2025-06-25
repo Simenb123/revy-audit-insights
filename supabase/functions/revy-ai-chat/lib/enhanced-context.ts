@@ -1,6 +1,3 @@
-
-// deno-lint-ignore-file no-explicit-any
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { searchClientDocuments, DocumentSearchResult } from './document-search.ts';
 
 export interface EnhancedContext {
@@ -26,6 +23,13 @@ export const buildEnhancedContextWithVariant = async (
   const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
   const supabase = createClient(supabaseUrl, supabaseKey);
 
+  // Try to get the current session to use its token for downstream requests
+  const {
+    data: { session }
+  } = await supabase.auth.getSession();
+
+  const authToken = session?.access_token || supabaseKey;
+
   const enhancedContext: any = {
     knowledge: null,
     articleTagMapping: {},
@@ -45,8 +49,9 @@ export const buildEnhancedContextWithVariant = async (
     console.log('📤 Sending knowledge search request:', knowledgeRequestBody);
 
     const knowledgeResponse = await supabase.functions.invoke('knowledge-search', {
-      headers: { 
-        'Content-Type': 'application/json'
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`
       },
       body: knowledgeRequestBody
     });
