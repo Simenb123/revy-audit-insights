@@ -88,16 +88,6 @@ For automated environments, you can run `scripts/setup-ci.sh` to install depende
 - Use different Supabase projects for development and production
 - Regularly rotate API keys for security
 - Ensure your `.env` file is listed in `.gitignore`
-## Kilder og sporbarhet
-
-AI-Revi legger ved lenker til relevante artikler og dokumenter etter hvert svar. Referansene vises som klikkbare lenker under overskriften "Kilder og referanser" slik at du enkelt kan kontrollere kildene.
-
-**Eksempel**:
-
-> Revisor må dokumentere vurderingene i henhold til ISA 230.
->
-> Kilder og referanser: [ISA 230](https://example.com/isa-230) | [Internt notat om dokumentasjon](https://example.com/notat.pdf)
-
 
 ### Service Role Usage
 
@@ -105,14 +95,15 @@ Most edge functions now rely on the caller's JWT instead of the powerful service
 
 ## Kilder og sporbarhet
 
-AI-Revi henter automatisk relevante kilder fra kunnskapsartikler og opplastede
-dokumenter. Etter hvert svar fra assistenten vises disse referansene som lenker
-under meldingen, slik at du enkelt kan åpne kilden og verifisere innholdet.
+AI-Revi henter automatisk relevante kilder fra kunnskapsartikler og opplastede dokumenter. Etter hvert svar fra assistenten vises disse som klikkbare lenker under overskriften "Kilder og referanser", slik at du enkelt kan åpne kildene og verifisere innholdet.
 
-Når AI-Revi finner relevante artikler legger den til en skjult HTML-kommentar i
-svaret med metadata om artiklene. Kommentaren har formatet
-`<!-- KNOWLEDGE_ARTICLES: [...] -->`. Frontend-komponenten leser denne metadataen
-og viser de nevnte artiklene som klikkbare lenker under svaret.
+Når AI-Revi finner relevante artikler legger den til en skjult HTML-kommentar i svaret med metadata: `<!-- KNOWLEDGE_ARTICLES: [...] -->`. Frontend-komponenten leser kommentaren og viser de nevnte artiklene som lenker under svaret.
+
+**Eksempel**:
+
+> Revisor må dokumentere vurderingene i henhold til ISA 230.
+>
+> Kilder og referanser: [ISA 230](https://example.com/isa-230) | [Internt notat om dokumentasjon](https://example.com/notat.pdf)
 
 Eksempel på respons fra assistenten:
 
@@ -121,8 +112,6 @@ Svar fra AI-Revi...
 
 <!-- KNOWLEDGE_ARTICLES: [{"slug":"isa-315","title":"ISA 315"}] -->
 ```
-
-Eksempel:
 
 ```
 AI-Revi: Husk å dokumentere risikovurderingen i henhold til ISA 315.
