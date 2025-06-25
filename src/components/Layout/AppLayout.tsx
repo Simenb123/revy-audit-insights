@@ -23,12 +23,15 @@ const AppLayout = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background w-full flex flex-col overflow-hidden">
+    <div className="min-h-screen bg-background w-full flex flex-col">
       <AppHeader
         onToggleRightSidebar={toggleRightSidebar}
         isRightSidebarCollapsed={isRightSidebarCollapsed}
       />
-      <div className="flex flex-1 overflow-hidden">
+      <div
+        className="flex flex-1"
+        style={{ height: "calc(100vh - 3.5rem)" }}
+      >
         <Sidebar
           isCollapsed={isLeftSidebarCollapsed}
           onToggle={toggleLeftSidebar}
