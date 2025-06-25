@@ -84,6 +84,28 @@ For the embedded generation trigger to work properly, you may need to set custom
 
 Most edge functions now rely on the caller's JWT instead of the powerful service role key. Only a few functions still require `SUPABASE_SERVICE_ROLE_KEY` due to privileged operations. See [docs/service-role-functions.md](docs/service-role-functions.md) for details.
 
+## Deploying Supabase Functions
+
+The repository includes several Supabase Edge Functions located in `supabase/functions`. Deploy them using the Supabase CLI after configuring the required environment variables.
+
+1. Install the CLI and log in (if you haven't already): `npm install -g supabase && supabase login`
+2. Set the secrets used by the functions:
+
+   ```bash
+   supabase secrets set \
+     SUPABASE_URL=https://your-project.supabase.co \
+     SUPABASE_SERVICE_ROLE_KEY=your_service_role_key \
+     OPENAI_API_KEY=your_openai_api_key
+   ```
+
+3. Deploy each function individually:
+
+   ```bash
+   supabase functions deploy revy-ai-chat
+   supabase functions deploy knowledge-search
+   supabase functions deploy pdf-text-extractor
+   ```
+
 ## Support
 
 For technical support or questions about AI Revy, please contact the development team.
