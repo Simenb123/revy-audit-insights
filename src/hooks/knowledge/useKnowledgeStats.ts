@@ -2,7 +2,12 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
-export const useKnowledgeStats = () => {
+interface HookOptions {
+  /** When true, errors are thrown. When false, fallback values are returned */
+  throwOnError?: boolean;
+}
+export const useKnowledgeStats = (options: HookOptions = {}) => {
+  const { throwOnError = true } = options;
   return useQuery({
     queryKey: ['knowledge-stats'],
     queryFn: async () => {
@@ -21,7 +26,8 @@ export const useKnowledgeStats = () => {
 
       if (categoriesError) {
         console.error('📊 [KNOWLEDGE_STATS] Categories error:', categoriesError);
-        throw categoriesError;
+        if (throwOnError) throw categoriesError;
+        return [];
       }
 
       console.log('📊 [KNOWLEDGE_STATS] Raw categories data:', categories);
@@ -44,7 +50,6 @@ export const useKnowledgeStats = () => {
 
           if (countError) {
             console.error('📊 [KNOWLEDGE_STATS] Count error for category', category.name, ':', countError);
-            // Don't throw, just log and continue with 0 count
             return {
               ...category,
               article_count: 0
@@ -69,7 +74,8 @@ export const useKnowledgeStats = () => {
   });
 };
 
-export const useRecentArticles = (limit = 5) => {
+export const useRecentArticles = (limit = 5, options: HookOptions = {}) => {
+  const { throwOnError = true } = options;
   return useQuery({
     queryKey: ['recent-articles', limit],
     queryFn: async () => {
@@ -93,7 +99,8 @@ export const useRecentArticles = (limit = 5) => {
 
       if (error) {
         console.error('📊 [RECENT_ARTICLES] Error:', error);
-        throw error;
+        if (throwOnError) throw error;
+        return [];
       }
 
       console.log('📊 [RECENT_ARTICLES] Fetched articles:', data?.length || 0);
@@ -106,7 +113,8 @@ export const useRecentArticles = (limit = 5) => {
   });
 };
 
-export const useTotalArticleCount = () => {
+export const useTotalArticleCount = (options: HookOptions = {}) => {
+  const { throwOnError = true } = options;
   return useQuery({
     queryKey: ['total-article-count'],
     queryFn: async () => {
@@ -119,7 +127,8 @@ export const useTotalArticleCount = () => {
 
       if (error) {
         console.error('📊 [TOTAL_ARTICLES] Error:', error);
-        throw error;
+        if (throwOnError) throw error;
+        return 0;
       }
 
       console.log('📊 [TOTAL_ARTICLES] Total count:', count);

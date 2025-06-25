@@ -2,7 +2,12 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
-export const useAuditActionTemplateCount = () => {
+interface HookOptions {
+  /** When true, errors are thrown. When false, fallback values are returned */
+  throwOnError?: boolean;
+}
+export const useAuditActionTemplateCount = (options: HookOptions = {}) => {
+  const { throwOnError = true } = options;
   return useQuery({
     queryKey: ['audit-action-template-count'],
     queryFn: async () => {
@@ -15,7 +20,8 @@ export const useAuditActionTemplateCount = () => {
 
       if (error) {
         console.error('🔧 [ACTION_TEMPLATES] Count error:', error);
-        throw error;
+        if (throwOnError) throw error;
+        return 0;
       }
 
       console.log('🔧 [ACTION_TEMPLATES] Total templates count:', count);
@@ -27,7 +33,10 @@ export const useAuditActionTemplateCount = () => {
   });
 };
 
-export const useAuditActionTemplatesBySubjectArea = () => {
+export const useAuditActionTemplatesBySubjectArea = (
+  options: HookOptions = {}
+) => {
+  const { throwOnError = true } = options;
   return useQuery({
     queryKey: ['audit-action-templates-by-subject-area'],
     queryFn: async () => {
@@ -56,7 +65,8 @@ export const useAuditActionTemplatesBySubjectArea = () => {
 
       if (error) {
         console.error('🔧 [ACTION_TEMPLATES] Fetch error:', error);
-        throw error;
+        if (throwOnError) throw error;
+        return [];
       }
 
       console.log('🔧 [ACTION_TEMPLATES] Fetched templates:', data?.length || 0);

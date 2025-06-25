@@ -18,41 +18,45 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useRobustKnowledgeStats, useRobustRecentArticles, useRobustTotalArticleCount } from '@/hooks/knowledge/useRobustKnowledgeStats';
-import { useRobustAuditActionTemplateCount } from '@/hooks/knowledge/useRobustAuditActionTemplates';
+import {
+  useKnowledgeStats,
+  useRecentArticles,
+  useTotalArticleCount,
+} from '@/hooks/knowledge/useKnowledgeStats';
+import { useAuditActionTemplateCount } from '@/hooks/knowledge/useAuditActionTemplatesPreview';
 
 const ImprovedKnowledgeOverview = () => {
   const navigate = useNavigate();
   
   console.log('📚 [IMPROVED_OVERVIEW] Component mounting...');
   
-  const { 
-    data: knowledgeStats = [], 
-    isLoading: statsLoading, 
+  const {
+    data: knowledgeStats = [],
+    isLoading: statsLoading,
     error: statsError,
-    isError: hasStatsError 
-  } = useRobustKnowledgeStats();
+    isError: hasStatsError,
+  } = useKnowledgeStats({ throwOnError: false });
   
   const { 
     data: recentArticles = [], 
     isLoading: articlesLoading, 
     error: articlesError,
     isError: hasArticlesError 
-  } = useRobustRecentArticles(3);
+  } = useRecentArticles(3, { throwOnError: false });
   
   const { 
     data: totalArticles = 0, 
     isLoading: totalLoading, 
     error: totalError,
     isError: hasTotalError 
-  } = useRobustTotalArticleCount();
+  } = useTotalArticleCount({ throwOnError: false });
   
   const { 
     data: totalActionTemplates = 0, 
     isLoading: templatesLoading, 
     error: templatesError,
     isError: hasTemplatesError 
-  } = useRobustAuditActionTemplateCount();
+  } = useAuditActionTemplateCount({ throwOnError: false });
 
   console.log('📚 [IMPROVED_OVERVIEW] Component render - Loading states:', {
     statsLoading,
