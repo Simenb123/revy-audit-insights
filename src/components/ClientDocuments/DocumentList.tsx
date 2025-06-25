@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -7,6 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FileText, Download, Trash2, Search, Calendar } from 'lucide-react';
 import { ClientDocument, useClientDocuments } from '@/hooks/useClientDocuments';
+import { useDocumentFilters } from '@/hooks/useDocumentFilters';
+import { useDownload } from '@/hooks/useDownload';
 import { formatDistanceToNow } from 'date-fns';
 import { nb } from 'date-fns/locale';
 
@@ -17,31 +19,21 @@ interface DocumentListProps {
 }
 
 const DocumentList = ({ documents, documentsByCategory, isLoading }: DocumentListProps) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('all');
-  const [subjectAreaFilter, setSubjectAreaFilter] = useState('all');
-  
   const { deleteDocument, getDocumentUrl } = useClientDocuments('');
 
-  const filteredDocuments = documents.filter(doc => {
-    const matchesSearch = doc.file_name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = categoryFilter === 'all' || doc.category === categoryFilter;
-    const matchesSubjectArea = subjectAreaFilter === 'all' || doc.subject_area === subjectAreaFilter;
-    return matchesSearch && matchesCategory && matchesSubjectArea;
-  });
+  const {
+    searchTerm,
+    setSearchTerm,
+    categoryFilter,
+    setCategoryFilter,
+    subjectAreaFilter,
+    setSubjectAreaFilter,
+    categories,
+    subjectAreas,
+    filteredDocuments,
+  } = useDocumentFilters(documents, { enableSubjectArea: true });
 
-  const categories = [...new Set(documents.map(d => d.category).filter(Boolean))];
-  const subjectAreas = [...new Set(documents.map(d => d.subject_area).filter(Boolean))];
-
-  const handleDownload = async (document: ClientDocument) => {
-    const url = await getDocumentUrl(document.file_path);
-    if (!url) return;
-    
-    const link = window.document.createElement('a');
-    link.href = url;
-    link.download = document.file_name;
-    link.click();
-  };
+  const handleDownload = useDownload(getDocumentUrl);
 
   const getFileIcon = (mimeType: string) => {
     if (mimeType.includes('pdf')) return '📄';
