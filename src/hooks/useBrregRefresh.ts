@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Client } from "@/types/revio";
 import { formatUpdateData, isDifferent } from "./formatBrregData";
 import { updateClientRoles } from "./updateClientRoles";
+import { createTimeoutSignal } from "@/utils/networkHelpers";
 
 interface UseBrregRefreshOptions {
   clients: Client[];
@@ -44,16 +45,23 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
 
         try {
           console.log(`Fetching data for ${client.name} (${client.org_number})`);
-                const functionsUrl = import.meta.env.SUPABASE_FUNCTIONS_URL ||
-                                       import.meta.env.VITE_SUPABASE_FUNCTIONS_URL;
-                const response = await fetch(`${functionsUrl}/brreg`, {
+
+          const functionsUrl =
+            import.meta.env.SUPABASE_FUNCTIONS_URL ||
+            import.meta.env.VITE_SUPABASE_FUNCTIONS_URL;
+          const { signal, clear } = createTimeoutSignal(20000);
+
+          const response = await fetch(`${functionsUrl}/brreg`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
               ...(authHeader ? { Authorization: authHeader } : {}),
             },
             body: JSON.stringify({ query: client.org_number }),
+            signal,
           });
+
+          clear();
 
           if (response.status === 404 || response.status === 429) {
             failedClients.push(client.name);
@@ -117,8 +125,16 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
           if (updatedData && updatedData.length > 0) {
             updatedClientsData[client.id] = updateData;
           }
-        } catch (error) {
-          console.error(`Error processing ${client.name}:`, error);
+        } catch (error: any) {
+          if (error.name === 'AbortError') {
+            toast({
+              title: 'Tilkoblingsfeil',
+              description: 'Tilkoblingen tok for lang tid, prøv igjen senere.',
+              variant: 'destructive',
+            });
+          } else {
+            console.error(`Error processing ${client.name}:`, error);
+          }
           failedClients.push(client.name);
         }
       }
@@ -158,12 +174,14 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
           variant: "destructive",
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("General error during refresh:", error);
       toast({
-        title: "Feil ved oppdatering",
-        description: "Kunne ikke hente oppdatert data fra Brønnøysund. Vennligst prøv igjen senere.",
-        variant: "destructive",
+        title: error.name === 'AbortError' ? 'Tilkoblingsfeil' : 'Feil ved oppdatering',
+        description: error.name === 'AbortError'
+          ? 'Tilkoblingen tok for lang tid, prøv igjen senere.'
+          : 'Kunne ikke hente oppdatert data fra Brønnøysund. Vennligst prøv igjen senere.',
+        variant: 'destructive',
       });
     } finally {
       setIsRefreshing(false);

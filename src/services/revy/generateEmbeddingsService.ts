@@ -1,5 +1,6 @@
 
 import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
+import { createTimeoutSignal } from '@/utils/networkHelpers';
 
 export const generateEmbeddingsForExistingArticles = async (): Promise<{
   success: boolean;
@@ -15,9 +16,14 @@ export const generateEmbeddingsForExistingArticles = async (): Promise<{
     console.log('🚀 Starting embedding generation for existing articles...');
     
     // Send empty JSON object instead of no body
+    const { signal, clear } = createTimeoutSignal(20000);
+
     const { data, error } = await supabase.functions.invoke('generate-embeddings', {
-      body: {}
+      body: {},
+      signal
     });
+
+    clear();
     
     if (error) {
       console.error('❌ Error calling generate-embeddings function:', error);
@@ -33,8 +39,16 @@ export const generateEmbeddingsForExistingArticles = async (): Promise<{
       message: data.message || 'Embeddings generated successfully'
     };
     
-  } catch (error) {
+  } catch (error: any) {
     console.error('💥 Error in generateEmbeddingsForExistingArticles:', error);
+    if (error.name === 'AbortError') {
+      return {
+        success: false,
+        processed: 0,
+        errors: 1,
+        message: 'Tilkoblingen tok for lang tid, prøv igjen senere'
+      };
+    }
     return {
       success: false,
       processed: 0,

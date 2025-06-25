@@ -2,6 +2,7 @@
 import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 import { RevyContext } from '@/types/revio';
 import { toast } from 'sonner';
+import { createTimeoutSignal } from '@/utils/networkHelpers';
 
 interface Variant {
   name: string;
@@ -148,13 +149,18 @@ const buildEnhancedContextWithVariantAndDocuments = async (
 
       console.log('📤 Sending knowledge search request:', requestBody);
 
+      const { signal, clear } = createTimeoutSignal(20000);
+
       const { data, error } = await supabase.functions.invoke('knowledge-search', {
         body: requestBody,
         headers: {
           'Content-Type': 'application/json',
           ...(session?.access_token && { 'Authorization': `Bearer ${session.access_token}` })
-        }
+        },
+        signal
       });
+
+      clear();
 
       if (error) {
         console.error('❌ Knowledge search failed:', error);
@@ -178,10 +184,14 @@ const buildEnhancedContextWithVariantAndDocuments = async (
           );
         }
       }
-    } catch (error) {
-      console.error('❌ Knowledge search error:', error);
-      // Don't throw here - let the main function handle fallback
-      console.log('⚠️ Knowledge search failed, continuing without it');
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        toast.error('Tilkoblingen tok for lang tid, prøv igjen senere.');
+      } else {
+        console.error('❌ Knowledge search error:', error);
+        // Don't throw here - let the main function handle fallback
+        console.log('⚠️ Knowledge search failed, continuing without it');
+      }
     }
   }
 
@@ -195,8 +205,12 @@ const buildEnhancedContextWithVariantAndDocuments = async (
         .limit(10);
       
       documentResults = documents || [];
-    } catch (error) {
-      console.error('❌ Error loading client documents:', error);
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        toast.error('Tilkoblingen tok for lang tid, prøv igjen senere.');
+      } else {
+        console.error('❌ Error loading client documents:', error);
+      }
     }
   }
 
@@ -313,9 +327,14 @@ export const generateEnhancedAIResponseWithVariant = async (
       variantName: selectedVariant?.name || 'default'
     });
     
+    const { signal, clear } = createTimeoutSignal(20000);
+
     const { data, error } = await supabase.functions.invoke('revy-ai-chat', {
-      body: requestPayload
+      body: requestPayload,
+      signal
     });
+
+    clear();
 
     console.log('📥 Response from revy-ai-chat:', {
       hasData: !!data,
@@ -418,9 +437,13 @@ export const generateEnhancedAIResponseWithVariant = async (
 
     return aiResponse;
 
-  } catch (error) {
+  } catch (error: any) {
     const responseTime = Date.now() - startTime;
     console.error('💥 Enhanced AI response generation failed, using fallback:', error);
+
+    if (error.name === 'AbortError') {
+      return 'Tilkoblingen tok for lang tid, prøv igjen senere';
+    }
     
     // SECURE FALLBACK: No direct OpenAI calls
     const fallbackResponse = getIntelligentFallback(message, context, selectedVariant);

@@ -1,4 +1,5 @@
 import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
+import { createTimeoutSignal } from '@/utils/networkHelpers';
 
 export interface SearchDiagnostic {
   timestamp: string;
@@ -51,9 +52,14 @@ export class KnowledgeSearchDiagnostics {
       // Test search function
       let searchStatus: 'working' | 'error' | 'unknown' = 'unknown';
       try {
+        const { signal, clear } = createTimeoutSignal(20000);
+
         const { data, error } = await supabase.functions.invoke('knowledge-search', {
-          body: { query: 'ISA revisjon test' }
+          body: { query: 'ISA revisjon test' },
+          signal
         });
+
+        clear();
         
         if (error) {
           console.error('❌ Search function error:', error);
@@ -62,9 +68,13 @@ export class KnowledgeSearchDiagnostics {
           searchStatus = 'working';
           console.log('✅ Search function working, returned', data.articles.length, 'results');
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('❌ Search function exception:', error);
-        searchStatus = 'error';
+        if (error.name === 'AbortError') {
+          searchStatus = 'error';
+        } else {
+          searchStatus = 'error';
+        }
       }
 
       const health: KnowledgeBaseHealth = {
@@ -132,9 +142,14 @@ export class KnowledgeSearchDiagnostics {
     let totalResults = 0;
 
     try {
+      const { signal, clear } = createTimeoutSignal(20000);
+
       const { data, error } = await supabase.functions.invoke('knowledge-search', {
-        body: { query }
+        body: { query },
+        signal
       });
+
+      clear();
 
       if (error) {
         errors.push(`Search function error: ${error.message}`);
@@ -151,8 +166,12 @@ export class KnowledgeSearchDiagnostics {
           warnings.push('No results returned for query');
         }
       }
-    } catch (error) {
-      errors.push(`Exception during search: ${error.message}`);
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        errors.push('Timeout');
+      } else {
+        errors.push(`Exception during search: ${error.message}`);
+      }
     }
 
     const responseTime = Date.now() - startTime;
