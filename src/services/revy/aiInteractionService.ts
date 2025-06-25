@@ -21,6 +21,7 @@ export const generateAIResponse = async (
     userRole,
     messageLength: message.length,
     historyLength: history.length,
+    sessionId,
   });
 
   try {
@@ -45,7 +46,7 @@ export const generateAIResponse = async (
       userId: user.id
     };
 
-    console.log('📤 Sending request to revy-ai-chat edge function');
+    console.log('📤 Sending request to revy-ai-chat edge function', { sessionId });
 
     const { data, error } = await supabase.functions.invoke('revy-ai-chat', {
       body: requestBody
@@ -80,7 +81,7 @@ export const generateAIResponse = async (
       return getFallbackResponse(context, 'general');
     }
 
-    console.log('✅ AI response received successfully', { responseLength: data.response.length });
+    console.log('✅ AI response received successfully', { responseLength: data.response.length, sessionId });
     return data.response;
 
   } catch (error) {

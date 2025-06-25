@@ -83,7 +83,8 @@ serve(async (req) => {
       hasKnowledgeArticles: knowledgeArticles.length > 0,
       knowledgeArticleCount: knowledgeArticles.length,
       hasMessage: !!message,
-      messageLength: message?.length || 0
+      messageLength: message?.length || 0,
+      sessionId
     });
 
     if (!message || message.trim() === '') {
@@ -340,7 +341,8 @@ serve(async (req) => {
       hasArticleMappings: aiResponse.includes('ARTICLE_MAPPINGS'),
       hasKnowledgeReferences: aiResponse.includes('KNOWLEDGE_ARTICLES'),
       variantUsed: selectedVariant?.name || 'default',
-      finalPreview: aiResponse.substring(0, 200) + '...'
+      finalPreview: aiResponse.substring(0, 200) + '...',
+      sessionId
     });
 
     // Log usage if user is authenticated
@@ -378,7 +380,8 @@ serve(async (req) => {
       hasResponse: !!aiResponse,
       responseLength: aiResponse.length,
       responseType: typeof aiResponse,
-      isValidString: typeof aiResponse === 'string' && aiResponse.trim().length > 0
+      isValidString: typeof aiResponse === 'string' && aiResponse.trim().length > 0,
+      sessionId
     });
 
     return new Response(JSON.stringify({ response: aiResponse }), {
@@ -423,7 +426,8 @@ serve(async (req) => {
     log('🚨 Returning error response:', {
       hasFallbackResponse: !!fallbackResponse,
       fallbackLength: fallbackResponse?.length || 0,
-      errorMessage: error.message
+      errorMessage: error.message,
+      sessionId
     });
     
     return new Response(JSON.stringify({ 

@@ -246,7 +246,8 @@ export const generateEnhancedAIResponseWithVariant = async (
       userId: (await supabase.auth.getUser()).data.user?.id?.substring(0, 8) + '...',
       hasClientData: !!clientData,
       historyLength: history.length,
-      variantName: selectedVariant?.name
+      variantName: selectedVariant?.name,
+      sessionId
     });
 
     // Check cache first
@@ -310,7 +311,8 @@ export const generateEnhancedAIResponseWithVariant = async (
       hasKnowledgeArticles: requestPayload.knowledgeArticles.length > 0,
       knowledgeArticleCount: requestPayload.knowledgeArticles.length,
       hasArticleTagMapping: Object.keys(requestPayload.articleTagMapping).length > 0,
-      variantName: selectedVariant?.name || 'default'
+      variantName: selectedVariant?.name || 'default',
+      sessionId
     });
     
     const { data, error } = await supabase.functions.invoke('revy-ai-chat', {
@@ -325,7 +327,8 @@ export const generateEnhancedAIResponseWithVariant = async (
       dataType: typeof data,
       responseField: data?.response ? 'present' : 'missing',
       responseLength: data?.response?.length || 0,
-      responsePreview: data?.response?.substring(0, 100) || 'N/A'
+      responsePreview: data?.response?.substring(0, 100) || 'N/A',
+      sessionId
     });
 
     if (error) {
@@ -351,7 +354,8 @@ export const generateEnhancedAIResponseWithVariant = async (
       responseType: typeof aiResponse,
       isEmpty: !aiResponse || aiResponse.trim() === '',
       hasContent: aiResponse && aiResponse.length > 0,
-      preview: aiResponse.substring(0, 100) + '...'
+      preview: aiResponse.substring(0, 100) + '...',
+      sessionId
     });
 
     if (!aiResponse || typeof aiResponse !== 'string' || aiResponse.trim() === '') {
@@ -385,7 +389,8 @@ export const generateEnhancedAIResponseWithVariant = async (
       hasArticleMappings: Object.keys(enhancedContextData.articleTagMapping).length > 0,
       hasDocumentReferences: enhancedContextData.knowledgeArticles.length > 0,
       variantUsed: selectedVariant?.name || 'default',
-      finalResponsePreview: aiResponse.substring(0, 200) + '...'
+      finalResponsePreview: aiResponse.substring(0, 200) + '...',
+      sessionId
     });
 
     // Cache and log the response
@@ -413,7 +418,8 @@ export const generateEnhancedAIResponseWithVariant = async (
     console.log('🎯 Returning final AI response:', {
       length: aiResponse.length,
       hasContent: !!aiResponse && aiResponse.trim().length > 0,
-      isString: typeof aiResponse === 'string'
+      isString: typeof aiResponse === 'string',
+      sessionId
     });
 
     return aiResponse;
