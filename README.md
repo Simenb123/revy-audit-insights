@@ -94,6 +94,21 @@ AI-Revi legger ved lenker til relevante artikler og dokumenter etter hvert svar.
 
 Most edge functions now rely on the caller's JWT instead of the powerful service role key. Only a few functions still require `SUPABASE_SERVICE_ROLE_KEY` due to privileged operations. See [docs/service-role-functions.md](docs/service-role-functions.md) for details.
 
+## Kilder og sporbarhet
+
+AI-Revi henter automatisk relevante kilder fra kunnskapsartikler og opplastede
+dokumenter. Etter hvert svar fra assistenten vises disse referansene som lenker
+under meldingen, slik at du enkelt kan åpne kilden og verifisere innholdet.
+
+Eksempel:
+
+```
+AI-Revi: Husk å dokumentere risikovurderingen i henhold til ISA 315.
+
+Kilder og referanser:
+[ISA 315] [Revisorloven] [balanse_2023.pdf]
+```
+
 ## Support
 
 For technical support or questions about AI Revy, please contact the development team.
