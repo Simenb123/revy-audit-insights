@@ -24,7 +24,7 @@ import PromptEditor from './PromptEditor';
 import KnowledgeMonitor from './KnowledgeMonitor';
 import UsageAnalytics from './UsageAnalytics';
 import TestInterface from './TestInterface';
-import CategoryStructureManager from './CategoryStructureManager';
+import CategoryAdmin from './CategoryAdmin';
 import DocumentTypeManager from './DocumentTypeManager';
 import AuditActionGenerator from './AuditActionGenerator';
 import DatabaseTools from './DatabaseTools';
@@ -165,7 +165,7 @@ const EnhancedAdminDashboard = () => {
         </TabsContent>
 
         <TabsContent value="categories">
-          <CategoryStructureManager />
+          <CategoryAdmin />
         </TabsContent>
 
         <TabsContent value="prompts">
