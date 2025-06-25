@@ -2,7 +2,7 @@
 import { supabase } from './supabase.ts';
 
 export async function seedArticleTags() {
-  console.log('🏷️ Adding tags to existing articles...');
+  console.log('🏷️ Adding tags to existing articles using linking table...');
   
   const articles = [
     {
@@ -49,16 +49,63 @@ export async function seedArticleTags() {
 
   for (const article of articles) {
     try {
-      const { error } = await supabase
+      const { data: articleRecord, error: findError } = await supabase
         .from('knowledge_articles')
-        .update({ tags: article.tags })
-        .ilike('title', `%${article.title.substring(0, 20)}%`);
-      
-      if (error) {
-        console.error(`❌ Error updating tags for "${article.title}":`, error);
-      } else {
-        console.log(`✅ Updated tags for: ${article.title}`);
+        .select('id')
+        .ilike('title', `%${article.title.substring(0, 20)}%`)
+        .single();
+
+      if (findError || !articleRecord) {
+        console.error(`❌ Error finding article "${article.title}":`, findError);
+        continue;
       }
+
+      for (const tagName of article.tags) {
+        const tagKey = tagName.trim().toLowerCase().replace(/\s+/g, '_');
+
+        const { data: existingTag } = await supabase
+          .from('tags')
+          .select('id')
+          .eq('name', tagKey)
+          .maybeSingle();
+
+        let tagId = existingTag?.id;
+
+        if (!tagId) {
+          const { data: newTag, error: tagError } = await supabase
+            .from('tags')
+            .insert({
+              name: tagKey,
+              display_name: tagName.trim(),
+              color: '#3B82F6',
+              category: 'article',
+              sort_order: 999,
+              is_active: true,
+            })
+            .select('id')
+            .single();
+
+          if (tagError) {
+            console.error(`❌ Error creating tag "${tagName}":`, tagError);
+            continue;
+          }
+
+          tagId = newTag.id;
+        }
+
+        const { error: linkError } = await supabase
+          .from('knowledge_article_tags')
+          .insert({ article_id: articleRecord.id, tag_id: tagId });
+
+        if (linkError && !linkError.message.includes('duplicate')) {
+          console.error(
+            `❌ Error linking tag "${tagName}" to article "${article.title}":`,
+            linkError,
+          );
+        }
+      }
+
+      console.log(`✅ Updated tags for: ${article.title}`);
     } catch (error) {
       console.error(`❌ Failed to update article "${article.title}":`, error);
     }
