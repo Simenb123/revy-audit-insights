@@ -22,12 +22,14 @@ Copy `.env.example` to `.env.local` and update the values:
 SUPABASE_URL=your_supabase_project_url
 SUPABASE_ANON_KEY=your_supabase_anonymous_key
 SUPABASE_FUNCTIONS_URL=your_supabase_functions_url
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key_here # used for accessing internal knowledge articles
+
 
 # OpenAI API Key (Required for AI features)
 OPENAI_API_KEY=your_openai_api_key
 ```
 
-**Note**: The Supabase configuration has working defaults built-in. You only need to set `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_FUNCTIONS_URL` if you want to use your own Supabase project.
+**Note**: The Supabase configuration has working defaults built-in. You only need to set `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_FUNCTIONS_URL` if you want to use your own Supabase project. `SUPABASE_SERVICE_ROLE_KEY` is required for AI Revy to access internal knowledge articles.
 
 ### Getting Your Supabase Credentials (Optional)
 
@@ -36,6 +38,7 @@ OPENAI_API_KEY=your_openai_api_key
 3. Go to Settings > API
 4. Copy the "Project URL" for `SUPABASE_URL`
 5. Copy the "anon/public" key for `SUPABASE_ANON_KEY`
+6. Copy the "service_role" key (also in Settings > API) for `SUPABASE_SERVICE_ROLE_KEY`
 
 ### Getting Your OpenAI API Key
 
