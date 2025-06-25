@@ -21,6 +21,8 @@ interface ArticleMapping {
   relevanceScore: number;
   contentType?: string;
   category?: string;
+  updated_at?: string;
+  published_at?: string;
 }
 
 // Enhanced content type configuration
@@ -334,20 +336,28 @@ export const MessageContentParser = ({ content, isEmbedded = false }: MessageCon
                 const slug = match[2];
                 const matchedMapping = Object.values(articleMappings).find(m => m.articleSlug === slug);
                 const contentType = matchedMapping?.contentType || 'fagartikkel';
-                
+                const dateStr = matchedMapping?.updated_at || matchedMapping?.published_at;
+                const formattedDate = dateStr ? new Date(dateStr).toLocaleDateString('nb-NO') : null;
+
                 return (
                   <a
                     key={`article-${i}-${matchIndex}`}
                     href={`/fag/artikkel/${match[2]}`}
-                    className="inline-flex items-center gap-2 hover:underline px-4 py-2 rounded-lg transition-all duration-200 group shadow-sm bg-white border border-gray-200 hover:shadow-md"
+                    className="block hover:underline px-4 py-2 rounded-lg transition-all duration-200 group shadow-sm bg-white border border-gray-200 hover:shadow-md"
                   >
                     <div className="flex items-center gap-2">
                       <span className={`font-medium ${isEmbedded ? 'text-sm' : 'text-base'} text-gray-900`}>
                         {match[1]}
                       </span>
                       <ContentTypeBadge contentType={contentType as any} size="sm" />
+                      <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity text-gray-500" />
                     </div>
-                    <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity text-gray-500" />
+                    {matchedMapping && (
+                      <div className="text-xs text-gray-500 mt-1 pl-6">
+                        {matchedMapping.category}
+                        {formattedDate ? ` • ${formattedDate}` : ''}
+                      </div>
+                    )}
                   </a>
                 );
               })}

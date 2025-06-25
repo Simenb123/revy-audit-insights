@@ -132,7 +132,9 @@ function createTagMapping(articles: any[], keywords: string[]) {
         matchedTags: [],
         relevanceScore: bestScore,
         contentType: 'fagartikkel',
-        category: bestMatch.category?.name || 'Ukategoriseret'
+        category: bestMatch.category?.name || 'Ukategoriseret',
+        updated_at: bestMatch.updated_at,
+        published_at: bestMatch.published_at
       };
     }
   });
