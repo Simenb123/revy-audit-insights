@@ -1,13 +1,9 @@
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
+import { getScopedClient } from './supabase.ts';
 import { log } from '../_shared/log.ts';
 
-const supabase = createClient(
-  Deno.env.get('SUPABASE_URL') ?? '',
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-);
-
-export async function fetchEnhancedClientContext(clientId: string) {
+export async function fetchEnhancedClientContext(req: Request, clientId: string) {
+  const supabase = getScopedClient(req);
   log('🔍 Fetching enhanced client context for:', clientId);
   
   try {
@@ -68,7 +64,8 @@ Gjennomsnittlig AI-sikkerhet: ${Math.round(documentInsights.avgConfidence * 100)
   }
 }
 
-export async function searchDocumentContent(clientId: string, query: string) {
+export async function searchDocumentContent(req: Request, clientId: string, query: string) {
+  const supabase = getScopedClient(req);
   log('🔍 Searching document content for client:', clientId, 'query:', query);
   
   try {
@@ -109,7 +106,8 @@ export async function searchDocumentContent(clientId: string, query: string) {
   }
 }
 
-export async function findDocumentByReference(clientId: string, reference: string) {
+export async function findDocumentByReference(req: Request, clientId: string, reference: string) {
+  const supabase = getScopedClient(req);
   log('🔍 Finding document by reference in edge function:', clientId, reference);
   
   try {
@@ -134,7 +132,7 @@ export async function findDocumentByReference(clientId: string, reference: strin
       let content = bestMatch.extracted_text;
       if (!content || content.trim().length === 0) {
         log('📄 No text content found, attempting to retrieve from file...');
-        content = await tryExtractDocumentContent(bestMatch.file_path, bestMatch.mime_type);
+        content = await tryExtractDocumentContent(supabase, bestMatch.file_path, bestMatch.mime_type);
       }
       
       return {
@@ -158,7 +156,7 @@ export async function findDocumentByReference(clientId: string, reference: strin
   }
 }
 
-async function tryExtractDocumentContent(filePath: string, mimeType: string): Promise<string | null> {
+async function tryExtractDocumentContent(supabase: any, filePath: string, mimeType: string): Promise<string | null> {
   try {
     log('🔄 Attempting to extract content from:', filePath);
     

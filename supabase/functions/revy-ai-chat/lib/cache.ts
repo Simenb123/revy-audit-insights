@@ -1,5 +1,5 @@
 
-import { supabase } from './supabase.ts';
+import { getScopedClient } from './supabase.ts';
 
 export const getRequestHash = async (payload: object): Promise<string> => {
   const sortedPayload = Object.fromEntries(Object.entries(payload).filter(([, v]) => v !== null).sort());
@@ -8,8 +8,14 @@ export const getRequestHash = async (payload: object): Promise<string> => {
   return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
 };
 
-export async function getCachedResponse(cacheKey: string, userId?: string) {
+export async function getCachedResponse(
+  req: Request,
+  cacheKey: string,
+  userId?: string
+) {
   if (!userId) return null;
+
+  const supabase = getScopedClient(req);
   
   try {
     const requestHash = await getRequestHash(JSON.parse(cacheKey));
@@ -37,12 +43,14 @@ export async function getCachedResponse(cacheKey: string, userId?: string) {
 }
 
 export async function cacheResponse(
-  cacheKey: string, 
-  response: string, 
-  userId: string, 
-  clientId?: string, 
+  req: Request,
+  cacheKey: string,
+  response: string,
+  userId: string,
+  clientId?: string,
   model?: string
 ) {
+  const supabase = getScopedClient(req);
   try {
     const requestHash = await getRequestHash(JSON.parse(cacheKey));
     

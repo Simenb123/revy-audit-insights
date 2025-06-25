@@ -1,5 +1,5 @@
 
-import { supabase } from './supabase.ts';
+import { getScopedClient } from './supabase.ts';
 import { log } from '../_shared/log.ts';
 
 type ContextPrompts = {
@@ -10,7 +10,8 @@ type ContextPrompts = {
   'general': string;
 };
 
-export async function getLatestPromptConfiguration() {
+export async function getLatestPromptConfiguration(req: Request) {
+  const supabase = getScopedClient(req);
   try {
     log('🔧 Loading latest prompt configuration from database...');
     

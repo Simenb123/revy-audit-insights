@@ -1,5 +1,5 @@
 
-import { supabase } from './supabase.ts';
+import { getScopedClient } from './supabase.ts';
 import { extractIntelligentKeywords } from './utils.ts';
 import { log } from '../_shared/log.ts';
 
@@ -33,10 +33,12 @@ interface EnhancedKnowledgeResult {
 }
 
 export async function searchKnowledgeIntelligently(
-  message: string, 
-  context: string, 
+  req: Request,
+  message: string,
+  context: string,
   clientData?: any
 ): Promise<EnhancedKnowledgeResult> {
+  const supabase = getScopedClient(req);
   try {
     log('🔍 Starting intelligent knowledge search with enhanced content type support...');
     log(`📝 Message: "${message}"`);

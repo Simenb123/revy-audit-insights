@@ -110,7 +110,7 @@ serve(async (req) => {
     if (isKnowledgeQuery) {
       log('🏷️ Knowledge query detected, ensuring article tags are seeded...');
       try {
-        await seedArticleTags();
+        await seedArticleTags(req);
       } catch (error) {
         log('⚠️ Tag seeding failed, continuing with query:', error.message);
       }
@@ -124,7 +124,7 @@ serve(async (req) => {
       userRole, 
       variantName: selectedVariant?.name 
     });
-    const cachedResponse = await getCachedResponse(cacheKey, userId);
+    const cachedResponse = await getCachedResponse(req, cacheKey, userId);
     
     if (cachedResponse) {
       log('✅ Cache hit for variant-aware request!', { 
@@ -150,8 +150,9 @@ serve(async (req) => {
     if (!enhancedSystemPrompt) {
       // Build enhanced context with variant and document support
       const enhancedContext = await buildEnhancedContextWithVariant(
-        message, 
-        context, 
+        req,
+        message,
+        context,
         clientData,
         selectedVariant
       );
@@ -346,7 +347,7 @@ serve(async (req) => {
     // Log usage if user is authenticated
     if (userId && data.usage) {
       try {
-        await logUsage({
+        await logUsage(req, {
           userId,
           model: selectedModel,
           promptTokens: data.usage.prompt_tokens,
@@ -367,7 +368,7 @@ serve(async (req) => {
     // Cache the response with variant awareness
     if (userId) {
       try {
-        await cacheResponse(cacheKey, aiResponse, userId, clientData?.id, selectedModel);
+        await cacheResponse(req, cacheKey, aiResponse, userId, clientData?.id, selectedModel);
         log('✅ Document-enhanced response cached successfully');
       } catch (error) {
         console.error('❌ Failed to cache response:', error);

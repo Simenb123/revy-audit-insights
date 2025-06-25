@@ -1,8 +1,9 @@
 
-import { supabase } from './supabase.ts';
+import { getScopedClient } from './supabase.ts';
 import { log } from '../_shared/log.ts';
 
-export async function seedArticleTags() {
+export async function seedArticleTags(req: Request) {
+  const supabase = getScopedClient(req);
   log('🏷️ Adding tags to existing articles using linking table...');
   
   const articles = [
