@@ -15,8 +15,11 @@ const AppHeader = ({ onToggleRightSidebar, isRightSidebarCollapsed }: AppHeaderP
   const isMobile = useIsMobile();
 
   return (
-    <header className="bg-sidebar border-b border-sidebar-border sticky top-0 z-50 w-full">
-      <div className="flex h-14 items-center justify-between px-4">
+    <header
+      className="bg-sidebar border-b border-sidebar-border sticky top-0 z-50 w-full"
+      style={{ height: "var(--header-height)" }}
+    >
+      <div className="flex items-center justify-between px-4" style={{ height: "100%" }}>
         <div className="flex items-center gap-4">
           <Logo />
           {!isMobile && (
