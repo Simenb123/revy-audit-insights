@@ -19,6 +19,17 @@ const EnhancedMessageContentParser: React.FC<EnhancedMessageContentParserProps> 
   const variantMatch = content.match(/<!-- VARIANT_INFO: (.*?) -->/);
   const variantInfo = variantMatch ? JSON.parse(variantMatch[1]) : null;
 
+  // Extract document references if present
+  const docRefMatch = content.match(/<!-- DOCUMENT_REFERENCES: (.*?) -->/);
+  let documentReferences: Array<{ id: string; fileName?: string; snippet?: string }> = [];
+  if (docRefMatch) {
+    try {
+      documentReferences = JSON.parse(docRefMatch[1]);
+    } catch (e) {
+      console.error('Failed to parse DOCUMENT_REFERENCES:', e);
+    }
+  }
+
   // Clean content for display (remove metadata comments)
   const cleanContent = content
     .replace(/<!-- ARTICLE_MAPPINGS: .*? -->/g, '')
@@ -50,6 +61,32 @@ const EnhancedMessageContentParser: React.FC<EnhancedMessageContentParserProps> 
       )}
       
       <MessageContentParser content={cleanContent} />
+
+      {documentReferences.length > 0 && (
+        <div className="mt-4 space-y-2">
+          <h4 className="text-sm font-medium">Kildedokumenter</h4>
+          <ul className="space-y-2">
+            {documentReferences.map((doc) => (
+              <li key={doc.id} className="border rounded-lg p-2 bg-gray-50">
+                <div className="text-xs font-semibold text-gray-700">
+                  {doc.fileName}
+                </div>
+                {doc.snippet && (
+                  <p className="text-xs text-gray-600 italic mt-1">
+                    "{doc.snippet}"
+                  </p>
+                )}
+                <a
+                  href="/documents"
+                  className="text-xs text-blue-600 hover:underline mt-1 inline-block"
+                >
+                  Åpne dokument
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 };
