@@ -14,6 +14,7 @@ AI Revy is an intelligent audit assistant built for Norwegian audit firms, provi
 ## Project Overview
 
 For a high-level tour of the architecture and key modules, see [docs/project-overview.md](docs/project-overview.md).
+For the document processing pipeline, see [docs/document-workflow.md](docs/document-workflow.md).
 
 ## Environment Setup
 
