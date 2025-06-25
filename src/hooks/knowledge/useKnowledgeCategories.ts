@@ -2,6 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { AuditPhase } from '@/types/revio';
 
 export interface KnowledgeCategory {
   id: string;
@@ -10,7 +11,7 @@ export interface KnowledgeCategory {
   icon?: string;
   parent_category_id?: string;
   display_order: number;
-  applicable_phases?: string[];
+  applicable_phases?: AuditPhase[];
   created_at: string;
   updated_at: string;
   children?: KnowledgeCategory[];
@@ -42,7 +43,10 @@ export const useCreateKnowledgeCategory = () => {
       
       const { data, error } = await supabase
         .from('knowledge_categories')
-        .insert(categoryData)
+        .insert({
+          ...categoryData,
+          applicable_phases: categoryData.applicable_phases as any
+        })
         .select()
         .single();
 
@@ -68,7 +72,10 @@ export const useUpdateKnowledgeCategory = () => {
       
       const { data, error } = await supabase
         .from('knowledge_categories')
-        .update(updateData)
+        .update({
+          ...updateData,
+          applicable_phases: updateData.applicable_phases as any
+        })
         .eq('id', id)
         .select()
         .single();

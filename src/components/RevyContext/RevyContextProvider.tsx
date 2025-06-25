@@ -1,20 +1,90 @@
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useLocation, useParams } from 'react-router-dom';
-import { useClientDetails } from '@/hooks/useClientDetails';
-import { Client, AuditPhase, RevyContext } from '@/types/revio';
+import React, { createContext, useContext, useReducer, useCallback } from 'react';
+import { RevyContext } from '@/types/revio';
 
-interface RevyContextType {
+interface RevyContextState {
   currentContext: RevyContext;
-  currentClient: Client | null;
-  currentPhase: AuditPhase | null;
-  isClientContext: boolean;
-  contextualData: any;
-  updateContext: (context: RevyContext, data?: any) => void;
-  setContext: (context: RevyContext) => void;
+  clientId?: string;
+  phase?: string;
+  contextData?: any;
+  previousContext?: RevyContext;
 }
 
-const RevyContextContext = createContext<RevyContextType | undefined>(undefined);
+interface RevyContextAction {
+  type: 'SET_CONTEXT' | 'UPDATE_CONTEXT_DATA' | 'RESET_CONTEXT';
+  payload?: Partial<RevyContextState>;
+}
+
+const initialState: RevyContextState = {
+  currentContext: 'general',
+  contextData: {}
+};
+
+function revyContextReducer(state: RevyContextState, action: RevyContextAction): RevyContextState {
+  switch (action.type) {
+    case 'SET_CONTEXT':
+      return {
+        ...state,
+        previousContext: state.currentContext,
+        ...action.payload
+      };
+    case 'UPDATE_CONTEXT_DATA':
+      return {
+        ...state,
+        contextData: {
+          ...state.contextData,
+          ...action.payload?.contextData
+        }
+      };
+    case 'RESET_CONTEXT':
+      return initialState;
+    default:
+      return state;
+  }
+}
+
+const RevyContextContext = createContext<{
+  state: RevyContextState;
+  setContext: (context: RevyContext, data?: Partial<RevyContextState>) => void;
+  updateContextData: (data: any) => void;
+  resetContext: () => void;
+} | undefined>(undefined);
+
+export const RevyContextProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [state, dispatch] = useReducer(revyContextReducer, initialState);
+
+  const setContext = useCallback((context: RevyContext, data?: Partial<RevyContextState>) => {
+    dispatch({
+      type: 'SET_CONTEXT',
+      payload: {
+        currentContext: context,
+        ...data
+      }
+    });
+  }, []);
+
+  const updateContextData = useCallback((data: any) => {
+    dispatch({
+      type: 'UPDATE_CONTEXT_DATA',
+      payload: { contextData: data }
+    });
+  }, []);
+
+  const resetContext = useCallback(() => {
+    dispatch({ type: 'RESET_CONTEXT' });
+  }, []);
+
+  return (
+    <RevyContextContext.Provider value={{
+      state,
+      setContext,
+      updateContextData,
+      resetContext
+    }}>
+      {children}
+    </RevyContextContext.Provider>
+  );
+};
 
 export const useRevyContext = () => {
   const context = useContext(RevyContextContext);
@@ -22,93 +92,4 @@ export const useRevyContext = () => {
     throw new Error('useRevyContext must be used within a RevyContextProvider');
   }
   return context;
-};
-
-export const RevyContextProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const location = useLocation();
-  const { orgNumber } = useParams<{ orgNumber: string }>();
-  const [currentContext, setCurrentContext] = useState<RevyContext>('general');
-  const [contextualData, setContextualData] = useState<any>({});
-
-  // Get client data if we're in a client context
-  const { data: client } = useClientDetails(orgNumber || '');
-
-  // Determine context based on current route
-  useEffect(() => {
-    const path = location.pathname;
-    let newContext: RevyContext = 'general';
-
-    if (path.includes('/klienter/') && orgNumber) {
-      if (path.includes('/regnskap')) {
-        newContext = 'accounting-data';
-      } else if (path.includes('/analyser')) {
-        newContext = 'analysis';
-      } else if (path.includes('/regnskapsdata')) {
-        newContext = 'data-upload';
-      } else if (path.includes('/revisjonshandlinger') || path.includes('/actions')) {
-        newContext = 'audit-actions';
-      } else if (path.includes('/risikovurdering') || path.includes('/risk')) {
-        newContext = 'risk-assessment';
-      } else if (path.includes('/dokumentasjon') || path.includes('/documents')) {
-        newContext = 'documentation';
-      } else if (path.includes('/team') || path.includes('/samarbeid')) {
-        newContext = 'collaboration';
-      } else {
-        newContext = 'client-detail';
-      }
-    } else if (path.includes('/klienter')) {
-      newContext = 'client-overview';
-    } else if (path.includes('/dashboard')) {
-      newContext = 'dashboard';
-    } else if (path.includes('/fag') || path.includes('/knowledge')) {
-      newContext = 'knowledge-base';
-    } else if (path.includes('/teams')) {
-      newContext = 'team-management';
-    } else if (path.includes('/communication')) {
-      newContext = 'communication';
-    }
-    
-    setCurrentContext(newContext);
-
-    // Update contextual data based on client
-    if (client) {
-      setContextualData({
-        client,
-        industry: client.industry,
-        phase: client.phase,
-        progress: client.progress,
-        orgNumber: client.org_number,
-        companyName: client.company_name
-      });
-    } else {
-      setContextualData({});
-    }
-  }, [location.pathname, orgNumber, client]);
-
-  const updateContext = (context: RevyContext, data?: any) => {
-    setCurrentContext(context);
-    if (data) {
-      setContextualData(prev => ({ ...prev, ...data }));
-    }
-  };
-
-  const setContext = (context: RevyContext) => {
-    setCurrentContext(context);
-  };
-
-  const value: RevyContextType = {
-    currentContext,
-    currentClient: client || null,
-    currentPhase: client?.phase || null,
-    isClientContext: !!orgNumber && !!client,
-    contextualData,
-    updateContext,
-    setContext
-  };
-
-  return (
-    <RevyContextContext.Provider value={value}>
-      {children}
-    </RevyContextContext.Provider>
-  );
 };

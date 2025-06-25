@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -69,7 +68,7 @@ const AuditActionsFlowTester = ({ clientId }: AuditActionsFlowTesterProps) => {
   ]);
 
   const updateStepStatus = (stepId: string, status: TestStep['status'], result?: any, error?: string) => {
-    setTestSteps(prev => prev.map(step => 
+    setTestSteps((prev: TestStep[]) => prev.map(step => 
       step.id === stepId 
         ? { ...step, status, result, error }
         : step
@@ -89,7 +88,7 @@ const AuditActionsFlowTester = ({ clientId }: AuditActionsFlowTesterProps) => {
       ];
       
       updateStepStatus('template-load', 'success', { count: mockTemplates.length, templates: mockTemplates });
-      setResults(prev => ({ ...prev, templates: mockTemplates }));
+      setResults((prev: any) => ({ ...prev, templates: mockTemplates }));
       
     } catch (error) {
       updateStepStatus('template-load', 'error', null, 'Kunne ikke laste maler');
@@ -109,7 +108,7 @@ const AuditActionsFlowTester = ({ clientId }: AuditActionsFlowTesterProps) => {
       };
       
       updateStepStatus('ai-generation', 'success', aiGeneratedAction);
-      setResults(prev => ({ ...prev, aiAction: aiGeneratedAction }));
+      setResults((prev: any) => ({ ...prev, aiAction: aiGeneratedAction }));
       
     } catch (error) {
       updateStepStatus('ai-generation', 'error', null, 'AI-generering feilet');
@@ -130,7 +129,7 @@ const AuditActionsFlowTester = ({ clientId }: AuditActionsFlowTesterProps) => {
       };
       
       updateStepStatus('document-analysis', 'success', analysisResult);
-      setResults(prev => ({ ...prev, documentAnalysis: analysisResult }));
+      setResults((prev: any) => ({ ...prev, documentAnalysis: analysisResult }));
       
     } catch (error) {
       updateStepStatus('document-analysis', 'error', null, 'Dokumentanalyse feilet');
@@ -151,7 +150,7 @@ const AuditActionsFlowTester = ({ clientId }: AuditActionsFlowTesterProps) => {
       };
       
       updateStepStatus('action-linking', 'success', linkingResult);
-      setResults(prev => ({ ...prev, linking: linkingResult }));
+      setResults((prev: any) => ({ ...prev, linking: linkingResult }));
       
     } catch (error) {
       updateStepStatus('action-linking', 'error', null, 'Kobling feilet');
@@ -176,20 +175,21 @@ const AuditActionsFlowTester = ({ clientId }: AuditActionsFlowTesterProps) => {
       };
       
       updateStepStatus('end-to-end', 'success', e2eResult);
-      setResults(prev => ({ ...prev, endToEnd: e2eResult }));
+      setResults((prev: any) => ({ ...prev, endToEnd: e2eResult }));
       
     } catch (error) {
       updateStepStatus('end-to-end', 'error', null, 'End-to-end test feilet');
     }
   };
 
+  
   const runAllTests = async () => {
     setIsRunning(true);
     setCurrentStep(0);
     
     try {
       // Reset alle statuser
-      setTestSteps(prev => prev.map(step => ({ ...step, status: 'pending', result: undefined, error: undefined })));
+      setTestSteps((prev: TestStep[]) => prev.map(step => ({ ...step, status: 'pending' as const, result: undefined, error: undefined })));
       
       const tests = [
         simulateTemplateLoad,

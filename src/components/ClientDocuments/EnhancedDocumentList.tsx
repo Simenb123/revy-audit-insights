@@ -196,7 +196,7 @@ const EnhancedDocumentList = ({ documents, isLoading, clientId, onUpdate }: Enha
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => handleDownload(document)}
+                      onClick={() => handleDownload(document.id, document.file_name)}
                       title="Last ned dokument"
                     >
                       <Download className="h-4 w-4" />

@@ -313,7 +313,7 @@ const ArticleEditor = () => {
 
       console.log("Article data to save:", articleData);
 
-      let savedArticle;
+      let savedArticle: KnowledgeArticle;
       if (isEditing && articleId) {
         const { data: result, error } = await supabase
           .from("knowledge_articles")
@@ -330,7 +330,7 @@ const ArticleEditor = () => {
           }
           throw error;
         }
-        savedArticle = result;
+        savedArticle = result as KnowledgeArticle;
 
         // Update subject area mappings
         if (data.subjectAreaIds && data.subjectAreaIds.length > 0) {
@@ -369,7 +369,7 @@ const ArticleEditor = () => {
           }
           throw error;
         }
-        savedArticle = result;
+        savedArticle = result as KnowledgeArticle;
 
         // Insert subject area mappings for new articles
         if (data.subjectAreaIds && data.subjectAreaIds.length > 0) {

@@ -167,7 +167,7 @@ const DocumentList = ({ documents, documentsByCategory, isLoading }: DocumentLis
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => handleDownload(document)}
+                      onClick={() => handleDownload(document.id, document.file_name)}
                     >
                       <Download className="h-4 w-4" />
                     </Button>
