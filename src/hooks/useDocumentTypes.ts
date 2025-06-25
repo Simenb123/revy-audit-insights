@@ -1,20 +1,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-
-export interface DocumentType {
-  id: string;
-  name: string;
-  display_name: string;
-  description?: string;
-  file_pattern_hints: string[];
-  expected_structure: any;
-  validation_rules?: any;
-  is_standard: boolean;
-  sort_order: number;
-  created_at: string;
-  updated_at: string;
-}
+import type { DocumentType } from '@/types/classification';
 
 export interface DocumentTag {
   id: string;
@@ -50,8 +37,10 @@ export function useDocumentTags() {
         .select('*')
         .order('usage_count', { ascending: false });
       
-      if (error) throw error;
-      return data as DocumentTag[];
-    }
+    if (error) throw error;
+    return data as DocumentTag[];
+  }
   });
 }
+
+export type { DocumentType };

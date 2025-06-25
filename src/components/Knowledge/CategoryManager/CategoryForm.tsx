@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { KnowledgeCategory } from '@/types/knowledge';
+import { Category } from '@/types/classification';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -8,10 +8,10 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface CategoryFormProps {
-  category?: KnowledgeCategory;
+  category?: Category;
   onSubmit: (data: any) => void;
   onCancel?: () => void;
-  categories: KnowledgeCategory[];
+  categories: Category[];
 }
 
 const CategoryForm = ({ 

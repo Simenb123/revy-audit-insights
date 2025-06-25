@@ -1,8 +1,5 @@
-import createTaxonomyHooks, { TaxonomyBase } from './useTaxonomy';
-
-export interface ContentType extends TaxonomyBase {
-  icon?: string;
-}
+import createTaxonomyHooks from './useTaxonomy';
+import type { ContentType } from '@/types/classification';
 
 const {
   useTaxonomies: useContentTypes,
@@ -19,3 +16,5 @@ export {
   useUpdateContentType,
   useDeleteContentType,
 };
+
+export type { ContentType };

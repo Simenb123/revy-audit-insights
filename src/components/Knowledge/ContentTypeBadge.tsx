@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
-import { ContentType } from '@/types/knowledge';
+import { ContentType } from '@/types/classification';
 
 interface ContentTypeBadgeProps {
   contentType: ContentType;

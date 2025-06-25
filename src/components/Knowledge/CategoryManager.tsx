@@ -9,14 +9,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
-import { KnowledgeCategory } from '@/types/knowledge';
+import { Category } from '@/types/classification';
 import { Folder, FolderOpen, Edit, Trash2, Plus, Move, AlertTriangle, ChevronRight, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
 import ConfirmDeleteDialog from './ConfirmDeleteDialog';
 
 const CategoryManager = () => {
-  const [selectedCategory, setSelectedCategory] = useState<KnowledgeCategory | null>(null);
-  const [editingCategory, setEditingCategory] = useState<KnowledgeCategory | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isMoveDialogOpen, setIsMoveDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -33,7 +33,7 @@ const CategoryManager = () => {
         .order('display_order');
       
       if (error) throw error;
-      return data as KnowledgeCategory[];
+      return data as Category[];
     }
   });
 
@@ -54,7 +54,7 @@ const CategoryManager = () => {
   });
 
   const updateCategoryMutation = useMutation({
-    mutationFn: async (category: Partial<KnowledgeCategory> & { id: string }) => {
+    mutationFn: async (category: Partial<Category> & { id: string }) => {
       const cleanCategory = {
         name: category.name,
         description: category.description,
@@ -82,7 +82,7 @@ const CategoryManager = () => {
   });
 
   const createCategoryMutation = useMutation({
-    mutationFn: async (category: Omit<KnowledgeCategory, 'id' | 'created_at' | 'updated_at'>) => {
+    mutationFn: async (category: Omit<Category, 'id' | 'created_at' | 'updated_at'>) => {
       const cleanCategory = {
         name: category.name,
         description: category.description,
@@ -294,7 +294,7 @@ const CategoryManager = () => {
     }
   });
 
-  const buildCategoryTree = (categories: KnowledgeCategory[], parentId: string | null = null): KnowledgeCategory[] => {
+  const buildCategoryTree = (categories: Category[], parentId: string | null = null): Category[] => {
     return categories
       .filter(cat => cat.parent_category_id === parentId)
       .sort((a, b) => a.display_order - b.display_order)
@@ -314,7 +314,7 @@ const CategoryManager = () => {
     setExpandedCategories(newExpanded);
   };
 
-  const renderCategoryTree = (categories: KnowledgeCategory[], depth: number = 0) => {
+  const renderCategoryTree = (categories: Category[], depth: number = 0) => {
     return categories.map((category) => {
       const hasChildren = category.children && category.children.length > 0;
       const isExpanded = expandedCategories.has(category.id);
@@ -662,12 +662,12 @@ const CategoryForm = ({
   category, 
   onSubmit, 
   onCancel, 
-  categories 
+  categories
 }: {
-  category?: KnowledgeCategory;
+  category?: Category;
   onSubmit: (data: any) => void;
   onCancel?: () => void;
-  categories: KnowledgeCategory[];
+  categories: Category[];
 }) => {
   const [formData, setFormData] = useState({
     name: category?.name || '',
@@ -775,8 +775,8 @@ const MoveArticlesForm = ({
   categories, 
   onSubmit 
 }: {
-  fromCategory: KnowledgeCategory;
-  categories: KnowledgeCategory[];
+  fromCategory: Category;
+  categories: Category[];
   onSubmit: (toCategoryId: string) => void;
 }) => {
   const [toCategoryId, setToCategoryId] = useState('');

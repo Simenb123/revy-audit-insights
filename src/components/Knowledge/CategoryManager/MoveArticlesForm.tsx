@@ -1,13 +1,13 @@
 
 import React, { useState } from 'react';
-import { KnowledgeCategory } from '@/types/knowledge';
+import { Category } from '@/types/classification';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface MoveArticlesFormProps {
-  fromCategory: KnowledgeCategory;
-  categories: KnowledgeCategory[];
+  fromCategory: Category;
+  categories: Category[];
   onSubmit: (toCategoryId: string) => void;
 }
 

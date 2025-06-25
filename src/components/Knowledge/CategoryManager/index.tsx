@@ -34,13 +34,7 @@ import { Plus, Copy, Trash2, Move } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-
-interface Category {
-  id: string;
-  name: string;
-  description?: string;
-  created_at: string;
-}
+import type { Category } from '@/types/classification';
 
 interface Article {
   id: string;

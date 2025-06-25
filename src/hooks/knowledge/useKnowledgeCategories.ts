@@ -1,10 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { KnowledgeCategory } from '@/types/knowledge';
+import type { Category } from '@/types/classification';
 
 // Build hierarchical structure from flat array
-const buildTree = (cats: KnowledgeCategory[], parentId: string | null = null): KnowledgeCategory[] => {
+const buildTree = (cats: Category[], parentId: string | null = null): Category[] => {
   return cats
     .filter(c => c.parent_category_id === parentId)
     .sort((a, b) => a.display_order - b.display_order)
@@ -14,7 +14,7 @@ const buildTree = (cats: KnowledgeCategory[], parentId: string | null = null): K
 export const useKnowledgeCategories = () => {
   return useQuery({
     queryKey: ['knowledge-categories'],
-    queryFn: async (): Promise<KnowledgeCategory[]> => {
+    queryFn: async (): Promise<Category[]> => {
       const { data, error } = await supabase
         .from('knowledge_categories')
         .select('*')
@@ -36,7 +36,7 @@ export const useCreateKnowledgeCategory = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (category: Omit<KnowledgeCategory, 'id' | 'created_at' | 'updated_at'>) => {
+    mutationFn: async (category: Omit<Category, 'id' | 'created_at' | 'updated_at'>) => {
       const payload = {
         name: category.name,
         description: category.description || null,
@@ -53,7 +53,7 @@ export const useCreateKnowledgeCategory = () => {
         .single();
 
       if (error) throw error;
-      return data as KnowledgeCategory;
+      return data as Category;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['knowledge-categories'] });
@@ -69,7 +69,7 @@ export const useUpdateKnowledgeCategory = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, ...updates }: Partial<KnowledgeCategory> & { id: string }) => {
+    mutationFn: async ({ id, ...updates }: Partial<Category> & { id: string }) => {
       const payload = {
         name: updates.name,
         description: updates.description || null,
@@ -87,7 +87,7 @@ export const useUpdateKnowledgeCategory = () => {
         .single();
 
       if (error) throw error;
-      return data as KnowledgeCategory;
+      return data as Category;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['knowledge-categories'] });
@@ -120,3 +120,5 @@ export const useDeleteKnowledgeCategory = () => {
     },
   });
 };
+
+export type { Category };

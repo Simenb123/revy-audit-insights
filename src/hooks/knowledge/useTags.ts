@@ -1,8 +1,5 @@
-import createTaxonomyHooks, { TaxonomyBase } from './useTaxonomy';
-
-export interface Tag extends TaxonomyBase {
-  category?: string;
-}
+import createTaxonomyHooks from './useTaxonomy';
+import type { Tag } from '@/types/classification';
 
 const {
   useTaxonomies: useTags,
@@ -19,3 +16,5 @@ export {
   useUpdateTag,
   useDeleteTag,
 };
+
+export type { Tag };
