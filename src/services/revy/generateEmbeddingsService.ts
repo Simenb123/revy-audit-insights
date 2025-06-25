@@ -1,5 +1,6 @@
 
 import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
+import { log, error as logError } from '@/utils/logger';
 
 export const generateEmbeddingsForExistingArticles = async (): Promise<{
   success: boolean;
@@ -8,11 +9,11 @@ export const generateEmbeddingsForExistingArticles = async (): Promise<{
   message: string;
 }> => {
   if (!isSupabaseConfigured || !supabase) {
-    console.error("Supabase is not configured. Cannot generate embeddings.");
-    return { success: false, processed: 0, errors: 1, message: "Supabase not initialized" };
+    logError('Supabase is not configured. Cannot generate embeddings.');
+    return { success: false, processed: 0, errors: 1, message: 'Supabase not initialized' };
   }
   try {
-    console.log('🚀 Starting embedding generation for existing articles...');
+    log('🚀 Starting embedding generation for existing articles...');
     
     // Send empty JSON object instead of no body
     const { data, error } = await supabase.functions.invoke('generate-embeddings', {
@@ -20,11 +21,11 @@ export const generateEmbeddingsForExistingArticles = async (): Promise<{
     });
     
     if (error) {
-      console.error('❌ Error calling generate-embeddings function:', error);
+      logError('❌ Error calling generate-embeddings function:', error);
       throw new Error(error.message || 'Failed to generate embeddings');
     }
     
-    console.log('✅ Embedding generation response:', data);
+    log('✅ Embedding generation response:', data);
     
     return {
       success: true,
@@ -34,7 +35,7 @@ export const generateEmbeddingsForExistingArticles = async (): Promise<{
     };
     
   } catch (error) {
-    console.error('💥 Error in generateEmbeddingsForExistingArticles:', error);
+    logError('💥 Error in generateEmbeddingsForExistingArticles:', error);
     return {
       success: false,
       processed: 0,

@@ -1,4 +1,5 @@
 import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
+import { log, error as logError } from '@/utils/logger';
 
 export interface SearchLogEntry {
   timestamp: string;
@@ -34,7 +35,7 @@ class EnhancedSearchLogger {
     }
 
     // Console logging for development
-    console.log('📊 Search Log:', {
+    log('📊 Search Log:', {
       query: entry.query,
       method: entry.method,
       results: entry.resultsCount,
@@ -89,7 +90,7 @@ class EnhancedSearchLogger {
 
   static clearLogs() {
     this.logs = [];
-    console.log('🧹 Search logs cleared');
+    log('🧹 Search logs cleared');
   }
 }
 
@@ -98,7 +99,7 @@ export { EnhancedSearchLogger };
 // Enhanced search wrapper that adds logging
 export const performEnhancedSearch = async (query: string): Promise<any> => {
   if (!isSupabaseConfigured || !supabase) {
-    console.error("Supabase is not configured. Search cannot proceed.");
+    logError('Supabase is not configured. Search cannot proceed.');
     return { articles: [], tagMapping: {} };
   }
   const startTime = Date.now();
@@ -114,7 +115,7 @@ export const performEnhancedSearch = async (query: string): Promise<any> => {
       logEntry.userId = user.id;
     }
 
-    console.log('🔍 Enhanced search starting for:', query);
+    log('🔍 Enhanced search starting for:', query);
 
     const { data, error } = await supabase.functions.invoke('knowledge-search', {
       body: { query }
@@ -168,7 +169,7 @@ export const performEnhancedSearch = async (query: string): Promise<any> => {
 
     EnhancedSearchLogger.logSearch(logEntry as SearchLogEntry);
 
-    console.log('✅ Enhanced search completed:', {
+    log('✅ Enhanced search completed:', {
       query,
       results: articles.length,
       method: determinedMethod,
@@ -190,7 +191,7 @@ export const performEnhancedSearch = async (query: string): Promise<any> => {
 
     EnhancedSearchLogger.logSearch(logEntry as SearchLogEntry);
     
-    console.error('❌ Enhanced search failed:', error);
+    logError('❌ Enhanced search failed:', error);
     throw error;
   }
 };

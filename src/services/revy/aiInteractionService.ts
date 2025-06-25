@@ -1,6 +1,7 @@
 
 import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 import { RevyContext, RevyChatMessage } from '@/types/revio';
+import { log, error } from '@/utils/logger';
 
 // Generate AI response using Supabase Edge Function with enhanced context and knowledge integration
 export const generateAIResponse = async (
@@ -12,10 +13,10 @@ export const generateAIResponse = async (
   sessionId?: string
 ): Promise<string> => {
   if (!isSupabaseConfigured || !supabase) {
-    console.error("Supabase is not configured. AI response cannot proceed.");
+    error('Supabase is not configured. AI response cannot proceed.');
     throw new Error("Supabase not initialized");
   }
-  console.log('🚀 Calling generateAIResponse service', {
+  log('🚀 Calling generateAIResponse service', {
     context,
     hasClientData: !!clientData,
     userRole,
@@ -27,11 +28,11 @@ export const generateAIResponse = async (
     // Get current user
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
-      console.error('❌ Authentication error in generateAIResponse:', userError?.message || 'No user found');
+      error('❌ Authentication error in generateAIResponse:', userError?.message || 'No user found');
       throw new Error('Du må være logget inn for å bruke AI-assistenten');
     }
 
-    console.log('✅ User authenticated for AI call:', user.id);
+    log('✅ User authenticated for AI call:', { userId: user.id });
 
     const simplifiedHistory = history.map(msg => ({ sender: msg.sender, content: msg.content }));
 
@@ -45,14 +46,14 @@ export const generateAIResponse = async (
       userId: user.id
     };
 
-    console.log('📤 Sending request to revy-ai-chat edge function');
+    log('📤 Sending request to revy-ai-chat edge function');
 
     const { data, error } = await supabase.functions.invoke('revy-ai-chat', {
       body: requestBody
     });
 
     if (error) {
-      console.error('❌ Supabase function invocation error:', error);
+      error('❌ Supabase function invocation error:', error);
       
       // More specific error handling
       if (error.message?.includes('FunctionsHttpError')) {
@@ -61,13 +62,13 @@ export const generateAIResponse = async (
         throw new Error('Autorisasjonsfeil. Logg ut og inn igjen.');
       } else {
         const errorMessage = error.context?.msg || error.message || 'Ukjent feil fra AI-tjenesten';
-        console.log('🆘 Using fallback response for error:', errorMessage);
+        log('🆘 Using fallback response for error:', errorMessage);
         return getFallbackResponse(context, 'ai_error', errorMessage);
       }
     }
 
     if (data?.isError) {
-      console.error('❌ Error response from AI function:', data.error);
+      error('❌ Error response from AI function:', data.error);
       // Return the fallback response if it exists, otherwise use our fallback
       if (data.response) {
         return data.response;
@@ -76,15 +77,15 @@ export const generateAIResponse = async (
     }
 
     if (!data || !data.response) {
-      console.error('❌ Invalid response structure from AI function:', data);
+      error('❌ Invalid response structure from AI function:', data);
       return getFallbackResponse(context, 'general');
     }
 
-    console.log('✅ AI response received successfully', { responseLength: data.response.length });
+    log('✅ AI response received successfully', { responseLength: data.response.length });
     return data.response;
 
   } catch (error) {
-    console.error('💥 Final catch block in generateAIResponse:', error);
+    error('💥 Final catch block in generateAIResponse:', error);
     
     // Enhanced fallback responses based on error type and context
     if (error instanceof Error) {

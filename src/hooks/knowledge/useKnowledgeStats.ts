@@ -1,12 +1,13 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { log, error as logError } from '@/utils/logger';
 
 export const useKnowledgeStats = () => {
   return useQuery({
     queryKey: ['knowledge-stats'],
     queryFn: async () => {
-      console.log('📊 [KNOWLEDGE_STATS] Starting to fetch categories...');
+      log('📊 [KNOWLEDGE_STATS] Starting to fetch categories...');
       
       // Get categories with article counts
       const { data: categories, error: categoriesError } = await supabase
@@ -20,21 +21,21 @@ export const useKnowledgeStats = () => {
         .order('display_order');
 
       if (categoriesError) {
-        console.error('📊 [KNOWLEDGE_STATS] Categories error:', categoriesError);
+        logError('📊 [KNOWLEDGE_STATS] Categories error:', categoriesError);
         throw categoriesError;
       }
 
-      console.log('📊 [KNOWLEDGE_STATS] Raw categories data:', categories);
+      log('📊 [KNOWLEDGE_STATS] Raw categories data:', categories);
 
       if (!categories || categories.length === 0) {
-        console.log('📊 [KNOWLEDGE_STATS] No categories found, returning empty array');
+        log('📊 [KNOWLEDGE_STATS] No categories found, returning empty array');
         return [];
       }
 
       // Get article counts per category
       const categoriesWithCounts = await Promise.all(
         categories.map(async (category) => {
-          console.log('📊 [KNOWLEDGE_STATS] Counting articles for category:', category.name);
+          log('📊 [KNOWLEDGE_STATS] Counting articles for category:', category.name);
           
           const { count, error: countError } = await supabase
             .from('knowledge_articles')
@@ -43,7 +44,7 @@ export const useKnowledgeStats = () => {
             .eq('status', 'published');
 
           if (countError) {
-            console.error('📊 [KNOWLEDGE_STATS] Count error for category', category.name, ':', countError);
+            logError('📊 [KNOWLEDGE_STATS] Count error for category', category.name, ':', countError);
             // Don't throw, just log and continue with 0 count
             return {
               ...category,
@@ -51,7 +52,7 @@ export const useKnowledgeStats = () => {
             };
           }
 
-          console.log('📊 [KNOWLEDGE_STATS] Article count for', category.name, ':', count);
+          log('📊 [KNOWLEDGE_STATS] Article count for', category.name, ':', count);
 
           return {
             ...category,
@@ -60,7 +61,7 @@ export const useKnowledgeStats = () => {
         })
       );
 
-      console.log('📊 [KNOWLEDGE_STATS] Final categories with counts:', categoriesWithCounts);
+      log('📊 [KNOWLEDGE_STATS] Final categories with counts:', categoriesWithCounts);
       return categoriesWithCounts;
     },
     retry: 2,
@@ -73,7 +74,7 @@ export const useRecentArticles = (limit = 5) => {
   return useQuery({
     queryKey: ['recent-articles', limit],
     queryFn: async () => {
-      console.log('📊 [RECENT_ARTICLES] Fetching recent articles, limit:', limit);
+      log('📊 [RECENT_ARTICLES] Fetching recent articles, limit:', limit);
       
       const { data, error } = await supabase
         .from('knowledge_articles')
@@ -92,12 +93,12 @@ export const useRecentArticles = (limit = 5) => {
         .limit(limit);
 
       if (error) {
-        console.error('📊 [RECENT_ARTICLES] Error:', error);
+        logError('📊 [RECENT_ARTICLES] Error:', error);
         throw error;
       }
 
-      console.log('📊 [RECENT_ARTICLES] Fetched articles:', data?.length || 0);
-      console.log('📊 [RECENT_ARTICLES] Articles data:', data);
+      log('📊 [RECENT_ARTICLES] Fetched articles:', data?.length || 0);
+      log('📊 [RECENT_ARTICLES] Articles data:', data);
       return data || [];
     },
     retry: 2,
@@ -110,7 +111,7 @@ export const useTotalArticleCount = () => {
   return useQuery({
     queryKey: ['total-article-count'],
     queryFn: async () => {
-      console.log('📊 [TOTAL_ARTICLES] Counting total articles...');
+      log('📊 [TOTAL_ARTICLES] Counting total articles...');
       
       const { count, error } = await supabase
         .from('knowledge_articles')
@@ -118,11 +119,11 @@ export const useTotalArticleCount = () => {
         .eq('status', 'published');
 
       if (error) {
-        console.error('📊 [TOTAL_ARTICLES] Error:', error);
+        logError('📊 [TOTAL_ARTICLES] Error:', error);
         throw error;
       }
 
-      console.log('📊 [TOTAL_ARTICLES] Total count:', count);
+      log('📊 [TOTAL_ARTICLES] Total count:', count);
       return count || 0;
     },
     retry: 2,

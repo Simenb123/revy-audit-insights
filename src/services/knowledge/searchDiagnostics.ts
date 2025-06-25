@@ -1,4 +1,5 @@
 import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
+import { log, warn, error as logError } from '@/utils/logger';
 
 export interface SearchDiagnostic {
   timestamp: string;
@@ -25,10 +26,10 @@ export class KnowledgeSearchDiagnostics {
 
   static async runHealthCheck(): Promise<KnowledgeBaseHealth> {
     if (!isSupabaseConfigured || !supabase) {
-      console.error("Supabase is not configured. Health check cannot run.");
+      logError('Supabase is not configured. Health check cannot run.');
       throw new Error("Supabase not initialized");
     }
-    console.log('🏥 Running knowledge base health check...');
+    log('🏥 Running knowledge base health check...');
     const startTime = Date.now();
 
     try {
@@ -56,14 +57,14 @@ export class KnowledgeSearchDiagnostics {
         });
         
         if (error) {
-          console.error('❌ Search function error:', error);
+          logError('❌ Search function error:', error);
           searchStatus = 'error';
         } else if (data && data.articles) {
           searchStatus = 'working';
-          console.log('✅ Search function working, returned', data.articles.length, 'results');
+          log('✅ Search function working, returned', data.articles.length, 'results');
         }
       } catch (error) {
-        console.error('❌ Search function exception:', error);
+        logError('❌ Search function exception:', error);
         searchStatus = 'error';
       }
 
@@ -76,20 +77,20 @@ export class KnowledgeSearchDiagnostics {
         lastChecked: new Date().toISOString()
       };
 
-      console.log('📊 Health check completed in', Date.now() - startTime, 'ms:', health);
+      log('📊 Health check completed in', Date.now() - startTime, 'ms:', health);
       return health;
     } catch (error) {
-      console.error('💥 Health check failed:', error);
+      logError('💥 Health check failed:', error);
       throw error;
     }
   }
 
   static async runSyntheticQueries(): Promise<SearchDiagnostic[]> {
     if (!isSupabaseConfigured || !supabase) {
-      console.error("Supabase is not configured. Cannot run synthetic queries.");
+      logError('Supabase is not configured. Cannot run synthetic queries.');
       return [];
     }
-    console.log('🤖 Running synthetic query tests...');
+    log('🤖 Running synthetic query tests...');
     
     const testQueries = [
       'ISA 315 risikovurdering',
@@ -120,10 +121,10 @@ export class KnowledgeSearchDiagnostics {
 
   static async testSingleQuery(query: string): Promise<SearchDiagnostic> {
     if (!isSupabaseConfigured || !supabase) {
-      console.error("Supabase is not configured. Cannot test query.");
+      logError('Supabase is not configured. Cannot test query.');
       return { timestamp: new Date().toISOString(), query, semanticResults: 0, keywordResults: 0, totalResults: 0, responseTime: 0, errors: ["Supabase not initialized"], warnings: [] };
     }
-    console.log(`🔍 Testing query: "${query}"`);
+    log(`🔍 Testing query: "${query}"`);
     const startTime = Date.now();
     const errors: string[] = [];
     const warnings: string[] = [];
