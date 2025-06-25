@@ -11,6 +11,8 @@ interface KnowledgeSearchResult {
   reference_code: string;
   relevanceScore: number;
   contentType: string;
+  updated_at?: string;
+  published_at?: string;
 }
 
 interface ArticleTagMapping {
@@ -20,6 +22,8 @@ interface ArticleTagMapping {
   relevanceScore: number;
   contentType: string;
   category: string;
+  updated_at?: string;
+  published_at?: string;
 }
 
 interface EnhancedKnowledgeResult {
@@ -72,6 +76,8 @@ export async function searchKnowledgeIntelligently(
           content,
           reference_code,
           content_type,
+          updated_at,
+          published_at,
           category:knowledge_categories(name),
           article_tags:knowledge_article_tags(
             tag:tags(
@@ -128,6 +134,8 @@ export async function searchKnowledgeIntelligently(
         content,
         reference_code,
         content_type,
+        updated_at,
+        published_at,
         category:knowledge_categories(name),
         article_tags:knowledge_article_tags(
           tag:tags(
@@ -264,7 +272,9 @@ function formatArticleResults(articles: any[]): KnowledgeSearchResult[] {
       tags: getTagsList(article.article_tags),
       reference_code: String(article.reference_code || ''),
       relevanceScore: 1,
-      contentType
+      contentType,
+      updated_at: article.updated_at,
+      published_at: article.published_at
     };
   });
 }
@@ -322,12 +332,14 @@ function createEnhancedTagToArticleMapping(articles: KnowledgeSearchResult[], ke
       mapping[keyword] = {
         articleSlug: bestMatch.slug,
         articleTitle: bestMatch.title,
-        matchedTags: bestMatch.tags.filter(tag => 
+        matchedTags: bestMatch.tags.filter(tag =>
           tag.toLowerCase().includes(keywordLower) || keywordLower.includes(tag.toLowerCase())
         ),
         relevanceScore: bestScore,
         contentType: bestMatch.contentType,
-        category: bestMatch.category
+        category: bestMatch.category,
+        updated_at: bestMatch.updated_at,
+        published_at: bestMatch.published_at
       };
     }
   });
@@ -352,7 +364,9 @@ function createEnhancedTagToArticleMapping(articles: KnowledgeSearchResult[], ke
           matchedTags: bestArticle.tags.filter(tag => tag.toLowerCase().includes(term)),
           relevanceScore: 1,
           contentType: bestArticle.contentType,
-          category: bestArticle.category
+          category: bestArticle.category,
+          updated_at: bestArticle.updated_at,
+          published_at: bestArticle.published_at
         };
       }
     }
