@@ -53,9 +53,9 @@ serve(async (req) => {
     // Step 2: Initialize Supabase client
     console.log('🔄 [PDF-EXTRACTOR] Initializing Supabase client...');
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
     
-    if (!supabaseUrl || !supabaseServiceKey) {
+    if (!supabaseUrl || !supabaseAnonKey) {
       console.error('❌ [PDF-EXTRACTOR] Missing environment variables');
       return new Response(JSON.stringify({ 
         success: false,
@@ -67,7 +67,11 @@ serve(async (req) => {
       });
     }
 
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+    const supabaseAdmin = createClient(
+      supabaseUrl,
+      supabaseAnonKey,
+      { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
+    );
     console.log('✅ [PDF-EXTRACTOR] Supabase client initialized');
 
     // Step 3: Update status to 'processing'
@@ -323,7 +327,8 @@ serve(async (req) => {
       try {
         const supabaseAdmin = createClient(
           Deno.env.get('SUPABASE_URL') ?? '',
-          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+          Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+          { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
         );
         await supabaseAdmin.from('client_documents_files').update({
           text_extraction_status: 'failed',
