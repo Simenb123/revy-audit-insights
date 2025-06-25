@@ -2,6 +2,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4';
+import { log } from "../_shared/log.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -59,14 +60,14 @@ serve(async (req) => {
         requestBody = JSON.parse(text);
       }
     } catch (parseError) {
-      console.log('No JSON body provided, proceeding with batch processing');
+      log('No JSON body provided, proceeding with batch processing');
     }
     
     const { article_id } = requestBody as { article_id?: string };
     
     if (article_id) {
       // Handle single article embedding from trigger
-      console.log(`🚀 Generating embedding for article: ${article_id}`);
+      log(`🚀 Generating embedding for article: ${article_id}`);
       
       const { data: article, error: fetchError } = await supabase
         .from('knowledge_articles')
@@ -98,7 +99,7 @@ serve(async (req) => {
         throw updateError;
       }
 
-      console.log(`✅ Updated embedding for: "${article.title}"`);
+      log(`✅ Updated embedding for: "${article.title}"`);
       
       return new Response(JSON.stringify({ 
         success: true,
@@ -110,7 +111,7 @@ serve(async (req) => {
     }
 
     // Batch processing (existing functionality)
-    console.log('🚀 Starting embedding generation for articles');
+    log('🚀 Starting embedding generation for articles');
 
     // Get articles that need embeddings
     const { data: articles, error: fetchError } = await supabase.rpc('queue_articles_for_embedding');
@@ -121,7 +122,7 @@ serve(async (req) => {
     }
 
     if (!articles || articles.length === 0) {
-      console.log('✅ No articles need embeddings');
+      log('✅ No articles need embeddings');
       return new Response(JSON.stringify({ 
         message: 'No articles need embeddings', 
         processed: 0 
@@ -130,7 +131,7 @@ serve(async (req) => {
       });
     }
 
-    console.log(`📄 Found ${articles.length} articles needing embeddings`);
+    log(`📄 Found ${articles.length} articles needing embeddings`);
 
     let processed = 0;
     let errors = 0;
@@ -140,7 +141,7 @@ serve(async (req) => {
         // Combine title and content for embedding
         const textForEmbedding = `${article.title}\n\n${article.content}`;
         
-        console.log(`🔄 Processing: "${article.title}"`);
+        log(`🔄 Processing: "${article.title}"`);
         
         // Generate embedding
         const embedding = await generateEmbedding(textForEmbedding);
@@ -156,7 +157,7 @@ serve(async (req) => {
           errors++;
         } else {
           processed++;
-          console.log(`✅ Updated: "${article.title}"`);
+          log(`✅ Updated: "${article.title}"`);
         }
 
         // Small delay to avoid rate limiting
@@ -168,7 +169,7 @@ serve(async (req) => {
       }
     }
 
-    console.log(`🎉 Embedding generation complete. Processed: ${processed}, Errors: ${errors}`);
+    log(`🎉 Embedding generation complete. Processed: ${processed}, Errors: ${errors}`);
 
     return new Response(JSON.stringify({ 
       message: 'Embedding generation complete',

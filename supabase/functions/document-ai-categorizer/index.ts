@@ -1,6 +1,7 @@
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { log } from "../_shared/log.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -27,7 +28,7 @@ serve(async (req: Request) => {
 
     const { documentId, fileName, extractedText }: DocumentCategorizationRequest = await req.json();
 
-    console.log('Processing document categorization for:', fileName);
+    log('Processing document categorization for:', fileName);
 
     // Get document categories for pattern matching
     const { data: categories, error: categoriesError } = await supabase
@@ -88,7 +89,7 @@ serve(async (req: Request) => {
       throw new Error(`Failed to update document: ${updateError.message}`);
     }
 
-    console.log('Document categorization completed for:', fileName);
+    log('Document categorization completed for:', fileName);
 
     return new Response(
       JSON.stringify({ 

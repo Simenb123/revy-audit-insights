@@ -1,5 +1,6 @@
 
 import { getVariantSystemPrompt } from './variant-handler.ts';
+import { log } from '../_shared/log.ts';
 
 export async function buildIntelligentSystemPromptWithVariant(
   context: string,
@@ -9,7 +10,7 @@ export async function buildIntelligentSystemPromptWithVariant(
   isGuestMode: boolean = false,
   selectedVariant?: any
 ) {
-  console.log('🎯 Building intelligent system prompt with variant support:', {
+  log('🎯 Building intelligent system prompt with variant support:', {
     context,
     variantName: selectedVariant?.name,
     hasClientData: !!clientData,
@@ -156,6 +157,6 @@ VIKTIG FOR ARTIKKELREFERANSER:
     systemPrompt += `\n\nGJESTEMODUS: Brukeren er ikke logget inn. Gi generelle råd uten tilgang til spesifikke klientdata.`;
   }
 
-  console.log('✅ Intelligent system prompt built with variant and document support');
+  log('✅ Intelligent system prompt built with variant and document support');
   return systemPrompt;
 }

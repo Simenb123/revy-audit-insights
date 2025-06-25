@@ -1,6 +1,7 @@
 
 import "https://deno.land/x/xhr@0.1.0/mod.ts"
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { log } from "../_shared/log.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -49,7 +50,7 @@ serve(async (req) => {
       throw new Error('No audio data provided')
     }
 
-    console.log('Processing audio transcription request...')
+    log('Processing audio transcription request...')
 
     // Process audio in chunks
     const binaryAudio = processBase64Chunks(audio)
@@ -77,7 +78,7 @@ serve(async (req) => {
     }
 
     const result = await response.json()
-    console.log('Transcription successful:', result.text?.substring(0, 100) + '...')
+    log('Transcription successful:', result.text?.substring(0, 100) + '...')
 
     return new Response(
       JSON.stringify({ text: result.text }),

@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import { log } from "../_shared/log.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -29,7 +30,7 @@ serve(async (req) => {
     if (Array.isArray(orgNumbers) && orgNumbers.length > 0) {
       for (const orgNumber of orgNumbers) {
         try {
-          console.log(`Processing org number: ${orgNumber}`);
+          log(`Processing org number: ${orgNumber}`);
           
           // Fetch client info to get the client ID
           const { data: client, error: clientError } = await supabase
@@ -84,7 +85,7 @@ serve(async (req) => {
             announcements = parseAnnouncementsHtml(html, client.id, orgNumber).slice(0, 100);
           }
 
-          console.log(`Fetched ${announcements.length} announcements from ${fetchedFrom} for ${client.name} (${orgNumber})`);
+          log(`Fetched ${announcements.length} announcements from ${fetchedFrom} for ${client.name} (${orgNumber})`);
 
           if (announcements.length === 0) {
             results.push({ orgNumber, status: "success", inserted: 0 });
@@ -107,7 +108,7 @@ serve(async (req) => {
 
             // Logg faktisk insert count
             const inserted = Array.isArray(insertedData) ? insertedData : [];
-            console.log("Inserted announcements:", inserted.length);
+            log("Inserted announcements:", inserted.length);
 
             results.push({ 
               orgNumber, 
@@ -133,7 +134,7 @@ serve(async (req) => {
           throw new Error(`Error fetching clients: ${clientsError.message}`);
         }
         
-        console.log(`Processing announcements for ${clients.length} clients`);
+        log(`Processing announcements for ${clients.length} clients`);
         
         for (const client of clients) {
           try {
@@ -153,7 +154,7 @@ serve(async (req) => {
             
             // Parse the HTML to extract announcements
             const announcements = parseAnnouncementsHtml(html, client.id, client.org_number);
-            console.log(`Found ${announcements.length} announcements for ${client.name} (${client.org_number})`);
+            log(`Found ${announcements.length} announcements for ${client.name} (${client.org_number})`);
             
             if (announcements.length === 0) {
               results.push({ orgNumber: client.org_number, status: "success", inserted: 0, message: "No announcements found" });
@@ -174,7 +175,7 @@ serve(async (req) => {
               continue;
             }
             
-            console.log(`Successfully processed ${announcements.length} announcements for ${client.name}`);
+            log(`Successfully processed ${announcements.length} announcements for ${client.name}`);
             results.push({ 
               orgNumber: client.org_number, 
               status: "success", 
@@ -191,7 +192,7 @@ serve(async (req) => {
         }
       }
     
-    console.log(`Processed ${processed} clients, inserted ${totalInserted} announcements`);
+    log(`Processed ${processed} clients, inserted ${totalInserted} announcements`);
     
     return new Response(
       JSON.stringify({ 

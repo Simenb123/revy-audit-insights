@@ -1,5 +1,6 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { log } from "../_shared/log.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -18,8 +19,8 @@ serve(async (req) => {
       throw new Error('Text is required')
     }
 
-    console.log('Generating speech for text length:', text.length)
-    console.log('Using voice ID:', voiceId)
+    log('Generating speech for text length:', text.length)
+    log('Using voice ID:', voiceId)
 
     // Use ElevenLabs for realistic Norwegian voices
     const elevenLabsApiKey = Deno.env.get('ELEVENLABS_API_KEY')
@@ -47,7 +48,7 @@ serve(async (req) => {
 
       if (response.ok) {
         const audioBuffer = await response.arrayBuffer()
-        console.log('ElevenLabs speech generated successfully')
+        log('ElevenLabs speech generated successfully')
         
         return new Response(audioBuffer, {
           headers: {
@@ -56,7 +57,7 @@ serve(async (req) => {
           },
         })
       } else {
-        console.log('ElevenLabs failed, falling back to OpenAI')
+        log('ElevenLabs failed, falling back to OpenAI')
       }
     }
 
@@ -81,7 +82,7 @@ serve(async (req) => {
     }
 
     const audioBuffer = await openAIResponse.arrayBuffer()
-    console.log('OpenAI speech generated successfully')
+    log('OpenAI speech generated successfully')
 
     return new Response(audioBuffer, {
       headers: {

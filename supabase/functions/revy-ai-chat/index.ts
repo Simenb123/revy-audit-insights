@@ -1,5 +1,6 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { log } from "../_shared/log.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -25,7 +26,7 @@ import { validateAIResponse } from './lib/response-validator.ts'
 import { getVariantContextualTips } from './lib/variant-handler.ts'
 
 serve(async (req) => {
-  console.log('🤖 AI-Revi Chat function started with enhanced document reading support');
+  log('🤖 AI-Revi Chat function started with enhanced document reading support');
   
   if (isOptions(req)) {
     return handleCors();
@@ -35,7 +36,7 @@ serve(async (req) => {
     let requestBody;
     try {
       const bodyText = await req.text();
-      console.log('📝 Raw request body length:', bodyText?.length || 0);
+      log('📝 Raw request body length:', bodyText?.length || 0);
       
       if (!bodyText || bodyText.trim() === '') {
         console.error('❌ Empty request body received');
@@ -43,7 +44,7 @@ serve(async (req) => {
       }
       
       requestBody = JSON.parse(bodyText);
-      console.log('✅ Request body parsed successfully');
+      log('✅ Request body parsed successfully');
     } catch (parseError) {
       console.error('❌ JSON parsing error:', parseError);
       return new Response(JSON.stringify({ 
@@ -70,7 +71,7 @@ serve(async (req) => {
       articleTagMapping = {}
     } = requestBody;
     
-    console.log('📝 Enhanced request received:', {
+    log('📝 Enhanced request received:', {
       message: `${message?.substring(0, 50) || 'No message'}...`,
       context,
       userRole,
@@ -107,11 +108,11 @@ serve(async (req) => {
     const isKnowledgeQuery = /\b(inntekter?|revisjon|isa|fagstoff|artikkel|retningslinje|tags?|emner)\b/i.test(message);
     
     if (isKnowledgeQuery) {
-      console.log('🏷️ Knowledge query detected, ensuring article tags are seeded...');
+      log('🏷️ Knowledge query detected, ensuring article tags are seeded...');
       try {
         await seedArticleTags();
       } catch (error) {
-        console.log('⚠️ Tag seeding failed, continuing with query:', error.message);
+        log('⚠️ Tag seeding failed, continuing with query:', error.message);
       }
     }
 
@@ -126,7 +127,7 @@ serve(async (req) => {
     const cachedResponse = await getCachedResponse(cacheKey, userId);
     
     if (cachedResponse) {
-      console.log('✅ Cache hit for variant-aware request!', { 
+      log('✅ Cache hit for variant-aware request!', { 
         requestHash: cachedResponse.requestHash?.substring(0, 16) + '...',
         variantName: selectedVariant?.name
       });
@@ -134,14 +135,14 @@ serve(async (req) => {
       const validation = validateAIResponse(cachedResponse.response);
       const finalResponse = validation.fixedResponse || cachedResponse.response;
       
-      console.log('✅ Cached response validated and ready with guaranteed tags');
+      log('✅ Cached response validated and ready with guaranteed tags');
       
       return new Response(JSON.stringify({ response: finalResponse }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
     
-    console.log('🧐 Cache miss for variant request, proceeding to generate new response.');
+    log('🧐 Cache miss for variant request, proceeding to generate new response.');
 
     // Use the enhanced system prompt if provided, otherwise build context
     let enhancedSystemPrompt = systemPrompt;
@@ -155,7 +156,7 @@ serve(async (req) => {
         selectedVariant
       );
       
-      console.log('🧠 Enhanced variant-aware context built with document support:', {
+      log('🧠 Enhanced variant-aware context built with document support:', {
         knowledgeArticleCount: enhancedContext.knowledge?.length || 0,
         articleTagMappingCount: Object.keys(enhancedContext.articleTagMapping || {}).length,
         hasClientContext: !!enhancedContext.clientContext,
@@ -177,19 +178,19 @@ serve(async (req) => {
         selectedVariant
       );
     } else {
-      console.log('📝 Using provided enhanced system prompt with knowledge articles');
+      log('📝 Using provided enhanced system prompt with knowledge articles');
     }
 
     // Select optimal model
     const selectedModel = model || selectOptimalModel(message, context, !userId);
-    console.log('🎯 Selected model:', selectedModel, 'for variant:', selectedVariant?.name);
+    log('🎯 Selected model:', selectedModel, 'for variant:', selectedVariant?.name);
 
     // Add explicit tag instruction
     enhancedSystemPrompt += '\n\nIMPORTANT: ALWAYS end your response with a line: "🏷️ **EMNER:** [list relevant Norwegian tags separated by commas]". This is required for proper UI functionality.';
 
     const startTime = Date.now();
-    console.log('🚀 Calling OpenAI API with document-enhanced prompt...');
-    console.log('📊 OpenAI request details:', {
+    log('🚀 Calling OpenAI API with document-enhanced prompt...');
+    log('📊 OpenAI request details:', {
       model: selectedModel,
       messagesCount: history.length + 2, // system + history + user message
       temperature: selectedVariant?.name === 'methodology-expert' ? 0.1 : 0.3,
@@ -219,7 +220,7 @@ serve(async (req) => {
       }),
     });
 
-    console.log('📥 OpenAI response status:', openaiResponse.status, openaiResponse.statusText);
+    log('📥 OpenAI response status:', openaiResponse.status, openaiResponse.statusText);
 
     if (!openaiResponse.ok) {
       const errorText = await openaiResponse.text();
@@ -234,7 +235,7 @@ serve(async (req) => {
     const data = await openaiResponse.json();
     const responseTime = Date.now() - startTime;
     
-    console.log('📊 OpenAI response data:', {
+    log('📊 OpenAI response data:', {
       hasChoices: !!data.choices,
       choicesLength: data.choices?.length || 0,
       hasUsage: !!data.usage,
@@ -244,7 +245,7 @@ serve(async (req) => {
 
     let aiResponse = data.choices?.[0]?.message?.content;
 
-    console.log('🔍 AI response extraction:', {
+    log('🔍 AI response extraction:', {
       hasAiResponse: !!aiResponse,
       aiResponseType: typeof aiResponse,
       aiResponseLength: aiResponse?.length || 0,
@@ -257,7 +258,7 @@ serve(async (req) => {
       throw new Error('No response content from OpenAI');
     }
 
-    console.log('📄 Raw AI response received:', {
+    log('📄 Raw AI response received:', {
       responseLength: aiResponse.length,
       hasValidContent: aiResponse.trim().length > 0,
       startsWithGreeting: /^(hei|hallo|god)/i.test(aiResponse.trim())
@@ -266,7 +267,7 @@ serve(async (req) => {
     // Inject article mappings and variant info into response metadata
     if (articleTagMapping && Object.keys(articleTagMapping).length > 0) {
       aiResponse += `\n\n<!-- ARTICLE_MAPPINGS: ${JSON.stringify(articleTagMapping)} -->`;
-      console.log('📎 Injected article mappings into response');
+      log('📎 Injected article mappings into response');
     }
 
     if (selectedVariant) {
@@ -275,7 +276,7 @@ serve(async (req) => {
         display_name: selectedVariant.display_name,
         specialization: selectedVariant.description
       })} -->`;
-      console.log('🎭 Injected variant info into response');
+      log('🎭 Injected variant info into response');
     }
 
     // Add knowledge article reference metadata if articles were provided
@@ -289,7 +290,7 @@ serve(async (req) => {
       }));
 
       aiResponse += `\n\n<!-- KNOWLEDGE_ARTICLES: ${JSON.stringify(articleRefs)} -->`;
-      console.log('📚 Injected knowledge article references into response');
+      log('📚 Injected knowledge article references into response');
     }
 
     // Add document reference metadata if search results are available
@@ -322,15 +323,15 @@ serve(async (req) => {
     }
 
     // Validate and fix the AI response
-    console.log('🔧 ENFORCING response validation with document-aware content...');
+    log('🔧 ENFORCING response validation with document-aware content...');
     const validation = validateAIResponse(aiResponse);
     
     if (validation.fixedResponse) {
       aiResponse = validation.fixedResponse;
-      console.log('✅ Response was standardized with guaranteed tag format and document context');
+      log('✅ Response was standardized with guaranteed tag format and document context');
     }
 
-    console.log('✅ Document-enhanced AI response generated successfully:', {
+    log('✅ Document-enhanced AI response generated successfully:', {
       responseLength: aiResponse.length,
       usage: data.usage,
       responseTime: `${responseTime}ms`,
@@ -357,7 +358,7 @@ serve(async (req) => {
           sessionId,
           contextType: context + (selectedVariant ? `_${selectedVariant.name}` : '')
         });
-        console.log('📊 Usage logged successfully with variant and document info');
+        log('📊 Usage logged successfully with variant and document info');
       } catch (error) {
         console.error('❌ Failed to log usage:', error);
       }
@@ -367,13 +368,13 @@ serve(async (req) => {
     if (userId) {
       try {
         await cacheResponse(cacheKey, aiResponse, userId, clientData?.id, selectedModel);
-        console.log('✅ Document-enhanced response cached successfully');
+        log('✅ Document-enhanced response cached successfully');
       } catch (error) {
         console.error('❌ Failed to cache response:', error);
       }
     }
 
-    console.log('🎯 Returning response to client:', {
+    log('🎯 Returning response to client:', {
       hasResponse: !!aiResponse,
       responseLength: aiResponse.length,
       responseType: typeof aiResponse,
@@ -412,14 +413,14 @@ serve(async (req) => {
       }
     }
     
-    console.log('🔧 Validating fallback response for proper tag format...');
+    log('🔧 Validating fallback response for proper tag format...');
     const validation = validateAIResponse(fallbackResponse);
     if (validation.fixedResponse) {
       fallbackResponse = validation.fixedResponse;
-      console.log('✅ Fallback response fixed with guaranteed tags');
+      log('✅ Fallback response fixed with guaranteed tags');
     }
     
-    console.log('🚨 Returning error response:', {
+    log('🚨 Returning error response:', {
       hasFallbackResponse: !!fallbackResponse,
       fallbackLength: fallbackResponse?.length || 0,
       errorMessage: error.message

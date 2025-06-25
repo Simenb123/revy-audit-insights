@@ -1,6 +1,7 @@
 
 import { supabase } from './supabase.ts';
 import { extractIntelligentKeywords } from './utils.ts';
+import { log } from '../_shared/log.ts';
 
 interface KnowledgeSearchResult {
   title: string;
@@ -37,9 +38,9 @@ export async function searchKnowledgeIntelligently(
   clientData?: any
 ): Promise<EnhancedKnowledgeResult> {
   try {
-    console.log('🔍 Starting intelligent knowledge search with enhanced content type support...');
-    console.log(`📝 Message: "${message}"`);
-    console.log(`🎯 Context: "${context}"`);
+    log('🔍 Starting intelligent knowledge search with enhanced content type support...');
+    log(`📝 Message: "${message}"`);
+    log(`🎯 Context: "${context}"`);
     
     // First check if we have any published articles at all
     const { count: totalCount, error: countError } = await supabase
@@ -52,19 +53,19 @@ export async function searchKnowledgeIntelligently(
       return { articles: [], tagToArticleMap: {} };
     }
     
-    console.log(`📊 Total published articles available: ${totalCount || 0}`);
+    log(`📊 Total published articles available: ${totalCount || 0}`);
     
     if (!totalCount || totalCount === 0) {
-      console.log('❌ No published articles found in database');
+      log('❌ No published articles found in database');
       return { articles: [], tagToArticleMap: {} };
     }
 
     // Extract keywords from the message
     const keywords = extractIntelligentKeywords(message, context);
-    console.log('📝 Extracted keywords:', keywords);
+    log('📝 Extracted keywords:', keywords);
 
     if (keywords.length === 0) {
-      console.log('⚠️ No keywords found, performing broad search...');
+      log('⚠️ No keywords found, performing broad search...');
       // If no keywords, try a broad search for any articles
       const { data: broadArticles, error: broadError } = await supabase
         .from('knowledge_articles')
@@ -95,7 +96,7 @@ export async function searchKnowledgeIntelligently(
       }
 
       if (broadArticles && broadArticles.length > 0) {
-        console.log(`✅ Broad search found ${broadArticles.length} articles`);
+        log(`✅ Broad search found ${broadArticles.length} articles`);
         const formattedArticles = formatArticleResults(broadArticles);
         const tagMapping = createEnhancedTagToArticleMapping(formattedArticles, keywords);
         return { articles: formattedArticles, tagToArticleMap: tagMapping };
@@ -122,7 +123,7 @@ export async function searchKnowledgeIntelligently(
     const allSearches = [...searchQueries, ...refSearches];
     const searchQuery = allSearches.join(',');
 
-    console.log(`🔎 Executing enhanced search with query patterns: ${searchQuery.substring(0, 200)}...`);
+    log(`🔎 Executing enhanced search with query patterns: ${searchQuery.substring(0, 200)}...`);
 
     const { data: articles, error } = await supabase
       .from('knowledge_articles')
@@ -154,11 +155,11 @@ export async function searchKnowledgeIntelligently(
     }
 
     if (!articles || articles.length === 0) {
-      console.log('📭 No articles found with keyword search');
+      log('📭 No articles found with keyword search');
       return { articles: [], tagToArticleMap: {} };
     }
 
-    console.log(`✅ Found ${articles.length} relevant articles`);
+    log(`✅ Found ${articles.length} relevant articles`);
 
     // Enhanced formatting with relevance scoring and content type classification
     const results = articles.map(article => {
@@ -174,7 +175,7 @@ export async function searchKnowledgeIntelligently(
           const contentText = String(article.content);
           const sentences = contentText.replace(/<[^>]*>/g, '').split(/[.!?]+/);
           summary = sentences.slice(0, 2).join('. ').substring(0, 200) + '...';
-          console.log(`📝 Generated summary for article "${article.title}": ${summary.substring(0, 50)}...`);
+          log(`📝 Generated summary for article "${article.title}": ${summary.substring(0, 50)}...`);
         }
 
         return {
@@ -206,7 +207,7 @@ export async function searchKnowledgeIntelligently(
     // Create enhanced tag-to-article mapping with content types
     const tagMapping = createEnhancedTagToArticleMapping(results, keywords);
 
-    console.log(`📊 Returning ${results.length} scored and sorted articles with enhanced content type support`);
+    log(`📊 Returning ${results.length} scored and sorted articles with enhanced content type support`);
     return { articles: results, tagToArticleMap: tagMapping };
 
   } catch (error) {

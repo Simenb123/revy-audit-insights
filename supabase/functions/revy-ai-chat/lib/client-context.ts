@@ -1,5 +1,6 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
+import { log } from '../_shared/log.ts';
 
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL') ?? '',
@@ -7,7 +8,7 @@ const supabase = createClient(
 );
 
 export async function fetchEnhancedClientContext(clientId: string) {
-  console.log('🔍 Fetching enhanced client context for:', clientId);
+  log('🔍 Fetching enhanced client context for:', clientId);
   
   try {
     // Get client basic info
@@ -47,7 +48,7 @@ Dokumenter: ${documentInsights.totalDocuments} totalt, ${documentInsights.withTe
 Kategorier: ${documentInsights.categories.join(', ') || 'Ingen'}
 Gjennomsnittlig AI-sikkerhet: ${Math.round(documentInsights.avgConfidence * 100)}%`;
 
-    console.log('✅ Enhanced client context built:', { 
+    log('✅ Enhanced client context built:', { 
       clientName: client.company_name,
       documentsProcessed: documentInsights.totalDocuments,
       withText: documentInsights.withText,
@@ -68,7 +69,7 @@ Gjennomsnittlig AI-sikkerhet: ${Math.round(documentInsights.avgConfidence * 100)
 }
 
 export async function searchDocumentContent(clientId: string, query: string) {
-  console.log('🔍 Searching document content for client:', clientId, 'query:', query);
+  log('🔍 Searching document content for client:', clientId, 'query:', query);
   
   try {
     const { data: documents, error } = await supabase
@@ -99,7 +100,7 @@ export async function searchDocumentContent(clientId: string, query: string) {
       mimeType: doc.mime_type
     }));
 
-    console.log('✅ Found', results.length, 'relevant documents');
+    log('✅ Found', results.length, 'relevant documents');
     return results;
 
   } catch (error) {
@@ -109,7 +110,7 @@ export async function searchDocumentContent(clientId: string, query: string) {
 }
 
 export async function findDocumentByReference(clientId: string, reference: string) {
-  console.log('🔍 Finding document by reference in edge function:', clientId, reference);
+  log('🔍 Finding document by reference in edge function:', clientId, reference);
   
   try {
     const identifiers = extractDocumentIdentifiers(reference);
@@ -127,12 +128,12 @@ export async function findDocumentByReference(clientId: string, reference: strin
     const bestMatch = findBestDocumentMatch(documents || [], identifiers);
     
     if (bestMatch) {
-      console.log('✅ Found specific document match:', bestMatch.file_name);
+      log('✅ Found specific document match:', bestMatch.file_name);
       
       // Try to extract or enhance text content if missing
       let content = bestMatch.extracted_text;
       if (!content || content.trim().length === 0) {
-        console.log('📄 No text content found, attempting to retrieve from file...');
+        log('📄 No text content found, attempting to retrieve from file...');
         content = await tryExtractDocumentContent(bestMatch.file_path, bestMatch.mime_type);
       }
       
@@ -159,7 +160,7 @@ export async function findDocumentByReference(clientId: string, reference: strin
 
 async function tryExtractDocumentContent(filePath: string, mimeType: string): Promise<string | null> {
   try {
-    console.log('🔄 Attempting to extract content from:', filePath);
+    log('🔄 Attempting to extract content from:', filePath);
     
     // Download file from storage
     const { data: fileData, error: downloadError } = await supabase.storage
@@ -174,12 +175,12 @@ async function tryExtractDocumentContent(filePath: string, mimeType: string): Pr
     // For text-based files, try simple text extraction
     if (mimeType?.includes('text/') || mimeType?.includes('application/json')) {
       const text = await fileData.text();
-      console.log('✅ Extracted text content successfully');
+      log('✅ Extracted text content successfully');
       return text;
     }
 
     // For other files, return indication that content extraction is needed
-    console.log('⚠️ File type requires specialized extraction:', mimeType);
+    log('⚠️ File type requires specialized extraction:', mimeType);
     return `[Dokumenttype: ${mimeType}. Innhold krever tekstekstraksjon.]`;
 
   } catch (error) {
@@ -235,7 +236,7 @@ function findBestDocumentMatch(documents: any[], identifiers: string[]): any | n
   }
   
   if (bestMatch) {
-    console.log('🎯 Best match:', bestMatch.file_name, 'with score:', bestScore);
+    log('🎯 Best match:', bestMatch.file_name, 'with score:', bestScore);
   }
   
   return bestScore > 0 ? bestMatch : null;

@@ -1,5 +1,6 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { log } from "../_shared/log.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -24,7 +25,7 @@ interface ConversionRequest {
 
 async function extractTextFromPDF(filePath: string): Promise<string> {
   // Simulate PDF text extraction - in production, use a proper PDF parsing library
-  console.log(`Extracting text from PDF: ${filePath}`);
+  log(`Extracting text from PDF: ${filePath}`);
   
   // Simulate processing time
   await new Promise(resolve => setTimeout(resolve, 2000));
@@ -80,7 +81,7 @@ Revisoren skal dokumentere:
 }
 
 async function processContent(text: string, conversionType: string): Promise<any> {
-  console.log(`Processing content for type: ${conversionType}`);
+  log(`Processing content for type: ${conversionType}`);
   
   switch (conversionType) {
     case 'full':
@@ -246,7 +247,7 @@ Deno.serve(async (req) => {
     const supabase = getSupabase(req);
     const { conversionId, filePath, conversionType, title, categoryId }: ConversionRequest = await req.json();
 
-    console.log(`Starting PDF conversion for: ${conversionId} (${conversionType})`);
+    log(`Starting PDF conversion for: ${conversionId} (${conversionType})`);
 
     // Update status to processing
     await supabase
@@ -302,7 +303,7 @@ Deno.serve(async (req) => {
       })
       .eq('id', conversionId);
 
-    console.log(`PDF conversion completed for: ${conversionId}, created article: ${articleId}`);
+    log(`PDF conversion completed for: ${conversionId}, created article: ${articleId}`);
 
     return new Response(
       JSON.stringify({ 

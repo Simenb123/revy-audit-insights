@@ -1,8 +1,9 @@
 
 import { supabase } from './supabase.ts';
+import { log } from '../_shared/log.ts';
 
 export async function seedArticleTags() {
-  console.log('🏷️ Adding tags to existing articles using linking table...');
+  log('🏷️ Adding tags to existing articles using linking table...');
   
   const articles = [
     {
@@ -105,11 +106,11 @@ export async function seedArticleTags() {
         }
       }
 
-      console.log(`✅ Updated tags for: ${article.title}`);
+      log(`✅ Updated tags for: ${article.title}`);
     } catch (error) {
       console.error(`❌ Failed to update article "${article.title}":`, error);
     }
   }
   
-  console.log('🏷️ Article tags seeding completed');
+  log('🏷️ Article tags seeding completed');
 }

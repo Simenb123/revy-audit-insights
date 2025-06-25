@@ -2,6 +2,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4';
+import { log } from "../_shared/log.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -73,7 +74,7 @@ serve(async (req) => {
       throw new Error('documentId, text, and fileName are required');
     }
 
-    console.log(`🔄 Analyzing document: ${fileName} (ID: ${documentId})`);
+    log(`🔄 Analyzing document: ${fileName} (ID: ${documentId})`);
     
     // Generate AI analysis
     const aiAnalysis = await analyzeDocumentWithAI(text, fileName);
@@ -92,7 +93,7 @@ serve(async (req) => {
       throw updateError;
     }
 
-    console.log(`✅ AI analysis completed for document: ${fileName}`);
+    log(`✅ AI analysis completed for document: ${fileName}`);
     
     return new Response(JSON.stringify({ 
       success: true,

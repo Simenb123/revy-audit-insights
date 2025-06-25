@@ -1,9 +1,10 @@
 
 import { searchKnowledgeIntelligently } from './improved-knowledge.ts';
 import { fetchEnhancedClientContext } from './client-context.ts';
+import { log } from '../_shared/log.ts';
 
 export async function buildEnhancedContext(message: string, context: string, clientData: any | null) {
-  console.log('🏗️ Building enhanced context with improved search and article mappings...');
+  log('🏗️ Building enhanced context with improved search and article mappings...');
   try {
     // Use the improved knowledge search that returns both articles and tag mappings
     const knowledgePromise = searchKnowledgeIntelligently(message, context);
@@ -17,7 +18,7 @@ export async function buildEnhancedContext(message: string, context: string, cli
       clientContextPromise
     ]);
     
-    console.log('✅ Enhanced context built with improved search and article mappings.', { 
+    log('✅ Enhanced context built with improved search and article mappings.', { 
       hasKnowledge: !!knowledgeResult && knowledgeResult.articles.length > 0,
       knowledgeCount: knowledgeResult?.articles.length || 0,
       tagMappingCount: Object.keys(knowledgeResult?.tagToArticleMap || {}).length,

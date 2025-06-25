@@ -1,5 +1,6 @@
 
 import { supabase } from './supabase.ts';
+import { log } from '../_shared/log.ts';
 
 async function getEmbedding(text: string, openAIApiKey: string) {
   try {
@@ -31,7 +32,7 @@ async function getEmbedding(text: string, openAIApiKey: string) {
 
 // Improved search terms extraction
 export const extractSearchTerms = (query: string, context: string): string[] => {
-  console.log(`🔍 Extracting search terms from: "${query}"`);
+  log(`🔍 Extracting search terms from: "${query}"`);
   const terms = new Set<string>();
 
   // Norwegian stopwords to exclude
@@ -45,7 +46,7 @@ export const extractSearchTerms = (query: string, context: string): string[] => 
     
   words.forEach(word => {
     terms.add(word);
-    console.log(`📝 Added search term: "${word}"`);
+    log(`📝 Added search term: "${word}"`);
   });
 
   // Enhanced ISA standards extraction
@@ -55,7 +56,7 @@ export const extractSearchTerms = (query: string, context: string): string[] => 
       const cleanMatch = match.replace(/\s+/g, ' ').trim().toUpperCase();
       terms.add(cleanMatch);
       terms.add('ISA');
-      console.log(`📋 Added ISA term: "${cleanMatch}"`);
+      log(`📋 Added ISA term: "${cleanMatch}"`);
     });
   }
 
@@ -64,17 +65,17 @@ export const extractSearchTerms = (query: string, context: string): string[] => 
   revisionTerms.forEach(term => {
     if (query.toLowerCase().includes(term)) {
       terms.add(term);
-      console.log(`🎯 Added revision term: "${term}"`);
+      log(`🎯 Added revision term: "${term}"`);
     }
   });
 
   const finalTerms = Array.from(terms);
-  console.log(`✅ Final search terms (${finalTerms.length}): ${finalTerms.join(', ')}`);
+  log(`✅ Final search terms (${finalTerms.length}): ${finalTerms.join(', ')}`);
   return finalTerms;
 };
 
 export const scoreArticleRelevance = (articles: any[], searchTerms: string[]): any[] => {
-  console.log(`📊 Scoring ${articles.length} articles against ${searchTerms.length} search terms`);
+  log(`📊 Scoring ${articles.length} articles against ${searchTerms.length} search terms`);
   
   return articles
     .map(article => {
@@ -102,7 +103,7 @@ export const scoreArticleRelevance = (articles: any[], searchTerms: string[]): a
           
           score += matches.length * weight;
           matchedTerms.add(term);
-          console.log(`  📈 "${article.title}": term "${term}" matched ${matches.length} times (weight: ${weight})`);
+          log(`  📈 "${article.title}": term "${term}" matched ${matches.length} times (weight: ${weight})`);
         }
       });
 
@@ -111,12 +112,12 @@ export const scoreArticleRelevance = (articles: any[], searchTerms: string[]): a
         searchTerms.forEach(term => {
           if (article.reference_code.toLowerCase().includes(term.toLowerCase())) {
             score += 15;
-            console.log(`  🔖 "${article.title}": reference code bonus for "${term}"`);
+            log(`  🔖 "${article.title}": reference code bonus for "${term}"`);
           }
         });
       }
 
-      console.log(`  ⭐ "${article.title}": final score ${score.toFixed(2)} (matched: ${[...matchedTerms].join(', ')})`);
+      log(`  ⭐ "${article.title}": final score ${score.toFixed(2)} (matched: ${[...matchedTerms].join(', ')})`);
 
       return {
         ...article,
@@ -130,7 +131,7 @@ export const scoreArticleRelevance = (articles: any[], searchTerms: string[]): a
 
 export async function searchRelevantKnowledge(message: string, context: string) {
   try {
-    console.log(`🔎 Starting knowledge search for: "${message}" in context: "${context}"`);
+    log(`🔎 Starting knowledge search for: "${message}" in context: "${context}"`);
     
     // First check if we have any published articles at all
     const { count: totalCount } = await supabase
@@ -138,10 +139,10 @@ export async function searchRelevantKnowledge(message: string, context: string) 
       .select('*', { count: 'exact', head: true })
       .eq('status', 'published');
     
-    console.log(`📊 Total published articles available: ${totalCount}`);
+    log(`📊 Total published articles available: ${totalCount}`);
     
     if (!totalCount || totalCount === 0) {
-      console.log('❌ No published articles found in database');
+      log('❌ No published articles found in database');
       return null;
     }
 
@@ -149,7 +150,7 @@ export async function searchRelevantKnowledge(message: string, context: string) 
     
     // Try semantic search if OpenAI key available
     if (openAIApiKey) {
-      console.log(`🧠 Attempting semantic search...`);
+      log(`🧠 Attempting semantic search...`);
       
       try {
         const queryEmbedding = await getEmbedding(message, openAIApiKey);
@@ -163,10 +164,10 @@ export async function searchRelevantKnowledge(message: string, context: string) 
         if (error) {
           console.error('❌ Error calling match_knowledge_articles:', error);
         } else if (articles && articles.length > 0) {
-          console.log(`✅ Semantic search found ${articles.length} articles`);
+          log(`✅ Semantic search found ${articles.length} articles`);
           return articles.map((a: any) => ({...a, content: a.content.substring(0, 2000)}));
         } else {
-          console.log('ℹ️ Semantic search returned no results, falling back to keyword search');
+          log('ℹ️ Semantic search returned no results, falling back to keyword search');
         }
       } catch (semanticError) {
         console.error('⚠️ Semantic search failed:', semanticError);
@@ -174,7 +175,7 @@ export async function searchRelevantKnowledge(message: string, context: string) 
     }
     
     // Fallback to improved keyword search
-    console.log('🔄 Using keyword search');
+    log('🔄 Using keyword search');
     return keywordSearch(message, context);
 
   } catch (error) {
@@ -184,11 +185,11 @@ export async function searchRelevantKnowledge(message: string, context: string) 
 }
 
 async function keywordSearch(message: string, context: string) {
-  console.log(`🔑 Starting keyword search for: "${message}"`);
+  log(`🔑 Starting keyword search for: "${message}"`);
   
   const searchTerms = extractSearchTerms(message, context);
   if (searchTerms.length === 0) {
-    console.log('❌ No search terms extracted');
+    log('❌ No search terms extracted');
     return null;
   }
 
@@ -217,10 +218,10 @@ async function keywordSearch(message: string, context: string) {
       return null;
     }
     
-    console.log(`📄 Retrieved ${allArticles?.length || 0} published articles for scoring`);
+    log(`📄 Retrieved ${allArticles?.length || 0} published articles for scoring`);
 
     if (!allArticles || allArticles.length === 0) {
-      console.log('❌ No published articles found');
+      log('❌ No published articles found');
       return null;
     }
 
@@ -232,10 +233,10 @@ async function keywordSearch(message: string, context: string) {
 
     const scoredArticles = scoreArticleRelevance(articlesWithTags, searchTerms);
     
-    console.log(`📊 After scoring: ${scoredArticles.length} relevant articles`);
+    log(`📊 After scoring: ${scoredArticles.length} relevant articles`);
     
     if (scoredArticles.length === 0) {
-      console.log('❌ No articles passed relevance scoring');
+      log('❌ No articles passed relevance scoring');
       return null;
     }
 
@@ -245,9 +246,9 @@ async function keywordSearch(message: string, context: string) {
       content: article.content.substring(0, 2000)
     }));
     
-    console.log(`✅ Returning ${results.length} top-scored articles:`);
+    log(`✅ Returning ${results.length} top-scored articles:`);
     results.forEach((article, index) => {
-      console.log(`  ${index + 1}. "${article.title}" (score: ${article.relevanceScore?.toFixed(2)})`);
+      log(`  ${index + 1}. "${article.title}" (score: ${article.relevanceScore?.toFixed(2)})`);
     });
 
     return results;

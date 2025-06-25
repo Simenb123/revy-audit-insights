@@ -1,5 +1,6 @@
 
 import { supabase } from './supabase.ts';
+import { log } from '../_shared/log.ts';
 
 export interface UsageLogData {
   userId: string;
@@ -35,7 +36,7 @@ export async function logUsage(data: UsageLogData) {
     if (error) {
       console.error('Failed to log AI usage:', error);
     } else {
-      console.log('✅ AI usage logged successfully');
+      log('✅ AI usage logged successfully');
     }
   } catch (error) {
     console.error('Error logging AI usage:', error);

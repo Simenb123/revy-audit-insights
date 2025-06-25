@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { searchClientDocuments, DocumentSearchResult } from './document-search.ts';
+import { log } from '../_shared/log.ts';
 
 export interface EnhancedContext {
   knowledge: any;
@@ -14,7 +15,7 @@ export const buildEnhancedContextWithVariant = async (
   clientData: any,
   variant: any
 ) => {
-  console.log('🏗️ Building enhanced context with variant and document search support:', { 
+  log('🏗️ Building enhanced context with variant and document search support:', { 
     context, 
     variantName: variant?.name, 
     hasClientData: !!clientData 
@@ -32,7 +33,7 @@ export const buildEnhancedContextWithVariant = async (
       authToken = data.session.access_token;
     }
   } catch (sessionError) {
-    console.log('⚠️ No session token available, using service role key');
+    log('⚠️ No session token available, using service role key');
   }
 
   const enhancedContext: any = {
@@ -44,14 +45,14 @@ export const buildEnhancedContextWithVariant = async (
 
   try {
     // 1. Get knowledge articles via knowledge-search function with proper JSON body
-    console.log('🔍 Starting knowledge search with proper JSON body...');
+    log('🔍 Starting knowledge search with proper JSON body...');
     
     // Ensure we send proper JSON body to knowledge-search
     const knowledgeRequestBody = {
       query: message || 'revisjon', // fallback query if message is empty
     };
     
-    console.log('📤 Sending knowledge search request:', knowledgeRequestBody);
+    log('📤 Sending knowledge search request:', knowledgeRequestBody);
 
     const knowledgeResponse = await supabase.functions.invoke('knowledge-search', {
       headers: {
@@ -64,9 +65,9 @@ export const buildEnhancedContextWithVariant = async (
     if (knowledgeResponse.error) {
       console.error('❌ Knowledge search failed:', knowledgeResponse.error);
       // Continue with empty knowledge instead of failing
-      console.log('⚠️ Continuing without knowledge base results');
+      log('⚠️ Continuing without knowledge base results');
     } else if (knowledgeResponse.data) {
-      console.log('📚 Knowledge search response received:', {
+      log('📚 Knowledge search response received:', {
         hasArticles: !!knowledgeResponse.data.articles,
         articlesCount: knowledgeResponse.data.articles?.length || 0,
         hasTagMapping: !!knowledgeResponse.data.tagMapping
@@ -75,25 +76,25 @@ export const buildEnhancedContextWithVariant = async (
       if (knowledgeResponse.data.articles && Array.isArray(knowledgeResponse.data.articles)) {
         enhancedContext.knowledge = knowledgeResponse.data.articles;
         enhancedContext.articleTagMapping = knowledgeResponse.data.tagMapping || {};
-        console.log('✅ Knowledge articles loaded successfully:', {
+        log('✅ Knowledge articles loaded successfully:', {
           articlesCount: knowledgeResponse.data.articles.length,
           tagMappingCount: Object.keys(knowledgeResponse.data.tagMapping || {}).length
         });
       } else {
-        console.log('⚠️ No articles found in knowledge search response');
+        log('⚠️ No articles found in knowledge search response');
       }
     }
 
     // 2. Search client documents if available
     if (clientData?.id) {
-      console.log('📄 Searching client documents for relevant content...');
+      log('📄 Searching client documents for relevant content...');
       
       try {
         const documentResults = await searchClientDocuments(message, clientData, supabase);
         
         if (documentResults) {
           enhancedContext.documentSearchResults = documentResults;
-          console.log('📄 Document search results:', {
+          log('📄 Document search results:', {
             hasSpecificDocument: !!documentResults.specificDocument,
             generalDocumentsCount: documentResults.generalDocuments?.length || 0
           });
@@ -116,7 +117,7 @@ export const buildEnhancedContextWithVariant = async (
       };
     }
 
-    console.log('🧠 Enhanced variant-aware context successfully built:', {
+    log('🧠 Enhanced variant-aware context successfully built:', {
       knowledgeArticleCount: enhancedContext.knowledge?.length || 0,
       articleTagMappingCount: Object.keys(enhancedContext.articleTagMapping || {}).length,
       hasClientContext: !!enhancedContext.clientContext,
@@ -132,7 +133,7 @@ export const buildEnhancedContextWithVariant = async (
   } catch (error) {
     console.error('❌ Error building enhanced context:', error);
     // Return partial context instead of failing completely
-    console.log('⚠️ Returning partial context due to error');
+    log('⚠️ Returning partial context due to error');
     return enhancedContext;
   }
 };
