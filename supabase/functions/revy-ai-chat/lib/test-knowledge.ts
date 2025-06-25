@@ -1,9 +1,10 @@
 
-import { supabase } from './supabase.ts';
+import { getScopedClient } from './supabase.ts';
 import { log } from '../_shared/log.ts';
 
 // Test function to verify knowledge search functionality
-export async function testKnowledgeAccess() {
+export async function testKnowledgeAccess(req: Request) {
+  const supabase = getScopedClient(req);
   log('🧪 Testing knowledge database access...');
   
   try {
