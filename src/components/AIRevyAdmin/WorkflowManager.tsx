@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,8 +14,23 @@ import {
   AlertTriangle
 } from 'lucide-react';
 
+interface WorkflowType {
+  id: string;
+  name: string;
+  description: string;
+  status: 'active' | 'paused' | 'error';
+  lastRun: string;
+  success_rate: number;
+  avg_duration: string;
+}
+
+interface ActiveWorkflowsProps {
+  workflows: WorkflowType[];
+  onToggleWorkflow: (workflowId: string) => void;
+}
+
 const WorkflowManager = () => {
-  const [activeWorkflows, setActiveWorkflows] = useState([
+  const [activeWorkflows, setActiveWorkflows] = useState<WorkflowType[]>([
     {
       id: '1',
       name: 'AI Dokumentkategorisering',
@@ -37,11 +51,11 @@ const WorkflowManager = () => {
     }
   ]);
 
-  const handleToggleWorkflow = (workflowId) => {
+  const handleToggleWorkflow = (workflowId: string) => {
     setActiveWorkflows(prev => 
       prev.map(workflow => 
         workflow.id === workflowId 
-          ? { ...workflow, status: workflow.status === 'active' ? 'paused' : 'active' }
+          ? { ...workflow, status: workflow.status === 'active' ? 'paused' : 'active' } as WorkflowType
           : workflow
       )
     );
@@ -90,8 +104,8 @@ const WorkflowManager = () => {
   );
 };
 
-const ActiveWorkflows = ({ workflows, onToggleWorkflow }) => {
-  const getStatusColor = (status) => {
+const ActiveWorkflows: React.FC<ActiveWorkflowsProps> = ({ workflows, onToggleWorkflow }) => {
+  const getStatusColor = (status: 'active' | 'paused' | 'error') => {
     switch (status) {
       case 'active': return 'bg-green-100 text-green-800';
       case 'paused': return 'bg-yellow-100 text-yellow-800';
@@ -100,7 +114,7 @@ const ActiveWorkflows = ({ workflows, onToggleWorkflow }) => {
     }
   };
 
-  const getStatusIcon = (status) => {
+  const getStatusIcon = (status: 'active' | 'paused' | 'error') => {
     switch (status) {
       case 'active': return <CheckCircle className="h-4 w-4" />;
       case 'paused': return <Pause className="h-4 w-4" />;
@@ -119,7 +133,7 @@ const ActiveWorkflows = ({ workflows, onToggleWorkflow }) => {
       </div>
 
       <div className="grid gap-4">
-        {workflows.map((workflow) => (
+        {workflows.map((workflow: WorkflowType) => (
           <Card key={workflow.id}>
             <CardContent className="p-4">
               <div className="flex items-start justify-between">

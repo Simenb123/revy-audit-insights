@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,14 +20,54 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+interface DocumentTypeFormData {
+  name: string;
+  display_name: string;
+  description: string;
+  file_pattern_hints: string;
+  is_standard: boolean;
+  sort_order: number;
+  validation_rules: string;
+  expected_structure: string;
+}
+
+interface DocumentType {
+  id: string;
+  name: string;
+  display_name: string;
+  description: string;
+  file_pattern_hints: string[];
+  is_standard: boolean;
+  sort_order: number;
+  validation_rules: Record<string, any>;
+  expected_structure?: Record<string, any>;
+}
+
+interface DocumentTypeCardProps {
+  type: DocumentType;
+  onSelect: (type: DocumentType | null) => void;
+  onEdit: () => void;
+  onDelete: (typeId: string) => void;
+  selected: boolean;
+}
+
+interface DocumentTypeFormProps {
+  type?: DocumentType | null;
+  onSubmit: (formData: DocumentTypeFormData) => void;
+}
+
+interface DocumentTypeDetailsProps {
+  type: DocumentType;
+}
+
 const DocumentTypeManager = () => {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [selectedType, setSelectedType] = useState(null);
+  const [selectedType, setSelectedType] = useState<DocumentType | null>(null);
   const [filterCategory, setFilterCategory] = useState('all');
 
   // Mock data - replace with actual data from hooks
-  const documentTypes = [
+  const documentTypes: DocumentType[] = [
     {
       id: '1',
       name: 'isa_standard',
@@ -69,19 +110,19 @@ const DocumentTypeManager = () => {
     return true;
   });
 
-  const handleCreateType = (formData) => {
+  const handleCreateType = (formData: DocumentTypeFormData) => {
     console.log('Creating document type:', formData);
     toast.success('Dokumenttype opprettet');
     setCreateDialogOpen(false);
   };
 
-  const handleEditType = (formData) => {
+  const handleEditType = (formData: DocumentTypeFormData) => {
     console.log('Editing document type:', formData);
     toast.success('Dokumenttype oppdatert');
     setEditDialogOpen(false);
   };
 
-  const handleDeleteType = (typeId) => {
+  const handleDeleteType = (typeId: string) => {
     console.log('Deleting document type:', typeId);
     toast.success('Dokumenttype slettet');
   };
@@ -178,7 +219,7 @@ const DocumentTypeManager = () => {
   );
 };
 
-const DocumentTypeCard = ({ type, onSelect, onEdit, onDelete, selected }) => {
+const DocumentTypeCard: React.FC<DocumentTypeCardProps> = ({ type, onSelect, onEdit, onDelete, selected }) => {
   return (
     <Card className={`cursor-pointer transition-colors hover:bg-accent/50 ${selected ? 'border-primary' : ''}`}>
       <CardContent className="p-4">
@@ -199,7 +240,7 @@ const DocumentTypeCard = ({ type, onSelect, onEdit, onDelete, selected }) => {
             </p>
             {type.file_pattern_hints && type.file_pattern_hints.length > 0 && (
               <div className="flex flex-wrap gap-1">
-                {type.file_pattern_hints.map((hint, index) => (
+                {type.file_pattern_hints.map((hint: string, index: number) => (
                   <Badge key={index} variant="outline" className="text-xs">
                     {hint}
                   </Badge>
@@ -221,8 +262,8 @@ const DocumentTypeCard = ({ type, onSelect, onEdit, onDelete, selected }) => {
   );
 };
 
-const DocumentTypeForm = ({ type, onSubmit }: { type?: any; onSubmit: any }) => {
-  const [formData, setFormData] = useState({
+const DocumentTypeForm: React.FC<DocumentTypeFormProps> = ({ type, onSubmit }) => {
+  const [formData, setFormData] = useState<DocumentTypeFormData>({
     name: type?.name || '',
     display_name: type?.display_name || '',
     description: type?.description || '',
@@ -233,15 +274,13 @@ const DocumentTypeForm = ({ type, onSubmit }: { type?: any; onSubmit: any }) => 
     expected_structure: JSON.stringify(type?.expected_structure || {}, null, 2)
   });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     try {
-      const submitData = {
+      const submitData: DocumentTypeFormData = {
         ...formData,
-        file_pattern_hints: formData.file_pattern_hints.split(',').map(s => s.trim()).filter(Boolean),
-        validation_rules: formData.validation_rules ? JSON.parse(formData.validation_rules) : {},
-        expected_structure: formData.expected_structure ? JSON.parse(formData.expected_structure) : {}
+        file_pattern_hints: formData.file_pattern_hints.split(',').map((s: string) => s.trim()).filter(Boolean).join(', '),
       };
       onSubmit(submitData);
     } catch (error) {
@@ -348,7 +387,7 @@ const DocumentTypeForm = ({ type, onSubmit }: { type?: any; onSubmit: any }) => 
   );
 };
 
-const DocumentTypeDetails = ({ type }) => {
+const DocumentTypeDetails: React.FC<DocumentTypeDetailsProps> = ({ type }) => {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
@@ -371,7 +410,7 @@ const DocumentTypeDetails = ({ type }) => {
         <div>
           <Label className="font-semibold">Fil mønstre</Label>
           <div className="flex flex-wrap gap-1 mt-1">
-            {type.file_pattern_hints.map((hint, index) => (
+            {type.file_pattern_hints.map((hint: string, index: number) => (
               <Badge key={index} variant="outline">
                 {hint}
               </Badge>
