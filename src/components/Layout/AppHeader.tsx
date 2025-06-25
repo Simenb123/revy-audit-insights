@@ -8,10 +8,18 @@ import AppBreadcrumb from './AppBreadcrumb';
 
 interface AppHeaderProps {
   onToggleRightSidebar?: () => void;
+
+  isRightSidebarCollapsed?: boolean;
+  onOpenMobileSidebar?: () => void;
+}
+
+const AppHeader = ({ onToggleRightSidebar, isRightSidebarCollapsed, onOpenMobileSidebar }: AppHeaderProps) => {
+
   isRightSidebarCollapsed?: boolean; // kept for backward compatibility
 }
 
 const AppHeader = ({ onToggleRightSidebar }: AppHeaderProps) => {
+
   const isMobile = useIsMobile();
 
   return (
@@ -31,7 +39,7 @@ const AppHeader = ({ onToggleRightSidebar }: AppHeaderProps) => {
           )}
         </div>
         
-        {/* Right Sidebar Toggle - Only show on desktop when not mobile */}
+        {/* Right Sidebar Toggle / Mobile Trigger */}
         <div className="flex items-center gap-2">
           {onToggleRightSidebar && !isMobile && (
             <Button
@@ -43,6 +51,20 @@ const AppHeader = ({ onToggleRightSidebar }: AppHeaderProps) => {
             >
               <MessageSquare className="h-4 w-4" />
               {/* AI indicator */}
+              <div className="absolute -top-1 -right-1 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full p-0.5">
+                <div className="h-2 w-2 bg-white rounded-full" />
+              </div>
+            </Button>
+          )}
+          {onOpenMobileSidebar && isMobile && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onOpenMobileSidebar}
+              className="h-8 w-8 relative text-sidebar-foreground hover:bg-sidebar-accent"
+              title="Åpne AI-chat"
+            >
+              <MessageSquare className="h-4 w-4" />
               <div className="absolute -top-1 -right-1 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full p-0.5">
                 <div className="h-2 w-2 bg-white rounded-full" />
               </div>

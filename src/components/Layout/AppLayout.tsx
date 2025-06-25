@@ -3,17 +3,23 @@ import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import AppHeader from './AppHeader';
-import ResizableRightSidebar from './ResizableRightSidebar';
+import AssistantSidebar from './AssistantSidebar';
+import { useMobileSidebar } from '@/hooks/use-mobile-sidebar';
 import { useRightSidebar } from './RightSidebarContext';
 
 const AppLayout = () => {
   const [isLeftSidebarCollapsed, setIsLeftSidebarCollapsed] = useState(false);
+
+  const { isCollapsed: isRightSidebarCollapsed, setIsCollapsed } = useRightSidebar();
+  const { isMobileSidebarOpen, openMobileSidebar, closeMobileSidebar } = useMobileSidebar();
+
   const {
     isCollapsed: isRightSidebarCollapsed,
     setIsCollapsed,
     isHidden: isRightSidebarHidden,
     setIsHidden
   } = useRightSidebar();
+
 
   const toggleLeftSidebar = () => {
     setIsLeftSidebarCollapsed(!isLeftSidebarCollapsed);
@@ -28,6 +34,7 @@ const AppLayout = () => {
       <AppHeader
         onToggleRightSidebar={toggleRightSidebar}
         isRightSidebarCollapsed={isRightSidebarCollapsed}
+        onOpenMobileSidebar={openMobileSidebar}
       />
       <div
         className="flex flex-1"
@@ -41,6 +48,12 @@ const AppLayout = () => {
           <main className="flex-1 overflow-y-auto">
             <Outlet />
           </main>
+
+          <AssistantSidebar
+            isMobileSidebarOpen={isMobileSidebarOpen}
+            closeMobileSidebar={closeMobileSidebar}
+          />
+
           {!isRightSidebarHidden && <ResizableRightSidebar />}
         </div>
       </div>
