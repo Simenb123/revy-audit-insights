@@ -17,7 +17,7 @@ import { Link } from 'react-router-dom';
 
 const AdminSidebarContent = () => {
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col h-full space-y-4">
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
