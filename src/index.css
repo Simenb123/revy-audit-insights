@@ -42,6 +42,9 @@
     --sidebar-width-collapsed: 4rem;
     --sidebar-width-icon: 3rem;
 
+    /* Header height variable */
+    --header-height: 3.5rem;
+
     --revio-100: 174 57% 95%;
     --revio-500: 173 49% 39%;
     --revio-600: 173 49% 35%;
