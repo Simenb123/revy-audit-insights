@@ -81,7 +81,7 @@ const WorkingPaperTemplateManager = ({
           title: 'Utførte prosedyrer',
           type: 'checklist',
           required: true,
-          items: []
+          items: [] as string[]
         },
         {
           id: 'findings',

@@ -51,7 +51,7 @@ export const useEnhancedDocumentAnalysis = () => {
 
   const analyzeBatch = async (inputs: Omit<DocumentAnalysisInput, 'variant'>[]) => {
     setIsAnalyzing(true);
-    const results = [];
+    const results: DocumentAnalysisResult[] = [];
     
     try {
       for (const input of inputs) {

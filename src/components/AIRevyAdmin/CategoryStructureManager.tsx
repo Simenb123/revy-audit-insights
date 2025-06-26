@@ -38,13 +38,15 @@ interface Category {
   children?: Category[];
 }
 
+import type { AuditPhase } from '@/types/revio';
+
 interface CategoryFormData {
   name: string;
   description: string;
   icon: string;
   parent_category_id: string;
   display_order: number;
-  applicable_phases: string[];
+  applicable_phases: AuditPhase[];
 }
 
 const CategoryStructureManager = () => {

@@ -1,6 +1,8 @@
 
 export type ArticleStatus = 'draft' | 'published' | 'archived';
 
+import type { AuditPhase } from './revio';
+
 export interface KnowledgeCategory {
   id: string;
   name: string;
@@ -11,7 +13,7 @@ export interface KnowledgeCategory {
   created_at: string;
   updated_at: string;
   children?: KnowledgeCategory[];
-  applicable_phases?: string[];
+  applicable_phases?: AuditPhase[];
 }
 
 export interface ContentTypeEntity {

@@ -35,9 +35,9 @@ export const useSmartReviAssistant = ({ clientData, userRole, embedded = false }
   const [isTyping, setIsTyping] = useState(false);
   const [currentTip, setCurrentTip] = useState('');
   const { toast } = useToast();
-  const { currentContext } = useRevyContext();
+  const { state } = useRevyContext();
 
-  const enhancedContext = currentContext;
+  const enhancedContext = state.currentContext;
 
   const handleCreateSession = useCallback(async (title?: string) => {
     console.log('🔥 Creating new session with title:', title);

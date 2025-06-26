@@ -146,7 +146,7 @@ export const triggerEnhancedTextExtraction = async (documentId: string): Promise
     const { data, error } = await supabase.functions.invoke('enhanced-pdf-text-extractor', {
       body: { documentId },
       signal
-    });
+    } as any);
 
     clear();
     
@@ -182,7 +182,7 @@ export const testKnowledgeSearch = async (testQuery: string = 'ISA revisjon'): P
     const { data, error } = await supabase.functions.invoke('knowledge-search', {
       body: { query: testQuery },
       signal
-    });
+    } as any);
 
     clear();
     

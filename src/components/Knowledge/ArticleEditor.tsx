@@ -26,7 +26,7 @@ import {
 import { Save, X, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import RichTextEditor from "./RichTextEditor";
-import { useContentTypes } from "@/hooks/knowledge/useContentTypes";
+import { useContentTypes, type ContentType } from "@/hooks/knowledge/useContentTypes";
 import { useSubjectAreas } from "@/hooks/knowledge/useSubjectAreas";
 import AIMetadataSuggestions from "./AIMetadataSuggestions";
 import TagSuggestions from "./TagSuggestions";
@@ -565,7 +565,7 @@ const ArticleEditor = () => {
                             <SelectValue placeholder="Velg innholdstype" />
                           </SelectTrigger>
                           <SelectContent>
-                            {contentTypes.map((type) => (
+                            {contentTypes.map((type: ContentType) => (
                               <SelectItem key={type.id} value={type.id}>
                                 <div className="flex items-center gap-2">
                                   <div 

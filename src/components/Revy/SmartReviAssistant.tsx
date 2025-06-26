@@ -53,18 +53,27 @@ const SmartReviAssistant = ({
   }, [currentContext, activeVariant, embedded, onContextChange]);
 
   // Get context display name for user feedback
-  const getContextDisplayName = (ctx: RevyContext) => {
-    const contextMap = {
-      'documentation': 'Dokumentanalyse',
-      'audit-actions': 'Revisjonshandlinger', 
-      'client-detail': 'Klientdetaljer',
-      'planning': 'Planlegging',
-      'execution': 'Gjennomføring',
-      'completion': 'Avslutning',
-      'general': 'Generell assistanse'
+    const getContextDisplayName = (ctx: RevyContext) => {
+      const contextMap: Record<RevyContext, string> = {
+        'dashboard': 'Dashboard',
+        'client-overview': 'Klientoversikt',
+        'client-detail': 'Klientdetaljer',
+        'audit-actions': 'Revisjonshandlinger',
+        'risk-assessment': 'Risikovurdering',
+        'documentation': 'Dokumentanalyse',
+        'collaboration': 'Samarbeid',
+        'communication': 'Kommunikasjon',
+        'team-management': 'Team',
+        'drill-down': 'Detaljer',
+        'mapping': 'Kartlegging',
+        'general': 'Generell assistanse',
+        'accounting-data': 'Regnskapsdata',
+        'analysis': 'Analyse',
+        'data-upload': 'Opplasting',
+        'knowledge-base': 'Kunnskapsbase'
+      };
+      return contextMap[ctx] || 'Generell assistanse';
     };
-    return contextMap[ctx] || 'Generell assistanse';
-  };
 
   const contextDisplayName = getContextDisplayName(currentContext);
 

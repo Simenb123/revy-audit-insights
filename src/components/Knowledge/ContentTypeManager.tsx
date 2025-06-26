@@ -187,7 +187,7 @@ const ContentTypeManager = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {contentTypes.map((type) => (
+              {contentTypes.map((type: ContentType) => (
               <div key={type.id} className="flex items-center justify-between p-3 border rounded-lg">
                 <div className="flex items-center gap-3">
                   <div 

@@ -57,7 +57,7 @@ export class KnowledgeSearchDiagnostics {
         const { data, error } = await supabase.functions.invoke('knowledge-search', {
           body: { query: 'ISA revisjon test' },
           signal
-        });
+        } as any);
 
         clear();
         
@@ -147,7 +147,7 @@ export class KnowledgeSearchDiagnostics {
       const { data, error } = await supabase.functions.invoke('knowledge-search', {
         body: { query },
         signal
-      });
+      } as any);
 
       clear();
 

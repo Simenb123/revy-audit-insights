@@ -186,7 +186,7 @@ const SubjectAreaManager = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {subjectAreas.map((area) => (
+              {subjectAreas.map((area: SubjectArea) => (
               <div key={area.id} className="flex items-center justify-between p-3 border rounded-lg">
                 <div className="flex items-center gap-3">
                   <div 

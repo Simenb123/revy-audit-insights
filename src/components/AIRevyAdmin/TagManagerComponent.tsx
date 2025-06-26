@@ -58,7 +58,7 @@ const TagManagerComponent = () => {
     'custom': 'Tilpasset'
   };
 
-  const filteredTags = tags.filter(tag => {
+  const filteredTags = tags.filter((tag: TagType) => {
     if (filterCategory === 'all') return true;
     return tag.category === filterCategory;
   });
@@ -131,7 +131,7 @@ const TagManagerComponent = () => {
 
           {/* Tags Grid */}
           <div className="grid gap-4">
-            {filteredTags.map((tag) => (
+              {filteredTags.map((tag: TagType) => (
               <TagCard 
                 key={tag.id} 
                 tag={tag} 

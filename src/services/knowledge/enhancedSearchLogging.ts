@@ -122,7 +122,7 @@ export const performEnhancedSearch = async (query: string): Promise<any> => {
     const { data, error } = await supabase.functions.invoke('knowledge-search', {
       body: { query },
       signal
-    });
+    } as any);
 
     clear();
 

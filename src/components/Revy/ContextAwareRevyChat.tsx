@@ -79,10 +79,12 @@ Hva kan jeg hjelpe deg med i dag?`;
       const phaseNames = {
         engagement: 'Oppdrags-fase',
         planning: 'Planlegging',
-        execution: 'Gjennomføring', 
+        execution: 'Gjennomføring',
         completion: 'Ferdigstillelse',
-        reporting: 'Rapportering'
-      };
+        reporting: 'Rapportering',
+        risk_assessment: 'Risikovurdering',
+        overview: 'Oversikt'
+      } as Record<string, string>;
       context.push(`🎯 Fase: ${phaseNames[client.phase] || client.phase}`);
     }
     
