@@ -158,7 +158,7 @@ const buildEnhancedContextWithVariantAndDocuments = async (
           ...(session?.access_token && { 'Authorization': `Bearer ${session.access_token}` })
         },
         signal
-      });
+      } as any);
 
       clear();
 
@@ -334,7 +334,7 @@ export const generateEnhancedAIResponseWithVariant = async (
     const { data, error } = await supabase.functions.invoke('revy-ai-chat', {
       body: requestPayload,
       signal
-    });
+    } as any);
 
     clear();
 

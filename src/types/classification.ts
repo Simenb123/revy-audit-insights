@@ -1,3 +1,5 @@
+import type { AuditPhase } from './revio';
+
 export interface Category {
   id: string;
   name: string;
@@ -8,7 +10,7 @@ export interface Category {
   created_at: string;
   updated_at: string;
   children?: Category[];
-  applicable_phases?: string[];
+  applicable_phases?: AuditPhase[];
 }
 
 export interface ContentType {

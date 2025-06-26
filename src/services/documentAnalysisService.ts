@@ -53,7 +53,7 @@ export const analyzeDocumentWithAI = async (
     if (useEnhanced) {
       const { signal, clear } = createTimeoutSignal(20000);
 
-      const { data, error } = await supabase.functions.invoke('enhanced-document-ai', {
+    const { data, error } = await supabase.functions.invoke('enhanced-document-ai', {
         body: {
           document_text: input.extractedText,
           file_name: input.fileName,
@@ -62,7 +62,7 @@ export const analyzeDocumentWithAI = async (
           audit_action_context: input.auditActionContext,
         },
         signal
-      });
+      } as any);
 
       clear();
 
@@ -90,7 +90,7 @@ export const analyzeDocumentWithAI = async (
         fileName: input.fileName
       },
       signal
-    });
+    } as any);
 
     clear();
 

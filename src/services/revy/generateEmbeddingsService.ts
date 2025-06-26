@@ -21,7 +21,7 @@ export const generateEmbeddingsForExistingArticles = async (): Promise<{
     const { data, error } = await supabase.functions.invoke('generate-embeddings', {
       body: {},
       signal
-    });
+    } as any);
 
     clear();
     

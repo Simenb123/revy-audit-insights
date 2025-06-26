@@ -65,7 +65,7 @@ export const useRevyMessageHandling = ({
 📊 **KLIENTOVERSIKT:**
 - ${docCount} dokumenter tilgjengelig
 - Kategorier: ${categories.length > 0 ? categories.join(', ') : 'Ingen kategorier ennå'}
-- Siste dokumenter: ${recentDocs.length > 0 ? recentDocs.map(d => d.name).join(', ') : 'Ingen dokumenter ennå'}
+ - Siste dokumenter: ${recentDocs.length > 0 ? recentDocs.map((d: any) => d.name).join(', ') : 'Ingen dokumenter ennå'}
 
 Jeg kan hjelpe deg med klientanalyse, dokumentgjennomgang, risikovurdering og revisjonsplanlegging. Hva vil du vite om denne klienten?
 

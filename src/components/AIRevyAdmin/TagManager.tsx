@@ -118,10 +118,10 @@ const TagManager = () => {
   const updateTag = useUpdateTag();
   const deleteTag = useDeleteTag();
 
-  const filteredTags = filterCategory === 'all' ? tags : tags.filter(tag => tag.category === filterCategory);
+  const filteredTags = filterCategory === 'all' ? tags : tags.filter((tag: TagType) => tag.category === filterCategory);
 
   return (
-    <EntityManager
+    <EntityManager<TagType>
       items={filteredTags}
       isLoading={isLoading}
       itemKey={(t) => t.id}
@@ -131,7 +131,7 @@ const TagManager = () => {
       FormComponent={({ item, onSubmit }) => (
         <TagForm defaultValues={item ?? undefined} onSubmit={onSubmit} />
       )}
-      renderItem={(tag, actions) => (
+      renderItem={(tag: TagType, actions) => (
         <TagCard tag={tag} actions={actions} />
       )}
       header={(

@@ -54,7 +54,7 @@ export const generateAIResponse = async (
     const { data, error } = await supabase.functions.invoke('revy-ai-chat', {
       body: requestBody,
       signal
-    });
+    } as any);
 
     clear();
 
