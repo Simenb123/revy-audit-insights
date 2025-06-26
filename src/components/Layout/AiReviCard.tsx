@@ -43,6 +43,10 @@ const AiReviCard: React.FC<AiReviCardProps> = ({
   });
 
   const handleToggleExpand = () => {
+    // Collapse should also exit fullscreen
+    if (isExpanded) {
+      setIsFullscreen(false);
+    }
     setIsExpanded(!isExpanded);
   };
 
@@ -71,6 +75,16 @@ const AiReviCard: React.FC<AiReviCardProps> = ({
             >
               {isExpanded ? <Minimize2 size={12} /> : <Maximize2 size={12} />}
             </Button>
+            {!isFullscreen && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleToggleFullscreen}
+                className="h-6 w-6 p-0"
+              >
+                <Maximize2 size={12} />
+              </Button>
+            )}
             {isFullscreen && (
               <Button
                 variant="ghost"
