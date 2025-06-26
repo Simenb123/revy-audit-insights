@@ -52,7 +52,7 @@ const AiReviCard: React.FC<AiReviCardProps> = ({
 
   const cardClasses = `w-full ${
     isFullscreen ? 'fixed inset-0 z-50 bg-white' : ''
-  } ${isExpanded ? 'h-96' : 'h-auto'} ${className}`;
+  } ${isExpanded ? 'flex flex-col h-full' : 'h-auto'} ${className}`;
 
   return (
     <Card className={cardClasses}>
@@ -96,7 +96,7 @@ const AiReviCard: React.FC<AiReviCardProps> = ({
         )}
       </CardHeader>
       
-      <CardContent className="p-2 space-y-2">
+      <CardContent className="p-2 space-y-2 flex flex-col flex-1 min-h-0">
         {currentTip && !isExpanded && (
           <div className="text-xs text-muted-foreground bg-blue-50 p-2 rounded border">
             💡 {currentTip}
@@ -104,16 +104,16 @@ const AiReviCard: React.FC<AiReviCardProps> = ({
         )}
         
         {isExpanded && (
-          <div className="flex flex-col flex-1 overflow-hidden">
+          <ScrollArea className="flex-1">
             <RevyMessageList
               messages={messages}
               isTyping={isTyping}
               isEmbedded={true}
             />
-          </div>
+          </ScrollArea>
         )}
 
-        <div className="sticky bottom-0 bg-white border-t">
+        <div className="mt-auto">
           <RevyInput
             message={message}
             setMessage={setMessage}
