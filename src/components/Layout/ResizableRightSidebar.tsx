@@ -109,7 +109,7 @@ const ResizableRightSidebar = () => {
       <ResizableHandle onMouseDown={handleMouseDown} />
 
       <motion.div
-        className="border-l bg-background flex flex-col h-full overflow-hidden"
+        className="border-l bg-background flex flex-col h-full"
         animate={{ width: isCollapsed ? 0 : width }}
         style={{
           minWidth: isCollapsed ? 0 : 280,
@@ -123,7 +123,7 @@ const ResizableRightSidebar = () => {
               title={getPageTitle()}
               onToggle={toggleCollapsed}
             />
-            <ScrollArea className="flex-1">
+            <ScrollArea className="flex-1 h-full">
               <div className="p-4 space-y-4">
                 <RevySidebarFigure />
                 {renderContent()}
