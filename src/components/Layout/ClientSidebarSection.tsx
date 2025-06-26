@@ -43,7 +43,7 @@ const ClientSidebarSection: React.FC<ClientSidebarSectionProps> = ({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Calendar className="w-4 w-4" />
+            <Calendar className="w-4 h-4" />
             Aktivitet
           </CardTitle>
         </CardHeader>
