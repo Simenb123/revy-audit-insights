@@ -63,15 +63,15 @@ export const FloatingRevyAssistant = (props: FloatingRevyAssistantProps) => {
   return (
     <>
       {!isOpen && (
-        <motion.div 
-          className="fixed bottom-4 right-4 z-50"
+        <motion.div
+          className="fixed bottom-6 right-6 z-50"
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ duration: 0.3 }}
           onClick={toggleOpen}
         >
           <div className="relative">
-            <RevyAvatar size="lg" className="cursor-pointer hover:shadow-lg transition-shadow duration-300 animate-bounce-limited" />
+            <RevyAvatar size="lg" className="cursor-pointer hover:shadow-lg transition-shadow duration-300" />
             <div className="absolute -top-2 -right-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full p-1">
               <Sparkles className="h-3 w-3 text-white" />
             </div>
