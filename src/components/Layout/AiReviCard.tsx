@@ -3,14 +3,12 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Bot, MessageSquare, X, Maximize2, Minimize2 } from 'lucide-react';
+import { Bot, X, Maximize2, Minimize2 } from 'lucide-react';
 import { useSmartReviAssistant } from '@/hooks/revy/useSmartReviAssistant';
 import { RevyInput } from '../Revy/Assistant/RevyInput';
 import { RevyMessageList } from '../Revy/Assistant/RevyMessageList';
-import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface AiReviCardProps {
-  context: string;
   clientData?: any;
   title?: string;
   description?: string;
@@ -18,7 +16,6 @@ interface AiReviCardProps {
 }
 
 const AiReviCard: React.FC<AiReviCardProps> = ({
-  context,
   clientData,
   title = "AI-Revi Assistent",
   description = "Din smarte revisjonsassistent",
