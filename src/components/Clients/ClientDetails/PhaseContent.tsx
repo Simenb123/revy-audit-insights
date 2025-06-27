@@ -3,7 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import DocumentsContainer from "./Documents/DocumentsContainer";
 import PlanningContainer from "./Planning/PlanningContainer";
 import ActionsContainer from "./Actions/ActionsContainer";
-import { AuditPhase } from "@/types/client";
+import { AuditPhase } from "@/types/revio";
 import { Client } from "@/types/revio";
 
 interface PhaseContentProps {

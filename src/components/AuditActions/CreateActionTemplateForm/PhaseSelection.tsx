@@ -10,6 +10,7 @@ import {
   FormMessage,
   FormDescription 
 } from '@/components/ui/form';
+import { AuditPhase } from '@/types/revio';
 import { CreateActionTemplateFormData } from './types';
 
 interface PhaseSelectionProps {
@@ -17,12 +18,12 @@ interface PhaseSelectionProps {
 }
 
 const PhaseSelection = ({ form }: PhaseSelectionProps) => {
-  const phaseOptions = [
-    { value: 'engagement', label: 'Oppdragsaksept' },
-    { value: 'planning', label: 'Planlegging' },
-    { value: 'execution', label: 'Gjennomføring' },
-    { value: 'conclusion', label: 'Konklusjon' }
-  ] as const;
+  const phaseOptions: { value: AuditPhase; label: string }[] = [
+    { value: AuditPhase.Engagement, label: 'Oppdragsaksept' },
+    { value: AuditPhase.Planning, label: 'Planlegging' },
+    { value: AuditPhase.Execution, label: 'Gjennomføring' },
+    { value: AuditPhase.Completion, label: 'Avslutning' }
+  ];
 
   return (
     <FormField

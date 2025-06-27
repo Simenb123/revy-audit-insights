@@ -1,5 +1,6 @@
 
 import * as z from 'zod';
+import { AuditPhase } from '@/types/revio';
 
 export const createActionTemplateFormSchema = z.object({
   name: z.string().min(1, 'Navn er påkrevd'),
@@ -11,7 +12,7 @@ export const createActionTemplateFormSchema = z.object({
   documentation_requirements: z.string().optional(),
   estimated_hours: z.number().min(0).optional(),
   risk_level: z.enum(['low', 'medium', 'high']),
-  applicable_phases: z.array(z.enum(['engagement', 'planning', 'execution', 'conclusion'] as const)).min(1, 'Minst én fase må velges'),
+  applicable_phases: z.array(z.nativeEnum(AuditPhase)).min(1, 'Minst én fase må velges'),
   sort_order: z.number().default(0)
 });
 

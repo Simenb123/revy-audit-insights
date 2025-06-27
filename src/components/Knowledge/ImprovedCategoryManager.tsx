@@ -21,7 +21,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import type { AuditPhase } from '@/types/audit-actions';
+import type { AuditPhase } from '@/types/revio';
 import type { Category as BaseCategory } from '@/types/classification';
 
 interface Category extends BaseCategory {
