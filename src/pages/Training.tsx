@@ -25,6 +25,8 @@ import ScenarioSelection from '@/components/Training/ScenarioSelection';
 import RiskAssessmentModule from '@/components/Training/RiskAssessmentModule';
 import AICharacterSimulator from '@/components/Training/AICharacterSimulator';
 import VoiceTrainingModule from '@/components/Training/VoiceTrainingModule';
+import VesentlighetModule from '@/components/Training/VesentlighetModule';
+import SubstanstestingModule from '@/components/Training/SubstanstestingModule';
 import StructuredLearningPath from '@/components/Training/StructuredLearningPath';
 import ManagerDashboard from '@/components/Training/ManagerDashboard';
 
@@ -76,9 +78,9 @@ const Training = () => {
       estimatedTime: '15 min'
     },
     {
-      id: 'materialitet',
-      title: 'Materialitetsberegning',
-      description: 'Beregn materialitetsgrenser',
+      id: 'vesentlighet',
+      title: 'Vesentlighetsberegning',
+      description: 'Beregn vesentlighetsgrenser',
       icon: TrendingUp,
       difficulty: 'Vanskelig',
       estimatedTime: '20 min'
@@ -307,22 +309,18 @@ const Training = () => {
               />
             )}
             
-            {activeModule === 'materialitet' && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Materialitetsberegning</CardTitle>
-                  <p className="text-muted-foreground">Denne modulen er under utvikling.</p>
-                </CardHeader>
-              </Card>
+            {activeModule === 'vesentlighet' && selectedScenario && selectedScenarioData && (
+              <VesentlighetModule
+                scenarioId={selectedScenario}
+                scenarioName={selectedScenarioData.name}
+              />
             )}
             
-            {activeModule === 'testing' && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Substanstesting</CardTitle>
-                  <p className="text-muted-foreground">Denne modulen er under utvikling.</p>
-                </CardHeader>
-              </Card>
+            {activeModule === 'testing' && selectedScenario && selectedScenarioData && (
+              <SubstanstestingModule
+                scenarioId={selectedScenario}
+                scenarioName={selectedScenarioData.name}
+              />
             )}
           </div>
         )}
