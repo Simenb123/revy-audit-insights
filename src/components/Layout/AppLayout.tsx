@@ -1,58 +1,37 @@
-
 import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
-import Sidebar from './Sidebar';
-import AppHeader from './AppHeader';
-import AssistantSidebar from './AssistantSidebar';
-import { useMobileSidebar } from '@/hooks/use-mobile-sidebar';
-import { useRightSidebar } from './RightSidebarContext';
+import Sidebar from './Sidebar'
+import AppHeader from './AppHeader'
+import AssistantSidebar from '../RightSidebar/AssistantSidebar'
+import { ChatUIProvider } from '@/store/chatUI'
 
 const AppLayout = () => {
   const [isLeftSidebarCollapsed, setIsLeftSidebarCollapsed] = useState(false);
 
-  const {
-    isCollapsed: isRightSidebarCollapsed,
-    setIsCollapsed,
-    isHidden: isRightSidebarHidden,
-    setIsHidden
-  } = useRightSidebar();
-  const { isMobileSidebarOpen, openMobileSidebar, closeMobileSidebar } = useMobileSidebar();
 
   const toggleLeftSidebar = () => {
     setIsLeftSidebarCollapsed(!isLeftSidebarCollapsed);
   };
 
-  const toggleRightSidebar = () => {
-    setIsHidden(v => !v);
-  };
-
   return (
-    <div className="min-h-screen bg-background w-full flex flex-col">
-      <AppHeader
-        onToggleRightSidebar={toggleRightSidebar}
-        isRightSidebarCollapsed={isRightSidebarCollapsed}
-        onOpenMobileSidebar={openMobileSidebar}
-      />
-      <div
-        className="flex flex-1"
-        style={{ height: "calc(100vh - var(--header-height))" }}
-      >
-        <Sidebar
-          isCollapsed={isLeftSidebarCollapsed}
-          onToggle={toggleLeftSidebar}
-        />
-        <div className="flex-1 flex overflow-hidden">
-          <main className="flex-1 overflow-y-auto">
+    <ChatUIProvider>
+      <div className="min-h-screen bg-background grid grid-cols-[auto_1fr_auto] grid-rows-[auto_1fr]">
+        <AppHeader className="col-span-3" />
+        <div
+          className="grid grid-cols-[auto_1fr] lg:grid-cols-[auto_1fr_auto] flex-1"
+          style={{ height: 'calc(100vh - var(--header-height))' }}
+        >
+          <Sidebar
+            isCollapsed={isLeftSidebarCollapsed}
+            onToggle={toggleLeftSidebar}
+          />
+          <main className="overflow-y-auto">
             <Outlet />
           </main>
-
-          <AssistantSidebar
-            isMobileSidebarOpen={isMobileSidebarOpen}
-            closeMobileSidebar={closeMobileSidebar}
-          />
+          <AssistantSidebar />
         </div>
       </div>
-    </div>
+    </ChatUIProvider>
   );
 };
 
