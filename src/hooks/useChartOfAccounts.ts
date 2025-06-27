@@ -185,3 +185,94 @@ export function useUpdateAccountMapping() {
     },
   });
 }
+
+export function useCreateStandardAccount() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: Omit<StandardAccount, 'id' | 'created_at'>) => {
+      const { data: result, error } = await supabase
+        .from('standard_accounts')
+        .insert(data)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return result as StandardAccount;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['standard-accounts'] });
+      toast({
+        title: 'Standardkonto opprettet',
+        description: 'Standardkontoen ble opprettet',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Feil ved opprettelse av standardkonto',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+}
+
+export function useUpdateStandardAccount() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: Partial<StandardAccount> & { id: string }) => {
+      const { data, error } = await supabase
+        .from('standard_accounts')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data as StandardAccount;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['standard-accounts'] });
+      toast({
+        title: 'Standardkonto oppdatert',
+        description: 'Standardkontoen ble oppdatert',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Feil ved oppdatering av standardkonto',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+}
+
+export function useDeleteStandardAccount() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('standard_accounts')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['standard-accounts'] });
+      toast({
+        title: 'Standardkonto slettet',
+        description: 'Standardkontoen ble slettet',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Feil ved sletting av standardkonto',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+}

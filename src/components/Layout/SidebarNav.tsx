@@ -14,7 +14,8 @@ import {
   UserCog,
   GraduationCap,
   FileText,
-  Brain
+  Brain,
+  Database
 } from 'lucide-react';
 import { TooltipProvider, Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -70,6 +71,11 @@ const SidebarNav = ({ collapsed = false }: SidebarNavProps) => {
       to: "/ai-usage",
       icon: BarChart3,
       label: "AI-bruk"
+    },
+    {
+      to: "/standard-accounts",
+      icon: Database,
+      label: "Kontoplan"
     },
     {
       to: "/ai-revy-admin",

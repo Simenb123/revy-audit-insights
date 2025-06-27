@@ -31,6 +31,7 @@ import AuditLogs from "./pages/AuditLogs";
 import AIUsage from "./pages/AIUsage";
 import KnowledgeBase from "./pages/KnowledgeBase";
 import AIRevyAdmin from "./pages/AIRevyAdmin";
+import StandardAccountsAdmin from "./pages/StandardAccountsAdmin";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -75,6 +76,7 @@ function App() {
                   <Route path="documents" element={<PDFDocuments />} />
                   <Route path="audit-logs" element={<AuditLogs />} />
                   <Route path="ai-usage" element={<AIUsage />} />
+                  <Route path="standard-accounts" element={<StandardAccountsAdmin />} />
                   <Route path="fag/*" element={<KnowledgeBase />} />
                   <Route path="ai-revy-admin" element={<AIRevyAdmin />} />
                 </Route>
