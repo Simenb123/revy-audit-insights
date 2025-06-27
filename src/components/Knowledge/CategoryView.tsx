@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { useParams, Link, Navigate } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,7 @@ import { Plus, Clock, Eye } from 'lucide-react';
 
 const CategoryView = () => {
   const { categoryId } = useParams<{ categoryId: string }>();
+  const categoryIdentifier = categoryId;
 
   // Check if categoryId is a valid UUID format
   const isValidUUID = (str: string | undefined) => {
@@ -21,18 +22,17 @@ const CategoryView = () => {
     return uuidRegex.test(str);
   };
 
-  const validCategoryId = isValidUUID(categoryId)
+  const validCategoryId = isValidUUID(categoryIdentifier)
 
   const { data: category, isLoading: categoryLoading } = useQuery({
-    queryKey: ['knowledge-category', categoryId],
+    queryKey: ['knowledge-category', categoryIdentifier],
     queryFn: async () => {
-      if (!categoryId) throw new Error('Category ID is required')
+      if (!categoryIdentifier) throw new Error('Category identifier is required')
 
-      console.log('Fetching category:', categoryId)
       const { data, error } = await supabase
         .from('knowledge_categories')
         .select('*')
-        .eq('id', categoryId)
+        .eq(validCategoryId ? 'id' : 'slug', categoryIdentifier)
         .single()
 
       if (error) {
@@ -43,30 +43,30 @@ const CategoryView = () => {
       console.log('Category fetched:', data)
       return data as KnowledgeCategory
     },
-    enabled: !!categoryId && validCategoryId
+    enabled: !!categoryIdentifier
   })
 
   const { data: subcategories } = useQuery({
-    queryKey: ['knowledge-subcategories', categoryId],
+    queryKey: ['knowledge-subcategories', categoryIdentifier],
     queryFn: async () => {
-      if (!categoryId || !validCategoryId) return []
+      if (!category) return []
 
       const { data, error } = await supabase
         .from('knowledge_categories')
         .select('*')
-        .eq('parent_category_id', categoryId)
+        .eq('parent_category_id', category.id)
         .order('display_order')
 
       if (error) throw error
       return data as KnowledgeCategory[]
     },
-    enabled: !!categoryId && validCategoryId
+    enabled: !!category
   })
 
   const { data: articles = [], isLoading: isLoadingArticles } = useQuery({
-    queryKey: ['knowledge-articles', categoryId],
+    queryKey: ['knowledge-articles', categoryIdentifier],
     queryFn: async () => {
-      if (!categoryId || !validCategoryId) return []
+      if (!category) return []
 
       const { data, error } = await supabase
         .from('knowledge_articles')
@@ -79,7 +79,7 @@ const CategoryView = () => {
             tag:tags(*)
           )
         `)
-        .eq('category_id', categoryId)
+        .eq('category_id', category.id)
         .eq('status', 'published')
 
       if (error) throw error
@@ -89,14 +89,9 @@ const CategoryView = () => {
         article_tags: article.article_tags?.map((at: any) => at.tag) || []
       }))
     },
-    enabled: !!categoryId && validCategoryId
+    enabled: !!category
   })
 
-  // If categoryId is not a valid UUID, redirect to knowledge base
-  if (!validCategoryId) {
-    console.warn('Invalid category ID format:', categoryId)
-    return <Navigate to="/fag" replace />
-  }
 
   if (categoryLoading) {
     return (
@@ -150,7 +145,7 @@ const CategoryView = () => {
           )}
         </div>
         <Button asChild>
-          <Link to="/fag/ny-artikkel" state={{ categoryId }}>
+          <Link to="/fag/ny-artikkel" state={{ categoryId: category?.id }}>
             <Plus className="w-4 h-4 mr-2" />
             Ny artikkel
           </Link>
@@ -163,7 +158,7 @@ const CategoryView = () => {
           <h2 className="text-lg font-semibold mb-3">Underkategorier</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {subcategories.map((subcategory) => (
-              <Link key={subcategory.id} to={`/fag/kategori/${subcategory.id}`}>
+              <Link key={subcategory.id} to={`/fag/kategori/${subcategory.slug ?? subcategory.id}`}>
                 <Card className="hover:shadow-md transition-shadow cursor-pointer bg-card">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-base">{subcategory.name}</CardTitle>
@@ -239,7 +234,7 @@ const CategoryView = () => {
           <div className="text-center py-8">
             <p className="text-muted-foreground">Ingen artikler i denne kategorien ennå.</p>
             <Button asChild className="mt-4">
-              <Link to="/fag/ny-artikkel" state={{ categoryId }}>
+              <Link to="/fag/ny-artikkel" state={{ categoryId: category?.id }}>
                 <Plus className="w-4 h-4 mr-2" />
                 Opprett første artikkel
               </Link>

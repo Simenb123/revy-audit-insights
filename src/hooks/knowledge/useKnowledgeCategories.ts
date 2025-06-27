@@ -7,6 +7,7 @@ import { AuditPhase } from '@/types/revio';
 export interface KnowledgeCategory {
   id: string;
   name: string;
+  slug: string;
   description?: string;
   icon?: string;
   parent_category_id?: string;
@@ -38,13 +39,17 @@ export const useCreateKnowledgeCategory = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async (categoryData: Omit<KnowledgeCategory, 'id' | 'created_at' | 'updated_at'>) => {
+    mutationFn: async (categoryData: Omit<KnowledgeCategory, 'id' | 'created_at' | 'updated_at' | 'slug'>) => {
       if (!supabase) throw new Error('Supabase not initialized');
-      
+
       const { data, error } = await supabase
         .from('knowledge_categories')
         .insert({
           ...categoryData,
+          slug: categoryData.name
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, ''),
           applicable_phases: categoryData.applicable_phases as any
         })
         .select()
@@ -74,6 +79,14 @@ export const useUpdateKnowledgeCategory = () => {
         .from('knowledge_categories')
         .update({
           ...updateData,
+          ...(updateData.name
+            ? {
+                slug: updateData.name
+                  .toLowerCase()
+                  .replace(/[^a-z0-9]+/g, '-')
+                  .replace(/^-+|-+$/g, '')
+              }
+            : {}),
           applicable_phases: updateData.applicable_phases as any
         })
         .eq('id', id)

@@ -2298,6 +2298,7 @@ export type Database = {
           icon: string | null
           id: string
           name: string
+          slug: string
           parent_category_id: string | null
           updated_at: string
         }
@@ -2311,6 +2312,7 @@ export type Database = {
           icon?: string | null
           id?: string
           name: string
+          slug?: string
           parent_category_id?: string | null
           updated_at?: string
         }
@@ -2324,6 +2326,7 @@ export type Database = {
           icon?: string | null
           id?: string
           name?: string
+          slug?: string
           parent_category_id?: string | null
           updated_at?: string
         }

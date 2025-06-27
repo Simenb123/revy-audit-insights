@@ -42,14 +42,14 @@ const buildCategoryTree = (categories: Category[]): CategoryTreeNode[] => {
 
 const CategoryTreeItem = ({ category }: { category: CategoryTreeNode }) => {
   const { categoryId } = useParams<{ categoryId?: string }>();
-  const isSelected = category.id === categoryId;
+  const isSelected = category.id === categoryId || category.slug === categoryId;
   const hasChildren = category.children && category.children.length > 0;
 
   if (!hasChildren) {
     return (
       <li className="list-none">
         <Link
-          to={`/fag/kategori/${category.id}`}
+          to={`/fag/kategori/${category.slug ?? category.id}`}
           className={cn(
             'flex items-center gap-2 p-2 rounded-md hover:bg-accent ml-6',
             isSelected && 'bg-accent font-semibold'
@@ -64,7 +64,7 @@ const CategoryTreeItem = ({ category }: { category: CategoryTreeNode }) => {
 
   return (
     <TreeItem value={category.id}>
-      <Link to={`/fag/kategori/${category.id}`} className="block text-current no-underline">
+      <Link to={`/fag/kategori/${category.slug ?? category.id}`} className="block text-current no-underline">
         <TreeViewTrigger className={cn(isSelected && 'bg-accent font-semibold')}>
           <div className="flex items-center gap-2">
             <Folder size={16} />
