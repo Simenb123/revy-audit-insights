@@ -23,7 +23,24 @@ const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
   const [fileName, setFileName] = useState<string>('');
   const [parsedData, setParsedData] = useState<ParsedCSVData | null>(null);
   const [showMapping, setShowMapping] = useState(false);
+  const [savedMapping, setSavedMapping] = useState<Record<string, string> | null>(null);
   const { toast } = useToast();
+
+  const fetchLastMapping = useCallback(async () => {
+    if (!clientId) return null;
+    const { data, error } = await supabase
+      .from('upload_column_mappings')
+      .select('column_mappings')
+      .eq('client_id', clientId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error) {
+      console.warn('Failed to fetch previous column mapping', error);
+      return null;
+    }
+    return data ? (data.column_mappings as Record<string, string>) : null;
+  }, [clientId]);
 
   const parseCSVFile = async (file: File): Promise<ParsedCSVData> => {
     try {
@@ -215,7 +232,10 @@ const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
     return isNaN(parsed) ? 0 : parsed;
   };
 
-  const processTransactionData = async (data: any[], mapping: Record<string, string>) => {
+  const processTransactionData = async (
+    data: any[],
+    mapping: Record<string, string>
+  ): Promise<{ processed: number; batchId: string }> => {
     console.log('=== TRANSAKSJONSPROSESSERING START ===');
     console.log('Processing transaction data with mapping:', mapping);
     console.log('Number of transactions to process:', data.length);
@@ -445,7 +465,7 @@ const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
       });
     }
 
-    return processed;
+    return { processed, batchId: batch.id };
   };
 
   const handleFileUpload = useCallback(async (file: File) => {
@@ -464,6 +484,8 @@ const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
     try {
       const parsed = await parseCSVFile(file);
       setParsedData(parsed);
+      const last = await fetchLastMapping();
+      setSavedMapping(last);
       setShowMapping(true);
       
       toast({
@@ -480,19 +502,27 @@ const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
     } finally {
       setIsUploading(false);
     }
-  }, [toast]);
+  }, [toast, fetchLastMapping]);
 
   const handleMappingComplete = async (mapping: Record<string, string>) => {
     if (!parsedData) return;
     
     setIsUploading(true);
     try {
-      const recordCount = await processTransactionData(parsedData.data, mapping);
+      const { processed, batchId } = await processTransactionData(parsedData.data, mapping);
       setUploadSuccess(true);
       setShowMapping(false);
-      
+
       if (onUploadSuccess) {
-        onUploadSuccess(fileName, recordCount);
+        onUploadSuccess(fileName, processed);
+      }
+
+      if (clientId) {
+        await supabase.from('upload_column_mappings').insert({
+          client_id: clientId,
+          upload_batch_id: batchId,
+          column_mappings: mapping
+        });
       }
     } catch (error) {
       console.error('Processing error:', error);
@@ -542,6 +572,7 @@ const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
     setFileName('');
     setParsedData(null);
     setShowMapping(false);
+    setSavedMapping(null);
   };
 
   if (showMapping && parsedData) {
@@ -562,6 +593,7 @@ const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
             sampleData={parsedData.data}
             onMappingComplete={handleMappingComplete}
             onCancel={handleMappingCancel}
+            initialMapping={savedMapping || {}}
           />
         </CardContent>
       </Card>

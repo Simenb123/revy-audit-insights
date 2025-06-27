@@ -22,6 +22,7 @@ interface ColumnMappingInterfaceProps {
   sampleData: Record<string, string>[];
   onMappingComplete: (mapping: ColumnMapping) => void;
   onCancel: () => void;
+  initialMapping?: ColumnMapping;
 }
 
 const standardFields: StandardField[] = [
@@ -42,20 +43,22 @@ const standardFields: StandardField[] = [
   { key: 'balance_amount', label: 'Saldo (legacy)', required: false, description: 'Saldo etter transaksjon (eldre format)' },
 ];
 
-const ColumnMappingInterface = ({ 
-  fileColumns, 
-  sampleData, 
-  onMappingComplete, 
-  onCancel 
+const ColumnMappingInterface = ({
+  fileColumns,
+  sampleData,
+  onMappingComplete,
+  onCancel,
+  initialMapping = {}
 }: ColumnMappingInterfaceProps) => {
-  const [mapping, setMapping] = useState<ColumnMapping>({});
+  const [mapping, setMapping] = useState<ColumnMapping>(initialMapping);
   const [showPreview, setShowPreview] = useState(false);
 
   // Auto-detect column mappings based on common names
   useEffect(() => {
-    const autoMapping: ColumnMapping = {};
+    const autoMapping: ColumnMapping = { ...initialMapping };
     
     fileColumns.forEach(column => {
+      if (autoMapping[column]) return;
       const lowerColumn = column.toLowerCase();
       
       // Auto-detect common patterns for new format
@@ -92,7 +95,7 @@ const ColumnMappingInterface = ({
     });
     
     setMapping(autoMapping);
-  }, [fileColumns]);
+  }, [fileColumns, initialMapping]);
 
   const handleMappingChange = (fileColumn: string, standardField: string) => {
     setMapping(prev => ({
