@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -35,6 +36,7 @@ interface Category {
   description?: string;
   display_order: number;
   icon?: string;
+  applicable_phases?: AuditPhase[];
   children?: Category[];
 }
 
@@ -295,13 +297,22 @@ interface CategoryFormProps {
 }
 
 const CategoryForm: React.FC<CategoryFormProps> = ({ category, onSubmit }) => {
+  const phaseOptions: { value: AuditPhase; label: string }[] = [
+    { value: 'overview', label: 'Oversikt' },
+    { value: 'engagement', label: 'Oppdragsvurdering' },
+    { value: 'planning', label: 'Planlegging' },
+    { value: 'risk_assessment', label: 'Risikovurdering' },
+    { value: 'execution', label: 'Utførelse' },
+    { value: 'completion', label: 'Avslutning' },
+    { value: 'reporting', label: 'Rapportering' },
+  ];
   const [formData, setFormData] = useState<CategoryFormData>({
     name: category?.name || '',
     description: category?.description || '',
     icon: category?.icon || '',
     parent_category_id: 'none',
     display_order: category?.display_order || 0,
-    applicable_phases: []
+    applicable_phases: category?.applicable_phases || []
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -357,6 +368,29 @@ const CategoryForm: React.FC<CategoryFormProps> = ({ category, onSubmit }) => {
           value={formData.display_order}
           onChange={(e) => setFormData(prev => ({ ...prev, display_order: parseInt(e.target.value) || 0 }))}
         />
+      </div>
+
+      <div>
+        <Label className="mb-2 block">Gjeldende faser</Label>
+        <div className="grid grid-cols-2 gap-2">
+          {phaseOptions.map((phase) => (
+            <div key={phase.value} className="flex items-center space-x-2">
+              <Checkbox
+                id={`phase-${phase.value}`}
+                checked={formData.applicable_phases.includes(phase.value)}
+                onCheckedChange={(checked) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    applicable_phases: checked
+                      ? [...prev.applicable_phases, phase.value]
+                      : prev.applicable_phases.filter((p) => p !== phase.value),
+                  }))
+                }
+              />
+              <Label htmlFor={`phase-${phase.value}`}>{phase.label}</Label>
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="flex gap-2">
