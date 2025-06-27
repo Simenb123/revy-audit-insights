@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { FileText } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useKnowledgeCategories } from '@/hooks/knowledge/useKnowledgeCategories';
 
 const searchArticles = async (query: string, categoryId?: string | null) => {
   const searchQuery = `%${query}%`;
@@ -43,6 +44,8 @@ const SearchResults = () => {
   const [searchParams] = useSearchParams();
   const query = searchParams.get('q') || '';
   const categoryId = searchParams.get('category');
+  const { data: categories } = useKnowledgeCategories();
+  const categoryName = categories?.find(c => c.id === categoryId)?.name;
 
   const { data: articles, isLoading, error } = useQuery({
     queryKey: ['knowledge-search', query, categoryId],
@@ -64,8 +67,11 @@ const SearchResults = () => {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">
-        Søkeresultater{query ? (
+        Søkeresultater
+        {query ? (
           <> for: <span className="text-primary">"{query}"</span></>
+        ) : categoryName ? (
+          <> i <span className="text-primary">{categoryName}</span></>
         ) : null}
       </h1>
 
@@ -106,9 +112,15 @@ const SearchResults = () => {
           ) : (
             <div className="text-center p-8 border rounded-lg">
                 <h2 className="text-xl font-semibold">Ingen resultater</h2>
-                <p className="text-muted-foreground mt-2">
+                {query ? (
+                  <p className="text-muted-foreground mt-2">
                     Vi fant dessverre ingen artikler som matchet søket ditt for "{query}".
-                </p>
+                  </p>
+                ) : categoryName ? (
+                  <p className="text-muted-foreground mt-2">
+                    Vi fant ingen artikler i kategorien "{categoryName}".
+                  </p>
+                ) : null}
                 <p className="text-muted-foreground mt-1">
                     Prøv et annet søkeord eller naviger via kategoriene til venstre.
                 </p>
