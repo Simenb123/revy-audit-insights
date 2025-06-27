@@ -34,9 +34,9 @@ const TrainingOverview = ({ userProgress, userBadges }: TrainingOverviewProps) =
       color: 'bg-red-100 text-red-600'
     },
     {
-      id: 'materialitet',
-      title: 'Materialitetsberegning',
-      description: 'Forstå og beregne materialitet i revisjon',
+      id: 'vesentlighet',
+      title: 'Vesentlighetsberegning',
+      description: 'Forstå og beregne vesentlighet i revisjon',
       icon: TrendingUp,
       difficulty: 'Lett',
       estimatedTime: '20 min',
