@@ -9,13 +9,13 @@ import { Badge } from '@/components/ui/badge';
 import { FileText } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
-const searchArticles = async (query: string) => {
+const searchArticles = async (query: string, categoryId?: string | null) => {
   const searchQuery = `%${query}%`;
-  
-  const { data, error } = await supabase
+
+  let queryBuilder = supabase
     .from('knowledge_articles')
     .select(`
-      *, 
+      *,
       category:knowledge_categories(name),
       article_tags:knowledge_article_tags(
         id,
@@ -23,8 +23,13 @@ const searchArticles = async (query: string) => {
       )
     `)
     .or(`title.ilike.${searchQuery},summary.ilike.${searchQuery}`)
-    .eq('status', 'published')
-    .limit(20);
+    .eq('status', 'published');
+
+  if (categoryId) {
+    queryBuilder = queryBuilder.eq('category_id', categoryId);
+  }
+
+  const { data, error } = await queryBuilder.limit(20);
 
   if (error) throw error;
   
@@ -37,14 +42,15 @@ const searchArticles = async (query: string) => {
 const SearchResults = () => {
   const [searchParams] = useSearchParams();
   const query = searchParams.get('q') || '';
+  const categoryId = searchParams.get('category');
 
   const { data: articles, isLoading, error } = useQuery({
-    queryKey: ['knowledge-search', query],
-    queryFn: () => searchArticles(query),
-    enabled: !!query,
+    queryKey: ['knowledge-search', query, categoryId],
+    queryFn: () => searchArticles(query, categoryId),
+    enabled: !!query || !!categoryId,
   });
 
-  if (!query) {
+  if (!query && !categoryId) {
     return (
         <div className="text-center p-8">
             <h1 className="text-xl font-semibold">Søk i kunnskapsbasen</h1>
@@ -58,7 +64,9 @@ const SearchResults = () => {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">
-        Søkeresultater for: <span className="text-primary">"{query}"</span>
+        Søkeresultater{query ? (
+          <> for: <span className="text-primary">"{query}"</span></>
+        ) : null}
       </h1>
 
       {isLoading && (
