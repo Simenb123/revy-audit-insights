@@ -1,0 +1,14 @@
+# Audit Action Generator
+
+The audit action generator lets Revy propose new audit steps based on your selected subject area. It relies on Supabase to store the action templates and an AI service to produce the initial text.
+
+## Prerequisites
+
+- **Supabase setup** – the application must be configured with `SUPABASE_URL` and `SUPABASE_ANON_KEY`. The Supabase migrations need to be applied so the `audit_action_templates` tables exist.
+- **AI service** – a valid `OPENAI_API_KEY` (or another compatible model key) is required. If no key is configured, the generator tools will be disabled in the UI.
+
+## Where to find it
+
+1. Open a client and choose **Revisjonshandlinger**.
+2. Navigate to the **AI-verktøy** tab.
+3. Use the AI-enabled editor to generate or refine audit actions for that client.
