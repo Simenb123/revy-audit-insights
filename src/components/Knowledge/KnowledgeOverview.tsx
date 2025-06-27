@@ -9,11 +9,19 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { generateEmbeddingsForExistingArticles } from '@/services/revy/generateEmbeddingsService';
 import { useToast } from '@/hooks/use-toast';
+import AdvancedKnowledgeFilter from '@/components/Knowledge/AdvancedKnowledgeFilter';
+import { KnowledgeCategoryTree } from '@/components/Knowledge/KnowledgeCategoryTree';
 
 export interface KnowledgeOverviewProps {
   extraLogging?: boolean;
   showAiInfo?: boolean;
   darkTheme?: boolean;
+}
+
+interface FilterState {
+  searchTerm: string;
+  contentTypes: string[];
+  subjectAreas: string[];
 }
 
 const KnowledgeOverview = ({
@@ -40,6 +48,22 @@ const KnowledgeOverview = ({
         console.log('[KnowledgeOverview] search', searchQuery);
       }
       navigate(`/fag/sok?q=${encodeURIComponent(searchQuery)}`);
+    }
+  };
+
+  const handleAdvancedFilterChange = (filters: FilterState) => {
+    const params = new URLSearchParams();
+    if (filters.searchTerm.trim()) {
+      params.set('q', filters.searchTerm.trim());
+    }
+    if (filters.contentTypes.length) {
+      params.set('types', filters.contentTypes.join(','));
+    }
+    if (filters.subjectAreas.length) {
+      params.set('areas', filters.subjectAreas.join(','));
+    }
+    if (params.toString()) {
+      navigate(`/fag/sok?${params.toString()}`);
     }
   };
 
@@ -112,31 +136,35 @@ const KnowledgeOverview = ({
         )}
       </div>
 
-      {/* Search */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Search className="h-5 w-5" />
-            Søk i kunnskapsbasen
-          </CardTitle>
-          <CardDescription>
-            Finn fagartikler, ISA-standarder og andre ressurser
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSearch} className="flex gap-2">
-            <Input
-              placeholder="Søk etter artikler, ISA-standarder, emner..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1"
-            />
-            <Button type="submit">
-              <Search className="h-4 w-4" />
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+      {/* Search & Filters */}
+      <div className="grid gap-4 lg:grid-cols-3">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Search className="h-5 w-5" />
+              Søk i kunnskapsbasen
+            </CardTitle>
+            <CardDescription>
+              Finn fagartikler, ISA-standarder og andre ressurser
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSearch} className="flex gap-2">
+              <Input
+                placeholder="Søk etter artikler, ISA-standarder, emner..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="flex-1"
+              />
+              <Button type="submit">
+                <Search className="h-4 w-4" />
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+        <AdvancedKnowledgeFilter onFilterChange={handleAdvancedFilterChange} />
+        <KnowledgeCategoryTree />
+      </div>
 
       {/* Quick Access */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
