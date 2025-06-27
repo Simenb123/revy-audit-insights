@@ -3,19 +3,19 @@ import React from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { KnowledgeArticle } from '@/types/knowledge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { FileText } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useKnowledgeCategories } from '@/hooks/knowledge/useKnowledgeCategories';
 
-const searchArticles = async (query: string) => {
+const searchArticles = async (query: string, categoryId?: string | null) => {
   const searchQuery = `%${query}%`;
-  
-  const { data, error } = await supabase
+
+  let queryBuilder = supabase
     .from('knowledge_articles')
     .select(`
-      *, 
+      *,
       category:knowledge_categories(name),
       article_tags:knowledge_article_tags(
         id,
@@ -23,8 +23,13 @@ const searchArticles = async (query: string) => {
       )
     `)
     .or(`title.ilike.${searchQuery},summary.ilike.${searchQuery}`)
-    .eq('status', 'published')
-    .limit(20);
+    .eq('status', 'published');
+
+  if (categoryId) {
+    queryBuilder = queryBuilder.eq('category_id', categoryId);
+  }
+
+  const { data, error } = await queryBuilder.limit(20);
 
   if (error) throw error;
   
@@ -37,14 +42,17 @@ const searchArticles = async (query: string) => {
 const SearchResults = () => {
   const [searchParams] = useSearchParams();
   const query = searchParams.get('q') || '';
+  const categoryId = searchParams.get('category');
+  const { data: categories } = useKnowledgeCategories();
+  const categoryName = categories?.find(c => c.id === categoryId)?.name;
 
   const { data: articles, isLoading, error } = useQuery({
-    queryKey: ['knowledge-search', query],
-    queryFn: () => searchArticles(query),
-    enabled: !!query,
+    queryKey: ['knowledge-search', query, categoryId],
+    queryFn: () => searchArticles(query, categoryId),
+    enabled: !!query || !!categoryId,
   });
 
-  if (!query) {
+  if (!query && !categoryId) {
     return (
         <div className="text-center p-8">
             <h1 className="text-xl font-semibold">Søk i kunnskapsbasen</h1>
@@ -58,7 +66,12 @@ const SearchResults = () => {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">
-        Søkeresultater for: <span className="text-primary">"{query}"</span>
+        Søkeresultater
+        {query ? (
+          <> for: <span className="text-primary">"{query}"</span></>
+        ) : categoryName ? (
+          <> i <span className="text-primary">{categoryName}</span></>
+        ) : null}
       </h1>
 
       {isLoading && (
@@ -98,9 +111,15 @@ const SearchResults = () => {
           ) : (
             <div className="text-center p-8 border rounded-lg">
                 <h2 className="text-xl font-semibold">Ingen resultater</h2>
-                <p className="text-muted-foreground mt-2">
+                {query ? (
+                  <p className="text-muted-foreground mt-2">
                     Vi fant dessverre ingen artikler som matchet søket ditt for "{query}".
-                </p>
+                  </p>
+                ) : categoryName ? (
+                  <p className="text-muted-foreground mt-2">
+                    Vi fant ingen artikler i kategorien "{categoryName}".
+                  </p>
+                ) : null}
                 <p className="text-muted-foreground mt-1">
                     Prøv et annet søkeord eller naviger via kategoriene til venstre.
                 </p>

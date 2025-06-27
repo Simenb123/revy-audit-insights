@@ -22,6 +22,7 @@ interface FilterState {
   searchTerm: string;
   contentTypes: string[];
   subjectAreas: string[];
+  categoryId: string;
 }
 
 const KnowledgeOverview = ({
@@ -61,6 +62,9 @@ const KnowledgeOverview = ({
     }
     if (filters.subjectAreas.length) {
       params.set('areas', filters.subjectAreas.join(','));
+    }
+    if (filters.categoryId) {
+      params.set('category', filters.categoryId);
     }
     if (params.toString()) {
       navigate(`/fag/sok?${params.toString()}`);

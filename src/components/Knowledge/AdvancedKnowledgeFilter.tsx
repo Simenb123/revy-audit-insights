@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useKnowledgeCategories } from '@/hooks/knowledge/useKnowledgeCategories';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,13 +9,13 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { supabase } from '@/integrations/supabase/client';
 import { Search, Filter, X } from 'lucide-react';
 
 interface FilterState {
   searchTerm: string;
   contentTypes: string[];
   subjectAreas: string[];
+  categoryId: string;
 }
 
 interface AdvancedKnowledgeFilterProps {
@@ -43,7 +44,8 @@ const AdvancedKnowledgeFilter = ({ onFilterChange, className }: AdvancedKnowledg
   const [filters, setFilters] = useState<FilterState>({
     searchTerm: '',
     contentTypes: [],
-    subjectAreas: []
+    subjectAreas: [],
+    categoryId: ''
   });
 
   // Temporary hardcoded data until database tables are created
@@ -63,6 +65,8 @@ const AdvancedKnowledgeFilter = ({ onFilterChange, className }: AdvancedKnowledg
     { id: '3', name: 'skatt', display_name: 'Skatt', color: '#F59E0B', icon: 'coins' },
     { id: '4', name: 'annet', display_name: 'Annet', color: '#6B7280', icon: 'folder' }
   ];
+
+  const { data: categories = [] } = useKnowledgeCategories();
 
   const updateFilters = (newFilters: Partial<FilterState>) => {
     const updatedFilters = { ...filters, ...newFilters };
@@ -90,11 +94,16 @@ const AdvancedKnowledgeFilter = ({ onFilterChange, className }: AdvancedKnowledg
     updateFilters({
       searchTerm: '',
       contentTypes: [],
-      subjectAreas: []
+      subjectAreas: [],
+      categoryId: ''
     });
   };
 
-  const hasActiveFilters = filters.searchTerm || filters.contentTypes.length > 0 || filters.subjectAreas.length > 0;
+  const hasActiveFilters =
+    filters.searchTerm ||
+    filters.contentTypes.length > 0 ||
+    filters.subjectAreas.length > 0 ||
+    !!filters.categoryId;
 
   return (
     <Card className={className}>
@@ -126,6 +135,27 @@ const AdvancedKnowledgeFilter = ({ onFilterChange, className }: AdvancedKnowledg
               className="pl-9"
             />
           </div>
+        </div>
+
+        {/* Category */}
+        <div className="space-y-2">
+          <Label>Kategori</Label>
+          <Select
+            value={filters.categoryId || 'all'}
+            onValueChange={(val) => updateFilters({ categoryId: val === 'all' ? '' : val })}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Alle kategorier" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Alle kategorier</SelectItem>
+              {categories.map((cat) => (
+                <SelectItem key={cat.id} value={cat.id}>
+                  {cat.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         <Separator />
@@ -212,6 +242,16 @@ const AdvancedKnowledgeFilter = ({ onFilterChange, className }: AdvancedKnowledg
                     </Badge>
                   ) : null;
                 })}
+                {filters.categoryId && (
+                  (() => {
+                    const cat = categories.find(c => c.id === filters.categoryId);
+                    return cat ? (
+                      <Badge variant="secondary" className="text-xs">
+                        Kategori: {cat.name}
+                      </Badge>
+                    ) : null;
+                  })()
+                )}
               </div>
             </div>
           </>
