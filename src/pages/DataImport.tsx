@@ -9,34 +9,24 @@ const DataImport = () => {
   const { orgNumber } = useParams<{ orgNumber: string }>();
   const location = useLocation();
   const { data: client } = useClientDetails(orgNumber || '');
+  const clientId = client?.id || '';
+  const clientName = client?.company_name || client?.name || 'Ukjent klient';
   
   // If we're on a specific data category route, show the appropriate uploader
   if (location.pathname.includes('/grunnlagsdata')) {
-    return <AccountingDataUploader
-      clientId={client?.id || ''}
-      clientName={client?.company_name || client?.name || 'Ukjent klient'}
-    />;
+    return <AccountingDataUploader clientId={clientId} clientName={clientName} />;
   }
   
   if (location.pathname.includes('/spesialdata')) {
-    return <AccountingDataUploader
-      clientId={client?.id || ''}
-      clientName={client?.company_name || client?.name || 'Ukjent klient'}
-    />;
+    return <AccountingDataUploader clientId={clientId} clientName={clientName} />;
   }
   
   if (location.pathname.includes('/transaksjoner')) {
-    return <AccountingDataUploader
-      clientId={client?.id || ''}
-      clientName={client?.company_name || client?.name || 'Ukjent klient'}
-    />;
+    return <AccountingDataUploader clientId={clientId} clientName={clientName} />;
   }
   
   if (location.pathname.includes('/import')) {
-    return <AccountingDataUploader
-      clientId={client?.id || ''}
-      clientName={client?.company_name || client?.name || 'Ukjent klient'}
-    />;
+    return <AccountingDataUploader clientId={clientId} clientName={clientName} />;
   }
   
   // Default: show the data upload hub if we're in a client context
