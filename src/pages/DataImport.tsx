@@ -12,30 +12,30 @@ const DataImport = () => {
   
   // If we're on a specific data category route, show the appropriate uploader
   if (location.pathname.includes('/grunnlagsdata')) {
-    return <AccountingDataUploader 
-      clientId={orgNumber || ''} 
-      clientName={client?.company_name || client?.name || 'Ukjent klient'} 
+    return <AccountingDataUploader
+      clientId={client?.id || ''}
+      clientName={client?.company_name || client?.name || 'Ukjent klient'}
     />;
   }
   
   if (location.pathname.includes('/spesialdata')) {
-    return <AccountingDataUploader 
-      clientId={orgNumber || ''} 
-      clientName={client?.company_name || client?.name || 'Ukjent klient'} 
+    return <AccountingDataUploader
+      clientId={client?.id || ''}
+      clientName={client?.company_name || client?.name || 'Ukjent klient'}
     />;
   }
   
   if (location.pathname.includes('/transaksjoner')) {
-    return <AccountingDataUploader 
-      clientId={orgNumber || ''} 
-      clientName={client?.company_name || client?.name || 'Ukjent klient'} 
+    return <AccountingDataUploader
+      clientId={client?.id || ''}
+      clientName={client?.company_name || client?.name || 'Ukjent klient'}
     />;
   }
   
   if (location.pathname.includes('/import')) {
-    return <AccountingDataUploader 
-      clientId={orgNumber || ''} 
-      clientName={client?.company_name || client?.name || 'Ukjent klient'} 
+    return <AccountingDataUploader
+      clientId={client?.id || ''}
+      clientName={client?.company_name || client?.name || 'Ukjent klient'}
     />;
   }
   
