@@ -1,22 +1,16 @@
-
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React from "react";
+import AuditActionsTab from "../AuditActionsTab";
 
 interface ActionsContainerProps {
   clientId: string;
+  phase?: string;
 }
 
-const ActionsContainer: React.FC<ActionsContainerProps> = ({ clientId }) => {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Handlinger</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <p>Revisjonshandlinger kommer her...</p>
-      </CardContent>
-    </Card>
-  );
+const ActionsContainer: React.FC<ActionsContainerProps> = ({
+  clientId,
+  phase,
+}) => {
+  return <AuditActionsTab clientId={clientId} phase={phase} />;
 };
 
 export default ActionsContainer;

@@ -1,11 +1,10 @@
-
-import React from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import DocumentsContainer from './Documents/DocumentsContainer';
-import PlanningContainer from './Planning/PlanningContainer';
-import ActionsContainer from './Actions/ActionsContainer';
-import { AuditPhase } from '@/types/client';
-import { Client } from '@/types/revio';
+import React from "react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import DocumentsContainer from "./Documents/DocumentsContainer";
+import PlanningContainer from "./Planning/PlanningContainer";
+import ActionsContainer from "./Actions/ActionsContainer";
+import { AuditPhase } from "@/types/client";
+import { Client } from "@/types/revio";
 
 interface PhaseContentProps {
   phase: AuditPhase;
@@ -33,11 +32,14 @@ const PhaseContent: React.FC<PhaseContentProps> = ({ phase, client }) => {
       </TabsContent>
 
       <TabsContent value="actions">
-        <ActionsContainer clientId={client.id} />
+        <ActionsContainer clientId={client.id} phase={phase} />
       </TabsContent>
 
       <TabsContent value="documents">
-        <DocumentsContainer clientId={client.id} />
+        <DocumentsContainer
+          clientId={client.id}
+          clientName={client.company_name || client.name}
+        />
       </TabsContent>
     </Tabs>
   );
