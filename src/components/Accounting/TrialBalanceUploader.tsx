@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Card,
   CardContent,
@@ -24,6 +25,7 @@ interface TrialBalanceUploaderProps {
 
 interface TrialBalanceRow {
   account_number: string;
+  account_name?: string;
   period_end_date: string;
   opening_balance?: number;
   debit_turnover?: number;
@@ -35,6 +37,7 @@ const TrialBalanceUploader = ({ clientId }: TrialBalanceUploaderProps) => {
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState(0);
+  const queryClient = useQueryClient();
   const [uploadResult, setUploadResult] = useState<{
     success: boolean;
     message: string;
@@ -51,6 +54,7 @@ const TrialBalanceUploader = ({ clientId }: TrialBalanceUploaderProps) => {
   } | null>(null);
   const [showMapping, setShowMapping] = useState(false);
   const [fileName, setFileName] = useState("");
+  const [createdAccountsCount, setCreatedAccountsCount] = useState(0);
 
   const tbFields: StandardField[] = [
     {
@@ -159,7 +163,7 @@ const TrialBalanceUploader = ({ clientId }: TrialBalanceUploaderProps) => {
     if (!parsedData || !file) return;
     const balances = transformCSVData(parsedData.data, mapping);
     setShowMapping(false);
-    await uploadTrialBalance(balances, file);
+    await uploadWithAccountCreation(balances, file);
   };
 
   const handleMappingCancel = () => {
@@ -193,6 +197,11 @@ const TrialBalanceUploader = ({ clientId }: TrialBalanceUploaderProps) => {
                 account_number:
                   row["Kontonummer"]?.toString() ||
                   row["account_number"]?.toString() ||
+                  "",
+                account_name:
+                  row["Kontonavn"] ||
+                  row["account_name"] ||
+                  row["Account name"] ||
                   "",
                 period_end_date: row["Periode"] || row["period_end_date"] || "",
                 opening_balance:
@@ -273,6 +282,47 @@ const TrialBalanceUploader = ({ clientId }: TrialBalanceUploaderProps) => {
     return { headers, data };
   };
 
+  const determineAccountType = (
+    accountNumber: string,
+  ): "asset" | "liability" | "equity" | "revenue" | "expense" => {
+    const first = accountNumber.charAt(0);
+    switch (first) {
+      case "1":
+        return "asset";
+      case "2":
+        return "liability";
+      case "3":
+        return "equity";
+      case "4":
+      case "5":
+      case "6":
+      case "7":
+      case "8":
+        return "revenue";
+      case "9":
+        return "expense";
+      default:
+        return "asset";
+    }
+  };
+
+  const generateAccountName = (accountNumber: string): string => {
+    const firstDigit = accountNumber.charAt(0);
+    const baseNames: Record<string, string> = {
+      "1": "Eiendeler",
+      "2": "Gjeld",
+      "3": "Egenkapital",
+      "4": "Salgsinntekt",
+      "5": "Annen inntekt",
+      "6": "Varekostnad",
+      "7": "L\u00f8nnskostnad",
+      "8": "Annen kostnad",
+      "9": "Finanskostnad",
+    };
+    const baseName = baseNames[firstDigit] || "Ukjent konto";
+    return `${baseName} ${accountNumber}`;
+  };
+
   const parseAmount = (amountStr: string): number => {
     if (!amountStr || amountStr.trim() === "") return 0;
     const clean = amountStr
@@ -281,6 +331,56 @@ const TrialBalanceUploader = ({ clientId }: TrialBalanceUploaderProps) => {
       .replace(/[^\d.-]/g, "");
     const parsed = parseFloat(clean);
     return isNaN(parsed) ? 0 : parsed;
+  };
+
+  const createAccountsFromBalances = async (
+    balances: TrialBalanceRow[],
+  ): Promise<number> => {
+    const uniqueMap = new Map<string, string | undefined>();
+    balances.forEach((b) => {
+      if (!uniqueMap.has(b.account_number)) {
+        uniqueMap.set(b.account_number, b.account_name);
+      } else if (!uniqueMap.get(b.account_number) && b.account_name) {
+        uniqueMap.set(b.account_number, b.account_name);
+      }
+    });
+    const accountNumbers = [...uniqueMap.keys()];
+    if (accountNumbers.length === 0) return 0;
+
+    const { data: existing, error: fetchError } = await supabase
+      .from("client_chart_of_accounts")
+      .select("account_number")
+      .eq("client_id", clientId)
+      .in("account_number", accountNumbers);
+
+    if (fetchError) {
+      throw new Error(`Kunne ikke hente eksisterende kontoer: ${fetchError.message}`);
+    }
+
+    const existingSet = new Set(existing?.map((a) => a.account_number) || []);
+
+    const accountsToInsert = accountNumbers
+      .filter((num) => !existingSet.has(num))
+      .map((num) => ({
+        client_id: clientId,
+        account_number: num,
+        account_name: uniqueMap.get(num) || generateAccountName(num),
+        account_type: determineAccountType(num),
+        is_active: true,
+      }));
+
+    if (accountsToInsert.length === 0) return 0;
+
+    const { error: insertError } = await supabase
+      .from("client_chart_of_accounts")
+      .insert(accountsToInsert);
+
+    if (insertError) {
+      throw new Error(`Kunne ikke opprette kontoer: ${insertError.message}`);
+    }
+
+    queryClient.invalidateQueries({ queryKey: ["chart-of-accounts", clientId] });
+    return accountsToInsert.length;
   };
 
   const transformCSVData = (
@@ -294,6 +394,8 @@ const TrialBalanceUploader = ({ clientId }: TrialBalanceUploaderProps) => {
           const value = row[col];
           if (field === "account_number") {
             tb.account_number = value?.toString() || "";
+          } else if (field === "account_name") {
+            tb.account_name = value?.toString() || "";
           } else if (field === "period_end_date") {
             if (value) {
               if (value.includes(".")) {
@@ -335,6 +437,34 @@ const TrialBalanceUploader = ({ clientId }: TrialBalanceUploaderProps) => {
     const parsed = await parseCSVFile(csvFile);
     setParsedData(parsed);
     setShowMapping(true);
+  };
+
+  const uploadWithAccountCreation = async (
+    balances: TrialBalanceRow[],
+    srcFile: File,
+  ) => {
+    let created = 0;
+    if (hasChartOfAccounts === false) {
+      try {
+        created = await createAccountsFromBalances(balances);
+        if (created > 0) {
+          toast({
+            title: "Kontoer opprettet",
+            description: `${created} nye kontoer ble automatisk opprettet`,
+          });
+        }
+        setHasChartOfAccounts(true);
+      } catch (error: any) {
+        toast({
+          title: "Feil ved opprettelse av kontoer",
+          description: error.message,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+    setCreatedAccountsCount(created);
+    await uploadTrialBalance(balances, srcFile);
   };
 
   const uploadTrialBalance = async (
@@ -529,35 +659,6 @@ const TrialBalanceUploader = ({ clientId }: TrialBalanceUploaderProps) => {
     }
   };
 
-  // Show warning if no chart of accounts
-  if (hasChartOfAccounts === false) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="w-5 h-5" />
-            Last opp saldobalanse
-          </CardTitle>
-          <CardDescription>Last opp saldobalanse fra Excel-fil</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-            <Info className="w-5 h-5 text-amber-600 mt-0.5" />
-            <div>
-              <h4 className="font-medium text-amber-800">
-                Kontoplan må lastes opp først
-              </h4>
-              <p className="text-sm text-amber-700 mt-1">
-                Du må laste opp kontoplan i "Kontoplan"-taben før du kan laste
-                opp saldobalanse. Saldobalansen trenger kontoplanen for å
-                validere kontonumrene.
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
 
   if (showMapping && parsedData) {
     return (
@@ -596,6 +697,17 @@ const TrialBalanceUploader = ({ clientId }: TrialBalanceUploaderProps) => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        {hasChartOfAccounts === false && (
+          <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+            <Info className="w-5 h-5 text-amber-600 mt-0.5" />
+            <div>
+              <h4 className="font-medium text-amber-800">Ingen kontoplan funnet</h4>
+              <p className="text-sm text-amber-700 mt-1">
+                Kontoer blir opprettet automatisk fra filen.
+              </p>
+            </div>
+          </div>
+        )}
         <UploadZone
           isDragging={isDragging}
           onDragOver={handleDragOver}
@@ -615,7 +727,7 @@ const TrialBalanceUploader = ({ clientId }: TrialBalanceUploaderProps) => {
             onClick={async () => {
               if (!file) return;
               const balances = await processExcelFile(file);
-              uploadTrialBalance(balances, file);
+              await uploadWithAccountCreation(balances, file);
             }}
             disabled={!file || isUploading}
             className="flex items-center gap-2"
@@ -665,6 +777,11 @@ const TrialBalanceUploader = ({ clientId }: TrialBalanceUploaderProps) => {
                   ))}
                 </ul>
               </div>
+            )}
+            {createdAccountsCount > 0 && (
+              <p className="text-sm mt-2">
+                {createdAccountsCount} nye kontoer ble opprettet fra filen.
+              </p>
             )}
           </div>
         )}
