@@ -3537,6 +3537,46 @@ export type Database = {
           },
         ]
       }
+      ,
+      upload_column_mappings: {
+        Row: {
+          client_id: string
+          upload_batch_id: string
+          column_mappings: Json
+          created_at: string
+          id: string
+        }
+        Insert: {
+          client_id: string
+          upload_batch_id: string
+          column_mappings: Json
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          client_id?: string
+          upload_batch_id?: string
+          column_mappings?: Json
+          created_at?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "upload_column_mappings_client_id_fkey",
+            columns: ["client_id"],
+            isOneToOne: false,
+            referencedRelation: "clients",
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "upload_column_mappings_upload_batch_id_fkey",
+            columns: ["upload_batch_id"],
+            isOneToOne: false,
+            referencedRelation: "upload_batches",
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       user_badges: {
         Row: {
           badge_name: string
