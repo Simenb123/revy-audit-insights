@@ -1,13 +1,22 @@
-
-import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Progress } from '@/components/ui/progress';
-import { Upload, FileText, CheckCircle, AlertCircle, Info } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
-import * as XLSX from 'xlsx';
+import React, { useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Progress } from "@/components/ui/progress";
+import { Upload, FileText, CheckCircle, AlertCircle, Info } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
+import * as XLSX from "xlsx";
+import UploadZone from "@/components/DataUpload/UploadZone";
+import ColumnMappingInterface, {
+  StandardField,
+} from "@/components/DataUpload/ColumnMappingInterface";
 
 interface TrialBalanceUploaderProps {
   clientId: string;
@@ -32,26 +41,74 @@ const TrialBalanceUploader = ({ clientId }: TrialBalanceUploaderProps) => {
     processed: number;
     errors: string[];
   } | null>(null);
-  const [hasChartOfAccounts, setHasChartOfAccounts] = useState<boolean | null>(null);
+  const [hasChartOfAccounts, setHasChartOfAccounts] = useState<boolean | null>(
+    null,
+  );
+  const [isDragging, setIsDragging] = useState(false);
+  const [parsedData, setParsedData] = useState<{
+    headers: string[];
+    data: Record<string, string>[];
+  } | null>(null);
+  const [showMapping, setShowMapping] = useState(false);
+  const [fileName, setFileName] = useState("");
+
+  const tbFields: StandardField[] = [
+    {
+      key: "account_number",
+      label: "Kontonummer",
+      required: true,
+      description: "Kontonummer",
+    },
+    {
+      key: "period_end_date",
+      label: "Periode",
+      required: true,
+      description: "Periode (dd.mm.yyyy eller yyyy-mm-dd)",
+    },
+    {
+      key: "opening_balance",
+      label: "Inngående saldo",
+      required: false,
+      description: "Saldo ved periodens start",
+    },
+    {
+      key: "debit_turnover",
+      label: "Debet omsetning",
+      required: false,
+      description: "Debet omsetning i perioden",
+    },
+    {
+      key: "credit_turnover",
+      label: "Kredit omsetning",
+      required: false,
+      description: "Kredit omsetning i perioden",
+    },
+    {
+      key: "closing_balance",
+      label: "Utgående saldo",
+      required: false,
+      description: "Saldo ved periodens slutt",
+    },
+  ];
 
   // Check if client has chart of accounts when component loads
   React.useEffect(() => {
     const checkChartOfAccounts = async () => {
-      console.log('Checking if client has chart of accounts...');
+      console.log("Checking if client has chart of accounts...");
       const { data: accounts, error } = await supabase
-        .from('client_chart_of_accounts')
-        .select('id')
-        .eq('client_id', clientId)
-        .eq('is_active', true)
+        .from("client_chart_of_accounts")
+        .select("id")
+        .eq("client_id", clientId)
+        .eq("is_active", true)
         .limit(1);
 
       if (error) {
-        console.error('Error checking chart of accounts:', error);
+        console.error("Error checking chart of accounts:", error);
         return;
       }
 
       const hasAccounts = accounts && accounts.length > 0;
-      console.log('Client has chart of accounts:', hasAccounts);
+      console.log("Client has chart of accounts:", hasAccounts);
       setHasChartOfAccounts(hasAccounts);
     };
 
@@ -62,136 +119,303 @@ const TrialBalanceUploader = ({ clientId }: TrialBalanceUploaderProps) => {
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
-    console.log('File selected:', selectedFile?.name, selectedFile?.size);
+    console.log("File selected:", selectedFile?.name, selectedFile?.size);
     if (selectedFile) {
-      setFile(selectedFile);
-      setUploadResult(null);
+      if (selectedFile.name.toLowerCase().endsWith(".csv")) {
+        handleCSVFile(selectedFile);
+      } else {
+        setFile(selectedFile);
+        setFileName(selectedFile.name);
+        setUploadResult(null);
+      }
     }
   };
 
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const dropped = e.dataTransfer.files[0];
+    if (dropped) {
+      if (dropped.name.toLowerCase().endsWith(".csv")) {
+        handleCSVFile(dropped);
+      } else {
+        setFile(dropped);
+        setFileName(dropped.name);
+        setUploadResult(null);
+      }
+    }
+  };
+
+  const handleMappingComplete = async (mapping: Record<string, string>) => {
+    if (!parsedData || !file) return;
+    const balances = transformCSVData(parsedData.data, mapping);
+    setShowMapping(false);
+    await uploadTrialBalance(balances, file);
+  };
+
+  const handleMappingCancel = () => {
+    setShowMapping(false);
+    setParsedData(null);
+    setFile(null);
+    setFileName("");
+  };
+
   const processExcelFile = async (file: File): Promise<TrialBalanceRow[]> => {
-    console.log('Processing Excel file:', file.name);
+    console.log("Processing Excel file:", file.name);
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      
+
       reader.onload = (e) => {
         try {
-          console.log('File reader loaded successfully');
+          console.log("File reader loaded successfully");
           const data = new Uint8Array(e.target?.result as ArrayBuffer);
-          const workbook = XLSX.read(data, { type: 'array' });
-          console.log('Workbook loaded, sheets:', workbook.SheetNames);
-          
+          const workbook = XLSX.read(data, { type: "array" });
+          console.log("Workbook loaded, sheets:", workbook.SheetNames);
+
           const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
           const jsonData = XLSX.utils.sheet_to_json(firstSheet);
-          console.log('Excel data parsed, rows:', jsonData.length);
-          console.log('First few rows:', jsonData.slice(0, 3));
-          
-          const balances: TrialBalanceRow[] = jsonData.map((row: any, index) => {
-            console.log(`Processing row ${index}:`, row);
-            return {
-              account_number: row['Kontonummer']?.toString() || row['account_number']?.toString() || '',
-              period_end_date: row['Periode'] || row['period_end_date'] || '',
-              opening_balance: parseFloat(row['Inngående saldo'] || row['opening_balance'] || '0') || 0,
-              debit_turnover: parseFloat(row['Debet omsetning'] || row['debit_turnover'] || '0') || 0,
-              credit_turnover: parseFloat(row['Kredit omsetning'] || row['credit_turnover'] || '0') || 0,
-              closing_balance: parseFloat(row['Utgående saldo'] || row['closing_balance'] || '0') || 0,
-            };
-          }).filter(bal => {
-            const isValid = bal.account_number && bal.period_end_date;
-            console.log(`Row valid: ${isValid}`, bal);
-            return isValid;
-          });
-          
-          console.log('Processed balances:', balances.length);
+          console.log("Excel data parsed, rows:", jsonData.length);
+          console.log("First few rows:", jsonData.slice(0, 3));
+
+          const balances: TrialBalanceRow[] = jsonData
+            .map((row: any, index) => {
+              console.log(`Processing row ${index}:`, row);
+              return {
+                account_number:
+                  row["Kontonummer"]?.toString() ||
+                  row["account_number"]?.toString() ||
+                  "",
+                period_end_date: row["Periode"] || row["period_end_date"] || "",
+                opening_balance:
+                  parseFloat(
+                    row["Inngående saldo"] || row["opening_balance"] || "0",
+                  ) || 0,
+                debit_turnover:
+                  parseFloat(
+                    row["Debet omsetning"] || row["debit_turnover"] || "0",
+                  ) || 0,
+                credit_turnover:
+                  parseFloat(
+                    row["Kredit omsetning"] || row["credit_turnover"] || "0",
+                  ) || 0,
+                closing_balance:
+                  parseFloat(
+                    row["Utgående saldo"] || row["closing_balance"] || "0",
+                  ) || 0,
+              };
+            })
+            .filter((bal) => {
+              const isValid = bal.account_number && bal.period_end_date;
+              console.log(`Row valid: ${isValid}`, bal);
+              return isValid;
+            });
+
+          console.log("Processed balances:", balances.length);
           resolve(balances);
         } catch (error) {
-          console.error('Error processing Excel file:', error);
+          console.error("Error processing Excel file:", error);
           reject(error);
         }
       };
-      
+
       reader.onerror = () => {
-        console.error('FileReader error:', reader.error);
-        reject(new Error('Kunne ikke lese filen'));
+        console.error("FileReader error:", reader.error);
+        reject(new Error("Kunne ikke lese filen"));
       };
-      
+
       reader.readAsArrayBuffer(file);
     });
   };
 
-  const uploadTrialBalance = async () => {
-    if (!file || !clientId) {
-      console.error('Missing file or clientId:', { file: !!file, clientId });
+  const parseCSVFile = async (
+    file: File,
+  ): Promise<{ headers: string[]; data: Record<string, string>[] }> => {
+    const text = await file.text();
+    const lines = text.split("\n").filter((l) => l.trim());
+    const parseCSVLine = (line: string): string[] => {
+      const result: string[] = [];
+      let current = "";
+      let inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        if (char === '"') {
+          inQuotes = !inQuotes;
+        } else if (char === "," && !inQuotes) {
+          result.push(current.trim());
+          current = "";
+        } else {
+          current += char;
+        }
+      }
+      result.push(current.trim());
+      return result.map((f) => f.replace(/^"|"$/g, ""));
+    };
+
+    const headers = parseCSVLine(lines[0]);
+    const data = lines.slice(1).map((line) => {
+      const values = parseCSVLine(line);
+      const row: Record<string, string> = {};
+      headers.forEach((h, idx) => {
+        row[h] = values[idx] || "";
+      });
+      return row;
+    });
+
+    return { headers, data };
+  };
+
+  const parseAmount = (amountStr: string): number => {
+    if (!amountStr || amountStr.trim() === "") return 0;
+    const clean = amountStr
+      .replace(/\s/g, "")
+      .replace(/,/g, ".")
+      .replace(/[^\d.-]/g, "");
+    const parsed = parseFloat(clean);
+    return isNaN(parsed) ? 0 : parsed;
+  };
+
+  const transformCSVData = (
+    data: Record<string, string>[],
+    mapping: Record<string, string>,
+  ): TrialBalanceRow[] => {
+    return data
+      .map((row) => {
+        const tb: TrialBalanceRow = { account_number: "", period_end_date: "" };
+        Object.entries(mapping).forEach(([col, field]) => {
+          const value = row[col];
+          if (field === "account_number") {
+            tb.account_number = value?.toString() || "";
+          } else if (field === "period_end_date") {
+            if (value) {
+              if (value.includes(".")) {
+                const [d, m, y] = value.split(".");
+                const date = new Date(
+                  parseInt(y),
+                  parseInt(m) - 1,
+                  parseInt(d),
+                );
+                if (!isNaN(date.getTime())) {
+                  tb.period_end_date = date.toISOString().split("T")[0];
+                }
+              } else {
+                const date = new Date(value);
+                if (!isNaN(date.getTime())) {
+                  tb.period_end_date = date.toISOString().split("T")[0];
+                }
+              }
+            }
+          } else if (field === "opening_balance") {
+            tb.opening_balance = parseAmount(value);
+          } else if (field === "debit_turnover") {
+            tb.debit_turnover = parseAmount(value);
+          } else if (field === "credit_turnover") {
+            tb.credit_turnover = parseAmount(value);
+          } else if (field === "closing_balance") {
+            tb.closing_balance = parseAmount(value);
+          }
+        });
+        return tb;
+      })
+      .filter((tb) => tb.account_number && tb.period_end_date);
+  };
+
+  const handleCSVFile = async (csvFile: File) => {
+    setFile(csvFile);
+    setFileName(csvFile.name);
+    setUploadResult(null);
+    const parsed = await parseCSVFile(csvFile);
+    setParsedData(parsed);
+    setShowMapping(true);
+  };
+
+  const uploadTrialBalance = async (
+    balances: TrialBalanceRow[],
+    srcFile: File,
+  ) => {
+    if (!srcFile || !clientId) {
+      console.error("Missing file or clientId:", { file: !!srcFile, clientId });
       return;
     }
 
-    console.log('Starting upload for client:', clientId);
+    console.log("Starting upload for client:", clientId);
     setIsUploading(true);
     setProgress(0);
-    
+
     try {
       // Check authentication first
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      const {
+        data: { user },
+        error: authError,
+      } = await supabase.auth.getUser();
       if (authError) {
-        console.error('Auth error:', authError);
+        console.error("Auth error:", authError);
         throw new Error(`Autentiseringsfeil: ${authError.message}`);
       }
       if (!user) {
-        console.error('No authenticated user');
-        throw new Error('Du må være logget inn for å laste opp data');
+        console.error("No authenticated user");
+        throw new Error("Du må være logget inn for å laste opp data");
       }
-      console.log('User authenticated:', user.id);
+      console.log("User authenticated:", user.id);
 
-      // Process the Excel file
-      console.log('Processing Excel file...');
-      const balances = await processExcelFile(file);
       setProgress(25);
-      console.log('Excel processing complete, balances:', balances.length);
 
       // Get client accounts for validation
-      console.log('Fetching client accounts for validation...');
+      console.log("Fetching client accounts for validation...");
       const { data: clientAccounts, error: accountsError } = await supabase
-        .from('client_chart_of_accounts')
-        .select('id, account_number')
-        .eq('client_id', clientId);
+        .from("client_chart_of_accounts")
+        .select("id, account_number")
+        .eq("client_id", clientId);
 
       if (accountsError) {
-        console.error('Error fetching client accounts:', accountsError);
-        throw new Error(`Feil ved henting av kontoplan: ${accountsError.message}`);
+        console.error("Error fetching client accounts:", accountsError);
+        throw new Error(
+          `Feil ved henting av kontoplan: ${accountsError.message}`,
+        );
       }
 
-      console.log('Client accounts fetched:', clientAccounts?.length || 0);
-      
+      console.log("Client accounts fetched:", clientAccounts?.length || 0);
+
       // Check if no accounts exist
       if (!clientAccounts || clientAccounts.length === 0) {
-        throw new Error('Ingen kontoplan funnet for denne klienten. Du må laste opp kontoplan før du kan laste opp saldobalanse.');
+        throw new Error(
+          "Ingen kontoplan funnet for denne klienten. Du må laste opp kontoplan før du kan laste opp saldobalanse.",
+        );
       }
 
       const accountMap = new Map(
-        clientAccounts.map(acc => [acc.account_number, acc.id])
+        clientAccounts.map((acc) => [acc.account_number, acc.id]),
       );
 
       // Create upload batch record
-      console.log('Creating upload batch...');
+      console.log("Creating upload batch...");
       const { data: batch, error: batchError } = await supabase
-        .from('upload_batches')
+        .from("upload_batches")
         .insert({
           client_id: clientId,
           user_id: user.id,
-          batch_type: 'trial_balance',
-          file_name: file.name,
-          file_size: file.size,
+          batch_type: "trial_balance",
+          file_name: srcFile.name,
+          file_size: srcFile.size,
           total_records: balances.length,
-          status: 'processing'
+          status: "processing",
         })
         .select()
         .single();
 
       if (batchError) {
-        console.error('Batch creation error:', batchError);
+        console.error("Batch creation error:", batchError);
         throw new Error(`Feil ved opprettelse av batch: ${batchError.message}`);
       }
-      console.log('Batch created:', batch.id);
+      console.log("Batch created:", batch.id);
       setProgress(50);
 
       // Process balances
@@ -218,7 +442,7 @@ const TrialBalanceUploader = ({ clientId }: TrialBalanceUploaderProps) => {
             return {
               client_id: clientId,
               client_account_id: clientAccountId,
-              period_end_date: periodDate.toISOString().split('T')[0],
+              period_end_date: periodDate.toISOString().split("T")[0],
               period_year: periodDate.getFullYear(),
               opening_balance: bal.opening_balance || 0,
               debit_turnover: bal.debit_turnover || 0,
@@ -235,70 +459,70 @@ const TrialBalanceUploader = ({ clientId }: TrialBalanceUploaderProps) => {
         })
         .filter(Boolean);
 
-      console.log('Balances to insert:', balancesToInsert.length);
+      console.log("Balances to insert:", balancesToInsert.length);
       setProgress(75);
 
       let processed = 0;
       if (balancesToInsert.length > 0) {
-        console.log('Inserting trial balances...');
+        console.log("Inserting trial balances...");
         const { data: insertedBalances, error: insertError } = await supabase
-          .from('trial_balances')
-          .upsert(balancesToInsert, { 
-            onConflict: 'client_id,client_account_id,period_end_date',
-            ignoreDuplicates: false 
+          .from("trial_balances")
+          .upsert(balancesToInsert, {
+            onConflict: "client_id,client_account_id,period_end_date",
+            ignoreDuplicates: false,
           })
           .select();
 
         if (insertError) {
-          console.error('Insert error:', insertError);
+          console.error("Insert error:", insertError);
           errors.push(`Insert error: ${insertError.message}`);
         } else {
           processed = insertedBalances?.length || 0;
-          console.log('Successfully inserted:', processed);
+          console.log("Successfully inserted:", processed);
         }
       }
 
       // Update batch status
-      console.log('Updating batch status...');
+      console.log("Updating batch status...");
       await supabase
-        .from('upload_batches')
+        .from("upload_batches")
         .update({
-          status: processed > 0 ? 'completed' : 'failed',
+          status: processed > 0 ? "completed" : "failed",
           processed_records: processed,
           error_records: errors.length,
-          error_log: errors.join('\n'),
-          completed_at: new Date().toISOString()
+          error_log: errors.join("\n"),
+          completed_at: new Date().toISOString(),
         })
-        .eq('id', batch.id);
+        .eq("id", batch.id);
 
       setProgress(100);
-      
+
       setUploadResult({
         success: processed > 0,
         message: `${processed} saldobalanser ble lastet opp`,
         processed,
-        errors: errors.slice(0, 10)
+        errors: errors.slice(0, 10),
       });
 
       toast({
-        title: processed > 0 ? "Saldobalanse lastet opp" : "Feil ved opplasting",
-        description: `${processed} saldobalanser ble importert${errors.length > 0 ? ` (${errors.length} feil)` : ''}`,
-        variant: processed > 0 ? "default" : "destructive"
+        title:
+          processed > 0 ? "Saldobalanse lastet opp" : "Feil ved opplasting",
+        description: `${processed} saldobalanser ble importert${errors.length > 0 ? ` (${errors.length} feil)` : ""}`,
+        variant: processed > 0 ? "default" : "destructive",
       });
-      
     } catch (error: any) {
-      console.error('Upload error:', error);
+      console.error("Upload error:", error);
       setUploadResult({
         success: false,
-        message: error.message || 'Det oppstod en feil under opplastingen',
+        message: error.message || "Det oppstod en feil under opplastingen",
         processed: 0,
-        errors: [error.message]
+        errors: [error.message],
       });
 
       toast({
         title: "Feil ved opplasting",
         description: error.message,
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setIsUploading(false);
@@ -314,21 +538,47 @@ const TrialBalanceUploader = ({ clientId }: TrialBalanceUploaderProps) => {
             <FileText className="w-5 h-5" />
             Last opp saldobalanse
           </CardTitle>
-          <CardDescription>
-            Last opp saldobalanse fra Excel-fil
-          </CardDescription>
+          <CardDescription>Last opp saldobalanse fra Excel-fil</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-lg">
             <Info className="w-5 h-5 text-amber-600 mt-0.5" />
             <div>
-              <h4 className="font-medium text-amber-800">Kontoplan må lastes opp først</h4>
+              <h4 className="font-medium text-amber-800">
+                Kontoplan må lastes opp først
+              </h4>
               <p className="text-sm text-amber-700 mt-1">
-                Du må laste opp kontoplan i "Kontoplan"-taben før du kan laste opp saldobalanse. 
-                Saldobalansen trenger kontoplanen for å validere kontonumrene.
+                Du må laste opp kontoplan i "Kontoplan"-taben før du kan laste
+                opp saldobalanse. Saldobalansen trenger kontoplanen for å
+                validere kontonumrene.
               </p>
             </div>
           </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (showMapping && parsedData) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="w-5 h-5" />
+            Kolonnemapping - {fileName}
+          </CardTitle>
+          <CardDescription>
+            Koble kolonnene i CSV-filen til feltene som kreves for import
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ColumnMappingInterface
+            fileColumns={parsedData.headers}
+            sampleData={parsedData.data}
+            onMappingComplete={handleMappingComplete}
+            onCancel={handleMappingCancel}
+            fields={tbFields}
+          />
         </CardContent>
       </Card>
     );
@@ -342,10 +592,18 @@ const TrialBalanceUploader = ({ clientId }: TrialBalanceUploaderProps) => {
           Last opp saldobalanse
         </CardTitle>
         <CardDescription>
-          Last opp saldobalanse fra Excel-fil. Filen må inneholde kolonner: Kontonummer, Periode, Inngående saldo, Debet omsetning, Kredit omsetning, Utgående saldo
+          Last opp saldobalanse fra CSV eller Excel. CSV krever kolonnemapping.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        <UploadZone
+          isDragging={isDragging}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          onFileSelect={handleFileSelect}
+        />
+
         <div className="flex items-center gap-4">
           <Input
             type="file"
@@ -354,12 +612,16 @@ const TrialBalanceUploader = ({ clientId }: TrialBalanceUploaderProps) => {
             disabled={isUploading}
           />
           <Button
-            onClick={uploadTrialBalance}
+            onClick={async () => {
+              if (!file) return;
+              const balances = await processExcelFile(file);
+              uploadTrialBalance(balances, file);
+            }}
             disabled={!file || isUploading}
             className="flex items-center gap-2"
           >
             <Upload className="w-4 h-4" />
-            {isUploading ? 'Laster opp...' : 'Last opp'}
+            {isUploading ? "Laster opp..." : "Last opp"}
           </Button>
         </div>
 
@@ -379,11 +641,13 @@ const TrialBalanceUploader = ({ clientId }: TrialBalanceUploaderProps) => {
         )}
 
         {uploadResult && (
-          <div className={`p-4 rounded-lg border ${
-            uploadResult.success 
-              ? 'bg-green-50 border-green-200 text-green-800' 
-              : 'bg-red-50 border-red-200 text-red-800'
-          }`}>
+          <div
+            className={`p-4 rounded-lg border ${
+              uploadResult.success
+                ? "bg-green-50 border-green-200 text-green-800"
+                : "bg-red-50 border-red-200 text-red-800"
+            }`}
+          >
             <div className="flex items-center gap-2">
               {uploadResult.success ? (
                 <CheckCircle className="w-5 h-5" />
