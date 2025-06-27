@@ -9,22 +9,36 @@ import { Badge } from '@/components/ui/badge';
 import { FileText } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
-const searchArticles = async (query: string) => {
+const searchArticles = async (query: string, types: string[], areas: string[]) => {
   const searchQuery = `%${query}%`;
-  
-  const { data, error } = await supabase
+
+  let db = supabase
     .from('knowledge_articles')
-    .select(`
-      *, 
+    .select(
+      `
+      *,
       category:knowledge_categories(name),
+      article_subject_areas(subject_area_id),
       article_tags:knowledge_article_tags(
         id,
         tag:tags(*)
       )
-    `)
-    .or(`title.ilike.${searchQuery},summary.ilike.${searchQuery}`)
+    `
+    )
     .eq('status', 'published')
     .limit(20);
+
+  if (query) {
+    db = db.or(`title.ilike.${searchQuery},summary.ilike.${searchQuery}`);
+  }
+  if (types.length) {
+    db = db.in('content_type_id', types);
+  }
+  if (areas.length) {
+    db = db.in('article_subject_areas.subject_area_id', areas);
+  }
+
+  const { data, error } = await db;
 
   if (error) throw error;
   
@@ -37,14 +51,22 @@ const searchArticles = async (query: string) => {
 const SearchResults = () => {
   const [searchParams] = useSearchParams();
   const query = searchParams.get('q') || '';
+  const types = (searchParams.get('types') || '')
+    .split(',')
+    .map(t => t.trim())
+    .filter(Boolean);
+  const areas = (searchParams.get('areas') || '')
+    .split(',')
+    .map(a => a.trim())
+    .filter(Boolean);
 
   const { data: articles, isLoading, error } = useQuery({
-    queryKey: ['knowledge-search', query],
-    queryFn: () => searchArticles(query),
-    enabled: !!query,
+    queryKey: ['knowledge-search', query, types.join(','), areas.join(',')],
+    queryFn: () => searchArticles(query, types, areas),
+    enabled: !!query || types.length > 0 || areas.length > 0,
   });
 
-  if (!query) {
+  if (!query && types.length === 0 && areas.length === 0) {
     return (
         <div className="text-center p-8">
             <h1 className="text-xl font-semibold">Søk i kunnskapsbasen</h1>
@@ -58,7 +80,11 @@ const SearchResults = () => {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">
-        Søkeresultater for: <span className="text-primary">"{query}"</span>
+        {query ? (
+          <>Søkeresultater for: <span className="text-primary">"{query}"</span></>
+        ) : (
+          'Filtrerte artikler'
+        )}
       </h1>
 
       {isLoading && (
@@ -74,7 +100,7 @@ const SearchResults = () => {
         <>
           {articles && articles.length > 0 ? (
             <div className="space-y-4">
-              <p className="text-muted-foreground">Fant {articles.length} resultat(er).</p>
+              <p className="text-muted-foreground">Fant {articles.length} artikler.</p>
               {articles.map((article) => (
                 <Card key={article.id}>
                   <CardHeader>
@@ -99,7 +125,9 @@ const SearchResults = () => {
             <div className="text-center p-8 border rounded-lg">
                 <h2 className="text-xl font-semibold">Ingen resultater</h2>
                 <p className="text-muted-foreground mt-2">
-                    Vi fant dessverre ingen artikler som matchet søket ditt for "{query}".
+                    {query
+                      ? `Vi fant dessverre ingen artikler som matchet søket ditt for "${query}".`
+                      : 'Vi fant dessverre ingen artikler som matchet de valgte filtrene.'}
                 </p>
                 <p className="text-muted-foreground mt-1">
                     Prøv et annet søkeord eller naviger via kategoriene til venstre.
