@@ -32,18 +32,14 @@ export type RiskLevel =
   | 'high'
   | 'critical';
 
-export type ActionStatus = 
+export type ActionStatus =
   | 'not_started'
   | 'in_progress'
   | 'completed'
   | 'reviewed'
   | 'approved';
 
-export type AuditPhase = 
-  | 'engagement'
-  | 'planning'
-  | 'execution'
-  | 'conclusion';
+import type { AuditPhase } from './revio';
 
 export interface AuditActionTemplate {
   id: string;

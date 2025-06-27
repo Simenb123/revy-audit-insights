@@ -16,13 +16,13 @@ interface ClientDetailsFormProps {
 }
 
 const phaseOptions: { value: AuditPhase; label: string }[] = [
-  { value: 'overview', label: 'Oversikt' },
-  { value: 'engagement', label: 'Oppdragsvurdering' },
-  { value: 'planning', label: 'Planlegging' },
-  { value: 'risk_assessment', label: 'Risikovurdering' },
-  { value: 'execution', label: 'Utførelse' },
-  { value: 'completion', label: 'Avslutning' },
-  { value: 'reporting', label: 'Rapportering' },
+  { value: AuditPhase.Overview, label: 'Oversikt' },
+  { value: AuditPhase.Engagement, label: 'Oppdragsvurdering' },
+  { value: AuditPhase.Planning, label: 'Planlegging' },
+  { value: AuditPhase.RiskAssessment, label: 'Risikovurdering' },
+  { value: AuditPhase.Execution, label: 'Utførelse' },
+  { value: AuditPhase.Completion, label: 'Avslutning' },
+  { value: AuditPhase.Reporting, label: 'Rapportering' },
 ];
 
 const ClientDetailsForm = ({ form }: ClientDetailsFormProps) => {

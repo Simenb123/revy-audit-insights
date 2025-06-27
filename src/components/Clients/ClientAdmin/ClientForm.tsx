@@ -3,7 +3,7 @@ import React from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
-import { Client } from '@/types/revio';
+import { Client, AuditPhase } from '@/types/revio';
 import { Button } from '@/components/ui/button';
 import { Form } from '@/components/ui/form';
 import ClientDetailsForm from './ClientDetailsForm';
@@ -21,7 +21,7 @@ const clientSchema = z.object({
   name: z.string().min(2, { message: 'Selskapsnavn må ha minst 2 tegn' }),
   company_name: z.string().min(2, { message: 'Firmanavn må ha minst 2 tegn' }),
   org_number: z.string().regex(/^\d{9}$/, { message: 'Organisasjonsnummer må være 9 siffer' }),
-  phase: z.enum(['overview', 'engagement', 'planning', 'risk_assessment', 'execution', 'completion', 'reporting']),
+  phase: z.nativeEnum(AuditPhase),
   progress: z.coerce.number().min(0).max(100),
   department: z.string().optional(),
   contact_person: z.string().optional(),
@@ -65,7 +65,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, submitLa
       name: initialData?.name || '',
       company_name: initialData?.company_name || '',
       org_number: initialData?.org_number || '',
-      phase: initialData?.phase || 'engagement',
+      phase: initialData?.phase || AuditPhase.Engagement,
       progress: initialData?.progress || 0,
       department: initialData?.department || '',
       contact_person: initialData?.contact_person || '',

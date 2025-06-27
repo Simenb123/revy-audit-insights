@@ -1,5 +1,5 @@
 
-export type AuditPhase = 'overview' | 'engagement' | 'planning' | 'execution' | 'completion' | 'reporting';
+import type { AuditPhase } from './revio';
 
 export interface Client {
   id: string;

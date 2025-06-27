@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import type { AuditPhase } from '@/types/audit-actions';
+import type { AuditPhase } from '@/types/revio';
 
 interface TemplateBase {
   subject_area: string;

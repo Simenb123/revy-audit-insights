@@ -2,7 +2,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { ClientAuditAction, ActionGroup, AuditSubjectArea, AuditPhase } from '@/types/audit-actions';
+import { ClientAuditAction, ActionGroup, AuditSubjectArea } from '@/types/audit-actions';
+import { AuditPhase } from '@/types/revio';
 export {
   useAuditActionTemplates,
   useCreateAuditActionTemplate,

@@ -8,11 +8,11 @@ import ClientBreadcrumb from '@/components/Clients/ClientDetails/ClientBreadcrum
 import ClientNavigation from '@/components/Clients/ClientDetails/ClientNavigation';
 import RevisionWorkflow from '@/components/Clients/ClientDetails/RevisionWorkflow';
 import PhaseContent from '@/components/Clients/ClientDetails/PhaseContent';
-import { AuditPhase } from '@/types/client';
+import { AuditPhase } from '@/types/revio';
 
 const ClientDetail = () => {
   const { orgNumber } = useParams<{ orgNumber: string }>();
-  const [selectedPhase, setSelectedPhase] = useState<AuditPhase>('overview');
+  const [selectedPhase, setSelectedPhase] = useState<AuditPhase>(AuditPhase.Overview);
 
   console.log('🏢 [CLIENT_DETAIL] Component rendered:', {
     orgNumber,
