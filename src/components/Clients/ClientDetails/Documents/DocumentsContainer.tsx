@@ -1,21 +1,21 @@
-
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React from "react";
+import ClientDocumentManager from "@/components/ClientDocuments/ClientDocumentManager";
 
 interface DocumentsContainerProps {
   clientId: string;
+  clientName?: string;
 }
 
-const DocumentsContainer: React.FC<DocumentsContainerProps> = ({ clientId }) => {
+const DocumentsContainer: React.FC<DocumentsContainerProps> = ({
+  clientId,
+  clientName,
+}) => {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Dokumenter</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <p>Dokumentadministrasjon kommer her...</p>
-      </CardContent>
-    </Card>
+    <ClientDocumentManager
+      clientId={clientId}
+      clientName={clientName}
+      enableAI
+    />
   );
 };
 
