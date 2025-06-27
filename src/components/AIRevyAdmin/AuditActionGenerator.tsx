@@ -12,6 +12,7 @@ import { toast } from '@/hooks/use-toast';
 import { useSubjectAreas } from '@/hooks/knowledge/useSubjectAreas';
 import { useAuditActionTemplatesBySubjectArea } from '@/hooks/knowledge/useAuditActionTemplates';
 import { useAuth } from '@/components/Auth/AuthProvider';
+import { ACTION_TYPE_LABELS, ActionType, AuditSubjectArea } from '@/types/audit-actions';
 
 interface FormData {
   name: string;
@@ -27,7 +28,7 @@ const AuditActionGenerator = () => {
   const { session } = useAuth();
   
   const [selectedSubjectArea, setSelectedSubjectArea] = useState('');
-  const [selectedActionType, setSelectedActionType] = useState('substantive');
+  const [selectedActionType, setSelectedActionType] = useState<ActionType>('substantive');
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -46,19 +47,17 @@ const AuditActionGenerator = () => {
     risk_level: 'medium'
   });
 
-  const actionTypes = [
-    { value: 'substantive', label: 'Substansiell testing' },
-    { value: 'analytical', label: 'Analytiske handlinger' },
-    { value: 'control_testing', label: 'Kontroll testing' },
-    { value: 'risk_assessment', label: 'Risikovurdering' },
-    { value: 'documentation', label: 'Dokumentasjon' }
-  ];
+  const actionTypes: { value: ActionType; label: string }[] =
+    Object.entries(ACTION_TYPE_LABELS).map(([value, label]) => ({
+      value: value as ActionType,
+      label
+    }));
 
   // Map subject area names to the correct enum values used in the database
-  const getSubjectAreaEnumValue = (subjectAreaName: string): string => {
-    const mapping: Record<string, string> = {
+  const getSubjectAreaEnumValue = (subjectAreaName: string): AuditSubjectArea => {
+    const mapping: Record<string, AuditSubjectArea> = {
       'Inntekter/Salg': 'sales',
-      'Lønn': 'payroll', 
+      'Lønn': 'payroll',
       'Andre driftskostnader': 'operating_expenses',
       'Varelager': 'inventory',
       'Finans': 'finance',
@@ -69,7 +68,7 @@ const AuditActionGenerator = () => {
       'Egenkapital': 'equity',
       'Nærstående transaksjoner': 'other'
     };
-    
+
     return mapping[subjectAreaName] || 'other';
   };
 
@@ -166,8 +165,8 @@ const AuditActionGenerator = () => {
       await createTemplate.mutateAsync({
         name: formData.name,
         description: formData.description,
-        subject_area: enumSubjectArea as any,
-        action_type: selectedActionType as any,
+        subject_area: enumSubjectArea,
+        action_type: selectedActionType,
         objective: formData.objective,
         procedures: formData.procedures,
         documentation_requirements: formData.documentation_requirements,
@@ -349,7 +348,10 @@ const AuditActionGenerator = () => {
             
             <div className="flex-1">
               <Label>Handlingstype</Label>
-              <Select value={selectedActionType} onValueChange={setSelectedActionType}>
+              <Select
+                value={selectedActionType}
+                onValueChange={(v) => setSelectedActionType(v as ActionType)}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
