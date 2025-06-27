@@ -2,7 +2,8 @@ import React, { useState, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, FileSpreadsheet, CheckCircle } from 'lucide-react';
+import { FileSpreadsheet, CheckCircle } from 'lucide-react';
+import UploadZone from './UploadZone';
 import { supabase } from '@/integrations/supabase/client';
 import ColumnMappingInterface from './ColumnMappingInterface';
 
@@ -623,39 +624,13 @@ const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
             </Button>
           </div>
         ) : (
-          <div 
-            className={`
-              border-2 border-dashed rounded-lg p-6 text-center
-              transition-colors duration-200 cursor-pointer
-              ${isDragging ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-blue-400'}
-              ${isUploading ? 'opacity-50 pointer-events-none' : ''}
-            `}
+          <UploadZone
+            isDragging={isDragging}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
-          >
-            <input 
-              type="file" 
-              id="csv-upload" 
-              className="hidden" 
-              onChange={handleFileInput}
-              accept=".csv"
-              disabled={isUploading}
-            />
-            
-            <label htmlFor="csv-upload" className="cursor-pointer">
-              <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-lg font-medium mb-2">
-                {isUploading ? 'Behandler fil...' : 'Dra og slipp CSV-fil her'}
-              </p>
-              <p className="text-muted-foreground mb-4">
-                eller klikk for å velge fil
-              </p>
-              <Button variant="outline" disabled={isUploading}>
-                Velg CSV-fil
-              </Button>
-            </label>
-          </div>
+            onFileSelect={handleFileInput}
+          />
         )}
       </CardContent>
     </Card>

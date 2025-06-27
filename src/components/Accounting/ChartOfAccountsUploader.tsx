@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import UploadZone from '@/components/DataUpload/UploadZone';
 import { Progress } from '@/components/ui/progress';
 import { Upload, FileText, CheckCircle, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -23,6 +23,7 @@ interface AccountRow {
 
 const ChartOfAccountsUploader = ({ clientId, onUploadComplete }: ChartOfAccountsUploaderProps) => {
   const [file, setFile] = useState<File | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [uploadResult, setUploadResult] = useState<{
@@ -36,6 +37,25 @@ const ChartOfAccountsUploader = ({ clientId, onUploadComplete }: ChartOfAccounts
     const selectedFile = event.target.files?.[0];
     if (selectedFile) {
       setFile(selectedFile);
+      setUploadResult(null);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const droppedFile = e.dataTransfer.files?.[0];
+    if (droppedFile) {
+      setFile(droppedFile);
       setUploadResult(null);
     }
   };
@@ -176,22 +196,21 @@ const ChartOfAccountsUploader = ({ clientId, onUploadComplete }: ChartOfAccounts
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex items-center gap-4">
-          <Input
-            type="file"
-            accept=".xlsx,.xls"
-            onChange={handleFileSelect}
-            disabled={isUploading}
-          />
-          <Button
-            onClick={uploadChartOfAccounts}
-            disabled={!file || isUploading}
-            className="flex items-center gap-2"
-          >
-            <Upload className="w-4 h-4" />
-            {isUploading ? 'Laster opp...' : 'Last opp'}
-          </Button>
-        </div>
+        <UploadZone
+          isDragging={isDragging}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          onFileSelect={handleFileSelect}
+        />
+        <Button
+          onClick={uploadChartOfAccounts}
+          disabled={!file || isUploading}
+          className="flex items-center gap-2"
+        >
+          <Upload className="w-4 h-4" />
+          {isUploading ? 'Laster opp...' : 'Last opp'}
+        </Button>
 
         {isUploading && (
           <div className="space-y-2">

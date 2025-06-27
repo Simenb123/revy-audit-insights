@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { Upload, FileText, CheckCircle, AlertCircle } from 'lucide-react';
+import UploadZone from '@/components/DataUpload/UploadZone';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import * as XLSX from 'xlsx';
@@ -25,6 +25,7 @@ interface TransactionRow {
 
 const GeneralLedgerUploader = ({ clientId }: GeneralLedgerUploaderProps) => {
   const [file, setFile] = useState<File | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [uploadResult, setUploadResult] = useState<{
@@ -38,6 +39,25 @@ const GeneralLedgerUploader = ({ clientId }: GeneralLedgerUploaderProps) => {
     const selectedFile = event.target.files?.[0];
     if (selectedFile) {
       setFile(selectedFile);
+      setUploadResult(null);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const droppedFile = e.dataTransfer.files?.[0];
+    if (droppedFile) {
+      setFile(droppedFile);
       setUploadResult(null);
     }
   };
@@ -233,13 +253,13 @@ const GeneralLedgerUploader = ({ clientId }: GeneralLedgerUploaderProps) => {
             Last opp hovedboktransaksjoner fra Excel-fil. Filen må inneholde: Dato, Kontonummer, Debet, Kredit
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center gap-4">
-            <Input
-              type="file"
-              accept=".xlsx,.xls"
-              onChange={handleFileSelect}
-              disabled={isUploading}
+          <CardContent className="space-y-4">
+            <UploadZone
+              isDragging={isDragging}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              onFileSelect={handleFileSelect}
             />
             <Button
               onClick={uploadGeneralLedger}
@@ -249,7 +269,6 @@ const GeneralLedgerUploader = ({ clientId }: GeneralLedgerUploaderProps) => {
               <Upload className="w-4 h-4" />
               {isUploading ? 'Laster opp...' : 'Last opp'}
             </Button>
-          </div>
 
           {isUploading && (
             <div className="space-y-2">
