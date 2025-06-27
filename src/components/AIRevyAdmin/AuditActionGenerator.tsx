@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Brain, Plus, Loader2, Save } from 'lucide-react';
 import { useCreateAuditActionTemplate } from '@/hooks/audit-actions/useActionTemplateCRUD';
 import { toast } from '@/hooks/use-toast';
+import { generateEnhancedAIResponseWithVariant } from '@/services/revy/enhancedAiInteractionService';
 import { useSubjectAreas } from '@/hooks/knowledge/useSubjectAreas';
 import { useAuditActionTemplatesBySubjectArea } from '@/hooks/knowledge/useAuditActionTemplates';
 import { useAuth } from '@/components/Auth/AuthProvider';
@@ -85,32 +86,46 @@ const AuditActionGenerator = () => {
 
     setIsGenerating(true);
     try {
-      // Simuler AI-generering for nå
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      const selectedArea = subjectAreas?.find(area => area.name === selectedSubjectArea);
-      
+      const prompt = `Lag et forslag til revisjonshandling for fagområdet "${selectedSubjectArea}" ` +
+        `og handlingstypen "${selectedActionType}". ` +
+        `Svar i JSON-format med feltene name, description, objective, procedures, ` +
+        `documentation_requirements, estimated_hours og risk_level.`;
+
+      const aiResponse = await generateEnhancedAIResponseWithVariant(
+        prompt,
+        'audit-actions'
+      );
+
+      let parsed: any;
+      try {
+        parsed = JSON.parse(aiResponse);
+      } catch (parseError) {
+        console.error('Failed to parse AI response:', parseError, aiResponse);
+        throw new Error('Kunne ikke tolke AI-responsen');
+      }
+
       const aiSuggestion: FormData = {
-        name: `AI-generert handling for ${selectedArea?.display_name || selectedSubjectArea}`,
-        description: `AI-generert beskrivelse basert på best practices for ${selectedArea?.display_name || selectedSubjectArea}`,
-        objective: `Sikre nøyaktighet og fullstendighet av ${selectedArea?.display_name || selectedSubjectArea}`,
-        procedures: '1. Gjennomgå relevant dokumentasjon\n2. Utfør nødvendig testing\n3. Dokumenter funn og konklusjoner\n4. Vurder eventuelle justeringer',
-        documentation_requirements: 'Arbeidspapirer, testresultater, konklusjoner og eventuelle oppfølgingsnotater',
-        estimated_hours: 4,
-        risk_level: 'medium'
+        name: parsed.name || '',
+        description: parsed.description || '',
+        objective: parsed.objective || '',
+        procedures: parsed.procedures || '',
+        documentation_requirements: parsed.documentation_requirements || '',
+        estimated_hours: parsed.estimated_hours || 0,
+        risk_level: (parsed.risk_level as 'low' | 'medium' | 'high') || 'medium'
       };
-      
+
       setFormData(aiSuggestion);
       setShowCreateForm(true);
-      
+
       toast({
         title: "AI-forslag generert",
         description: "Handlingen er generert med AI. Du kan nå redigere og lagre den.",
       });
-    } catch (error) {
+    } catch (error: any) {
+      const message = error instanceof Error ? error.message : 'Kunne ikke generere handling med AI';
       toast({
         title: "Feil ved AI-generering",
-        description: "Kunne ikke generere handling med AI",
+        description: message,
         variant: "destructive"
       });
     } finally {
