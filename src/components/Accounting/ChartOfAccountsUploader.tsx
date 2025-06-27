@@ -1,13 +1,13 @@
 
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import UploadZone from '@/components/DataUpload/UploadZone';
 import { Progress } from '@/components/ui/progress';
-import { Upload, FileText, CheckCircle, AlertCircle } from 'lucide-react';
+import { FileText, CheckCircle, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import * as XLSX from 'xlsx';
+import AccountCSVMapping from './AccountCSVMapping';
 
 interface ChartOfAccountsUploaderProps {
   clientId: string;
@@ -23,6 +23,7 @@ interface AccountRow {
 
 const ChartOfAccountsUploader = ({ clientId, onUploadComplete }: ChartOfAccountsUploaderProps) => {
   const [file, setFile] = useState<File | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [uploadResult, setUploadResult] = useState<{
@@ -31,12 +32,39 @@ const ChartOfAccountsUploader = ({ clientId, onUploadComplete }: ChartOfAccounts
     processed: number;
     errors: string[];
   } | null>(null);
+  const [csvData, setCsvData] = useState<{ headers: string[]; rows: Record<string, string>[] } | null>(null);
+  const [showMapping, setShowMapping] = useState(false);
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = event.target.files?.[0];
-    if (selectedFile) {
-      setFile(selectedFile);
-      setUploadResult(null);
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => setIsDragging(false);
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const f = e.dataTransfer.files?.[0];
+    if (f) handleFile(f);
+  };
+
+  const onFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (f) handleFile(f);
+  };
+
+  const handleFile = async (selectedFile: File) => {
+    setFile(selectedFile);
+    setUploadResult(null);
+
+    if (selectedFile.name.toLowerCase().endsWith('.csv')) {
+      const parsed = await parseCSVFile(selectedFile);
+      setCsvData(parsed);
+      setShowMapping(true);
+    } else {
+      const accounts = await processExcelFile(selectedFile);
+      uploadChartOfAccounts(accounts, selectedFile);
     }
   };
 
@@ -69,15 +97,70 @@ const ChartOfAccountsUploader = ({ clientId, onUploadComplete }: ChartOfAccounts
     });
   };
 
-  const uploadChartOfAccounts = async () => {
-    if (!file || !clientId) return;
+  const parseCSVFile = async (
+    file: File
+  ): Promise<{ headers: string[]; rows: Record<string, string>[] }> => {
+    const text = await file.text();
+    const lines = text.split('\n').filter(l => l.trim());
+    const parseLine = (line: string): string[] => {
+      const result: string[] = [];
+      let current = '';
+      let inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        if (char === '"') {
+          inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
+          result.push(current.trim());
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      result.push(current.trim());
+      return result.map(f => f.replace(/^"|"$/g, ''));
+    };
+
+    const headers = parseLine(lines[0]);
+    const rows = lines.slice(1).map(line => {
+      const values = parseLine(line);
+      const obj: Record<string, string> = {};
+      headers.forEach((h, idx) => {
+        obj[h] = values[idx] || '';
+      });
+      return obj;
+    });
+    return { headers, rows };
+  };
+
+  const handleMappingComplete = (mapping: Record<string, string>) => {
+    if (!csvData || !file) return;
+    setShowMapping(false);
+    const getColumn = (field: string) =>
+      Object.keys(mapping).find(col => mapping[col] === field);
+    const accounts: AccountRow[] = csvData.rows
+      .map(row => ({
+        account_number: row[getColumn('account_number') || '']?.toString() || '',
+        account_name: row[getColumn('account_name') || ''] || '',
+        account_type: row[getColumn('account_type') || ''] || 'asset',
+      }))
+      .filter(a => a.account_number && a.account_name);
+    uploadChartOfAccounts(accounts, file);
+  };
+
+  const handleMappingCancel = () => {
+    setShowMapping(false);
+    setCsvData(null);
+    setFile(null);
+  };
+
+  const uploadChartOfAccounts = async (accounts: AccountRow[], source: File) => {
+    if (!clientId) return;
 
     setIsUploading(true);
     setProgress(0);
     
     try {
-      // Process the Excel file
-      const accounts = await processExcelFile(file);
       setProgress(25);
 
       // Create upload batch record
@@ -88,8 +171,8 @@ const ChartOfAccountsUploader = ({ clientId, onUploadComplete }: ChartOfAccounts
           client_id: clientId,
           user_id: userId,
           batch_type: 'chart_of_accounts',
-          file_name: file.name,
-          file_size: file.size,
+          file_name: source.name,
+          file_size: source.size,
           total_records: accounts.length,
           status: 'processing'
         })
@@ -164,6 +247,17 @@ const ChartOfAccountsUploader = ({ clientId, onUploadComplete }: ChartOfAccounts
     }
   };
 
+  if (showMapping && csvData) {
+    return (
+      <AccountCSVMapping
+        headers={csvData.headers}
+        sampleData={csvData.rows}
+        onComplete={handleMappingComplete}
+        onCancel={handleMappingCancel}
+      />
+    );
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -172,26 +266,17 @@ const ChartOfAccountsUploader = ({ clientId, onUploadComplete }: ChartOfAccounts
           Last opp kontoplan
         </CardTitle>
         <CardDescription>
-          Last opp kontoplan fra Excel-fil. Filen må inneholde kolonnene: Kontonummer, Kontonavn, Kontotype
+          Last opp kontoplan fra Excel- eller CSV-fil
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex items-center gap-4">
-          <Input
-            type="file"
-            accept=".xlsx,.xls"
-            onChange={handleFileSelect}
-            disabled={isUploading}
-          />
-          <Button
-            onClick={uploadChartOfAccounts}
-            disabled={!file || isUploading}
-            className="flex items-center gap-2"
-          >
-            <Upload className="w-4 h-4" />
-            {isUploading ? 'Laster opp...' : 'Last opp'}
-          </Button>
-        </div>
+        <UploadZone
+          isDragging={isDragging}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          onFileSelect={onFileSelect}
+        />
 
         {isUploading && (
           <div className="space-y-2">
