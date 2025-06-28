@@ -1,8 +1,31 @@
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import type { AuditActionTemplate } from '@/types/audit-actions';
+import type { AuditActionTemplate, AuditSubjectArea } from '@/types/audit-actions';
+
+export function useAuditActionTemplates(subjectArea?: AuditSubjectArea) {
+  return useQuery({
+    queryKey: ['audit-action-templates', subjectArea],
+    queryFn: async () => {
+      let query = supabase
+        .from('audit_action_templates')
+        .select('*')
+        .eq('is_active', true)
+        .order('sort_order, name');
+
+      if (subjectArea) {
+        query = query.eq('subject_area', subjectArea);
+      }
+
+      const { data, error } = await query;
+      if (error) {
+        throw error;
+      }
+      return data as AuditActionTemplate[];
+    }
+  });
+}
 
 export function useCreateAuditActionTemplate() {
   const queryClient = useQueryClient();

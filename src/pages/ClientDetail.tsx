@@ -13,7 +13,7 @@ import { AuditPhase } from '@/types/revio';
 
 const ClientDetail = () => {
   const { orgNumber } = useParams<{ orgNumber: string }>();
-  const [selectedPhase, setSelectedPhase] = useState<AuditPhase>(AuditPhase.Overview);
+  const [selectedPhase, setSelectedPhase] = useState<AuditPhase>('overview');
 
   console.log('🏢 [CLIENT_DETAIL] Component rendered:', {
     orgNumber,
