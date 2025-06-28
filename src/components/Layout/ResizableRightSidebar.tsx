@@ -116,7 +116,7 @@ const ResizableRightSidebar = () => {
               onToggle={toggleCollapsed}
             />
             <ScrollArea className="flex-1 h-full">
-              <div className="p-3 space-y-3">
+              <div className="p-3 h-full">
                 {renderContent()}
               </div>
             </ScrollArea>
