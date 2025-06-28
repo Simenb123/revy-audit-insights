@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { SubjectArea } from '@/types/classification';
 
 // Mock hooks and dependencies
 vi.mock('@/hooks/use-toast', () => ({
@@ -8,9 +9,10 @@ vi.mock('@/hooks/use-toast', () => ({
 }));
 
 vi.mock('@/hooks/knowledge/useSubjectAreas', () => ({
-  useSubjectAreas: () => ({ data: [
-    { id: '1', name: 'sales', display_name: 'Salg' }
-  ], isLoading: false })
+  useSubjectAreas: () => ({
+    data: [{ id: '1', name: 'sales', display_name: 'Salg' }] as SubjectArea[],
+    isLoading: false,
+  }),
 }));
 
 vi.mock('@/hooks/knowledge/useAuditActionTemplates', () => ({
