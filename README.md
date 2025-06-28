@@ -36,7 +36,7 @@ OPENAI_API_KEY=your_openai_api_key
 LOG_LEVEL=info # set to 'debug' for more verbose logs
 ```
 
-**Note**: You must provide `SUPABASE_URL` and `SUPABASE_ANON_KEY` for the application to connect to Supabase. `SUPABASE_SERVICE_ROLE_KEY` is required for AI Revy to access internal knowledge articles.
+**Note**: You must provide `SUPABASE_URL` and `SUPABASE_ANON_KEY` for the application to connect to Supabase. `SUPABASE_SERVICE_ROLE_KEY` is only required for certain edge functions (`syncKunngjoring`, `setup-storage`). See [docs/service-role-functions.md](docs/service-role-functions.md) for details.
 
 ### Getting Your Supabase Credentials
 
