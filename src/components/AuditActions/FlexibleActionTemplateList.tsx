@@ -149,7 +149,7 @@ const FlexibleActionTemplateList = ({
                     <SelectItem value="engagement">Engasjement</SelectItem>
                     <SelectItem value="planning">Planlegging</SelectItem>
                     <SelectItem value="execution">Utførelse</SelectItem>
-                    <SelectItem value="conclusion">Avslutning</SelectItem>
+                    <SelectItem value="completion">Avslutning</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -242,7 +242,7 @@ const FlexibleActionTemplateList = ({
                                 {phase === 'engagement' ? 'Engasjement' :
                                  phase === 'planning' ? 'Planlegging' : 
                                  phase === 'execution' ? 'Utførelse' : 
-                                 phase === 'conclusion' ? 'Avslutning' : phase}
+                                 phase === 'completion' ? 'Avslutning' : phase}
                               </Badge>
                             ))}
                             {template.is_system_template && (

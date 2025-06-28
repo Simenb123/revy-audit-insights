@@ -91,7 +91,7 @@ const WorkingPaperTemplateManager = ({
           columns: ['Beskrivelse', 'Risiko', 'Anbefaling', 'Status']
         },
         {
-          id: 'conclusion',
+          id: 'completion',
           title: 'Konklusjon',
           type: 'text',
           required: true,
