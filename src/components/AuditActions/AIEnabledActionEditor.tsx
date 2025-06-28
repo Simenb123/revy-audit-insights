@@ -29,7 +29,12 @@ const fetchAuditAction = async (clientId: string): Promise<ClientAuditAction | n
         if (error.code === 'PGRST116') return null; // No rows found is not an error here
         throw error;
     }
-    return data;
+    return data
+      ? ({
+          ...data,
+          phase: data.phase === 'conclusion' ? 'completion' : data.phase,
+        } as ClientAuditAction)
+      : null;
 };
 
 const fetchClient = async (clientId: string): Promise<Client | null> => {
