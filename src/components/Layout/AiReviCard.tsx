@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { MessageSquare, Send, Minimize2, Maximize2 } from 'lucide-react';
+import { Send } from 'lucide-react';
 import RevyAvatar from '@/components/Revy/RevyAvatar';
 
 interface AiReviCardProps {
@@ -14,7 +14,6 @@ interface AiReviCardProps {
 }
 
 const AiReviCard: React.FC<AiReviCardProps> = ({ title, description, className = '' }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState<Array<{ sender: 'user' | 'ai', content: string }>>([]);
 
@@ -37,7 +36,7 @@ const AiReviCard: React.FC<AiReviCardProps> = ({ title, description, className =
   };
 
   return (
-    <Card className={`${className} transition-all duration-300 ${isExpanded ? 'h-96' : 'h-auto'}`}>
+    <Card className={`${className} transition-all duration-300`}>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -47,19 +46,12 @@ const AiReviCard: React.FC<AiReviCardProps> = ({ title, description, className =
               <CardDescription className="text-xs">{description}</CardDescription>
             </div>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="h-6 w-6 p-0"
-          >
-            {isExpanded ? <Minimize2 className="h-3 w-3" /> : <Maximize2 className="h-3 w-3" />}
-          </Button>
+          
         </div>
       </CardHeader>
 
       <CardContent className="pt-0">
-        {isExpanded && messages.length > 0 && (
+        {messages.length > 0 && (
           <ScrollArea className="h-48 mb-3 p-2 border rounded-md">
             <div className="space-y-2">
               {messages.map((msg, index) => (
