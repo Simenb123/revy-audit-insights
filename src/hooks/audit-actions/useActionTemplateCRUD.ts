@@ -1,65 +1,35 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import type { AuditActionTemplate, AuditSubjectArea } from '@/types/audit-actions';
+import type { AuditActionTemplate } from '@/types/audit-actions';
 
-export const useAuditActionTemplates = (subjectArea?: AuditSubjectArea) => {
-  return useQuery({
-    queryKey: ['audit-action-templates', subjectArea],
-    queryFn: async () => {
-      let query = supabase
-        .from('audit_action_templates')
-        .select('*')
-        .eq('is_active', true)
-        .order('sort_order, name');
-
-      if (subjectArea) {
-        query = query.eq('subject_area', subjectArea);
-      }
-
-      const { data, error } = await query;
-
-      if (error) {
-        throw error;
-      }
-
-      return data as AuditActionTemplate[];
-    }
-  });
-};
-
-export const useCreateAuditActionTemplate = () => {
+export function useCreateAuditActionTemplate() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (template: Omit<AuditActionTemplate, 'id' | 'created_at' | 'updated_at'>) => {
-      if (!template.name?.trim()) {
-        throw new Error('Navn er påkrevd');
-      }
+    mutationFn: async (templateData: Omit<AuditActionTemplate, 'id' | 'created_at' | 'updated_at'>) => {
+      // Map AuditPhase values to database enum values
+      const mappedPhases = templateData.applicable_phases.map(phase => {
+        if (phase === 'completion') return 'conclusion';
+        if (phase === 'risk_assessment') return 'planning';
+        if (phase === 'overview') return 'engagement';
+        return phase;
+      });
 
-      if (!template.procedures?.trim()) {
-        throw new Error('Prosedyrer er påkrevd');
-      }
-
-      if (!template.subject_area) {
-        throw new Error('Emneområde er påkrevd');
-      }
-
-      if (!template.action_type) {
-        throw new Error('Handlingstype er påkrevd');
-      }
-
-      if (!template.applicable_phases || template.applicable_phases.length === 0) {
-        template.applicable_phases = ['execution'];
-      }
+      const dataToInsert = {
+        ...templateData,
+        applicable_phases: mappedPhases
+      };
 
       const { data, error } = await supabase
         .from('audit_action_templates')
-        .insert(template)
+        .insert(dataToInsert)
         .select()
         .single();
 
       if (error) {
+        console.error('Error creating audit action template:', error);
         throw error;
       }
 
@@ -67,20 +37,30 @@ export const useCreateAuditActionTemplate = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['audit-action-templates'] });
-      queryClient.invalidateQueries({ queryKey: ['audit-action-template-count'] });
-      toast.success('Revisjonshandling opprettet');
+      toast.success('Handlingsmal opprettet');
     },
     onError: (error: any) => {
-      toast.error('Feil ved opprettelse: ' + (error.message || 'Ukjent feil'));
+      console.error('Failed to create audit action template:', error);
+      toast.error('Feil ved opprettelse av handlingsmal: ' + error.message);
     }
   });
-};
+}
 
-export const useUpdateAuditActionTemplate = () => {
+export function useUpdateAuditActionTemplate() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, ...updates }: Partial<AuditActionTemplate> & { id: string }) => {
+    mutationFn: async ({ id, ...updates }: { id: string } & Partial<AuditActionTemplate>) => {
+      // Map AuditPhase values to database enum values if applicable_phases is being updated
+      if (updates.applicable_phases) {
+        updates.applicable_phases = updates.applicable_phases.map(phase => {
+          if (phase === 'completion') return 'conclusion';
+          if (phase === 'risk_assessment') return 'planning';
+          if (phase === 'overview') return 'engagement';
+          return phase;
+        }) as any;
+      }
+
       const { data, error } = await supabase
         .from('audit_action_templates')
         .update(updates)
@@ -89,6 +69,7 @@ export const useUpdateAuditActionTemplate = () => {
         .single();
 
       if (error) {
+        console.error('Error updating audit action template:', error);
         throw error;
       }
 
@@ -96,15 +77,16 @@ export const useUpdateAuditActionTemplate = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['audit-action-templates'] });
-      toast.success('Revisjonshandling oppdatert');
+      toast.success('Handlingsmal oppdatert');
     },
     onError: (error: any) => {
-      toast.error('Feil ved oppdatering: ' + (error.message || 'Ukjent feil'));
+      console.error('Failed to update audit action template:', error);
+      toast.error('Feil ved oppdatering av handlingsmal: ' + error.message);
     }
   });
-};
+}
 
-export const useDeleteAuditActionTemplate = () => {
+export function useDeleteAuditActionTemplate() {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -115,16 +97,17 @@ export const useDeleteAuditActionTemplate = () => {
         .eq('id', id);
 
       if (error) {
+        console.error('Error deleting audit action template:', error);
         throw error;
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['audit-action-templates'] });
-      queryClient.invalidateQueries({ queryKey: ['audit-action-template-count'] });
-      toast.success('Revisjonshandling slettet');
+      toast.success('Handlingsmal slettet');
     },
     onError: (error: any) => {
-      toast.error('Feil ved sletting: ' + (error.message || 'Ukjent feil'));
+      console.error('Failed to delete audit action template:', error);
+      toast.error('Feil ved sletting av handlingsmal: ' + error.message);
     }
   });
-};
+}

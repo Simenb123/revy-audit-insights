@@ -22,51 +22,53 @@ const CategoryView = () => {
     return uuidRegex.test(str);
   };
 
-  const validCategoryId = isValidUUID(categoryIdentifier)
+  const validCategoryId = isValidUUID(categoryIdentifier);
 
   const { data: category, isLoading: categoryLoading } = useQuery({
     queryKey: ['knowledge-category', categoryIdentifier],
     queryFn: async () => {
-      if (!categoryIdentifier) throw new Error('Category identifier is required')
+      if (!categoryIdentifier) throw new Error('Category identifier is required');
 
       const { data, error } = await supabase
         .from('knowledge_categories')
         .select('*')
-        .eq(validCategoryId ? 'id' : 'slug', categoryIdentifier)
-        .single()
+        .eq(validCategoryId ? 'id' : 'name', categoryIdentifier)
+        .single();
 
       if (error) {
-        console.error('Error fetching category:', error)
-        throw error
+        console.error('Error fetching category:', error);
+        throw error;
       }
 
-      console.log('Category fetched:', data)
-      return data as KnowledgeCategory
+      console.log('Category fetched:', data);
+      // Add slug property if missing
+      return { ...data, slug: data.slug || data.id } as KnowledgeCategory;
     },
     enabled: !!categoryIdentifier
-  })
+  });
 
   const { data: subcategories } = useQuery({
     queryKey: ['knowledge-subcategories', categoryIdentifier],
     queryFn: async () => {
-      if (!category) return []
+      if (!category) return [];
 
       const { data, error } = await supabase
         .from('knowledge_categories')
         .select('*')
         .eq('parent_category_id', category.id)
-        .order('display_order')
+        .order('display_order');
 
-      if (error) throw error
-      return data as KnowledgeCategory[]
+      if (error) throw error;
+      // Add slug property if missing for subcategories
+      return (data || []).map(cat => ({ ...cat, slug: cat.slug || cat.id })) as KnowledgeCategory[];
     },
     enabled: !!category
-  })
+  });
 
   const { data: articles = [], isLoading: isLoadingArticles } = useQuery({
     queryKey: ['knowledge-articles', categoryIdentifier],
     queryFn: async () => {
-      if (!category) return []
+      if (!category) return [];
 
       const { data, error } = await supabase
         .from('knowledge_articles')
@@ -80,18 +82,17 @@ const CategoryView = () => {
           )
         `)
         .eq('category_id', category.id)
-        .eq('status', 'published')
+        .eq('status', 'published');
 
-      if (error) throw error
+      if (error) throw error;
 
       return (data || []).map(article => ({
         ...article,
         article_tags: article.article_tags?.map((at: any) => at.tag) || []
-      }))
+      }));
     },
     enabled: !!category
-  })
-
+  });
 
   if (categoryLoading) {
     return (

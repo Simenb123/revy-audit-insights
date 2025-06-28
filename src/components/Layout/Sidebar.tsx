@@ -1,60 +1,27 @@
-
 import React from 'react';
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
-import SidebarNav from './SidebarNav';
-import ClientNav from './ClientNav';
-import { useLocation, useParams } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import GeneralSidebarSection from './GeneralSidebarSection';
+import ClientSidebarSection from './ClientSidebarSection';
+import KnowledgeSidebarSection from './KnowledgeSidebarSection';
 
 interface SidebarProps {
-  isCollapsed: boolean;
-  onToggle: () => void;
+  isCollapsed?: boolean;
+  onToggle?: () => void;
 }
 
-const Sidebar = ({ isCollapsed, onToggle }: SidebarProps) => {
+const Sidebar: React.FC<SidebarProps> = ({ isCollapsed = false, onToggle }) => {
   const location = useLocation();
-  const { orgNumber } = useParams<{ orgNumber: string }>();
-  
-  // Simple check for client context
-  const isClientContext = location.pathname.includes('/klienter/') && orgNumber;
 
   return (
-    <div
-      className={cn(
-        "sticky left-0 flex-none bg-sidebar border-r border-sidebar-border flex flex-col overflow-hidden transition-all duration-300 ease-in-out",
-        isCollapsed ? "w-sidebar-collapsed" : "w-sidebar"
-      )}
-      style={{ top: "var(--header-height)", height: "calc(100vh - var(--header-height))" }}
-      role="navigation"
-      aria-label="Hovedmeny"
-    >
-      {/* Toggle button positioned on the right side inside the sidebar */}
-      <div className="absolute top-4 right-2 z-20">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onToggle}
-          className="h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent"
-          title={isCollapsed ? "Utvid sidebar" : "Trekk inn sidebar"}
-          aria-label={isCollapsed ? "Utvid sidebar" : "Trekk inn sidebar"}
-          aria-expanded={!isCollapsed}
-        >
-          {isCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
-        </Button>
-      </div>
-      
-      {/* Navigation Content - Scrollable */}
-      <div className={cn(
-        "flex-1 min-h-0 overflow-y-auto transition-all duration-300 ease-in-out",
-        isCollapsed ? "p-2 pt-14" : "p-3 pt-14"
-      )}>
-        {isClientContext ? (
-          <ClientNav />
-        ) : (
-          <SidebarNav collapsed={isCollapsed} />
-        )}
-      </div>
+    <div className="h-full flex flex-col border-r bg-background">
+      <ScrollArea className="flex-1 p-4">
+        <div className="space-y-4">
+          <GeneralSidebarSection />
+          <ClientSidebarSection />
+          <KnowledgeSidebarSection />
+        </div>
+      </ScrollArea>
     </div>
   );
 };

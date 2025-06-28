@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -24,9 +25,11 @@ import { toast } from 'sonner';
 import type { AuditPhase } from '@/types/revio';
 import type { Category as BaseCategory } from '@/types/classification';
 
-interface Category extends BaseCategory {
+interface Category extends Omit<BaseCategory, 'applicable_phases'> {
   article_count: number;
   children?: Category[];
+  applicable_phases?: string[] | null;
+  slug?: string;
 }
 
 interface CategoryFormData {
@@ -35,7 +38,7 @@ interface CategoryFormData {
   icon: string;
   parent_category_id: string;
   display_order: number;
-  applicable_phases: AuditPhase[];
+  applicable_phases: string[];
 }
 
 const ImprovedCategoryManager = () => {
@@ -67,7 +70,8 @@ const ImprovedCategoryManager = () => {
           
           return {
             ...category,
-            article_count: count || 0
+            article_count: count || 0,
+            slug: category.slug || category.id
           };
         })
       );
@@ -98,14 +102,21 @@ const ImprovedCategoryManager = () => {
 
   const createCategory = useMutation({
     mutationFn: async (categoryData: CategoryFormData) => {
-      // Convert to database format, removing extra properties
+      // Convert applicable_phases to match database enum values
+      const mappedPhases = categoryData.applicable_phases.map(phase => {
+        if (phase === 'completion') return 'conclusion';
+        if (phase === 'risk_assessment') return 'planning';
+        if (phase === 'overview') return 'engagement';
+        return phase;
+      });
+
       const dbData = {
         name: categoryData.name,
         description: categoryData.description || null,
         icon: categoryData.icon || null,
         parent_category_id: categoryData.parent_category_id || null,
         display_order: categoryData.display_order,
-        applicable_phases: categoryData.applicable_phases
+        applicable_phases: mappedPhases
       };
       
       const { data, error } = await supabase
@@ -129,14 +140,21 @@ const ImprovedCategoryManager = () => {
 
   const updateCategory = useMutation({
     mutationFn: async ({ id, ...updates }: Partial<CategoryFormData> & { id: string }) => {
-      // Only include database fields, excluding UI-only properties
+      // Convert applicable_phases to match database enum values
+      const mappedPhases = updates.applicable_phases?.map(phase => {
+        if (phase === 'completion') return 'conclusion';
+        if (phase === 'risk_assessment') return 'planning';
+        if (phase === 'overview') return 'engagement';
+        return phase;
+      });
+
       const dbUpdates = {
         name: updates.name,
         description: updates.description || null,
         icon: updates.icon || null,
         parent_category_id: updates.parent_category_id || null,
         display_order: updates.display_order,
-        applicable_phases: updates.applicable_phases
+        applicable_phases: mappedPhases
       };
       
       const { data, error } = await supabase

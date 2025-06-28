@@ -26,10 +26,10 @@ const AppLayout = () => {
   }
 
   if (profileLoading) {
-    return <PageLoader message="Laster brukerdata..." />;
+    return <PageLoader />;
   }
 
-  if (!profile?.first_name || !profile?.last_name) {
+  if (!profile?.firstName || !profile?.lastName) {
     return <OnboardingCheck />;
   }
 

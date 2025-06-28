@@ -34,12 +34,12 @@ const AppHeader: React.FC<AppHeaderProps> = ({ className = '' }) => {
     }
   };
 
-  const userInitials = profile?.first_name && profile?.last_name
-    ? `${profile.first_name.charAt(0)}${profile.last_name.charAt(0)}`
+  const userInitials = profile?.firstName && profile?.lastName
+    ? `${profile.firstName.charAt(0)}${profile.lastName.charAt(0)}`
     : session?.user?.email?.charAt(0).toUpperCase() || 'U';
 
-  const userName = profile?.first_name && profile?.last_name
-    ? `${profile.first_name} ${profile.last_name}`
+  const userName = profile?.firstName && profile?.lastName
+    ? `${profile.firstName} ${profile.lastName}`
     : session?.user?.email || 'Bruker';
 
   return (

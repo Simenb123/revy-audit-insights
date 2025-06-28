@@ -1,13 +1,23 @@
+
 import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import RevyAvatar from './RevyAvatar';
 
 const AssistantSidebar = () => {
   return (
-    <div className="flex items-center gap-2 p-3 border-b bg-gray-50">
-      <RevyAvatar size="sm" variant="chat" />
-      <span className="font-semibold text-sm">AI-Revi</span>
-      <span className="ml-1 h-2 w-2 bg-green-500 rounded-full" />
-    </div>
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base flex items-center gap-2">
+          <RevyAvatar size="sm" />
+          AI-Revi Assistent
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p className="text-sm text-muted-foreground">
+          Spør AI-Revi om hjelp med revisjon og regnskapsføring.
+        </p>
+      </CardContent>
+    </Card>
   );
 };
 

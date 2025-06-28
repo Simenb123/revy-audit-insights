@@ -32,8 +32,8 @@ const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
 
   const fetchLastMapping = useCallback(async () => {
     if (!clientId) return null;
-    const { data, error } = await (supabase as any)
-      .from<UploadColumnMapping>('upload_column_mappings')
+    const { data, error } = await supabase
+      .from('upload_column_mappings')
       .select('column_mappings')
       .eq('client_id', clientId)
       .order('created_at', { ascending: false })
@@ -522,8 +522,8 @@ const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
       }
 
       if (clientId) {
-        await (supabase as any)
-          .from<UploadColumnMapping>('upload_column_mappings')
+        await supabase
+          .from('upload_column_mappings')
           .insert({
             client_id: clientId,
             upload_batch_id: batchId,
