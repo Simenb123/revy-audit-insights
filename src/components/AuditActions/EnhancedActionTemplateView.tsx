@@ -174,7 +174,7 @@ const EnhancedActionTemplateView = ({
                     {phase === 'engagement' ? 'Engasjement' :
                      phase === 'planning' ? 'Planlegging' : 
                      phase === 'execution' ? 'Utførelse' : 
-                     phase === 'conclusion' ? 'Avslutning' : phase}
+                     phase === 'completion' ? 'Avslutning' : phase}
                   </Badge>
                 ))}
               </div>

@@ -102,7 +102,7 @@ const EnhancedActionTemplateList = ({
                 <SelectItem value="engagement">Engasjement</SelectItem>
                 <SelectItem value="planning">Planlegging</SelectItem>
                 <SelectItem value="execution">Utførelse</SelectItem>
-                <SelectItem value="conclusion">Avslutning</SelectItem>
+                <SelectItem value="completion">Avslutning</SelectItem>
               </SelectContent>
             </Select>
 

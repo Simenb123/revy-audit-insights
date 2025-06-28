@@ -26,9 +26,8 @@ const ClientsTable = ({ clients, onRowSelect, selectedClientId }: ClientsTablePr
     engagement: { label: "Oppdrag", variant: "outline" },
     planning: { label: "Planlegging", variant: "secondary" },
     execution: { label: "Gjennomføring", variant: "default" },
-    conclusion: { label: "Avslutning", variant: "success" },
+    completion: { label: "Avslutning", variant: "success" },
     risk_assessment: { label: "Risikovurdering", variant: "warning" },
-    completion: { label: "Fullføring", variant: "success" },
     reporting: { label: "Rapportering", variant: "default" },
     overview: { label: "Oversikt", variant: "secondary" }
   } as const;
