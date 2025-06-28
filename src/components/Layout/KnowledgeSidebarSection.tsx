@@ -1,42 +1,24 @@
-
 import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { FileText } from 'lucide-react';
-import KnowledgeStatusIndicator from '@/components/Revy/KnowledgeStatusIndicator';
-import AiReviCard from './AiReviCard';
+import { useLocation } from 'react-router-dom';
+import SimplifiedSidebarSection from './SimplifiedSidebarSection';
 
-const KnowledgeSidebarSection: React.FC = () => {
+const KnowledgeSidebarSection = () => {
+  const location = useLocation();
+  
+  // Check if we're on a knowledge base page
+  const isKnowledgePage = location.pathname.includes('knowledge');
+  
+  if (!isKnowledgePage) {
+    return null;
+  }
+
   return (
-    <div className="flex flex-col h-full space-y-4 pb-4">
-      <KnowledgeStatusIndicator />
+    <div className="space-y-4">
       
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="w-4 h-4" />
-            Kunnskapsbase
-          </CardTitle>
-          <CardDescription>
-            AI Revi fagstoff og artikler
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-sm">Status</span>
-            <Badge className="bg-green-100 text-green-800">Aktiv</Badge>
-          </div>
-          <div className="text-xs text-muted-foreground">
-            <p>AI Revi kan svare på spørsmål basert på fagartiklene i kunnskapsbasen.</p>
-          </div>
-        </CardContent>
-      </Card>
-
-      <AiReviCard
-        context="knowledge-base"
-        title="AI-Revi Assistent"
-        description="Spør AI-Revi om fagstoff og artikler"
-        className="mt-auto"
+      <SimplifiedSidebarSection
+        title="AI-Revi Kunnskapsbase"
+        description="Spør om revisjonsstandarder og prosedyrer"
+        className="border-l-4 border-l-purple-500"
       />
     </div>
   );

@@ -1,3 +1,4 @@
+
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -16,7 +17,7 @@ vi.mock('@/hooks/knowledge/useSubjectAreas', () => ({
 }));
 
 vi.mock('@/hooks/knowledge/useAuditActionTemplates', () => ({
-  useAuditActionTemplatesBySubjectArea: () => ({ data: [], isLoading: false })
+  useAuditActionTemplatesBySubjectArea: () => ({ data: [] as any[], isLoading: false })
 }));
 
 vi.mock('@/hooks/audit-actions/useActionTemplateCRUD', () => ({
@@ -47,9 +48,8 @@ describe('AuditActionGenerator', () => {
     vi.runAllTimers();
 
     await waitFor(() => {
-      expect(screen.getByPlaceholderText('Navn på handlingen')).toHaveValue(
-        expect.stringContaining('AI-generert handling for')
-      );
+      const nameInput = screen.getByPlaceholderText('Navn på handlingen') as HTMLInputElement;
+      expect(nameInput.value).toContain('AI-generert handling for');
     });
   });
 

@@ -1,37 +1,69 @@
-import React, { useState } from 'react';
-import { Outlet } from 'react-router-dom';
-import Sidebar from './Sidebar'
-import AppHeader from './AppHeader'
-import AssistantSidebar from '../RightSidebar/AssistantSidebar'
-import { ChatUIProvider } from '@/store/chatUI'
+
+import React, { useEffect, useState } from 'react';
+import { Outlet, useLocation, Navigate } from 'react-router-dom';
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
+import { useAuth } from '@/components/Auth/AuthProvider';
+import { useUserProfile } from '@/hooks/useUserProfile';
+import AppHeader from './AppHeader';
+import Sidebar from './Sidebar';
+import ResizableRightSidebar from './ResizableRightSidebar';
+import PageLoader from './PageLoader';
+import OnboardingCheck from './OnboardingCheck';
+import { RightSidebarProvider } from './RightSidebarContext';
 
 const AppLayout = () => {
-  const [isLeftSidebarCollapsed, setIsLeftSidebarCollapsed] = useState(false);
+  const { session } = useAuth();
+  const { data: profile, isLoading: profileLoading } = useUserProfile();
+  const location = useLocation();
+  const [leftPanelSize, setLeftPanelSize] = useState(20);
 
+  useEffect(() => {
+    console.log('AppLayout mounted, session:', !!session, 'profile loading:', profileLoading);
+  }, [session, profileLoading]);
 
-  const toggleLeftSidebar = () => {
-    setIsLeftSidebarCollapsed(!isLeftSidebarCollapsed);
-  };
+  if (!session) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  if (profileLoading) {
+    return <PageLoader message="Laster brukerdata..." />;
+  }
+
+  if (!profile?.first_name || !profile?.last_name) {
+    return <OnboardingCheck />;
+  }
 
   return (
-    <ChatUIProvider>
-      <div className="min-h-screen bg-background grid grid-cols-[auto_1fr_auto] grid-rows-[auto_1fr]">
-        <AppHeader className="col-span-3" />
-        <div
-          className="grid grid-cols-[auto_1fr] lg:grid-cols-[auto_1fr_auto] flex-1"
-          style={{ height: 'calc(100vh - var(--header-height))' }}
-        >
-          <Sidebar
-            isCollapsed={isLeftSidebarCollapsed}
-            onToggle={toggleLeftSidebar}
-          />
-          <main className="overflow-y-auto">
-            <Outlet />
-          </main>
-          <AssistantSidebar />
+    <RightSidebarProvider>
+      <div className="h-screen flex flex-col bg-background">
+        <AppHeader />
+        
+        <div className="flex-1 overflow-hidden">
+          <ResizablePanelGroup direction="horizontal" className="h-full">
+            <ResizablePanel 
+              defaultSize={leftPanelSize} 
+              minSize={15} 
+              maxSize={30}
+              onResize={setLeftPanelSize}
+            >
+              <Sidebar />
+            </ResizablePanel>
+            
+            <ResizableHandle />
+            
+            <ResizablePanel defaultSize={50} minSize={30}>
+              <main className="h-full overflow-auto">
+                <Outlet />
+              </main>
+            </ResizablePanel>
+            
+            <ResizableHandle />
+            
+            <ResizableRightSidebar />
+          </ResizablePanelGroup>
         </div>
       </div>
-    </ChatUIProvider>
+    </RightSidebarProvider>
   );
 };
 

@@ -83,7 +83,7 @@ export function useClientData() {
         let mappedPhase: AuditPhase;
         switch (client.phase as string) {
           case 'conclusion':
-            mappedPhase = 'completion';
+            mappedPhase = 'completion';  // Map conclusion to completion
             break;
           case 'engagement':
           case 'planning':
@@ -92,7 +92,7 @@ export function useClientData() {
           case 'reporting':
           case 'risk_assessment':
           case 'overview':
-            mappedPhase = client.phase;
+            mappedPhase = client.phase as AuditPhase;
             break;
           default:
             mappedPhase = 'overview';

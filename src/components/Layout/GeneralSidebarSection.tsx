@@ -1,17 +1,14 @@
 
 import React from 'react';
-import AiReviCard from './AiReviCard';
+import SimplifiedSidebarSection from './SimplifiedSidebarSection';
 
-const GeneralSidebarSection: React.FC = () => {
+const GeneralSidebarSection = () => {
   return (
-    <div className="flex flex-col h-full pb-4">
-      <AiReviCard
-        context="general"
-        title="AI-Revi Assistent"
-        description="Din smarte revisjonsassistent"
-        className="mt-auto"
-      />
-    </div>
+    <SimplifiedSidebarSection
+      title="AI-Revi Assistent"
+      description="Generell hjelp og veiledning"
+      className="border-l-4 border-l-green-500"
+    />
   );
 };
 

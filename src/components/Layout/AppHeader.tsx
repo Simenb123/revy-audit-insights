@@ -1,69 +1,92 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { MessageSquare } from 'lucide-react';
-import { useIsMobile } from '@/hooks/use-mobile';
-import Logo from './Logo';
-import AppBreadcrumb from './AppBreadcrumb';
+import { Bell, Settings, User } from 'lucide-react';
+import { useAuth } from '@/components/Auth/AuthProvider';
+import { useUserProfile } from '@/hooks/useUserProfile';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AppHeaderProps {
-  onToggleRightSidebar?: () => void;
-  isRightSidebarCollapsed?: boolean;
-  onOpenMobileSidebar?: () => void;
+  className?: string;
 }
 
-const AppHeader = ({ onToggleRightSidebar, isRightSidebarCollapsed, onOpenMobileSidebar }: AppHeaderProps) => {
-  const isMobile = useIsMobile();
+const AppHeader: React.FC<AppHeaderProps> = ({ className = '' }) => {
+  const { session } = useAuth();
+  const { data: profile } = useUserProfile();
+  const navigate = useNavigate();
+
+  const handleSignOut = async () => {
+    try {
+      await supabase.auth.signOut();
+      navigate('/auth');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
+
+  const userInitials = profile?.first_name && profile?.last_name
+    ? `${profile.first_name.charAt(0)}${profile.last_name.charAt(0)}`
+    : session?.user?.email?.charAt(0).toUpperCase() || 'U';
+
+  const userName = profile?.first_name && profile?.last_name
+    ? `${profile.first_name} ${profile.last_name}`
+    : session?.user?.email || 'Bruker';
 
   return (
-    <header
-      className="bg-sidebar border-b border-sidebar-border sticky top-0 z-50 w-full"
-      style={{ height: "var(--header-height)" }}
-    >
-      <div className="flex items-center justify-between px-4" style={{ height: "100%" }}>
-        <div className="flex items-center gap-4">
-          <Logo />
-          {!isMobile && (
-            <div className="border-l border-sidebar-border pl-4">
-              <div className="text-sidebar-foreground">
-                <AppBreadcrumb />
-              </div>
-            </div>
-          )}
-        </div>
+    <header className={`border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 h-12 flex items-center justify-between px-4 ${className}`}>
+      <div className="flex items-center gap-4">
+        <h1 className="text-lg font-semibold">AI-Revi</h1>
+      </div>
+      
+      <div className="flex items-center gap-2">
+        <Button variant="ghost" size="sm">
+          <Bell className="h-4 w-4" />
+        </Button>
         
-        {/* Right Sidebar Toggle / Mobile Trigger */}
-        <div className="flex items-center gap-2">
-          {onToggleRightSidebar && !isMobile && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onToggleRightSidebar}
-              className="h-8 w-8 relative text-sidebar-foreground hover:bg-sidebar-accent"
-              title="Toggle AI-Revi Assistant"
-            >
-              <MessageSquare className="h-4 w-4" />
-              {/* AI indicator */}
-              <div className="absolute -top-1 -right-1 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full p-0.5">
-                <div className="h-2 w-2 bg-white rounded-full" />
-              </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+              <Avatar className="h-8 w-8">
+                <AvatarFallback className="text-xs">
+                  {userInitials}
+                </AvatarFallback>
+              </Avatar>
             </Button>
-          )}
-          {onOpenMobileSidebar && isMobile && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onOpenMobileSidebar}
-              className="h-8 w-8 relative text-sidebar-foreground hover:bg-sidebar-accent"
-              title="Åpne AI-chat"
-            >
-              <MessageSquare className="h-4 w-4" />
-              <div className="absolute -top-1 -right-1 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full p-0.5">
-                <div className="h-2 w-2 bg-white rounded-full" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-56" align="end" forceMount>
+            <DropdownMenuLabel className="font-normal">
+              <div className="flex flex-col space-y-1">
+                <p className="text-sm font-medium leading-none">{userName}</p>
+                <p className="text-xs leading-none text-muted-foreground">
+                  {session?.user?.email}
+                </p>
               </div>
-            </Button>
-          )}
-        </div>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => navigate('/user-profile')}>
+              <User className="mr-2 h-4 w-4" />
+              <span>Profil</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate('/organization-settings')}>
+              <Settings className="mr-2 h-4 w-4" />
+              <span>Innstillinger</span>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={handleSignOut}>
+              Logg ut
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </header>
   );

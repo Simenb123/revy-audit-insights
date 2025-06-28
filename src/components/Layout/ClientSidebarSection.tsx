@@ -1,79 +1,51 @@
-
 import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { FileText, Users, Calendar } from 'lucide-react';
-import AiReviCard from './AiReviCard';
+import { useLocation } from 'react-router-dom';
+import SimplifiedSidebarSection from './SimplifiedSidebarSection';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CircleDollarSign, Users, Building2, Briefcase } from 'lucide-react';
 
-interface ClientSidebarSectionProps {
-  clientId: string;
-  documentsCount: number;
-  categoriesCount: number;
-}
+const ClientSidebarSection = () => {
+  const location = useLocation();
+  
+  // Extract client ID from the URL path
+  const pathSegments = location.pathname.split('/');
+  const clientIdIndex = pathSegments.findIndex(segment => segment === 'client') + 1;
+  const clientId = pathSegments[clientIdIndex];
 
-const ClientSidebarSection: React.FC<ClientSidebarSectionProps> = ({
-  clientId,
-  documentsCount,
-  categoriesCount
-}) => {
+  if (!clientId) {
+    return null;
+  }
+
   return (
-    <div className="flex flex-col h-full space-y-4 pb-4">
+    <div className="space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="w-4 h-4" />
-            Dokumenter
+          <CardTitle className="text-sm font-medium flex items-center gap-2">
+            <Building2 className="w-4 h-4 text-muted-foreground" />
+            Klientstatus
           </CardTitle>
-          <CardDescription>
-            Dokumentstatus for klient
-          </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-sm">Totalt dokumenter</span>
-            <Badge variant="secondary">{documentsCount}</Badge>
+        <CardContent className="p-2 space-y-1">
+          <div className="flex items-center text-xs text-muted-foreground">
+            <CircleDollarSign className="w-3 h-3 mr-1" />
+            Omsetning: <span className="ml-auto font-medium">1.2M</span>
           </div>
-          <div className="flex items-center justify-between">
-            <span className="text-sm">Kategorier</span>
-            <Badge variant="outline">{categoriesCount}</Badge>
+          <div className="flex items-center text-xs text-muted-foreground">
+            <Users className="w-3 h-3 mr-1" />
+            Ansatte: <span className="ml-auto font-medium">25</span>
+          </div>
+          <div className="flex items-center text-xs text-muted-foreground">
+            <Briefcase className="w-3 h-3 mr-1" />
+            Bransje: <span className="ml-auto font-medium">Teknologi</span>
           </div>
         </CardContent>
       </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="w-4 h-4" />
-            Aktivitet
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">
-            Ingen nylig aktivitet
-          </p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="w-4 h-4" />
-            Team
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">
-            Ingen teammedlemmer tilordnet
-          </p>
-        </CardContent>
-      </Card>
-
-      <AiReviCard
-        context="client-detail"
+      
+      <SimplifiedSidebarSection
         clientData={{ id: clientId }}
-        title="AI-Revi Assistent"
-        description="Klientspesifikk revisjonsassistanse"
-        className="mt-auto"
+        title="AI-Revi for klient"
+        description="Spør om denne klienten"
+        className="border-l-4 border-l-blue-500"
       />
     </div>
   );
