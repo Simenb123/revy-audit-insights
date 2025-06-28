@@ -16,6 +16,10 @@ interface ParsedCSVData {
   data: Record<string, string>[];
 }
 
+interface UploadColumnMapping {
+  column_mappings: Record<string, string>;
+}
+
 const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -28,8 +32,8 @@ const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
 
   const fetchLastMapping = useCallback(async () => {
     if (!clientId) return null;
-    const { data, error } = await supabase
-      .from('upload_column_mappings')
+    const { data, error } = await (supabase as any)
+      .from<UploadColumnMapping>('upload_column_mappings')
       .select('column_mappings')
       .eq('client_id', clientId)
       .order('created_at', { ascending: false })
@@ -518,11 +522,13 @@ const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
       }
 
       if (clientId) {
-        await supabase.from('upload_column_mappings').insert({
-          client_id: clientId,
-          upload_batch_id: batchId,
-          column_mappings: mapping
-        });
+        await (supabase as any)
+          .from<UploadColumnMapping>('upload_column_mappings')
+          .insert({
+            client_id: clientId,
+            upload_batch_id: batchId,
+            column_mappings: mapping
+          });
       }
     } catch (error) {
       console.error('Processing error:', error);
