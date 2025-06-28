@@ -65,7 +65,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, submitLa
       name: initialData?.name || '',
       company_name: initialData?.company_name || '',
       org_number: initialData?.org_number || '',
-      phase: initialData?.phase || AuditPhase.Engagement,
+      phase: initialData?.phase || 'engagement',
       progress: initialData?.progress || 0,
       department: initialData?.department || '',
       contact_person: initialData?.contact_person || '',
