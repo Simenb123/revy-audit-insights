@@ -12,7 +12,7 @@ interface RevyMessageListProps {
   compact?: boolean;
 }
 
-const RevyMessageList: React.FC<RevyMessageListProps> = ({ 
+export const RevyMessageList: React.FC<RevyMessageListProps> = ({
   messages, 
   onClearMessages, 
   compact = false 
@@ -67,4 +67,3 @@ const RevyMessageList: React.FC<RevyMessageListProps> = ({
   );
 };
 
-export default RevyMessageList;

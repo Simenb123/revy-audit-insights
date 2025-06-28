@@ -61,10 +61,10 @@ export function useClientDetails(orgNumber: string) {
       let mappedPhase: AuditPhase;
       switch (clientData.phase as any) {
         case 'conclusion':
-          mappedPhase = AuditPhase.Completion;
+          mappedPhase = 'completion';
           break;
         case 'reporting': // Map reporting to a valid phase or handle it
-          mappedPhase = AuditPhase.Reporting;
+          mappedPhase = 'reporting';
           break;
         default:
           mappedPhase = clientData.phase as AuditPhase;
