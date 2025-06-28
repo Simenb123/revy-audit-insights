@@ -2,18 +2,18 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Send } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { RevyMessageList } from './RevyMessageList';
+import { Badge } from '@/components/ui/badge';
+import { Send, Loader2 } from 'lucide-react';
 import { RevyMessage } from '@/types/revio';
+import MessageItem from './MessageItem';
 
 interface EmbeddedRevyAssistantProps {
   messages: RevyMessage[];
   input: string;
   isLoading: boolean;
-  isAnalyzingDocuments?: boolean;
   selectedVariant?: any;
-  contextDisplayName?: string;
+  contextDisplayName: string;
   onInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void;
   onSendMessage: () => void;
@@ -23,7 +23,6 @@ const EmbeddedRevyAssistant: React.FC<EmbeddedRevyAssistantProps> = ({
   messages,
   input,
   isLoading,
-  isAnalyzingDocuments = false,
   selectedVariant,
   contextDisplayName,
   onInputChange,
@@ -31,55 +30,58 @@ const EmbeddedRevyAssistant: React.FC<EmbeddedRevyAssistantProps> = ({
   onSendMessage
 }) => {
   return (
-    <div className="h-full flex flex-col">
+    <div className="flex flex-col h-full max-h-96">
       {/* Context indicator */}
-      {(contextDisplayName || selectedVariant) && (
-        <div className="p-3 border-b bg-gray-50 flex-shrink-0">
-          <div className="text-xs text-gray-600">
-            {contextDisplayName && (
-              <span>Kontekst: {contextDisplayName}</span>
-            )}
-            {selectedVariant && (
-              <span className="ml-2">• {selectedVariant.display_name}</span>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Messages with ScrollArea */}
-      <div className="flex-1 min-h-0">
-        <ScrollArea className="h-full">
-          <div className="p-4">
-            <RevyMessageList
-              messages={messages}
-              isTyping={isLoading}
-              isAnalyzingDocuments={isAnalyzingDocuments}
-              isEmbedded={true}
-              advanced
-            />
-          </div>
-        </ScrollArea>
+      <div className="mb-2">
+        <Badge variant="outline" className="text-xs">
+          {contextDisplayName}
+          {selectedVariant && ` • ${selectedVariant.display_name}`}
+        </Badge>
       </div>
 
-      {/* Input */}
-      <div className="p-3 border-t bg-white flex-shrink-0">
-        <div className="flex gap-2">
-          <Input
-            value={input}
-            onChange={onInputChange}
-            onKeyDown={onKeyDown}
-            placeholder={isAnalyzingDocuments ? "Analyserer dokumenter..." : "Skriv en melding..."}
-            disabled={isLoading}
-            className="flex-1"
-          />
-          <Button 
-            onClick={onSendMessage}
-            disabled={isLoading || !input.trim()}
-            size="icon"
-          >
-            <Send className="h-4 w-4" />
-          </Button>
+      {/* Messages area - compact */}
+      <ScrollArea className="flex-1 mb-3 max-h-48">
+        <div className="space-y-2 pr-2">
+          {messages.length === 0 ? (
+            <div className="text-xs text-muted-foreground p-2 text-center">
+              Spør meg om hjelp med revisjonen
+            </div>
+          ) : (
+            messages.map((message) => (
+              <MessageItem 
+                key={message.id} 
+                message={message} 
+                compact={true}
+              />
+            ))
+          )}
+          {isLoading && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground p-2">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              AI-Revi tenker...
+            </div>
+          )}
         </div>
+      </ScrollArea>
+
+      {/* Input area */}
+      <div className="flex gap-2">
+        <Input
+          value={input}
+          onChange={onInputChange}
+          onKeyDown={onKeyDown}
+          placeholder="Spør AI-Revi..."
+          disabled={isLoading}
+          className="text-sm"
+        />
+        <Button 
+          onClick={onSendMessage} 
+          disabled={!input.trim() || isLoading}
+          size="sm"
+          className="px-2"
+        >
+          <Send className="h-3 w-3" />
+        </Button>
       </div>
     </div>
   );

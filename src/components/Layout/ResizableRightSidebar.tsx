@@ -5,19 +5,18 @@ import { useClientDocuments } from '@/hooks/useClientDocuments';
 import { useClientLookup } from '@/hooks/useClientLookup';
 import { detectPageType, extractClientId } from './pageDetectionHelpers';
 import ResizableHandle from './ResizableHandle';
-import SidebarHeader from './SidebarHeader';
+import CompactSidebarHeader from './CompactSidebarHeader';
 import AdminSidebarSection from './AdminSidebarSection';
 import KnowledgeSidebarSection from './KnowledgeSidebarSection';
-import ClientSidebarSection from './ClientSidebarSection';
+import StreamlinedClientSidebar from './StreamlinedClientSidebar';
 import GeneralSidebarSection from './GeneralSidebarSection';
 import LoadingErrorSection from './LoadingErrorSection';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
-import { MessageSquare } from 'lucide-react';
+import RevyAvatar from '@/components/Revy/RevyAvatar';
 
 import { useRightSidebar } from './RightSidebarContext';
-import RevySidebarFigure from '../Revy/RevySidebarFigure';
 
 const ResizableRightSidebar = () => {
   const { isCollapsed, setIsCollapsed, width, setWidth } = useRightSidebar();
@@ -77,7 +76,6 @@ const ResizableRightSidebar = () => {
     }
   };
 
-
   const renderContent = () => {
     if (pageType === 'admin') {
       return <AdminSidebarSection />;
@@ -92,13 +90,7 @@ const ResizableRightSidebar = () => {
     }
 
     if (clientId) {
-      return (
-        <ClientSidebarSection
-          clientId={clientId}
-          documentsCount={documentsCount}
-          categoriesCount={categoriesCount}
-        />
-      );
+      return <StreamlinedClientSidebar clientId={clientId} />;
     }
 
     return <GeneralSidebarSection />;
@@ -119,13 +111,12 @@ const ResizableRightSidebar = () => {
       >
         {!isCollapsed && (
           <>
-            <SidebarHeader
+            <CompactSidebarHeader
               title={getPageTitle()}
               onToggle={toggleCollapsed}
             />
             <ScrollArea className="flex-1 h-full">
-              <div className="p-4 space-y-4">
-                <RevySidebarFigure />
+              <div className="p-3 space-y-3">
                 {renderContent()}
               </div>
             </ScrollArea>
@@ -135,8 +126,8 @@ const ResizableRightSidebar = () => {
 
       {isCollapsed && (
         <div className="w-[var(--sidebar-width-icon)] border-l bg-background flex flex-col items-center py-4">
-          <Button variant="ghost" size="icon" onClick={toggleCollapsed}>
-            <MessageSquare className="h-5 w-5" />
+          <Button variant="ghost" size="icon" onClick={toggleCollapsed} className="p-1">
+            <RevyAvatar size="sm" />
           </Button>
         </div>
       )}
