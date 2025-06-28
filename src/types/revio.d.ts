@@ -63,7 +63,8 @@ export type Account = {
 };
 export type AccountGroup = { id: string; name: string; accounts: Account[]; balance: number; };
 
-import type { AuditPhase } from './revio';
+// Use the same string literal type as in revio.ts
+export type AuditPhase = 'overview' | 'engagement' | 'planning' | 'risk_assessment' | 'execution' | 'completion' | 'reporting';
 
 // Extended client type for frontend use. It includes related data not on the client table itself.
 type DbClient = Database['public']['Tables']['clients']['Row'];

@@ -17,7 +17,12 @@ interface PhaseContentProps {
 }
 
 const getPhaseInfo = (phase: AuditPhase) => {
-  const phaseMap = {
+  const phaseMap: Record<AuditPhase, {
+    title: string;
+    description: string;
+    icon: any;
+    color: string;
+  }> = {
     overview: {
       title: "Oversikt",
       description: "Klientinformasjon, grunndata og innledende vurderinger",
@@ -36,6 +41,12 @@ const getPhaseInfo = (phase: AuditPhase) => {
       icon: BookOpen,
       color: "bg-orange-100 text-orange-800"
     },
+    risk_assessment: {
+      title: "Risikovurdering",
+      description: "Identifikasjon og vurdering av revisjonsrisiko",
+      icon: Target,
+      color: "bg-yellow-100 text-yellow-800"
+    },
     execution: {
       title: "Utførelse",
       description: "Revisjonshandlinger, testing og dokumentasjon",
@@ -47,6 +58,12 @@ const getPhaseInfo = (phase: AuditPhase) => {
       description: "Rapporter, konklusjon og oppfølging",
       icon: FileText,
       color: "bg-red-100 text-red-800"
+    },
+    reporting: {
+      title: "Rapportering",
+      description: "Ferdigstillelse av revisjonsrapport",
+      icon: FileText,
+      color: "bg-gray-100 text-gray-800"
     }
   };
   return phaseMap[phase] || phaseMap.overview;

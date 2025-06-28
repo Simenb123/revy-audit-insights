@@ -130,17 +130,10 @@ export interface BrregSearchResult {
   registrertIFrivillighetsregisteret: boolean;
 }
 
-export enum AuditPhase {
-  Overview = 'overview',
-  Engagement = 'engagement',
-  Planning = 'planning',
-  RiskAssessment = 'risk_assessment',
-  Execution = 'execution',
-  Completion = 'completion',
-  Reporting = 'reporting'
-}
+// Use string literal type instead of enum for better compatibility
+export type AuditPhase = 'overview' | 'engagement' | 'planning' | 'risk_assessment' | 'execution' | 'completion' | 'reporting';
 
-export const AUDIT_PHASES = Object.values(AuditPhase) as AuditPhase[];
+export const AUDIT_PHASES: AuditPhase[] = ['overview', 'engagement', 'planning', 'risk_assessment', 'execution', 'completion', 'reporting'];
 
 export interface RiskArea {
   name: string;

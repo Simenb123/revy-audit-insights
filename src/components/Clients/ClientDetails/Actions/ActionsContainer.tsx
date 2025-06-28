@@ -59,13 +59,15 @@ const ActionsContainer = ({ clientId, phase }: ActionsContainerProps) => {
     }
   };
 
-  const getPhaseLabel = (phase: AuditPhase) => {
-    const labels = {
+  const getPhaseLabel = (phase: AuditPhase): string => {
+    const labels: Record<AuditPhase, string> = {
       overview: 'Oversikt',
       engagement: 'Oppdragsvurdering',
       planning: 'Planlegging',
+      risk_assessment: 'Risikovurdering',
       execution: 'Utførelse',
-      completion: 'Avslutning'
+      completion: 'Avslutning',
+      reporting: 'Rapportering'
     };
     return labels[phase] || phase;
   };
@@ -115,7 +117,7 @@ const ActionsContainer = ({ clientId, phase }: ActionsContainerProps) => {
               <Clock className="w-4 h-4 text-orange-600" />
               <div>
                 <div className="text-2xl font-bold text-orange-600">{inProgressActions.length}</div>
-                <p className="text-sm text-muted-foreforeground">Pågår</p>
+                <p className="text-sm text-muted-foreground">Pågår</p>
               </div>
             </div>
           </CardContent>
