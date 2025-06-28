@@ -1,11 +1,12 @@
 
-import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { MessageSquare, Send, Minimize2, Maximize2 } from 'lucide-react';
-import RevyAvatar from '@/components/Revy/RevyAvatar';
+import React, { useState } from 'react'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { MessageSquare, Send } from 'lucide-react'
+import RevyAvatar from '@/components/Revy/RevyAvatar'
+import { cn } from '@/lib/utils'
 
 interface AiReviCardProps {
   title: string;
@@ -14,9 +15,8 @@ interface AiReviCardProps {
 }
 
 const AiReviCard: React.FC<AiReviCardProps> = ({ title, description, className = '' }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [message, setMessage] = useState('');
-  const [messages, setMessages] = useState<Array<{ sender: 'user' | 'ai', content: string }>>([]);
+  const [message, setMessage] = useState('')
+  const [messages, setMessages] = useState<Array<{ sender: 'user' | 'ai', content: string }>>([])
 
   const handleSendMessage = () => {
     if (!message.trim()) return;
@@ -37,36 +37,26 @@ const AiReviCard: React.FC<AiReviCardProps> = ({ title, description, className =
   };
 
   return (
-    <Card className={`${className} transition-all duration-300 ${isExpanded ? 'h-96' : 'h-auto'}`}>
+    <Card className={cn('h-full flex flex-col', className)}>
       <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <RevyAvatar size="sm" />
-            <div>
-              <CardTitle className="text-base">{title}</CardTitle>
-              <CardDescription className="text-xs">{description}</CardDescription>
-            </div>
+        <div className="flex items-center gap-2">
+          <RevyAvatar size="sm" />
+          <div>
+            <CardTitle className="text-base">{title}</CardTitle>
+            <CardDescription className="text-xs">{description}</CardDescription>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="h-6 w-6 p-0"
-          >
-            {isExpanded ? <Minimize2 className="h-3 w-3" /> : <Maximize2 className="h-3 w-3" />}
-          </Button>
         </div>
       </CardHeader>
 
-      <CardContent className="pt-0">
-        {isExpanded && messages.length > 0 && (
-          <ScrollArea className="h-48 mb-3 p-2 border rounded-md">
+      <CardContent className="pt-0 flex flex-col flex-1">
+        {messages.length > 0 && (
+          <ScrollArea className="flex-1 mb-3 p-2 border rounded-md">
             <div className="space-y-2">
               {messages.map((msg, index) => (
                 <div key={index} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
                   <div className={`max-w-[80%] p-2 rounded-lg text-sm ${
-                    msg.sender === 'user' 
-                      ? 'bg-primary text-primary-foreground' 
+                    msg.sender === 'user'
+                      ? 'bg-primary text-primary-foreground'
                       : 'bg-muted'
                   }`}>
                     {msg.content}
@@ -77,7 +67,7 @@ const AiReviCard: React.FC<AiReviCardProps> = ({ title, description, className =
           </ScrollArea>
         )}
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 mt-auto">
           <Input
             placeholder="Spør AI-Revi om hjelp..."
             value={message}
