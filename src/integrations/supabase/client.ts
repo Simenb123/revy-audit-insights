@@ -22,7 +22,29 @@ if (!isSupabaseConfigured) {
     'Supabase credentials missing. Set SUPABASE_URL and SUPABASE_ANON_KEY.'
   )
 }
+const logLevel =
+  import.meta.env.VITE_LOG_LEVEL || import.meta.env.LOG_LEVEL || 'info'
+
+const loggingFetch = async (
+  input: RequestInfo | URL,
+  init?: RequestInit
+): Promise<Response> => {
+  const method = init?.method || 'GET'
+  const start = Date.now()
+  const response = await fetch(input, init)
+  if (logLevel === 'debug') {
+    const url = typeof input === 'string' ? input : input.toString()
+    console.log(
+      `\uD83D\uDCE1 [Supabase] ${method} ${url} -> ${response.status} in ${
+        Date.now() - start
+      }ms`
+    )
+  }
+  return response
+}
 
 export const supabase: SupabaseClient<Database> | null = isSupabaseConfigured
-  ? createClient<Database>(supabaseUrl, supabaseAnonKey)
+  ? createClient<Database>(supabaseUrl, supabaseAnonKey, {
+      global: { fetch: loggingFetch }
+    })
   : null
