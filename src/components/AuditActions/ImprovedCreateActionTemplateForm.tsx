@@ -57,7 +57,7 @@ const ImprovedCreateActionTemplateForm = ({
         documentation_requirements: data.documentation_requirements?.trim() || '',
         estimated_hours: data.estimated_hours,
         risk_level: data.risk_level,
-        applicable_phases: data.applicable_phases,
+        applicable_phases: data.applicable_phases as any, // Type assertion for compatibility
         sort_order: data.sort_order,
         is_system_template: false,
         is_active: true

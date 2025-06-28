@@ -1,6 +1,8 @@
 
 import * as z from 'zod';
-import { AUDIT_PHASES, type AuditPhase } from '@/types/revio';
+
+// Define the audit phases as string literals for Zod
+const AUDIT_PHASES_ARRAY = ['overview', 'engagement', 'planning', 'risk_assessment', 'execution', 'completion', 'reporting'] as const;
 
 export const createActionTemplateFormSchema = z.object({
   name: z.string().min(1, 'Navn er påkrevd'),
@@ -12,7 +14,7 @@ export const createActionTemplateFormSchema = z.object({
   documentation_requirements: z.string().optional(),
   estimated_hours: z.number().min(0).optional(),
   risk_level: z.enum(['low', 'medium', 'high']),
-  applicable_phases: z.array(z.enum(AUDIT_PHASES)).min(1, 'Minst én fase må velges'),
+  applicable_phases: z.array(z.enum(AUDIT_PHASES_ARRAY)).min(1, 'Minst én fase må velges'),
   sort_order: z.number().default(0)
 });
 

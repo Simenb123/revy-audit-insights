@@ -91,6 +91,7 @@ export function useClientData() {
           case 'completion':
           case 'reporting':
           case 'risk_assessment':
+          case 'overview':
             mappedPhase = client.phase;
             break;
           default:
