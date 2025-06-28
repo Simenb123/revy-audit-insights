@@ -9,27 +9,46 @@ import { FileText } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useKnowledgeCategories } from '@/hooks/knowledge/useKnowledgeCategories';
 
-const searchArticles = async (query: string, categoryId?: string | null) => {
+const searchArticles = async (
+  query: string,
+  types: string[],
+  areas: string[],
+  categoryId?: string | null
+) => {
   const searchQuery = `%${query}%`;
 
-  let queryBuilder = supabase
+  let db = supabase
     .from('knowledge_articles')
-    .select(`
+    .select(
+      `
       *,
       category:knowledge_categories(name),
+      article_subject_areas(subject_area_id),
       article_tags:knowledge_article_tags(
         id,
         tag:tags(*)
       )
-    `)
-    .or(`title.ilike.${searchQuery},summary.ilike.${searchQuery}`)
+    `
+    )
     .eq('status', 'published');
 
-  if (categoryId) {
-    queryBuilder = queryBuilder.eq('category_id', categoryId);
+  if (query) {
+    db = db.or(`title.ilike.${searchQuery},summary.ilike.${searchQuery}`);
   }
 
-  const { data, error } = await queryBuilder.limit(20);
+  if (types.length) {
+    db = db.in('content_type_id', types);
+  }
+
+  if (areas.length) {
+    db = db.in('article_subject_areas.subject_area_id', areas);
+  }
+
+  if (categoryId) {
+    db = db.eq('category_id', categoryId);
+  }
+
+  const { data, error } = await db.limit(20);
 
   if (error) throw error;
   
@@ -43,16 +62,25 @@ const SearchResults = () => {
   const [searchParams] = useSearchParams();
   const query = searchParams.get('q') || '';
   const categoryId = searchParams.get('category');
+  const types = (searchParams.get('types') || '')
+    .split(',')
+    .map(t => t.trim())
+    .filter(Boolean);
+  const areas = (searchParams.get('areas') || '')
+    .split(',')
+    .map(a => a.trim())
+    .filter(Boolean);
+
   const { data: categories } = useKnowledgeCategories();
   const categoryName = categories?.find(c => c.id === categoryId)?.name;
 
   const { data: articles, isLoading, error } = useQuery({
-    queryKey: ['knowledge-search', query, categoryId],
-    queryFn: () => searchArticles(query, categoryId),
-    enabled: !!query || !!categoryId,
+    queryKey: ['knowledge-search', query, types.join(','), areas.join(','), categoryId],
+    queryFn: () => searchArticles(query, types, areas, categoryId),
+    enabled: !!query || types.length > 0 || areas.length > 0 || !!categoryId,
   });
 
-  if (!query && !categoryId) {
+  if (!query && types.length === 0 && areas.length === 0 && !categoryId) {
     return (
         <div className="text-center p-8">
             <h1 className="text-xl font-semibold">Søk i kunnskapsbasen</h1>
@@ -66,12 +94,11 @@ const SearchResults = () => {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">
-        Søkeresultater
         {query ? (
-          <> for: <span className="text-primary">"{query}"</span></>
+          <>Søkeresultater for: <span className="text-primary">"{query}"</span></>
         ) : categoryName ? (
-          <> i <span className="text-primary">{categoryName}</span></>
-        ) : null}
+          <>Filtrerte artikler i <span className="text-primary">{categoryName}</span></>
+        ) : (types.length > 0 || areas.length > 0 ? 'Filtrerte artikler' : 'Søkeresultater')}
       </h1>
 
       {isLoading && (
@@ -118,6 +145,10 @@ const SearchResults = () => {
                 ) : categoryName ? (
                   <p className="text-muted-foreground mt-2">
                     Vi fant ingen artikler i kategorien "{categoryName}".
+                  </p>
+                ) : types.length > 0 || areas.length > 0 ? (
+                  <p className="text-muted-foreground mt-2">
+                    Vi fant dessverre ingen artikler som matchet de valgte filtrene.
                   </p>
                 ) : null}
                 <p className="text-muted-foreground mt-1">
