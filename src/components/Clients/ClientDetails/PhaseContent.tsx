@@ -31,19 +31,19 @@ const getPhaseInfo = (phase: AuditPhase) => {
     },
     engagement: {
       title: "Oppdragsvurdering",
-      description: "Klientaksept, uavhengighetsvurdering og oppdragsbrev",
+      description: "Klientaksept, uavhengighetsvurdering og engasjementsbrev",
       icon: Users,
       color: "bg-purple-100 text-purple-800"
     },
     planning: {
       title: "Planlegging", 
-      description: "Materialitet, revisjonsstrategi og risikovurdering",
+      description: "Vesentlighetsgrense, revisjonsstrategi og risikovurdering",
       icon: BookOpen,
       color: "bg-orange-100 text-orange-800"
     },
     risk_assessment: {
       title: "Risikovurdering",
-      description: "Identifikasjon og vurdering av revisjonsrisiko",
+      description: "Identifisering og vurdering av revisjonsrisiko",
       icon: Target,
       color: "bg-yellow-100 text-yellow-800"
     },
