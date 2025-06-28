@@ -19,7 +19,7 @@ export interface StandardAccount {
   id: string;
   standard_number: string;
   standard_name: string;
-  account_type: string;
+  account_type: 'asset' | 'liability' | 'equity' | 'revenue' | 'expense';
   category?: string;
   analysis_group?: string;
 }
@@ -83,7 +83,10 @@ export function useStandardAccounts() {
         throw error;
       }
 
-      return data || [];
+      return (data || []).map(a => ({
+        ...a,
+        account_type: a.account_type as StandardAccount['account_type'],
+      }));
     },
   });
 }
