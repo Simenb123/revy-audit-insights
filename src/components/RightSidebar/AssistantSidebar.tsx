@@ -3,24 +3,15 @@ import { Drawer, DrawerContent } from '@/components/ui/drawer'
 import SmartReviAssistant from '@/components/Revy/SmartReviAssistant'
 import { useChatUI } from '@/store/chatUI'
 import { useBreakpoint } from '@/hooks/useBreakpoint'
-import { X } from 'lucide-react'
-import { useRightSidebar } from '@/components/Layout/RightSidebarContext'
 
 
-const SidebarHeader = () => {
-  const { setIsHidden } = useRightSidebar()
-  const hide = () => setIsHidden(v => !v)
-  return (
-    <div className="flex items-center justify-between h-10 px-2 border-b bg-gray-50">
-      <div className="flex items-center gap-2">
-        <span className="font-semibold text-sm">Assistent</span>
-      </div>
-      <button onClick={hide} className="p-2" aria-label="Close sidebar">
-        <X className="h-4 w-4" />
-      </button>
+const SidebarHeader = () => (
+  <div className="flex items-center justify-between h-10 px-2 border-b bg-gray-50">
+    <div className="flex items-center gap-2">
+      <span className="font-semibold text-sm">Assistent</span>
     </div>
-  )
-}
+  </div>
+)
 
 const AssistantBody = () => (
   <div className="flex-grow overflow-y-auto p-0">
@@ -45,7 +36,7 @@ const AssistantSidebar = () => {
   const { collapsed, toggle } = useChatUI()
   const { lg } = useBreakpoint()
 
-  const classes = `flex h-full flex-col w-full bg-white border-l border-gray-200 transition-transform ${collapsed ? 'translate-x-full' : ''}`
+  const classes = `flex h-full flex-col w-full bg-white ${collapsed ? 'translate-x-full' : ''}`
 
   if (!lg) {
     return (
