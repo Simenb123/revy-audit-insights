@@ -1,12 +1,15 @@
+
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, Circle, Clock, TrendingUp, ArrowRight, Info } from 'lucide-react';
+import { CheckCircle, Circle, Clock, TrendingUp, ArrowRight, Info, Target, FileText, Users, BookOpen, Flag } from 'lucide-react';
 import { AuditPhase } from '@/types/revio';
+import { useClientAuditActions } from '@/hooks/useAuditActions';
 
 interface RevisionWorkflowProps {
   currentPhase: AuditPhase;
   progress: number;
   onPhaseClick?: (phase: AuditPhase) => void;
+  clientId?: string;
 }
 
 const phases = [
@@ -21,29 +24,35 @@ const phases = [
     key: 'engagement' as AuditPhase, 
     label: 'Oppdragsvurdering', 
     description: 'Klientaksept og oppdragsbrev',
-    number: 1
+    number: 1,
+    icon: Users
   },
   { 
     key: 'planning' as AuditPhase, 
     label: 'Planlegging', 
     description: 'Materialitet og revisjonsstrategi',
-    number: 2
+    number: 2,
+    icon: BookOpen
   },
   { 
     key: 'execution' as AuditPhase, 
     label: 'Utførelse', 
     description: 'Testing og dokumentasjon',
-    number: 3
+    number: 3,
+    icon: Target
   },
   { 
     key: 'completion' as AuditPhase, 
     label: 'Avslutning', 
     description: 'Rapporter og konklusjon',
-    number: 4
+    number: 4,
+    icon: Flag
   }
 ];
 
-const RevisionWorkflow = ({ currentPhase, progress, onPhaseClick }: RevisionWorkflowProps) => {
+const RevisionWorkflow = ({ currentPhase, progress, onPhaseClick, clientId }: RevisionWorkflowProps) => {
+  const { data: clientActions = [] } = useClientAuditActions(clientId || '');
+
   const getCurrentPhaseIndex = () => {
     return phases.findIndex(phase => phase.key === currentPhase);
   };
@@ -60,6 +69,14 @@ const RevisionWorkflow = ({ currentPhase, progress, onPhaseClick }: RevisionWork
     const baseProgress = (currentIndex / (phases.length - 1)) * 100;
     const phaseProgress = (progress / 100) * (100 / phases.length);
     return Math.min(baseProgress + phaseProgress, 100);
+  };
+
+  const getPhaseActionCount = (phaseKey: AuditPhase) => {
+    return clientActions.filter(action => action.phase === phaseKey).length;
+  };
+
+  const getPhaseCompletedActions = (phaseKey: AuditPhase) => {
+    return clientActions.filter(action => action.phase === phaseKey && action.status === 'completed').length;
   };
 
   return (
@@ -93,18 +110,20 @@ const RevisionWorkflow = ({ currentPhase, progress, onPhaseClick }: RevisionWork
         </div>
       </div>
 
-      {/* Phase steps - now with equal sizing */}
+      {/* Phase steps - now with equal sizing and action counts */}
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
         {phases.map((phase, index) => {
           const status = getPhaseStatus(index);
           const isClickable = onPhaseClick;
           const IconComponent = phase.icon;
+          const actionCount = getPhaseActionCount(phase.key);
+          const completedCount = getPhaseCompletedActions(phase.key);
           
           return (
             <div key={phase.key} className="relative">
               <div
                 className={`
-                  relative p-4 rounded-xl border-2 transition-all duration-300 group cursor-pointer hover:scale-105 hover:shadow-xl min-h-[140px] flex flex-col justify-between
+                  relative p-4 rounded-xl border-2 transition-all duration-300 group cursor-pointer hover:scale-105 hover:shadow-xl min-h-[160px] flex flex-col justify-between
                   ${status === 'current' 
                     ? 'border-blue-500 bg-blue-50 shadow-xl transform scale-105' 
                     : status === 'completed'
@@ -142,13 +161,27 @@ const RevisionWorkflow = ({ currentPhase, progress, onPhaseClick }: RevisionWork
                   }`}>
                     {phase.label}
                   </h3>
-                  <p className={`text-sm ${
+                  <p className={`text-sm mb-3 ${
                     status === 'current' ? 'text-blue-700' :
                     status === 'completed' ? 'text-green-700' :
                     'text-gray-500'
                   }`}>
                     {phase.description}
                   </p>
+
+                  {/* Action count display */}
+                  {actionCount > 0 && (
+                    <div className={`text-xs font-medium ${
+                      status === 'current' ? 'text-blue-600' :
+                      status === 'completed' ? 'text-green-600' :
+                      'text-gray-500'
+                    }`}>
+                      <div className="flex items-center gap-1">
+                        <Target className="w-3 h-3" />
+                        <span>{completedCount}/{actionCount} handlinger</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Action indicator */}

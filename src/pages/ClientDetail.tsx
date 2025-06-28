@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Routes, Route, useParams } from 'react-router-dom';
 import { useClientDetails } from '@/hooks/useClientDetails';
@@ -133,6 +134,7 @@ const ClientDetail = () => {
                 currentPhase={client.phase || 'overview'} 
                 progress={client.progress || 0}
                 onPhaseClick={handlePhaseClick}
+                clientId={client.id}
               />
               <PhaseContent phase={selectedPhase} client={client} />
             </div>
