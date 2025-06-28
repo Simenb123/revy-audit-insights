@@ -19,10 +19,10 @@ interface PhaseSelectionProps {
 
 const PhaseSelection = ({ form }: PhaseSelectionProps) => {
   const phaseOptions: { value: AuditPhase; label: string }[] = [
-    { value: AuditPhase.Engagement, label: 'Oppdragsaksept' },
-    { value: AuditPhase.Planning, label: 'Planlegging' },
-    { value: AuditPhase.Execution, label: 'Gjennomføring' },
-    { value: AuditPhase.Completion, label: 'Avslutning' }
+    { value: 'engagement', label: 'Oppdragsaksept' },
+    { value: 'planning', label: 'Planlegging' },
+    { value: 'execution', label: 'Gjennomføring' },
+    { value: 'completion', label: 'Avslutning' }
   ];
 
   return (
