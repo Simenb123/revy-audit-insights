@@ -81,7 +81,7 @@ export function useClientData() {
         }
 
         let mappedPhase: AuditPhase;
-        switch (client.phase) {
+        switch (client.phase as string) {
           case 'conclusion':
             mappedPhase = 'completion';
             break;
