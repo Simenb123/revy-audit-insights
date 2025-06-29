@@ -21,6 +21,12 @@ type SidebarContext = {
 
 const SidebarContext = React.createContext<SidebarContext | null>(null)
 
+/**
+ * Custom hook to access sidebar state and actions from {@link SidebarProvider}.
+ *
+ * @throws Error if used outside of the provider.
+ * @returns {SidebarContext} Sidebar context value.
+ */
 export function useSidebar() {
   const context = React.useContext(SidebarContext)
   if (!context) {
@@ -33,6 +39,14 @@ export function useSidebar() {
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
 
+/**
+ * Provider component managing sidebar open/collapse state.
+ *
+ * @param {React.ComponentProps<'div'> & { defaultOpen?: boolean; open?: boolean; onOpenChange?: (open: boolean) => void }} props
+ *   Props controlling sidebar behaviour.
+ * @param {React.Ref<HTMLDivElement>} ref - Forwarded ref to the wrapper element.
+ * @returns {JSX.Element} Wrapper that supplies sidebar context.
+ */
 export const SidebarProvider = React.forwardRef<
   HTMLDivElement,
   React.ComponentProps<"div"> & {

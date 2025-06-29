@@ -50,6 +50,13 @@ const RevyContextContext = createContext<{
   resetContext: () => void;
 } | undefined>(undefined);
 
+/**
+ * Provides application-wide state management for the Revy assistant.
+ *
+ * @param {Object} props - Component properties.
+ * @param {React.ReactNode} props.children - Child components that require access to the context.
+ * @returns {JSX.Element} Wrapper element that supplies the context to its children.
+ */
 export const RevyContextProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(revyContextReducer, initialState);
 
@@ -86,6 +93,12 @@ export const RevyContextProvider: React.FC<{ children: React.ReactNode }> = ({ c
   );
 };
 
+/**
+ * Hook for consuming the Revy context provided by {@link RevyContextProvider}.
+ *
+ * @throws Error if used outside of the provider.
+ * @returns {object} Revy context value with state and action handlers.
+ */
 export const useRevyContext = () => {
   const context = useContext(RevyContextContext);
   if (!context) {

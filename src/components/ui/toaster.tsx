@@ -8,6 +8,11 @@ import {
   ToastViewport,
 } from "@/components/ui/toast"
 
+/**
+ * Renders toast notifications queued via the `useToast` hook.
+ *
+ * @returns {JSX.Element} Toast provider with all active toasts.
+ */
 export function Toaster() {
   const { toasts } = useToast()
 

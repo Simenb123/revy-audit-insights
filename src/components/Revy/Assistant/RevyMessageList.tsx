@@ -13,6 +13,16 @@ interface RevyMessageListProps {
   isTyping?: boolean;
 }
 
+/**
+ * Displays a list of messages from the Revy assistant.
+ *
+ * @param {RevyMessageListProps} props - Component props.
+ * @param {RevyMessage[]} props.messages - Messages to display.
+ * @param {() => void} [props.onClearMessages] - Optional handler to clear all messages.
+ * @param {boolean} [props.compact] - Renders a more condensed layout when true.
+ * @param {boolean} [props.isTyping] - Shows a typing indicator when true.
+ * @returns {JSX.Element} List of messages with optional controls.
+ */
 export const RevyMessageList: React.FC<RevyMessageListProps> = ({
   messages,
   onClearMessages,

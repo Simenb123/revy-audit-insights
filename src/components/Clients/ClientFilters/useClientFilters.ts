@@ -2,6 +2,12 @@ import { logger } from '@/utils/logger';
 import { useState, useMemo } from 'react';
 import { Client } from '@/types/revio';
 
+/**
+ * Client list filtering hook used in the clients module.
+ *
+ * @param {Client[]} clients - Array of clients to filter.
+ * @returns {object} Filter state values and helper functions.
+ */
 export function useClientFilters(clients: Client[]) {
   const [searchTerm, setSearchTerm] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState('all');
