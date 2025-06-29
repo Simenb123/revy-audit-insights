@@ -1,0 +1,605 @@
+openapi: 3.0.3
+info:
+  title: AI Revy Edge Functions API
+  version: 1.0.0
+servers:
+  - url: https://{project}.supabase.co
+    variables:
+      project:
+        default: your-project
+paths:
+  /functions/v1/brreg:
+    post:
+      summary: Fetch company details from Brønnøysundregistrene
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BrregRequest'
+      responses:
+        '200':
+          description: Company information
+          content:
+            application/json:
+              schema:
+                type: object
+                description: Arbitrary company information
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /functions/v1/revy-ai-chat:
+    post:
+      summary: Chat with the AI assistant
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatRequest'
+      responses:
+        '200':
+          description: AI chat response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /functions/v1/knowledge-search:
+    post:
+      summary: Search knowledge articles
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KnowledgeSearchRequest'
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KnowledgeSearchResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /functions/v1/pdf-text-extractor:
+    post:
+      summary: Extract text from a PDF file
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocumentIdRequest'
+      responses:
+        '200':
+          description: Extraction result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PDFTextExtractorResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /functions/v1/enhanced-pdf-text-extractor:
+    post:
+      summary: Extract text from PDFs and Office documents
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocumentIdRequest'
+      responses:
+        '200':
+          description: Extraction result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PDFTextExtractorResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /functions/v1/document-ai-analyzer:
+    post:
+      summary: Analyze extracted document text with AI
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocumentAIAnalyzerRequest'
+      responses:
+        '200':
+          description: Analysis result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentAIAnalyzerResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /functions/v1/document-ai-categorizer:
+    post:
+      summary: Suggest document categories based on file name and text
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocumentAICategorizerRequest'
+      responses:
+        '200':
+          description: Categorization result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentAICategorizerResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /functions/v1/pdf-converter:
+    post:
+      summary: Convert PDFs into structured knowledge articles
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PDFConverterRequest'
+      responses:
+        '200':
+          description: Conversion result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PDFConverterResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /functions/v1/generate-embeddings:
+    post:
+      summary: Generate OpenAI embeddings for knowledge articles
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateEmbeddingsRequest'
+      responses:
+        '200':
+          description: Generation status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerateEmbeddingsResponse'
+        '400':
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /functions/v1/syncKunngjoring:
+    post:
+      summary: Sync announcements from Brønnøysundregistrene
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SyncKunngjoringRequest'
+      responses:
+        '200':
+          description: Sync result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncKunngjoringResponse'
+        '400':
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /functions/v1/text-to-speech:
+    post:
+      summary: Convert text to speech
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TextToSpeechRequest'
+      responses:
+        '200':
+          description: MP3 audio
+          content:
+            audio/mpeg:
+              schema:
+                type: string
+                format: binary
+        '400':
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /functions/v1/voice-to-text:
+    post:
+      summary: Transcribe audio using OpenAI Whisper
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VoiceToTextRequest'
+      responses:
+        '200':
+          description: Transcription text
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VoiceToTextResponse'
+        '400':
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /functions/v1/enhanced-document-ai:
+    post:
+      summary: Detailed AI analysis of documents
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EnhancedDocumentAIRequest'
+      responses:
+        '200':
+          description: Analysis object
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnhancedDocumentAIResponse'
+        '400':
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /functions/v1/setup-storage:
+    post:
+      summary: Initialize storage bucket
+      requestBody:
+        required: false
+      responses:
+        '200':
+          description: Setup result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SetupStorageResponse'
+        '400':
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        details:
+          type: string
+      required:
+        - error
+    BrregRequest:
+      type: object
+      properties:
+        query:
+          type: string
+      required:
+        - query
+    ChatRequest:
+      type: object
+      properties:
+        message:
+          type: string
+        context:
+          type: string
+        history:
+          type: array
+          items:
+            type: object
+            properties:
+              sender:
+                type: string
+              content:
+                type: string
+        clientData:
+          type: object
+        userRole:
+          type: string
+        sessionId:
+          type: string
+        userId:
+          type: string
+        selectedVariant:
+          type: object
+        systemPrompt:
+          type: string
+        model:
+          type: string
+        knowledgeArticles:
+          type: array
+          items:
+            type: object
+        articleTagMapping:
+          type: object
+      required:
+        - message
+    ChatResponse:
+      type: object
+      properties:
+        response:
+          type: string
+        isError:
+          type: boolean
+        error:
+          type: string
+    KnowledgeSearchRequest:
+      type: object
+      properties:
+        query:
+          type: string
+      required:
+        - query
+    KnowledgeSearchResponse:
+      type: object
+      properties:
+        articles:
+          type: array
+          items:
+            type: object
+        tagMapping:
+          type: object
+    DocumentIdRequest:
+      type: object
+      properties:
+        documentId:
+          type: string
+      required:
+        - documentId
+    PDFTextExtractorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        documentId:
+          type: string
+        textLength:
+          type: integer
+        fileType:
+          type: string
+        message:
+          type: string
+        preview:
+          type: string
+    DocumentAIAnalyzerRequest:
+      type: object
+      properties:
+        documentId:
+          type: string
+        text:
+          type: string
+        fileName:
+          type: string
+      required:
+        - documentId
+        - text
+        - fileName
+    DocumentAIAnalyzerResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        analysis:
+          type: string
+        message:
+          type: string
+    DocumentAICategorizerRequest:
+      type: object
+      properties:
+        documentId:
+          type: string
+        fileName:
+          type: string
+        extractedText:
+          type: string
+      required:
+        - documentId
+        - fileName
+    DocumentAICategorizerResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        category:
+          type: string
+        confidence:
+          type: number
+    PDFConverterRequest:
+      type: object
+      properties:
+        conversionId:
+          type: string
+        filePath:
+          type: string
+        conversionType:
+          type: string
+          enum: [full, summary, checklist]
+        title:
+          type: string
+        categoryId:
+          type: string
+      required:
+        - conversionId
+        - filePath
+        - conversionType
+        - title
+        - categoryId
+    PDFConverterResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        conversionId:
+          type: string
+        articleId:
+          type: string
+        message:
+          type: string
+        contentType:
+          type: string
+    GenerateEmbeddingsRequest:
+      type: object
+      properties:
+        article_id:
+          type: string
+    GenerateEmbeddingsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+    SyncKunngjoringRequest:
+      type: object
+      properties:
+        orgNumbers:
+          type: array
+          items:
+            type: string
+      required:
+        - orgNumbers
+    SyncKunngjoringResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        processed:
+          type: integer
+        inserted:
+          type: integer
+        results:
+          type: array
+          items:
+            type: object
+    TextToSpeechRequest:
+      type: object
+      properties:
+        text:
+          type: string
+        voiceId:
+          type: string
+      required:
+        - text
+    VoiceToTextRequest:
+      type: object
+      properties:
+        audio:
+          type: string
+          description: base64 encoded audio
+      required:
+        - audio
+    VoiceToTextResponse:
+      type: object
+      properties:
+        text:
+          type: string
+    EnhancedDocumentAIRequest:
+      type: object
+      properties:
+        document_text:
+          type: string
+        file_name:
+          type: string
+        client_id:
+          type: string
+        variant_config:
+          type: object
+    EnhancedDocumentAIResponse:
+      type: object
+      properties:
+        suggested_category:
+          type: string
+        confidence_score:
+          type: number
+        analysis_summary:
+          type: string
+    SetupStorageResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        bucketExists:
+          type: boolean

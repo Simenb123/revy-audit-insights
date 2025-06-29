@@ -125,6 +125,12 @@ Kilder og referanser:
 [ISA 315] [Revisorloven] [balanse_2023.pdf]
 ```
 
+## API Documentation
+
+The full list of available edge function endpoints is documented in
+[docs/openapi.yaml](docs/openapi.yaml). Use this OpenAPI specification to
+explore request parameters, response formats and authentication requirements.
+
 ## Support
 
 For technical support or questions about AI Revy, please contact the development team.
