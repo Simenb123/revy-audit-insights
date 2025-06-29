@@ -8,6 +8,16 @@ interface FileDropZoneProps {
   children: React.ReactNode | ((isDragActive: boolean) => React.ReactNode);
 }
 
+/**
+ * Drag-and-drop wrapper for selecting files.
+ *
+ * @param {FileDropZoneProps} props - Component properties.
+ * @param {(files: File[]) => void} props.onFilesSelected - Callback invoked when files are chosen.
+ * @param {DropzoneOptions['accept']} [props.accept] - Allowed MIME types for uploads.
+ * @param {string} [props.className] - Optional additional CSS classes.
+ * @param {React.ReactNode | ((isDragActive: boolean) => React.ReactNode)} props.children - Render prop or node shown inside the drop zone.
+ * @returns {JSX.Element} Styled container that handles file selection.
+ */
 const FileDropZone: React.FC<FileDropZoneProps> = ({
   onFilesSelected,
   accept,

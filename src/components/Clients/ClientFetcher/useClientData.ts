@@ -5,6 +5,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Client, AuditPhase, ClientRole, RiskArea, ClientDocument, Announcement } from '@/types/revio';
 
+/**
+ * Fetches client data along with related roles, announcements and documents.
+ *
+ * @returns {UseQueryResult<Client[]>} React Query object containing the clients data.
+ */
 export function useClientData() {
   return useQuery<Client[]>({
     queryKey: ['clients'],
