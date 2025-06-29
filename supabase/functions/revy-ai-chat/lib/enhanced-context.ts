@@ -49,7 +49,10 @@ export const buildEnhancedContextWithVariant = async (
     log('📤 Sending knowledge search request with context:', knowledgeRequestBody);
 
     const knowledgeResponse = await supabase.functions.invoke('knowledge-search', {
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(req.headers.get('Authorization') && { 'Authorization': req.headers.get('Authorization')! })
+      },
       body: knowledgeRequestBody
     });
 
