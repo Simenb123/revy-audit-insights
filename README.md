@@ -18,6 +18,7 @@ For the document processing pipeline, see [docs/document-workflow.md](docs/docum
 For using the AI-driven audit action generator, see [docs/audit-action-generator.md](docs/audit-action-generator.md).
 For a beginner friendly summary of the code structure, see [docs/modules-overview.md](docs/modules-overview.md).
 For an explanation of the right sidebar and assistant panel, see [docs/sidebar-overview.md](docs/sidebar-overview.md).
+For an overview of the audit phases used throughout the app, see [docs/audit-phases.md](docs/audit-phases.md).
 
 ## Environment Setup
 
