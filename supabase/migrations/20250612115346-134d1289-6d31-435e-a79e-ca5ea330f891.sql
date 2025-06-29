@@ -122,7 +122,7 @@ CREATE POLICY "Admins can manage learning paths"
     EXISTS (
       SELECT 1 FROM public.profiles 
       WHERE id = auth.uid() 
-      AND user_role IN ('admin', 'partner')
+      AND user_role IN ('admin', 'partner', 'employee')
     )
   );
 
@@ -139,7 +139,7 @@ CREATE POLICY "Managers can view enrollments in their firm"
       JOIN public.profiles p2 ON p1.audit_firm_id = p2.audit_firm_id
       WHERE p1.id = auth.uid() 
       AND p2.id = user_id
-      AND p1.user_role IN ('admin', 'partner', 'manager')
+      AND p1.user_role IN ('admin', 'partner', 'manager', 'employee')
     )
   );
 
@@ -149,7 +149,7 @@ CREATE POLICY "Managers can create enrollments"
     EXISTS (
       SELECT 1 FROM public.profiles 
       WHERE id = auth.uid() 
-      AND user_role IN ('admin', 'partner', 'manager')
+      AND user_role IN ('admin', 'partner', 'manager', 'employee')
     )
   );
 
@@ -172,7 +172,7 @@ CREATE POLICY "Managers can view completions in their firm"
       JOIN public.profiles p2 ON p1.audit_firm_id = p2.audit_firm_id
       WHERE ule.id = enrollment_id 
       AND p2.id = auth.uid()
-      AND p2.user_role IN ('admin', 'partner', 'manager')
+      AND p2.user_role IN ('admin', 'partner', 'manager', 'employee')
     )
   );
 

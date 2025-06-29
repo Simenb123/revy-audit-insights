@@ -139,7 +139,7 @@ CREATE POLICY "Users can create templates in their firm" ON public.audit_action_
 CREATE POLICY "Users can update templates in their firm" ON public.audit_action_templates
   FOR UPDATE USING (
     audit_firm_id = public.get_user_firm(auth.uid()) AND
-    (created_by = auth.uid() OR public.get_user_role(auth.uid()) IN ('admin', 'partner'))
+    (created_by = auth.uid() OR public.get_user_role(auth.uid()) IN ('admin', 'partner', 'employee'))
   );
 
 -- RLS Policies for client_audit_actions
@@ -154,7 +154,7 @@ CREATE POLICY "Users can view client actions for their clients" ON public.client
         WHERE tm.user_id = auth.uid() AND tm.is_active = true
       )
     ) OR
-    public.get_user_role(auth.uid()) IN ('admin', 'partner')
+    public.get_user_role(auth.uid()) IN ('admin', 'partner', 'employee')
   );
 
 CREATE POLICY "Users can create client actions for their clients" ON public.client_audit_actions

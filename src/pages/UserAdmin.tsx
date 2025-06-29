@@ -31,7 +31,10 @@ const UserAdmin = () => {
     departmentId: ''
   });
 
-  const canAccessUserAdmin = userProfile?.userRole === 'admin' || userProfile?.userRole === 'partner';
+  const canAccessUserAdmin =
+    userProfile?.userRole === 'admin' ||
+    userProfile?.userRole === 'partner' ||
+    userProfile?.userRole === 'employee';
 
   const handleCreateTestUsers = async () => {
     if (!userProfile?.auditFirmId || !departments?.length) {
@@ -157,7 +160,7 @@ const UserAdmin = () => {
               <Shield className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <h2 className="text-xl font-semibold mb-2">Tilgang nektet</h2>
               <p className="text-muted-foreground">
-                Du har ikke tilgang til brukeradministrasjon. Kun administratorer og partnere kan administrere brukere.
+                Du har ikke tilgang til brukeradministrasjon. Kun administratorer, partnere og ansatte kan administrere brukere.
               </p>
             </div>
           </CardContent>

@@ -189,7 +189,7 @@ CREATE POLICY "Users can view relevant audit logs" ON public.audit_logs
       JOIN public.team_members tm ON ct.id = tm.team_id
       WHERE tm.user_id = auth.uid() AND tm.is_active = true
     ) OR
-    public.get_user_role(auth.uid()) IN ('admin', 'partner')
+    public.get_user_role(auth.uid()) IN ('admin', 'partner', 'employee')
   );
 
 -- Insert policies for team communications

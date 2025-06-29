@@ -32,7 +32,7 @@ USING (
         JOIN public.clients c ON caa.client_id = c.id
         LEFT JOIN public.departments d ON c.department_id = d.id
         WHERE caa.id = document_versions.client_audit_action_id
-    ) OR get_user_role(auth.uid()) IN ('admin', 'partner')
+    ) OR get_user_role(auth.uid()) IN ('admin', 'partner', 'employee')
 )
 WITH CHECK (
     created_by_user_id = auth.uid()
