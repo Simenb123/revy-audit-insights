@@ -1,6 +1,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
 import { toast } from 'sonner';
 import type { AuditActionTemplate, AuditSubjectArea } from '@/types/audit-actions';
 
@@ -42,7 +43,7 @@ export function useCreateAuditActionTemplate() {
 
       const dataToInsert = {
         ...templateData,
-        applicable_phases: mappedPhases
+        applicable_phases: mappedPhases as Database['public']['Enums']['audit_phase'][]
       };
 
       const { data, error } = await supabase
@@ -75,18 +76,19 @@ export function useUpdateAuditActionTemplate() {
   return useMutation({
     mutationFn: async ({ id, ...updates }: { id: string } & Partial<AuditActionTemplate>) => {
       // Map AuditPhase values to database enum values if applicable_phases is being updated
+      let mappedPhases: Database['public']['Enums']['audit_phase'][] | undefined = undefined;
       if (updates.applicable_phases) {
-        updates.applicable_phases = updates.applicable_phases.map(phase => {
+        mappedPhases = updates.applicable_phases.map(phase => {
           if (phase === 'completion') return 'conclusion';
           if (phase === 'risk_assessment') return 'planning';
           if (phase === 'overview') return 'engagement';
           return phase;
-        }) as any;
+        }) as Database['public']['Enums']['audit_phase'][];
       }
 
       const { data, error } = await supabase
         .from('audit_action_templates')
-        .update(updates)
+        .update({ ...updates, applicable_phases: mappedPhases })
         .eq('id', id)
         .select()
         .single();

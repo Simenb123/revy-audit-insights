@@ -10,12 +10,14 @@ interface RevyMessageListProps {
   messages: RevyMessage[];
   onClearMessages?: () => void;
   compact?: boolean;
+  isTyping?: boolean;
 }
 
 export const RevyMessageList: React.FC<RevyMessageListProps> = ({
-  messages, 
-  onClearMessages, 
-  compact = false 
+  messages,
+  onClearMessages,
+  compact = false,
+  isTyping = false
 }) => {
   if (messages.length === 0) {
     return (
@@ -55,12 +57,15 @@ export const RevyMessageList: React.FC<RevyMessageListProps> = ({
       <ScrollArea className="flex-1">
         <div className="p-2 space-y-1">
           {messages.map((message) => (
-            <RevyMessageItem 
-              key={message.id} 
-              message={message} 
+            <RevyMessageItem
+              key={message.id}
+              message={message}
               compact={compact}
             />
           ))}
+          {isTyping && (
+            <div className="p-2 text-sm text-muted-foreground">Skriver…</div>
+          )}
         </div>
       </ScrollArea>
     </div>

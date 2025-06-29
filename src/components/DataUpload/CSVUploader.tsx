@@ -32,7 +32,7 @@ const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
 
   const fetchLastMapping = useCallback(async () => {
     if (!clientId) return null;
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('upload_column_mappings')
       .select('column_mappings')
       .eq('client_id', clientId)
@@ -522,7 +522,7 @@ const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
       }
 
       if (clientId) {
-        await supabase
+        await (supabase as any)
           .from('upload_column_mappings')
           .insert({
             client_id: clientId,
