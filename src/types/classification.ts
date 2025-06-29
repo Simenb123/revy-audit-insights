@@ -3,7 +3,7 @@ import type { AuditPhase } from './revio';
 export interface Category {
   id: string;
   name: string;
-  slug: string;
+  slug?: string;
   description?: string;
   parent_category_id?: string;
   display_order: number;

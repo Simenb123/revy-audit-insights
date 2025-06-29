@@ -33,12 +33,13 @@ export function useCreateAuditActionTemplate() {
   return useMutation({
     mutationFn: async (templateData: Omit<AuditActionTemplate, 'id' | 'created_at' | 'updated_at'>) => {
       // Map AuditPhase values to database enum values
-      const mappedPhases = templateData.applicable_phases.map(phase => {
-        if (phase === 'completion') return 'conclusion';
-        if (phase === 'risk_assessment') return 'planning';
-        if (phase === 'overview') return 'engagement';
-        return phase;
-      });
+      const mappedPhases: Database['public']['Enums']['audit_phase'][] =
+        templateData.applicable_phases.map(phase => {
+          if (phase === 'completion') return 'conclusion';
+          if (phase === 'risk_assessment') return 'planning';
+          if (phase === 'overview') return 'engagement';
+          return phase;
+        }) as any;
 
       const dataToInsert = {
         ...templateData,

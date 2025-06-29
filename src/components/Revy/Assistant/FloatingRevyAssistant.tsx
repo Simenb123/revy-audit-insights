@@ -110,7 +110,7 @@ export const FloatingRevyAssistant = (props: FloatingRevyAssistantProps) => {
                     </div>
                   )}
 
-                  <RevyMessageList messages={props.messages} isTyping={props.isTyping} />
+                  <RevyMessageList messages={props.messages} />
                   
                   <RevyInput {...inputProps} />
                 </main>

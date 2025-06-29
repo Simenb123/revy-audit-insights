@@ -7,7 +7,7 @@ import { AuditPhase } from '@/types/revio';
 export interface KnowledgeCategory {
   id: string;
   name: string;
-  slug: string;
+  slug?: string;
   description?: string;
   icon?: string;
   parent_category_id?: string;

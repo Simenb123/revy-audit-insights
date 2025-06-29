@@ -24,8 +24,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { AuditPhase } from '@/types/revio';
 import type { Category as BaseCategory } from '@/types/classification';
+import type { Database } from '@/integrations/supabase/types';
 
-interface Category extends Omit<BaseCategory, 'applicable_phases'> {
+interface Category extends Omit<BaseCategory, 'applicable_phases' | 'children'> {
   article_count: number;
   children?: Category[];
   applicable_phases?: string[] | null;
@@ -71,7 +72,7 @@ const ImprovedCategoryManager = () => {
           return {
             ...category,
             article_count: count || 0,
-            slug: category.slug || category.id
+            slug: (category as any).slug || category.id
           };
         })
       );
@@ -103,12 +104,13 @@ const ImprovedCategoryManager = () => {
   const createCategory = useMutation({
     mutationFn: async (categoryData: CategoryFormData) => {
       // Convert applicable_phases to match database enum values
-      const mappedPhases = categoryData.applicable_phases.map(phase => {
-        if (phase === 'completion') return 'conclusion';
-        if (phase === 'risk_assessment') return 'planning';
-        if (phase === 'overview') return 'engagement';
-        return phase;
-      });
+      const mappedPhases: Database['public']['Enums']['audit_phase'][] =
+        categoryData.applicable_phases.map(phase => {
+          if (phase === 'completion') return 'conclusion';
+          if (phase === 'risk_assessment') return 'planning';
+          if (phase === 'overview') return 'engagement';
+          return phase;
+        }) as any;
 
       const dbData = {
         name: categoryData.name,
@@ -141,12 +143,13 @@ const ImprovedCategoryManager = () => {
   const updateCategory = useMutation({
     mutationFn: async ({ id, ...updates }: Partial<CategoryFormData> & { id: string }) => {
       // Convert applicable_phases to match database enum values
-      const mappedPhases = updates.applicable_phases?.map(phase => {
-        if (phase === 'completion') return 'conclusion';
-        if (phase === 'risk_assessment') return 'planning';
-        if (phase === 'overview') return 'engagement';
-        return phase;
-      });
+      const mappedPhases: Database['public']['Enums']['audit_phase'][] | undefined =
+        updates.applicable_phases?.map(phase => {
+          if (phase === 'completion') return 'conclusion';
+          if (phase === 'risk_assessment') return 'planning';
+          if (phase === 'overview') return 'engagement';
+          return phase;
+        }) as any;
 
       const dbUpdates = {
         name: updates.name,

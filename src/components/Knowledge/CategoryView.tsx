@@ -42,7 +42,7 @@ const CategoryView = () => {
 
       console.log('Category fetched:', data);
       // Add slug property if missing
-      return { ...data, slug: data.slug || data.id } as KnowledgeCategory;
+      return { ...data, slug: (data as any).slug || data.id } as KnowledgeCategory;
     },
     enabled: !!categoryIdentifier
   });
@@ -60,7 +60,7 @@ const CategoryView = () => {
 
       if (error) throw error;
       // Add slug property if missing for subcategories
-      return (data || []).map(cat => ({ ...cat, slug: cat.slug || cat.id })) as KnowledgeCategory[];
+      return (data || []).map(cat => ({ ...cat, slug: (cat as any).slug || cat.id })) as KnowledgeCategory[];
     },
     enabled: !!category
   });

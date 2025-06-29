@@ -61,12 +61,7 @@ const StandaloneRevyAssistant = ({
       </CardHeader>
       <CardContent className="p-0 h-full flex-grow flex flex-col">
         <div className="flex-1 min-h-0">
-          <RevyMessageList
-            messages={messages}
-            isTyping={isLoading}
-            isEmbedded={false}
-            advanced
-          />
+          <RevyMessageList messages={messages} isEmbedded={false} advanced />
         </div>
         <div className="p-4 border-t flex-shrink-0">
           <div className="flex items-center space-x-2">
