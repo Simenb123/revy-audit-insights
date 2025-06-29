@@ -10,20 +10,15 @@ import {
 } from '@/components/ui/select';
 import FormFieldWrapper from './FormFields/FormFieldWrapper';
 import { AuditPhase } from '@/types/revio';
+import { phaseLabels } from '@/constants/phaseLabels';
 
 interface ClientDetailsFormProps {
   form: UseFormReturn<any>;
 }
 
-const phaseOptions: { value: AuditPhase; label: string }[] = [
-  { value: 'overview', label: 'Oversikt' },
-  { value: 'engagement', label: 'Oppdragsvurdering' },
-  { value: 'planning', label: 'Planlegging' },
-  { value: 'risk_assessment', label: 'Risikovurdering' },
-  { value: 'execution', label: 'Utførelse' },
-  { value: 'completion', label: 'Avslutning' },
-  { value: 'reporting', label: 'Rapportering' },
-];
+const phaseOptions: { value: AuditPhase; label: string }[] = Object.entries(
+  phaseLabels
+).map(([value, label]) => ({ value: value as AuditPhase, label }));
 
 const ClientDetailsForm = ({ form }: ClientDetailsFormProps) => {
   return (
