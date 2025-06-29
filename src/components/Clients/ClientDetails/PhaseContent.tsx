@@ -3,76 +3,25 @@ import React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Target, FileText, BookOpen, Users } from "lucide-react";
+import { Target, FileText, BookOpen } from "lucide-react";
 import DocumentsContainer from "./Documents/DocumentsContainer";
 import PlanningContainer from "./Planning/PlanningContainer";
 import ActionsContainer from "./Actions/ActionsContainer";
 import { AuditPhase } from "@/types/revio";
 import { Client } from "@/types/revio";
 import { useClientAuditActions } from "@/hooks/useAuditActions";
+import { phaseInfo } from "@/constants/phaseInfo";
 
 interface PhaseContentProps {
   phase: AuditPhase;
   client: Client;
 }
 
-const getPhaseInfo = (phase: AuditPhase) => {
-  const phaseMap: Record<AuditPhase, {
-    title: string;
-    description: string;
-    icon: any;
-    color: string;
-  }> = {
-    overview: {
-      title: "Oversikt",
-      description: "Klientinformasjon, grunndata og innledende vurderinger",
-      icon: BookOpen,
-      color: "bg-blue-100 text-blue-800"
-    },
-    engagement: {
-      title: "Oppdragsvurdering",
-      description: "Klientaksept, uavhengighetsvurdering og engasjementsbrev",
-      icon: Users,
-      color: "bg-purple-100 text-purple-800"
-    },
-    planning: {
-      title: "Planlegging", 
-      description: "Vesentlighetsgrense, revisjonsstrategi og risikovurdering",
-      icon: BookOpen,
-      color: "bg-orange-100 text-orange-800"
-    },
-    risk_assessment: {
-      title: "Risikovurdering",
-      description: "Identifisering og vurdering av revisjonsrisiko",
-      icon: Target,
-      color: "bg-yellow-100 text-yellow-800"
-    },
-    execution: {
-      title: "Utførelse",
-      description: "Revisjonshandlinger, testing og dokumentasjon",
-      icon: Target,
-      color: "bg-green-100 text-green-800"
-    },
-    completion: {
-      title: "Avslutning",
-      description: "Rapporter, konklusjon og oppfølging",
-      icon: FileText,
-      color: "bg-red-100 text-red-800"
-    },
-    reporting: {
-      title: "Rapportering",
-      description: "Ferdigstillelse av revisjonsrapport",
-      icon: FileText,
-      color: "bg-gray-100 text-gray-800"
-    }
-  };
-  return phaseMap[phase] || phaseMap.overview;
-};
 
 const PhaseContent: React.FC<PhaseContentProps> = ({ phase, client }) => {
   const { data: clientActions = [] } = useClientAuditActions(client.id);
-  const phaseInfo = getPhaseInfo(phase);
-  const IconComponent = phaseInfo.icon;
+  const info = phaseInfo[phase];
+  const IconComponent = info.icon;
   
   // Count actions for this phase
   const phaseActions = clientActions.filter(action => action.phase === phase);
@@ -85,18 +34,18 @@ const PhaseContent: React.FC<PhaseContentProps> = ({ phase, client }) => {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className={`p-2 rounded-lg ${phaseInfo.color.split(' ')[0]} bg-opacity-20`}>
-                <IconComponent className={`w-5 h-5 ${phaseInfo.color.split(' ')[1]}`} />
+              <div className={`p-2 rounded-lg ${info.color.split(' ')[0]} bg-opacity-20`}>
+                <IconComponent className={`w-5 h-5 ${info.color.split(' ')[1]}`} />
               </div>
               <div>
                 <CardTitle className="flex items-center gap-2">
-                  {phaseInfo.title}
-                  <Badge className={phaseInfo.color}>
+                  {info.label}
+                  <Badge className={info.color}>
                     Aktiv fase
                   </Badge>
                 </CardTitle>
                 <p className="text-muted-foreground mt-1">
-                  {phaseInfo.description}
+                  {info.description}
                 </p>
               </div>
             </div>
@@ -172,8 +121,8 @@ const PhaseContent: React.FC<PhaseContentProps> = ({ phase, client }) => {
                 <CardTitle className="text-base">Status</CardTitle>
               </CardHeader>
               <CardContent>
-                <Badge className={phaseInfo.color}>
-                  {phaseInfo.title}
+                <Badge className={info.color}>
+                  {info.label}
                 </Badge>
                 <p className="text-sm text-muted-foreground mt-2">
                   Aktiv fase

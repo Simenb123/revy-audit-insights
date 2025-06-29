@@ -1,9 +1,10 @@
 
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, Circle, Clock, TrendingUp, ArrowRight, Info, Target, FileText, Users, BookOpen, Flag } from 'lucide-react';
+import { CheckCircle, TrendingUp, ArrowRight, Target } from 'lucide-react';
 import { AuditPhase } from '@/types/revio';
 import { useClientAuditActions } from '@/hooks/useAuditActions';
+import { phaseInfo } from '@/constants/phaseInfo';
 
 interface RevisionWorkflowProps {
   currentPhase: AuditPhase;
@@ -13,41 +14,11 @@ interface RevisionWorkflowProps {
 }
 
 const phases = [
-  { 
-    key: 'overview' as AuditPhase, 
-    label: 'Oversikt', 
-    description: 'Klientinformasjon og grunndata',
-    number: 0,
-    icon: Info
-  },
-  { 
-    key: 'engagement' as AuditPhase, 
-    label: 'Oppdragsvurdering', 
-    description: 'Klientaksept og oppdragsbrev',
-    number: 1,
-    icon: Users
-  },
-  { 
-    key: 'planning' as AuditPhase, 
-    label: 'Planlegging', 
-    description: 'Materialitet og revisjonsstrategi',
-    number: 2,
-    icon: BookOpen
-  },
-  { 
-    key: 'execution' as AuditPhase, 
-    label: 'Utførelse', 
-    description: 'Testing og dokumentasjon',
-    number: 3,
-    icon: Target
-  },
-  { 
-    key: 'completion' as AuditPhase, 
-    label: 'Avslutning', 
-    description: 'Rapporter og konklusjon',
-    number: 4,
-    icon: Flag
-  }
+  { key: 'overview' as AuditPhase, number: 0 },
+  { key: 'engagement' as AuditPhase, number: 1 },
+  { key: 'planning' as AuditPhase, number: 2 },
+  { key: 'execution' as AuditPhase, number: 3 },
+  { key: 'completion' as AuditPhase, number: 4 }
 ];
 
 const RevisionWorkflow = ({ currentPhase, progress, onPhaseClick, clientId }: RevisionWorkflowProps) => {
@@ -115,7 +86,8 @@ const RevisionWorkflow = ({ currentPhase, progress, onPhaseClick, clientId }: Re
         {phases.map((phase, index) => {
           const status = getPhaseStatus(index);
           const isClickable = onPhaseClick;
-          const IconComponent = phase.icon;
+          const info = phaseInfo[phase.key];
+          const IconComponent = info.icon;
           const actionCount = getPhaseActionCount(phase.key);
           const completedCount = getPhaseCompletedActions(phase.key);
           
@@ -159,14 +131,14 @@ const RevisionWorkflow = ({ currentPhase, progress, onPhaseClick, clientId }: Re
                     status === 'completed' ? 'text-green-900' :
                     'text-gray-700'
                   }`}>
-                    {phase.label}
+                    {info.label}
                   </h3>
                   <p className={`text-sm mb-3 ${
                     status === 'current' ? 'text-blue-700' :
                     status === 'completed' ? 'text-green-700' :
                     'text-gray-500'
                   }`}>
-                    {phase.description}
+                    {info.description}
                   </p>
 
                   {/* Action count display */}
