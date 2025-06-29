@@ -22,6 +22,11 @@ For an explanation of the right sidebar and assistant panel, see [docs/sidebar-o
 For an overview of the audit phases used throughout the app, see [docs/audit-phases.md](docs/audit-phases.md).
 For instructions on managing audit actions, see [docs/manage-audit-actions.md](docs/manage-audit-actions.md).
 For a map of which hooks and services call Supabase edge functions, see [docs/frontend-supabase-flow.md](docs/frontend-supabase-flow.md).
+For client and team features see [docs/client-management.md](docs/client-management.md) and [docs/team-collaboration.md](docs/team-collaboration.md).
+For accounting imports see [docs/accounting-upload-workflow.md](docs/accounting-upload-workflow.md).
+For voice features see [docs/voice-functions.md](docs/voice-functions.md).
+For running tests in CI see [docs/testing-ci.md](docs/testing-ci.md).
+For an overview of the database structure see [docs/database-overview.md](docs/database-overview.md).
 
 ## Environment Setup
 
