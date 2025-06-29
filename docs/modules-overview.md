@@ -34,5 +34,6 @@ Database changes live in `supabase/migrations` as SQL scripts.
 - **cypress** – automated tests that ensure the user interface works correctly.
 - **docs** – documentation for developers and auditors.
 - For how the right sidebar chooses its content see [sidebar-overview.md](sidebar-overview.md).
+- For a list of the audit phases and how templates use them see [audit-phases.md](audit-phases.md).
 
 This overview should help you navigate the project without needing to read the code in detail.
