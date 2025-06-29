@@ -11,6 +11,7 @@ import {
   FormDescription 
 } from '@/components/ui/form';
 import { AuditPhase } from '@/types/revio';
+import { phaseLabels } from '@/constants/phaseLabels';
 import { CreateActionTemplateFormData } from './types';
 
 interface PhaseSelectionProps {
@@ -18,12 +19,13 @@ interface PhaseSelectionProps {
 }
 
 const PhaseSelection = ({ form }: PhaseSelectionProps) => {
-  const phaseOptions: { value: AuditPhase; label: string }[] = [
-    { value: 'engagement', label: 'Oppdragsaksept' },
-    { value: 'planning', label: 'Planlegging' },
-    { value: 'execution', label: 'Gjennomføring' },
-    { value: 'completion', label: 'Avslutning' }
-  ];
+  const phaseOptions: { value: AuditPhase; label: string }[] = Object.entries(
+    phaseLabels
+  )
+    .filter(([value]) =>
+      ['engagement', 'planning', 'execution', 'completion'].includes(value)
+    )
+    .map(([value, label]) => ({ value: value as AuditPhase, label }));
 
   return (
     <FormField

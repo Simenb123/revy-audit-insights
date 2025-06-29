@@ -41,6 +41,7 @@ interface Category {
 }
 
 import type { AuditPhase } from '@/types/revio';
+import { phaseLabels } from '@/constants/phaseLabels';
 
 interface CategoryFormData {
   name: string;
@@ -297,15 +298,9 @@ interface CategoryFormProps {
 }
 
 const CategoryForm: React.FC<CategoryFormProps> = ({ category, onSubmit }) => {
-  const phaseOptions: { value: AuditPhase; label: string }[] = [
-    { value: 'overview', label: 'Oversikt' },
-    { value: 'engagement', label: 'Oppdragsvurdering' },
-    { value: 'planning', label: 'Planlegging' },
-    { value: 'risk_assessment', label: 'Risikovurdering' },
-    { value: 'execution', label: 'Utførelse' },
-    { value: 'completion', label: 'Avslutning' },
-    { value: 'reporting', label: 'Rapportering' },
-  ];
+  const phaseOptions: { value: AuditPhase; label: string }[] = Object.entries(
+    phaseLabels
+  ).map(([value, label]) => ({ value: value as AuditPhase, label }));
   const [formData, setFormData] = useState<CategoryFormData>({
     name: category?.name || '',
     description: category?.description || '',
