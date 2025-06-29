@@ -5,6 +5,13 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { CheckCircle, AlertCircle, FileText, Save } from 'lucide-react';
@@ -15,8 +22,9 @@ interface ChecklistItem {
   id: number;
   description: string;
   applies: 'N' | 'E' | 'N+E';
-  response?: 'JA' | 'NEI' | null;
+  response?: string | null;
   comment?: string;
+  options?: string[];
 }
 
 const checklistItems: ChecklistItem[] = [
@@ -42,31 +50,42 @@ const checklistItems: ChecklistItem[] = [
   },
   {
     id: 5,
+    description: 'Rapporteringsrammeverk - velg standard',
+    applies: 'N+E',
+    options: [
+      'NGAAP små foretak',
+      'NGAAP mellomstore foretak',
+      'NGAAP store foretak',
+      'IFRS',
+    ]
+  },
+  {
+    id: 6,
     description: 'Ledelsen erkjenner ansvar for regnskap, internkontroll og tilgang til info (forhåndsbetingelser)',
     applies: 'N'
   },
   {
-    id: 6,
+    id: 7,
     description: 'Kontakt med forrige revisor gjennomført og svar vurdert',
     applies: 'N'
   },
   {
-    id: 7,
+    id: 8,
     description: 'Tidligere års regnskap + revisjonsberetning innhentet & gjennomgått',
     applies: 'N'
   },
   {
-    id: 8,
+    id: 9,
     description: 'Kundetiltak (AML/KYC) fullført – reelle rettighetshavere, PEP-/sanksjonssøk, ID-verifisering',
     applies: 'N'
   },
   {
-    id: 9,
+    id: 10,
     description: 'Engasjementsbrev utarbeidet og signert av ledelsen',
     applies: 'N'
   },
   {
-    id: 10,
+    id: 11,
     description: 'Formell aksept / fortsettelse dokumentert (sign-off fra oppdragsansvarlig ± kvalitetskontrollør)',
     applies: 'N+E'
   }
@@ -81,6 +100,18 @@ const EngagementChecklist = ({ clientId, clientName }: EngagementChecklistProps)
   const [items, setItems] = useState<ChecklistItem[]>(checklistItems);
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+
+  useEffect(() => {
+    const stored = localStorage.getItem(`engagementChecklist-${clientId}`);
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored) as ChecklistItem[];
+        setItems(parsed);
+      } catch {
+        // ignore parsing errors
+      }
+    }
+  }, [clientId]);
 
   const getAppliesBadgeColor = (applies: string) => {
     switch (applies) {
@@ -118,8 +149,12 @@ const EngagementChecklist = ({ clientId, clientName }: EngagementChecklistProps)
   const saveAssessment = async () => {
     setIsSaving(true);
     try {
-      // In a real implementation, this would save to Supabase
-      // For now, we'll simulate the save operation
+      // Persist locally for now. Replace with Supabase save when available
+      localStorage.setItem(
+        `engagementChecklist-${clientId}`,
+        JSON.stringify(items)
+      );
+
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       setLastSaved(new Date());
@@ -206,20 +241,38 @@ const EngagementChecklist = ({ clientId, clientName }: EngagementChecklistProps)
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 ml-12">
                   <div>
                     <Label className="text-sm font-medium mb-2 block">Svar</Label>
-                    <RadioGroup
-                      value={item.response || ''}
-                      onValueChange={(value) => updateItem(item.id, 'response', value)}
-                      className="flex gap-6"
-                    >
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="JA" id={`ja-${item.id}`} />
-                        <Label htmlFor={`ja-${item.id}`} className="text-green-700 font-medium">JA</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="NEI" id={`nei-${item.id}`} />
-                        <Label htmlFor={`nei-${item.id}`} className="text-red-700 font-medium">NEI</Label>
-                      </div>
-                    </RadioGroup>
+                    {item.options ? (
+                      <Select
+                        value={item.response || ''}
+                        onValueChange={(value) => updateItem(item.id, 'response', value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Velg" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {item.options.map((opt) => (
+                            <SelectItem key={opt} value={opt}>
+                              {opt}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <RadioGroup
+                        value={item.response || ''}
+                        onValueChange={(value) => updateItem(item.id, 'response', value)}
+                        className="flex gap-6"
+                      >
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="JA" id={`ja-${item.id}`} />
+                          <Label htmlFor={`ja-${item.id}`} className="text-green-700 font-medium">JA</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="NEI" id={`nei-${item.id}`} />
+                          <Label htmlFor={`nei-${item.id}`} className="text-red-700 font-medium">NEI</Label>
+                        </div>
+                      </RadioGroup>
+                    )}
                   </div>
                   
                   <div>
