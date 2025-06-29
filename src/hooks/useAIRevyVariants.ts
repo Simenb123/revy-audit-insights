@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
@@ -53,7 +54,7 @@ export const useAIRevyVariants = (context?: string) => {
         setSelectedVariant(defaultVariant);
       }
     } catch (error) {
-      console.error('Error loading AI-Revi variants:', error);
+      logger.error('Error loading AI-Revi variants:', error);
     } finally {
       setIsLoading(false);
     }

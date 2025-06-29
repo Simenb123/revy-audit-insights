@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -53,7 +54,7 @@ const SmartDocumentSearch: React.FC<SmartDocumentSearchProps> = ({ clientId }) =
       const suggestionData = await generateSearchSuggestions(clientId);
       setSuggestions(suggestionData);
     } catch (error) {
-      console.error('Failed to load search suggestions:', error);
+      logger.error('Failed to load search suggestions:', error);
     }
   };
 
@@ -81,7 +82,7 @@ const SmartDocumentSearch: React.FC<SmartDocumentSearchProps> = ({ clientId }) =
         toast.success(`Fant ${results.length} relevante dokumenter`);
       }
     } catch (error) {
-      console.error('Search error:', error);
+      logger.error('Search error:', error);
       toast.error('Søket feilet - prøv igjen');
     } finally {
       setIsSearching(false);
@@ -132,7 +133,7 @@ const SmartDocumentSearch: React.FC<SmartDocumentSearchProps> = ({ clientId }) =
         toast.success(`AI-søk fant ${results.length} relevante dokumenter med forbedrede kriterier`);
       }
     } catch (error) {
-      console.error('AI-assisted search error:', error);
+      logger.error('AI-assisted search error:', error);
       // Fallback to regular search
       await handleSearch();
     } finally {

@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -26,7 +27,7 @@ export function useClientTeams(clientId?: string) {
       const { data, error } = await query;
 
       if (error) {
-        console.error('Error fetching client teams:', error);
+        logger.error('Error fetching client teams:', error);
         return [];
       }
 

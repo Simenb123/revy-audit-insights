@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState } from 'react';
 import { Editor } from '@tiptap/react';
 import { Bot, Loader2 } from 'lucide-react';
@@ -49,7 +50,7 @@ const ReviAIGroup = ({ editor, client, action }: Props) => {
         actionName: action.name,
       });
     } catch (versionError) {
-       console.error("Could not save pre-AI version:", versionError);
+       logger.error("Could not save pre-AI version:", versionError);
        toast({ title: "Feil", description: "Kunne ikke lagre nåværende versjon før AI-kjøring. Handlingen ble avbrutt.", variant: "destructive" });
        setIsLoading(false);
        return;
@@ -95,7 +96,7 @@ Eksisterende tekst:\n\n${currentContent}`;
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Ukjent feil";
-      console.error("Error getting response from AI-Revi:", error);
+      logger.error("Error getting response from AI-Revi:", error);
       toast({ title: "Feil", description: `Kunne ikke få svar fra AI-Revi: ${errorMessage}`, variant: "destructive" });
       setOriginalContent(null);
     } finally {
@@ -132,7 +133,7 @@ Eksisterende tekst:\n\n${currentContent}`;
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Ukjent feil";
-      console.error("Error approving AI suggestion:", error);
+      logger.error("Error approving AI suggestion:", error);
       toast({ title: "Feil", description: `Kunne ikke lagre AI-forslaget: ${errorMessage}`, variant: "destructive" });
     } finally {
       setAiSuggestion(null);

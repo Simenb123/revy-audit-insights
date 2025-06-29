@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import { Client } from '@/types/revio';
 import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
@@ -17,7 +18,7 @@ export const analyzeAuditProcess = async (
   userRole: string = 'employee'
 ): Promise<AuditProcessInsight> => {
   if (!isSupabaseConfigured || !supabase) {
-    console.error("Supabase is not configured. Analysis cannot proceed.");
+    logger.error("Supabase is not configured. Analysis cannot proceed.");
     throw new Error("Supabase not initialized");
   }
   try {
@@ -28,7 +29,7 @@ export const analyzeAuditProcess = async (
       .eq('client_id', client.id);
 
     if (error) {
-      console.error('Error fetching audit actions:', error);
+      logger.error('Error fetching audit actions:', error);
     }
 
     const actions = auditActions || [];
@@ -64,7 +65,7 @@ export const analyzeAuditProcess = async (
       recommendations
     };
   } catch (error) {
-    console.error('Error analyzing audit process:', error);
+    logger.error('Error analyzing audit process:', error);
     return getDefaultInsight(client.phase || 'planning');
   }
 };

@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -189,7 +190,7 @@ const GeneralLedgerUploader = ({ clientId }: GeneralLedgerUploaderProps) => {
       });
       
     } catch (error: any) {
-      console.error('Upload error:', error);
+      logger.error('Upload error:', error);
       setUploadResult({
         success: false,
         message: error.message || 'Det oppstod en feil under opplastingen',

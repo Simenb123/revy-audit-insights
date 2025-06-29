@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -111,19 +112,19 @@ const DocumentTypeManager = () => {
   });
 
   const handleCreateType = (formData: DocumentTypeFormData) => {
-    console.log('Creating document type:', formData);
+    logger.log('Creating document type:', formData);
     toast.success('Dokumenttype opprettet');
     setCreateDialogOpen(false);
   };
 
   const handleEditType = (formData: DocumentTypeFormData) => {
-    console.log('Editing document type:', formData);
+    logger.log('Editing document type:', formData);
     toast.success('Dokumenttype oppdatert');
     setEditDialogOpen(false);
   };
 
   const handleDeleteType = (typeId: string) => {
-    console.log('Deleting document type:', typeId);
+    logger.log('Deleting document type:', typeId);
     toast.success('Dokumenttype slettet');
   };
 

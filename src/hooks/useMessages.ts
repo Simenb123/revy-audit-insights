@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -58,7 +59,7 @@ export function useMessages(roomId: string) {
         .limit(100);
 
       if (error) {
-        console.error('Error fetching messages:', error);
+        logger.error('Error fetching messages:', error);
         return [];
       }
 

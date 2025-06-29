@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -22,7 +23,7 @@ export function useActionGroups() {
         .order('subject_area, sort_order');
 
       if (error) {
-        console.error('Error fetching action groups:', error);
+        logger.error('Error fetching action groups:', error);
         throw error;
       }
 
@@ -42,7 +43,7 @@ export function useClientAuditActions(clientId: string) {
         .order('subject_area, sort_order');
 
       if (error) {
-        console.error('Error fetching client audit actions:', error);
+        logger.error('Error fetching client audit actions:', error);
         throw error;
       }
 
@@ -75,7 +76,7 @@ export function useCreateClientAuditAction() {
       });
     },
     onError: (error) => {
-      console.error('Error creating client audit action:', error);
+      logger.error('Error creating client audit action:', error);
       toast({
         title: "Feil ved opprettelse",
         description: "Kunne ikke opprette handlingen.",
@@ -108,7 +109,7 @@ export function useUpdateClientAuditAction() {
       });
     },
     onError: (error) => {
-      console.error('Error updating client audit action:', error);
+      logger.error('Error updating client audit action:', error);
       toast({
         title: "Feil ved oppdatering",
         description: "Kunne ikke oppdatere handlingen.",
@@ -169,7 +170,7 @@ export function useCopyActionsFromTemplate() {
       });
     },
     onError: (error) => {
-      console.error('Error copying actions from template:', error);
+      logger.error('Error copying actions from template:', error);
       toast({
         title: "Feil ved kopiering",
         description: "Kunne ikke kopiere handlingene.",

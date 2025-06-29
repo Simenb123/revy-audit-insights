@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,11 +12,11 @@ export function useUserProfile() {
     queryKey: ['userProfile', session?.user?.id],
     queryFn: async (): Promise<UserProfile | null> => {
       if (!session?.user?.id) {
-        console.log('useUserProfile: No session or user ID available');
+        logger.log('useUserProfile: No session or user ID available');
         return null;
       }
       
-      console.log('useUserProfile: Fetching profile for user:', session.user.id);
+      logger.log('useUserProfile: Fetching profile for user:', session.user.id);
       
       const { data, error } = await supabase
         .from('profiles')
@@ -24,16 +25,16 @@ export function useUserProfile() {
         .single();
 
       if (error) {
-        console.error('Error fetching user profile:', error);
+        logger.error('Error fetching user profile:', error);
         throw error;
       }
 
       if (!data) {
-        console.log('useUserProfile: No profile data found');
+        logger.log('useUserProfile: No profile data found');
         return null;
       }
 
-      console.log('useUserProfile: Profile data received:', data);
+      logger.log('useUserProfile: Profile data received:', data);
 
       return {
         id: data.id,

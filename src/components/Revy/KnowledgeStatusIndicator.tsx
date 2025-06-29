@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
 import { Brain, Database, Zap, AlertTriangle, CheckCircle, RefreshCw } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -17,7 +18,7 @@ const KnowledgeStatusIndicator = () => {
 
   const checkEmbeddingStatus = async () => {
     try {
-      console.log('🔍 Checking knowledge base status...');
+      logger.log('🔍 Checking knowledge base status...');
       
       // Count total published articles
       const { count: totalCount } = await supabase
@@ -35,7 +36,7 @@ const KnowledgeStatusIndicator = () => {
       setArticleCount(totalCount || 0);
       setEmbeddedCount(embeddedCount || 0);
 
-      console.log('📊 Knowledge base status:', { totalCount, embeddedCount });
+      logger.log('📊 Knowledge base status:', { totalCount, embeddedCount });
 
       if (totalCount === 0) {
         setEmbeddingStatus('missing');
@@ -52,7 +53,7 @@ const KnowledgeStatusIndicator = () => {
         await testKnowledgeSearch();
       }
     } catch (error) {
-      console.error('❌ Error checking embedding status:', error);
+      logger.error('❌ Error checking embedding status:', error);
       setEmbeddingStatus('error');
       setSearchTestResult('error');
       setLastTestError(error.message || 'Unknown error');
@@ -61,7 +62,7 @@ const KnowledgeStatusIndicator = () => {
 
   const testKnowledgeSearch = async () => {
     try {
-      console.log('🧪 Testing knowledge search functionality...');
+      logger.log('🧪 Testing knowledge search functionality...');
       setSearchTestResult('pending');
       setLastTestError('');
       
@@ -70,24 +71,24 @@ const KnowledgeStatusIndicator = () => {
       });
 
       if (error) {
-        console.error('❌ Knowledge search test failed:', error);
+        logger.error('❌ Knowledge search test failed:', error);
         setSearchTestResult('error');
         setLastTestError(error.message || 'Edge function error');
       } else if (data && data.articles && Array.isArray(data.articles)) {
         if (data.articles.length > 0) {
-          console.log('✅ Knowledge search test successful:', data.articles.length, 'results');
+          logger.log('✅ Knowledge search test successful:', data.articles.length, 'results');
           setSearchTestResult('success');
         } else {
-          console.log('⚠️ Knowledge search returned no results but function works');
+          logger.log('⚠️ Knowledge search returned no results but function works');
           setSearchTestResult('success'); // Function works, just no results for this query
         }
       } else {
-        console.error('❌ Unexpected response format:', data);
+        logger.error('❌ Unexpected response format:', data);
         setSearchTestResult('error');
         setLastTestError('Unexpected response format from search function');
       }
     } catch (error) {
-      console.error('❌ Knowledge search test error:', error);
+      logger.error('❌ Knowledge search test error:', error);
       setSearchTestResult('error');
       setLastTestError(error.message || 'Network or function error');
     }
@@ -107,7 +108,7 @@ const KnowledgeStatusIndicator = () => {
         toast.error(`Feil ved generering: ${result.message}`);
       }
     } catch (error) {
-      console.error('Error generating embeddings:', error);
+      logger.error('Error generating embeddings:', error);
       toast.error('Kunne ikke generere embeddings');
     } finally {
       setIsGenerating(false);

@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -120,7 +121,7 @@ const PDFViewer = ({ document, isOpen, onClose, getDocumentUrl }: PDFViewerProps
                 <Document
                     file={pdfUrl}
                     onLoadSuccess={onDocumentLoadSuccess}
-                    onLoadError={(error) => console.error('Failed to load PDF:', error)}
+                    onLoadError={(error) => logger.error('Failed to load PDF:', error)}
                     loading={<div className="m-auto text-muted-foreground">Laster PDF-dokument...</div>}
                     error={
                         <div className="p-4 text-center m-auto bg-card rounded-lg shadow-md">

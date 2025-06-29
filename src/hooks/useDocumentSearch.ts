@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import { useState, useCallback } from 'react';
 import { 
@@ -27,7 +28,7 @@ export const useDocumentSearch = (clientId: string) => {
       
       return results;
     } catch (error) {
-      console.error('Search failed:', error);
+      logger.error('Search failed:', error);
       throw error;
     } finally {
       setIsSearching(false);
@@ -40,7 +41,7 @@ export const useDocumentSearch = (clientId: string) => {
       setSuggestions(suggestionData);
       return suggestionData;
     } catch (error) {
-      console.error('Failed to load suggestions:', error);
+      logger.error('Failed to load suggestions:', error);
       return [];
     }
   }, [clientId]);

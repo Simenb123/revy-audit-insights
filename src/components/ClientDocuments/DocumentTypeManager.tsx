@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -81,7 +82,7 @@ const DocumentTypeManager = () => {
       });
       refetch();
     } catch (error) {
-      console.error('Error saving document type:', error);
+      logger.error('Error saving document type:', error);
       toast.error('Feil ved lagring');
     }
   };
@@ -99,7 +100,7 @@ const DocumentTypeManager = () => {
       toast.success('Dokumenttype slettet');
       refetch();
     } catch (error) {
-      console.error('Error deleting document type:', error);
+      logger.error('Error deleting document type:', error);
       toast.error('Feil ved sletting');
     }
   };

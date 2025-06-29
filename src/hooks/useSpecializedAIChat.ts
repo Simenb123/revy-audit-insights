@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
@@ -92,7 +93,7 @@ export const useSpecializedAIChat = (actionTemplate: EnhancedAuditActionTemplate
 
       setMessages(prev => [...prev, assistantMsg]);
     } catch (error) {
-      console.error('Error sending message to specialized AI:', error);
+      logger.error('Error sending message to specialized AI:', error);
       toast({
         title: "Feil ved kommunikasjon med AI",
         description: "Kunne ikke sende melding til den spesialiserte assistenten.",

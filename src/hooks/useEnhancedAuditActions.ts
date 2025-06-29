@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -22,7 +23,7 @@ export function useISAStandards() {
         .order('isa_number');
 
       if (error) {
-        console.error('Error fetching ISA standards:', error);
+        logger.error('Error fetching ISA standards:', error);
         throw error;
       }
 
@@ -47,7 +48,7 @@ export function useDocumentRequirements(subjectArea?: string) {
       const { data, error } = await query;
 
       if (error) {
-        console.error('Error fetching document requirements:', error);
+        logger.error('Error fetching document requirements:', error);
         throw error;
       }
 
@@ -75,7 +76,7 @@ export function useWorkingPaperTemplates(subjectArea?: string, actionType?: stri
       const { data, error } = await query;
 
       if (error) {
-        console.error('Error fetching working paper templates:', error);
+        logger.error('Error fetching working paper templates:', error);
         throw error;
       }
 
@@ -105,7 +106,7 @@ export function useEnhancedAuditActionTemplates() {
         .order('subject_area, sort_order');
 
       if (error) {
-        console.error('Error fetching enhanced audit action templates:', error);
+        logger.error('Error fetching enhanced audit action templates:', error);
         throw error;
       }
 
@@ -130,7 +131,7 @@ export function useActionISAMappings(actionTemplateId?: string) {
         .order('relevance_level');
 
       if (error) {
-        console.error('Error fetching action ISA mappings:', error);
+        logger.error('Error fetching action ISA mappings:', error);
         throw error;
       }
 
@@ -156,7 +157,7 @@ export function useActionDocumentMappings(actionTemplateId?: string) {
         .order('timing, is_mandatory desc');
 
       if (error) {
-        console.error('Error fetching action document mappings:', error);
+        logger.error('Error fetching action document mappings:', error);
         throw error;
       }
 
@@ -179,7 +180,7 @@ export function useActionAIMetadata(actionTemplateId?: string) {
         .single();
 
       if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching action AI metadata:', error);
+        logger.error('Error fetching action AI metadata:', error);
         throw error;
       }
 
@@ -212,7 +213,7 @@ export function useCreateActionISAMapping() {
       });
     },
     onError: (error) => {
-      console.error('Error creating action ISA mapping:', error);
+      logger.error('Error creating action ISA mapping:', error);
       toast({
         title: "Feil ved kobling",
         description: "Kunne ikke koble ISA-standarden til handlingen.",
@@ -245,7 +246,7 @@ export function useCreateActionDocumentMapping() {
       });
     },
     onError: (error) => {
-      console.error('Error creating action document mapping:', error);
+      logger.error('Error creating action document mapping:', error);
       toast({
         title: "Feil ved kobling",
         description: "Kunne ikke koble dokumentkravet til handlingen.",
@@ -278,7 +279,7 @@ export function useCreateActionAIMetadata() {
       });
     },
     onError: (error) => {
-      console.error('Error creating action AI metadata:', error);
+      logger.error('Error creating action AI metadata:', error);
       toast({
         title: "Feil ved opprettelse",
         description: "Kunne ikke opprette AI-metadata.",
@@ -311,7 +312,7 @@ export function useCreateWorkingPaperTemplate() {
       });
     },
     onError: (error) => {
-      console.error('Error creating working paper template:', error);
+      logger.error('Error creating working paper template:', error);
       toast({
         title: "Feil ved opprettelse",
         description: "Kunne ikke opprette arbeidspapir-malen.",
@@ -344,7 +345,7 @@ export function useUpdateWorkingPaperTemplate() {
       });
     },
     onError: (error) => {
-      console.error('Error updating working paper template:', error);
+      logger.error('Error updating working paper template:', error);
       toast({
         title: "Feil ved oppdatering",
         description: "Kunne ikke oppdatere malen.",

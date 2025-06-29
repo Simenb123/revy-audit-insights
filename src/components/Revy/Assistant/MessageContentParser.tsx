@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
@@ -90,7 +91,7 @@ export const MessageContentParser = ({
   const [copiedBlocks, setCopiedBlocks] = useState<Set<number>>(new Set());
   const navigate = useNavigate();
 
-  console.log('🔍 MessageContentParser processing content with enhanced categorization:', content.substring(0, 100) + '...');
+  logger.log('🔍 MessageContentParser processing content with enhanced categorization:', content.substring(0, 100) + '...');
 
   let contentToProcess = content;
   let variantInfo: { display_name: string; specialization: string } | null = null;
@@ -108,7 +109,7 @@ export const MessageContentParser = ({
       try {
         variantInfo = JSON.parse(variantMatch[1]);
       } catch (e) {
-        console.error('❌ Failed to parse VARIANT_INFO:', e);
+        logger.error('❌ Failed to parse VARIANT_INFO:', e);
       }
     }
 
@@ -117,7 +118,7 @@ export const MessageContentParser = ({
       try {
         knowledgeArticles = JSON.parse(knowledgeMatch[1]);
       } catch (e) {
-        console.error('Failed to parse KNOWLEDGE_ARTICLES:', e);
+        logger.error('Failed to parse KNOWLEDGE_ARTICLES:', e);
       }
     }
 
@@ -126,7 +127,7 @@ export const MessageContentParser = ({
       try {
         documentReferences = JSON.parse(docRefMatch[1]);
       } catch (e) {
-        console.error('Failed to parse DOCUMENT_REFERENCES:', e);
+        logger.error('Failed to parse DOCUMENT_REFERENCES:', e);
       }
     }
 
@@ -150,7 +151,7 @@ export const MessageContentParser = ({
         });
       }, 2000);
     } catch (err) {
-      console.error('Failed to copy text:', err);
+      logger.error('Failed to copy text:', err);
     }
   };
 
@@ -161,7 +162,7 @@ export const MessageContentParser = ({
       try {
         return JSON.parse(mappingMatch[1]);
       } catch (error) {
-        console.error('❌ Failed to parse article mappings:', error);
+        logger.error('❌ Failed to parse article mappings:', error);
       }
     }
     return {};
@@ -174,7 +175,7 @@ export const MessageContentParser = ({
 
   // Handle tag click with enhanced content type awareness
   const handleTagClick = (tag: string, articleMappings: Record<string, ArticleMapping>) => {
-    console.log('🏷️ Tag clicked:', tag);
+    logger.log('🏷️ Tag clicked:', tag);
     
     // Find exact match first
     let mapping = articleMappings[tag];
@@ -190,17 +191,17 @@ export const MessageContentParser = ({
       
       if (matchingKey) {
         mapping = articleMappings[matchingKey];
-        console.log('🎯 Found partial match for tag:', tag, '→', matchingKey);
+        logger.log('🎯 Found partial match for tag:', tag, '→', matchingKey);
       }
     }
     
     if (mapping && mapping.articleSlug) {
       const contentTypeConfig = getContentTypeConfig(mapping.contentType);
-      console.log('📖 Navigating to article:', mapping.articleTitle, 'Type:', mapping.contentType);
+      logger.log('📖 Navigating to article:', mapping.articleTitle, 'Type:', mapping.contentType);
       navigate(`/fag/artikkel/${mapping.articleSlug}`);
       toast.success(`Åpner ${contentTypeConfig.label.toLowerCase()}: ${mapping.articleTitle}`);
     } else {
-      console.log('❌ No article mapping found for tag:', tag);
+      logger.log('❌ No article mapping found for tag:', tag);
       toast.info(`Søker etter: ${tag}`);
       navigate(`/fag/sok?q=${encodeURIComponent(tag)}`);
     }
@@ -211,17 +212,17 @@ export const MessageContentParser = ({
     const processedElements: React.ReactElement[] = [];
     let currentBlockIndex = 0;
 
-    console.log('🔍 Processing content lines with enhanced categorization:', lines.length);
+    logger.log('🔍 Processing content lines with enhanced categorization:', lines.length);
 
     // Extract article mappings and tags FIRST
     const articleMappings = extractArticleMappings(content);
-    console.log('📎 Extracted article mappings:', Object.keys(articleMappings));
+    logger.log('📎 Extracted article mappings:', Object.keys(articleMappings));
     
     const tagExtraction = extractTagsFromContent(content);
     const extractedTags = tagExtraction.tags;
     const contentTypes = tagExtraction.contentTypes || ['fagartikkel'];
     
-    console.log('🏷️ ENHANCED: Tag extraction result:', {
+    logger.log('🏷️ ENHANCED: Tag extraction result:', {
       tags: extractedTags,
       contentTypes: contentTypes,
       hasValidFormat: tagExtraction.hasValidFormat,
@@ -246,7 +247,7 @@ export const MessageContentParser = ({
 
       // Skip the EMNER line since we'll add it as clickable tags separately
       if (/🏷️.*[Ee][Mm][Nn][Ee][Rr]|[Ee][Mm][Nn][Ee][Rr]:/i.test(trimmedLine)) {
-        console.log('⏭️ Skipping EMNER line, will render separately with content types');
+        logger.log('⏭️ Skipping EMNER line, will render separately with content types');
         continue;
       }
 
@@ -464,17 +465,17 @@ export const MessageContentParser = ({
     }
 
     // Enhanced tags section with better content type visualization
-    console.log('🚨 ENHANCED: Rendering tags section with improved content types...');
+    logger.log('🚨 ENHANCED: Rendering tags section with improved content types...');
     
     let tagsToRender = extractedTags;
     
     // If no tags extracted, use intelligent fallback
     if (!tagsToRender || tagsToRender.length === 0) {
-      console.log('⚠️ No tags extracted, using fallback tags');
+      logger.log('⚠️ No tags extracted, using fallback tags');
       tagsToRender = ['Revisjon', 'Fagstoff']; // Basic fallback
     }
     
-    console.log('🎯 FINAL: Will render these tags with content types:', tagsToRender, 'Content types:', contentTypes);
+    logger.log('🎯 FINAL: Will render these tags with content types:', tagsToRender, 'Content types:', contentTypes);
     
     // ALWAYS add the enhanced clickable tags section
     processedElements.push(
@@ -554,7 +555,7 @@ export const MessageContentParser = ({
       </div>
     );
 
-    console.log('✅ ENHANCED: Created', processedElements.length, 'elements including enhanced tags section with content types');
+    logger.log('✅ ENHANCED: Created', processedElements.length, 'elements including enhanced tags section with content types');
     return processedElements;
   };
 

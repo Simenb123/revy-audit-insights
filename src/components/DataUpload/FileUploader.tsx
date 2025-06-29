@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import React, { useState } from 'react';
 import { 
@@ -108,7 +109,7 @@ const FileUploader = () => {
         }
       );
     } catch (error) {
-      console.error('Error processing file:', error);
+      logger.error('Error processing file:', error);
       setError((error as Error).message || 'Ukjent feil ved prosessering av filen');
       setIsUploading(false);
       addLog(`Fatal error: ${(error as Error).message}`);

@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -98,7 +99,7 @@ VIKTIG: Svar kun med gyldig JSON, ingen ekstra tekst eller formatering.`,
 
       // Try to extract JSON from the response
       const responseText = data.response;
-      console.log('AI Response:', responseText);
+      logger.log('AI Response:', responseText);
       
       // Look for JSON in the response
       let jsonMatch = responseText.match(/\{[\s\S]*?\}/);
@@ -134,16 +135,16 @@ VIKTIG: Svar kun med gyldig JSON, ingen ekstra tekst eller formatering.`,
           
           toast.success('AI-forslag generert');
         } catch (parseError) {
-          console.error('JSON Parse Error:', parseError, 'Raw JSON:', jsonMatch[0]);
+          logger.error('JSON Parse Error:', parseError, 'Raw JSON:', jsonMatch[0]);
           throw new Error('Kunne ikke parse AI-svar som JSON');
         }
       } else {
-        console.error('No JSON found in response:', responseText);
+        logger.error('No JSON found in response:', responseText);
         throw new Error('Ingen gyldig JSON funnet i AI-svar');
       }
 
     } catch (error) {
-      console.error('Error generating suggestions:', error);
+      logger.error('Error generating suggestions:', error);
       toast.error('Feil ved generering av forslag: ' + (error as Error).message);
     } finally {
       setIsLoading(false);

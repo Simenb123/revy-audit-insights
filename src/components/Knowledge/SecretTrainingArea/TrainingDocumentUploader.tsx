@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -58,7 +59,7 @@ const TrainingDocumentUploader = () => {
 
     try {
       // Here we would upload to a special training documents bucket
-      console.log('Uploading training documents:', {
+      logger.log('Uploading training documents:', {
         files: selectedFiles,
         documentType,
         systemSource,

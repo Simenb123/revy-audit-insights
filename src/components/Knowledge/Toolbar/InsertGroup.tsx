@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import React, { useRef, useCallback } from 'react';
 import { Editor } from '@tiptap/react';
@@ -33,7 +34,7 @@ const InsertGroup = ({ editor, onImageUpload, isUploading, onOpenMediaLibrary }:
         }
       } catch (error) {
         // Error is handled by the mutation's onError toast
-        console.error("Upload failed in component:", error);
+        logger.error("Upload failed in component:", error);
       }
     }
   };

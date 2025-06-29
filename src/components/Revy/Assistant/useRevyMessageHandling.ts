@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
@@ -31,7 +32,7 @@ export const useRevyMessageHandling = ({
     const generateSessionId = async () => {
       const newSessionId = uuidv4();
       setSessionId(newSessionId);
-      console.log('💬 New session ID generated:', newSessionId);
+      logger.log('💬 New session ID generated:', newSessionId);
     };
 
     if (!sessionId) {
@@ -112,7 +113,7 @@ Jeg kan hjelpe deg med planlegging og gjennomføring av revisjonshandlinger, ISA
             .order('created_at', { ascending: true });
 
           if (error) {
-            console.error('Error loading messages:', error);
+            logger.error('Error loading messages:', error);
           } else if (data && data.length > 0) {
             const loadedMessages: RevyMessage[] = data.map(msg => ({
               id: msg.id,
@@ -121,7 +122,7 @@ Jeg kan hjelpe deg med planlegging og gjennomføring av revisjonshandlinger, ISA
               timestamp: new Date(msg.created_at),
             }));
             setMessages(loadedMessages);
-            console.log(`💬 Loaded ${loadedMessages.length} previous messages from session ${sessionId}`);
+            logger.log(`💬 Loaded ${loadedMessages.length} previous messages from session ${sessionId}`);
           } else {
             // Add welcome message for new sessions
             const welcomeMessage = getContextualWelcomeMessage(context, clientData);
@@ -141,11 +142,11 @@ Jeg kan hjelpe deg med planlegging og gjennomføring av revisjonshandlinger, ISA
                 content: welcomeMessage
               });
             } catch (saveError) {
-              console.error('Error saving welcome message:', saveError);
+              logger.error('Error saving welcome message:', saveError);
             }
           }
         } catch (error) {
-          console.error('Error loading messages:', error);
+          logger.error('Error loading messages:', error);
         }
       }
     };
@@ -189,7 +190,7 @@ Jeg kan hjelpe deg med planlegging og gjennomføring av revisjonshandlinger, ISA
     setMessages(updatedMessages);
 
     try {
-      console.log(`🤖 Generating AI response with context: ${context} and variant:`, selectedVariant?.name || 'default');
+      logger.log(`🤖 Generating AI response with context: ${context} and variant:`, selectedVariant?.name || 'default');
       
       // Convert RevyMessage[] to RevyChatMessage[] format expected by the enhanced AI service
       const chatHistory: RevyChatMessage[] = updatedMessages.map(msg => ({
@@ -212,7 +213,7 @@ Jeg kan hjelpe deg med planlegging og gjennomføring av revisjonshandlinger, ISA
         selectedVariant
       );
 
-      console.log('🔍 AI response received with context-aware content:', {
+      logger.log('🔍 AI response received with context-aware content:', {
         context: context,
         variant: selectedVariant?.name,
         responseLength: aiResponse.length
@@ -235,12 +236,12 @@ Jeg kan hjelpe deg med planlegging og gjennomføring av revisjonshandlinger, ISA
             { session_id: sessionId, sender: 'revy', content: aiResponse }
           ]);
         } catch (error) {
-          console.error('Error saving messages:', error);
+          logger.error('Error saving messages:', error);
         }
       }
 
     } catch (error) {
-      console.error('Error getting AI response:', error);
+      logger.error('Error getting AI response:', error);
       
       const errorMessage: RevyMessage = {
         id: crypto.randomUUID(),

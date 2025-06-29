@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -25,7 +26,7 @@ export function useDocumentVersions(clientAuditActionId: string | undefined) {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching document versions:', error);
+        logger.error('Error fetching document versions:', error);
         throw error;
       }
 

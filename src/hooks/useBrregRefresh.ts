@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -44,7 +45,7 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
         }
 
         try {
-          console.log(`Fetching data for ${client.name} (${client.org_number})`);
+          logger.log(`Fetching data for ${client.name} (${client.org_number})`);
 
           const functionsUrl =
             import.meta.env.SUPABASE_FUNCTIONS_URL ||
@@ -81,7 +82,7 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
           }
 
           const data = await response.json();
-          console.log(`Received data for ${client.name}:`, data);
+          logger.log(`Received data for ${client.name}:`, data);
           
           if (!data.basis || !data.basis.organisasjonsnummer) {
             failedClients.push(client.name);
@@ -91,18 +92,18 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
           const basis = data.basis;
           const roles = data.roles;
 
-          console.log(`Roles for ${client.name}:`, roles);
+          logger.log(`Roles for ${client.name}:`, roles);
           
           const updateData = formatUpdateData(basis, roles, client);
-          console.log(`Update data for ${client.name}:`, updateData);
+          logger.log(`Update data for ${client.name}:`, updateData);
 
           if (!isDifferent(updateData, client)) {
-            console.log(`No changes for ${client.name}`);
+            logger.log(`No changes for ${client.name}`);
             continue;
           }
 
           anyUpdate = true;
-          console.log(`Updating ${client.name} in database`);
+          logger.log(`Updating ${client.name} in database`);
 
           const { error: updateError, data: updatedData } = await supabase
             .from("clients")
@@ -111,13 +112,13 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
             .select();
 
           if (updateError) {
-            console.error(`Error updating ${client.name}:`, updateError);
+            logger.error(`Error updating ${client.name}:`, updateError);
             failedClients.push(client.name);
             continue;
           }
 
           if (roles && (roles.ceo || roles.chair || (roles.boardMembers && roles.boardMembers.length > 0))) {
-            console.log(`Updating roles for ${client.name}`);
+            logger.log(`Updating roles for ${client.name}`);
             await updateClientRoles(client.id, roles, client.name);
           }
 
@@ -133,7 +134,7 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
               variant: 'destructive',
             });
           } else {
-            console.error(`Error processing ${client.name}:`, error);
+            logger.error(`Error processing ${client.name}:`, error);
           }
           failedClients.push(client.name);
         }
@@ -175,7 +176,7 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
         });
       }
     } catch (error: any) {
-      console.error("General error during refresh:", error);
+      logger.error("General error during refresh:", error);
       toast({
         title: error.name === 'AbortError' ? 'Tilkoblingsfeil' : 'Feil ved oppdatering',
         description: error.name === 'AbortError'

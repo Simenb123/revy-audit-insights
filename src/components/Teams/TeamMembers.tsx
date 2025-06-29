@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import React from 'react';
 import { TeamMember } from '@/types/organization';
@@ -21,7 +22,7 @@ const TeamMembers = ({ teamId, members, onUpdate }: TeamMembersProps) => {
       await removeTeamMemberMutation.mutateAsync(memberId);
       onUpdate();
     } catch (error) {
-      console.error('Error removing team member:', error);
+      logger.error('Error removing team member:', error);
     }
   };
 

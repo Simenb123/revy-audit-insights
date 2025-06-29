@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,7 +16,7 @@ export function useExistingFirm(orgNumber: string) {
         .maybeSingle();
 
       if (error) {
-        console.error('Error checking existing firm:', error);
+        logger.error('Error checking existing firm:', error);
         return null;
       }
 

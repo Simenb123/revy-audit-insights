@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
@@ -36,7 +37,7 @@ export const useSubjectAreaMappings = () => {
       
       setMappings(transformedData);
     } catch (error) {
-      console.error('Error loading subject area mappings:', error);
+      logger.error('Error loading subject area mappings:', error);
     } finally {
       setIsLoading(false);
     }

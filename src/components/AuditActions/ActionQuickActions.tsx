@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -43,7 +44,7 @@ const ActionQuickActions = ({ action, onEdit }: ActionQuickActionsProps) => {
         });
       }
     } catch (error) {
-      console.error('Error updating action status:', error);
+      logger.error('Error updating action status:', error);
     }
   };
 

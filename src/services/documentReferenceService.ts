@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 
@@ -18,11 +19,11 @@ export const searchClientDocuments = async (
   query: string
 ): Promise<DocumentReference[]> => {
   if (!isSupabaseConfigured || !supabase) {
-    console.error("Supabase is not configured. Document search cannot proceed.");
+    logger.error("Supabase is not configured. Document search cannot proceed.");
     return [];
   }
   try {
-    console.log('🔍 Searching client documents for:', { clientId, query });
+    logger.log('🔍 Searching client documents for:', { clientId, query });
 
     const { data, error } = await supabase
       .from('client_documents_files')
@@ -32,7 +33,7 @@ export const searchClientDocuments = async (
       .limit(10);
 
     if (error) {
-      console.error('❌ Error searching documents:', error);
+      logger.error('❌ Error searching documents:', error);
       return [];
     }
 
@@ -49,7 +50,7 @@ export const searchClientDocuments = async (
     }));
 
   } catch (error) {
-    console.error('💥 Failed to search client documents:', error);
+    logger.error('💥 Failed to search client documents:', error);
     return [];
   }
 };
@@ -59,11 +60,11 @@ export const findDocumentByReference = async (
   reference: string
 ): Promise<DocumentReference | null> => {
   if (!isSupabaseConfigured || !supabase) {
-    console.error("Supabase is not configured. Document reference lookup cannot proceed.");
+    logger.error("Supabase is not configured. Document reference lookup cannot proceed.");
     return null;
   }
   try {
-    console.log('🔍 Finding document by reference:', { clientId, reference });
+    logger.log('🔍 Finding document by reference:', { clientId, reference });
     
     // Extract potential document identifiers from reference
     const referencePatterns = extractDocumentIdentifiers(reference);
@@ -74,7 +75,7 @@ export const findDocumentByReference = async (
       .eq('client_id', clientId);
 
     if (error) {
-      console.error('❌ Error finding document:', error);
+      logger.error('❌ Error finding document:', error);
       return null;
     }
 
@@ -96,14 +97,14 @@ export const findDocumentByReference = async (
 
     return null;
   } catch (error) {
-    console.error('💥 Failed to find document by reference:', error);
+    logger.error('💥 Failed to find document by reference:', error);
     return null;
   }
 };
 
 export const getDocumentById = async (documentId: string): Promise<DocumentReference | null> => {
   if (!isSupabaseConfigured || !supabase) {
-    console.error("Supabase is not configured. Document retrieval cannot proceed.");
+    logger.error("Supabase is not configured. Document retrieval cannot proceed.");
     return null;
   }
   try {
@@ -114,7 +115,7 @@ export const getDocumentById = async (documentId: string): Promise<DocumentRefer
       .single();
 
     if (error || !data) {
-      console.error('❌ Error fetching document:', error);
+      logger.error('❌ Error fetching document:', error);
       return null;
     }
 
@@ -130,7 +131,7 @@ export const getDocumentById = async (documentId: string): Promise<DocumentRefer
     };
 
   } catch (error) {
-    console.error('💥 Failed to fetch document:', error);
+    logger.error('💥 Failed to fetch document:', error);
     return null;
   }
 };

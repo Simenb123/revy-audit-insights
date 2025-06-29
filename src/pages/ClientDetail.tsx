@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import React, { useState } from 'react';
 import { Routes, Route, useParams } from 'react-router-dom';
@@ -15,7 +16,7 @@ const ClientDetail = () => {
   const { orgNumber } = useParams<{ orgNumber: string }>();
   const [selectedPhase, setSelectedPhase] = useState<AuditPhase>('overview');
 
-  console.log('🏢 [CLIENT_DETAIL] Component rendered:', {
+  logger.log('🏢 [CLIENT_DETAIL] Component rendered:', {
     orgNumber,
     selectedPhase,
     currentPath: window.location.pathname
@@ -24,7 +25,7 @@ const ClientDetail = () => {
   // Ensure orgNumber exists before making the query
   const { data: client, isLoading, error } = useClientDetails(orgNumber || '');
 
-  console.log('🏢 [CLIENT_DETAIL] Client query result:', {
+  logger.log('🏢 [CLIENT_DETAIL] Client query result:', {
     orgNumber,
     client: client ? {
       id: client.id,
@@ -37,7 +38,7 @@ const ClientDetail = () => {
   });
 
   if (!orgNumber) {
-    console.error('❌ [CLIENT_DETAIL] No orgNumber in URL params');
+    logger.error('❌ [CLIENT_DETAIL] No orgNumber in URL params');
     return (
       <div className="text-center py-12">
         <Alert variant="destructive" className="max-w-md mx-auto">
@@ -51,7 +52,7 @@ const ClientDetail = () => {
   }
 
   if (isLoading) {
-    console.log('⏳ [CLIENT_DETAIL] Loading client data...');
+    logger.log('⏳ [CLIENT_DETAIL] Loading client data...');
     return (
       <div className="space-y-6 p-6">
         <Skeleton className="h-8 w-64" />
@@ -62,7 +63,7 @@ const ClientDetail = () => {
   }
 
   if (error) {
-    console.error('❌ [CLIENT_DETAIL] Error loading client:', error);
+    logger.error('❌ [CLIENT_DETAIL] Error loading client:', error);
     return (
       <div className="text-center py-12">
         <Alert variant="destructive" className="max-w-md mx-auto">
@@ -76,7 +77,7 @@ const ClientDetail = () => {
   }
 
   if (!client) {
-    console.error('❌ [CLIENT_DETAIL] No client found for orgNumber:', orgNumber);
+    logger.error('❌ [CLIENT_DETAIL] No client found for orgNumber:', orgNumber);
     return (
       <div className="text-center py-12">
         <Alert variant="destructive" className="max-w-md mx-auto">
@@ -92,7 +93,7 @@ const ClientDetail = () => {
 
   // Additional validation to ensure we have a valid client ID
   if (!client.id || client.id.trim() === '') {
-    console.error('❌ [CLIENT_DETAIL] Client loaded but ID is missing:', {
+    logger.error('❌ [CLIENT_DETAIL] Client loaded but ID is missing:', {
       client,
       orgNumber
     });
@@ -108,7 +109,7 @@ const ClientDetail = () => {
     );
   }
 
-  console.log('✅ [CLIENT_DETAIL] Client loaded successfully:', {
+  logger.log('✅ [CLIENT_DETAIL] Client loaded successfully:', {
     id: client.id,
     name: client.name,
     company_name: client.company_name,
@@ -117,7 +118,7 @@ const ClientDetail = () => {
   });
 
   const handlePhaseClick = (phase: AuditPhase) => {
-    console.log('🔄 [CLIENT_DETAIL] Phase changed:', { from: selectedPhase, to: phase });
+    logger.log('🔄 [CLIENT_DETAIL] Phase changed:', { from: selectedPhase, to: phase });
     setSelectedPhase(phase);
   };
 

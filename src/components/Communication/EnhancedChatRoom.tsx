@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -137,17 +138,17 @@ const EnhancedChatRoom = ({
 
   const addReaction = (messageId: string, emoji: string) => {
     // Implementer reaksjonsfunksjonalitet
-    console.log(`Adding ${emoji} to message ${messageId}`);
+    logger.log(`Adding ${emoji} to message ${messageId}`);
   };
 
   const pinMessage = (messageId: string) => {
     // Implementer pin-funksjonalitet
-    console.log(`Pinning message ${messageId}`);
+    logger.log(`Pinning message ${messageId}`);
   };
 
   const starMessage = (messageId: string) => {
     // Implementer stjernemarkering
-    console.log(`Starring message ${messageId}`);
+    logger.log(`Starring message ${messageId}`);
   };
 
   const getMessageSender = (senderId: string) => {
@@ -380,7 +381,7 @@ const EnhancedChatRoom = ({
             className="hidden"
             onChange={(e) => {
               // Håndter filopplasting
-              console.log('Files selected:', e.target.files);
+              logger.log('Files selected:', e.target.files);
             }}
           />
         </div>

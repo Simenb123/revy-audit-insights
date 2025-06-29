@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import React from 'react';
 import { useUserProfile } from '@/hooks/useUserProfile';
@@ -13,9 +14,9 @@ const CommunicationStatus = () => {
   const { data: departmentRooms } = useChatRooms('department');
   const { data: firmRooms } = useChatRooms('firm');
 
-  console.log('CommunicationStatus - userProfile:', userProfile);
-  console.log('CommunicationStatus - profileLoading:', profileLoading);
-  console.log('CommunicationStatus - profileError:', profileError);
+  logger.log('CommunicationStatus - userProfile:', userProfile);
+  logger.log('CommunicationStatus - profileLoading:', profileLoading);
+  logger.log('CommunicationStatus - profileError:', profileError);
 
   if (profileLoading) {
     return (

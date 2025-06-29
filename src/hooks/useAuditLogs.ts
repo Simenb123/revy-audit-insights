@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -73,7 +74,7 @@ export function useAuditLogs(params: UseAuditLogsParams = {}) {
       const { data, error } = await query.limit(100);
 
       if (error) {
-        console.error('Error fetching audit logs:', error);
+        logger.error('Error fetching audit logs:', error);
         return [];
       }
 

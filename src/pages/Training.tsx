@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -297,7 +298,7 @@ const Training = () => {
                 scenarioId={selectedScenario}
                 scenarioName={selectedScenarioData.name}
                 onComplete={(feedback) => {
-                  console.log('Voice training completed:', feedback);
+                  logger.log('Voice training completed:', feedback);
                 }}
               />
             )}

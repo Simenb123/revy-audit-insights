@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -158,7 +159,7 @@ const OptimalCategoryStructure = () => {
       for (const [mainCategoryName, mainCategoryData] of Object.entries(optimalStructure)) {
         // Skip if main category already exists
         if (existingNames.has(mainCategoryName)) {
-          console.log(`Hopper over eksisterende hovedkategori: ${mainCategoryName}`);
+          logger.log(`Hopper over eksisterende hovedkategori: ${mainCategoryName}`);
           continue;
         }
         
@@ -176,7 +177,7 @@ const OptimalCategoryStructure = () => {
           .single();
         
         if (mainError) {
-          console.error('Feil ved opprettelse av hovedkategori:', mainError);
+          logger.error('Feil ved opprettelse av hovedkategori:', mainError);
           continue;
         }
         
@@ -186,7 +187,7 @@ const OptimalCategoryStructure = () => {
         for (const [subCategoryName, subCategoryData] of Object.entries(mainCategoryData.children)) {
           // Skip if subcategory already exists
           if (existingNames.has(subCategoryName)) {
-            console.log(`Hopper over eksisterende underkategori: ${subCategoryName}`);
+            logger.log(`Hopper over eksisterende underkategori: ${subCategoryName}`);
             continue;
           }
           
@@ -202,7 +203,7 @@ const OptimalCategoryStructure = () => {
             .single();
           
           if (subError) {
-            console.error('Feil ved opprettelse av underkategori:', subError);
+            logger.error('Feil ved opprettelse av underkategori:', subError);
             continue;
           }
           
@@ -211,7 +212,7 @@ const OptimalCategoryStructure = () => {
           for (const item of subCategoryData.items) {
             // Skip if item already exists
             if (existingNames.has(item)) {
-              console.log(`Hopper over eksisterende element: ${item}`);
+              logger.log(`Hopper over eksisterende element: ${item}`);
               continue;
             }
             
@@ -231,7 +232,7 @@ const OptimalCategoryStructure = () => {
       toast.success('Optimal kategoristruktur implementert! Eksisterende kategorier ble bevart.');
     },
     onError: (error) => {
-      console.error('Implementeringsfeil:', error);
+      logger.error('Implementeringsfeil:', error);
       toast.error(`Feil ved implementering: ${error.message}`);
     }
   });

@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -100,7 +101,7 @@ const AuditActionGenerator = () => {
       try {
         parsed = JSON.parse(aiResponse);
       } catch (parseError) {
-        console.error('Failed to parse AI response:', parseError, aiResponse);
+        logger.error('Failed to parse AI response:', parseError, aiResponse);
         throw new Error('Kunne ikke tolke AI-responsen');
       }
 
@@ -169,7 +170,7 @@ const AuditActionGenerator = () => {
       // Convert the selected subject area to the correct enum value
       const enumSubjectArea = getSubjectAreaEnumValue(selectedSubjectArea);
       
-      console.log('Creating action with enum value:', {
+      logger.log('Creating action with enum value:', {
         ...formData,
         subject_area: enumSubjectArea,
         action_type: selectedActionType,
@@ -206,7 +207,7 @@ const AuditActionGenerator = () => {
         risk_level: 'medium'
       });
     } catch (error) {
-      console.error('Error creating action:', error);
+      logger.error('Error creating action:', error);
     }
   };
 

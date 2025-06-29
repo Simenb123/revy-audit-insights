@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,7 +21,7 @@ const ConversionProgress = ({ onPreview, onRetry }: ConversionProgressProps) => 
       await retryConversion.mutateAsync(jobId);
       onRetry?.(jobId);
     } catch (error) {
-      console.error('Retry failed:', error);
+      logger.error('Retry failed:', error);
     }
   };
 
@@ -28,7 +29,7 @@ const ConversionProgress = ({ onPreview, onRetry }: ConversionProgressProps) => 
     try {
       await deleteConversion.mutateAsync(jobId);
     } catch (error) {
-      console.error('Delete failed:', error);
+      logger.error('Delete failed:', error);
     }
   };
 

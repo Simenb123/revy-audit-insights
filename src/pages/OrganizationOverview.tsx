@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import React from 'react';
 import { useUserProfile } from '@/hooks/useUserProfile';
@@ -13,7 +14,7 @@ const OrganizationOverview = () => {
   const { data: departments = [], isLoading: departmentsLoading } = useDepartments();
   const { data: teams = [], isLoading: teamsLoading } = useClientTeams();
 
-  console.log('OrganizationOverview rendering with profile:', userProfile);
+  logger.log('OrganizationOverview rendering with profile:', userProfile);
 
   if (profileLoading) {
     return (

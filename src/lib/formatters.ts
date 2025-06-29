@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 /**
  * Format a date string to a localized format (Norwegian)
@@ -13,7 +14,7 @@ export function formatDate(dateString: string): string {
       day: '2-digit'
     }).format(date);
   } catch (e) {
-    console.error('Error formatting date:', e);
+    logger.error('Error formatting date:', e);
     return dateString;
   }
 }

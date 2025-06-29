@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import React, { useState } from 'react';
 import { 
@@ -43,7 +44,7 @@ const AccountingOverview = ({ className }: AccountingOverviewProps) => {
   const [activeLineType, setActiveLineType] = useState<'inntekt' | 'kostnad'>('inntekt');
   
   const handleClick = (name: string) => {
-    console.log("Drill down into:", name);
+    logger.log("Drill down into:", name);
     // This would navigate to a detailed view in a real application
   };
   

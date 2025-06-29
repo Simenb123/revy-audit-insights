@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -45,18 +46,18 @@ const SearchTestingPanel = () => {
         .limit(1);
       
       if (error) {
-        console.error('❌ RLS configuration error:', error);
+        logger.error('❌ RLS configuration error:', error);
         setRlsStatus('error');
         toast.error('RLS-konfiguration har problemer');
       } else {
-        console.log('✅ RLS configuration OK, can access published articles');
+        logger.log('✅ RLS configuration OK, can access published articles');
         setRlsStatus('ok');
         if (data && data.length > 0) {
           toast.success('RLS-konfiguration er korrekt! Søk skal nå fungere.');
         }
       }
     } catch (error) {
-      console.error('❌ RLS test failed:', error);
+      logger.error('❌ RLS test failed:', error);
       setRlsStatus('error');
     }
   };
@@ -74,7 +75,7 @@ const SearchTestingPanel = () => {
       }
     } catch (error) {
       toast.error('Helsesjekk feilet');
-      console.error('Health check error:', error);
+      logger.error('Health check error:', error);
     } finally {
       setIsRunningHealth(false);
     }
@@ -90,7 +91,7 @@ const SearchTestingPanel = () => {
       toast.success(`Fullført ${successCount}/${results.length} tester med suksess`);
     } catch (error) {
       toast.error('Syntetiske tester feilet');
-      console.error('Synthetic test error:', error);
+      logger.error('Synthetic test error:', error);
     } finally {
       setIsRunningTests(false);
     }
@@ -111,7 +112,7 @@ const SearchTestingPanel = () => {
       }
     } catch (error) {
       toast.error('Søketest feilet');
-      console.error('Custom query test error:', error);
+      logger.error('Custom query test error:', error);
     } finally {
       setIsTestingCustom(false);
     }

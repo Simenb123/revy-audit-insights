@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import { Client } from "@/types/revio";
 
 export interface BrregBasis {
@@ -38,7 +39,7 @@ export function formatUpdateData(basis: any, roles: any, client: any) {
   const ceoName = roles?.ceo?.name ? fixValue(roles.ceo.name) : null;
   const chairName = roles?.chair?.name ? fixValue(roles.chair.name) : null;
 
-  console.log("Processed CEO and Chair from roles:", { ceoName, chairName });
+  logger.log("Processed CEO and Chair from roles:", { ceoName, chairName });
 
   return {
     name: fixValue(basis.navn) || client.name,

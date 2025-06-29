@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import React, { useEffect, useState } from 'react';
 import { Outlet, useLocation, Navigate } from 'react-router-dom';
@@ -18,7 +19,7 @@ const AppLayout = () => {
   const [leftPanelSize, setLeftPanelSize] = useState(20);
 
   useEffect(() => {
-    console.log('AppLayout mounted, session:', !!session, 'profile loading:', profileLoading);
+    logger.log('AppLayout mounted, session:', !!session, 'profile loading:', profileLoading);
   }, [session, profileLoading]);
 
   if (!session) {

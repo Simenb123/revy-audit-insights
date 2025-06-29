@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -32,7 +33,7 @@ const DocumentInsights: React.FC<DocumentInsightsProps> = ({
         });
         setInsights(generatedInsights);
       } catch (error) {
-        console.error('Failed to generate document insights:', error);
+        logger.error('Failed to generate document insights:', error);
       } finally {
         setIsLoading(false);
       }

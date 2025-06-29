@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -19,7 +20,7 @@ export function useAuditFirm() {
         .single();
 
       if (error) {
-        console.error('Error fetching audit firm:', error);
+        logger.error('Error fetching audit firm:', error);
         return null;
       }
 

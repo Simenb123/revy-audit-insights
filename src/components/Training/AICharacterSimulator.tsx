@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -159,7 +160,7 @@ const AICharacterSimulator = () => {
       });
       
     } catch (error) {
-      console.error('Error starting simulation:', error);
+      logger.error('Error starting simulation:', error);
       toast({
         title: "Feil",
         description: mode === 'audio' ? "Kunne ikke starte simulering. Sjekk mikrofontilgang." : "Kunne ikke starte simulering.",
@@ -215,7 +216,7 @@ const AICharacterSimulator = () => {
       }
       
     } catch (error) {
-      console.error('Error generating AI response:', error);
+      logger.error('Error generating AI response:', error);
       toast({
         title: "Feil",
         description: "Kunne ikke generere AI-svar",
@@ -242,7 +243,7 @@ const AICharacterSimulator = () => {
       await audio.play();
       
     } catch (error) {
-      console.error('Error generating speech:', error);
+      logger.error('Error generating speech:', error);
       // Continue without audio in case of speech generation failure
     }
   };
@@ -276,7 +277,7 @@ const AICharacterSimulator = () => {
       setIsRecording(true);
       
     } catch (error) {
-      console.error('Error starting recording:', error);
+      logger.error('Error starting recording:', error);
       toast({
         title: "Feil",
         description: "Kunne ikke starte opptak",
@@ -311,7 +312,7 @@ const AICharacterSimulator = () => {
       }
       
     } catch (error) {
-      console.error('Error processing recording:', error);
+      logger.error('Error processing recording:', error);
       toast({
         title: "Feil",
         description: "Kunne ikke behandle opptak",

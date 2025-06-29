@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -110,7 +111,7 @@ const CategoryManager = () => {
 
   const deleteCategoryMutation = useMutation({
     mutationFn: async (categoryId: string) => {
-      console.log(`=== STARTING DELETE PROCESS FOR CATEGORY: ${categoryId} ===`);
+      logger.log(`=== STARTING DELETE PROCESS FOR CATEGORY: ${categoryId} ===`);
       
       try {
         // Step 1: Get detailed category info
@@ -121,50 +122,50 @@ const CategoryManager = () => {
           .single();
         
         if (categoryError) {
-          console.error('Error fetching category:', categoryError);
+          logger.error('Error fetching category:', categoryError);
           throw new Error(`Kunne ikke hente kategoriinformasjon: ${categoryError.message}`);
         }
         
-        console.log('Category to delete:', categoryData);
+        logger.log('Category to delete:', categoryData);
         
         // Step 2: Check articles with explicit query
-        console.log('Checking for articles in category...');
+        logger.log('Checking for articles in category...');
         const { data: articlesData, error: articlesError, count: articlesCount } = await supabase
           .from('knowledge_articles')
           .select('id, title, category_id', { count: 'exact', head: true })
           .eq('category_id', categoryId);
         
         if (articlesError) {
-          console.error('Error checking articles:', articlesError);
+          logger.error('Error checking articles:', articlesError);
           throw new Error(`Feil ved sjekk av artikler: ${articlesError.message}`);
         }
         
-        console.log(`Found ${articlesCount} articles:`, articlesData);
+        logger.log(`Found ${articlesCount} articles:`, articlesData);
         
         if (articlesCount && articlesCount > 0) {
           throw new Error(`Kan ikke slette kategori som inneholder ${articlesCount} artikler. Flytt eller slett artiklene først.`);
         }
         
         // Step 3: Check subcategories with explicit query
-        console.log('Checking for subcategories...');
+        logger.log('Checking for subcategories...');
         const { data: subcategoriesData, error: subcategoriesError, count: subcategoriesCount } = await supabase
           .from('knowledge_categories')
           .select('id, name, parent_category_id', { count: 'exact' })
           .eq('parent_category_id', categoryId);
         
         if (subcategoriesError) {
-          console.error('Error checking subcategories:', subcategoriesError);
+          logger.error('Error checking subcategories:', subcategoriesError);
           throw new Error(`Feil ved sjekk av underkategorier: ${subcategoriesError.message}`);
         }
         
-        console.log(`Found ${subcategoriesCount} subcategories:`, subcategoriesData);
+        logger.log(`Found ${subcategoriesCount} subcategories:`, subcategoriesData);
         
         if (subcategoriesCount && subcategoriesCount > 0) {
           throw new Error(`Kan ikke slette kategori som har ${subcategoriesCount} underkategorier. Flytt eller slett underkategoriene først.`);
         }
         
         // Step 4: Perform the actual deletion
-        console.log(`Category ${categoryId} is empty, proceeding with deletion...`);
+        logger.log(`Category ${categoryId} is empty, proceeding with deletion...`);
         
         const { error: deleteError } = await supabase
           .from('knowledge_categories')
@@ -172,27 +173,27 @@ const CategoryManager = () => {
           .eq('id', categoryId);
         
         if (deleteError) {
-          console.error('Delete operation failed:', deleteError);
+          logger.error('Delete operation failed:', deleteError);
           throw new Error(`Sletting feilet: ${deleteError.message}`);
         }
         
-        console.log(`Successfully deleted category ${categoryId}`);
+        logger.log(`Successfully deleted category ${categoryId}`);
         return { success: true, categoryId };
         
       } catch (error) {
-        console.error('Delete process failed:', error);
+        logger.error('Delete process failed:', error);
         throw error;
       }
     },
     onSuccess: (result) => {
-      console.log('Delete mutation successful:', result);
+      logger.log('Delete mutation successful:', result);
       queryClient.invalidateQueries({ queryKey: ['knowledge-categories-all'] });
       toast.success('Kategori slettet successfully!');
       setSelectedCategory(null);
       setIsDeleteDialogOpen(false);
     },
     onError: (error: Error) => {
-      console.error('Delete mutation error:', error);
+      logger.error('Delete mutation error:', error);
       toast.error(`Feil ved sletting: ${error.message}`);
       setIsDeleteDialogOpen(false);
     }
@@ -217,7 +218,7 @@ const CategoryManager = () => {
 
   const deleteEmptySubcategoriesMutation = useMutation({
     mutationFn: async (parentCategoryId: string) => {
-      console.log(`Deleting empty subcategories for parent: ${parentCategoryId}`);
+      logger.log(`Deleting empty subcategories for parent: ${parentCategoryId}`);
       
       const { data: subcategories, error: subcategoriesError } = await supabase
         .from('knowledge_categories')
@@ -229,7 +230,7 @@ const CategoryManager = () => {
       
       let deletedCount = 0;
       for (const subcat of subcategories) {
-        console.log(`Checking subcategory: ${subcat.name} (${subcat.id})`);
+        logger.log(`Checking subcategory: ${subcat.name} (${subcat.id})`);
         
         // Check if subcategory has articles
         const { data: articles, error: articlesError } = await supabase
@@ -238,7 +239,7 @@ const CategoryManager = () => {
           .eq('category_id', subcat.id);
         
         if (articlesError) {
-          console.error(`Error checking articles for category ${subcat.name}:`, articlesError);
+          logger.error(`Error checking articles for category ${subcat.name}:`, articlesError);
           continue;
         }
         
@@ -249,18 +250,18 @@ const CategoryManager = () => {
           .eq('parent_category_id', subcat.id);
         
         if (nestedError) {
-          console.error(`Error checking nested subcategories for ${subcat.name}:`, nestedError);
+          logger.error(`Error checking nested subcategories for ${subcat.name}:`, nestedError);
           continue;
         }
         
         const hasArticles = articles && articles.length > 0;
         const hasNestedCategories = nestedSubcategories && nestedSubcategories.length > 0;
         
-        console.log(`Category ${subcat.name}: articles=${hasArticles}, nested=${hasNestedCategories}`);
+        logger.log(`Category ${subcat.name}: articles=${hasArticles}, nested=${hasNestedCategories}`);
         
         // Only delete if truly empty (no articles and no subcategories)
         if (!hasArticles && !hasNestedCategories) {
-          console.log(`Deleting empty category: ${subcat.name}`);
+          logger.log(`Deleting empty category: ${subcat.name}`);
           
           const { error: deleteError } = await supabase
             .from('knowledge_categories')
@@ -268,13 +269,13 @@ const CategoryManager = () => {
             .eq('id', subcat.id);
           
           if (deleteError) {
-            console.error(`Error deleting category ${subcat.name}:`, deleteError);
+            logger.error(`Error deleting category ${subcat.name}:`, deleteError);
           } else {
             deletedCount++;
-            console.log(`Successfully deleted empty category: ${subcat.name}`);
+            logger.log(`Successfully deleted empty category: ${subcat.name}`);
           }
         } else {
-          console.log(`Skipping category ${subcat.name} - not empty`);
+          logger.log(`Skipping category ${subcat.name} - not empty`);
         }
       }
       
@@ -289,7 +290,7 @@ const CategoryManager = () => {
       }
     },
     onError: (error: Error) => {
-      console.error('Delete empty subcategories error:', error);
+      logger.error('Delete empty subcategories error:', error);
       toast.error('Feil ved sletting av underkategorier: ' + error.message);
     }
   });
@@ -388,13 +389,13 @@ const CategoryManager = () => {
   const getSelectedCategoryDetails = () => {
     if (!selectedCategory) return null;
     
-    console.log('Getting details for selected category:', selectedCategory);
+    logger.log('Getting details for selected category:', selectedCategory);
     
     const subcategories = categories.filter(c => c.parent_category_id === selectedCategory.id);
     const articlesCount = articles.length;
     const isEmpty = subcategories.length === 0 && articlesCount === 0;
     
-    console.log(`Selected category details:`, {
+    logger.log(`Selected category details:`, {
       id: selectedCategory.id,
       name: selectedCategory.name,
       subcategoriesCount: subcategories.length,
@@ -509,9 +510,9 @@ const CategoryManager = () => {
                   size="sm" 
                   variant="destructive"
                   onClick={() => {
-                    console.log('Delete button clicked for category:', selectedCategory);
+                    logger.log('Delete button clicked for category:', selectedCategory);
                     const details = getSelectedCategoryDetails();
-                    console.log('Can delete?', details?.canDelete);
+                    logger.log('Can delete?', details?.canDelete);
                     if (details?.canDelete) {
                       setIsDeleteDialogOpen(true);
                     } else {
@@ -640,7 +641,7 @@ const CategoryManager = () => {
           open={isDeleteDialogOpen}
           onOpenChange={setIsDeleteDialogOpen}
           onConfirm={() => {
-            console.log('Confirm delete clicked for category:', selectedCategory.id);
+            logger.log('Confirm delete clicked for category:', selectedCategory.id);
             deleteCategoryMutation.mutate(selectedCategory.id);
           }}
           title="Slett kategori"

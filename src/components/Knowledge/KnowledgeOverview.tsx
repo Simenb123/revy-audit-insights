@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import React, { useState, useEffect } from 'react';
 import { Search, BookOpen, Plus, Upload, Settings, Brain, Play } from 'lucide-react';
@@ -37,7 +38,7 @@ const KnowledgeOverview = ({
 
   useEffect(() => {
     if (extraLogging) {
-      console.log('[KnowledgeOverview] mounted');
+      logger.log('[KnowledgeOverview] mounted');
     }
   }, [extraLogging]);
 
@@ -45,7 +46,7 @@ const KnowledgeOverview = ({
     e.preventDefault();
     if (searchQuery.trim()) {
       if (extraLogging) {
-        console.log('[KnowledgeOverview] search', searchQuery);
+        logger.log('[KnowledgeOverview] search', searchQuery);
       }
       navigate(`/fag/sok?q=${encodeURIComponent(searchQuery)}`);
     }
@@ -69,7 +70,7 @@ const KnowledgeOverview = ({
 
   const handleGenerateEmbeddings = async () => {
     if (extraLogging) {
-      console.log('[KnowledgeOverview] generating embeddings');
+      logger.log('[KnowledgeOverview] generating embeddings');
     }
     setIsGeneratingEmbeddings(true);
     try {
@@ -77,7 +78,7 @@ const KnowledgeOverview = ({
       
       if (result.success) {
         if (extraLogging) {
-          console.log('[KnowledgeOverview] embeddings generated', result.processed);
+          logger.log('[KnowledgeOverview] embeddings generated', result.processed);
         }
         toast({
           title: "Kunnskapsbase aktivert!",
@@ -85,7 +86,7 @@ const KnowledgeOverview = ({
         });
       } else {
         if (extraLogging) {
-          console.log('[KnowledgeOverview] embedding generation failed', result);
+          logger.log('[KnowledgeOverview] embedding generation failed', result);
         }
         toast({
           title: "Feil ved aktivering",
@@ -95,7 +96,7 @@ const KnowledgeOverview = ({
       }
     } catch (error) {
       if (extraLogging) {
-        console.error('[KnowledgeOverview] embedding generation error', error);
+        logger.error('[KnowledgeOverview] embedding generation error', error);
       }
       toast({
         title: "Feil",

@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -82,7 +83,7 @@ const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
 
       // Parse headers
       const headers = parseCSVLine(lines[0]);
-      console.log('CSV headers:', headers);
+      logger.log('CSV headers:', headers);
 
       // Parse data rows
       const data = lines.slice(1).map((line, index) => {
@@ -99,12 +100,12 @@ const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
         }
       }).filter(row => row && Object.values(row).some(value => value.trim() !== ''));
 
-      console.log('Parsed CSV data sample:', data.slice(0, 3));
-      console.log('Total rows after filtering:', data.length);
+      logger.log('Parsed CSV data sample:', data.slice(0, 3));
+      logger.log('Total rows after filtering:', data.length);
       
       return { headers, data };
     } catch (error) {
-      console.error('Error parsing CSV:', error);
+      logger.error('Error parsing CSV:', error);
       throw error;
     }
   };
@@ -152,16 +153,16 @@ const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
   };
 
   const createMissingAccounts = async (uniqueAccountNumbers: string[]) => {
-    console.log('=== KONTOOPPRETTELSE START ===');
-    console.log('Unique account numbers to check:', uniqueAccountNumbers);
-    console.log('Client ID:', clientId);
+    logger.log('=== KONTOOPPRETTELSE START ===');
+    logger.log('Unique account numbers to check:', uniqueAccountNumbers);
+    logger.log('Client ID:', clientId);
     
     if (!clientId) {
       throw new Error('Ingen klient valgt for import');
     }
     
     // Hent eksisterende kontoer
-    console.log('Fetching existing accounts...');
+    logger.log('Fetching existing accounts...');
     const { data: existingAccounts, error: fetchError } = await supabase
       .from('client_chart_of_accounts')
       .select('account_number')
@@ -169,18 +170,18 @@ const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
       .in('account_number', uniqueAccountNumbers);
 
     if (fetchError) {
-      console.error('Error fetching existing accounts:', fetchError);
+      logger.error('Error fetching existing accounts:', fetchError);
       throw new Error(`Kunne ikke hente eksisterende kontoer: ${fetchError.message}`);
     }
 
-    console.log('Existing accounts:', existingAccounts);
+    logger.log('Existing accounts:', existingAccounts);
     const existingNumbers = new Set(existingAccounts?.map(acc => acc.account_number) || []);
     const missingNumbers = uniqueAccountNumbers.filter(num => !existingNumbers.has(num));
 
-    console.log('Missing account numbers:', missingNumbers);
+    logger.log('Missing account numbers:', missingNumbers);
 
     if (missingNumbers.length === 0) {
-      console.log('No missing accounts to create');
+      logger.log('No missing accounts to create');
       return [];
     }
 
@@ -193,7 +194,7 @@ const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
       is_active: true
     }));
 
-    console.log('Creating accounts:', accountsToCreate);
+    logger.log('Creating accounts:', accountsToCreate);
 
     const { data: newAccounts, error: createError } = await supabase
       .from('client_chart_of_accounts')
@@ -201,13 +202,13 @@ const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
       .select();
 
     if (createError) {
-      console.error('Error creating accounts:', createError);
-      console.error('Create error details:', JSON.stringify(createError, null, 2));
+      logger.error('Error creating accounts:', createError);
+      logger.error('Create error details:', JSON.stringify(createError, null, 2));
       throw new Error(`Kunne ikke opprette manglende kontoer: ${createError.message}`);
     }
 
-    console.log('Successfully created accounts:', newAccounts);
-    console.log('=== KONTOOPPRETTELSE SLUTT ===');
+    logger.log('Successfully created accounts:', newAccounts);
+    logger.log('=== KONTOOPPRETTELSE SLUTT ===');
     return newAccounts || [];
   };
 
@@ -240,10 +241,10 @@ const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
     data: any[],
     mapping: Record<string, string>
   ): Promise<{ processed: number; batchId: string }> => {
-    console.log('=== TRANSAKSJONSPROSESSERING START ===');
-    console.log('Processing transaction data with mapping:', mapping);
-    console.log('Number of transactions to process:', data.length);
-    console.log('Client ID:', clientId);
+    logger.log('=== TRANSAKSJONSPROSESSERING START ===');
+    logger.log('Processing transaction data with mapping:', mapping);
+    logger.log('Number of transactions to process:', data.length);
+    logger.log('Client ID:', clientId);
     
     if (!clientId) {
       throw new Error('Ingen klient valgt for import');
@@ -284,7 +285,7 @@ const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
         }
       });
       
-      console.log(`Row ${index + 1} transformed:`, transformed);
+      logger.log(`Row ${index + 1} transformed:`, transformed);
       return transformed;
     });
 
@@ -295,7 +296,7 @@ const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
         .filter(num => num && num.trim() !== '')
     )];
 
-    console.log('Unique account numbers found:', uniqueAccountNumbers);
+    logger.log('Unique account numbers found:', uniqueAccountNumbers);
 
     // STEG 2: Opprett manglende kontoer
     let createdAccounts: any[] = [];
@@ -303,14 +304,14 @@ const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
       try {
         createdAccounts = await createMissingAccounts(uniqueAccountNumbers);
         if (createdAccounts.length > 0) {
-          console.log(`Created ${createdAccounts.length} new accounts`);
+          logger.log(`Created ${createdAccounts.length} new accounts`);
           toast({
             title: "Kontoer opprettet",
             description: `${createdAccounts.length} nye kontoer ble automatisk opprettet`,
           });
         }
       } catch (error) {
-        console.error('Failed to create missing accounts:', error);
+        logger.error('Failed to create missing accounts:', error);
         toast({
           title: "Feil ved opprettelse av kontoer",
           description: (error as Error).message,
@@ -321,18 +322,18 @@ const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
     }
 
     // STEG 3: Hent oppdatert kontoplan
-    console.log('Fetching updated client accounts...');
+    logger.log('Fetching updated client accounts...');
     const { data: clientAccounts, error: accountsError } = await supabase
       .from('client_chart_of_accounts')
       .select('id, account_number, account_name')
       .eq('client_id', clientId);
 
     if (accountsError) {
-      console.error('Error fetching accounts:', accountsError);
+      logger.error('Error fetching accounts:', accountsError);
       throw new Error(`Kunne ikke hente kontoplan: ${accountsError.message}`);
     }
 
-    console.log('Available client accounts:', clientAccounts);
+    logger.log('Available client accounts:', clientAccounts);
 
     const accountMap = new Map(
       clientAccounts?.map(acc => [acc.account_number, acc.id]) || []
@@ -343,7 +344,7 @@ const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
     );
 
     // Opprett upload batch
-    console.log('Creating upload batch...');
+    logger.log('Creating upload batch...');
     const { data: batch, error: batchError } = await supabase
       .from('upload_batches')
       .insert({
@@ -359,11 +360,11 @@ const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
       .single();
 
     if (batchError) {
-      console.error('Error creating batch:', batchError);
+      logger.error('Error creating batch:', batchError);
       throw batchError;
     }
 
-    console.log('Upload batch created:', batch);
+    logger.log('Upload batch created:', batch);
 
     // STEG 4: Prosesser transaksjoner
     let processed = 0;
@@ -419,12 +420,12 @@ const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
           upload_batch_id: batch.id,
         };
 
-        console.log(`Transaction ${index + 1}:`, transaction);
+        logger.log(`Transaction ${index + 1}:`, transaction);
         return transaction;
       })
       .filter(Boolean);
 
-    console.log(`Attempting to insert ${transactionsToInsert.length} transactions`);
+    logger.log(`Attempting to insert ${transactionsToInsert.length} transactions`);
 
     if (transactionsToInsert.length > 0) {
       const { error: insertError } = await supabase
@@ -432,11 +433,11 @@ const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
         .insert(transactionsToInsert);
 
       if (insertError) {
-        console.error('Transaction insert error:', insertError);
+        logger.error('Transaction insert error:', insertError);
         throw new Error(`Database error: ${insertError.message}`);
       } else {
         processed = transactionsToInsert.length;
-        console.log(`Successfully inserted ${processed} transactions`);
+        logger.log(`Successfully inserted ${processed} transactions`);
       }
     }
 
@@ -452,8 +453,8 @@ const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
       })
       .eq('id', batch.id);
 
-    console.log('=== TRANSAKSJONSPROSESSERING SLUTT ===');
-    console.log(`Final result: ${processed} processed, ${errors.length} errors`);
+    logger.log('=== TRANSAKSJONSPROSESSERING SLUTT ===');
+    logger.log(`Final result: ${processed} processed, ${errors.length} errors`);
 
     if (errors.length > 0) {
       console.warn('Processing errors:', errors.slice(0, 10));
@@ -497,7 +498,7 @@ const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
         description: `${parsed.headers.length} kolonner og ${parsed.data.length} rader funnet`,
       });
     } catch (error) {
-      console.error('Upload error:', error);
+      logger.error('Upload error:', error);
       toast({
         title: "Opplastingsfeil",
         description: (error as Error).message,
@@ -531,7 +532,7 @@ const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
           });
       }
     } catch (error) {
-      console.error('Processing error:', error);
+      logger.error('Processing error:', error);
       toast({
         title: "Behandlingsfeil",
         description: (error as Error).message,

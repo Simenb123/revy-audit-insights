@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
@@ -36,11 +37,11 @@ const CategoryView = () => {
         .single();
 
       if (error) {
-        console.error('Error fetching category:', error);
+        logger.error('Error fetching category:', error);
         throw error;
       }
 
-      console.log('Category fetched:', data);
+      logger.log('Category fetched:', data);
       // Add slug property if missing
       return { ...(data as any), slug: (data as any).slug || data.id } as KnowledgeCategory;
     },

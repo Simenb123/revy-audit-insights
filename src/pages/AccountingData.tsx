@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import React from 'react';
 import { useParams } from 'react-router-dom';
@@ -10,10 +11,10 @@ const AccountingData = () => {
   const { orgNumber } = useParams<{ orgNumber: string }>();
   const { data: client, isLoading, error } = useClientDetails(orgNumber || '');
 
-  console.log('AccountingData - orgNumber:', orgNumber);
-  console.log('AccountingData - client:', client);
-  console.log('AccountingData - isLoading:', isLoading);
-  console.log('AccountingData - error:', error);
+  logger.log('AccountingData - orgNumber:', orgNumber);
+  logger.log('AccountingData - client:', client);
+  logger.log('AccountingData - isLoading:', isLoading);
+  logger.log('AccountingData - error:', error);
 
   if (isLoading) {
     return (
@@ -25,7 +26,7 @@ const AccountingData = () => {
   }
 
   if (error) {
-    console.error('Error loading client:', error);
+    logger.error('Error loading client:', error);
     return (
       <div className="text-center py-12">
         <h1 className="text-2xl font-bold text-gray-900 mb-4">Feil ved lasting av klient</h1>

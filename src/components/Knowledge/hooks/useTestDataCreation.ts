@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,7 +12,7 @@ export const useTestDataCreation = () => {
   const createTestData = async () => {
     setIsCreating(true);
     try {
-      console.log('🚀 Starter opprettelse av testartikler...');
+      logger.log('🚀 Starter opprettelse av testartikler...');
 
       // Get the current user
       const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -40,7 +41,7 @@ export const useTestDataCreation = () => {
           .single();
 
         if (existing) {
-          console.log(`⏭️ Artikkel "${article.title}" eksisterer allerede`);
+          logger.log(`⏭️ Artikkel "${article.title}" eksisterer allerede`);
           skippedCount++;
           continue;
         }
@@ -64,12 +65,12 @@ export const useTestDataCreation = () => {
           });
 
         if (error) {
-          console.error(`Feil ved opprettelse av "${article.title}":`, error);
+          logger.error(`Feil ved opprettelse av "${article.title}":`, error);
           throw error;
         }
 
         createdCount++;
-        console.log(`✅ Opprettet artikkel: "${article.title}"`);
+        logger.log(`✅ Opprettet artikkel: "${article.title}"`);
       }
 
       // Generate embeddings for the new articles
@@ -82,7 +83,7 @@ export const useTestDataCreation = () => {
       toast.success(`Testdata opprettet! ${createdCount} nye artikler lagt til. ${skippedCount} artikler eksisterte allerede.`);
 
     } catch (error) {
-      console.error('Feil ved opprettelse av testdata:', error);
+      logger.error('Feil ved opprettelse av testdata:', error);
       toast.error('Kunne ikke opprette testdata: ' + error.message);
     } finally {
       setIsCreating(false);

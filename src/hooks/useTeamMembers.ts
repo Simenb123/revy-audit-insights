@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,7 +17,7 @@ export function useTeamMembers(teamId: string) {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching team members:', error);
+        logger.error('Error fetching team members:', error);
         return [];
       }
 

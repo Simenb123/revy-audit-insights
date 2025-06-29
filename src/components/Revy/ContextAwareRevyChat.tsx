@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -126,7 +127,7 @@ Trenger du mer spesifikk hjelp med noen av disse områdene?`;
       setMessages(prev => [...prev, assistantMessage]);
 
     } catch (error) {
-      console.error('Error getting chat response:', error);
+      logger.error('Error getting chat response:', error);
       const errorMessage = {
         sender: 'assistant' as const,
         content: 'Beklager, jeg kunne ikke behandle forespørselen din akkurat nå. Prøv igjen.',

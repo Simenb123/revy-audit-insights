@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -44,7 +45,7 @@ export function useCompleteAction() {
       });
     },
     onError: (error) => {
-      console.error('Error completing action:', error);
+      logger.error('Error completing action:', error);
       toast({
         title: "Feil ved fullføring",
         description: "Kunne ikke fullføre handlingen.",

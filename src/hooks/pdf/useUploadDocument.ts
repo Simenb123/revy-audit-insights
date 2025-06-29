@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -68,7 +69,7 @@ export const useUploadDocument = () => {
       supabase.functions.invoke('pdf-text-extractor', {
         body: { documentId: document.id },
       }).catch(err => {
-        console.error("Failed to invoke text extractor function:", err);
+        logger.error("Failed to invoke text extractor function:", err);
       });
 
       return document;

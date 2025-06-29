@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import React, { useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
@@ -78,7 +79,7 @@ const TagSuggestions = ({
         onCreateNewTag(newTagName.trim());
       }
     } catch (error) {
-      console.error('Error creating tag:', error);
+      logger.error('Error creating tag:', error);
     }
   };
 

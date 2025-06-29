@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -47,7 +48,7 @@ const AuditActionsManager = ({ clientId, phase = 'execution' }: AuditActionsMana
         phase
       });
     } catch (error) {
-      console.error('Error copying actions:', error);
+      logger.error('Error copying actions:', error);
     }
   };
 

@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -55,7 +56,7 @@ const WorkingPaperTemplateManager = ({
         template_structure: {}
       });
     } catch (error) {
-      console.error('Error creating template:', error);
+      logger.error('Error creating template:', error);
     }
   };
 

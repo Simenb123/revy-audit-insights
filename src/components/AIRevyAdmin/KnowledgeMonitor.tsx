@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -59,7 +60,7 @@ const KnowledgeMonitor = () => {
       setStats({ total, published, withEmbeddings, recentlyUpdated });
 
     } catch (error) {
-      console.error('Error loading knowledge data:', error);
+      logger.error('Error loading knowledge data:', error);
       toast({
         title: "Feil ved lasting",
         description: "Kunne ikke laste kunnskapsbase-data",
@@ -111,7 +112,7 @@ const KnowledgeMonitor = () => {
         description: "Sjekk konsollen for detaljer"
       });
 
-      console.log('Test search result:', data);
+      logger.log('Test search result:', data);
     } catch (error) {
       toast({
         title: "Test feilet",

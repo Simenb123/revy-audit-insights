@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -62,7 +63,7 @@ export function useCopyActionsFromClient() {
       });
     },
     onError: (error) => {
-      console.error('Error copying actions from client:', error);
+      logger.error('Error copying actions from client:', error);
       toast({
         title: "Feil ved kopiering",
         description: "Kunne ikke kopiere handlingene fra annen klient.",

@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,7 +27,7 @@ const AdvancedFilePreview = ({ file, isOpen, onClose }: AdvancedFilePreviewProps
 
     const generatePreview = async () => {
       setIsLoading(true);
-      console.log('Generating advanced preview for:', file.name, file.type);
+      logger.log('Generating advanced preview for:', file.name, file.type);
 
       try {
         if (file.type.startsWith('image/')) {
@@ -61,7 +62,7 @@ const AdvancedFilePreview = ({ file, isOpen, onClose }: AdvancedFilePreviewProps
           setPreviewContent(`Filtype: ${file.type}\nStørrelse: ${(file.size / 1024 / 1024).toFixed(2)} MB\nPreview ikke støttet for denne filtypen.`);
         }
       } catch (error) {
-        console.error('Advanced preview generation failed:', error);
+        logger.error('Advanced preview generation failed:', error);
         setPreviewType('unsupported');
         setPreviewContent('Kunne ikke generere preview');
       } finally {

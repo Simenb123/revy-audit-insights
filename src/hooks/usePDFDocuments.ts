@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -22,7 +23,7 @@ export const usePDFDocuments = () => {
       .createSignedUrl(filePath, 60 * 15); // Signed URL valid for 15 minutes
 
     if (error) {
-      console.error('Error creating signed URL:', error);
+      logger.error('Error creating signed URL:', error);
       toast({
         title: "Kunne ikke hente fil",
         description: "Klarte ikke å lage en sikker lenke til dokumentet.",

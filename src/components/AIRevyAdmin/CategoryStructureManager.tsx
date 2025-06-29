@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -80,12 +81,12 @@ const CategoryStructureManager = () => {
   };
 
   const handleMoveCategory = (categoryId: string, direction: 'up' | 'down') => {
-    console.log('Moving category:', categoryId, direction);
+    logger.log('Moving category:', categoryId, direction);
     toast.success('Kategori flyttet');
   };
 
   const handleDuplicateCategory = (categoryId: string) => {
-    console.log('Duplicating category:', categoryId);
+    logger.log('Duplicating category:', categoryId);
     toast.success('Kategori duplisert');
   };
 

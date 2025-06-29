@@ -1,12 +1,13 @@
+import { logger } from '@/utils/logger';
 
 import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 
 export const createTestArticles = async () => {
   if (!isSupabaseConfigured || !supabase) {
-    console.error("Supabase is not configured. Seeder cannot proceed.");
+    logger.error("Supabase is not configured. Seeder cannot proceed.");
     return;
   }
-  console.log('🌱 Creating test articles for knowledge base...');
+  logger.log('🌱 Creating test articles for knowledge base...');
   
   // First get or create a test category
   let categoryId = '';
@@ -31,7 +32,7 @@ export const createTestArticles = async () => {
       .single();
       
     if (categoryError || !newCategory) {
-      console.error('❌ Failed to create category:', categoryError);
+      logger.error('❌ Failed to create category:', categoryError);
       return;
     }
     categoryId = newCategory.id;
@@ -62,7 +63,7 @@ export const createTestArticles = async () => {
       .single();
       
     if (contentTypeError || !newContentType) {
-      console.error('❌ Failed to create content type:', contentTypeError);
+      logger.error('❌ Failed to create content type:', contentTypeError);
       return;
     }
     contentTypeId = newContentType.id;
@@ -71,7 +72,7 @@ export const createTestArticles = async () => {
   // Get current user ID
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    console.error('❌ No authenticated user found');
+    logger.error('❌ No authenticated user found');
     return;
   }
   
@@ -220,14 +221,14 @@ export const createTestArticles = async () => {
         .insert(article);
         
       if (error) {
-        console.error(`❌ Failed to create article "${article.title}":`, error);
+        logger.error(`❌ Failed to create article "${article.title}":`, error);
       } else {
-        console.log(`✅ Created article: "${article.title}"`);
+        logger.log(`✅ Created article: "${article.title}"`);
       }
     } else {
-      console.log(`⏭️ Article "${article.title}" already exists`);
+      logger.log(`⏭️ Article "${article.title}" already exists`);
     }
   }
   
-  console.log('🌱 Test articles creation completed!');
+  logger.log('🌱 Test articles creation completed!');
 };
