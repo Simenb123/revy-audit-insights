@@ -1,6 +1,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
 import { toast } from 'sonner';
 import type { AuditActionTemplate, AuditSubjectArea } from '@/types/audit-actions';
 
@@ -40,9 +41,9 @@ export function useCreateAuditActionTemplate() {
         return phase;
       });
 
-      const dataToInsert = {
+      const dataToInsert: Database['public']['Tables']['audit_action_templates']['Insert'] = {
         ...templateData,
-        applicable_phases: mappedPhases
+        applicable_phases: mappedPhases as Database['public']['Enums']['audit_phase'][]
       };
 
       const { data, error } = await supabase
@@ -75,21 +76,28 @@ export function useUpdateAuditActionTemplate() {
   return useMutation({
     mutationFn: async ({ id, ...updates }: { id: string } & Partial<AuditActionTemplate>) => {
       // Map AuditPhase values to database enum values if applicable_phases is being updated
-      if (updates.applicable_phases) {
-        updates.applicable_phases = updates.applicable_phases.map(phase => {
-          if (phase === 'completion') return 'conclusion';
-          if (phase === 'risk_assessment') return 'planning';
-          if (phase === 'overview') return 'engagement';
-          return phase;
-        }) as any;
-      }
+        if (updates.applicable_phases) {
+          updates.applicable_phases = updates.applicable_phases.map(phase => {
+            if (phase === 'completion') return 'conclusion';
+            if (phase === 'risk_assessment') return 'planning';
+            if (phase === 'overview') return 'engagement';
+            return phase;
+          }) as any;
+        }
 
-      const { data, error } = await supabase
-        .from('audit_action_templates')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single();
+        const updatesData: Database['public']['Tables']['audit_action_templates']['Update'] = {
+          ...updates,
+          applicable_phases: updates.applicable_phases as
+            | Database['public']['Enums']['audit_phase'][]
+            | undefined,
+        };
+
+        const { data, error } = await supabase
+          .from('audit_action_templates')
+          .update(updatesData)
+          .eq('id', id)
+          .select()
+          .single();
 
       if (error) {
         console.error('Error updating audit action template:', error);

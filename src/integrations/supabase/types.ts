@@ -3532,7 +3532,46 @@ export type Database = {
             foreignKeyName: "upload_batches_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
+          referencedRelation: "clients"
+          referencedColumns: ["id"]
+        },
+      ]
+      }
+      upload_column_mappings: {
+        Row: {
+          id: string
+          client_id: string
+          upload_batch_id: string
+          column_mappings: Json
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          client_id: string
+          upload_batch_id: string
+          column_mappings: Json
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          client_id?: string
+          upload_batch_id?: string
+          column_mappings?: Json
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "upload_column_mappings_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "upload_column_mappings_upload_batch_id_fkey"
+            columns: ["upload_batch_id"]
+            isOneToOne: false
+            referencedRelation: "upload_batches"
             referencedColumns: ["id"]
           },
         ]

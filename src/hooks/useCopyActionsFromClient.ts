@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { ClientAuditAction } from '@/types/audit-actions';
 import { AuditPhase } from '@/types/revio';
+import type { Database } from '@/integrations/supabase/types';
 
 interface CopyActionsFromClientParams {
   targetClientId: string;
@@ -27,12 +28,19 @@ export function useCopyActionsFromClient() {
       if (fetchError) throw fetchError;
 
       // Convert source actions to new client actions
-      const newActions = sourceActions.map(action => ({
+      const mapPhase = (p: string): Database['public']['Enums']['audit_phase'] => {
+        if (p === 'completion') return 'conclusion';
+        if (p === 'risk_assessment') return 'planning';
+        if (p === 'overview') return 'engagement';
+        return p as Database['public']['Enums']['audit_phase'];
+      };
+
+      const newActions: Database['public']['Tables']['client_audit_actions']['Insert'][] = sourceActions.map(action => ({
         client_id: targetClientId,
         template_id: action.template_id,
         subject_area: action.subject_area,
         action_type: action.action_type,
-        phase: phase as AuditPhase,
+        phase: mapPhase(phase),
         name: action.name,
         description: action.description,
         objective: action.objective,

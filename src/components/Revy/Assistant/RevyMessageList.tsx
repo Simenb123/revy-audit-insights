@@ -10,6 +10,7 @@ interface RevyMessageListProps {
   messages: RevyMessage[];
   onClearMessages?: () => void;
   compact?: boolean;
+  isTyping?: boolean;
 }
 
 export const RevyMessageList: React.FC<RevyMessageListProps> = ({

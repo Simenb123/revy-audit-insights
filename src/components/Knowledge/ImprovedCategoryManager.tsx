@@ -21,15 +21,15 @@ import {
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
 import { toast } from 'sonner';
 import type { AuditPhase } from '@/types/revio';
 import type { Category as BaseCategory } from '@/types/classification';
 
-interface Category extends Omit<BaseCategory, 'applicable_phases'> {
+interface Category extends Omit<BaseCategory, 'applicable_phases' | 'children'> {
   article_count: number;
   children?: Category[];
   applicable_phases?: string[] | null;
-  slug?: string;
 }
 
 interface CategoryFormData {
@@ -49,7 +49,7 @@ const ImprovedCategoryManager = () => {
   
   const queryClient = useQueryClient();
 
-  const { data: categories = [], isLoading } = useQuery({
+  const { data: categories = [], isLoading } = useQuery<Category[]>({
     queryKey: ['improved-categories'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -110,13 +110,13 @@ const ImprovedCategoryManager = () => {
         return phase;
       });
 
-      const dbData = {
+      const dbData: Database['public']['Tables']['knowledge_categories']['Insert'] = {
         name: categoryData.name,
         description: categoryData.description || null,
         icon: categoryData.icon || null,
         parent_category_id: categoryData.parent_category_id || null,
         display_order: categoryData.display_order,
-        applicable_phases: mappedPhases
+        applicable_phases: mappedPhases as Database['public']['Enums']['audit_phase'][]
       };
       
       const { data, error } = await supabase
@@ -148,13 +148,13 @@ const ImprovedCategoryManager = () => {
         return phase;
       });
 
-      const dbUpdates = {
+      const dbUpdates: Database['public']['Tables']['knowledge_categories']['Update'] = {
         name: updates.name,
         description: updates.description || null,
         icon: updates.icon || null,
         parent_category_id: updates.parent_category_id || null,
         display_order: updates.display_order,
-        applicable_phases: mappedPhases
+        applicable_phases: mappedPhases as Database['public']['Enums']['audit_phase'][] | null
       };
       
       const { data, error } = await supabase

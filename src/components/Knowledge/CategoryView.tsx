@@ -24,7 +24,7 @@ const CategoryView = () => {
 
   const validCategoryId = isValidUUID(categoryIdentifier);
 
-  const { data: category, isLoading: categoryLoading } = useQuery({
+  const { data: category, isLoading: categoryLoading } = useQuery<KnowledgeCategory | null>({
     queryKey: ['knowledge-category', categoryIdentifier],
     queryFn: async () => {
       if (!categoryIdentifier) throw new Error('Category identifier is required');
@@ -47,7 +47,7 @@ const CategoryView = () => {
     enabled: !!categoryIdentifier
   });
 
-  const { data: subcategories } = useQuery({
+  const { data: subcategories } = useQuery<KnowledgeCategory[]>({
     queryKey: ['knowledge-subcategories', categoryIdentifier],
     queryFn: async () => {
       if (!category) return [];
