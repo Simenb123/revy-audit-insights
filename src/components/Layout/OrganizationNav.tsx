@@ -63,7 +63,10 @@ const OrganizationNav = () => {
     return location.pathname.startsWith(path);
   };
 
-  const canAccessAdminFeatures = userProfile?.userRole === 'admin' || userProfile?.userRole === 'partner';
+  const canAccessAdminFeatures =
+    userProfile?.userRole === 'admin' ||
+    userProfile?.userRole === 'partner' ||
+    userProfile?.userRole === 'employee';
 
   return (
     <>
