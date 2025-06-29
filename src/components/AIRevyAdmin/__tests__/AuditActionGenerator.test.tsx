@@ -40,7 +40,7 @@ describe('AuditActionGenerator', () => {
     render(<AuditActionGenerator />);
 
     // choose subject area
-    await userEvent.click(screen.getByPlaceholderText('Velg fagområde'));
+    await userEvent.click(screen.getByText(/Velg fagområde/i));
     await userEvent.click(screen.getByText('Salg'));
 
     // trigger AI generation
