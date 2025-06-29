@@ -17,6 +17,7 @@ For a high-level tour of the architecture and key modules, see [docs/project-ove
 For the document processing pipeline, see [docs/document-workflow.md](docs/document-workflow.md).
 For using the AI-driven audit action generator, see [docs/audit-action-generator.md](docs/audit-action-generator.md).
 For a beginner friendly summary of the code structure, see [docs/modules-overview.md](docs/modules-overview.md).
+For a visual map of the repository folders, see [docs/repository-structure.md](docs/repository-structure.md).
 For an explanation of the right sidebar and assistant panel, see [docs/sidebar-overview.md](docs/sidebar-overview.md).
 For an overview of the audit phases used throughout the app, see [docs/audit-phases.md](docs/audit-phases.md).
 For instructions on managing audit actions, see [docs/manage-audit-actions.md](docs/manage-audit-actions.md).
