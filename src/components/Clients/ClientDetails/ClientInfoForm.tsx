@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -142,7 +143,7 @@ const ClientInfoForm = ({ client }: ClientInfoFormProps) => {
 
       setIsEditing(false);
     } catch (error) {
-      console.error('Error saving client info:', error);
+      logger.error('Error saving client info:', error);
       toast({
         title: "Feil",
         description: "Kunne ikke lagre endringer",

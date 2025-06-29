@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
@@ -20,7 +21,7 @@ export const useClientTextExtraction = () => {
 
   const extractTextFromPDF = async (file: File): Promise<string> => {
     try {
-      console.log('🔄 Starting PDF text extraction for:', file.name);
+      logger.log('🔄 Starting PDF text extraction for:', file.name);
       const arrayBuffer = await file.arrayBuffer();
       
       const loadingTask = pdfjsLib.getDocument({ 
@@ -30,7 +31,7 @@ export const useClientTextExtraction = () => {
       });
       
       const pdf = await loadingTask.promise;
-      console.log('📄 PDF loaded successfully, pages:', pdf.numPages);
+      logger.log('📄 PDF loaded successfully, pages:', pdf.numPages);
       
       let fullText = '';
 
@@ -47,7 +48,7 @@ export const useClientTextExtraction = () => {
             fullText += pageText + '\n\n';
           }
           
-          console.log(`📖 Extracted text from page ${i}: ${pageText.length} characters`);
+          logger.log(`📖 Extracted text from page ${i}: ${pageText.length} characters`);
         } catch (pageError) {
           console.warn(`⚠️ Could not extract text from page ${i}:`, pageError);
           // Continue with other pages
@@ -60,18 +61,18 @@ export const useClientTextExtraction = () => {
         throw new Error('PDF ser ut til å være scannet eller inneholder lite tekst. Prøver backend-prosessering...');
       }
       
-      console.log('✅ PDF text extraction completed:', cleanText.length, 'characters');
+      logger.log('✅ PDF text extraction completed:', cleanText.length, 'characters');
       return cleanText;
       
     } catch (error) {
-      console.error('❌ PDF extraction error:', error);
+      logger.error('❌ PDF extraction error:', error);
       throw new Error('Frontend PDF-lesing feilet. Sender til backend for avansert prosessering...');
     }
   };
 
   const extractTextFromExcel = async (file: File): Promise<string> => {
     try {
-      console.log('📊 Starting Excel text extraction for:', file.name);
+      logger.log('📊 Starting Excel text extraction for:', file.name);
       const arrayBuffer = await file.arrayBuffer();
       const workbook = XLSX.read(arrayBuffer, { type: 'array' });
       let fullText = '';
@@ -85,17 +86,17 @@ export const useClientTextExtraction = () => {
       });
 
       const cleanText = fullText.trim();
-      console.log('✅ Excel extraction completed:', cleanText.length, 'characters');
+      logger.log('✅ Excel extraction completed:', cleanText.length, 'characters');
       return cleanText;
       
     } catch (error) {
-      console.error('❌ Excel extraction error:', error);
+      logger.error('❌ Excel extraction error:', error);
       throw new Error('Kunne ikke lese Excel-innhold');
     }
   };
 
   const extractTextFromFile = async (file: File): Promise<string> => {
-    console.log('🔍 Extracting text from file:', file.name, 'type:', file.type);
+    logger.log('🔍 Extracting text from file:', file.name, 'type:', file.type);
     
     if (file.type === 'application/pdf') {
       return await extractTextFromPDF(file);
@@ -109,7 +110,7 @@ export const useClientTextExtraction = () => {
       return await extractTextFromExcel(file);
     } else if (file.type.startsWith('text/')) {
       const text = await file.text();
-      console.log('📝 Text file extracted:', text.length, 'characters');
+      logger.log('📝 Text file extracted:', text.length, 'characters');
       return text;
     } else {
       throw new Error('Filtype støttes ikke for tekstekstraksjon');
@@ -118,7 +119,7 @@ export const useClientTextExtraction = () => {
 
   const callBackendExtraction = async (documentId: string): Promise<boolean> => {
     try {
-      console.log('🔄 Calling backend extraction for document:', documentId);
+      logger.log('🔄 Calling backend extraction for document:', documentId);
       
       // Update status to indicate backend processing
       await supabase
@@ -135,15 +136,15 @@ export const useClientTextExtraction = () => {
       });
 
       if (error) {
-        console.error('❌ Backend extraction failed:', error);
+        logger.error('❌ Backend extraction failed:', error);
         throw new Error(`Backend-prosessering feilet: ${error.message}`);
       }
 
-      console.log('✅ Backend extraction completed successfully:', data);
+      logger.log('✅ Backend extraction completed successfully:', data);
       return true;
       
     } catch (error) {
-      console.error('❌ Backend extraction error:', error);
+      logger.error('❌ Backend extraction error:', error);
       
       // Update with failed status
       await supabase
@@ -164,7 +165,7 @@ export const useClientTextExtraction = () => {
     documentId: string
   ): Promise<string> => {
     try {
-      console.log('🤖 Generating AI analysis for document:', fileName);
+      logger.log('🤖 Generating AI analysis for document:', fileName);
 
       const result = await analyzeDocumentWithAI({
         documentId,
@@ -175,11 +176,11 @@ export const useClientTextExtraction = () => {
 
       await updateDocumentWithAnalysis(result);
 
-      console.log('✅ AI analysis completed:', result.aiAnalysisSummary.substring(0, 100) + '...');
+      logger.log('✅ AI analysis completed:', result.aiAnalysisSummary.substring(0, 100) + '...');
       return result.aiAnalysisSummary;
 
     } catch (error) {
-      console.error('AI analysis error:', error);
+      logger.error('AI analysis error:', error);
       return '';
     }
   };
@@ -201,7 +202,7 @@ export const useClientTextExtraction = () => {
         throw new Error('Kunne ikke finne dokument');
       }
 
-      console.log('📋 Processing document:', document.file_name, 'type:', document.mime_type);
+      logger.log('📋 Processing document:', document.file_name, 'type:', document.mime_type);
 
       // Check if document already has error text and needs re-processing
       const hasErrorText = document.extracted_text?.includes('[OpenAI Vision feilet') || 
@@ -209,7 +210,7 @@ export const useClientTextExtraction = () => {
                           document.extracted_text?.includes('Maximum call stack size');
 
       if (hasErrorText) {
-        console.log('🔄 Document has error text, re-processing with improved method...');
+        logger.log('🔄 Document has error text, re-processing with improved method...');
       }
 
       // Update status to processing
@@ -242,18 +243,18 @@ export const useClientTextExtraction = () => {
         extractedText = await extractTextFromFile(file);
         
         if (!extractedText || extractedText.trim().length < 10) {
-          console.log('⚠️ Frontend extraction produced minimal text, trying backend...');
+          logger.log('⚠️ Frontend extraction produced minimal text, trying backend...');
           shouldFallbackToBackend = true;
         }
         
       } catch (frontendError) {
-        console.log('⚠️ Frontend extraction failed:', frontendError.message);
+        logger.log('⚠️ Frontend extraction failed:', frontendError.message);
         
         // For PDFs and other supported files, try backend extraction
         if (document.mime_type === 'application/pdf' || 
             document.mime_type.includes('excel') || 
             document.mime_type.includes('spreadsheet')) {
-          console.log('🔄 Switching to backend extraction...');
+          logger.log('🔄 Switching to backend extraction...');
           shouldFallbackToBackend = true;
         } else {
           // For non-supported files, fail immediately
@@ -263,7 +264,7 @@ export const useClientTextExtraction = () => {
 
       // If we need to fallback to backend
       if (shouldFallbackToBackend) {
-        console.log('🔄 Initiating backend fallback...');
+        logger.log('🔄 Initiating backend fallback...');
         const success = await callBackendExtraction(documentId);
         
         if (success) {
@@ -311,7 +312,7 @@ export const useClientTextExtraction = () => {
       }
 
     } catch (error) {
-      console.error('❌ Text extraction error:', error);
+      logger.error('❌ Text extraction error:', error);
       
       // Update status to failed
       await supabase

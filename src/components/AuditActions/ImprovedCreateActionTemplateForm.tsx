@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import React from 'react';
 import { useForm } from 'react-hook-form';
@@ -43,7 +44,7 @@ const ImprovedCreateActionTemplateForm = ({
   });
 
   const onSubmit = async (data: CreateActionTemplateFormData) => {
-    console.log('🔄 Submitting audit action template:', data);
+    logger.log('🔄 Submitting audit action template:', data);
     
     try {
       // Ensure all required fields are present for the template
@@ -63,7 +64,7 @@ const ImprovedCreateActionTemplateForm = ({
         is_active: true
       };
       
-      console.log('📝 Template data to submit:', templateData);
+      logger.log('📝 Template data to submit:', templateData);
       
       await createTemplate.mutateAsync(templateData);
       
@@ -72,7 +73,7 @@ const ImprovedCreateActionTemplateForm = ({
       }
       form.reset();
     } catch (error) {
-      console.error('❌ Error creating template:', error);
+      logger.error('❌ Error creating template:', error);
     }
   };
 

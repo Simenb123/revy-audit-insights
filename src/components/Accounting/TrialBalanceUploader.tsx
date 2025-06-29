@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -98,7 +99,7 @@ const TrialBalanceUploader = ({ clientId }: TrialBalanceUploaderProps) => {
   // Check if client has chart of accounts when component loads
   React.useEffect(() => {
     const checkChartOfAccounts = async () => {
-      console.log("Checking if client has chart of accounts...");
+      logger.log("Checking if client has chart of accounts...");
       const { data: accounts, error } = await supabase
         .from("client_chart_of_accounts")
         .select("id")
@@ -107,12 +108,12 @@ const TrialBalanceUploader = ({ clientId }: TrialBalanceUploaderProps) => {
         .limit(1);
 
       if (error) {
-        console.error("Error checking chart of accounts:", error);
+        logger.error("Error checking chart of accounts:", error);
         return;
       }
 
       const hasAccounts = accounts && accounts.length > 0;
-      console.log("Client has chart of accounts:", hasAccounts);
+      logger.log("Client has chart of accounts:", hasAccounts);
       setHasChartOfAccounts(hasAccounts);
     };
 
@@ -123,7 +124,7 @@ const TrialBalanceUploader = ({ clientId }: TrialBalanceUploaderProps) => {
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
-    console.log("File selected:", selectedFile?.name, selectedFile?.size);
+    logger.log("File selected:", selectedFile?.name, selectedFile?.size);
     if (selectedFile) {
       if (selectedFile.name.toLowerCase().endsWith(".csv")) {
         handleCSVFile(selectedFile);
@@ -174,25 +175,25 @@ const TrialBalanceUploader = ({ clientId }: TrialBalanceUploaderProps) => {
   };
 
   const processExcelFile = async (file: File): Promise<TrialBalanceRow[]> => {
-    console.log("Processing Excel file:", file.name);
+    logger.log("Processing Excel file:", file.name);
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
 
       reader.onload = (e) => {
         try {
-          console.log("File reader loaded successfully");
+          logger.log("File reader loaded successfully");
           const data = new Uint8Array(e.target?.result as ArrayBuffer);
           const workbook = XLSX.read(data, { type: "array" });
-          console.log("Workbook loaded, sheets:", workbook.SheetNames);
+          logger.log("Workbook loaded, sheets:", workbook.SheetNames);
 
           const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
           const jsonData = XLSX.utils.sheet_to_json(firstSheet);
-          console.log("Excel data parsed, rows:", jsonData.length);
-          console.log("First few rows:", jsonData.slice(0, 3));
+          logger.log("Excel data parsed, rows:", jsonData.length);
+          logger.log("First few rows:", jsonData.slice(0, 3));
 
           const balances: TrialBalanceRow[] = jsonData
             .map((row: any, index) => {
-              console.log(`Processing row ${index}:`, row);
+              logger.log(`Processing row ${index}:`, row);
               return {
                 account_number:
                   row["Kontonummer"]?.toString() ||
@@ -224,20 +225,20 @@ const TrialBalanceUploader = ({ clientId }: TrialBalanceUploaderProps) => {
             })
             .filter((bal) => {
               const isValid = bal.account_number && bal.period_end_date;
-              console.log(`Row valid: ${isValid}`, bal);
+              logger.log(`Row valid: ${isValid}`, bal);
               return isValid;
             });
 
-          console.log("Processed balances:", balances.length);
+          logger.log("Processed balances:", balances.length);
           resolve(balances);
         } catch (error) {
-          console.error("Error processing Excel file:", error);
+          logger.error("Error processing Excel file:", error);
           reject(error);
         }
       };
 
       reader.onerror = () => {
-        console.error("FileReader error:", reader.error);
+        logger.error("FileReader error:", reader.error);
         reject(new Error("Kunne ikke lese filen"));
       };
 
@@ -472,11 +473,11 @@ const TrialBalanceUploader = ({ clientId }: TrialBalanceUploaderProps) => {
     srcFile: File,
   ) => {
     if (!srcFile || !clientId) {
-      console.error("Missing file or clientId:", { file: !!srcFile, clientId });
+      logger.error("Missing file or clientId:", { file: !!srcFile, clientId });
       return;
     }
 
-    console.log("Starting upload for client:", clientId);
+    logger.log("Starting upload for client:", clientId);
     setIsUploading(true);
     setProgress(0);
 
@@ -487,32 +488,32 @@ const TrialBalanceUploader = ({ clientId }: TrialBalanceUploaderProps) => {
         error: authError,
       } = await supabase.auth.getUser();
       if (authError) {
-        console.error("Auth error:", authError);
+        logger.error("Auth error:", authError);
         throw new Error(`Autentiseringsfeil: ${authError.message}`);
       }
       if (!user) {
-        console.error("No authenticated user");
+        logger.error("No authenticated user");
         throw new Error("Du må være logget inn for å laste opp data");
       }
-      console.log("User authenticated:", user.id);
+      logger.log("User authenticated:", user.id);
 
       setProgress(25);
 
       // Get client accounts for validation
-      console.log("Fetching client accounts for validation...");
+      logger.log("Fetching client accounts for validation...");
       const { data: clientAccounts, error: accountsError } = await supabase
         .from("client_chart_of_accounts")
         .select("id, account_number")
         .eq("client_id", clientId);
 
       if (accountsError) {
-        console.error("Error fetching client accounts:", accountsError);
+        logger.error("Error fetching client accounts:", accountsError);
         throw new Error(
           `Feil ved henting av kontoplan: ${accountsError.message}`,
         );
       }
 
-      console.log("Client accounts fetched:", clientAccounts?.length || 0);
+      logger.log("Client accounts fetched:", clientAccounts?.length || 0);
 
       // Check if no accounts exist
       if (!clientAccounts || clientAccounts.length === 0) {
@@ -526,7 +527,7 @@ const TrialBalanceUploader = ({ clientId }: TrialBalanceUploaderProps) => {
       );
 
       // Create upload batch record
-      console.log("Creating upload batch...");
+      logger.log("Creating upload batch...");
       const { data: batch, error: batchError } = await supabase
         .from("upload_batches")
         .insert({
@@ -542,10 +543,10 @@ const TrialBalanceUploader = ({ clientId }: TrialBalanceUploaderProps) => {
         .single();
 
       if (batchError) {
-        console.error("Batch creation error:", batchError);
+        logger.error("Batch creation error:", batchError);
         throw new Error(`Feil ved opprettelse av batch: ${batchError.message}`);
       }
-      console.log("Batch created:", batch.id);
+      logger.log("Batch created:", batch.id);
       setProgress(50);
 
       // Process balances
@@ -582,19 +583,19 @@ const TrialBalanceUploader = ({ clientId }: TrialBalanceUploaderProps) => {
             };
           } catch (error) {
             const errorMsg = `Feil ved prosessering av rad ${index + 1}: ${error}`;
-            console.error(errorMsg);
+            logger.error(errorMsg);
             errors.push(errorMsg);
             return null;
           }
         })
         .filter(Boolean);
 
-      console.log("Balances to insert:", balancesToInsert.length);
+      logger.log("Balances to insert:", balancesToInsert.length);
       setProgress(75);
 
       let processed = 0;
       if (balancesToInsert.length > 0) {
-        console.log("Inserting trial balances...");
+        logger.log("Inserting trial balances...");
         const { data: insertedBalances, error: insertError } = await supabase
           .from("trial_balances")
           .upsert(balancesToInsert, {
@@ -604,16 +605,16 @@ const TrialBalanceUploader = ({ clientId }: TrialBalanceUploaderProps) => {
           .select();
 
         if (insertError) {
-          console.error("Insert error:", insertError);
+          logger.error("Insert error:", insertError);
           errors.push(`Insert error: ${insertError.message}`);
         } else {
           processed = insertedBalances?.length || 0;
-          console.log("Successfully inserted:", processed);
+          logger.log("Successfully inserted:", processed);
         }
       }
 
       // Update batch status
-      console.log("Updating batch status...");
+      logger.log("Updating batch status...");
       await supabase
         .from("upload_batches")
         .update({
@@ -641,7 +642,7 @@ const TrialBalanceUploader = ({ clientId }: TrialBalanceUploaderProps) => {
         variant: processed > 0 ? "default" : "destructive",
       });
     } catch (error: any) {
-      console.error("Upload error:", error);
+      logger.error("Upload error:", error);
       setUploadResult({
         success: false,
         message: error.message || "Det oppstod en feil under opplastingen",

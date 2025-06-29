@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import React from 'react';
 import { useForm } from 'react-hook-form';
@@ -63,7 +64,7 @@ const CreateActionTemplateForm = ({ selectedArea, onSuccess, onCancel }: CreateA
       }
       form.reset();
     } catch (error) {
-      console.error('Error creating template:', error);
+      logger.error('Error creating template:', error);
     }
   };
 

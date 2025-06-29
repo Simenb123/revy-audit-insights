@@ -1,10 +1,11 @@
+import { logger } from '@/utils/logger';
 
 import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 
 // Get AI usage statistics for current user
 export const getAIUsageStats = async (timeframe: 'day' | 'week' | 'month' = 'week') => {
   if (!isSupabaseConfigured || !supabase) {
-    console.error("Supabase is not configured. Cannot load usage stats.");
+    logger.error("Supabase is not configured. Cannot load usage stats.");
     throw new Error("Supabase not initialized");
   }
   try {
@@ -36,7 +37,7 @@ export const getAIUsageStats = async (timeframe: 'day' | 'week' | 'month' = 'wee
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching AI usage stats:', error);
+      logger.error('Error fetching AI usage stats:', error);
       throw error;
     }
 
@@ -63,7 +64,7 @@ export const getAIUsageStats = async (timeframe: 'day' | 'week' | 'month' = 'wee
       summary
     };
   } catch (error) {
-    console.error('Error in getAIUsageStats:', error);
+    logger.error('Error in getAIUsageStats:', error);
     throw error;
   }
 };
@@ -71,7 +72,7 @@ export const getAIUsageStats = async (timeframe: 'day' | 'week' | 'month' = 'wee
 // Get firm-wide AI usage statistics (admin only)
 export const getFirmAIUsageStats = async (timeframe: 'day' | 'week' | 'month' = 'week') => {
   if (!isSupabaseConfigured || !supabase) {
-    console.error("Supabase is not configured. Cannot load usage stats.");
+    logger.error("Supabase is not configured. Cannot load usage stats.");
     throw new Error("Supabase not initialized");
   }
   try {
@@ -109,13 +110,13 @@ export const getFirmAIUsageStats = async (timeframe: 'day' | 'week' | 'month' = 
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching firm AI usage stats:', error);
+      logger.error('Error fetching firm AI usage stats:', error);
       throw error;
     }
 
     return logs || [];
   } catch (error) {
-    console.error('Error in getFirmAIUsageStats:', error);
+    logger.error('Error in getFirmAIUsageStats:', error);
     throw error;
   }
 };

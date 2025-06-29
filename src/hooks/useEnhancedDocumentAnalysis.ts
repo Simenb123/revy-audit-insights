@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
@@ -37,7 +38,7 @@ export const useEnhancedDocumentAnalysis = () => {
       return result;
       
     } catch (error) {
-      console.error('Document analysis failed:', error);
+      logger.error('Document analysis failed:', error);
       toast({
         title: "Analyse feilet",
         description: "Kunne ikke analysere dokumentet",
@@ -74,7 +75,7 @@ export const useEnhancedDocumentAnalysis = () => {
       return results;
       
     } catch (error) {
-      console.error('Batch analysis failed:', error);
+      logger.error('Batch analysis failed:', error);
       toast({
         title: "Batch-analyse feilet",
         description: "En eller flere dokumenter kunne ikke analyseres",

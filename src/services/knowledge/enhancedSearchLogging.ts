@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 import { createTimeoutSignal } from '@/utils/networkHelpers';
 
@@ -35,7 +36,7 @@ class EnhancedSearchLogger {
     }
 
     // Console logging for development
-    console.log('📊 Search Log:', {
+    logger.log('📊 Search Log:', {
       query: entry.query,
       method: entry.method,
       results: entry.resultsCount,
@@ -90,7 +91,7 @@ class EnhancedSearchLogger {
 
   static clearLogs() {
     this.logs = [];
-    console.log('🧹 Search logs cleared');
+    logger.log('🧹 Search logs cleared');
   }
 }
 
@@ -99,7 +100,7 @@ export { EnhancedSearchLogger };
 // Enhanced search wrapper that adds logging
 export const performEnhancedSearch = async (query: string): Promise<any> => {
   if (!isSupabaseConfigured || !supabase) {
-    console.error("Supabase is not configured. Search cannot proceed.");
+    logger.error("Supabase is not configured. Search cannot proceed.");
     return { articles: [], tagMapping: {} };
   }
   const startTime = Date.now();
@@ -115,7 +116,7 @@ export const performEnhancedSearch = async (query: string): Promise<any> => {
       logEntry.userId = user.id;
     }
 
-    console.log('🔍 Enhanced search starting for:', query);
+    logger.log('🔍 Enhanced search starting for:', query);
 
     const { signal, clear } = createTimeoutSignal(20000);
 
@@ -174,7 +175,7 @@ export const performEnhancedSearch = async (query: string): Promise<any> => {
 
     EnhancedSearchLogger.logSearch(logEntry as SearchLogEntry);
 
-    console.log('✅ Enhanced search completed:', {
+    logger.log('✅ Enhanced search completed:', {
       query,
       results: articles.length,
       method: determinedMethod,
@@ -196,7 +197,7 @@ export const performEnhancedSearch = async (query: string): Promise<any> => {
 
     EnhancedSearchLogger.logSearch(logEntry as SearchLogEntry);
 
-    console.error('❌ Enhanced search failed:', error);
+    logger.error('❌ Enhanced search failed:', error);
     if (error.name === 'AbortError') {
       throw new Error('Tilkoblingen tok for lang tid, prøv igjen senere');
     }

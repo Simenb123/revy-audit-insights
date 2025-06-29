@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -41,7 +42,7 @@ const BulkCategoryManager = ({ selectedDocuments, categories, onClose, onUpdate 
       onUpdate();
       onClose();
     } catch (error) {
-      console.error('Bulk update failed:', error);
+      logger.error('Bulk update failed:', error);
       toast.error('Feil ved oppdatering av dokumenter');
     } finally {
       setIsProcessing(false);

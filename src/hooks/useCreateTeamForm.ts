@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -47,7 +48,7 @@ export const useCreateTeamForm = ({ onOpenChange, onTeamCreated }: UseCreateTeam
       onOpenChange(false);
       onTeamCreated();
     } catch (error) {
-      console.error('Error creating team:', error);
+      logger.error('Error creating team:', error);
     }
   };
 

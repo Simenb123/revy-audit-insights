@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
 import { useRevyContext } from '@/components/RevyContext/RevyContextProvider';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -44,7 +45,7 @@ const ClientsOverview = () => {
       try {
         setAnnouncements([]);
       } catch (error) {
-        console.error('Error fetching announcements:', error);
+        logger.error('Error fetching announcements:', error);
       }
     };
     

@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,10 +9,10 @@ export function useClientDetails(orgNumber: string) {
   return useQuery({
     queryKey: ['client', orgNumber],
     queryFn: async (): Promise<Client | null> => {
-      console.log('🔍 [USE_CLIENT_DETAILS] Fetching client for orgNumber:', orgNumber);
+      logger.log('🔍 [USE_CLIENT_DETAILS] Fetching client for orgNumber:', orgNumber);
       
       if (!orgNumber || orgNumber.trim() === '') {
-        console.error('❌ [USE_CLIENT_DETAILS] Empty orgNumber provided');
+        logger.error('❌ [USE_CLIENT_DETAILS] Empty orgNumber provided');
         throw new Error('Organisasjonsnummer er påkrevd');
       }
 
@@ -23,7 +24,7 @@ export function useClientDetails(orgNumber: string) {
         .single();
 
       if (clientError) {
-        console.error('❌ [USE_CLIENT_DETAILS] Database error:', clientError);
+        logger.error('❌ [USE_CLIENT_DETAILS] Database error:', clientError);
         if (clientError.code !== 'PGRST116') { // No rows returned
           toast({
             title: "Feil ved lasting av klientdata",
@@ -35,11 +36,11 @@ export function useClientDetails(orgNumber: string) {
       }
 
       if (!clientData) {
-        console.error('❌ [USE_CLIENT_DETAILS] No client data returned');
+        logger.error('❌ [USE_CLIENT_DETAILS] No client data returned');
         return null;
       }
 
-      console.log('📋 [USE_CLIENT_DETAILS] Raw client data:', {
+      logger.log('📋 [USE_CLIENT_DETAILS] Raw client data:', {
         id: clientData.id,
         name: clientData.name,
         company_name: clientData.company_name,
@@ -49,7 +50,7 @@ export function useClientDetails(orgNumber: string) {
 
       // Validate essential fields - ensure we have a proper UUID
       if (!clientData.id || clientData.id.trim() === '' || clientData.id === 'undefined' || clientData.id === 'null') {
-        console.error('❌ [USE_CLIENT_DETAILS] Client ID is missing, empty, or invalid:', {
+        logger.error('❌ [USE_CLIENT_DETAILS] Client ID is missing, empty, or invalid:', {
           id: clientData.id,
           type: typeof clientData.id,
           rawData: clientData
@@ -121,14 +122,14 @@ export function useClientDetails(orgNumber: string) {
 
       // Final validation that we have a valid ID
       if (!client.id || client.id.trim() === '' || client.id === 'undefined' || client.id === 'null') {
-        console.error('❌ [USE_CLIENT_DETAILS] Final validation failed - client ID still invalid:', {
+        logger.error('❌ [USE_CLIENT_DETAILS] Final validation failed - client ID still invalid:', {
           clientId: client.id,
           orgNumber: client.org_number
         });
         throw new Error('Klient-ID kunne ikke valideres');
       }
 
-      console.log('✅ [USE_CLIENT_DETAILS] Client successfully transformed with valid ID:', {
+      logger.log('✅ [USE_CLIENT_DETAILS] Client successfully transformed with valid ID:', {
         id: client.id,
         name: client.name,
         company_name: client.company_name,
@@ -141,7 +142,7 @@ export function useClientDetails(orgNumber: string) {
     enabled: !!orgNumber && orgNumber.trim() !== '',
     staleTime: 1000 * 60 * 5, // 5 minutes
     retry: (failureCount, error) => {
-      console.log('🔄 [USE_CLIENT_DETAILS] Query retry:', { failureCount, error: error.message });
+      logger.log('🔄 [USE_CLIENT_DETAILS] Query retry:', { failureCount, error: error.message });
       return failureCount < 2; // Retry max 2 times
     }
   });

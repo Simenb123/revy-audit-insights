@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -35,7 +36,7 @@ export function useChatRooms(roomType?: 'team' | 'department' | 'firm') {
       const { data, error } = await query;
 
       if (error) {
-        console.error('Error fetching chat rooms:', error);
+        logger.error('Error fetching chat rooms:', error);
         return [];
       }
 

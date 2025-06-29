@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,7 +9,7 @@ export function useClientData() {
   return useQuery<Client[]>({
     queryKey: ['clients'],
     queryFn: async () => {
-      console.log('=== STARTING CLIENT DATA FETCH ===');
+      logger.log('=== STARTING CLIENT DATA FETCH ===');
       
       const { data: clientsData, error: clientsError } = await supabase
         .from('clients')
@@ -20,7 +21,7 @@ export function useClientData() {
         .order('created_at', { ascending: false });
 
       if (clientsError) {
-        console.error('Error fetching clients:', clientsError);
+        logger.error('Error fetching clients:', clientsError);
         toast({
           title: "Feil ved lasting av klienter",
           description: clientsError.message,
@@ -29,14 +30,14 @@ export function useClientData() {
         return [];
       }
 
-      console.log('Raw clients data from database:', clientsData);
+      logger.log('Raw clients data from database:', clientsData);
       
       const { data: riskAreasData, error: riskAreasError } = await supabase
         .from('risk_areas')
         .select('*');
 
       if (riskAreasError) {
-        console.error("Error fetching risk areas:", riskAreasError);
+        logger.error("Error fetching risk areas:", riskAreasError);
       }
 
       const { data: documentsData, error: documentsError } = await supabase
@@ -44,7 +45,7 @@ export function useClientData() {
         .select('*');
 
       if (documentsError) {
-        console.error("Error fetching client documents:", documentsError);
+        logger.error("Error fetching client documents:", documentsError);
       }
       
       const transformedClients = clientsData.map(client => {
@@ -118,8 +119,8 @@ export function useClientData() {
         return transformedClient;
       });
 
-      console.log('=== TRANSFORMATION COMPLETE ===');
-      console.log('Final transformed clients:', transformedClients.length);
+      logger.log('=== TRANSFORMATION COMPLETE ===');
+      logger.log('Final transformed clients:', transformedClients.length);
       
       return transformedClients;
     },

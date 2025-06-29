@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 import { performEnhancedSearch } from '@/services/knowledge/enhancedSearchLogging';
 import { createTimeoutSignal } from '@/utils/networkHelpers';
@@ -50,16 +51,16 @@ export interface SearchSuggestion {
 
 export const performSemanticSearch = async (query: SearchQuery): Promise<SearchResult[]> => {
   if (!isSupabaseConfigured || !supabase) {
-    console.error("Supabase is not configured. Search cannot proceed.");
+    logger.error("Supabase is not configured. Search cannot proceed.");
     throw new Error("Supabase not initialized");
   }
   try {
-    console.log('🔍 Performing enhanced semantic search:', query);
+    logger.log('🔍 Performing enhanced semantic search:', query);
     
     // Use the enhanced search with logging
     const { articles } = await performEnhancedSearch(query.term);
     
-    console.log('📊 Enhanced search returned:', articles.length, 'results');
+    logger.log('📊 Enhanced search returned:', articles.length, 'results');
     
     const results: SearchResult[] = articles.map((article: any) => ({
       id: article.id,
@@ -82,11 +83,11 @@ export const performSemanticSearch = async (query: SearchQuery): Promise<SearchR
       suggestedActions: article.suggested_actions || []
     }));
     
-    console.log('✅ Enhanced search results processed:', results.length);
+    logger.log('✅ Enhanced search results processed:', results.length);
     return results;
     
   } catch (error: any) {
-    console.error('💥 Enhanced semantic search error:', error);
+    logger.error('💥 Enhanced semantic search error:', error);
     if (error.name === 'AbortError') {
       throw new Error('Tilkoblingen tok for lang tid, prøv igjen senere');
     }
@@ -135,11 +136,11 @@ export const generateSearchSuggestions = async (clientId: string): Promise<Searc
 // Helper function to trigger enhanced text extraction for documents
 export const triggerEnhancedTextExtraction = async (documentId: string): Promise<boolean> => {
   if (!isSupabaseConfigured || !supabase) {
-    console.error("Supabase is not configured. Text extraction cannot proceed.");
+    logger.error("Supabase is not configured. Text extraction cannot proceed.");
     return false;
   }
   try {
-    console.log('🔄 Triggering enhanced text extraction for document:', documentId);
+    logger.log('🔄 Triggering enhanced text extraction for document:', documentId);
     
     const { signal, clear } = createTimeoutSignal(20000);
 
@@ -151,18 +152,18 @@ export const triggerEnhancedTextExtraction = async (documentId: string): Promise
     clear();
     
     if (error) {
-      console.error('❌ Enhanced text extraction error:', error);
+      logger.error('❌ Enhanced text extraction error:', error);
       return false;
     }
     
-    console.log('✅ Enhanced text extraction completed:', data);
+    logger.log('✅ Enhanced text extraction completed:', data);
     return data?.success || false;
     
   } catch (error: any) {
     if (error.name === 'AbortError') {
-      console.error('💥 Enhanced text extraction timed out');
+      logger.error('💥 Enhanced text extraction timed out');
     } else {
-      console.error('💥 Enhanced text extraction failed:', error);
+      logger.error('💥 Enhanced text extraction failed:', error);
     }
     return false;
   }
@@ -171,11 +172,11 @@ export const triggerEnhancedTextExtraction = async (documentId: string): Promise
 // Test function to verify knowledge search is working
 export const testKnowledgeSearch = async (testQuery: string = 'ISA revisjon'): Promise<boolean> => {
   if (!isSupabaseConfigured || !supabase) {
-    console.error("Supabase is not configured. Knowledge search cannot proceed.");
+    logger.error("Supabase is not configured. Knowledge search cannot proceed.");
     return false;
   }
   try {
-    console.log('🧪 Testing knowledge search with query:', testQuery);
+    logger.log('🧪 Testing knowledge search with query:', testQuery);
     
     const { signal, clear } = createTimeoutSignal(20000);
 
@@ -187,7 +188,7 @@ export const testKnowledgeSearch = async (testQuery: string = 'ISA revisjon'): P
     clear();
     
     if (error) {
-      console.error('❌ Knowledge search test failed:', error);
+      logger.error('❌ Knowledge search test failed:', error);
       return false;
     }
     
@@ -195,7 +196,7 @@ export const testKnowledgeSearch = async (testQuery: string = 'ISA revisjon'): P
     const articles = data?.articles || [];
     const tagMapping = data?.tagMapping || {};
     
-    console.log('✅ Knowledge search test result:', {
+    logger.log('✅ Knowledge search test result:', {
       success: true,
       resultsCount: articles.length,
       hasResults: Array.isArray(articles) && articles.length > 0,
@@ -206,9 +207,9 @@ export const testKnowledgeSearch = async (testQuery: string = 'ISA revisjon'): P
     
   } catch (error: any) {
     if (error.name === 'AbortError') {
-      console.error('💥 Knowledge search test timed out');
+      logger.error('💥 Knowledge search test timed out');
     } else {
-      console.error('💥 Knowledge search test error:', error);
+      logger.error('💥 Knowledge search test error:', error);
     }
     return false;
   }

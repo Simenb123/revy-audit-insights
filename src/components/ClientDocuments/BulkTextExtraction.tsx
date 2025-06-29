@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -18,7 +19,7 @@ const BulkTextExtraction = ({ documents, onUpdate }: BulkTextExtractionProps) =>
   const [currentDocument, setCurrentDocument] = useState<string>('');
   const { extractAndAnalyzeDocument } = useClientTextExtraction();
 
-  console.log('🔄 [BULK_EXTRACTION] Component rendered with:', {
+  logger.log('🔄 [BULK_EXTRACTION] Component rendered with:', {
     totalDocuments: documents.length,
     documentStatuses: documents.map(d => ({
       id: d.id,
@@ -47,7 +48,7 @@ const BulkTextExtraction = ({ documents, onUpdate }: BulkTextExtractionProps) =>
     
     const needsProcessing = statusNeedsProcessing || hasErrorText;
     
-    console.log('🔍 [BULK_EXTRACTION] Document check:', {
+    logger.log('🔍 [BULK_EXTRACTION] Document check:', {
       fileName: doc.file_name,
       status: doc.text_extraction_status,
       hasText: !!doc.extracted_text,
@@ -68,7 +69,7 @@ const BulkTextExtraction = ({ documents, onUpdate }: BulkTextExtractionProps) =>
     )
   );
 
-  console.log('📊 [BULK_EXTRACTION] Processing status:', {
+  logger.log('📊 [BULK_EXTRACTION] Processing status:', {
     total: documents.length,
     needingProcessing: documentsNeedingProcessing.length,
     withErrors: documentsWithErrors.length,
@@ -85,29 +86,29 @@ const BulkTextExtraction = ({ documents, onUpdate }: BulkTextExtractionProps) =>
 
   const handleBulkProcessing = async () => {
     if (documentsNeedingProcessing.length === 0) {
-      console.log('⚠️ [BULK_EXTRACTION] No documents to process');
+      logger.log('⚠️ [BULK_EXTRACTION] No documents to process');
       return;
     }
     
-    console.log('🚀 [BULK_EXTRACTION] Starting bulk processing of', documentsNeedingProcessing.length, 'documents');
+    logger.log('🚀 [BULK_EXTRACTION] Starting bulk processing of', documentsNeedingProcessing.length, 'documents');
     setIsProcessing(true);
     setProgress(0);
     
     for (let i = 0; i < documentsNeedingProcessing.length; i++) {
       const doc = documentsNeedingProcessing[i];
-      console.log('🔄 [BULK_EXTRACTION] Processing document:', doc.file_name);
+      logger.log('🔄 [BULK_EXTRACTION] Processing document:', doc.file_name);
       setCurrentDocument(doc.file_name);
       
       try {
         await extractAndAnalyzeDocument(doc.id);
-        console.log('✅ [BULK_EXTRACTION] Successfully processed:', doc.file_name);
+        logger.log('✅ [BULK_EXTRACTION] Successfully processed:', doc.file_name);
       } catch (error) {
-        console.error('❌ [BULK_EXTRACTION] Failed to process', doc.file_name, ':', error);
+        logger.error('❌ [BULK_EXTRACTION] Failed to process', doc.file_name, ':', error);
       }
       
       const newProgress = ((i + 1) / documentsNeedingProcessing.length) * 100;
       setProgress(newProgress);
-      console.log('📈 [BULK_EXTRACTION] Progress:', newProgress.toFixed(1) + '%');
+      logger.log('📈 [BULK_EXTRACTION] Progress:', newProgress.toFixed(1) + '%');
       
       // Small delay to prevent overwhelming the system
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -115,7 +116,7 @@ const BulkTextExtraction = ({ documents, onUpdate }: BulkTextExtractionProps) =>
     
     setIsProcessing(false);
     setCurrentDocument('');
-    console.log('🎉 [BULK_EXTRACTION] Bulk processing completed');
+    logger.log('🎉 [BULK_EXTRACTION] Bulk processing completed');
     
     if (onUpdate) {
       onUpdate();
@@ -124,7 +125,7 @@ const BulkTextExtraction = ({ documents, onUpdate }: BulkTextExtractionProps) =>
 
   // Show success state if no documents need processing
   if (documentsNeedingProcessing.length === 0) {
-    console.log('✅ [BULK_EXTRACTION] All documents processed - showing success state');
+    logger.log('✅ [BULK_EXTRACTION] All documents processed - showing success state');
     return (
       <Card className="bg-green-50 border-green-200">
         <CardContent className="p-4">
@@ -140,7 +141,7 @@ const BulkTextExtraction = ({ documents, onUpdate }: BulkTextExtractionProps) =>
     );
   }
 
-  console.log('🎯 [BULK_EXTRACTION] Showing processing interface for', documentsNeedingProcessing.length, 'documents');
+  logger.log('🎯 [BULK_EXTRACTION] Showing processing interface for', documentsNeedingProcessing.length, 'documents');
 
   return (
     <Card className="bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200">

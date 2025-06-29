@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from './types'
@@ -18,7 +19,7 @@ export const supabaseServiceRoleKey = typeof window === 'undefined'
 export const isSupabaseConfigured = !!(supabaseUrl && supabaseAnonKey)
 
 if (!isSupabaseConfigured) {
-  console.error(
+  logger.error(
     'Supabase credentials missing. Set SUPABASE_URL and SUPABASE_ANON_KEY.'
   )
 }
@@ -34,7 +35,7 @@ const loggingFetch = async (
   const response = await fetch(input, init)
   if (logLevel === 'debug') {
     const url = typeof input === 'string' ? input : input.toString()
-    console.log(
+    logger.log(
       `\uD83D\uDCE1 [Supabase] ${method} ${url} -> ${response.status} in ${
         Date.now() - start
       }ms`

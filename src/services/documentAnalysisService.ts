@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 import { createTimeoutSignal } from '@/utils/networkHelpers';
 
@@ -44,7 +45,7 @@ export const analyzeDocumentWithAI = async (
   input: DocumentAnalysisInput
 ): Promise<DocumentAnalysisResult> => {
   if (!isSupabaseConfigured || !supabase) {
-    console.error("Supabase is not configured. Document analysis cannot proceed.");
+    logger.error("Supabase is not configured. Document analysis cannot proceed.");
     throw new Error("Supabase not initialized");
   }
   const useEnhanced = import.meta.env.VITE_USE_ENHANCED_ANALYSIS === 'true';
@@ -112,7 +113,7 @@ export const updateDocumentWithAnalysis = async (
   result: DocumentAnalysisResult
 ): Promise<void> => {
   if (!isSupabaseConfigured || !supabase) {
-    console.error("Supabase is not configured. Document update cannot proceed.");
+    logger.error("Supabase is not configured. Document update cannot proceed.");
     throw new Error("Supabase not initialized");
   }
   const updateData: Record<string, any> = {

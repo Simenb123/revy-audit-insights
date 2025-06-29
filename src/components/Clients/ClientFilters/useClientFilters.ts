@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import { useState, useMemo } from 'react';
 import { Client } from '@/types/revio';
 
@@ -20,8 +21,8 @@ export function useClientFilters(clients: Client[]) {
 
   // Filter clients based on search term, department, and test data preference
   const filteredClients = useMemo(() => {
-    console.log('=== FILTERING CLIENTS ===');
-    console.log('Filter parameters:', { 
+    logger.log('=== FILTERING CLIENTS ===');
+    logger.log('Filter parameters:', { 
       totalClients: clients.length, 
       showTestData, 
       searchTerm, 
@@ -30,9 +31,9 @@ export function useClientFilters(clients: Client[]) {
     
     // Count test clients in input
     const testClientsInput = clients.filter(c => c.is_test_data);
-    console.log('Test clients in input to filter:', testClientsInput.length);
+    logger.log('Test clients in input to filter:', testClientsInput.length);
     if (testClientsInput.length > 0) {
-      console.log('Test clients details:', testClientsInput.map(c => ({ name: c.name, isTestData: c.is_test_data })));
+      logger.log('Test clients details:', testClientsInput.map(c => ({ name: c.name, isTestData: c.is_test_data })));
     }
     
     const result = clients.filter(client => {
@@ -52,7 +53,7 @@ export function useClientFilters(clients: Client[]) {
       const shouldShow = matchesSearch && matchesDepartment && matchesTestDataPreference;
       
       if (client.is_test_data) {
-        console.log(`Test client ${client.name}:`, {
+        logger.log(`Test client ${client.name}:`, {
           matchesSearch,
           matchesDepartment,
           matchesTestDataPreference,
@@ -66,8 +67,8 @@ export function useClientFilters(clients: Client[]) {
     });
 
     const testClientsInResult = result.filter(c => c.is_test_data);
-    console.log('=== FILTER RESULT ===');
-    console.log('Filtered clients result:', {
+    logger.log('=== FILTER RESULT ===');
+    logger.log('Filtered clients result:', {
       total: clients.length,
       filtered: result.length,
       testClientsInInput: testClientsInput.length,
@@ -75,9 +76,9 @@ export function useClientFilters(clients: Client[]) {
     });
 
     if (testClientsInResult.length > 0) {
-      console.log('Test clients that passed filter:', testClientsInResult.map(c => c.name));
+      logger.log('Test clients that passed filter:', testClientsInResult.map(c => c.name));
     } else if (testClientsInput.length > 0 && showTestData) {
-      console.log('TEST CLIENTS WERE FILTERED OUT despite showTestData being true - Check filter logic');
+      logger.log('TEST CLIENTS WERE FILTERED OUT despite showTestData being true - Check filter logic');
     }
 
     return result;

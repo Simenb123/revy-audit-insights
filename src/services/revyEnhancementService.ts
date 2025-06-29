@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import { useNavigate } from 'react-router-dom';
 
@@ -152,7 +153,7 @@ export const generateProactiveActions = (clientData: any, context: string) => {
     actions.push({
       type: 'action' as const,
       text: 'Opprett handlingsplan',
-      action: () => console.log('Creating action plan...'),
+      action: () => logger.log('Creating action plan...'),
       variant: 'default' as const
     });
   }

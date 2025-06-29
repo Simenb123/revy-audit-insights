@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import * as XLSX from 'xlsx';
 import { supabase } from "@/integrations/supabase/client";
@@ -14,7 +15,7 @@ export const processOrgNumber = async (orgNumber: string, addLog: AddLogFunction
     const { data: { session } } = await supabase.auth.getSession();
     if (!session || !session.user) {
       const errorMsg = 'No authenticated user found';
-      console.error(errorMsg);
+      logger.error(errorMsg);
       addLog(errorMsg);
       return null;
     }
@@ -42,14 +43,14 @@ export const processOrgNumber = async (orgNumber: string, addLog: AddLogFunction
     
     if (invokeError) {
       const errorMsg = `Error calling brreg function: ${invokeError.message}`;
-      console.error(errorMsg);
+      logger.error(errorMsg);
       addLog(errorMsg);
       return null;
     }
 
     if (!response) {
       const errorMsg = `No response from brreg function for org number: ${orgNumber}`;
-      console.error(errorMsg);
+      logger.error(errorMsg);
       addLog(errorMsg);
       return null;
     }
@@ -91,12 +92,12 @@ export const processOrgNumber = async (orgNumber: string, addLog: AddLogFunction
     if (error) {
       if (error.code === '23505') {
         const errorMsg = `Client with org number ${orgNumber} already exists`;
-        console.log(errorMsg);
+        logger.log(errorMsg);
         addLog(errorMsg);
         return null;
       }
       const errorMsg = `Error inserting client: ${error.message} (${error.code}) - Details: ${JSON.stringify(error.details || {})}`;
-      console.error(errorMsg);
+      logger.error(errorMsg);
       addLog(errorMsg);
       throw error;
     }
@@ -105,7 +106,7 @@ export const processOrgNumber = async (orgNumber: string, addLog: AddLogFunction
     return client;
   } catch (error) {
     const errorMsg = `Error processing org number ${orgNumber}: ${(error as Error).message}`;
-    console.error(errorMsg);
+    logger.error(errorMsg);
     addLog(errorMsg);
     return null;
   }

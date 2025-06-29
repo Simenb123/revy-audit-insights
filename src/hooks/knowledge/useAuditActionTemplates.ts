@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -16,7 +17,7 @@ export const useAuditActionTemplateCount = (
   return useQuery({
     queryKey: ['audit-action-template-count', robust],
     queryFn: async () => {
-      console.log('[ACTION_TEMPLATES] Counting audit action templates...');
+      logger.log('[ACTION_TEMPLATES] Counting audit action templates...');
       try {
         const { count, error } = await supabase
           .from('audit_action_templates')
@@ -24,17 +25,17 @@ export const useAuditActionTemplateCount = (
           .eq('is_active', true);
 
         if (error) {
-          console.error('[ACTION_TEMPLATES] Count error:', error);
+          logger.error('[ACTION_TEMPLATES] Count error:', error);
           if (robust) {
             return 0;
           }
           throw error;
         }
 
-        console.log('[ACTION_TEMPLATES] Total templates count:', count);
+        logger.log('[ACTION_TEMPLATES] Total templates count:', count);
         return count || 0;
       } catch (err) {
-        console.error('[ACTION_TEMPLATES] Fatal error:', err);
+        logger.error('[ACTION_TEMPLATES] Fatal error:', err);
         if (robust) {
           return 0;
         }
@@ -55,7 +56,7 @@ export const useAuditActionTemplatesBySubjectArea = (
   return useQuery({
     queryKey: ['audit-action-templates-by-subject-area', robust],
     queryFn: async () => {
-      console.log('[ACTION_TEMPLATES] Fetching templates by subject area...');
+      logger.log('[ACTION_TEMPLATES] Fetching templates by subject area...');
       try {
         const { data, error } = await supabase
           .from('audit_action_templates')
@@ -78,17 +79,17 @@ export const useAuditActionTemplatesBySubjectArea = (
           .eq('is_active', true);
 
         if (error) {
-          console.error('[ACTION_TEMPLATES] Fetch error:', error);
+          logger.error('[ACTION_TEMPLATES] Fetch error:', error);
           if (robust) {
             return [] as any[];
           }
           throw error;
         }
 
-        console.log('[ACTION_TEMPLATES] Fetched templates:', data?.length || 0);
+        logger.log('[ACTION_TEMPLATES] Fetched templates:', data?.length || 0);
         return data || [];
       } catch (err) {
-        console.error('[ACTION_TEMPLATES] Fatal error:', err);
+        logger.error('[ACTION_TEMPLATES] Fatal error:', err);
         if (robust) {
           return [] as any[];
         }

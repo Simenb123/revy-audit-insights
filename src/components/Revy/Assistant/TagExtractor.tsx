@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import React from 'react';
 
@@ -9,8 +10,8 @@ interface TagExtractionResult {
 }
 
 export const extractTagsFromContent = (content: string): TagExtractionResult => {
-  console.log('🔍 Starting enhanced tag extraction with improved content type detection...');
-  console.log('📝 Content preview:', content.substring(0, 200) + '...');
+  logger.log('🔍 Starting enhanced tag extraction with improved content type detection...');
+  logger.log('📝 Content preview:', content.substring(0, 200) + '...');
   
   const lines = content.split('\n');
   
@@ -34,14 +35,14 @@ export const extractTagsFromContent = (content: string): TagExtractionResult => 
   
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
-    console.log(`🔍 Analyzing line ${i}: "${line}"`);
+    logger.log(`🔍 Analyzing line ${i}: "${line}"`);
     
     for (const pattern of tagPatterns) {
       const match = line.match(pattern);
       if (match && match[1]) {
-        console.log('✅ Found tags with pattern:', pattern);
+        logger.log('✅ Found tags with pattern:', pattern);
         const tagsPart = match[1].trim();
-        console.log('📝 Raw tags part:', tagsPart);
+        logger.log('📝 Raw tags part:', tagsPart);
         
         // Enhanced cleaning for various AI response formats
         const cleanedPart = tagsPart
@@ -53,7 +54,7 @@ export const extractTagsFromContent = (content: string): TagExtractionResult => 
           .replace(/^[:\-\s]+/, '') // Remove leading colons, dashes, spaces
           .trim();
         
-        console.log('🧹 Cleaned tags part:', cleanedPart);
+        logger.log('🧹 Cleaned tags part:', cleanedPart);
         
         // Split on common separators and clean each tag
         const tags = cleanedPart
@@ -74,7 +75,7 @@ export const extractTagsFromContent = (content: string): TagExtractionResult => 
           });
         
         if (tags.length > 0) {
-          console.log('🎯 Successfully extracted and formatted tags:', tags);
+          logger.log('🎯 Successfully extracted and formatted tags:', tags);
           const contentTypes = detectContentTypes(content);
           return {
             tags,
@@ -87,14 +88,14 @@ export const extractTagsFromContent = (content: string): TagExtractionResult => 
     }
   }
   
-  console.log('❌ No valid tags found with standard patterns, trying intelligent fallback extraction...');
+  logger.log('❌ No valid tags found with standard patterns, trying intelligent fallback extraction...');
   
   // Intelligent fallback: extract key terms from the actual content
   const fallbackTags = extractIntelligentFallbackTags(content);
   const contentTypes = detectContentTypes(content);
   
   if (fallbackTags.length > 0) {
-    console.log('🔄 Using intelligent fallback tags:', fallbackTags);
+    logger.log('🔄 Using intelligent fallback tags:', fallbackTags);
     return {
       tags: fallbackTags,
       hasValidFormat: false,
@@ -103,7 +104,7 @@ export const extractTagsFromContent = (content: string): TagExtractionResult => 
     };
   }
   
-  console.log('❌ No tags found at all');
+  logger.log('❌ No tags found at all');
   return {
     tags: [],
     hasValidFormat: false,
@@ -149,7 +150,7 @@ function detectContentTypes(content: string): string[] {
     detectedTypes.push('fagartikkel');
   }
   
-  console.log('🏷️ Enhanced content type detection result:', detectedTypes);
+  logger.log('🏷️ Enhanced content type detection result:', detectedTypes);
   return detectedTypes;
 }
 

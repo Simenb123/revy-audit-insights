@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -94,7 +95,7 @@ const DocumentUploader = ({ clientId, categories, enableAIProgress = false }: Do
           setUploadProgress(prev => ({ ...prev, [file.name]: 100 }));
         }
       } catch (error) {
-        console.error(`Failed to upload ${file.name}:`, error);
+        logger.error(`Failed to upload ${file.name}:`, error);
         if (enableAIProgress) {
           setUploadProgress(prev => ({ ...prev, [file.name]: 0 }));
         }

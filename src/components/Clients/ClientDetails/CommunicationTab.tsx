@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -35,10 +36,10 @@ const CommunicationTab = ({ client }: CommunicationTabProps) => {
     // Create a new room for this client
     try {
       // This would typically call a create room mutation
-      console.log('Creating room for client:', client.company_name);
+      logger.log('Creating room for client:', client.company_name);
       refetchRooms();
     } catch (error) {
-      console.error('Failed to create room:', error);
+      logger.error('Failed to create room:', error);
     }
   };
 

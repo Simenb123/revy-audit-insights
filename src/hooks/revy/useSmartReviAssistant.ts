@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import { useState, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
@@ -40,14 +41,14 @@ export const useSmartReviAssistant = ({ clientData, userRole, embedded = false }
   const enhancedContext = state.currentContext;
 
   const handleCreateSession = useCallback(async (title?: string) => {
-    console.log('🔥 Creating new session with title:', title);
+    logger.log('🔥 Creating new session with title:', title);
     try {
       const newSession = await createSession({
         title: title || `Ny samtale ${new Date().toLocaleDateString()}`,
         context: enhancedContext,
         clientId: clientData?.id,
       });
-      console.log('✅ Session created successfully:', newSession);
+      logger.log('✅ Session created successfully:', newSession);
       setActiveSessionId(newSession.id);
       
       // Add welcome message to new session
@@ -56,11 +57,11 @@ export const useSmartReviAssistant = ({ clientData, userRole, embedded = false }
         content: welcomeContent,
         sender: 'revy',
       });
-      console.log('✅ Welcome message sent to new session');
+      logger.log('✅ Welcome message sent to new session');
       
       return newSession;
     } catch (error) {
-      console.error('❌ Failed to create session:', error);
+      logger.error('❌ Failed to create session:', error);
       toast({ title: "Feil", description: "Kunne ikke opprette en ny samtale.", variant: "destructive" });
       throw error;
     }
@@ -68,10 +69,10 @@ export const useSmartReviAssistant = ({ clientData, userRole, embedded = false }
   
   // Enhanced effect to manage sessions with variant context
   useEffect(() => {
-    console.log('🔍 Managing sessions - sessionsLoading:', sessionsLoading, 'sessions.length:', sessions.length, 'activeSessionId:', activeSessionId);
+    logger.log('🔍 Managing sessions - sessionsLoading:', sessionsLoading, 'sessions.length:', sessions.length, 'activeSessionId:', activeSessionId);
     
     if (sessionsLoading) {
-      console.log('⏳ Sessions still loading...');
+      logger.log('⏳ Sessions still loading...');
       return;
     }
 
@@ -79,25 +80,25 @@ export const useSmartReviAssistant = ({ clientData, userRole, embedded = false }
       // For embedded, we want one session per context
       const contextTitle = `Embedded: ${enhancedContext} ${clientData?.id || ''} ${selectedVariant?.name || ''}`;
       const existingSession = sessions.find(s => s.title === contextTitle);
-      console.log('🔍 Looking for embedded session with title:', contextTitle, 'found:', !!existingSession);
+      logger.log('🔍 Looking for embedded session with title:', contextTitle, 'found:', !!existingSession);
       
       if (existingSession) {
         if (activeSessionId !== existingSession.id) {
-          console.log('✅ Setting active session to existing embedded session:', existingSession.id);
+          logger.log('✅ Setting active session to existing embedded session:', existingSession.id);
           setActiveSessionId(existingSession.id);
         }
       } else {
-        console.log('📝 Creating new embedded session');
-        handleCreateSession(contextTitle).catch(console.error);
+        logger.log('📝 Creating new embedded session');
+        handleCreateSession(contextTitle).catch(logger.error);
       }
     } else {
       // For floating, pick the most recent one or create a new one
       if (sessions.length > 0 && !activeSessionId) {
-        console.log('✅ Setting active session to most recent:', sessions[0].id);
+        logger.log('✅ Setting active session to most recent:', sessions[0].id);
         setActiveSessionId(sessions[0].id);
       } else if (sessions.length === 0 && !activeSessionId) {
-        console.log('📝 No sessions exist, creating first session');
-        handleCreateSession().catch(console.error);
+        logger.log('📝 No sessions exist, creating first session');
+        handleCreateSession().catch(logger.error);
       }
     }
   }, [sessions, sessionsLoading, embedded, enhancedContext, clientData?.id, activeSessionId, selectedVariant?.name, handleCreateSession]);
@@ -109,7 +110,7 @@ export const useSmartReviAssistant = ({ clientData, userRole, embedded = false }
         const tip = await getEnhancedContextualTips(enhancedContext, clientData, userRole);
         setCurrentTip(tip || '');
       } catch (e) {
-        console.error("Failed to get contextual tip", e);
+        logger.error("Failed to get contextual tip", e);
         setCurrentTip('');
       }
     };
@@ -117,7 +118,7 @@ export const useSmartReviAssistant = ({ clientData, userRole, embedded = false }
   }, [enhancedContext, clientData, userRole]);
 
   const handleSendMessage = async () => {
-    console.log('🚀 handleSendMessage called with:', { 
+    logger.log('🚀 handleSendMessage called with:', { 
       message: message.substring(0, 50) + '...', 
       isTyping, 
       activeSessionId,
@@ -125,28 +126,28 @@ export const useSmartReviAssistant = ({ clientData, userRole, embedded = false }
     });
     
     if (!message.trim()) {
-      console.log('❌ No message to send');
+      logger.log('❌ No message to send');
       return;
     }
 
     if (isTyping) {
-      console.log('❌ Already processing a message');
+      logger.log('❌ Already processing a message');
       return;
     }
     
     if (!activeSessionId) {
-      console.log('❌ No active session - attempting to create one');
+      logger.log('❌ No active session - attempting to create one');
       try {
         const newSession = await handleCreateSession();
         if (!newSession?.id) {
-          console.error('❌ Failed to create session for message');
+          logger.error('❌ Failed to create session for message');
           toast({ title: "Feil", description: "Kunne ikke opprette samtale for å sende melding.", variant: "destructive" });
           return;
         }
         // Wait a moment for the session to be set
         await new Promise(resolve => setTimeout(resolve, 100));
       } catch (error) {
-        console.error('❌ Could not create session for message:', error);
+        logger.error('❌ Could not create session for message:', error);
         return;
       }
     }
@@ -155,25 +156,25 @@ export const useSmartReviAssistant = ({ clientData, userRole, embedded = false }
     setMessage('');
     
     const historyBeforeSend = dbMessages;
-    console.log('📝 Sending user message:', userMessageContent.substring(0, 100) + '...');
+    logger.log('📝 Sending user message:', userMessageContent.substring(0, 100) + '...');
 
     try {
       await sendMessage({
         content: userMessageContent,
         sender: 'user'
       });
-      console.log('✅ User message saved to database');
+      logger.log('✅ User message saved to database');
     } catch (error) {
-      console.error('❌ Failed to save user message:', error);
+      logger.error('❌ Failed to save user message:', error);
       toast({ title: "Feil", description: "Kunne ikke lagre melding.", variant: "destructive" });
       return;
     }
 
     setIsTyping(true);
-    console.log('⏳ Set isTyping to true, calling AI service...');
+    logger.log('⏳ Set isTyping to true, calling AI service...');
     
     try {
-      console.log('🤖 Calling generateEnhancedAIResponseWithVariant with params:', {
+      logger.log('🤖 Calling generateEnhancedAIResponseWithVariant with params:', {
         message: userMessageContent.substring(0, 50) + '...',
         context: enhancedContext,
         historyLength: historyBeforeSend.length,
@@ -194,7 +195,7 @@ export const useSmartReviAssistant = ({ clientData, userRole, embedded = false }
         selectedVariant
       );
       
-      console.log('✅ AI response received:', {
+      logger.log('✅ AI response received:', {
         responseLength: responseText?.length || 0,
         responsePreview: responseText?.substring(0, 100) + '...',
         responseType: typeof responseText,
@@ -203,22 +204,22 @@ export const useSmartReviAssistant = ({ clientData, userRole, embedded = false }
       });
 
       if (!responseText || typeof responseText !== 'string' || responseText.trim() === '') {
-        console.error('❌ Invalid AI response received:', responseText);
+        logger.error('❌ Invalid AI response received:', responseText);
         throw new Error('AI returnerte en tom eller ugyldig respons');
       }
       
-      console.log('💾 Saving AI response to database...');
+      logger.log('💾 Saving AI response to database...');
       await sendMessage({
         content: responseText,
         sender: 'revy'
       });
-      console.log('✅ AI response saved successfully');
+      logger.log('✅ AI response saved successfully');
 
     } catch (error) {
-      console.error('💥 Error in handleSendMessage:', error);
+      logger.error('💥 Error in handleSendMessage:', error);
       
       const errorMessage = error instanceof Error ? error.message : 'En ukjent feil oppstod.';
-      console.log('🆘 Sending fallback error message:', errorMessage);
+      logger.log('🆘 Sending fallback error message:', errorMessage);
       
       const fallbackContent = `Beklager, jeg opplever tekniske problemer akkurat nå. Prøv igjen om litt. 
 
@@ -233,9 +234,9 @@ export const useSmartReviAssistant = ({ clientData, userRole, embedded = false }
 
       try {
         await sendMessage({ content: fallbackContent, sender: 'revy' });
-        console.log('✅ Fallback message sent successfully');
+        logger.log('✅ Fallback message sent successfully');
       } catch (fallbackError) {
-        console.error('💥 Failed to send fallback message:', fallbackError);
+        logger.error('💥 Failed to send fallback message:', fallbackError);
         toast({
           title: "Kritisk feil",
           description: "Kunne ikke sende feilmelding. Prøv å laste siden på nytt.",
@@ -249,7 +250,7 @@ export const useSmartReviAssistant = ({ clientData, userRole, embedded = false }
         variant: "destructive"
       });
     } finally {
-      console.log('🔄 Setting isTyping to false');
+      logger.log('🔄 Setting isTyping to false');
       setIsTyping(false);
     }
   };

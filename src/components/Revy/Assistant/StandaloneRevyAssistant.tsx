@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,7 +34,7 @@ const StandaloneRevyAssistant = ({
 }: StandaloneRevyAssistantProps) => {
   
   const handleVariantChange = (variant: any) => {
-    console.log('🔄 Variant changed in standalone assistant:', variant.name);
+    logger.log('🔄 Variant changed in standalone assistant:', variant.name);
     // The variant change will be handled by the parent component
   };
 

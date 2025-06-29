@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -117,7 +118,7 @@ VIKTIG: Du har tilgang til en omfattende kunnskapsbase med artikler om revisjon,
         });
       }
     } catch (error) {
-      console.error('Error loading prompts:', error);
+      logger.error('Error loading prompts:', error);
     }
   };
 
@@ -131,7 +132,7 @@ VIKTIG: Du har tilgang til en omfattende kunnskapsbase med artikler om revisjon,
       
       setPromptHistory(data || []);
     } catch (error) {
-      console.error('Error loading prompt history:', error);
+      logger.error('Error loading prompt history:', error);
     }
   };
 

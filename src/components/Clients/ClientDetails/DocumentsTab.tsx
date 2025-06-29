@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import React from 'react';
 import { Client } from '@/types/revio';
@@ -8,7 +9,7 @@ interface DocumentsTabProps {
 }
 
 const DocumentsTab = ({ client }: DocumentsTabProps) => {
-  console.log('📋 [DOCUMENTS_TAB] Component rendered with client:', {
+  logger.log('📋 [DOCUMENTS_TAB] Component rendered with client:', {
     id: client?.id,
     name: client?.company_name || client?.name,
     orgNumber: client?.org_number,
@@ -17,7 +18,7 @@ const DocumentsTab = ({ client }: DocumentsTabProps) => {
   
   // Enhanced validation for client ID
   if (!client || !client.id || client.id === 'undefined' || client.id === 'null') {
-    console.error('❌ [DOCUMENTS_TAB] Invalid client data:', {
+    logger.error('❌ [DOCUMENTS_TAB] Invalid client data:', {
       hasClient: !!client,
       clientId: client?.id,
       clientIdType: typeof client?.id

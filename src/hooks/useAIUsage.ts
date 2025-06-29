@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import { useState, useEffect } from 'react';
 import { getAIUsageStats, getFirmAIUsageStats } from '@/services/revy/usageStatsService';
@@ -45,7 +46,7 @@ export const useAIUsage = (timeframe: 'day' | 'week' | 'month' = 'week') => {
       setPersonalStats(stats);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Feil ved henting av statistikk');
-      console.error('Error loading personal AI stats:', err);
+      logger.error('Error loading personal AI stats:', err);
     } finally {
       setLoading(false);
     }
@@ -81,7 +82,7 @@ export const useFirmAIUsage = (timeframe: 'day' | 'week' | 'month' = 'week') => 
       setFirmStats(Array.isArray(data) ? data : []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Feil ved henting av firmastatistikk');
-      console.error('Error loading firm AI stats:', err);
+      logger.error('Error loading firm AI stats:', err);
     } finally {
       setLoading(false);
     }

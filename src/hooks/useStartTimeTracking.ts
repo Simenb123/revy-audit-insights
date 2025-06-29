@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -36,7 +37,7 @@ export function useStartTimeTracking() {
       });
     },
     onError: (error) => {
-      console.error('Error starting time tracking:', error);
+      logger.error('Error starting time tracking:', error);
       toast({
         title: "Feil ved start",
         description: "Kunne ikke starte tidregistrering.",

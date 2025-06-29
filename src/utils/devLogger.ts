@@ -1,10 +1,17 @@
+import { logger } from './logger';
 
 export const devLog = (message: string, data?: any) => {
-  if (process.env.NODE_ENV === 'development') {
-    if (data) {
-      console.log(message, data);
-    } else {
-      console.log(message);
-    }
+  if (data) {
+    logger.log(message, data);
+  } else {
+    logger.log(message);
+  }
+};
+
+export const devError = (message: string, error?: any) => {
+  if (error) {
+    logger.error(message, error);
+  } else {
+    logger.error(message);
   }
 };

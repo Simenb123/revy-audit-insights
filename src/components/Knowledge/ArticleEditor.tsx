@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import React from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
@@ -131,7 +132,7 @@ const ArticleEditor = () => {
 
   React.useEffect(() => {
     if (article && !isLoadingArticle) {
-      console.log("Setting form values from article:", article);
+      logger.log("Setting form values from article:", article);
       // Find the content type ID based on the article's content_type_id
       let contentTypeId = contentTypes.length > 0 ? contentTypes[0]?.id : "";
       if (article.content_type_id) {
@@ -212,7 +213,7 @@ const ArticleEditor = () => {
         return baseSlug;
       }
     } catch (error) {
-      console.error("Slug uniqueness check failed:", error);
+      logger.error("Slug uniqueness check failed:", error);
       return `${baseSlug}-${Date.now().toString().slice(-6)}`;
     }
 
@@ -247,13 +248,13 @@ const ArticleEditor = () => {
             });
 
           if (tagError) {
-            console.error('Error creating tag in unified system:', tagError);
+            logger.error('Error creating tag in unified system:', tagError);
           } else {
-            console.log(`Created new tag in unified system: ${tagName.trim()}`);
+            logger.log(`Created new tag in unified system: ${tagName.trim()}`);
           }
         }
       } catch (error) {
-        console.error('Error checking/creating tag:', error);
+        logger.error('Error checking/creating tag:', error);
       }
     }
   };
@@ -262,7 +263,7 @@ const ArticleEditor = () => {
     mutationFn: async (data: ArticleFormData) => {
       if (!session?.user?.id) throw new Error("Not authenticated");
 
-      console.log("Saving article with data:", data);
+      logger.log("Saving article with data:", data);
 
       // Validate required fields
       if (!data.title.trim()) {
@@ -311,7 +312,7 @@ const ArticleEditor = () => {
         reference_code: data.reference_code || null,
       };
 
-      console.log("Article data to save:", articleData);
+      logger.log("Article data to save:", articleData);
 
       let savedArticle: KnowledgeArticle;
       if (isEditing && articleId) {
@@ -323,7 +324,7 @@ const ArticleEditor = () => {
           .single();
 
         if (error) {
-          console.error("Update error:", error);
+          logger.error("Update error:", error);
           if (error.code === "23505" && error.message.includes("slug")) {
             setSlugError("URL-slug eksisterer allerede.");
             throw new Error("Slug conflict");
@@ -351,7 +352,7 @@ const ArticleEditor = () => {
             .insert(subjectAreaMappings);
 
           if (mappingError) {
-            console.error("Subject area mapping error:", mappingError);
+            logger.error("Subject area mapping error:", mappingError);
           }
         }
       } else {
@@ -362,7 +363,7 @@ const ArticleEditor = () => {
           .single();
 
         if (error) {
-          console.error("Insert error:", error);
+          logger.error("Insert error:", error);
           if (error.code === "23505" && error.message.includes("slug")) {
             setSlugError("URL-slug eksisterer allerede.");
             throw new Error("Slug conflict");
@@ -383,7 +384,7 @@ const ArticleEditor = () => {
             .insert(subjectAreaMappings);
 
           if (mappingError) {
-            console.error("Subject area mapping error:", mappingError);
+            logger.error("Subject area mapping error:", mappingError);
           }
         }
       }
@@ -392,11 +393,11 @@ const ArticleEditor = () => {
     },
     onSuccess: (result) => {
       toast.success(isEditing ? "Artikkel oppdatert" : "Artikkel opprettet");
-      console.log("Article saved successfully:", result);
+      logger.log("Article saved successfully:", result);
       navigate(`/fag/artikkel/${result.slug}`);
     },
     onError: (error: any) => {
-      console.error("Save error:", error);
+      logger.error("Save error:", error);
       if (error.message && error.message.includes("slug")) {
         toast.error("URL-slug eksisterer allerede. Prøv et annet.");
       } else {
@@ -406,7 +407,7 @@ const ArticleEditor = () => {
   });
 
   const onSubmit = async (data: ArticleFormData) => {
-    console.log("Form submitted with data:", data);
+    logger.log("Form submitted with data:", data);
     data.slug = await generateUniqueSlug(data.slug || data.title);
     saveMutation.mutate(data);
   };

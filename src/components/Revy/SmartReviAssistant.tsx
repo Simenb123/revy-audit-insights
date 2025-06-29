@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import React, { useEffect } from 'react';
 import { RevyContext } from '@/types/revio';
@@ -48,7 +49,7 @@ const SmartReviAssistant = ({
   // Add context change effect to show visual feedback
   useEffect(() => {
     if (embedded && onContextChange) {
-      console.log(`🔄 AI-Revi context changed to: ${currentContext}${activeVariant ? ` with variant: ${activeVariant.name}` : ''}`);
+      logger.log(`🔄 AI-Revi context changed to: ${currentContext}${activeVariant ? ` with variant: ${activeVariant.name}` : ''}`);
     }
   }, [currentContext, activeVariant, embedded, onContextChange]);
 

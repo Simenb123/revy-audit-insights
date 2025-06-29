@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
@@ -30,7 +31,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ className = '' }) => {
       await supabase.auth.signOut();
       navigate('/auth');
     } catch (error) {
-      console.error('Error signing out:', error);
+      logger.error('Error signing out:', error);
     }
   };
 

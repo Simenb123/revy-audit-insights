@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import React from 'react';
 import { useForm } from 'react-hook-form';
@@ -66,7 +67,7 @@ const AddMemberDialog = ({ open, onOpenChange, teamId, onMemberAdded }: AddMembe
       onOpenChange(false);
       onMemberAdded();
     } catch (error) {
-      console.error('Error adding team member:', error);
+      logger.error('Error adding team member:', error);
     }
   };
 

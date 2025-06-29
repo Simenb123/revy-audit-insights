@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import { useState, useEffect } from 'react';
 import { useEditor } from '@tiptap/react';
@@ -47,7 +48,7 @@ export const useTiptapEditor = ({ content, onChange, uploadImage }: UseTiptapEdi
               editor.chain().focus().insertContentAt(position, { type: 'image', attrs: { src: url, alt: alt || '' } }).run();
             }
           } catch (error) {
-            console.error("Upload failed on drop:", error);
+            logger.error("Upload failed on drop:", error);
           }
         });
 

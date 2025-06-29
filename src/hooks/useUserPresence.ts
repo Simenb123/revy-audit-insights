@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -35,7 +36,7 @@ export function useUserPresence() {
         .eq('is_online', true);
 
       if (error) {
-        console.error('Error fetching user presence:', error);
+        logger.error('Error fetching user presence:', error);
         return [];
       }
 

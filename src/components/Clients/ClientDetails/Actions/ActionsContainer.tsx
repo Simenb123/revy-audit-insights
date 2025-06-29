@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -55,7 +56,7 @@ const ActionsContainer = ({ clientId, phase }: ActionsContainerProps) => {
         phase
       });
     } catch (error) {
-      console.error('Error copying templates:', error);
+      logger.error('Error copying templates:', error);
     }
   };
 

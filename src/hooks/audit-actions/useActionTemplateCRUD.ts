@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -53,7 +54,7 @@ export function useCreateAuditActionTemplate() {
         .single();
 
       if (error) {
-        console.error('Error creating audit action template:', error);
+        logger.error('Error creating audit action template:', error);
         throw error;
       }
 
@@ -64,7 +65,7 @@ export function useCreateAuditActionTemplate() {
       toast.success('Handlingsmal opprettet');
     },
     onError: (error: any) => {
-      console.error('Failed to create audit action template:', error);
+      logger.error('Failed to create audit action template:', error);
       toast.error('Feil ved opprettelse av handlingsmal: ' + error.message);
     }
   });
@@ -94,7 +95,7 @@ export function useUpdateAuditActionTemplate() {
         .single();
 
       if (error) {
-        console.error('Error updating audit action template:', error);
+        logger.error('Error updating audit action template:', error);
         throw error;
       }
 
@@ -105,7 +106,7 @@ export function useUpdateAuditActionTemplate() {
       toast.success('Handlingsmal oppdatert');
     },
     onError: (error: any) => {
-      console.error('Failed to update audit action template:', error);
+      logger.error('Failed to update audit action template:', error);
       toast.error('Feil ved oppdatering av handlingsmal: ' + error.message);
     }
   });
@@ -122,7 +123,7 @@ export function useDeleteAuditActionTemplate() {
         .eq('id', id);
 
       if (error) {
-        console.error('Error deleting audit action template:', error);
+        logger.error('Error deleting audit action template:', error);
         throw error;
       }
     },
@@ -131,7 +132,7 @@ export function useDeleteAuditActionTemplate() {
       toast.success('Handlingsmal slettet');
     },
     onError: (error: any) => {
-      console.error('Failed to delete audit action template:', error);
+      logger.error('Failed to delete audit action template:', error);
       toast.error('Feil ved sletting av handlingsmal: ' + error.message);
     }
   });

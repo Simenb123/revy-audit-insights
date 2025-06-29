@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import React, { useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -86,7 +87,7 @@ const VoiceTrainingModule = ({ scenarioId, scenarioName, onComplete }: VoiceTrai
       });
       
     } catch (error) {
-      console.error('Error starting recording:', error);
+      logger.error('Error starting recording:', error);
       toast({
         title: "Feil",
         description: "Kunne ikke starte opptak. Sjekk mikrofontilgang.",
@@ -184,7 +185,7 @@ const VoiceTrainingModule = ({ scenarioId, scenarioName, onComplete }: VoiceTrai
       });
       
     } catch (error) {
-      console.error('Error processing audio:', error);
+      logger.error('Error processing audio:', error);
       toast({
         title: "Feil",
         description: "Kunne ikke behandle lydopptaket",

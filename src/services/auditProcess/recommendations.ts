@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import { AuditPhase, Client } from '@/types/revio';
 import { getPhaseGuidance } from './phaseGuidance';
@@ -46,13 +47,13 @@ export const generateContextualRecommendations = async (
       console.warn("AI response for recommendations was not a valid JSON array. Falling back to splitting.", aiResult);
       return aiResult.split('\n').map(r => r.replace(/^- /, '')).filter(Boolean).slice(0, 5);
     } catch (e) {
-      console.error("Failed to parse recommendations from AI:", e, "Raw response:", aiResult);
+      logger.error("Failed to parse recommendations from AI:", e, "Raw response:", aiResult);
       // Fallback to splitting by newline if JSON parsing fails
       return aiResult.split('\n').map(r => r.replace(/^- /, '')).filter(Boolean).slice(0, 5);
     }
 
   } catch (error) {
-    console.error('Error generating recommendations:', error);
+    logger.error('Error generating recommendations:', error);
     return ['Det oppstod en feil under generering av anbefalinger. Prøv igjen senere.'];
   }
 };

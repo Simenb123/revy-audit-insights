@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import { useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -22,8 +23,8 @@ export const useAdvancedDocumentAI = () => {
       mimeType: string;
       fileSize: number;
     }): Promise<AICategorizationResult> => {
-      console.log('=== STARTING ADVANCED AI ANALYSIS ===');
-      console.log('File:', data.fileName, 'Type:', data.mimeType);
+      logger.log('=== STARTING ADVANCED AI ANALYSIS ===');
+      logger.log('File:', data.fileName, 'Type:', data.mimeType);
 
       try {
         const { data: result, error } = await supabase.functions.invoke('document-ai-categorizer', {
@@ -36,20 +37,20 @@ export const useAdvancedDocumentAI = () => {
         });
 
         if (error) {
-          console.error('AI categorization error:', error);
+          logger.error('AI categorization error:', error);
           // Fallback til filnavn-basert kategorisering
           return analyzeByFilename(data);
         }
 
-        console.log('AI analysis result:', result);
+        logger.log('AI analysis result:', result);
         return result as AICategorizationResult;
       } catch (error) {
-        console.error('AI analysis failed:', error);
+        logger.error('AI analysis failed:', error);
         return analyzeByFilename(data);
       }
     },
     onError: (error) => {
-      console.error('Document analysis error:', error);
+      logger.error('Document analysis error:', error);
       toast({
         title: "AI-analyse feilet",
         description: "Bruker fallback kategorisering basert på filnavn",

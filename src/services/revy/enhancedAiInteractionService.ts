@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 import { RevyContext } from '@/types/revio';
@@ -49,7 +50,7 @@ const logAIUsage = async (
   errorMessage?: string
 ): Promise<void> => {
   try {
-    console.log('📊 Logging AI usage:', {
+    logger.log('📊 Logging AI usage:', {
       userId: userId?.substring(0, 8) + '...',
       promptTokens,
       completionTokens,
@@ -59,7 +60,7 @@ const logAIUsage = async (
       variantName
     });
   } catch (error) {
-    console.error('❌ Error logging AI usage:', error);
+    logger.error('❌ Error logging AI usage:', error);
   }
 };
 
@@ -127,7 +128,7 @@ const buildEnhancedContextWithVariantAndDocuments = async (
   selectedVariant?: any,
   message?: string
 ) => {
-  console.log('🏗️ Building enhanced context with variant and document search support:', { context, variantName: selectedVariant?.name, hasClientData: !!clientData });
+  logger.log('🏗️ Building enhanced context with variant and document search support:', { context, variantName: selectedVariant?.name, hasClientData: !!clientData });
 
   let knowledgeArticles: any[] = [];
   let articleTagMapping: Record<string, any> = {};
@@ -137,7 +138,7 @@ const buildEnhancedContextWithVariantAndDocuments = async (
   // Enhanced knowledge search with better error handling and mobile support
   if (message && message.trim()) {
     try {
-      console.log('🔍 Starting knowledge search with proper request format...');
+      logger.log('🔍 Starting knowledge search with proper request format...');
       
       // Get current user session for authorization
       const { data: { session } } = await supabase.auth.getSession();
@@ -147,7 +148,7 @@ const buildEnhancedContextWithVariantAndDocuments = async (
         query: message.trim()
       };
 
-      console.log('📤 Sending knowledge search request:', requestBody);
+      logger.log('📤 Sending knowledge search request:', requestBody);
 
       const { signal, clear } = createTimeoutSignal(20000);
 
@@ -163,17 +164,17 @@ const buildEnhancedContextWithVariantAndDocuments = async (
       clear();
 
       if (error) {
-        console.error('❌ Knowledge search failed:', error);
+        logger.error('❌ Knowledge search failed:', error);
         toast.error('Kunne ikke hente fagartikler – prøv igjen senere.');
         // Continue without knowledge base instead of failing
-        console.log('⚠️ Continuing without knowledge base results');
+        logger.log('⚠️ Continuing without knowledge base results');
       } else if (data) {
         // Handle response structure { articles, tagMapping }
         knowledgeArticles = data?.articles || [];
         articleTagMapping = data?.tagMapping || {};
         
-        console.log(`✅ Knowledge search successful: ${knowledgeArticles.length} articles found`);
-        console.log('📊 Article tag mapping:', Object.keys(articleTagMapping).length, 'mappings');
+        logger.log(`✅ Knowledge search successful: ${knowledgeArticles.length} articles found`);
+        logger.log('📊 Article tag mapping:', Object.keys(articleTagMapping).length, 'mappings');
         
         // Check if we found specific documents the user asked about
         if (knowledgeArticles.length > 0) {
@@ -188,9 +189,9 @@ const buildEnhancedContextWithVariantAndDocuments = async (
       if (error.name === 'AbortError') {
         toast.error('Tilkoblingen tok for lang tid, prøv igjen senere.');
       } else {
-        console.error('❌ Knowledge search error:', error);
+        logger.error('❌ Knowledge search error:', error);
         // Don't throw here - let the main function handle fallback
-        console.log('⚠️ Knowledge search failed, continuing without it');
+        logger.log('⚠️ Knowledge search failed, continuing without it');
       }
     }
   }
@@ -209,7 +210,7 @@ const buildEnhancedContextWithVariantAndDocuments = async (
       if (error.name === 'AbortError') {
         toast.error('Tilkoblingen tok for lang tid, prøv igjen senere.');
       } else {
-        console.error('❌ Error loading client documents:', error);
+        logger.error('❌ Error loading client documents:', error);
       }
     }
   }
@@ -237,12 +238,12 @@ export const generateEnhancedAIResponseWithVariant = async (
   selectedVariant?: any
 ): Promise<string> => {
   if (!isSupabaseConfigured || !supabase) {
-    console.error("Supabase is not configured. AI response cannot be generated.");
+    logger.error("Supabase is not configured. AI response cannot be generated.");
     return "Supabase not initialized";
   }
   const startTime = Date.now();
   
-  console.log('🚀 generateEnhancedAIResponseWithVariant called with:', {
+  logger.log('🚀 generateEnhancedAIResponseWithVariant called with:', {
     message: message.substring(0, 50) + '...',
     context,
     userRole,
@@ -253,7 +254,7 @@ export const generateEnhancedAIResponseWithVariant = async (
   });
   
   try {
-    console.log('📝 Enhanced request received:', {
+    logger.log('📝 Enhanced request received:', {
       message: message.substring(0, 50) + '...',
       context,
       userRole,
@@ -269,11 +270,11 @@ export const generateEnhancedAIResponseWithVariant = async (
     const cachedResponse = await getCachedResponse(requestHash);
     
     if (cachedResponse) {
-      console.log('💾 Using cached response for variant request');
+      logger.log('💾 Using cached response for variant request');
       return cachedResponse;
     }
     
-    console.log('🧐 Cache miss for variant request, proceeding to generate new response.');
+    logger.log('🧐 Cache miss for variant request, proceeding to generate new response.');
     
     // Build enhanced context with document search support
     const enhancedContextData = await buildEnhancedContextWithVariantAndDocuments(
@@ -285,7 +286,7 @@ export const generateEnhancedAIResponseWithVariant = async (
       message
     );
 
-    console.log('🧠 Enhanced variant-aware context built with document support:', {
+    logger.log('🧠 Enhanced variant-aware context built with document support:', {
       knowledgeArticleCount: enhancedContextData.knowledgeArticles.length,
       articleTagMappingCount: Object.keys(enhancedContextData.articleTagMapping).length,
       hasClientContext: !!clientData,
@@ -299,10 +300,10 @@ export const generateEnhancedAIResponseWithVariant = async (
 
     // Select model based on variant or default
     const model = getModelForVariant(selectedVariant);
-    console.log('🎯 Selected model:', model, 'for variant:', selectedVariant?.name);
+    logger.log('🎯 Selected model:', model, 'for variant:', selectedVariant?.name);
 
     // Use the revy-ai-chat function for all AI communication
-    console.log('🚀 Calling revy-ai-chat function with enhanced prompt...');
+    logger.log('🚀 Calling revy-ai-chat function with enhanced prompt...');
     
     const requestPayload = {
       message,
@@ -318,7 +319,7 @@ export const generateEnhancedAIResponseWithVariant = async (
       articleTagMapping: enhancedContextData.articleTagMapping
     };
 
-    console.log('📤 Sending request to revy-ai-chat with payload:', {
+    logger.log('📤 Sending request to revy-ai-chat with payload:', {
       messageLength: message.length,
       context,
       historyLength: requestPayload.history.length,
@@ -338,7 +339,7 @@ export const generateEnhancedAIResponseWithVariant = async (
 
     clear();
 
-    console.log('📥 Response from revy-ai-chat:', {
+    logger.log('📥 Response from revy-ai-chat:', {
       hasData: !!data,
       hasError: !!error,
       dataKeys: data ? Object.keys(data) : [],
@@ -351,7 +352,7 @@ export const generateEnhancedAIResponseWithVariant = async (
     });
 
     if (error) {
-      console.error('❌ revy-ai-chat function error:', error);
+      logger.error('❌ revy-ai-chat function error:', error);
       // Use intelligent fallback
       const fallbackResponse = getIntelligentFallback(message, context, selectedVariant);
       const validatedResponse = enforceResponseValidation(fallbackResponse, enhancedContextData.knowledgeArticles, enhancedContextData.articleTagMapping);
@@ -360,7 +361,7 @@ export const generateEnhancedAIResponseWithVariant = async (
     }
 
     if (!data) {
-      console.error('❌ No data received from revy-ai-chat function');
+      logger.error('❌ No data received from revy-ai-chat function');
       const fallbackResponse = getIntelligentFallback(message, context, selectedVariant);
       const validatedResponse = enforceResponseValidation(fallbackResponse, enhancedContextData.knowledgeArticles, enhancedContextData.articleTagMapping);
       await cacheResponse(requestHash, validatedResponse);
@@ -368,7 +369,7 @@ export const generateEnhancedAIResponseWithVariant = async (
     }
 
     let aiResponse = data?.response || 'Beklager, jeg kunne ikke generere et svar.';
-    console.log('🤖 AI response extracted:', {
+    logger.log('🤖 AI response extracted:', {
       responseLength: aiResponse.length,
       responseType: typeof aiResponse,
       isEmpty: !aiResponse || aiResponse.trim() === '',
@@ -378,7 +379,7 @@ export const generateEnhancedAIResponseWithVariant = async (
     });
 
     if (!aiResponse || typeof aiResponse !== 'string' || aiResponse.trim() === '') {
-      console.error('❌ Invalid AI response format:', { aiResponse, type: typeof aiResponse });
+      logger.error('❌ Invalid AI response format:', { aiResponse, type: typeof aiResponse });
       const fallbackResponse = getIntelligentFallback(message, context, selectedVariant);
       const validatedResponse = enforceResponseValidation(fallbackResponse, enhancedContextData.knowledgeArticles, enhancedContextData.articleTagMapping);
       await cacheResponse(requestHash, validatedResponse);
@@ -387,11 +388,11 @@ export const generateEnhancedAIResponseWithVariant = async (
 
     // Inject variant information if available
     if (selectedVariant) {
-      console.log('🎭 Injected variant info into response');
+      logger.log('🎭 Injected variant info into response');
     }
 
     // Enforce response validation with document-aware content
-    console.log('🔧 ENFORCING response validation with document-aware content...');
+    logger.log('🔧 ENFORCING response validation with document-aware content...');
     aiResponse = enforceResponseValidation(aiResponse, enhancedContextData.knowledgeArticles, enhancedContextData.articleTagMapping);
 
     if (enhancedContextData.knowledgeArticles.length === 0) {
@@ -400,7 +401,7 @@ export const generateEnhancedAIResponseWithVariant = async (
 
     const responseTime = Date.now() - startTime;
 
-    console.log('✅ Document-enhanced AI response generated successfully:', {
+    logger.log('✅ Document-enhanced AI response generated successfully:', {
       responseLength: aiResponse.length,
       responseTime: `${responseTime}ms`,
       isGuestMode: !(await supabase.auth.getUser()).data.user,
@@ -430,11 +431,11 @@ export const generateEnhancedAIResponseWithVariant = async (
       )
     ]);
 
-    console.log('✅ AI usage logged successfully');
-    console.log('📊 Usage logged successfully with variant and document info');
-    console.log('✅ Document-enhanced response cached successfully');
+    logger.log('✅ AI usage logged successfully');
+    logger.log('📊 Usage logged successfully with variant and document info');
+    logger.log('✅ Document-enhanced response cached successfully');
 
-    console.log('🎯 Returning final AI response:', {
+    logger.log('🎯 Returning final AI response:', {
       length: aiResponse.length,
       hasContent: !!aiResponse && aiResponse.trim().length > 0,
       isString: typeof aiResponse === 'string',
@@ -445,7 +446,7 @@ export const generateEnhancedAIResponseWithVariant = async (
 
   } catch (error: any) {
     const responseTime = Date.now() - startTime;
-    console.error('💥 Enhanced AI response generation failed, using fallback:', error);
+    logger.error('💥 Enhanced AI response generation failed, using fallback:', error);
 
     if (error.name === 'AbortError') {
       return 'Tilkoblingen tok for lang tid, prøv igjen senere';

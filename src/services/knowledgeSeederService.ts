@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 
@@ -16,10 +17,10 @@ interface ArticleData {
 
 export const seedKnowledgeBase = async () => {
   if (!isSupabaseConfigured || !supabase) {
-    console.error("Supabase is not configured. Seeder cannot proceed.");
+    logger.error("Supabase is not configured. Seeder cannot proceed.");
     return;
   }
-  console.log('🌱 Starting knowledge base seeding...');
+  logger.log('🌱 Starting knowledge base seeding...');
   
   try {
     // Get current user
@@ -180,19 +181,19 @@ God materialitetsvurdering er kritisk for en effektiv og effektiv revisjon.`,
           .insert(article);
           
         if (error) {
-          console.error(`❌ Failed to create article "${article.title}":`, error);
+          logger.error(`❌ Failed to create article "${article.title}":`, error);
         } else {
-          console.log(`✅ Created article: "${article.title}"`);
+          logger.log(`✅ Created article: "${article.title}"`);
         }
       } else {
-        console.log(`⏭️ Article "${article.title}" already exists`);
+        logger.log(`⏭️ Article "${article.title}" already exists`);
       }
     }
     
-    console.log('🌱 Knowledge base seeding completed!');
+    logger.log('🌱 Knowledge base seeding completed!');
     
   } catch (error: any) {
-    console.error('❌ Knowledge base seeding failed:', error);
+    logger.error('❌ Knowledge base seeding failed:', error);
     throw error;
   }
 };

@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -25,7 +26,7 @@ const fetchAuditAction = async (clientId: string): Promise<ClientAuditAction | n
         .single();
 
     if (error) {
-        console.error('Error fetching audit action:', error.message);
+        logger.error('Error fetching audit action:', error.message);
         if (error.code === 'PGRST116') return null; // No rows found is not an error here
         throw error;
     }
@@ -44,7 +45,7 @@ const fetchClient = async (clientId: string): Promise<Client | null> => {
         .eq('id', clientId)
         .single();
     if (error) {
-        console.error('Error fetching client:', error.message);
+        logger.error('Error fetching client:', error.message);
         if (error.code === 'PGRST116') return null;
         throw error;
     }
@@ -85,7 +86,7 @@ const AIEnabledActionEditor: React.FC<AIEnabledActionEditorProps> = ({ clientId 
     };
 
     const handleSave = () => {
-        console.log("Saving procedures:", procedures);
+        logger.log("Saving procedures:", procedures);
         toast({
             title: 'Lagret (Demo)',
             description: 'Endringene dine er lagret i konsollen.',

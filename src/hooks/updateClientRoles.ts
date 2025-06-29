@@ -1,9 +1,10 @@
+import { logger } from '@/utils/logger';
 
 import { supabase } from "@/integrations/supabase/client";
 
 export async function updateClientRoles(clientId: string, roles: any, clientName: string) {
   try {
-    console.log(`Updating roles for client ${clientName} (${clientId})`, roles);
+    logger.log(`Updating roles for client ${clientName} (${clientId})`, roles);
     
     // First delete existing roles
     const { error: deleteError } = await supabase
@@ -12,14 +13,14 @@ export async function updateClientRoles(clientId: string, roles: any, clientName
       .eq("client_id", clientId);
     
     if (deleteError) {
-      console.error(`Error deleting existing roles for ${clientName}:`, deleteError);
+      logger.error(`Error deleting existing roles for ${clientName}:`, deleteError);
     }
     
     const rolesToInsert = [];
     
     // Add CEO role if present
     if (roles?.ceo?.name) {
-      console.log(`Adding CEO: ${roles.ceo.name}`);
+      logger.log(`Adding CEO: ${roles.ceo.name}`);
       rolesToInsert.push({
         client_id: clientId,
         role_type: "CEO",
@@ -31,7 +32,7 @@ export async function updateClientRoles(clientId: string, roles: any, clientName
     
     // Add Chair role if present
     if (roles?.chair?.name) {
-      console.log(`Adding Chair: ${roles.chair.name}`);
+      logger.log(`Adding Chair: ${roles.chair.name}`);
       rolesToInsert.push({
         client_id: clientId,
         role_type: "CHAIR",
@@ -43,7 +44,7 @@ export async function updateClientRoles(clientId: string, roles: any, clientName
     
     // Add board members if present
     if (roles?.boardMembers && Array.isArray(roles.boardMembers)) {
-      console.log(`Adding ${roles.boardMembers.length} board members`);
+      logger.log(`Adding ${roles.boardMembers.length} board members`);
       for (const member of roles.boardMembers) {
         if (member.name) {
           rolesToInsert.push({
@@ -59,17 +60,17 @@ export async function updateClientRoles(clientId: string, roles: any, clientName
     
     // Insert all roles
     if (rolesToInsert.length > 0) {
-      console.log(`Inserting ${rolesToInsert.length} roles for client ${clientName}`);
+      logger.log(`Inserting ${rolesToInsert.length} roles for client ${clientName}`);
       const { error } = await supabase.from("client_roles").insert(rolesToInsert);
       if (error) {
-        console.error(`Error inserting roles for ${clientName}:`, error);
+        logger.error(`Error inserting roles for ${clientName}:`, error);
       } else {
-        console.log(`Successfully inserted ${rolesToInsert.length} roles for ${clientName}`);
+        logger.log(`Successfully inserted ${rolesToInsert.length} roles for ${clientName}`);
       }
     } else {
-      console.log(`No roles to insert for client ${clientName}`);
+      logger.log(`No roles to insert for client ${clientName}`);
     }
   } catch (rolesError) {
-    console.error(`Error processing roles for ${clientName}:`, rolesError);
+    logger.error(`Error processing roles for ${clientName}:`, rolesError);
   }
 }

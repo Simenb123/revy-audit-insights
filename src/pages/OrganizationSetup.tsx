@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
@@ -143,7 +144,7 @@ const OrganizationSetup = () => {
 
       navigate('/organisasjon');
     } catch (error: any) {
-      console.error('Error creating firm:', error);
+      logger.error('Error creating firm:', error);
       toast({
         title: "Feil ved opprettelse",
         description: error.message || "En uventet feil oppstod",
@@ -175,7 +176,7 @@ const OrganizationSetup = () => {
       setShowExistingFirmDialog(false);
       navigate('/organisasjon');
     } catch (error) {
-      console.error('Error joining firm:', error);
+      logger.error('Error joining firm:', error);
     }
   };
 

@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -6,7 +7,7 @@ export const useRobustKnowledgeStats = () => {
   return useQuery({
     queryKey: ['robust-knowledge-stats'],
     queryFn: async () => {
-      console.log('🔧 [ROBUST_KNOWLEDGE_STATS] Starting fetch...');
+      logger.log('🔧 [ROBUST_KNOWLEDGE_STATS] Starting fetch...');
       
       try {
         // Get categories with fallback
@@ -21,15 +22,15 @@ export const useRobustKnowledgeStats = () => {
           .order('display_order');
 
         if (categoriesError) {
-          console.error('🔧 [ROBUST_KNOWLEDGE_STATS] Categories error:', categoriesError);
+          logger.error('🔧 [ROBUST_KNOWLEDGE_STATS] Categories error:', categoriesError);
           // Return empty array instead of throwing
           return [];
         }
 
-        console.log('🔧 [ROBUST_KNOWLEDGE_STATS] Categories found:', categories?.length || 0);
+        logger.log('🔧 [ROBUST_KNOWLEDGE_STATS] Categories found:', categories?.length || 0);
 
         if (!categories || categories.length === 0) {
-          console.log('🔧 [ROBUST_KNOWLEDGE_STATS] No categories, returning empty array');
+          logger.log('🔧 [ROBUST_KNOWLEDGE_STATS] No categories, returning empty array');
           return [];
         }
 
@@ -37,7 +38,7 @@ export const useRobustKnowledgeStats = () => {
         const categoriesWithCounts = await Promise.all(
           categories.map(async (category) => {
             try {
-              console.log('🔧 [ROBUST_KNOWLEDGE_STATS] Counting articles for:', category.name);
+              logger.log('🔧 [ROBUST_KNOWLEDGE_STATS] Counting articles for:', category.name);
               
               const { count, error: countError } = await supabase
                 .from('knowledge_articles')
@@ -46,21 +47,21 @@ export const useRobustKnowledgeStats = () => {
                 .eq('status', 'published');
 
               if (countError) {
-                console.error('🔧 [ROBUST_KNOWLEDGE_STATS] Count error for', category.name, ':', countError);
+                logger.error('🔧 [ROBUST_KNOWLEDGE_STATS] Count error for', category.name, ':', countError);
                 return {
                   ...category,
                   article_count: 0
                 };
               }
 
-              console.log('🔧 [ROBUST_KNOWLEDGE_STATS] Article count for', category.name, ':', count);
+              logger.log('🔧 [ROBUST_KNOWLEDGE_STATS] Article count for', category.name, ':', count);
 
               return {
                 ...category,
                 article_count: count || 0
               };
             } catch (error) {
-              console.error('🔧 [ROBUST_KNOWLEDGE_STATS] Error processing category', category.name, ':', error);
+              logger.error('🔧 [ROBUST_KNOWLEDGE_STATS] Error processing category', category.name, ':', error);
               return {
                 ...category,
                 article_count: 0
@@ -69,10 +70,10 @@ export const useRobustKnowledgeStats = () => {
           })
         );
 
-        console.log('🔧 [ROBUST_KNOWLEDGE_STATS] Final result:', categoriesWithCounts);
+        logger.log('🔧 [ROBUST_KNOWLEDGE_STATS] Final result:', categoriesWithCounts);
         return categoriesWithCounts;
       } catch (error) {
-        console.error('🔧 [ROBUST_KNOWLEDGE_STATS] Fatal error:', error);
+        logger.error('🔧 [ROBUST_KNOWLEDGE_STATS] Fatal error:', error);
         return []; // Always return an array, never throw
       }
     },
@@ -88,7 +89,7 @@ export const useRobustRecentArticles = (limit = 5) => {
   return useQuery({
     queryKey: ['robust-recent-articles', limit],
     queryFn: async () => {
-      console.log('🔧 [ROBUST_RECENT_ARTICLES] Fetching articles, limit:', limit);
+      logger.log('🔧 [ROBUST_RECENT_ARTICLES] Fetching articles, limit:', limit);
       
       try {
         const { data, error } = await supabase
@@ -108,14 +109,14 @@ export const useRobustRecentArticles = (limit = 5) => {
           .limit(limit);
 
         if (error) {
-          console.error('🔧 [ROBUST_RECENT_ARTICLES] Error:', error);
+          logger.error('🔧 [ROBUST_RECENT_ARTICLES] Error:', error);
           return []; // Return empty array instead of throwing
         }
 
-        console.log('🔧 [ROBUST_RECENT_ARTICLES] Fetched articles:', data?.length || 0);
+        logger.log('🔧 [ROBUST_RECENT_ARTICLES] Fetched articles:', data?.length || 0);
         return data || [];
       } catch (error) {
-        console.error('🔧 [ROBUST_RECENT_ARTICLES] Fatal error:', error);
+        logger.error('🔧 [ROBUST_RECENT_ARTICLES] Fatal error:', error);
         return [];
       }
     },
@@ -130,7 +131,7 @@ export const useRobustTotalArticleCount = () => {
   return useQuery({
     queryKey: ['robust-total-article-count'],
     queryFn: async () => {
-      console.log('🔧 [ROBUST_TOTAL_ARTICLES] Counting total articles...');
+      logger.log('🔧 [ROBUST_TOTAL_ARTICLES] Counting total articles...');
       
       try {
         const { count, error } = await supabase
@@ -139,14 +140,14 @@ export const useRobustTotalArticleCount = () => {
           .eq('status', 'published');
 
         if (error) {
-          console.error('🔧 [ROBUST_TOTAL_ARTICLES] Error:', error);
+          logger.error('🔧 [ROBUST_TOTAL_ARTICLES] Error:', error);
           return 0; // Return 0 instead of throwing
         }
 
-        console.log('🔧 [ROBUST_TOTAL_ARTICLES] Total count:', count);
+        logger.log('🔧 [ROBUST_TOTAL_ARTICLES] Total count:', count);
         return count || 0;
       } catch (error) {
-        console.error('🔧 [ROBUST_TOTAL_ARTICLES] Fatal error:', error);
+        logger.error('🔧 [ROBUST_TOTAL_ARTICLES] Fatal error:', error);
         return 0;
       }
     },

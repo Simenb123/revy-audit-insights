@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import createTaxonomyHooks from './useTaxonomy';
@@ -60,7 +61,7 @@ export const useSubjectAreas = (hierarchical: boolean = false) => {
         .order('sort_order', { ascending: true });
 
       if (error) {
-        console.error('Error fetching subject areas:', error);
+        logger.error('Error fetching subject areas:', error);
         throw error;
       }
 

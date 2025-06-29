@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import React, { useEffect, useState } from 'react';
 import { Bell } from 'lucide-react';
@@ -26,7 +27,7 @@ const AnnouncementIndicator: React.FC<AnnouncementIndicatorProps> = ({ client })
         setRecentAnnouncements([]);
         setLoading(false);
       } catch (error) {
-        console.error('Error fetching announcements:', error);
+        logger.error('Error fetching announcements:', error);
         setLoading(false);
       }
     };

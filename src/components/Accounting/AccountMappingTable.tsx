@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -33,7 +34,7 @@ const AccountMappingTable = ({ clientId }: AccountMappingTableProps) => {
         is_manual_mapping: true,
       });
     } catch (error) {
-      console.error('Error creating mapping:', error);
+      logger.error('Error creating mapping:', error);
     }
   };
 
@@ -46,7 +47,7 @@ const AccountMappingTable = ({ clientId }: AccountMappingTableProps) => {
         is_manual_mapping: true,
       });
     } catch (error) {
-      console.error('Error updating mapping:', error);
+      logger.error('Error updating mapping:', error);
     }
   };
 

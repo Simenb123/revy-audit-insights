@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import React, { useState } from 'react';
 import { useUserProfile } from '@/hooks/useUserProfile';
@@ -111,7 +112,7 @@ const UserAdmin = () => {
           });
 
         if (error) {
-          console.error('Error creating test user:', user.email, error);
+          logger.error('Error creating test user:', user.email, error);
           // Continue with other users even if one fails
         }
       }

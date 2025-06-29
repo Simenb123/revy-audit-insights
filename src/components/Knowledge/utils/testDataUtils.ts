@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 
 import { supabase } from '@/integrations/supabase/client';
 
@@ -23,7 +24,7 @@ export const getOrCreateContentType = async () => {
       .single();
 
     if (createError) {
-      console.error('Feil ved opprettelse av innholdstype:', createError);
+      logger.error('Feil ved opprettelse av innholdstype:', createError);
       throw createError;
     }
     contentType = newContentType;
@@ -56,7 +57,7 @@ export const getOrCreateCategories = async (categoryNames: string[]) => {
         .single();
 
       if (error) {
-        console.error('Feil ved opprettelse av kategori:', error);
+        logger.error('Feil ved opprettelse av kategori:', error);
         throw error;
       }
       categoryMap.set(categoryName, newCategory.id);
@@ -67,16 +68,16 @@ export const getOrCreateCategories = async (categoryNames: string[]) => {
 };
 
 export const generateEmbeddings = async () => {
-  console.log('🔄 Genererer embeddings...');
+  logger.log('🔄 Genererer embeddings...');
   const { data: embeddingResult, error: embeddingError } = await supabase.functions.invoke('generate-embeddings', {
     body: {}
   });
 
   if (embeddingError) {
-    console.error('Feil ved generering av embeddings:', embeddingError);
+    logger.error('Feil ved generering av embeddings:', embeddingError);
     return { success: false, error: embeddingError };
   }
 
-  console.log('✅ Embeddings generert:', embeddingResult);
+  logger.log('✅ Embeddings generert:', embeddingResult);
   return { success: true, data: embeddingResult };
 };

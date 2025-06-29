@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -102,7 +103,7 @@ const AIUsageDashboard = () => {
       setPersonalStats(personal);
       setFirmStats(firm);
     } catch (error) {
-      console.error('Error loading AI usage stats:', error);
+      logger.error('Error loading AI usage stats:', error);
     } finally {
       setLoading(false);
     }
