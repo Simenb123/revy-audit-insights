@@ -1,6 +1,6 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { SubjectArea } from '@/types/classification';
 
@@ -20,6 +20,20 @@ vi.mock('@/hooks/knowledge/useAuditActionTemplates', () => ({
   useAuditActionTemplatesBySubjectArea: () => ({ data: [] as any[], isLoading: false })
 }));
 
+vi.mock('@/services/revy/enhancedAiInteractionService', () => ({
+  generateEnhancedAIResponseWithVariant: vi.fn().mockResolvedValue(
+    JSON.stringify({
+      name: 'AI-generert handling for test',
+      description: 'd',
+      objective: 'o',
+      procedures: 'p',
+      documentation_requirements: 'r',
+      estimated_hours: 1,
+      risk_level: 'low'
+    })
+  )
+}));
+
 vi.mock('@/hooks/audit-actions/useActionTemplateCRUD', () => ({
   useCreateAuditActionTemplate: () => ({ mutateAsync: vi.fn(), isPending: false })
 }));
@@ -31,21 +45,18 @@ vi.mock('@/components/Auth/AuthProvider', () => ({
 import AuditActionGenerator from '../AuditActionGenerator';
 import { createActionTemplateFormSchema } from '@/components/AuditActions/CreateActionTemplateForm/types';
 
-beforeEach(() => {
-  vi.useFakeTimers();
-});
 
 describe('AuditActionGenerator', () => {
   it('populates form data via handleGenerateWithAI', async () => {
     render(<AuditActionGenerator />);
 
     // choose subject area
-    await userEvent.click(screen.getByPlaceholderText('Velg fagområde'));
+    const comboButton = screen.getByText('Velg fagområde').closest('button')!;
+    fireEvent.keyDown(comboButton, { key: 'Enter' });
     await userEvent.click(screen.getByText('Salg'));
 
     // trigger AI generation
     await userEvent.click(screen.getByRole('button', { name: /AI Generator/i }));
-    vi.runAllTimers();
 
     await waitFor(() => {
       const nameInput = screen.getByPlaceholderText('Navn på handlingen') as HTMLInputElement;
