@@ -17,6 +17,7 @@ For a high-level tour of the architecture and key modules, see [docs/project-ove
 For the document processing pipeline, see [docs/document-workflow.md](docs/document-workflow.md).
 For using the AI-driven audit action generator, see [docs/audit-action-generator.md](docs/audit-action-generator.md).
 For a beginner friendly summary of the code structure, see [docs/modules-overview.md](docs/modules-overview.md).
+For an explanation of the right sidebar and assistant panel, see [docs/sidebar-overview.md](docs/sidebar-overview.md).
 
 ## Environment Setup
 
