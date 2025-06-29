@@ -20,6 +20,7 @@ For a beginner friendly summary of the code structure, see [docs/modules-overvie
 For an explanation of the right sidebar and assistant panel, see [docs/sidebar-overview.md](docs/sidebar-overview.md).
 For an overview of the audit phases used throughout the app, see [docs/audit-phases.md](docs/audit-phases.md).
 For instructions on managing audit actions, see [docs/manage-audit-actions.md](docs/manage-audit-actions.md).
+For a map of which hooks and services call Supabase edge functions, see [docs/frontend-supabase-flow.md](docs/frontend-supabase-flow.md).
 
 ## Environment Setup
 
