@@ -11,7 +11,7 @@ CREATE POLICY "Users can view client actions for their accessible clients" ON pu
         WHERE tm.user_id = auth.uid() AND tm.is_active = true
       )
     ) OR
-    public.get_user_role(auth.uid()) IN ('admin', 'partner') OR
+    public.get_user_role(auth.uid()) IN ('admin', 'partner', 'employee') OR
     assigned_to = auth.uid()
   );
 
@@ -40,7 +40,7 @@ CREATE POLICY "Users can update client actions for accessible clients" ON public
       )
     ) OR
     assigned_to = auth.uid() OR
-    public.get_user_role(auth.uid()) IN ('admin', 'partner')
+    public.get_user_role(auth.uid()) IN ('admin', 'partner', 'employee')
   );
 
 -- Add copied_from tracking fields to client_audit_actions
@@ -72,7 +72,7 @@ DROP POLICY IF EXISTS "Users can update templates in their firm" ON public.audit
 CREATE POLICY "Users can update templates in their firm" ON public.audit_action_templates
   FOR UPDATE USING (
     audit_firm_id = public.get_user_firm(auth.uid()) AND
-    (created_by = auth.uid() OR public.get_user_role(auth.uid()) IN ('admin', 'partner'))
+    (created_by = auth.uid() OR public.get_user_role(auth.uid()) IN ('admin', 'partner', 'employee'))
   );
 
 -- Add RLS policies for action_groups

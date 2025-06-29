@@ -10,7 +10,7 @@ CREATE POLICY "Users can create audit action templates"
     auth.uid() = created_by OR 
     auth.uid() IN (
       SELECT p.id FROM profiles p 
-      WHERE p.user_role IN ('admin', 'partner', 'manager')
+      WHERE p.user_role IN ('admin', 'partner', 'manager', 'employee')
     )
   );
 
@@ -23,7 +23,7 @@ CREATE POLICY "Users can view audit action templates"
     auth.uid() = created_by OR
     auth.uid() IN (
       SELECT p.id FROM profiles p 
-      WHERE p.user_role IN ('admin', 'partner', 'manager')
+      WHERE p.user_role IN ('admin', 'partner', 'manager', 'employee')
     )
   );
 
@@ -35,7 +35,7 @@ CREATE POLICY "Users can update their own audit action templates"
     auth.uid() = created_by OR
     auth.uid() IN (
       SELECT p.id FROM profiles p 
-      WHERE p.user_role IN ('admin', 'partner', 'manager')
+      WHERE p.user_role IN ('admin', 'partner', 'manager', 'employee')
     )
   );
 
@@ -47,6 +47,6 @@ CREATE POLICY "Users can delete their own audit action templates"
     auth.uid() = created_by OR
     auth.uid() IN (
       SELECT p.id FROM profiles p 
-      WHERE p.user_role IN ('admin', 'partner', 'manager')
+      WHERE p.user_role IN ('admin', 'partner', 'manager', 'employee')
     )
   );

@@ -108,7 +108,10 @@ const KnowledgeOverview = ({
     }
   };
 
-  const canCreateContent = userProfile?.userRole === 'admin' || userProfile?.userRole === 'partner';
+  const canCreateContent =
+    userProfile?.userRole === 'admin' ||
+    userProfile?.userRole === 'partner' ||
+    userProfile?.userRole === 'employee';
 
   return (
     <div className={cn("space-y-6", darkTheme && "bg-gray-900 text-white p-4 rounded-lg")}>

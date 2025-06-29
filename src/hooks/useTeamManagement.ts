@@ -12,7 +12,11 @@ export const useTeamManagement = () => {
   const [selectedTeam, setSelectedTeam] = useState<ClientTeam | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
-  const canCreateTeams = userProfile?.userRole === 'admin' || userProfile?.userRole === 'partner' || userProfile?.userRole === 'manager';
+  const canCreateTeams =
+    userProfile?.userRole === 'admin' ||
+    userProfile?.userRole === 'partner' ||
+    userProfile?.userRole === 'manager' ||
+    userProfile?.userRole === 'employee';
 
   return {
     teams,
