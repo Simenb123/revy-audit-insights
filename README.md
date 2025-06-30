@@ -47,6 +47,14 @@ OPENAI_API_KEY=your_openai_api_key
 LOG_LEVEL=info # set to 'debug' for more verbose logs
 ```
 
+Other variables include:
+
+- `ELEVENLABS_API_KEY` – optional key for richer text-to-speech voices.
+- `VITE_KNOWLEDGE_ADMIN_ADVANCED` – enable advanced tools in the knowledge base UI when set to `true`.
+- `VITE_LOG_LEVEL` – browser log level, usually `info`.
+- `VITE_USE_ENHANCED_ANALYSIS` – toggle the enhanced document analysis features.
+- `RATE_LIMIT` – hourly request limit for the edge functions.
+
 **Note**: You must provide `SUPABASE_URL` and `SUPABASE_ANON_KEY` for the application to connect to Supabase. `SUPABASE_SERVICE_ROLE_KEY` is only required for certain edge functions (`syncKunngjoring`, `setup-storage`). See [docs/service-role-functions.md](docs/service-role-functions.md) for details.
 
 ### Getting Your Supabase Credentials

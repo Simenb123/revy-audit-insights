@@ -38,4 +38,16 @@ Database changes live in `supabase/migrations` as SQL scripts.
 - For how to manage audit actions see [manage-audit-actions.md](manage-audit-actions.md).
 - For guidelines on the form layout see [audit-action-editor-ui.md](audit-action-editor-ui.md).
 
+## Voice Features
+
+Two edge functions provide basic voice capabilities:
+
+- `text-to-speech` converts Revy's text replies to audio (uses ElevenLabs or OpenAI).
+- `voice-to-text` transcribes recordings to text using OpenAI Whisper.
+
+In the frontend these functions are used in the training tools found under `src/components/Training`. The
+`AICharacterSimulator` calls `text-to-speech` for spoken responses and `VoiceTrainingModule` uses
+`voice-to-text` to analyse user recordings. The regular chat interface has a placeholder button for future
+voice input.
+
 This overview should help you navigate the project without needing to read the code in detail.
