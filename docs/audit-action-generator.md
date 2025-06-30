@@ -16,8 +16,8 @@ The audit action generator lets Revy propose new audit steps based on your selec
 ## `getRelevantKnowledge`
 
 The generator can enrich suggestions with related knowledge base articles. The
-`getRelevantKnowledge` helper (see `src/services/revy/aiInteractionService.ts`)
-will eventually query the `knowledge-search` function to fetch article titles
-that match the current topic. At the moment this function returns an empty
-array, but it is designed so that future versions can automatically reference
-the most relevant standards or guidance when proposing new actions.
+`getRelevantKnowledge` helper, located in
+`src/services/revy/aiInteractionService.ts`, invokes the `knowledge-search`
+edge function and returns the article titles from the response. These titles can
+then be fed into the AI request so that generated actions are enriched with
+relevant context.
