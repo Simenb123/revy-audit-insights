@@ -89,3 +89,4 @@ To build and iterate on this editor you can break the work into a few small task
 6. **Experiment with layout** – Try toggles, helper text or grouped inputs to see which design feels best.
 
 Working through these tasks incrementally lets you refine the user experience before moving on to advanced features.
+

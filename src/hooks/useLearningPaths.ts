@@ -152,7 +152,7 @@ export const useTeamEnrollments = () => {
         .eq('id', user.user.id)
         .single();
 
-      if (!profile || !['admin', 'partner', 'manager'].includes(profile.user_role)) {
+      if (!profile || !['admin', 'partner', 'manager', 'employee'].includes(profile.user_role)) {
         return [];
       }
 
@@ -195,7 +195,11 @@ export const useTeamEnrollments = () => {
         const enrollmentProfile = enrollment.profiles;
         if (!enrollmentProfile) return false;
         
-        if (profile.user_role === 'admin' || profile.user_role === 'partner') {
+        if (
+          profile.user_role === 'admin' ||
+          profile.user_role === 'partner' ||
+          profile.user_role === 'employee'
+        ) {
           return enrollmentProfile.audit_firm_id === profile.audit_firm_id;
         } else if (profile.user_role === 'manager') {
           return enrollmentProfile.department_id === profile.department_id;

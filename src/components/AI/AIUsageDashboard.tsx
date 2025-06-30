@@ -86,7 +86,9 @@ const AIUsageDashboard = () => {
   const [loading, setLoading] = useState(true);
   const { data: userProfile } = useUserProfile();
 
-  const isAdmin = userProfile?.userRole === 'admin';
+  const isAdmin =
+    userProfile?.userRole === 'admin' ||
+    userProfile?.userRole === 'employee';
 
   useEffect(() => {
     loadStats();

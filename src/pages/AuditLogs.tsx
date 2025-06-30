@@ -56,7 +56,10 @@ const AuditLogs = () => {
     }
   };
 
-  const canReview = userProfile?.userRole === 'admin' || userProfile?.userRole === 'partner';
+  const canReview =
+    userProfile?.userRole === 'admin' ||
+    userProfile?.userRole === 'partner' ||
+    userProfile?.userRole === 'employee';
 
   const handleReview = (logId: string) => {
     reviewAuditLog.mutate(logId);
