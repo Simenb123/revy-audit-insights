@@ -9,7 +9,7 @@ The `src` folder holds the user interface of the application. It is built with R
 - **components** – small building blocks that show buttons, forms and pages. Important areas include:
   - **Revy** – chat interface for talking with the assistant.
   - **ClientDocuments** – tools for uploading and analysing client files.
-  - **Knowledge** – editing and searching articles in the knowledge base.
+  - **Knowledge** – editing and searching articles in the knowledge base. The search testing panel lets you run synthetic queries and download diagnostic history as CSV.
   - **Dashboard, Organization, Teams** – screens for managing firms and team members.
 - **hooks** – helper functions used by the components to fetch data and keep track of state.
 - **pages** – the main screens a user can open, such as the dashboard or the knowledge base.
