@@ -32,10 +32,19 @@ async function getEmbedding(text: string, openAIApiKey: string) {
   }
 }
 
+function sanitizeWords(text: string): string[] {
+  const cleaned = text
+    .toLowerCase()
+    .replace(/[^\w\såøæäöü]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return cleaned.split(' ').filter(word => word.length > 1);
+}
+
 async function keywordSearch(supabase: any, query: string) {
   log('🔎 Enhanced keyword search for:', query);
-  
-  const words = query.toLowerCase().split(/\s+/).filter(word => word.length > 1);
+
+  const words = sanitizeWords(query);
   log('📝 Search words:', words);
   
   if (words.length === 0) {
@@ -285,7 +294,7 @@ export async function handler(req: Request): Promise<Response> {
 
     const finalResults = uniqueResults.slice(0, 20);
     
-    const keywords = query.toLowerCase().split(/\s+/).filter(word => word.length > 1);
+    const keywords = sanitizeWords(query);
     const tagMapping = createTagMapping(finalResults, keywords);
     
     log(`✅ Returning ${finalResults.length} unique search results with tag mappings`);
