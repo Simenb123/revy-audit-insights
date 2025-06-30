@@ -205,7 +205,36 @@ const getFallbackResponse = (context: RevyContext, errorType: string, errorDetai
 
 // Mock function for knowledge integration (to be implemented)
 export const getRelevantKnowledge = async (query: string, context: RevyContext): Promise<string[]> => {
-  // This would integrate with the knowledge base
-  // For now, return empty array
-  return [];
+  if (!isSupabaseConfigured || !supabase) {
+    logger.error('Supabase is not configured. Knowledge search cannot proceed.');
+    return [];
+  }
+
+  try {
+    logger.log('🔍 Fetching relevant knowledge articles', { query, context });
+
+    const { signal, clear } = createTimeoutSignal(20000);
+
+    const { data, error } = await supabase.functions.invoke('knowledge-search', {
+      body: { query },
+      signal
+    } as any);
+
+    clear();
+
+    if (error) {
+      logger.error('❌ Knowledge search error:', error);
+      return [];
+    }
+
+    const articles = data?.articles || [];
+    return articles.map((a: any) => a.title || String(a.id)).filter(Boolean);
+  } catch (error: any) {
+    if (error.name === 'AbortError') {
+      logger.error('💥 Knowledge search timed out');
+    } else {
+      logger.error('💥 Knowledge search exception:', error);
+    }
+    return [];
+  }
 };
