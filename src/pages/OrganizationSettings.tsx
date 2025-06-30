@@ -30,7 +30,10 @@ const OrganizationSettings = () => {
     website: auditFirm?.website || ''
   });
 
-  const canAccessSettings = userProfile?.userRole === 'admin' || userProfile?.userRole === 'partner';
+  const canAccessSettings =
+    userProfile?.userRole === 'admin' ||
+    userProfile?.userRole === 'partner' ||
+    userProfile?.userRole === 'employee';
 
   React.useEffect(() => {
     if (auditFirm) {

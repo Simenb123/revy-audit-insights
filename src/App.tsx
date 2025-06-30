@@ -32,6 +32,7 @@ import AIUsage from "./pages/AIUsage";
 import KnowledgeBase from "./pages/KnowledgeBase";
 import AIRevyAdmin from "./pages/AIRevyAdmin";
 import StandardAccountsAdmin from "./pages/StandardAccountsAdmin";
+import RoleAccessAdmin from "./pages/RoleAccessAdmin";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -64,6 +65,7 @@ function App() {
                   <Route path="user-admin" element={<UserAdmin />} />
                   <Route path="profile" element={<UserProfile />} />
                   <Route path="organization/settings" element={<OrganizationSettings />} />
+                  <Route path="organization/roles" element={<RoleAccessAdmin />} />
                   <Route path="organization" element={<OrganizationOverview />} />
                   <Route path="teams" element={<TeamManagement />} />
                   <Route path="departments/:id" element={<DepartmentView />} />
