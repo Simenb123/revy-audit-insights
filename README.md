@@ -11,6 +11,13 @@ AI Revy is an intelligent audit assistant built for Norwegian audit firms, provi
 - **Client Management**: Organize and track audit clients and engagements
 - **Team Collaboration**: Real-time collaboration tools for audit teams
 
+## Voice Features
+
+Enable microphone access in your browser to dictate messages and issue voice commands.
+If you want richer text-to-speech voices, set the `ELEVENLABS_API_KEY` variable in
+your `.env.local` file. See [docs/voice-functions.md](docs/voice-functions.md)
+for detailed API examples.
+
 ## Project Overview
 
 For a high-level tour of the architecture and key modules, see [docs/project-overview.md](docs/project-overview.md).
