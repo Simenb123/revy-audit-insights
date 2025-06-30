@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Clock, FileText, AlertCircle } from 'lucide-react';
 import SmartReviAssistant from '@/components/Revy/SmartReviAssistant';
 import { useClientDetails } from '@/hooks/useClientDetails';
+import { useUserProfile } from '@/hooks/useUserProfile';
 
 interface StreamlinedClientSidebarProps {
   clientId: string;
@@ -12,6 +13,9 @@ interface StreamlinedClientSidebarProps {
 
 const StreamlinedClientSidebar: React.FC<StreamlinedClientSidebarProps> = ({ clientId }) => {
   const { data: client } = useClientDetails(clientId);
+  const { data: userProfile } = useUserProfile();
+
+  const userRole = userProfile?.userRole || 'employee';
 
   if (!client) return null;
 
@@ -57,10 +61,10 @@ const StreamlinedClientSidebar: React.FC<StreamlinedClientSidebarProps> = ({ cli
         </CardHeader>
         <CardContent className="p-0">
           <div className="px-3 pb-3">
-            <SmartReviAssistant 
-              embedded 
+            <SmartReviAssistant
+              embedded
               clientData={client}
-              userRole="employee"
+              userRole={userRole}
               context="client-detail"
             />
           </div>
