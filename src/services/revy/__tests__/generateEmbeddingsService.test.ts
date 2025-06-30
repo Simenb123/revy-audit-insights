@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-var invokeMock: any;
+let invokeMock: any;
 
 vi.mock('@/integrations/supabase/client', () => {
   invokeMock = vi.fn();

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react'
+import React, { createContext, useContext } from 'react'
 
 interface ChatUIState {
   collapsed: boolean
@@ -8,16 +8,8 @@ interface ChatUIState {
 const ChatUIContext = createContext<ChatUIState | undefined>(undefined)
 
 export const ChatUIProvider = ({ children }: { children: React.ReactNode }) => {
-  const [collapsed, setCollapsed] = useState(() => {
-    if (typeof window === 'undefined') return false
-    return localStorage.getItem('chatUICollapsed') === 'true'
-  })
-
-  useEffect(() => {
-    localStorage.setItem('chatUICollapsed', collapsed.toString())
-  }, [collapsed])
-
-  const toggle = () => setCollapsed(prev => !prev)
+  const collapsed = false
+  const toggle = () => {}
 
   return (
     <ChatUIContext.Provider value={{ collapsed, toggle }}>
