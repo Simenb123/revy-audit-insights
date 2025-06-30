@@ -34,17 +34,17 @@ const renderWithProvider = () =>
   )
 
 describe('AssistantSidebar', () => {
-  it('toggles collapsed class on click', () => {
+  it('ignores toggle actions', () => {
     renderWithProvider()
     const aside = screen.getByRole('complementary')
     expect(aside.className).not.toContain('translate-x-full')
 
     const button = screen.getByRole('button', { name: /toggle/i })
     fireEvent.click(button)
-    expect(aside.className).toContain('translate-x-full')
+    expect(aside.className).not.toContain('translate-x-full')
   })
 
-  it('resets collapse state after rerender', () => {
+  it('remains visible after rerender', () => {
     const { rerender } = renderWithProvider()
     fireEvent.click(screen.getByRole('button', { name: /toggle/i }))
 
