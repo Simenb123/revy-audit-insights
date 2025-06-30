@@ -26,12 +26,12 @@ import { toast } from 'sonner';
 import type { AuditPhase } from '@/types/revio';
 import type { Category as BaseCategory } from '@/types/classification';
 
-interface Category extends Omit<BaseCategory, 'applicable_phases' | 'slug'> {
+type Category = Omit<BaseCategory, 'applicable_phases' | 'slug' | 'children'> & {
   article_count: number;
   children?: Category[];
   applicable_phases?: string[] | null;
   slug?: string;
-}
+};
 
 interface CategoryFormData {
   name: string;
@@ -72,8 +72,8 @@ const ImprovedCategoryManager = () => {
           return {
             ...category,
             article_count: count || 0,
-            slug: category.slug || category.id
-          };
+            slug: (category as any).slug || category.id
+          } as Category;
         })
       );
       

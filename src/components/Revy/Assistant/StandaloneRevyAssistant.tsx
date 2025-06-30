@@ -65,8 +65,6 @@ const StandaloneRevyAssistant = ({
           <RevyMessageList
             messages={messages}
             isTyping={isLoading}
-            isEmbedded={false}
-            advanced
           />
         </div>
         <div className="p-4 border-t flex-shrink-0">

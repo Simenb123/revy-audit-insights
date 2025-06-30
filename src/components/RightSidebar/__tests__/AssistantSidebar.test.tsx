@@ -2,12 +2,13 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import AssistantSidebar from '../AssistantSidebar'
 import { ChatUIProvider, useChatUI } from '@/store/chatUI'
+import type { AIRevyVariant } from '@/hooks/useAIRevyVariants'
 
 // Mock hook that fetches AI-Revy variants to avoid Supabase calls
 vi.mock('@/hooks/useAIRevyVariants', () => ({
   useAIRevyVariants: () => ({
-    variants: [],
-    selectedVariant: null,
+    variants: [] as AIRevyVariant[],
+    selectedVariant: null as AIRevyVariant | null,
     isLoading: false,
     switchVariant: vi.fn(),
     handleVariantChange: vi.fn(),

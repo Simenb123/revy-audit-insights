@@ -2,6 +2,7 @@ import { logger } from '@/utils/logger';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
 import { toast } from '@/hooks/use-toast';
 import { ClientAuditAction, ActionGroup, AuditSubjectArea } from '@/types/audit-actions';
 import { AuditPhase } from '@/types/revio';
@@ -11,6 +12,16 @@ export {
   useUpdateAuditActionTemplate,
   useDeleteAuditActionTemplate
 } from '@/hooks/audit-actions/useActionTemplateCRUD';
+
+const mapPhaseToDb = (
+  phase: AuditPhase
+): Database['public']['Enums']['audit_phase'] => {
+  if (phase === 'completion') return 'conclusion';
+  if (phase === 'risk_assessment') return 'planning';
+  if (phase === 'overview') return 'engagement';
+  if (phase === 'reporting') return 'conclusion';
+  return phase as Database['public']['Enums']['audit_phase'];
+};
 
 
 export function useActionGroups() {
@@ -58,10 +69,16 @@ export function useCreateClientAuditAction() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (action: Omit<ClientAuditAction, 'id' | 'created_at' | 'updated_at'>) => {
+    mutationFn: async (
+      action: Omit<ClientAuditAction, 'id' | 'created_at' | 'updated_at'>
+    ) => {
+      const dbAction = {
+        ...action,
+        phase: mapPhaseToDb(action.phase)
+      };
       const { data, error } = await supabase
         .from('client_audit_actions')
-        .insert(action)
+        .insert(dbAction)
         .select()
         .single();
 
@@ -91,9 +108,13 @@ export function useUpdateClientAuditAction() {
 
   return useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<ClientAuditAction> }) => {
+      const dbUpdates = {
+        ...updates,
+        ...(updates.phase ? { phase: mapPhaseToDb(updates.phase) } : {})
+      };
       const { data, error } = await supabase
         .from('client_audit_actions')
-        .update(updates)
+        .update(dbUpdates)
         .eq('id', id)
         .select()
         .single();
@@ -123,9 +144,9 @@ export function useCopyActionsFromTemplate() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ clientId, templateIds, phase }: { 
-      clientId: string; 
-      templateIds: string[]; 
+    mutationFn: async ({ clientId, templateIds, phase }: {
+      clientId: string;
+      templateIds: string[];
       phase: string;
     }) => {
       // First fetch the templates
@@ -142,7 +163,7 @@ export function useCopyActionsFromTemplate() {
         template_id: template.id,
         subject_area: template.subject_area,
         action_type: template.action_type,
-        phase: phase as AuditPhase,
+        phase: mapPhaseToDb(phase as AuditPhase),
         name: template.name,
         description: template.description,
         objective: template.objective,
