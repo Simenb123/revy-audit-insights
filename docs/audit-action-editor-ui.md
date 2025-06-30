@@ -76,3 +76,17 @@ Checkboxes make it clear that more than one phase may be selected. The labels co
 The editor components are split into small pieces so you can experiment with different layouts. You might combine drop-down menus with toggle switches or add helper text near each field. React Hook Form manages validation, allowing you to mix and match controls while still capturing the data structure required by `audit_action_templates`.
 
 By using checkboxes, text inputs and selects together, auditors can quickly create actions that fit the current phase and subject area without typing everything from scratch.
+
+## Implementation plan
+
+To build and iterate on this editor you can break the work into a few small tasks:
+
+1. **Set up the container component** – Render `ImprovedCreateActionTemplateForm` inside the admin panel or another page.
+2. **Split the form** – Keep `BasicFields`, `DetailFields` and `PhaseSelection` as individual components so each section can be reused.
+3. **Wire up validation** – Use React Hook Form with `createActionTemplateFormSchema` for field validation and type safety.
+4. **Connect to the API** – Persist templates with the `useCreateAuditActionTemplate` hook and show a spinner while saving.
+5. **Add controls** – Provide Save and Cancel buttons; disable them while the mutation is pending.
+6. **Experiment with layout** – Try toggles, helper text or grouped inputs to see which design feels best.
+
+Working through these tasks incrementally lets you refine the user experience before moving on to advanced features.
+
