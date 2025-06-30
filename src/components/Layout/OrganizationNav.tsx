@@ -7,7 +7,8 @@ import {
   Briefcase,
   MessageSquare,
   Settings,
-  UserCog
+  UserCog,
+  Shield
 } from 'lucide-react';
 import {
   SidebarGroup,
@@ -51,6 +52,11 @@ const OrganizationNav = () => {
       to: "/brukeradministrasjon",
       icon: UserCog,
       label: "Brukeradministrasjon"
+    },
+    {
+      to: "/organisasjon/roles",
+      icon: Shield,
+      label: "Rolleadministrasjon"
     },
     {
       to: "/organisasjonsinnstillinger",

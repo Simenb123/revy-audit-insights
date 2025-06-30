@@ -96,7 +96,9 @@ const Training = () => {
     }
   ];
 
-  const isManager = userProfile?.userRole && ['admin', 'partner', 'manager'].includes(userProfile.userRole);
+  const isManager =
+    userProfile?.userRole &&
+    ['admin', 'partner', 'manager', 'employee'].includes(userProfile.userRole);
 
   if (progressLoading || badgesLoading || scenariosLoading) {
     return (
