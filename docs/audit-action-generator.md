@@ -12,3 +12,12 @@ The audit action generator lets Revy propose new audit steps based on your selec
 1. Open a client and choose **Revisjonshandlinger**.
 2. Navigate to the **AI-verktøy** tab.
 3. Use the AI-enabled editor to generate or refine audit actions for that client.
+
+## `getRelevantKnowledge`
+
+The generator can enrich suggestions with related knowledge base articles. The
+`getRelevantKnowledge` helper (see `src/services/revy/aiInteractionService.ts`)
+will eventually query the `knowledge-search` function to fetch article titles
+that match the current topic. At the moment this function returns an empty
+array, but it is designed so that future versions can automatically reference
+the most relevant standards or guidance when proposing new actions.
