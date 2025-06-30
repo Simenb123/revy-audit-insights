@@ -1,8 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
 import { toast } from 'sonner';
 
-function createTaxonomyHooks<T>(table: string, displayName: string) {
+function createTaxonomyHooks<
+  T,
+  TableName extends keyof Database['public']['Tables']
+>(table: TableName, displayName: string) {
   const useTaxonomies = () => {
     return useQuery({
       queryKey: [table],

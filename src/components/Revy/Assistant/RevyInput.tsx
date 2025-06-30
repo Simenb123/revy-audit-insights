@@ -28,7 +28,7 @@ export const RevyInput = ({
     if (isRecording) {
       const text = await stopRecording();
       if (text) {
-        setMessage((prev) => (prev ? `${prev} ${text}` : text));
+        setMessage(message ? `${message} ${text}` : text);
       }
     } else {
       await startRecording();
