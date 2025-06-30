@@ -26,26 +26,26 @@ Risikovurderingen danner grunnlag for den videre revisjonsplanleggingen.`,
     category_name: 'Revisjonsstandarder'
   },
   {
-    title: "Vesentlighetsvurdering i revisjon",
-    slug: "Vesentlighetsvurdering-revisjon",
-    summary: "Praktisk veiledning for fastsettelse av Vesentlighet, ytelsesVesentlighet og bagatellgrense i revisjonsoppdrag.",
-    content: `# Vesentlighetsvurdering i revisjon
+    title: "Materialitetsvurdering i revisjon",
+    slug: "materialitetsvurdering-revisjon",
+    summary: "Praktisk veiledning for fastsettelse av materialitet, ytelsesmaterialitet og bagatellgrense i revisjonsoppdrag.",
+    content: `# Materialitetsvurdering i revisjon
 
-Vesentlighet er et sentralt konsept som påvirker alle deler av revisjonsarbeidet.
+Materialitet er et sentralt konsept som påvirker alle deler av revisjonsarbeidet.
 
-## Typer Vesentlighet:
-- **Samlet Vesentlighet**: Største beløp med feilinformasjon som ikke påvirker brukernes beslutninger
-- **YtelsesVesentlighet**: Lavere beløp for å redusere risiko for uoppdagede feil
+## Typer materialitet:
+- **Samlet materialitet**: Største beløp med feilinformasjon som ikke påvirker brukernes beslutninger
+- **Ytelsesmaterialitet**: Lavere beløp for å redusere risiko for uoppdagede feil
 - **Bagatellgrense**: Grense under hvilken feil ikke akkumuleres
 
 ## Fastsettelse:
 1. Velg hensiktsmessig benchmark (resultat, omsetning, eiendeler)
 2. Anvend passende prosentsats (0,5-5% avhengig av benchmark)
 3. Vurder kvalitative faktorer
-4. Fastsett ytelsesVesentlighet (50-75% av samlet Vesentlighet)
-5. Sett bagatellgrense (5-10% av samlet Vesentlighet)
+4. Fastsett ytelsesmaterialitet (50-75% av samlet materialitet)
+5. Sett bagatellgrense (5-10% av samlet materialitet)
 
-Vesentlighetsvurderingen må oppdateres dersom forholdene endres.`,
+Materialitetsvurderingen må oppdateres dersom forholdene endres.`,
     reference_code: "ISA 320",
     status: 'published' as const,
     category_name: 'Revisjonsstandarder'
