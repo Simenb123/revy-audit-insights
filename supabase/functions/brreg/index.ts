@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { log } from "../_shared/log.ts";
+import { handleBrregError } from "../_shared/brregError.ts";
 
 const BRREG_API_BASE = "https://data.brreg.no/enhetsregisteret/api/enheter";
 const BRREG_ROLES_OPEN = "https://data.brreg.no/enhetsregisteret/api/roller/enhet";
@@ -54,35 +55,17 @@ serve(async (req) => {
       
       const fetchOptions = buildFetchOptions(authHeader);
       const response = await fetch(searchUrl, fetchOptions);
-      
+
       if (!response.ok) {
         console.error(`Error searching for company by name. Status: ${response.status}`);
-        if (response.status === 401 || response.status === 403) {
-          return new Response(
-            JSON.stringify({ 
-              error: 'Authentication error with Brønnøysund API',
-              status: response.status,
-              message: 'The Brønnøysund API requires authentication or the request was forbidden. Please check that valid API credentials are configured.'
-            }),
-            { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
-        
-        if (response.status === 429) {
-          return new Response(
-            JSON.stringify({ 
-              error: 'Rate limit exceeded',
-              status: response.status,
-              message: 'The Brønnøysund API rate limit has been exceeded. Please try again later.'
-            }),
-            { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
-        
+        const handled = handleBrregError(response.status, corsHeaders);
+        if (handled) return handled;
+
         return new Response(
-          JSON.stringify({ 
+          JSON.stringify({
             error: 'Error from Brønnøysund API',
-            status: response.status 
+            status: response.status,
+            message: 'Unexpected response from Brønnøysund API. Try again later or contact support.'
           }),
           { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
@@ -105,48 +88,19 @@ serve(async (req) => {
     // Fetch the basic organization information
     const baseUrl = `${BRREG_API_BASE}/${query}`;
     const baseResponse = await fetch(baseUrl, fetchOptions);
-    
+
     // Handle various error responses
     if (!baseResponse.ok) {
       console.error(`Error fetching company data. Status: ${baseResponse.status}`);
-      
-      if (baseResponse.status === 404) {
-        return new Response(
-          JSON.stringify({ 
-            error: 'Organization not found',
-            status: 404,
-            message: `No organization found with organization number: ${query}`
-          }),
-          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      if (baseResponse.status === 401 || baseResponse.status === 403) {
-        return new Response(
-          JSON.stringify({ 
-            error: 'Authentication error with Brønnøysund API',
-            status: baseResponse.status,
-            message: 'The Brønnøysund API requires authentication or the request was forbidden. Please check that valid API credentials are configured.'
-          }),
-          { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      if (baseResponse.status === 429) {
-        return new Response(
-          JSON.stringify({ 
-            error: 'Rate limit exceeded',
-            status: baseResponse.status,
-            message: 'The Brønnøysund API rate limit has been exceeded. Please try again later.'
-          }),
-          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
+
+      const handled = handleBrregError(baseResponse.status, corsHeaders, query);
+      if (handled) return handled;
+
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           error: 'Error from Brønnøysund API',
-          status: baseResponse.status 
+          status: baseResponse.status,
+          message: 'Unexpected response from Brønnøysund API. Try again later or contact support.'
         }),
         { status: baseResponse.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
