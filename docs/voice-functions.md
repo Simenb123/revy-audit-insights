@@ -28,3 +28,24 @@ Example request body:
 ```
 
 Both functions require a bearer token and follow the CORS headers defined in the source files.
+
+## `useVoiceCommands` hook
+
+`useVoiceCommands` wraps these endpoints for React components.
+
+```tsx
+const { startRecording, stopRecording, speakText, isRecording } = useVoiceCommands();
+
+// Start/stop recording
+const handleMic = async () => {
+  if (isRecording) {
+    const text = await stopRecording();
+    console.log(text);
+  } else {
+    await startRecording();
+  }
+};
+
+// Speak a message
+speakText('Hei AI-Revi');
+```

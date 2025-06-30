@@ -1,8 +1,10 @@
 
-import React from 'react';
-import { cn } from '@/lib/utils';
-import { RevyMessage } from '@/types/revio';
-import RevyAvatar from '../RevyAvatar';
+import React from 'react'
+import { cn } from '@/lib/utils'
+import { RevyMessage } from '@/types/revio'
+import RevyAvatar from '../RevyAvatar'
+import { Volume2 } from 'lucide-react'
+import { useVoiceCommands } from '@/hooks/useVoiceCommands'
 
 interface RevyMessageItemProps {
   message: RevyMessage;
@@ -10,7 +12,14 @@ interface RevyMessageItemProps {
 }
 
 const RevyMessageItem: React.FC<RevyMessageItemProps> = ({ message, compact = false }) => {
-  const isAssistant = message.sender === 'assistant';
+  const isAssistant = message.sender === 'assistant'
+  const { speakText } = useVoiceCommands()
+
+  const handleSpeak = () => {
+    if (typeof message.content === 'string') {
+      speakText(message.content)
+    }
+  }
   
   return (
     <div className={cn(
@@ -28,14 +37,21 @@ const RevyMessageItem: React.FC<RevyMessageItemProps> = ({ message, compact = fa
         !isAssistant && "items-end"
       )}>
         <div className={cn(
-          "rounded-lg px-3 py-2 text-sm break-words",
-          compact ? "text-xs" : "text-sm",
-          isAssistant 
-            ? "bg-muted text-foreground" 
-            : "bg-primary text-primary-foreground"
+          'rounded-lg px-3 py-2 text-sm break-words',
+          compact ? 'text-xs' : 'text-sm',
+          isAssistant ? 'bg-muted text-foreground' : 'bg-primary text-primary-foreground'
         )}>
           {message.content}
         </div>
+        {isAssistant && !compact && (
+          <button
+            type="button"
+            onClick={handleSpeak}
+            className="mt-1 text-muted-foreground hover:text-foreground self-start"
+          >
+            <Volume2 className="h-4 w-4" />
+          </button>
+        )}
         
         {!compact && (
           <span className="text-xs text-muted-foreground mt-1">

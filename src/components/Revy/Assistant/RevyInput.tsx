@@ -2,7 +2,8 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { SendIcon, Loader2 } from 'lucide-react';
+import { SendIcon, Loader2, Mic, MicOff } from 'lucide-react';
+import { useVoiceCommands } from '@/hooks/useVoiceCommands';
 
 interface RevyInputProps {
   message: string;
@@ -21,6 +22,18 @@ export const RevyInput = ({
   isEmbedded = false,
   placeholder = "Spør meg om Revio eller revisjon..."
 }: RevyInputProps) => {
+  const { isRecording, startRecording, stopRecording } = useVoiceCommands();
+
+  const handleVoiceClick = async () => {
+    if (isRecording) {
+      const text = await stopRecording();
+      if (text) {
+        setMessage((prev) => (prev ? `${prev} ${text}` : text));
+      }
+    } else {
+      await startRecording();
+    }
+  };
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -49,7 +62,17 @@ export const RevyInput = ({
           disabled={isTyping}
           rows={isEmbedded ? 2 : 3}
         />
-        <Button 
+        <Button
+          type="button"
+          onClick={handleVoiceClick}
+          size={isEmbedded ? 'sm' : 'icon'}
+          variant="outline"
+          className={`${isEmbedded ? 'h-16 w-12 px-2' : 'h-20 w-12'}`}
+          disabled={isTyping}
+        >
+          {isRecording ? <MicOff size={isEmbedded ? 12 : 16} /> : <Mic size={isEmbedded ? 12 : 16} />}
+        </Button>
+        <Button
           type="submit"
           size={isEmbedded ? 'sm' : 'icon'}
           className={`bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 shrink-0 ${isEmbedded ? 'h-16 w-12 px-2' : 'h-20 w-12'}`}
