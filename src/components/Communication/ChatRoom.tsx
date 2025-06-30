@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Send, Users } from 'lucide-react';
+import { Send, Users, Mic, MicOff, Volume2 } from 'lucide-react';
+import { useVoiceCommands } from '@/hooks/useVoiceCommands';
 import { format } from 'date-fns';
 import { nb } from 'date-fns/locale';
 
@@ -20,6 +21,7 @@ const ChatRoom = ({ roomId, roomName }: ChatRoomProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { messages, isLoading, sendMessage, isSending } = useMessages(roomId);
   const { presenceData, updatePresence } = useUserPresence();
+  const { isRecording, startRecording, stopRecording, speakText } = useVoiceCommands();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -100,6 +102,13 @@ const ChatRoom = ({ roomId, roomName }: ChatRoomProps) => {
                 </div>
                 <p className="text-sm whitespace-pre-wrap">{message.content}</p>
               </div>
+              <button
+                type="button"
+                onClick={() => speakText(message.content)}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <Volume2 className="h-4 w-4" />
+              </button>
             </div>
           ))}
           <div ref={messagesEndRef} />
@@ -108,7 +117,22 @@ const ChatRoom = ({ roomId, roomName }: ChatRoomProps) => {
 
       {/* Message Input */}
       <form onSubmit={handleSendMessage} className="p-4 border-t">
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={async () => {
+              if (isRecording) {
+                const text = await stopRecording();
+                if (text) setNewMessage((prev) => (prev ? `${prev} ${text}` : text));
+              } else {
+                await startRecording();
+              }
+            }}
+          >
+            {isRecording ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+          </Button>
           <Input
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
