@@ -96,6 +96,15 @@ The `.env.example` file includes a `VITE_USE_ENHANCED_ANALYSIS` flag. Set this t
 
 For automated environments, you can run `scripts/setup-ci.sh` to install dependencies and execute the test suite. This is useful for continuous integration pipelines.
 
+## Deno Edge Function Tests
+
+Install Deno (for example with `npm install -g deno`) and run:
+
+```bash
+ deno test supabase/functions
+```
+
+
 ## Deployment
 
 1. Ensure all environment variables are set in your hosting platform
