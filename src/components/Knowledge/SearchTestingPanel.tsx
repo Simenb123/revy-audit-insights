@@ -15,7 +15,8 @@ import {
   Clock,
   Search,
   RefreshCw,
-  Shield
+  Shield,
+  Download
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { KnowledgeSearchDiagnostics, SearchDiagnostic, KnowledgeBaseHealth } from '@/services/knowledge/searchDiagnostics';
@@ -143,6 +144,35 @@ const SearchTestingPanel = () => {
   };
 
   const metrics = KnowledgeSearchDiagnostics.getPerformanceMetrics();
+  const diagnosticHistory = KnowledgeSearchDiagnostics.getDiagnosticHistory();
+
+  const downloadDiagnosticsCSV = () => {
+    const history = KnowledgeSearchDiagnostics.getDiagnosticHistory();
+    if (history.length === 0) return;
+
+    const headers = Object.keys(history[0]);
+    const csvRows = [headers.join(',')];
+
+    for (const row of history) {
+      const values = headers.map(h => {
+        const val = (row as any)[h];
+        if (typeof val === 'string') {
+          return `"${val.replace(/"/g, '""')}"`;
+        }
+        return val;
+      });
+      csvRows.push(values.join(','));
+    }
+
+    const csvContent = csvRows.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'diagnostic_history.csv';
+    link.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="space-y-6">
@@ -232,10 +262,18 @@ const SearchTestingPanel = () => {
       {metrics && (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Clock className="w-5 h-5" />
-              Ytelsesmålinger
-            </CardTitle>
+            <div className="flex justify-between items-center">
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="w-5 h-5" />
+                Ytelsesmålinger
+              </CardTitle>
+              {diagnosticHistory.length > 0 && (
+                <Button variant="outline" size="sm" onClick={downloadDiagnosticsCSV}>
+                  <Download className="w-4 h-4 mr-2" />
+                  Last ned CSV
+                </Button>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
