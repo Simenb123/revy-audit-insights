@@ -66,6 +66,7 @@ flowchart TD
         docs --> classification["classification.md"]
         docs --> doc_workflow["document-workflow.md"]
         docs --> manage_audit_actions["manage-audit-actions.md"]
+        docs --> audit_action_editor_ui["audit-action-editor-ui.md"]
         docs --> modules_overview["modules-overview.md"]
         docs --> project_overview["project-overview.md"]
         docs --> service_role_functions["service-role-functions.md"]

@@ -36,5 +36,6 @@ Database changes live in `supabase/migrations` as SQL scripts.
 - For how the right sidebar chooses its content see [sidebar-overview.md](sidebar-overview.md).
 - For a list of the audit phases and how templates use them see [audit-phases.md](audit-phases.md).
 - For how to manage audit actions see [manage-audit-actions.md](manage-audit-actions.md).
+- For guidelines on the form layout see [audit-action-editor-ui.md](audit-action-editor-ui.md).
 
 This overview should help you navigate the project without needing to read the code in detail.
