@@ -166,11 +166,13 @@ Steps for Maskinporten integration:
 
 ### Caching Strategy
 
-Implement a caching strategy to:
-
-1. Reduce API calls to Brønnøysundregistrene
-2. Improve performance
-3. Stay within rate limits
+The `brreg` edge function now caches organization lookups using
+Deno KV. When a request is made with a nine digit organization
+number, the function checks KV for a cached response. If a cached
+entry exists and it is less than 24 hours old the cached JSON is
+returned immediately. Otherwise the data is fetched from the
+Brønnøysund API and the resulting payload is stored back in KV with
+a timestamp. Name searches are not cached.
 
 ## Client Data Model
 

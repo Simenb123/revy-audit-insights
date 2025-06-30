@@ -2,6 +2,9 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { log } from "../_shared/log.ts";
 import { handleBrregError } from "../_shared/brregError.ts";
 
+const kv = await Deno.openKv();
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+
 const BRREG_API_BASE = "https://data.brreg.no/enhetsregisteret/api/enheter";
 const BRREG_ROLES_OPEN = "https://data.brreg.no/enhetsregisteret/api/roller/enhet";
 const BRREG_ROLES_AUTH = "https://data.brreg.no/enhetsregisteret/autorisert-api/enheter";
@@ -43,7 +46,17 @@ serve(async (req) => {
     
     // Check if the query looks like an organization number (9 digits)
     const isOrgNumber = /^\d{9}$/.test(query);
-    
+    let cacheKey: string[] | undefined;
+    if (isOrgNumber) {
+      cacheKey = ['brreg_cache', query];
+      const cached = await kv.get<{ timestamp: number; data: unknown }>(cacheKey);
+      if (cached.value && Date.now() - cached.value.timestamp < CACHE_TTL_MS) {
+        log(`[BRREG] Returning cached data for ${query}`);
+        return new Response(JSON.stringify(cached.value.data), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+    }
     if (!isOrgNumber) {
       // For name searches, proceed as before
       const searchParams = new URLSearchParams({
@@ -322,6 +335,16 @@ serve(async (req) => {
     };
 
     log("Returning enhanced data object");
+    if (isOrgNumber && cacheKey) {
+      try {
+        await kv.set(cacheKey, {
+          timestamp: Date.now(),
+          data: enhancedData
+        });
+      } catch (err) {
+        console.error('Cache store error:', err);
+      }
+    }
     return new Response(
       JSON.stringify(enhancedData),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
