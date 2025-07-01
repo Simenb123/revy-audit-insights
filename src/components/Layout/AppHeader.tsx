@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import Logo from './Logo';
 
 interface AppHeaderProps {
   className?: string;
@@ -46,7 +47,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ className = '' }) => {
   return (
     <header className={`border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 h-12 flex items-center justify-between px-4 ${className}`}>
       <div className="flex items-center gap-4">
-        <h1 className="text-lg font-semibold">AI-Revi</h1>
+        <Logo />
       </div>
       
       <div className="flex items-center gap-2">
