@@ -1,4 +1,4 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { serve } from "../test_deps.ts";
 import { log } from "../_shared/log.ts";
 import { handleBrregError } from "../_shared/brregError.ts";
 
