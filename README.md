@@ -32,6 +32,7 @@ For a map of which hooks and services call Supabase edge functions, see [docs/fr
 For client and team features see [docs/client-management.md](docs/client-management.md) and [docs/team-collaboration.md](docs/team-collaboration.md).
 For accounting imports see [docs/accounting-upload-workflow.md](docs/accounting-upload-workflow.md).
 For voice features see [docs/voice-functions.md](docs/voice-functions.md).
+For the knowledge base and article workflow, see [docs/knowledge-base.md](docs/knowledge-base.md).
 For running tests in CI see [docs/testing-ci.md](docs/testing-ci.md).
 For an overview of the database structure see [docs/database-overview.md](docs/database-overview.md).
 
