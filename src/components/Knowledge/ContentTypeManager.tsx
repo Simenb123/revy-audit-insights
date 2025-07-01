@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,7 +16,7 @@ const {
   useCreateTaxonomy: useCreateContentType,
   useUpdateTaxonomy: useUpdateContentType,
   useDeleteTaxonomy: useDeleteContentType,
-} = createTaxonomyHooks<ContentType>('content_types', 'Innholdstype');
+} = createTaxonomyHooks<ContentType, 'content_types'>('content_types', 'Innholdstype');
 
 const ContentTypeManager = () => {
   const [editingType, setEditingType] = useState<ContentType | null>(null);

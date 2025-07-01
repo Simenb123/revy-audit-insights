@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -25,7 +24,7 @@ const {
   useCreateTaxonomy: useCreateTag,
   useUpdateTaxonomy: useUpdateTag,
   useDeleteTaxonomy: useDeleteTag,
-} = createTaxonomyHooks<TagType>('tags', 'Tag');
+} = createTaxonomyHooks<TagType, 'tags'>('tags', 'Tag');
 
 const TagManagerComponent = () => {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);

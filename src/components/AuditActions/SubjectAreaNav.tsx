@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useSubjectAreasHierarchical } from '@/hooks/knowledge/useSubjectAreas';
 import { Loader2, ChevronDown, ChevronRight } from 'lucide-react';
+import type { SubjectArea } from '@/types/classification';
 
 interface SubjectAreaNavProps {
   selectedArea: string;
@@ -12,7 +13,7 @@ interface SubjectAreaNavProps {
 }
 
 interface SubjectAreaNodeProps {
-  area: any;
+  area: SubjectArea;
   selectedArea: string;
   onAreaSelect: (areaId: string) => void;
   actionCounts: Record<string, number>;
@@ -32,7 +33,7 @@ const SubjectAreaNode: React.FC<SubjectAreaNodeProps> = ({
   const isSelected = selectedArea === area.id;
   
   const childrenCount = hasChildren ? 
-    area.children.reduce((sum: number, child: any) => 
+    area.children.reduce((sum: number, child: SubjectArea) => 
       sum + (actionCounts[child.id] || 0), 0
     ) : 0;
   
@@ -88,7 +89,7 @@ const SubjectAreaNode: React.FC<SubjectAreaNodeProps> = ({
       
       {hasChildren && isExpanded && (
         <div className="mt-2 space-y-2">
-          {area.children.map((child: any) => (
+          {area.children.map((child: SubjectArea) => (
             <SubjectAreaNode
               key={child.id}
               area={child}

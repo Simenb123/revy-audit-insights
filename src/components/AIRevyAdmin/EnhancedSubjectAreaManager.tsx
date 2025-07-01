@@ -33,7 +33,7 @@ const EnhancedSubjectAreaManager = () => {
     useCreateTaxonomy: useCreateSubjectArea,
     useUpdateTaxonomy: useUpdateSubjectArea,
     useDeleteTaxonomy: useDeleteSubjectArea,
-  } = createTaxonomyHooks<SubjectArea>('subject_areas', 'Emneområde');
+  } = createTaxonomyHooks<SubjectArea, 'subject_areas'>('subject_areas', 'Emneområde');
 
   const { data: subjectAreas = [], isLoading } = useSubjectAreas();
   const createSubjectArea = useCreateSubjectArea();

@@ -17,7 +17,7 @@ function createTaxonomyHooks<
           .select('*')
           .order('sort_order, name');
         if (error) throw error;
-        return data as T[];
+        return (data as any[]) || [];
       }
     });
   };

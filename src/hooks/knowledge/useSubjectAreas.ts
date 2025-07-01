@@ -2,20 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import createTaxonomyHooks from './useTaxonomy';
-
-export interface SubjectArea {
-  id: string;
-  name: string;
-  display_name: string;
-  description?: string;
-  icon?: string;
-  color: string;
-  sort_order: number;
-  is_active: boolean;
-  parent_subject_area_id?: string;
-  created_at: string;
-  updated_at: string;
-}
+import type { SubjectArea } from '@/types/classification';
 
 // Use the generic taxonomy hooks
 const {
@@ -26,6 +13,46 @@ const {
   useDeleteTaxonomy: useDeleteSubjectArea,
 } = createTaxonomyHooks<SubjectArea, 'subject_areas'>('subject_areas', 'Emneområde');
 
+// Add hierarchical subject areas hook
+export const useSubjectAreasHierarchical = () => {
+  return useQuery({
+    queryKey: ['subject-areas-hierarchical'],
+    queryFn: async (): Promise<SubjectArea[]> => {
+      const { data, error } = await supabase
+        .from('subject_areas')
+        .select('*')
+        .order('sort_order, name');
+      
+      if (error) throw error;
+      
+      // Build hierarchical structure
+      const allAreas = data as SubjectArea[];
+      const rootAreas: SubjectArea[] = [];
+      const areaMap = new Map<string, SubjectArea>();
+      
+      // Create map and initialize children arrays
+      allAreas.forEach(area => {
+        areaMap.set(area.id, { ...area, children: [] });
+      });
+      
+      // Build hierarchy
+      allAreas.forEach(area => {
+        const mappedArea = areaMap.get(area.id)!;
+        if (area.parent_subject_area_id) {
+          const parent = areaMap.get(area.parent_subject_area_id);
+          if (parent) {
+            parent.children!.push(mappedArea);
+          }
+        } else {
+          rootAreas.push(mappedArea);
+        }
+      });
+      
+      return rootAreas;
+    }
+  });
+};
+
 export {
   useSubjectAreas,
   useSubjectAreaById,
@@ -33,6 +60,8 @@ export {
   useUpdateSubjectArea,
   useDeleteSubjectArea,
 };
+
+export type { SubjectArea };
 
 // Keep existing custom hooks
 export const useSubjectAreaConnections = (subjectAreaId?: string) => {

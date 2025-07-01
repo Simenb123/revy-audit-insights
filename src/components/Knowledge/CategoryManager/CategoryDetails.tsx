@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -106,7 +105,7 @@ const CategoryDetails = ({
           <div>
             <span className="text-sm font-medium">Gjeldende faser:</span>
             <div className="flex flex-wrap gap-1 mt-1">
-              {selectedCategory.applicable_phases.map((phase) => (
+              {selectedCategory.applicable_phases?.map((phase: string) => (
                 <Badge key={phase} variant="outline" className="text-xs">
                   {phase}
                 </Badge>

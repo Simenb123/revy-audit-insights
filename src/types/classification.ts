@@ -37,4 +37,18 @@ export interface SubjectArea {
   parent_subject_area_id?: string;
   created_at: string;
   updated_at: string;
+  children?: SubjectArea[];
+}
+
+export interface Category {
+  id: string;
+  name: string;
+  description?: string;
+  parent_category_id?: string;
+  display_order: number;
+  icon?: string;
+  applicable_phases?: string[];
+  created_at: string;
+  updated_at: string;
+  children?: Category[];
 }

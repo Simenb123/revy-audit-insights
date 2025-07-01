@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,10 +11,11 @@ import createTaxonomyHooks from '@/hooks/knowledge/useTaxonomy';
 import { useSubjectAreas, SubjectArea } from '@/hooks/knowledge/useSubjectAreas';
 
 const {
+  useTaxonomies: useSubjectAreas,
   useCreateTaxonomy: useCreateSubjectArea,
   useUpdateTaxonomy: useUpdateSubjectArea,
   useDeleteTaxonomy: useDeleteSubjectArea,
-} = createTaxonomyHooks<SubjectArea>('subject_areas', 'Emneområde');
+} = createTaxonomyHooks<SubjectArea, 'subject_areas'>('subject_areas', 'Emneområde');
 import ConfirmDeleteDialog from './ConfirmDeleteDialog';
 
 const SubjectAreaManager = () => {

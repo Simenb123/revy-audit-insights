@@ -140,7 +140,7 @@ const DocumentTypeManager = () => {
                     )}
                     
                     <div className="flex flex-wrap gap-1 mb-2">
-                      {type.file_pattern_hints.map((hint, index) => (
+                      {type.file_pattern_hints.map((hint: string, index: number) => (
                         <Badge key={index} variant="outline" className="text-xs">
                           {hint}
                         </Badge>

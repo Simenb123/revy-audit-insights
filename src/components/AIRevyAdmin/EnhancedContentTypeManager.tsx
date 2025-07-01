@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -33,7 +32,7 @@ const EnhancedContentTypeManager = () => {
     useCreateTaxonomy: useCreateContentType,
     useUpdateTaxonomy: useUpdateContentType,
     useDeleteTaxonomy: useDeleteContentType,
-  } = createTaxonomyHooks<ContentType>('content_types', 'Innholdstype');
+  } = createTaxonomyHooks<ContentType, 'content_types'>('content_types', 'Innholdstype');
 
   const { data: contentTypes = [], isLoading } = useContentTypes();
   const { data: subjectAreas = [] } = useSubjectAreas();
