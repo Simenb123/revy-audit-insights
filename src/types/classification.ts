@@ -53,3 +53,17 @@ export interface Category {
   updated_at: string;
   children?: Category[];
 }
+
+export interface DocumentType {
+  id: string;
+  name: string;
+  display_name: string;
+  description?: string;
+  file_pattern_hints?: string[];
+  is_standard: boolean;
+  sort_order: number;
+  validation_rules?: Record<string, any>;
+  expected_structure?: Record<string, any>;
+  created_at: string;
+  updated_at: string;
+}

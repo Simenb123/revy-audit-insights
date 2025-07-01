@@ -118,7 +118,7 @@ export const generateAIResponse = async (
 const getFallbackResponse = (context: RevyContext, errorType: string, errorDetails?: string): string => {
   const baseMessage = "Beklager, jeg opplever tekniske problemer akkurat nå.";
   
-  const contextSpecificHelp = {
+  const contextSpecificHelp: Partial<Record<RevyContext, string>> & { general: string } = {
     'risk-assessment': `I mellomtiden kan du se på ISA 315-standarden for risikovurdering og planlegge revisjonshandlinger basert på identifiserte risikoområder.
 
 **Viktige risikoområder å vurdere:**

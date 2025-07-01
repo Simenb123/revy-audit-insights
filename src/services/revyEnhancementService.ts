@@ -22,12 +22,12 @@ export interface EnhancedResponse {
 }
 
 export const enhanceAIResponse = (
-  rawResponse: string, 
-  context: string, 
+  rawResponse: string,
+  context: string,
   clientData?: any
 ): EnhancedResponse => {
-  const links = [];
-  const sources = [];
+  const links: EnhancedResponse['links'] = [];
+  const sources: EnhancedResponse['sources'] = [];
   let content = rawResponse;
 
   // Extract and create navigation links based on keywords

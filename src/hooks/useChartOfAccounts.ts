@@ -116,10 +116,18 @@ export function useAccountMappings(clientId: string) {
       // Type cast the nested account_type fields
       return (data || []).map(mapping => ({
         ...mapping,
-        client_account: mapping.client_account ? {
-          ...mapping.client_account,
-          account_type: mapping.client_account.account_type as 'asset' | 'liability' | 'equity' | 'revenue' | 'expense'
-        } : undefined
+        client_account: mapping.client_account
+          ? {
+              ...mapping.client_account,
+              account_type: mapping.client_account.account_type as ChartOfAccount['account_type']
+            }
+          : undefined,
+        standard_account: mapping.standard_account
+          ? {
+              ...mapping.standard_account,
+              account_type: mapping.standard_account.account_type as StandardAccount['account_type']
+            }
+          : undefined
       }));
     },
     enabled: !!clientId,
