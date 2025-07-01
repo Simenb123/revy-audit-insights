@@ -1,0 +1,30 @@
+diff --git a/node_modules/lovable-tagger/dist/index.cjs b/node_modules/lovable-tagger/dist/index.cjs
+index 5e5945b..022974a 100644
+--- a/node_modules/lovable-tagger/dist/index.cjs
++++ b/node_modules/lovable-tagger/dist/index.cjs
+@@ -426,8 +426,9 @@ function componentTagger() {
+                 const legacyIds = ` data-component-path="${relativePath}" data-component-line="${line}" data-component-file="${fileName}" data-component-name="${elementName}" data-component-content="${encodeURIComponent(
+                   JSON.stringify(content)
+                 )}"`;
++                const insertPos = jsxNode.typeParameters?.end ?? jsxNode.name.end ?? 0;
+                 magicString.appendLeft(
+-                  jsxNode.name.end ?? 0,
++                  insertPos,
+                   ` data-lov-id="${dataComponentId}" data-lov-name="${elementName}" ${legacyIds}`
+                 );
+                 changedElementsCount++;
+diff --git a/node_modules/lovable-tagger/dist/index.js b/node_modules/lovable-tagger/dist/index.js
+index 9d1dda3..9eb08df 100644
+--- a/node_modules/lovable-tagger/dist/index.js
++++ b/node_modules/lovable-tagger/dist/index.js
+@@ -390,8 +390,9 @@ function componentTagger() {
+                 const legacyIds = ` data-component-path="${relativePath}" data-component-line="${line}" data-component-file="${fileName}" data-component-name="${elementName}" data-component-content="${encodeURIComponent(
+                   JSON.stringify(content)
+                 )}"`;
++                const insertPos = jsxNode.typeParameters?.end ?? jsxNode.name.end ?? 0;
+                 magicString.appendLeft(
+-                  jsxNode.name.end ?? 0,
++                  insertPos,
+                   ` data-lov-id="${dataComponentId}" data-lov-name="${elementName}" ${legacyIds}`
+                 );
+                 changedElementsCount++;
