@@ -1,3 +1,4 @@
+
 import createTaxonomyHooks from './useTaxonomy';
 import type { ContentType } from '@/types/classification';
 
@@ -7,7 +8,7 @@ const {
   useCreateTaxonomy: useCreateContentType,
   useUpdateTaxonomy: useUpdateContentType,
   useDeleteTaxonomy: useDeleteContentType,
-} = createTaxonomyHooks<ContentType>('content_types', 'Innholdstype');
+} = createTaxonomyHooks<ContentType, 'content_types'>('content_types', 'Innholdstype');
 
 export {
   useContentTypes,

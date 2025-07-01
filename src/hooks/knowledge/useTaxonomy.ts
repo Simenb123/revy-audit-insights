@@ -1,10 +1,11 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 import { toast } from 'sonner';
 
 function createTaxonomyHooks<
-  T,
+  T extends Record<string, any>,
   TableName extends keyof Database['public']['Tables']
 >(table: TableName, displayName: string) {
   const useTaxonomies = () => {
@@ -41,7 +42,7 @@ function createTaxonomyHooks<
   const useCreateTaxonomy = () => {
     const queryClient = useQueryClient();
     return useMutation({
-      mutationFn: async (data: Omit<T, 'id' | 'created_at' | 'updated_at'>) => {
+      mutationFn: async (data: any) => {
         const { data: result, error } = await supabase
           .from(table)
           .insert(data)
@@ -63,7 +64,7 @@ function createTaxonomyHooks<
   const useUpdateTaxonomy = () => {
     const queryClient = useQueryClient();
     return useMutation({
-      mutationFn: async ({ id, ...updates }: Partial<T> & { id: string }) => {
+      mutationFn: async ({ id, ...updates }: any) => {
         const { data: result, error } = await supabase
           .from(table)
           .update(updates)

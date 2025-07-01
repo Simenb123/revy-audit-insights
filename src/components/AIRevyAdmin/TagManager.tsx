@@ -4,18 +4,10 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Hash, Plus, Tag as TagIcon, Edit, Trash2 } from 'lucide-react';
 import EntityManager from '@/components/common/EntityManager';
-import createTaxonomyHooks from '@/hooks/knowledge/useTaxonomy';
-import { type Tag as TagType } from '@/hooks/knowledge/useTags';
+import { useTags, useCreateTag, useUpdateTag, useDeleteTag, type Tag as TagType } from '@/hooks/knowledge/useTags';
 import TagForm from './forms/TagForm';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-
-const {
-  useTaxonomies: useTags,
-  useCreateTaxonomy: useCreateTag,
-  useUpdateTaxonomy: useUpdateTag,
-  useDeleteTaxonomy: useDeleteTag,
-} = createTaxonomyHooks<TagType>('tags', 'Tag');
 
 const categories = [
   'all',

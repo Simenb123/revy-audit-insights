@@ -1,3 +1,4 @@
+
 import createTaxonomyHooks from './useTaxonomy';
 import type { Tag } from '@/types/classification';
 
@@ -7,7 +8,7 @@ const {
   useCreateTaxonomy: useCreateTag,
   useUpdateTaxonomy: useUpdateTag,
   useDeleteTaxonomy: useDeleteTag,
-} = createTaxonomyHooks<Tag>('tags', 'Tag');
+} = createTaxonomyHooks<Tag, 'tags'>('tags', 'Tag');
 
 export {
   useTags,
