@@ -43,6 +43,7 @@ export interface SubjectArea {
 export interface Category {
   id: string;
   name: string;
+  slug: string;
   description?: string;
   parent_category_id?: string;
   display_order: number;

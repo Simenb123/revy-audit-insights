@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,15 +9,15 @@ import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { FolderTree, Plus, Edit, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { KnowledgeCategory } from '@/types/knowledge';
+import { Category } from '@/types/classification';
 import { toast } from 'sonner';
 import CategoryForm from '@/components/Knowledge/CategoryManager/CategoryForm';
 import CategoryTree from '@/components/Knowledge/CategoryManager/CategoryTree';
 import ConfirmDeleteDialog from '@/components/Knowledge/ConfirmDeleteDialog';
 
 const CategoryAdmin = () => {
-  const [selectedCategory, setSelectedCategory] = useState<KnowledgeCategory | null>(null);
-  const [editingCategory, setEditingCategory] = useState<KnowledgeCategory | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [createOpen, setCreateOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -30,7 +31,7 @@ const CategoryAdmin = () => {
         .select('*')
         .order('display_order');
       if (error) throw error;
-      return data as KnowledgeCategory[];
+      return data as Category[];
     }
   });
 
@@ -49,9 +50,10 @@ const CategoryAdmin = () => {
   });
 
   const createCategory = useMutation({
-    mutationFn: async (data: Omit<KnowledgeCategory, 'id' | 'created_at' | 'updated_at'>) => {
+    mutationFn: async (data: Omit<Category, 'id' | 'created_at' | 'updated_at'>) => {
       const { error } = await supabase.from('knowledge_categories').insert({
         name: data.name,
+        slug: data.slug,
         description: data.description,
         parent_category_id: data.parent_category_id === 'none' ? null : data.parent_category_id,
         display_order: data.display_order,
@@ -68,11 +70,12 @@ const CategoryAdmin = () => {
   });
 
   const updateCategory = useMutation({
-    mutationFn: async (updates: Partial<KnowledgeCategory> & { id: string }) => {
+    mutationFn: async (updates: Partial<Category> & { id: string }) => {
       const { error } = await supabase
         .from('knowledge_categories')
         .update({
           name: updates.name,
+          slug: updates.slug,
           description: updates.description,
           parent_category_id: updates.parent_category_id === 'none' ? null : updates.parent_category_id,
           display_order: updates.display_order,

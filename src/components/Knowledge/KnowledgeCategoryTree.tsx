@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useParams, useNavigate } from 'react-router-dom';
@@ -15,7 +16,7 @@ const fetchCategories = async () => {
   return data as Category[];
 };
 
-type CategoryTreeNode = Omit<Category, 'children'> & {
+type CategoryTreeNode = Category & {
   children: CategoryTreeNode[];
 };
 
@@ -49,7 +50,7 @@ const CategoryTreeItem = ({ category }: { category: CategoryTreeNode }) => {
     return (
       <li className="list-none">
         <Link
-          to={`/fag/kategori/${category.slug ?? category.id}`}
+          to={`/fag/kategori/${category.slug || category.id}`}
           className={cn(
             'flex items-center gap-2 p-2 rounded-md hover:bg-accent ml-6',
             isSelected && 'bg-accent font-semibold'
@@ -64,7 +65,7 @@ const CategoryTreeItem = ({ category }: { category: CategoryTreeNode }) => {
 
   return (
     <TreeItem value={category.id}>
-      <Link to={`/fag/kategori/${category.slug ?? category.id}`} className="block text-current no-underline">
+      <Link to={`/fag/kategori/${category.slug || category.id}`} className="block text-current no-underline">
         <TreeViewTrigger className={cn(isSelected && 'bg-accent font-semibold')}>
           <div className="flex items-center gap-2">
             <Folder size={16} />

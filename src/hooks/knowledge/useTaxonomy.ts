@@ -17,7 +17,7 @@ function createTaxonomyHooks<
           .select('*')
           .order('sort_order, name');
         if (error) throw error;
-        return (data as any[]) || [];
+        return (data as unknown as T[]) || [];
       }
     });
   };
@@ -30,10 +30,10 @@ function createTaxonomyHooks<
         const { data, error } = await supabase
           .from(table)
           .select('*')
-          .eq('id', id)
+          .eq('id' as any, id)
           .single();
         if (error) throw error;
-        return data as T;
+        return data as unknown as T;
       },
       enabled: !!id
     });
@@ -45,11 +45,11 @@ function createTaxonomyHooks<
       mutationFn: async (data: any) => {
         const { data: result, error } = await supabase
           .from(table)
-          .insert(data)
+          .insert(data as any)
           .select()
           .single();
         if (error) throw error;
-        return result as T;
+        return result as unknown as T;
       },
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: [table] });
@@ -67,12 +67,12 @@ function createTaxonomyHooks<
       mutationFn: async ({ id, ...updates }: any) => {
         const { data: result, error } = await supabase
           .from(table)
-          .update(updates)
-          .eq('id', id)
+          .update(updates as any)
+          .eq('id' as any, id)
           .select()
           .single();
         if (error) throw error;
-        return result as T;
+        return result as unknown as T;
       },
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: [table] });
@@ -91,7 +91,7 @@ function createTaxonomyHooks<
         const { error } = await supabase
           .from(table)
           .delete()
-          .eq('id', id);
+          .eq('id' as any, id);
         if (error) throw error;
       },
       onSuccess: () => {
