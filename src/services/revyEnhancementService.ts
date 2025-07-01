@@ -1,6 +1,7 @@
 import { logger } from '@/utils/logger';
 
 import { useNavigate } from 'react-router-dom';
+import { RevyContext, ProactiveAction } from '@/types/revio';
 
 export interface EnhancedResponse {
   content: string;
@@ -146,8 +147,11 @@ export const enhanceAIResponse = (
 };
 
 // Helper function to generate proactive actions based on client data
-export const generateProactiveActions = (clientData: any, context: string) => {
-  const actions = [];
+export const generateProactiveActions = (
+  clientData: any,
+  context: RevyContext
+): ProactiveAction[] => {
+  const actions: ProactiveAction[] = [];
   
   if (clientData?.progress && clientData.progress < 50) {
     actions.push({
@@ -171,23 +175,26 @@ export const generateProactiveActions = (clientData: any, context: string) => {
 };
 
 // Function to extract and format contextual tips
-export const getContextualSuggestions = (context: string, clientData?: any) => {
-  const suggestions = [];
+export const getContextualSuggestions = (
+  context: RevyContext,
+  clientData?: any
+): ProactiveAction[] => {
+  const suggestions: ProactiveAction[] = [];
 
   switch (context) {
     case 'risk-assessment':
-      suggestions.push('Vurder materialitetsnivå basert på klientens størrelse');
-      suggestions.push('Identifiser bransjespecifikke risikoer');
+      suggestions.push({ type: 'knowledge', text: 'Vurder materialitetsnivå basert på klientens størrelse' });
+      suggestions.push({ type: 'knowledge', text: 'Identifiser bransjespecifikke risikoer' });
       break;
     case 'client-detail':
       if (clientData?.industry) {
-        suggestions.push(`Sammenlign med andre ${clientData.industry}-klienter`);
+        suggestions.push({ type: 'knowledge', text: `Sammenlign med andre ${clientData.industry}-klienter` });
       }
-      suggestions.push('Sjekk fremdrift på revisjonshandlinger');
+      suggestions.push({ type: 'knowledge', text: 'Sjekk fremdrift på revisjonshandlinger' });
       break;
     case 'documentation':
-      suggestions.push('Følg ISA 230 for dokumentasjonskrav');
-      suggestions.push('Strukturer arbeidspapirer systematisk');
+      suggestions.push({ type: 'knowledge', text: 'Følg ISA 230 for dokumentasjonskrav' });
+      suggestions.push({ type: 'knowledge', text: 'Strukturer arbeidspapirer systematisk' });
       break;
   }
 

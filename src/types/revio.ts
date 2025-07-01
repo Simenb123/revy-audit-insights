@@ -197,6 +197,16 @@ export type RevyChatMessage = {
   created_at: string;
 };
 
+export interface ProactiveAction {
+  type: 'navigation' | 'action' | 'external' | 'knowledge';
+  text: string;
+  path?: string;
+  url?: string;
+  action?: () => void;
+  icon?: React.ReactNode;
+  variant?: 'default' | 'secondary' | 'outline';
+}
+
 export type Account = {
   id: string;
   name: string;
