@@ -32,6 +32,12 @@ For a map of which hooks and services call Supabase edge functions, see [docs/fr
 For client and team features see [docs/client-management.md](docs/client-management.md) and [docs/team-collaboration.md](docs/team-collaboration.md).
 For accounting imports see [docs/accounting-upload-workflow.md](docs/accounting-upload-workflow.md).
 For voice features see [docs/voice-functions.md](docs/voice-functions.md).
+For the knowledge base and article workflow, see [docs/knowledge-base.md](docs/knowledge-base.md).
+For BRREG integration details, see [docs/brreg.md](docs/brreg.md).
+For the audit action editing interface, see [docs/audit-action-editor-ui.md](docs/audit-action-editor-ui.md).
+For service architecture diagrams of the edge functions, see [docs/backend-endpoints-flow.md](docs/backend-endpoints-flow.md).
+For classification models used across modules, see [docs/classification.md](docs/classification.md).
+For ledger upload column mappings, see [docs/upload-column-mappings.md](docs/upload-column-mappings.md).
 For running tests in CI see [docs/testing-ci.md](docs/testing-ci.md).
 For an overview of the database structure see [docs/database-overview.md](docs/database-overview.md).
 
