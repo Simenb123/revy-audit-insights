@@ -1,4 +1,4 @@
-import { assert, assertEquals, assertStringIncludes } from "https://deno.land/std@0.203.0/testing/asserts.ts";
+import { assert, assertEquals, assertStringIncludes } from "../test_deps.ts";
 import { handler } from "./index.ts";
 
 function mockFetch(responseText: string) {

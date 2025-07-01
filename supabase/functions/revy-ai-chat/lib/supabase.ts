@@ -1,5 +1,5 @@
 
-import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
+import { createClient, type SupabaseClient } from '../test_deps.ts';
 
 // Factory function to create a scoped Supabase client using the caller's JWT
 const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';

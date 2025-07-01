@@ -1,9 +1,8 @@
-import { assertEquals } from "https://deno.land/std@0.208.0/testing/asserts.ts";
-import { stub } from "https://deno.land/std@0.208.0/testing/mock.ts";
+import { assertEquals, stub } from "../test_deps.ts";
 
 Deno.test("returns transcribed text in JSON", async () => {
   let handler: (req: Request) => Promise<Response> | Response = () => new Response();
-  const serveMod = await import("https://deno.land/std@0.168.0/http/server.ts");
+  const serveMod = await import("../test_deps.ts");
   const serveStub = stub(serveMod, "serve", (h: typeof handler) => { handler = h; });
 
   const fetchStub = stub(globalThis, "fetch", async () =>
