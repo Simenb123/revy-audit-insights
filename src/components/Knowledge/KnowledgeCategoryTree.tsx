@@ -44,9 +44,7 @@ const buildCategoryTree = (categories: Category[]): CategoryTreeNode[] => {
 const CategoryTreeItem = ({ category }: { category: CategoryTreeNode }) => {
   const { categoryId } = useParams<{ categoryId?: string }>();
   const isSelected = category.id === categoryId || category.slug === categoryId;
-  const hasChildren = category.children && category.children.length > 0;
-
-  if (!hasChildren) {
+  if (category.children.length === 0) {
     return (
       <li className="list-none">
         <Link

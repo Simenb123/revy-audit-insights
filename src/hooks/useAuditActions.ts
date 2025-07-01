@@ -13,7 +13,7 @@ export {
   useDeleteAuditActionTemplate
 } from '@/hooks/audit-actions/useActionTemplateCRUD';
 
-const mapPhaseToDb = (
+export const mapPhaseToDb = (
   phase: AuditPhase
 ): Database['public']['Enums']['audit_phase'] => {
   if (phase === 'completion') return 'conclusion';
@@ -108,10 +108,12 @@ export function useUpdateClientAuditAction() {
 
   return useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<ClientAuditAction> }) => {
-      const dbUpdates = {
-        ...updates,
-        ...(updates.phase ? { phase: mapPhaseToDb(updates.phase) } : {})
+      const dbUpdates: Database['public']['Tables']['client_audit_actions']['Update'] = {
+        ...(updates as Database['public']['Tables']['client_audit_actions']['Update'])
       };
+      if (updates.phase) {
+        dbUpdates.phase = mapPhaseToDb(updates.phase);
+      }
       const { data, error } = await supabase
         .from('client_audit_actions')
         .update(dbUpdates)
