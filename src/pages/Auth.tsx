@@ -9,16 +9,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Info } from 'lucide-react';
+import { Info, AlertTriangle } from 'lucide-react';
+import { ConnectionStatus } from '@/components/Debug/ConnectionStatus';
 
 const Auth = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { session } = useAuth();
+  const { session, connectionStatus } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [showErrorDialog, setShowErrorDialog] = useState(false);
+  const [showDebugInfo, setShowDebugInfo] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -45,6 +47,25 @@ const Auth = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (connectionStatus !== 'connected') {
+      toast({
+        title: "Tilkoblingsfeil",
+        description: "Kan ikke koble til Supabase. Sjekk tilkoblingsstatusen.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (!supabase) {
+      toast({
+        title: "Konfigurasjonsfeil",
+        description: "Supabase-klienten er ikke initialisert korrekt.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setLoading(true);
 
     try {
@@ -53,6 +74,7 @@ const Auth = () => {
           email: formData.email,
           password: formData.password,
           options: {
+            emailRedirectTo: `${window.location.origin}/`,
             data: {
               first_name: formData.firstName,
               last_name: formData.lastName,
@@ -90,7 +112,7 @@ const Auth = () => {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-background">
+    <div className="flex items-center justify-center min-h-screen bg-background p-4">
       {/* Error dialog for invalid/expired email link */}
       <Dialog open={showErrorDialog} onOpenChange={setShowErrorDialog}>
         <DialogContent>
@@ -106,105 +128,134 @@ const Auth = () => {
         </DialogContent>
       </Dialog>
 
-      <Card className="w-[400px]">
-        <CardHeader>
-          <CardTitle>{isSignUp ? 'Registrer ny bruker' : 'Logg inn'}</CardTitle>
-          <CardDescription>
-            {isSignUp 
-              ? 'Opprett en ny brukerkonto' 
-              : 'Logg inn på din brukerkonto'}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium" htmlFor="email">E-post</label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium" htmlFor="password">Passord</label>
-              <Input
-                id="password"
-                type="password"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                required
-              />
-            </div>
-
-            {isSignUp && (
-              <>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium" htmlFor="firstName">Fornavn</label>
-                  <Input
-                    id="firstName"
-                    type="text"
-                    value={formData.firstName}
-                    onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium" htmlFor="lastName">Etternavn</label>
-                  <Input
-                    id="lastName"
-                    type="text"
-                    value={formData.lastName}
-                    onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium" htmlFor="workplaceCompanyName">Firmanavn</label>
-                  <Input
-                    id="workplaceCompanyName"
-                    type="text"
-                    value={formData.workplaceCompanyName}
-                    onChange={(e) => setFormData({ ...formData, workplaceCompanyName: e.target.value })}
-                    required
-                  />
-                </div>
-              </>
-            )}
-
-            {!isSignUp && (
-              <Alert variant="outline" className="mt-4">
-                <Info className="h-4 w-4" />
-                <AlertTitle>Tips</AlertTitle>
-                <AlertDescription>
-                  Du kan logge inn selv om du ikke har bekreftet e-posten din.
-                </AlertDescription>
-              </Alert>
-            )}
-
-            <div className="space-y-4">
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? 'Vennligst vent...' : (isSignUp ? 'Registrer' : 'Logg inn')}
-              </Button>
-
-              <Button
-                type="button"
-                variant="ghost"
-                className="w-full"
-                onClick={() => setIsSignUp(!isSignUp)}
+      <div className="flex flex-col gap-4 w-full max-w-md">
+        {/* Connection status warning */}
+        {connectionStatus !== 'connected' && (
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Tilkoblingsproblem</AlertTitle>
+            <AlertDescription>
+              Kan ikke koble til autentiseringsserveren. 
+              <Button 
+                variant="link" 
+                className="p-0 h-auto font-normal underline"
+                onClick={() => setShowDebugInfo(!showDebugInfo)}
               >
-                {isSignUp 
-                  ? 'Har du allerede en konto? Logg inn' 
-                  : 'Ny bruker? Registrer deg'}
+                Vis feilsøkingsinfo
               </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Debug info */}
+        {showDebugInfo && (
+          <ConnectionStatus />
+        )}
+
+        <Card>
+          <CardHeader>
+            <CardTitle>{isSignUp ? 'Registrer ny bruker' : 'Logg inn'}</CardTitle>
+            <CardDescription>
+              {isSignUp 
+                ? 'Opprett en ny brukerkonto' 
+                : 'Logg inn på din brukerkonto'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium" htmlFor="email">E-post</label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium" htmlFor="password">Passord</label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  required
+                />
+              </div>
+
+              {isSignUp && (
+                <>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium" htmlFor="firstName">Fornavn</label>
+                    <Input
+                      id="firstName"
+                      type="text"
+                      value={formData.firstName}
+                      onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium" htmlFor="lastName">Etternavn</label>
+                    <Input
+                      id="lastName"
+                      type="text"
+                      value={formData.lastName}
+                      onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium" htmlFor="workplaceCompanyName">Firmanavn</label>
+                    <Input
+                      id="workplaceCompanyName"
+                      type="text"
+                      value={formData.workplaceCompanyName}
+                      onChange={(e) => setFormData({ ...formData, workplaceCompanyName: e.target.value })}
+                      required
+                    />
+                  </div>
+                </>
+              )}
+
+              {!isSignUp && (
+                <Alert variant="outline" className="mt-4">
+                  <Info className="h-4 w-4" />
+                  <AlertTitle>Tips</AlertTitle>
+                  <AlertDescription>
+                    Du kan logge inn selv om du ikke har bekreftet e-posten din.
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              <div className="space-y-4">
+                <Button 
+                  type="submit" 
+                  className="w-full" 
+                  disabled={loading || connectionStatus !== 'connected'}
+                >
+                  {loading ? 'Vennligst vent...' : (isSignUp ? 'Registrer' : 'Logg inn')}
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="w-full"
+                  onClick={() => setIsSignUp(!isSignUp)}
+                >
+                  {isSignUp 
+                    ? 'Har du allerede en konto? Logg inn' 
+                    : 'Ny bruker? Registrer deg'}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };

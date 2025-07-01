@@ -1,6 +1,5 @@
 
 import { logger } from '@/utils/logger';
-
 import { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase, isSupabaseConfigured, checkSupabaseConnection } from '@/integrations/supabase/client';
@@ -62,7 +61,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signOut = async () => {
     if (!isSupabaseConfigured || !supabase) {
-      logger.warn('⚠️ Supabase not configured. Skipping sign out.');
+      logger.warn('⚠️ Supabase not configured. Clearing local session.');
       setSession(null);
       setUser(null);
       return;
@@ -81,7 +80,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     const initializeAuth = async () => {
       if (!isSupabaseConfigured || !supabase) {
-        logger.warn('⚠️ Supabase not configured. Skipping auth initialization.');
+        logger.error('❌ Supabase not configured. Cannot initialize authentication.');
         setConnectionStatus('disconnected');
         setIsLoading(false);
         return;
@@ -92,6 +91,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setConnectionStatus(connected ? 'connected' : 'disconnected');
       
       if (!connected) {
+        logger.error('❌ Supabase connection failed');
         setIsLoading(false);
         return;
       }

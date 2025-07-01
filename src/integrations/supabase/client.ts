@@ -1,14 +1,11 @@
 
 import { logger } from '@/utils/logger';
-
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from './types'
 
-// Supabase credentials from environment variables
-const supabaseUrl =
-  import.meta.env.SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL || ''
-const supabaseAnonKey =
-  import.meta.env.SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY || ''
+// Use the known Supabase project credentials directly
+const supabaseUrl = 'https://fxelhfwaoizqyecikscu.supabase.co'
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ4ZWxoZndhb2l6cXllY2lrc2N1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUxNjM2NzksImV4cCI6MjA2MDczOTY3OX0.h20hURN-5qCAtI8tZaHpEoCnNmfdhIuYJG3tgXyvKqc'
 
 // Service role key for server-side operations (used by edge functions)
 export const supabaseServiceRoleKey = typeof window === 'undefined'
@@ -24,7 +21,7 @@ if (import.meta.env.DEV) {
     hasKey: !!supabaseAnonKey,
     urlLength: supabaseUrl?.length || 0,
     keyLength: supabaseAnonKey?.length || 0,
-    urlPreview: supabaseUrl ? `${supabaseUrl.substring(0, 20)}...` : 'NOT SET',
+    urlPreview: supabaseUrl ? `${supabaseUrl.substring(0, 30)}...` : 'NOT SET',
     keyPreview: supabaseAnonKey ? `${supabaseAnonKey.substring(0, 20)}...` : 'NOT SET'
   });
 }
@@ -33,11 +30,8 @@ export const isSupabaseConfigured = !!(supabaseUrl && supabaseAnonKey)
 
 if (!isSupabaseConfigured) {
   logger.error(
-    '❌ Supabase credentials missing. Set SUPABASE_URL and SUPABASE_ANON_KEY.',
+    '❌ Supabase credentials missing. Check configuration.',
     {
-      availableEnvVars: Object.keys(import.meta.env).filter(key => 
-        key.includes('SUPABASE') || key.includes('supabase')
-      ),
       supabaseUrl: supabaseUrl || 'MISSING',
       supabaseAnonKey: supabaseAnonKey ? '[PRESENT]' : 'MISSING'
     }
@@ -87,16 +81,14 @@ const loggingFetch = async (
   }
 }
 
-export const supabase: SupabaseClient<Database> | null = isSupabaseConfigured
-  ? createClient<Database>(supabaseUrl, supabaseAnonKey, {
-      global: { fetch: loggingFetch },
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: true
-      }
-    })
-  : null
+export const supabase: SupabaseClient<Database> = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+  global: { fetch: loggingFetch },
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true
+  }
+})
 
 // Export a function to check if Supabase is ready
 export const checkSupabaseConnection = async (): Promise<boolean> => {
