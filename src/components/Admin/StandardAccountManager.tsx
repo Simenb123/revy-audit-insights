@@ -3,7 +3,11 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { MapPin, Edit, Trash2 } from 'lucide-react';
-import EntityManager from '@/components/common/EntityManager';
+import EntityManager, { type EntityManagerProps } from '@/components/common/EntityManager';
+
+type StandardAccountEntityManagerProps = EntityManagerProps<StandardAccount>;
+const StandardAccountEntityManager =
+  EntityManager as React.ComponentType<StandardAccountEntityManagerProps>;
 import StandardAccountForm from './forms/StandardAccountForm';
 import {
   useStandardAccounts,
@@ -78,7 +82,7 @@ const StandardAccountManager = () => {
   const deleteAccount = useDeleteStandardAccount();
 
   return (
-    <EntityManager<StandardAccount>
+    <StandardAccountEntityManager
       items={accounts}
       isLoading={isLoading}
       itemKey={(a) => a.id}
