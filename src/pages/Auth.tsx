@@ -60,7 +60,7 @@ const Auth = () => {
     if (!isSupabaseConfigured || !supabase) {
       toast({
         title: "Konfigurasjonsfeil",
-        description: "Supabase-klienten er ikke initialisert korrekt.",
+        description: "Supabase credentials missing",
         variant: "destructive"
       });
       return;
@@ -70,6 +70,14 @@ const Auth = () => {
 
     try {
       if (isSignUp) {
+        if (!isSupabaseConfigured || !supabase) {
+          toast({
+            title: "Konfigurasjonsfeil",
+            description: "Supabase credentials missing",
+            variant: "destructive"
+          });
+          return;
+        }
         const { error } = await supabase.auth.signUp({
           email: formData.email,
           password: formData.password,
@@ -93,6 +101,14 @@ const Auth = () => {
         // Auto-switch to login view after signup
         setIsSignUp(false);
       } else {
+        if (!isSupabaseConfigured || !supabase) {
+          toast({
+            title: "Konfigurasjonsfeil",
+            description: "Supabase credentials missing",
+            variant: "destructive"
+          });
+          return;
+        }
         const { error } = await supabase.auth.signInWithPassword({
           email: formData.email,
           password: formData.password,
