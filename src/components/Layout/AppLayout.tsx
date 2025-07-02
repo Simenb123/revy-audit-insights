@@ -6,7 +6,7 @@ import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/componen
 import { useAuth } from '@/components/Auth/AuthProvider';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import AppHeader from './AppHeader';
-import Sidebar from './Sidebar';
+import ContextualSidebar from './ContextualSidebar';
 import ResizableRightSidebar from './ResizableRightSidebar';
 import PageLoader from './PageLoader';
 import OnboardingCheck from './OnboardingCheck';
@@ -47,7 +47,7 @@ const AppLayout = () => {
               maxSize={30}
               onResize={setLeftPanelSize}
             >
-              <Sidebar />
+              <ContextualSidebar />
             </ResizablePanel>
             
             <ResizableHandle />
