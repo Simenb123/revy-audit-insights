@@ -45,21 +45,21 @@ const AppHeader: React.FC<AppHeaderProps> = ({ className = '' }) => {
     : session?.user?.email || 'Bruker';
 
   return (
-    <header className={`border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 h-12 flex items-center justify-between px-4 ${className}`}>
-      <div className="flex items-center gap-4">
-        <Logo />
+    <header className={`bg-white border-b border-gray-200 h-16 flex items-center justify-between px-6 ${className}`}>
+      <div className="flex items-center">
+        <h1 className="text-xl font-semibold text-gray-900">Revio</h1>
       </div>
       
-      <div className="flex items-center gap-2">
-        <Button variant="ghost" size="sm">
-          <Bell className="h-4 w-4" />
+      <div className="flex items-center gap-3">
+        <Button variant="ghost" size="sm" className="text-gray-600 hover:text-gray-900">
+          <Bell className="h-5 w-5" />
         </Button>
         
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-8 w-8 rounded-full">
               <Avatar className="h-8 w-8">
-                <AvatarFallback className="text-xs">
+                <AvatarFallback className="text-xs bg-gray-100 text-gray-700">
                   {userInitials}
                 </AvatarFallback>
               </Avatar>
@@ -75,7 +75,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ className = '' }) => {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => navigate('/user-profile')}>
+            <DropdownMenuItem onClick={() => navigate('/profile')}>
               <User className="mr-2 h-4 w-4" />
               <span>Profil</span>
             </DropdownMenuItem>

@@ -2,22 +2,18 @@ import { logger } from '@/utils/logger';
 
 import React, { useEffect, useState } from 'react';
 import { Outlet, useLocation, Navigate } from 'react-router-dom';
-import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 import { useAuth } from '@/components/Auth/AuthProvider';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import AppHeader from './AppHeader';
-import ContextualSidebar from './ContextualSidebar';
-import ResizableRightSidebar from './ResizableRightSidebar';
+import MainSidebar from './MainSidebar';
+import AIAssistantSidebar from './AIAssistantSidebar';
 import PageLoader from './PageLoader';
 import OnboardingCheck from './OnboardingCheck';
-import { RightSidebarProvider } from './RightSidebarContext';
-import { SidebarProvider } from '@/components/ui/sidebar';
 
 const AppLayout = () => {
   const { session } = useAuth();
   const { data: profile, isLoading: profileLoading } = useUserProfile();
-  const location = useLocation();
-  const [leftPanelSize, setLeftPanelSize] = useState(20);
+  const [rightSidebarCollapsed, setRightSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     logger.log('AppLayout mounted, session:', !!session, 'profile loading:', profileLoading);
@@ -36,38 +32,29 @@ const AppLayout = () => {
   }
 
   return (
-    <RightSidebarProvider>
-      <SidebarProvider>
-        <div className="h-screen flex flex-col bg-background">
-          <AppHeader />
-          
-          <div className="flex-1 overflow-y-auto">
-            <ResizablePanelGroup direction="horizontal" className="h-full">
-              <ResizablePanel 
-                defaultSize={leftPanelSize} 
-                minSize={15} 
-                maxSize={30}
-                onResize={setLeftPanelSize}
-              >
-                <ContextualSidebar />
-              </ResizablePanel>
-              
-              <ResizableHandle />
-              
-              <ResizablePanel defaultSize={50} minSize={30}>
-                <main className="h-full overflow-auto">
-                  <Outlet />
-                </main>
-              </ResizablePanel>
-              
-              <ResizableHandle />
-              
-              <ResizableRightSidebar />
-            </ResizablePanelGroup>
-          </div>
+    <div className="h-screen flex flex-col bg-gray-50">
+      <AppHeader />
+      
+      <div className="flex-1 flex overflow-hidden">
+        {/* Left Sidebar */}
+        <div className="w-64 flex-shrink-0">
+          <MainSidebar />
         </div>
-      </SidebarProvider>
-    </RightSidebarProvider>
+        
+        {/* Main Content */}
+        <div className="flex-1 overflow-auto bg-white">
+          <main className="h-full">
+            <Outlet />
+          </main>
+        </div>
+        
+        {/* Right Sidebar */}
+        <AIAssistantSidebar 
+          isCollapsed={rightSidebarCollapsed}
+          onToggleCollapse={() => setRightSidebarCollapsed(!rightSidebarCollapsed)}
+        />
+      </div>
+    </div>
   );
 };
 
