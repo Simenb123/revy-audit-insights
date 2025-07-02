@@ -22,28 +22,37 @@ type CategoryTreeNode = Category & {
 
 const buildCategoryTree = (categories: Category[]): CategoryTreeNode[] => {
   const categoryMap = new Map<string, CategoryTreeNode>();
+  
+  // First pass: create all nodes with empty children arrays
   categories.forEach(cat => categoryMap.set(cat.id, { ...cat, children: [] }));
 
   const tree: CategoryTreeNode[] = [];
+  
+  // Second pass: build the tree structure
   categories.forEach(cat => {
+    const node = categoryMap.get(cat.id)!;
     if (cat.parent_category_id && categoryMap.has(cat.parent_category_id)) {
       const parent = categoryMap.get(cat.parent_category_id)!;
-      parent.children.push(categoryMap.get(cat.id)!);
+      parent.children.push(node);
     } else {
-      tree.push(categoryMap.get(cat.id)!);
+      tree.push(node);
     }
   });
 
-  tree.forEach(node => {
-    node.children.sort((a, b) => a.display_order - b.display_order);
-  });
+  // Sort children within each node
+  const sortChildren = (nodes: CategoryTreeNode[]) => {
+    nodes.sort((a, b) => a.display_order - b.display_order);
+    nodes.forEach(node => sortChildren(node.children));
+  };
   
-  return tree.sort((a,b) => a.display_order - b.display_order);
+  sortChildren(tree);
+  return tree.sort((a, b) => a.display_order - b.display_order);
 };
 
 const CategoryTreeItem = ({ category }: { category: CategoryTreeNode }) => {
   const { categoryId } = useParams<{ categoryId?: string }>();
   const isSelected = category.id === categoryId || category.slug === categoryId;
+  
   if (category.children.length === 0) {
     return (
       <li className="list-none">
