@@ -1,14 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-var invokeMock: any;
+const invokeMock = vi.hoisted(() => vi.fn());
 
-vi.mock('@/integrations/supabase/client', () => {
-  invokeMock = vi.fn();
-  return {
-    supabase: { functions: { invoke: invokeMock } },
-    isSupabaseConfigured: true
-  };
-});
+vi.mock('@/integrations/supabase/client', () => ({
+  supabase: { functions: { invoke: invokeMock } },
+  isSupabaseConfigured: true
+}));
 
 import { generateEmbeddingsForExistingArticles } from '../generateEmbeddingsService';
 

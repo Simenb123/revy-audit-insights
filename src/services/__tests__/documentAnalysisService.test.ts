@@ -1,23 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-var invokeMock: any
-var updateMock: any
-var eqMock: any
-var fromMock: any
+const invokeMock = vi.hoisted(() => vi.fn())
+const updateMock = vi.hoisted(() => vi.fn().mockReturnThis())
+const eqMock = vi.hoisted(() => vi.fn().mockReturnThis())
+const fromMock = vi.hoisted(() => vi.fn().mockReturnValue({ update: updateMock, eq: eqMock }))
 
-vi.mock('@/integrations/supabase/client', () => {
-  invokeMock = vi.fn()
-  updateMock = vi.fn().mockReturnThis()
-  eqMock = vi.fn().mockReturnThis()
-  fromMock = vi.fn().mockReturnValue({ update: updateMock, eq: eqMock })
-  return {
-    supabase: {
-      functions: { invoke: invokeMock },
-      from: fromMock
-    },
-    isSupabaseConfigured: true
-  }
-})
+vi.mock('@/integrations/supabase/client', () => ({
+  supabase: {
+    functions: { invoke: invokeMock },
+    from: fromMock
+  },
+  isSupabaseConfigured: true
+}))
 
 import { analyzeDocumentWithAI, updateDocumentWithAnalysis } from '../documentAnalysisService'
 
