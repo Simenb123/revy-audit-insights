@@ -8,6 +8,7 @@ const GeneralSidebarSection = () => {
       title="AI-Revi Assistent"
       description="Generell hjelp og veiledning"
       className="border-l-4 border-l-green-500"
+      context="general"
     />
   );
 };

@@ -46,6 +46,7 @@ const ClientSidebarSection = () => {
         title="AI-Revi for klient"
         description="Spør om denne klienten"
         className="border-l-4 border-l-blue-500"
+        context="client-detail"
       />
     </div>
   );

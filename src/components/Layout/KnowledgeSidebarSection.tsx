@@ -19,6 +19,7 @@ const KnowledgeSidebarSection = () => {
         title="AI-Revi Kunnskapsbase"
         description="Spør om revisjonsstandarder og prosedyrer"
         className="border-l-4 border-l-purple-500"
+        context="knowledge-base"
       />
     </div>
   );
