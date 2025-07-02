@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/components/Auth/AuthProvider';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -57,7 +57,7 @@ const Auth = () => {
       return;
     }
     
-    if (!supabase) {
+    if (!isSupabaseConfigured || !supabase) {
       toast({
         title: "Konfigurasjonsfeil",
         description: "Supabase-klienten er ikke initialisert korrekt.",

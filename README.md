@@ -68,6 +68,9 @@ Other variables include:
 - `VITE_USE_ENHANCED_ANALYSIS` – toggle the enhanced document analysis features.
 - `RATE_LIMIT` – hourly request limit for the edge functions.
 
+These Supabase variables are made available to the frontend via custom settings in `vite.config.ts`.
+They do not need the usual `VITE_` prefix when defined in `.env.local`.
+
 **Note**: You must provide `SUPABASE_URL` and `SUPABASE_ANON_KEY` for the application to connect to Supabase. `SUPABASE_SERVICE_ROLE_KEY` is only required for certain edge functions (`syncKunngjoring`, `setup-storage`). See [docs/service-role-functions.md](docs/service-role-functions.md) for details.
 
 ### Getting Your Supabase Credentials
