@@ -1,20 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-var invokeMock: any;
-var fromMock: any;
+const invokeMock = vi.hoisted(() => vi.fn());
+const fromMock = vi.hoisted(() => vi.fn());
 
-vi.mock('@/integrations/supabase/client', () => {
-  invokeMock = vi.fn();
-  fromMock = vi.fn();
-  return {
-    supabase: {
-      functions: { invoke: invokeMock },
-      auth: { getUser: vi.fn() },
-      from: fromMock
-    },
-    isSupabaseConfigured: true
-  };
-});
+vi.mock('@/integrations/supabase/client', () => ({
+  supabase: {
+    functions: { invoke: invokeMock },
+    auth: { getUser: vi.fn() },
+    from: fromMock
+  },
+  isSupabaseConfigured: true
+}));
 
 import { KnowledgeSearchDiagnostics } from '../searchDiagnostics';
 

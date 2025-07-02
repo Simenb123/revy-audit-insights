@@ -1,19 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-var invokeMock: any;
-var getUserMock: any;
+const invokeMock = vi.hoisted(() => vi.fn());
+const getUserMock = vi.hoisted(() => vi.fn());
 
-vi.mock('@/integrations/supabase/client', () => {
-  invokeMock = vi.fn();
-  getUserMock = vi.fn();
-  return {
-    supabase: {
-      auth: { getUser: getUserMock },
-      functions: { invoke: invokeMock }
-    },
-    isSupabaseConfigured: true
-  };
-});
+vi.mock('@/integrations/supabase/client', () => ({
+  supabase: {
+    auth: { getUser: getUserMock },
+    functions: { invoke: invokeMock }
+  },
+  isSupabaseConfigured: true
+}));
 
 // helper to load service after mocks are applied
 const loadService = async () => await import('../aiInteractionService');
