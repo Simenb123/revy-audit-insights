@@ -16,7 +16,7 @@ const fetchCategories = async () => {
   return data as Category[];
 };
 
-type CategoryTreeNode = Category & {
+type CategoryTreeNode = Omit<Category, 'children'> & {
   children: CategoryTreeNode[];
 };
 
@@ -81,7 +81,7 @@ const CategoryTreeItem = ({ category }: { category: CategoryTreeNode }) => {
         </TreeViewTrigger>
       </Link>
       <TreeViewContent>
-        {category.children.map(child => (
+        {category.children?.map(child => (
           <CategoryTreeItem key={child.id} category={child} />
         ))}
       </TreeViewContent>

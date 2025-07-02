@@ -11,6 +11,7 @@ import ResizableRightSidebar from './ResizableRightSidebar';
 import PageLoader from './PageLoader';
 import OnboardingCheck from './OnboardingCheck';
 import { RightSidebarProvider } from './RightSidebarContext';
+import { SidebarProvider } from '@/components/ui/sidebar';
 
 const AppLayout = () => {
   const { session } = useAuth();
@@ -36,34 +37,36 @@ const AppLayout = () => {
 
   return (
     <RightSidebarProvider>
-      <div className="h-screen flex flex-col bg-background">
-        <AppHeader />
-        
-        <div className="flex-1 overflow-y-auto">
-          <ResizablePanelGroup direction="horizontal" className="h-full">
-            <ResizablePanel 
-              defaultSize={leftPanelSize} 
-              minSize={15} 
-              maxSize={30}
-              onResize={setLeftPanelSize}
-            >
-              <ContextualSidebar />
-            </ResizablePanel>
-            
-            <ResizableHandle />
-            
-            <ResizablePanel defaultSize={50} minSize={30}>
-              <main className="h-full overflow-auto">
-                <Outlet />
-              </main>
-            </ResizablePanel>
-            
-            <ResizableHandle />
-            
-            <ResizableRightSidebar />
-          </ResizablePanelGroup>
+      <SidebarProvider>
+        <div className="h-screen flex flex-col bg-background">
+          <AppHeader />
+          
+          <div className="flex-1 overflow-y-auto">
+            <ResizablePanelGroup direction="horizontal" className="h-full">
+              <ResizablePanel 
+                defaultSize={leftPanelSize} 
+                minSize={15} 
+                maxSize={30}
+                onResize={setLeftPanelSize}
+              >
+                <ContextualSidebar />
+              </ResizablePanel>
+              
+              <ResizableHandle />
+              
+              <ResizablePanel defaultSize={50} minSize={30}>
+                <main className="h-full overflow-auto">
+                  <Outlet />
+                </main>
+              </ResizablePanel>
+              
+              <ResizableHandle />
+              
+              <ResizableRightSidebar />
+            </ResizablePanelGroup>
+          </div>
         </div>
-      </div>
+      </SidebarProvider>
     </RightSidebarProvider>
   );
 };
