@@ -4,11 +4,11 @@ This guide explains how the assistant sidebar on the right side of the screen is
 
 ## AssistantSidebar
 
-`AssistantSidebar` is a wrapper component that displays the sidebar as a drawer on small screens and as a normal panel on desktop. Inside it we render `ResizableRightSidebar` which holds the actual content.
+`AssistantSidebar` is a wrapper component that displays the sidebar as a drawer on small screens and as a normal panel on desktop. Inside it we render `ResizableRightSidebar`, which holds the actual content.
 
 ## ResizableRightSidebar
 
-`ResizableRightSidebar` manages the width, collapsed state and what content is shown. The width is stored in `RightSidebarContext` so it persists between pages. The sidebar can be resized by dragging the divider.
+`ResizableRightSidebar` manages the width, collapsed state and what content is shown. The header is provided by `CompactSidebarHeader`, which contains the Revy avatar and collapse toggle. The width is stored in `RightSidebarContext` so it persists between pages. The sidebar can be resized by dragging the divider.
 
 The component looks at the current route to decide which section to render:
 
