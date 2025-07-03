@@ -1,5 +1,5 @@
 import { serve } from "../test_deps.ts";
-import { createClient } from "../test_deps.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { log } from "../_shared/log.ts";
 
 const corsHeaders = {
