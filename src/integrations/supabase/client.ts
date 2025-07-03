@@ -3,9 +3,9 @@ import { logger } from '@/utils/logger';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from './types'
 
-// Use the known Supabase project credentials directly
-const supabaseUrl = 'https://fxelhfwaoizqyecikscu.supabase.co'
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ4ZWxoZndhb2l6cXllY2lrc2N1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUxNjM2NzksImV4cCI6MjA2MDczOTY3OX0.h20hURN-5qCAtI8tZaHpEoCnNmfdhIuYJG3tgXyvKqc'
+// Load Supabase credentials from environment variables
+const supabaseUrl = import.meta.env.SUPABASE_URL || ''
+const supabaseAnonKey = import.meta.env.SUPABASE_ANON_KEY || ''
 
 // Service role key for server-side operations (used by edge functions)
 export const supabaseServiceRoleKey = typeof window === 'undefined'

@@ -77,7 +77,7 @@ export const ConnectionStatus = () => {
         
         <div className="pt-2 border-t">
           <p className="text-xs text-gray-500">
-            Supabase URL: https://fxelhfwaoizqyecikscu.supabase.co
+            Supabase URL: {import.meta.env.SUPABASE_URL}
           </p>
         </div>
       </CardContent>
