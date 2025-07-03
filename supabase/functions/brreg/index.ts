@@ -1,4 +1,4 @@
-import { serve } from "../test_deps.ts";
+import { serve } from "../deps.ts";
 import { log } from "../_shared/log.ts";
 import { handleBrregError } from "../_shared/brregError.ts";
 

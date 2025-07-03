@@ -1,5 +1,5 @@
 
-import { createClient } from '../test_deps.ts'
+import { createClient } from '../../deps.ts'
 import { searchClientDocuments, DocumentSearchResult } from './document-search.ts';
 import { log } from '../_shared/log.ts';
 import { getScopedClient } from './supabase.ts';
