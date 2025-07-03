@@ -8,7 +8,7 @@ This guide explains how the assistant sidebar on the right side of the screen is
 
 ## ResizableRightSidebar
 
-`ResizableRightSidebar` manages the width, collapsed state and what content is shown. The header is provided by `CompactSidebarHeader`, which contains the Revy avatar and collapse toggle. The width is stored in `RightSidebarContext` so it persists between pages. The sidebar can be resized by dragging the divider.
+`ResizableRightSidebar` manages the width, collapsed state and what content is shown. The header is provided by `CompactSidebarHeader`, which now includes a collapse/expand toggle. Both the collapsed state and current width are stored in `RightSidebarContext` and persisted to `localStorage` so the sidebar keeps its state across page loads. The sidebar can be resized by dragging the divider.
 
 The component looks at the current route to decide which section to render:
 

@@ -20,13 +20,19 @@ export const useRightSidebar = () => {
 };
 
 export const RightSidebarProvider = ({ children }: { children: React.ReactNode }) => {
-  const isCollapsed = false;
-  const setIsCollapsed = () => {};
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    const stored = localStorage.getItem('rightSidebarCollapsed');
+    return stored ? stored === 'true' : false;
+  });
   const [isHidden, setIsHidden] = useState(false);
   const [width, setWidth] = useState(() => {
     const stored = localStorage.getItem('rightSidebarWidth');
     return stored ? parseInt(stored, 10) : 320;
   });
+
+  useEffect(() => {
+    localStorage.setItem('rightSidebarCollapsed', String(isCollapsed));
+  }, [isCollapsed]);
 
   useEffect(() => {
     localStorage.setItem('rightSidebarWidth', width.toString());

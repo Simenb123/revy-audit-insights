@@ -17,7 +17,7 @@ import { motion } from 'framer-motion';
 import { useRightSidebar } from './RightSidebarContext';
 
 const ResizableRightSidebar = () => {
-  const { width, setWidth } = useRightSidebar();
+  const { width, setWidth, isCollapsed } = useRightSidebar();
   const [isDragging, setIsDragging] = useState(false);
   const location = useLocation();
   const pageType = detectPageType(location.pathname);
@@ -93,13 +93,15 @@ const ResizableRightSidebar = () => {
     return <GeneralSidebarSection />;
   };
 
+  const displayWidth = isCollapsed ? 64 : width;
+
   return (
     <div className="relative flex h-full">
-      <ResizableHandle onMouseDown={handleMouseDown} />
+      {!isCollapsed && <ResizableHandle onMouseDown={handleMouseDown} />}
 
       <motion.div
         className="border-l bg-background flex flex-col h-full"
-        animate={{ width }}
+        animate={{ width: displayWidth }}
         style={{
           minWidth: 280,
           maxWidth: 600
@@ -107,11 +109,13 @@ const ResizableRightSidebar = () => {
         transition={{ type: 'spring', stiffness: 250, damping: 30 }}
       >
         <CompactSidebarHeader title={getPageTitle()} />
-        <ScrollArea className="flex-1 h-full">
-          <div className="p-3 h-full">
-            {renderContent()}
-          </div>
-        </ScrollArea>
+        {!isCollapsed && (
+          <ScrollArea className="flex-1 h-full">
+            <div className="p-3 h-full">
+              {renderContent()}
+            </div>
+          </ScrollArea>
+        )}
       </motion.div>
     </div>
   );
