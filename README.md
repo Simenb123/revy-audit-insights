@@ -107,8 +107,15 @@ For the embedded generation trigger to work properly, you may need to set custom
 1. Clone the repository
 2. Install dependencies: `npm install --legacy-peer-deps`
 3. Run the test suite to verify the setup: `npm test`
-4. Copy `.env.example` to `.env.local` and fill in your credentials (optional)
+4. Copy `.env.example` to `.env.local` and fill in your credentials
 5. Start the development server: `npm run dev` (it will automatically load `.env.local`)
+6. To deploy edge functions, store your secrets with:
+   ```bash
+   supabase functions secrets set \
+     SUPABASE_URL=<your-project-url> \
+     SUPABASE_ANON_KEY=<your-anon-key> \
+     SUPABASE_SERVICE_ROLE_KEY=<your-service-role-key>
+   ```
 
 The `.env.example` file includes a `VITE_USE_ENHANCED_ANALYSIS` flag. Set this to `true` to use the enhanced document AI functions.
 
