@@ -1,5 +1,5 @@
 import { log, error as logError } from './log.ts'
-export { createClient } from '../test_deps.ts'
+import { createClient } from '@supabase/supabase-js'
 
 export function getSupabase(req: Request) {
   const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
