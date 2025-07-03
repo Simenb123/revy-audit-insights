@@ -1,4 +1,4 @@
-import type { SupabaseClient } from '../test_deps.ts';
+import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4';
 
 export async function fetchDocumentMetadata(
   supabase: SupabaseClient,

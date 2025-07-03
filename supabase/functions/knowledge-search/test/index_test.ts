@@ -16,7 +16,7 @@ deno.test("normal query returns articles", async () => {
 
   const createClient = () => supabaseStub;
   const createStub = stub(
-    await import("../../test_deps.ts"),
+    await import("https://esm.sh/@supabase/supabase-js@2.49.4"),
     "createClient",
     createClient,
   );
@@ -51,7 +51,7 @@ deno.test("query with punctuation is sanitized", async () => {
   };
 
   const createStub = stub(
-    await import("../../test_deps.ts"),
+    await import("https://esm.sh/@supabase/supabase-js@2.49.4"),
     "createClient",
     () => supabaseStub,
   );
@@ -86,7 +86,7 @@ deno.test("query with no results returns empty array", async () => {
     rpc() { return { data: [], error: null }; },
   };
   const createStub = stub(
-    await import("../../test_deps.ts"),
+    await import("https://esm.sh/@supabase/supabase-js@2.49.4"),
     "createClient",
     () => supabaseStub,
   );
@@ -117,7 +117,7 @@ deno.test("openai error handled", async () => {
     rpc() { return { data: [], error: null }; },
   };
   const createStub = stub(
-    await import("../../test_deps.ts"),
+    await import("https://esm.sh/@supabase/supabase-js@2.49.4"),
     "createClient",
     () => supabaseStub,
   );
@@ -141,7 +141,7 @@ deno.test("supabase error handled", async () => {
     rpc() { return { data: [], error: null }; },
   };
   const createStub = stub(
-    await import("../../test_deps.ts"),
+    await import("https://esm.sh/@supabase/supabase-js@2.49.4"),
     "createClient",
     () => supabaseStub,
   );

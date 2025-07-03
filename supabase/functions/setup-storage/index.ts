@@ -1,6 +1,6 @@
 
-import { serve } from '../test_deps.ts'
-import { createClient } from '../test_deps.ts'
+import { serve } from 'https://deno.land/std@0.224.0/http/server.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4'
 import { log } from "../_shared/log.ts"
 
 const corsHeaders = {
