@@ -1,24 +1,37 @@
 
 import React, { useState, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { Drawer, DrawerTrigger, DrawerContent } from '@/components/ui/drawer';
+import { Button } from '@/components/ui/button';
+import { MessageSquare } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useClientDocuments } from '@/hooks/useClientDocuments';
 import { useClientLookup } from '@/hooks/useClientLookup';
 import { detectPageType, extractClientId } from './pageDetectionHelpers';
 import ResizableHandle from './ResizableHandle';
-import CompactSidebarHeader from './CompactSidebarHeader';
+import SidebarHeader from './SidebarHeader';
 import AdminSidebarSection from './AdminSidebarSection';
 import KnowledgeSidebarSection from './KnowledgeSidebarSection';
 import StreamlinedClientSidebar from './StreamlinedClientSidebar';
 import GeneralSidebarSection from './GeneralSidebarSection';
 import LoadingErrorSection from './LoadingErrorSection';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { motion } from 'framer-motion';
 
 import { useRightSidebar } from './RightSidebarContext';
 
 const ResizableRightSidebar = () => {
-  const { width, setWidth } = useRightSidebar();
+  const {
+    isCollapsed,
+    setIsCollapsed,
+    isHidden,
+    setIsHidden,
+    width,
+    setWidth
+  } = useRightSidebar();
+  const isMobile = useIsMobile();
   const [isDragging, setIsDragging] = useState(false);
+  const toggleCollapsed = useCallback(() => setIsCollapsed(v => !v), [setIsCollapsed]);
   const location = useLocation();
   const pageType = detectPageType(location.pathname);
   const clientIdOrOrg = extractClientId(location.pathname);
@@ -93,25 +106,65 @@ const ResizableRightSidebar = () => {
     return <GeneralSidebarSection />;
   };
 
+  if (isMobile) {
+    return (
+      <Drawer open={!isHidden} onOpenChange={(open) => setIsHidden(!open)}>
+        <DrawerTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="fixed bottom-4 right-4 z-50"
+          >
+            <MessageSquare className="h-5 w-5" />
+          </Button>
+        </DrawerTrigger>
+        <DrawerContent className="p-0">
+          <motion.div
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+            className="h-[90vh] flex flex-col"
+          >
+            <SidebarHeader
+              title={getPageTitle()}
+              isCollapsed={isCollapsed}
+              onToggle={toggleCollapsed}
+            />
+            {!isCollapsed && (
+              <ScrollArea className="flex-1">
+                <div className="p-4">{renderContent()}</div>
+              </ScrollArea>
+            )}
+          </motion.div>
+        </DrawerContent>
+      </Drawer>
+    );
+  }
+
   return (
     <div className="relative flex h-full">
       <ResizableHandle onMouseDown={handleMouseDown} />
 
       <motion.div
         className="border-l bg-background flex flex-col h-full"
+        style={{ width: `${width}px`, minWidth: '280px', maxWidth: '600px' }}
         animate={{ width }}
-        style={{
-          minWidth: 280,
-          maxWidth: 600
-        }}
-        transition={{ type: 'spring', stiffness: 250, damping: 30 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
       >
-        <CompactSidebarHeader title={getPageTitle()} />
-        <ScrollArea className="flex-1 h-full">
-          <div className="p-3 h-full">
-            {renderContent()}
-          </div>
-        </ScrollArea>
+        <SidebarHeader
+          title={getPageTitle()}
+          isCollapsed={isCollapsed}
+          onToggle={toggleCollapsed}
+        />
+
+        {!isCollapsed && (
+          <ScrollArea className="flex-1">
+            <div className="p-4">
+              {renderContent()}
+            </div>
+          </ScrollArea>
+        )}
       </motion.div>
     </div>
   );
