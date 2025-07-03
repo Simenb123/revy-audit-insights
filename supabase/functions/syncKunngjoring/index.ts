@@ -1,4 +1,4 @@
-import { serve } from "../test_deps.ts";
+import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "../test_deps.ts";
 import { log } from "../_shared/log.ts";
 
