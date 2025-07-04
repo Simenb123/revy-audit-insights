@@ -1,7 +1,9 @@
 import { assertEquals, stub } from "../../test_deps.ts";
 import { handler } from "../index.ts";
 
-deno.test("normal query returns articles", async () => {
+Deno.test("normal query returns articles", async () => {
+  const serveMod = await import("../../test_deps.ts");
+  const serveStub = stub(serveMod, "serve", () => {});
   const supabaseStub = {
     from() {
       return this;
@@ -35,9 +37,12 @@ deno.test("normal query returns articles", async () => {
 
   createStub.restore();
   fetchStub.restore();
+  serveStub.restore();
 });
 
-deno.test("query with punctuation is sanitized", async () => {
+Deno.test("query with punctuation is sanitized", async () => {
+  const serveMod = await import("../../test_deps.ts");
+  const serveStub = stub(serveMod, "serve", () => {});
   const supabaseStub = {
     from() { return this; },
     select() { return this; },
@@ -73,9 +78,12 @@ deno.test("query with punctuation is sanitized", async () => {
 
   createStub.restore();
   fetchStub.restore();
+  serveStub.restore();
 });
 
-deno.test("query with no results returns empty array", async () => {
+Deno.test("query with no results returns empty array", async () => {
+  const serveMod = await import("../../test_deps.ts");
+  const serveStub = stub(serveMod, "serve", () => {});
   const supabaseStub = {
     from() { return this; },
     select() { return this; },
@@ -99,14 +107,20 @@ deno.test("query with no results returns empty array", async () => {
 
   createStub.restore();
   fetchStub.restore();
+  serveStub.restore();
 });
 
-deno.test("invalid JSON results in 400", async () => {
+Deno.test("invalid JSON results in 400", async () => {
+  const serveMod = await import("../../test_deps.ts");
+  const serveStub = stub(serveMod, "serve", () => {});
   const res = await handler(new Request("http://localhost", { method: "POST", body: "{" }));
   assertEquals(res.status, 400);
+  serveStub.restore();
 });
 
-deno.test("openai error handled", async () => {
+Deno.test("openai error handled", async () => {
+  const serveMod = await import("../../test_deps.ts");
+  const serveStub = stub(serveMod, "serve", () => {});
   const supabaseStub = {
     from() { return this; },
     select() { return this; },
@@ -128,9 +142,12 @@ deno.test("openai error handled", async () => {
   assertEquals(body.articles.length, 0);
   createStub.restore();
   fetchStub.restore();
+  serveStub.restore();
 });
 
-deno.test("supabase error handled", async () => {
+Deno.test("supabase error handled", async () => {
+  const serveMod = await import("../../test_deps.ts");
+  const serveStub = stub(serveMod, "serve", () => {});
   const supabaseStub = {
     from() { return this; },
     select() { return this; },
@@ -152,4 +169,5 @@ deno.test("supabase error handled", async () => {
   assertEquals(body.error, 'Knowledge search temporarily unavailable');
   createStub.restore();
   fetchStub.restore();
+  serveStub.restore();
 });
