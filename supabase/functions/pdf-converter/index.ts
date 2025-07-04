@@ -1,9 +1,8 @@
 
 import { log } from "../_shared/log.ts";
 import { getSupabase } from "../_shared/supabaseClient.ts";
-import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import type { Database } from '../../../src/integrations/supabase/types.ts';
-import { log } from "../_shared/log.ts";
 import * as pdfjsLib from 'https://esm.sh/pdfjs-dist@5.3.31/legacy/build/pdf.mjs';
 
 const corsHeaders = {
@@ -11,13 +10,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-function getSupabase(req: Request): SupabaseClient<Database> {
-  const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
-  const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
-  return createClient(supabaseUrl, supabaseAnonKey, {
-    global: { headers: { Authorization: req.headers.get('Authorization')! } }
-  });
-}
 
 interface ConversionRequest {
   conversionId: string;

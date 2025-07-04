@@ -2,9 +2,9 @@
 import "../xhr.ts";
 
 import { serve } from "../test_deps.ts";
-import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import type { Database } from '../../../src/integrations/supabase/types.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { getSupabase } from "../_shared/supabaseClient.ts";
 import { log } from "../_shared/log.ts";
 import { getUserFromRequest, hasPermittedRole } from "../_shared/auth.ts";
 
@@ -265,18 +265,9 @@ export async function handler(req: Request): Promise<Response> {
     log('🔍 Knowledge search for query:', query.substring(0, 50) + '...');
 
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
-    const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
-
-    if (!supabaseUrl || !supabaseAnonKey) {
-      console.error('❌ Missing Supabase environment variables');
-      throw new Error('Missing Supabase environment variables');
-    }
 
     log('🔗 Creating Supabase client...');
-    const supabase: SupabaseClient<Database> = createClient<Database>(supabaseUrl, supabaseAnonKey, {
-        global: { headers: { Authorization: req.headers.get('Authorization')! } }
-    });
+    const supabase: SupabaseClient<Database> = getSupabase(req);
 
     log('📊 Checking total published articles...');
     const { count: totalCount, error: countError } = await supabase
