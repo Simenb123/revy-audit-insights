@@ -1,4 +1,3 @@
-
 import "../xhr.ts";
 
 import type { Database } from '../../../src/integrations/supabase/types.ts';

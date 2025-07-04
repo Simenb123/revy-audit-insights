@@ -1,8 +1,7 @@
-
 import "../xhr.ts";
-
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import type { Database } from '../../../src/integrations/supabase/types.ts';
+import { getSupabase } from "../_shared/supabaseClient.ts";
 import { log } from "../_shared/log.ts";
 import { getUserFromRequest, hasPermittedRole } from "../_shared/auth.ts";
 import { getSupabase } from "../_shared/supabaseClient.ts";
@@ -266,7 +265,8 @@ export async function handler(req: Request): Promise<Response> {
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 
     log('🔗 Creating Supabase client...');
-    const supabase: SupabaseClient<Database> = getSupabase(req) as SupabaseClient<Database>;
+    const supabase: SupabaseClient<Database> = getSupabase(req);
+
 
     log('📊 Checking total published articles...');
     const { count: totalCount, error: countError } = await supabase
