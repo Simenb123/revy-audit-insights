@@ -4,7 +4,6 @@ import type { Database } from '../../../src/integrations/supabase/types.ts';
 import { getSupabase } from "../_shared/supabaseClient.ts";
 import { log } from "../_shared/log.ts";
 import { getUserFromRequest, hasPermittedRole } from "../_shared/auth.ts";
-import { getSupabase } from "../_shared/supabaseClient.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
