@@ -39,7 +39,7 @@ const AppLayout = () => {
       <div className="h-screen flex flex-col bg-background">
           <AppHeader />
 
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto pt-[var(--header-height)]">
             <ResizablePanelGroup direction="horizontal" className="h-full">
               <ResizablePanel
                 defaultSize={leftPanelSize}
