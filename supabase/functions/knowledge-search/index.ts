@@ -1,7 +1,4 @@
-
 import "../xhr.ts";
-
-import { serve } from "../test_deps.ts";
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import type { Database } from '../../../src/integrations/supabase/types.ts';
 import { getSupabase } from "../_shared/supabaseClient.ts";
