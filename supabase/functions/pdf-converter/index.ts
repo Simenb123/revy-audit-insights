@@ -1,4 +1,6 @@
 
+import { log } from "../_shared/log.ts";
+import { getSupabase } from "../_shared/supabaseClient.ts";
 import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import type { Database } from '../../../src/integrations/supabase/types.ts';
 import { log } from "../_shared/log.ts";
