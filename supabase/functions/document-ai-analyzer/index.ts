@@ -1,6 +1,5 @@
 
 import "../xhr.ts";
-import { serve } from "../test_deps.ts";
 import { log } from "../_shared/log.ts";
 import { getSupabase } from "../_shared/supabaseClient.ts";
 import { callOpenAI } from "../_shared/openai.ts";
@@ -37,7 +36,7 @@ async function analyzeDocumentWithAI(text: string, fileName: string): Promise<st
   return data.choices[0].message.content;
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }

@@ -1,5 +1,4 @@
 
-import { serve } from '../test_deps.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { log } from "../_shared/log.ts"
 
@@ -8,7 +7,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   log('🔧 Storage setup function started');
   
   if (req.method === 'OPTIONS') {
