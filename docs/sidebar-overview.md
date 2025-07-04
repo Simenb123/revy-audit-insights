@@ -2,6 +2,9 @@
 
 This guide explains how the assistant sidebar on the right side of the screen is built.
 
+The legacy `Sidebar` and `FloatingRevyAssistant` components have been removed
+in favor of a more unified sidebar implementation.
+
 ## AssistantSidebar
 
 `AssistantSidebar` is a wrapper component that displays the sidebar as a drawer on small screens and as a normal panel on desktop. Inside it we render `ResizableRightSidebar`, which holds the actual content.
@@ -20,4 +23,6 @@ The component looks at the current route to decide which section to render:
 A loading or error state will display `LoadingErrorSection` instead when client data is still being fetched.
 
 `SmartReviAssistant` is the main chat interface used across the app. The dedicated `RightSidebar/AssistantSidebar` component uses it directly, and `StreamlinedClientSidebar` embeds it with client information for contextual replies.
+
+Going forward, any new sidebar features should be built on top of `ResizableRightSidebar` and `SmartReviAssistant` to keep the experience consistent across pages.
 
