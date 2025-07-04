@@ -28,6 +28,12 @@ export function serve(_handler: (req: Request) => Response | Promise<Response>, 
   // no-op server stub for tests
 }
 
+// Redirect Deno.serve to this stub when running tests
+if (typeof Deno !== 'undefined' && 'serve' in Deno) {
+  // @ts-ignore overriding for tests
+  Deno.serve = ((...args: [Parameters<typeof serve>[0], Parameters<typeof serve>[1]]) => serve(...args)) as typeof Deno.serve;
+}
+
 export function createClient(_url?: string, _key?: string, _opts?: unknown): any {
   return {};
 }

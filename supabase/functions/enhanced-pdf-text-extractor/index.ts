@@ -1,5 +1,4 @@
 
-import { serve } from '../test_deps.ts';
 import { log } from "../_shared/log.ts";
 import { getSupabase } from "../_shared/supabaseClient.ts";
 import { fetchDocumentMetadata, updateExtractionStatus } from "../_shared/document.ts";
@@ -82,7 +81,7 @@ function extractTextFromXlsx(uint8Array: Uint8Array): string {
   }
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });

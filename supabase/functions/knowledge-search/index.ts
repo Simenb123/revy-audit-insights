@@ -1,6 +1,5 @@
 
 import "../xhr.ts";
-import { serve } from "../test_deps.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { log } from "../_shared/log.ts";
 import { getUserFromRequest, hasPermittedRole } from "../_shared/auth.ts";
@@ -322,5 +321,5 @@ export async function handler(req: Request): Promise<Response> {
 }
 
 if (import.meta.main) {
-  serve(handler);
+  Deno.serve(handler);
 }
