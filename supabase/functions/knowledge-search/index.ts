@@ -1,7 +1,8 @@
 
 import "../xhr.ts";
 import { serve } from "../test_deps.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import type { Database } from '../../../src/integrations/supabase/types.ts';
 import { log } from "../_shared/log.ts";
 import { getUserFromRequest, hasPermittedRole } from "../_shared/auth.ts";
 
@@ -9,6 +10,43 @@ const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+interface KnowledgeSearchRequest {
+  query: string;
+}
+
+interface SearchArticle {
+  id: string;
+  title: string;
+  slug: string;
+  summary: string | null;
+  content: string | null;
+  reference_code: string | null;
+  view_count: number | null;
+  created_at?: string;
+  updated_at?: string;
+  published_at?: string;
+  similarity?: number;
+  category?: { name: string; id: string } | null;
+}
+
+interface TagMappingEntry {
+  articleSlug: string;
+  articleTitle: string;
+  matchedTags: string[];
+  relevanceScore: number;
+  contentType: string;
+  category: string;
+  updated_at?: string;
+  published_at?: string;
+}
+
+interface KnowledgeSearchResponse {
+  articles: SearchArticle[];
+  tagMapping: Record<string, TagMappingEntry>;
+  message?: string;
+  error?: string;
+}
 
 async function getEmbedding(text: string, openAIApiKey: string) {
   try {
@@ -41,7 +79,10 @@ function sanitizeWords(text: string): string[] {
   return cleaned.split(' ').filter(word => word.length > 1);
 }
 
-async function keywordSearch(supabase: any, query: string) {
+async function keywordSearch(
+  supabase: SupabaseClient<Database>,
+  query: string
+): Promise<SearchArticle[]> {
   log('🔎 Enhanced keyword search for:', query);
 
   const words = sanitizeWords(query);
@@ -80,15 +121,17 @@ async function keywordSearch(supabase: any, query: string) {
       .or(searchConditions)
       .order('view_count', { ascending: false })
       .limit(20);
+
+    const typedData = data as SearchArticle[] | null;
       
     if (error) {
       console.error('❌ Keyword search database error:', error);
       throw error;
     }
     
-    log(`✅ Keyword search found ${data?.length || 0} articles`);
-    
-    return (data || []).map((article: any) => {
+    log(`✅ Keyword search found ${typedData?.length || 0} articles`);
+
+    return (typedData || []).map((article: SearchArticle) => {
       let relevanceScore = 0;
       const titleLower = (article.title || '').toLowerCase();
       const summaryLower = (article.summary || '').toLowerCase();
@@ -107,7 +150,7 @@ async function keywordSearch(supabase: any, query: string) {
         similarity: Math.min(relevanceScore / 10, 1.0),
         category: article.category ? { name: article.category.name } : null 
       };
-    }).sort((a: any, b: any) => b.similarity - a.similarity);
+    }).sort((a: SearchArticle, b: SearchArticle) => (b.similarity || 0) - (a.similarity || 0));
     
   } catch (error) {
     console.error('❌ Keyword search error:', error);
@@ -115,8 +158,11 @@ async function keywordSearch(supabase: any, query: string) {
   }
 }
 
-function createTagMapping(articles: any[], keywords: string[]) {
-  const mapping: Record<string, any> = {};
+function createTagMapping(
+  articles: SearchArticle[],
+  keywords: string[]
+): Record<string, TagMappingEntry> {
+  const mapping: Record<string, TagMappingEntry> = {};
   
   keywords.forEach(keyword => {
     const keywordLower = keyword.toLowerCase();
@@ -172,7 +218,7 @@ export async function handler(req: Request): Promise<Response> {
     log('🚀 Knowledge search function started for user', user?.sub?.slice(0, 8));
     
     // Improved JSON parsing with better error handling
-    let requestBody;
+    let requestBody: KnowledgeSearchRequest;
     try {
       const bodyText = await req.text();
       log('📝 Raw request body length:', bodyText?.length || 0);
@@ -190,7 +236,7 @@ export async function handler(req: Request): Promise<Response> {
         });
       }
       
-      requestBody = JSON.parse(bodyText);
+      requestBody = JSON.parse(bodyText) as KnowledgeSearchRequest;
     } catch (parseError) {
       console.error('❌ JSON parsing error:', parseError);
       return new Response(JSON.stringify({
@@ -226,7 +272,7 @@ export async function handler(req: Request): Promise<Response> {
     }
 
     log('🔗 Creating Supabase client...');
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    const supabase: SupabaseClient<Database> = createClient<Database>(supabaseUrl, supabaseAnonKey, {
         global: { headers: { Authorization: req.headers.get('Authorization')! } }
     });
 
