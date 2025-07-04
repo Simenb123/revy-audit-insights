@@ -1,5 +1,5 @@
 
-import { createClient } from '../test_deps.ts';
+import { createClient } from '../deps.ts';
 import { log } from "../_shared/log.ts";
 
 const corsHeaders = {
