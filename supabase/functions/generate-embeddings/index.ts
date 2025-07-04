@@ -25,7 +25,6 @@ interface GenerateEmbeddingsResponse {
   error?: string;
 }
 
-
 async function generateEmbedding(text: string): Promise<number[]> {
   const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
   if (!openAIApiKey) {
