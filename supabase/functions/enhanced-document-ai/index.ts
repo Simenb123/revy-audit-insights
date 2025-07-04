@@ -1,5 +1,4 @@
 
-import { serve } from '../test_deps.ts'
 import { log } from "../_shared/log.ts"
 import { callOpenAI } from "../_shared/openai.ts"
 
@@ -9,7 +8,7 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   log('📄 Enhanced Document AI function started');
   
   if (req.method === 'OPTIONS') {

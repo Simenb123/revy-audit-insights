@@ -1,6 +1,11 @@
 
 import "../xhr.ts";
 import { serve } from "../test_deps.ts";
+
+import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import type { Database } from '../../../src/integrations/supabase/types.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
 import { log } from "../_shared/log.ts";
 import { getSupabase } from "../_shared/supabaseClient.ts";
 import { getUserFromRequest, hasPermittedRole } from "../_shared/auth.ts";
@@ -10,6 +15,27 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+interface GenerateEmbeddingsRequest {
+  article_id?: string;
+}
+
+interface GenerateEmbeddingsResponse {
+  success?: boolean;
+  article_id?: string;
+  message?: string;
+  processed?: number;
+  errors?: number;
+  total?: number;
+  error?: string;
+}
+
+function getSupabase(req: Request): SupabaseClient<Database> {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+  const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
+  return createClient(supabaseUrl, supabaseAnonKey, {
+    global: { headers: { Authorization: req.headers.get('Authorization')! } }
+  });
+}
 
 async function generateEmbedding(text: string): Promise<number[]> {
   const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
@@ -38,7 +64,7 @@ async function generateEmbedding(text: string): Promise<number[]> {
   return data.data[0].embedding;
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -54,19 +80,19 @@ serve(async (req) => {
     }
 
     const supabase = getSupabase(req);
-    let requestBody = {};
+    let requestBody: GenerateEmbeddingsRequest = {};
     
     // Try to parse JSON body, but handle empty requests gracefully
     try {
       const text = await req.text();
       if (text && text.trim()) {
-        requestBody = JSON.parse(text);
+        requestBody = JSON.parse(text) as GenerateEmbeddingsRequest;
       }
     } catch (parseError) {
       log('No JSON body provided, proceeding with batch processing');
     }
     
-    const { article_id } = requestBody as { article_id?: string };
+    const { article_id } = requestBody;
     
     if (article_id) {
       // Handle single article embedding from trigger
@@ -77,7 +103,7 @@ serve(async (req) => {
         .select('id, title, content')
         .eq('id', article_id)
         .eq('status', 'published')
-        .single();
+        .single<Pick<Database["public"]["Tables"]["knowledge_articles"]["Row"], 'id' | 'title' | 'content'>>();
 
       if (fetchError || !article) {
         console.error('Article not found:', fetchError);
@@ -117,7 +143,9 @@ serve(async (req) => {
     log('🚀 Starting embedding generation for articles');
 
     // Get articles that need embeddings
-    const { data: articles, error: fetchError } = await supabase.rpc('queue_articles_for_embedding');
+    const { data: articles, error: fetchError } = await supabase.rpc<
+      Pick<Database["public"]["Tables"]["knowledge_articles"]["Row"], 'id' | 'title' | 'content'>[]
+    >('queue_articles_for_embedding');
     
     if (fetchError) {
       console.error('Error fetching articles:', fetchError);
