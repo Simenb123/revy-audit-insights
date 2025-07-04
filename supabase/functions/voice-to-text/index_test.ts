@@ -2,7 +2,7 @@ import { assertEquals, stub } from "../test_deps.ts";
 
 Deno.test("returns transcribed text in JSON", async () => {
   let handler: (req: Request) => Promise<Response> | Response = () => new Response();
-  const serveMod = await import("../test_deps.ts");
+  const serveMod = await import("../deps.ts");
   const serveStub = stub(serveMod, "serve", (h: typeof handler) => { handler = h; });
 
   const fetchStub = stub(globalThis, "fetch", async () =>

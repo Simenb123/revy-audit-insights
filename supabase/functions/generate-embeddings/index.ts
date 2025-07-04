@@ -1,7 +1,7 @@
 
 import "../xhr.ts";
-import { serve } from "../test_deps.ts";
-import { createClient } from '../test_deps.ts';
+import { serve } from "../deps.ts";
+import { createClient } from '../deps.ts';
 import { log } from "../_shared/log.ts";
 import { getUserFromRequest, hasPermittedRole } from "../_shared/auth.ts";
 

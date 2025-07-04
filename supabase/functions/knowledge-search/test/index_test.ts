@@ -15,11 +15,9 @@ deno.test("normal query returns articles", async () => {
   };
 
   const createClient = () => supabaseStub;
-  const createStub = stub(
-    await import("../../test_deps.ts"),
-    "createClient",
-    createClient,
-  );
+  const deps = await import("../../deps.ts");
+  const createStub = stub(deps, "createClient", createClient);
+  const serveStub = stub(deps, "serve", () => {});
 
   const fetchStub = stub(globalThis, "fetch", async (input: RequestInfo) => {
     if (typeof input === "string" && input.includes("openai")) {
@@ -34,6 +32,7 @@ deno.test("normal query returns articles", async () => {
   assertEquals(body.articles.length, 1);
 
   createStub.restore();
+  serveStub.restore();
   fetchStub.restore();
 });
 
@@ -50,11 +49,9 @@ deno.test("query with punctuation is sanitized", async () => {
     rpc() { return { data: [], error: null }; },
   };
 
-  const createStub = stub(
-    await import("../../test_deps.ts"),
-    "createClient",
-    () => supabaseStub,
-  );
+  const deps = await import("../../deps.ts");
+  const createStub = stub(deps, "createClient", () => supabaseStub);
+  const serveStub = stub(deps, "serve", () => {});
 
   const fetchStub = stub(globalThis, "fetch", async (input: RequestInfo) => {
     if (typeof input === "string" && input.includes("openai")) {
@@ -72,6 +69,7 @@ deno.test("query with punctuation is sanitized", async () => {
   assertEquals(body.articles.length, 1);
 
   createStub.restore();
+  serveStub.restore();
   fetchStub.restore();
 });
 
@@ -85,11 +83,9 @@ deno.test("query with no results returns empty array", async () => {
     limit() { return { data: [], error: null }; },
     rpc() { return { data: [], error: null }; },
   };
-  const createStub = stub(
-    await import("../../test_deps.ts"),
-    "createClient",
-    () => supabaseStub,
-  );
+  const deps = await import("../../deps.ts");
+  const createStub = stub(deps, "createClient", () => supabaseStub);
+  const serveStub = stub(deps, "serve", () => {});
   const fetchStub = stub(globalThis, "fetch", async () => new Response("", { status: 200 }));
 
   const res = await handler(new Request("http://localhost", { method: "POST", body: JSON.stringify({ query: "none" }) }));
@@ -98,6 +94,7 @@ deno.test("query with no results returns empty array", async () => {
   assertEquals(body.articles.length, 0);
 
   createStub.restore();
+  serveStub.restore();
   fetchStub.restore();
 });
 
@@ -116,17 +113,16 @@ deno.test("openai error handled", async () => {
     limit() { return { data: [], error: null }; },
     rpc() { return { data: [], error: null }; },
   };
-  const createStub = stub(
-    await import("../../test_deps.ts"),
-    "createClient",
-    () => supabaseStub,
-  );
+  const deps = await import("../../deps.ts");
+  const createStub = stub(deps, "createClient", () => supabaseStub);
+  const serveStub = stub(deps, "serve", () => {});
   const fetchStub = stub(globalThis, "fetch", async () => new Response("fail", { status: 500 }));
   const res = await handler(new Request("http://localhost", { method: "POST", body: JSON.stringify({ query: "hello" }) }));
   const body = await res.json();
   assertEquals(res.status, 200);
   assertEquals(body.articles.length, 0);
   createStub.restore();
+  serveStub.restore();
   fetchStub.restore();
 });
 
@@ -140,16 +136,15 @@ deno.test("supabase error handled", async () => {
     limit() { return { data: null, error: new Error("db fail") }; },
     rpc() { return { data: [], error: null }; },
   };
-  const createStub = stub(
-    await import("../../test_deps.ts"),
-    "createClient",
-    () => supabaseStub,
-  );
+  const deps = await import("../../deps.ts");
+  const createStub = stub(deps, "createClient", () => supabaseStub);
+  const serveStub = stub(deps, "serve", () => {});
   const fetchStub = stub(globalThis, "fetch", async () => new Response("", { status: 200 }));
   const res = await handler(new Request("http://localhost", { method: "POST", body: JSON.stringify({ query: "hello" }) }));
   const body = await res.json();
   assertEquals(res.status, 200);
   assertEquals(body.error, 'Knowledge search temporarily unavailable');
   createStub.restore();
+  serveStub.restore();
   fetchStub.restore();
 });

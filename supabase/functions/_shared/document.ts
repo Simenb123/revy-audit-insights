@@ -1,4 +1,4 @@
-import type { SupabaseClient } from '../test_deps.ts';
+import type { SupabaseClient } from '../deps.ts';
 
 export async function fetchDocumentMetadata(
   supabase: SupabaseClient,
