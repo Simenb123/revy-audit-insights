@@ -1,6 +1,7 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { log } from "../_shared/log.ts";
+import * as pdfjsLib from 'https://esm.sh/pdfjs-dist@5.3.31/legacy/build/pdf.mjs';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -24,60 +25,30 @@ interface ConversionRequest {
 }
 
 async function extractTextFromPDF(filePath: string): Promise<string> {
-  // Simulate PDF text extraction - in production, use a proper PDF parsing library
   log(`Extracting text from PDF: ${filePath}`);
-  
-  // Simulate processing time
-  await new Promise(resolve => setTimeout(resolve, 2000));
-  
-  // Return more realistic extracted text for ISA 240
-  return `
-ISA 240 - Revisorens ansvar for å avdekke misligheter ved revisjon av regnskaper
 
-1. INNLEDNING
-Denne standarden omhandler revisorens ansvar for å avdekke misligheter i forbindelse med revisjon av regnskaper.
+  const data = await Deno.readFile(filePath);
+  const loadingTask = pdfjsLib.getDocument({
+    data,
+    verbosity: 0,
+    isOffscreenCanvasSupported: false,
+  });
+  const pdf = await loadingTask.promise;
+  let fullText = '';
 
-2. FORMÅL
-Formålet med ISA 240 er å etablere standarder og gi veiledning om revisorens ansvar for å vurdere risiko for vesentlige feilinformasjoner i regnskapet som følge av misligheter.
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const textContent = await page.getTextContent();
+    const pageText = textContent.items
+      .filter((item: any) => 'str' in item)
+      .map((item: any) => (item as any).str)
+      .join(' ');
+    if (pageText.trim()) {
+      fullText += pageText + '\n\n';
+    }
+  }
 
-3. DEFINISJONER
-Misligheter: En forsettlig handling utført av en eller flere personer i ledelsen, personer med styrende organer, ansatte eller tredjeparter som innebærer bruk av bedrag for å oppnå en urettmessig eller ulovlig fordel.
-
-4. HOVEDKRAV
-4.1 Profesjonell skepsis
-Revisoren skal opprettholde profesjonell skepsis gjennom hele revisjonen og være oppmerksom på muligheten for at det kan foreligge vesentlige feilinformasjoner som følge av misligheter.
-
-4.2 Diskusjon blant engasjementsteamet
-Engasjementsteamet skal diskutere hvor utsatt foretakets regnskap er for vesentlige feilinformasjoner som følge av misligheter.
-
-4.3 Risikovurdering
-Revisoren skal gjøre spørringer til ledelsen og andre om:
-- Ledelsens vurdering av risikoen for at regnskapet kan inneholde vesentlige feilinformasjoner som følge av misligheter
-- Ledelsens prosess for å identifisere og reagere på risiko for misligheter
-- Ledelsens kommunikasjon til ansatte om forretningspraksis og etisk atferd
-
-5. RESPONSPROSEDYRER
-Revisoren skal designe og gjennomføre revisjonsprosedyrer som respons på vurderte risikoer for vesentlige feilinformasjoner som følge av misligheter.
-
-6. EVALUERING AV REVISJONSBEVIS
-Revisoren skal evaluere om den analytiske gjennomgangen som utføres nær slutten av revisjonen indikerer tidligere ikke identifiserte risikoer for vesentlige feilinformasjoner som følge av misligheter.
-
-7. SKRIFTLIGE ERKLÆRINGER
-Revisoren skal innhente skriftlige erklæringer fra ledelsen om at:
-- Ledelsen erkjenner sitt ansvar for utformingen og implementeringen av internkontroll
-- Ledelsen har avslørt resultatet av sin vurdering av risikoen
-- Ledelsen har avslørt alle kjente faktiske eller mistenkte misligheter
-
-8. KOMMUNIKASJON
-Revisoren skal kommunisere saker relatert til misligheter til det rette ledelsesnivået og personer med styrende oppgaver.
-
-9. DOKUMENTASJON
-Revisoren skal dokumentere:
-- Diskusjoner blant engasjementsteamet
-- Identifiserte og vurderte risikoer
-- Responsprosedyrer
-- Resultater av prosedyrene
-`;
+  return fullText.trim();
 }
 
 async function processContent(text: string, conversionType: string): Promise<any> {
