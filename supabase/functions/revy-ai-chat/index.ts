@@ -1,5 +1,4 @@
 
-import { serve } from '../test_deps.ts'
 import { log } from "../_shared/log.ts"
 import { enforceRateLimit, getRateLimitId } from "../_shared/rateLimiter.ts"
 
@@ -450,7 +449,7 @@ export const handler = async (req: Request): Promise<Response> => {
 };
 
 if (import.meta.main) {
-  serve(handler);
+  Deno.serve(handler);
 }
 
 function calculateCost(model: string, promptTokens: number, completionTokens: number): number {

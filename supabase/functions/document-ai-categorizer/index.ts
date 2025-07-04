@@ -1,5 +1,4 @@
 
-import { serve } from "../test_deps.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { log } from "../_shared/log.ts";
 
@@ -14,7 +13,7 @@ interface DocumentCategorizationRequest {
   extractedText?: string;
 }
 
-serve(async (req: Request) => {
+Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
