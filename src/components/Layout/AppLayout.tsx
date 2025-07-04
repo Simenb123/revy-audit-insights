@@ -10,7 +10,6 @@ import ContextualSidebar from './ContextualSidebar';
 import ResizableRightSidebar from './ResizableRightSidebar';
 import PageLoader from './PageLoader';
 import OnboardingCheck from './OnboardingCheck';
-import { RightSidebarProvider } from './RightSidebarContext';
 import { SidebarProvider } from '@/components/ui/sidebar';
 
 const AppLayout = () => {
@@ -36,9 +35,8 @@ const AppLayout = () => {
   }
 
   return (
-    <RightSidebarProvider>
-      <SidebarProvider>
-        <div className="h-screen flex flex-col bg-background">
+    <SidebarProvider>
+      <div className="h-screen flex flex-col bg-background">
           <AppHeader />
 
           <div className="flex-1 overflow-y-auto">
@@ -67,7 +65,6 @@ const AppLayout = () => {
           </div>
         </div>
       </SidebarProvider>
-    </RightSidebarProvider>
   );
 };
 
