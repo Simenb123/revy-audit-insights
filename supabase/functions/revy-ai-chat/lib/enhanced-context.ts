@@ -1,13 +1,39 @@
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { searchClientDocuments, DocumentSearchResult } from './document-search.ts';
 import { log } from '../_shared/log.ts';
 import { getScopedClient } from './supabase.ts';
 
+interface KnowledgeArticleResult {
+  id: string;
+  title: string;
+  slug: string;
+  summary: string | null;
+  content?: string | null;
+  reference_code?: string | null;
+  similarity?: number;
+  category?: { name: string; id: string } | null;
+}
+
+interface ClientData {
+  id?: string;
+  company_name?: string;
+  name?: string;
+  org_number?: string;
+  industry?: string;
+  phase?: string;
+  documents?: unknown[];
+  documentSummary?: Record<string, unknown>;
+}
+
+interface Variant {
+  name?: string;
+  description?: string;
+}
+
 export interface EnhancedContext {
-  knowledge: any;
+  knowledge: KnowledgeArticleResult[] | null;
   articleTagMapping: Record<string, string[]>;
-  clientContext: any;
+  clientContext: ClientData | null;
   documentSearchResults: DocumentSearchResult | null;
 }
 
@@ -15,9 +41,9 @@ export const buildEnhancedContextWithVariant = async (
   req: Request,
   message: string,
   context: string,
-  clientData: any,
-  variant: any
-) => {
+  clientData: ClientData | null,
+  variant: Variant | null
+): Promise<EnhancedContext> => {
   log('🏗️ Building enhanced context with variant and document search support:', { 
     context, 
     variantName: variant?.name, 
@@ -26,7 +52,7 @@ export const buildEnhancedContextWithVariant = async (
 
   const supabase = getScopedClient(req);
 
-  const enhancedContext: any = {
+  const enhancedContext: EnhancedContext = {
     knowledge: null,
     articleTagMapping: {},
     clientContext: null,

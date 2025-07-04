@@ -1,5 +1,6 @@
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import type { Database } from '../../../src/integrations/supabase/types.ts';
 import { log } from "../_shared/log.ts";
 import * as pdfjsLib from 'https://esm.sh/pdfjs-dist@5.3.31/legacy/build/pdf.mjs';
 
@@ -8,7 +9,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-function getSupabase(req: Request) {
+function getSupabase(req: Request): SupabaseClient<Database> {
   const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
   const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
   return createClient(supabaseUrl, supabaseAnonKey, {
@@ -23,6 +24,56 @@ interface ConversionRequest {
   title: string;
   categoryId: string;
 }
+
+interface ConversionResponse {
+  success: boolean;
+  conversionId?: string;
+  articleId?: string;
+  message: string;
+  contentType?: string;
+  error?: string;
+}
+
+interface ConversionData {
+  title: string;
+  category_id: string;
+  user_id: string;
+}
+
+interface FullArticleSection {
+  id: number;
+  title: string;
+  content: string;
+}
+
+interface FullArticleContent {
+  type: 'full_article';
+  sections: FullArticleSection[];
+  metadata: { wordCount: number; processingType: string; sectionCount: number };
+}
+
+interface SummaryContent {
+  type: 'summary';
+  summary: string;
+  keyPoints: string[];
+  metadata: { originalLength: number; summaryRatio: number; keyPointsCount: number };
+}
+
+interface ChecklistItem {
+  id: number;
+  text: string;
+  completed: boolean;
+  required: boolean;
+  reference: string;
+}
+
+interface ChecklistContent {
+  type: 'checklist';
+  items: ChecklistItem[];
+  metadata: { totalItems: number; requiredItems: number; standardReference: string };
+}
+
+type StructuredContent = FullArticleContent | SummaryContent | ChecklistContent;
 
 async function extractTextFromPDF(filePath: string): Promise<string> {
   log(`Extracting text from PDF: ${filePath}`);
@@ -51,7 +102,7 @@ async function extractTextFromPDF(filePath: string): Promise<string> {
   return fullText.trim();
 }
 
-async function processContent(text: string, conversionType: string): Promise<any> {
+async function processContent(text: string, conversionType: string): Promise<StructuredContent> {
   log(`Processing content for type: ${conversionType}`);
   
   switch (conversionType) {
@@ -160,8 +211,16 @@ async function processContent(text: string, conversionType: string): Promise<any
   }
 }
 
-async function updateProgress(conversionId: string, progress: number, estimatedTime?: number) {
-  const updates: any = { progress, updated_at: new Date().toISOString() };
+async function updateProgress(
+  supabase: SupabaseClient<Database>,
+  conversionId: string,
+  progress: number,
+  estimatedTime?: number
+) {
+  const updates: { progress: number; updated_at: string; estimated_time?: number } = {
+    progress,
+    updated_at: new Date().toISOString(),
+  };
   if (estimatedTime !== undefined) {
     updates.estimated_time = estimatedTime;
   }
@@ -176,7 +235,11 @@ async function updateProgress(conversionId: string, progress: number, estimatedT
   }
 }
 
-async function createKnowledgeArticle(conversionData: any, structuredContent: any): Promise<string> {
+async function createKnowledgeArticle(
+  supabase: SupabaseClient<Database>,
+  conversionData: ConversionData,
+  structuredContent: StructuredContent
+): Promise<string> {
   const slug = conversionData.title
     .toLowerCase()
     .replace(/[^a-z0-9\s-]/g, '')
@@ -232,7 +295,7 @@ Deno.serve(async (req) => {
       .eq('id', conversionId);
 
     // Step 1: Extract text from PDF
-    await updateProgress(conversionId, 30, 3);
+    await updateProgress(supabase, conversionId, 30, 3);
     const extractedText = await extractTextFromPDF(filePath);
 
     // Step 2: Update with extracted text
@@ -241,12 +304,12 @@ Deno.serve(async (req) => {
       .update({ extracted_text: extractedText })
       .eq('id', conversionId);
 
-    await updateProgress(conversionId, 60, 2);
+    await updateProgress(supabase, conversionId, 60, 2);
 
     // Step 3: Process content based on conversion type
     const structuredContent = await processContent(extractedText, conversionType);
 
-    await updateProgress(conversionId, 80, 1);
+    await updateProgress(supabase, conversionId, 80, 1);
 
     // Step 4: Create knowledge article
     const conversionData = await supabase
@@ -259,7 +322,11 @@ Deno.serve(async (req) => {
       throw new Error('Failed to fetch conversion data');
     }
 
-    const articleId = await createKnowledgeArticle(conversionData.data, structuredContent);
+    const articleId = await createKnowledgeArticle(
+      supabase,
+      conversionData.data as ConversionData,
+      structuredContent
+    );
 
     // Step 5: Complete conversion
     await supabase
