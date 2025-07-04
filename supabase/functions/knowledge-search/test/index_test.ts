@@ -1,7 +1,8 @@
 import { assertEquals, stub } from "../../test_deps.ts";
 import { handler } from "../index.ts";
 
-deno.test("normal query returns articles", async () => {
+Deno.test("normal query returns articles", async () => {
+
   const serveMod = await import("../../test_deps.ts");
   const serveStub = stub(serveMod, "serve", () => {});
   const supabaseStub = {
@@ -40,7 +41,9 @@ deno.test("normal query returns articles", async () => {
   serveStub.restore();
 });
 
-deno.test("query with punctuation is sanitized", async () => {
+
+Deno.test("query with punctuation is sanitized", async () => {
+
   const serveMod = await import("../../test_deps.ts");
   const serveStub = stub(serveMod, "serve", () => {});
   const supabaseStub = {
@@ -81,7 +84,8 @@ deno.test("query with punctuation is sanitized", async () => {
   serveStub.restore();
 });
 
-deno.test("query with no results returns empty array", async () => {
+Deno.test("query with no results returns empty array", async () => {
+
   const serveMod = await import("../../test_deps.ts");
   const serveStub = stub(serveMod, "serve", () => {});
   const supabaseStub = {
@@ -110,7 +114,10 @@ deno.test("query with no results returns empty array", async () => {
   serveStub.restore();
 });
 
-deno.test("invalid JSON results in 400", async () => {
+
+Deno.test("invalid JSON results in 400", async () => {
+
+
   const serveMod = await import("../../test_deps.ts");
   const serveStub = stub(serveMod, "serve", () => {});
   const res = await handler(new Request("http://localhost", { method: "POST", body: "{" }));
@@ -118,7 +125,8 @@ deno.test("invalid JSON results in 400", async () => {
   serveStub.restore();
 });
 
-deno.test("openai error handled", async () => {
+Deno.test("openai error handled", async () => {
+
   const serveMod = await import("../../test_deps.ts");
   const serveStub = stub(serveMod, "serve", () => {});
   const supabaseStub = {
@@ -145,7 +153,8 @@ deno.test("openai error handled", async () => {
   serveStub.restore();
 });
 
-deno.test("supabase error handled", async () => {
+Deno.test("supabase error handled", async () => {
+
   const serveMod = await import("../../test_deps.ts");
   const serveStub = stub(serveMod, "serve", () => {});
   const supabaseStub = {
