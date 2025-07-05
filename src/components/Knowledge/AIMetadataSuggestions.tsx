@@ -88,7 +88,7 @@ Analyser innholdet og returner kun ren JSON uten ekstra tekst:
 VIKTIG: Svar kun med gyldig JSON, ingen ekstra tekst eller formatering.`,
           context: 'knowledge',
           variant: {
-            name: 'methodology-expert',
+            name: 'methodology',
             display_name: 'Metodikk-ekspert',
             description: 'Ekspert på revisjon og fagstoff'
           }

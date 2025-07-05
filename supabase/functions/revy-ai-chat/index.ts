@@ -201,7 +201,7 @@ export const handler = async (req: Request): Promise<Response> => {
     log('📊 OpenAI request details:', {
       model: selectedModel,
       messagesCount: history.length + 2, // system + history + user message
-      temperature: selectedVariant?.name === 'methodology-expert' ? 0.1 : 0.3,
+      temperature: selectedVariant?.name === 'methodology' ? 0.1 : 0.3,
       maxTokens: 1500
     });
 
@@ -223,7 +223,7 @@ export const handler = async (req: Request): Promise<Response> => {
           { role: 'user', content: message }
         ],
         max_tokens: 1500,
-        temperature: selectedVariant?.name === 'methodology-expert' ? 0.1 : 0.3,
+        temperature: selectedVariant?.name === 'methodology' ? 0.1 : 0.3,
         stream: false,
       }),
     });

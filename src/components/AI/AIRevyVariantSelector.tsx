@@ -11,6 +11,7 @@ import {
   Check
 } from 'lucide-react';
 import { useAIRevyVariants } from '@/hooks/useAIRevyVariants';
+import type { AIRevyVariantName } from '@/constants/aiRevyVariants';
 
 interface AIRevyVariantSelectorProps {
   currentContext: string;
@@ -25,7 +26,7 @@ const AIRevyVariantSelector: React.FC<AIRevyVariantSelectorProps> = ({
 }) => {
   const { variants, selectedVariant, switchVariant, isLoading } = useAIRevyVariants(currentContext);
 
-  const getVariantIcon = (variantName: string) => {
+  const getVariantIcon = (variantName: AIRevyVariantName) => {
     switch (variantName) {
       case 'methodology': return <Brain className="h-4 w-4" />;
       case 'professional': return <BookOpen className="h-4 w-4" />;
@@ -35,7 +36,7 @@ const AIRevyVariantSelector: React.FC<AIRevyVariantSelectorProps> = ({
     }
   };
 
-  const getVariantColor = (variantName: string) => {
+  const getVariantColor = (variantName: AIRevyVariantName) => {
     switch (variantName) {
       case 'methodology': return 'bg-purple-100 text-purple-800 border-purple-200';
       case 'professional': return 'bg-blue-100 text-blue-800 border-blue-200';
