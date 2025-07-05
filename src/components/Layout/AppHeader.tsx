@@ -49,8 +49,11 @@ const AppHeader: React.FC<AppHeaderProps> = ({ className = '' }) => {
     <header
       className={`sticky top-0 z-50 bg-white border-b border-gray-200 h-[var(--header-height)] flex items-center justify-between px-6 ${className}`}
     >
+
       <div className="flex items-center gap-2">
         <SidebarTrigger />
+
+     # <div className="flex items-center">
         <Logo />
       </div>
       
