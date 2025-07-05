@@ -2,10 +2,11 @@ import { logger } from '@/utils/logger';
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import type { AIRevyVariantName } from '@/constants/aiRevyVariants';
 
 export interface AIRevyVariant {
   id: string;
-  name: string;
+  name: AIRevyVariantName;
   display_name: string;
   description: string;
   system_prompt_template: string;
@@ -64,9 +65,9 @@ export const useAIRevyVariants = (context?: string) => {
     if (!currentContext) return availableVariants[0];
 
     // Context-based variant selection
-    const contextMapping: Record<string, string> = {
+    const contextMapping: Record<string, AIRevyVariantName> = {
       'audit-actions': 'methodology',
-      'planning': 'methodology', 
+      'planning': 'methodology',
       'execution': 'methodology',
       'completion': 'methodology',
       'risk-assessment': 'professional',
