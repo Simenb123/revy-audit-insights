@@ -32,6 +32,10 @@ const ResizableRightSidebar = () => {
   const isMobile = useIsMobile();
   const [isDragging, setIsDragging] = useState(false);
   const toggleCollapsed = useCallback(() => setIsCollapsed(v => !v), [setIsCollapsed]);
+  const handleClose = useCallback(() => {
+    setIsHidden(true);
+    setIsCollapsed(false);
+  }, [setIsHidden, setIsCollapsed]);
   const location = useLocation();
   const pageType = detectPageType(location.pathname);
   const clientIdOrOrg = extractClientId(location.pathname);
@@ -130,6 +134,7 @@ const ResizableRightSidebar = () => {
               title={getPageTitle()}
               isCollapsed={isCollapsed}
               onToggle={toggleCollapsed}
+              onClose={handleClose}
             />
             {!isCollapsed && (
               <ScrollArea className="flex-1">
@@ -139,6 +144,19 @@ const ResizableRightSidebar = () => {
           </motion.div>
         </DrawerContent>
       </Drawer>
+    );
+  }
+
+  if (isHidden) {
+    return (
+      <Button
+        variant="ghost"
+        size="icon"
+        className="border-l"
+        onClick={() => setIsHidden(false)}
+      >
+        <MessageSquare className="h-5 w-5" />
+      </Button>
     );
   }
 
@@ -156,6 +174,7 @@ const ResizableRightSidebar = () => {
           title={getPageTitle()}
           isCollapsed={isCollapsed}
           onToggle={toggleCollapsed}
+          onClose={handleClose}
         />
 
         {!isCollapsed && (

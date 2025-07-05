@@ -58,8 +58,6 @@ const AppLayout = () => {
                 </main>
               </ResizablePanel>
 
-              <ResizableHandle />
-
               <ResizableRightSidebar />
             </ResizablePanelGroup>
           </div>
