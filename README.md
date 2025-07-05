@@ -107,6 +107,17 @@ For the embedded generation trigger to work properly, you may need to set custom
 1. Clone the repository
 2. Install dependencies: `npm install --legacy-peer-deps`
 3. Run the test suite to verify the setup: `npm test`
+
+To quickly verify that the Supabase edge functions respond you can run the
+smoke test script:
+
+```bash
+node scripts/smoke-test.js
+```
+
+This requires `SUPABASE_URL` and `SUPABASE_ANON_KEY` to be set, as described in
+[docs/testing-ci.md](docs/testing-ci.md).
+
 4. Copy `.env.example` to `.env.local` and fill in your credentials
 5. Start the development server: `npm run dev` (it will automatically load `.env.local`)
 6. To deploy edge functions, store your secrets with:
