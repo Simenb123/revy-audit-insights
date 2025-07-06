@@ -36,10 +36,10 @@ const AppLayout = () => {
 
   return (
     <SidebarProvider>
-      <div className="h-screen flex flex-col bg-background">
+      <div className="flex flex-col min-h-screen w-full bg-background">
           <AppHeader />
 
-          <div className="flex-1 overflow-y-auto pt-[var(--header-height)]">
+          <div className="flex-1 overflow-y-auto">
             <ResizablePanelGroup direction="horizontal" className="h-full">
               <ResizablePanel
                 defaultSize={leftPanelSize}
