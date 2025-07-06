@@ -39,7 +39,17 @@ For service architecture diagrams of the edge functions, see [docs/backend-endpo
 For classification models used across modules, see [docs/classification.md](docs/classification.md).
 For ledger upload column mappings, see [docs/upload-column-mappings.md](docs/upload-column-mappings.md).
 For running tests in CI see [docs/testing-ci.md](docs/testing-ci.md).
+
 For an overview of the database structure see [docs/database-overview.md](docs/database-overview.md).
+
+## Database Migrations
+
+The entire database schema is versioned in [`supabase/migrations`](supabase/migrations).
+There are 55 timestamped SQL scripts that create enum types, tables, triggers and
+row level security policies. Applying these migrations ensures all environments
+start with the same structure. See
+[docs/database-overview.md](docs/database-overview.md) for the most important
+tables and policies.
 
 ## Environment Setup
 

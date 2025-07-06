@@ -28,6 +28,9 @@ The `supabase/functions` folder contains serverless functions written in Deno. T
 - **knowledge-search** – searches knowledge articles for relevant information.
 
 Database changes live in `supabase/migrations` as SQL scripts.
+These scripts include enum definitions, table creation, row level security
+policies and triggers for automatically updating timestamps. Running them sets up
+the complete schema for the project.
 
 ## Other folders
 
