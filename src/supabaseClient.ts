@@ -12,4 +12,9 @@ const supabaseAnonKey =
   ''
 
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey)
+
+if (import.meta.env.DEV) {
+  // @ts-expect-error -- debug helper only in development
+  ;(window as any).supabase = supabase
+}
 export default supabase
