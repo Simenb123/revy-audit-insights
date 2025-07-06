@@ -13,7 +13,10 @@ const ResizableLeftSidebar = () => {
   const isCollapsed = state === 'collapsed'
 
   return (
-    <ShadcnSidebar collapsible="icon">
+    <ShadcnSidebar
+      collapsible="icon"
+      style={!isCollapsed ? { minWidth: '280px', maxWidth: '280px' } : undefined}
+    >
       <SidebarHeader>
         <SidebarTrigger className="absolute top-3 right-3" />
       </SidebarHeader>
