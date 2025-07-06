@@ -135,7 +135,7 @@ const ResizableRightSidebar = () => {
   }
 
   return (
-    <div className="relative flex h-full">
+    <div className="flex-1 h-full overflow-y-auto">
       {!isCollapsed && (
         <ResizableHandle onMouseDown={handleMouseDown} />
       )}
