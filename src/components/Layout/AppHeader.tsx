@@ -17,7 +17,6 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import Logo from './Logo';
-import { SidebarTrigger } from '@/components/ui/sidebar';
 
 interface AppHeaderProps {
   className?: string;
@@ -51,7 +50,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ className = '' }) => {
     >
 
       <div className="flex items-center gap-2">
-        <SidebarTrigger />
+        <h2 className="text-lg font-semibold">Revio</h2>
 
         <div className="flex items-center">
           <Logo />

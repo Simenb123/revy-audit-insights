@@ -4,7 +4,8 @@ import { useLocation, useParams } from 'react-router-dom';
 import { 
   Sidebar as ShadcnSidebar,
   SidebarContent,
-  SidebarHeader
+  SidebarHeader,
+  SidebarTrigger
 } from "@/components/ui/sidebar";
 import GlobalNav from "./GlobalNav";
 import ClientNav from "./ClientNav";
@@ -29,8 +30,8 @@ export default function ContextualSidebar() {
   return (
     <ShadcnSidebar>
       <SidebarHeader>
+        <SidebarTrigger className="absolute top-3 right-3" />
         <div className="p-4">
-          <h2 className="text-lg font-semibold">Revio</h2>
           {isClientContext && client && (
             <div className="mt-2 p-2 bg-revio-50 rounded-md">
               <p className="text-sm font-medium text-revio-900">{client.company_name}</p>
