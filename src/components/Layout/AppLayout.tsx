@@ -37,6 +37,22 @@ const AppLayout = () => {
           <AppHeader />
 
           <div className="flex-1 overflow-y-auto">
+            <ResizablePanelGroup direction="horizontal" className="h-full">
+              <ResizablePanel
+                defaultSize={leftPanelSize}
+                minSize={15}
+                maxSize={30}
+                onResize={setLeftPanelSize}
+              >
+                <ContextualSidebar />
+              </ResizablePanel>
+
+              <ResizablePanel defaultSize={50} minSize={30}>
+                <main className="flex-1 min-h-screen overflow-y-auto">
+                  <Outlet />
+                </main>
+              </ResizablePanel>
+
             <div className="flex w-full min-h-screen">
               <ContextualSidebar />
               <main className="flex-1 h-full overflow-auto">
