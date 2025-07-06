@@ -136,10 +136,15 @@ export const SidebarProvider = React.forwardRef<
           <div
             style={
               {
-                "--sidebar-width":
-                  state === "collapsed" ? "0px" : SIDEBAR_WIDTH,
-                "--sidebar-width-icon":
-                  state === "collapsed" ? SIDEBAR_WIDTH_ICON : "0px",
+                ...(state === "collapsed"
+                  ? {
+                      "--sidebar-width": "0",
+                      "--sidebar-width-icon": SIDEBAR_WIDTH_ICON,
+                    }
+                  : {
+                      "--sidebar-width": SIDEBAR_WIDTH,
+                      "--sidebar-width-icon": "0",
+                    }),
                 ...style,
               } as React.CSSProperties
             }
