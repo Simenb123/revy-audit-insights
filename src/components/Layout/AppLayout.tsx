@@ -1,8 +1,7 @@
 import { logger } from '@/utils/logger';
 
-import React, { useEffect, useState } from 'react';
-import { Outlet, useLocation, Navigate } from 'react-router-dom';
-import { ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
+import React, { useEffect } from 'react';
+import { Outlet, Navigate } from 'react-router-dom';
 import { useAuth } from '@/components/Auth/AuthProvider';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import AppHeader from './AppHeader';
@@ -15,8 +14,6 @@ import { SidebarProvider } from '@/components/ui/sidebar';
 const AppLayout = () => {
   const { session } = useAuth();
   const { data: profile, isLoading: profileLoading } = useUserProfile();
-  const location = useLocation();
-  const [leftPanelSize, setLeftPanelSize] = useState(20);
 
   useEffect(() => {
     logger.log('AppLayout mounted, session:', !!session, 'profile loading:', profileLoading);
@@ -40,25 +37,13 @@ const AppLayout = () => {
           <AppHeader />
 
           <div className="flex-1 overflow-y-auto">
-            <ResizablePanelGroup direction="horizontal" className="h-full">
-              <ResizablePanel
-                defaultSize={leftPanelSize}
-                minSize={15}
-                maxSize={30}
-                onResize={setLeftPanelSize}
-              >
-                <ContextualSidebar />
-              </ResizablePanel>
-
-
-              <ResizablePanel defaultSize={50} minSize={30}>
-                <main className="h-full overflow-auto">
-                  <Outlet />
-                </main>
-              </ResizablePanel>
-
+            <div className="flex w-full min-h-screen">
+              <ContextualSidebar />
+              <main className="flex-1 h-full overflow-auto">
+                <Outlet />
+              </main>
               <ResizableRightSidebar />
-            </ResizablePanelGroup>
+            </div>
           </div>
         </div>
       </SidebarProvider>
