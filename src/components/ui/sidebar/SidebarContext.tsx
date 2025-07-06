@@ -4,9 +4,9 @@ import { TooltipProvider } from "@/components/ui/tooltip"
 
 const SIDEBAR_COOKIE_NAME = "sidebar:state"
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
-const SIDEBAR_WIDTH = "12rem"
+const SIDEBAR_WIDTH = "280px"
 const SIDEBAR_WIDTH_MOBILE = "18rem"
-const SIDEBAR_WIDTH_ICON = "3rem"
+const SIDEBAR_WIDTH_ICON = "56px"
 const SIDEBAR_KEYBOARD_SHORTCUT = "Shift+B" // Changed from "b" to "Shift+B"
 
 type SidebarContext = {
@@ -137,13 +137,9 @@ export const SidebarProvider = React.forwardRef<
             style={
               {
                 "--sidebar-width":
-                  state === "collapsed"
-                    ? "0px"
-                    : SIDEBAR_WIDTH,
+                  state === "collapsed" ? "0px" : SIDEBAR_WIDTH,
                 "--sidebar-width-icon":
-                  state === "collapsed"
-                    ? "0px"
-                    : SIDEBAR_WIDTH_ICON,
+                  state === "collapsed" ? SIDEBAR_WIDTH_ICON : "0px",
                 ...style,
               } as React.CSSProperties
             }
