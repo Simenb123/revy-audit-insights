@@ -37,7 +37,7 @@ const AppLayout = () => {
           <AppHeader />
 
           <div className="flex-1 overflow-y-auto">
-            <div className="flex w-full min-h-screen">
+            <div className="flex flex-col h-full w-full min-h-screen">
               <ContextualSidebar />
               <main className="flex-1 h-full overflow-auto">
                 <Outlet />
