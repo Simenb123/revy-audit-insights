@@ -40,9 +40,11 @@ const SidebarHeader: React.FC<SidebarHeaderProps> = ({
             <X className="h-4 w-4" />
           </Button>
         )}
-        <Button variant="ghost" size="sm" onClick={onToggle}>
-          <ChevronRight className="h-4 w-4" />
-        </Button>
+        {onToggle && (
+          <Button variant="ghost" size="sm" onClick={onToggle}>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        )}
       </div>
     </div>
   );

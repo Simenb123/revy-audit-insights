@@ -31,7 +31,6 @@ const ResizableRightSidebar = () => {
   } = useRightSidebar();
   const isMobile = useIsMobile();
   const [isDragging, setIsDragging] = useState(false);
-  const toggleCollapsed = useCallback(() => setIsCollapsed(v => !v), [setIsCollapsed]);
   const handleClose = useCallback(() => {
     setIsHidden(true);
     setIsCollapsed(false);
@@ -132,8 +131,6 @@ const ResizableRightSidebar = () => {
           >
             <SidebarHeader
               title={getPageTitle()}
-              isCollapsed={isCollapsed}
-              onToggle={toggleCollapsed}
               onClose={handleClose}
             />
             {!isCollapsed && (
@@ -172,8 +169,6 @@ const ResizableRightSidebar = () => {
       >
         <SidebarHeader
           title={getPageTitle()}
-          isCollapsed={isCollapsed}
-          onToggle={toggleCollapsed}
           onClose={handleClose}
         />
 
