@@ -6,16 +6,11 @@ import { Drawer, DrawerTrigger, DrawerContent } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { MessageSquare } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useClientDocuments } from '@/hooks/useClientDocuments';
 import { useClientLookup } from '@/hooks/useClientLookup';
 import { detectPageType, extractClientId } from './pageDetectionHelpers';
 import ResizableHandle from './ResizableHandle';
 import SidebarHeader from './SidebarHeader';
-import AdminSidebarSection from './AdminSidebarSection';
-import KnowledgeSidebarSection from './KnowledgeSidebarSection';
-import StreamlinedClientSidebar from './StreamlinedClientSidebar';
-import GeneralSidebarSection from './GeneralSidebarSection';
-import LoadingErrorSection from './LoadingErrorSection';
+import AiReviCard, { AiReviVariant } from '@/components/AiReviCard';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 import { useRightSidebar } from './RightSidebarContext';
@@ -40,13 +35,6 @@ const ResizableRightSidebar = () => {
   const clientIdOrOrg = extractClientId(location.pathname);
   const { data: clientLookup } = useClientLookup(clientIdOrOrg);
   const clientId = clientLookup?.id;
-
-  const {
-    documentsCount,
-    categoriesCount,
-    isLoading,
-    error
-  } = useClientDocuments(clientId);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -90,23 +78,14 @@ const ResizableRightSidebar = () => {
   };
 
   const renderContent = () => {
-    if (pageType === 'admin') {
-      return <AdminSidebarSection />;
-    }
-
-    if (pageType === 'knowledge') {
-      return <KnowledgeSidebarSection />;
-    }
-
-    if (isLoading || error) {
-      return <LoadingErrorSection isLoading={isLoading} error={error} />;
-    }
-
-    if (clientId) {
-      return <StreamlinedClientSidebar clientId={clientId} />;
-    }
-
-    return <GeneralSidebarSection />;
+    return (
+      <AiReviCard
+        variant={pageType as AiReviVariant}
+        className="border-l border-purple-500"
+        context={clientId ? 'client-detail' : 'general'}
+        clientData={clientId ? { id: clientId } : undefined}
+      />
+    );
   };
 
   if (isMobile) {
