@@ -52,7 +52,7 @@ const AppLayout = () => {
 
 
               <ResizablePanel defaultSize={50} minSize={30}>
-                <main className="h-full overflow-auto">
+                <main className="flex-1 min-h-screen overflow-y-auto">
                   <Outlet />
                 </main>
               </ResizablePanel>
