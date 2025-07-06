@@ -12,9 +12,8 @@ import { detectPageType, extractClientId } from './pageDetectionHelpers';
 import ResizableHandle from './ResizableHandle';
 import SidebarHeader from './SidebarHeader';
 import AdminSidebarSection from './AdminSidebarSection';
-import KnowledgeSidebarSection from './KnowledgeSidebarSection';
 import StreamlinedClientSidebar from './StreamlinedClientSidebar';
-import GeneralSidebarSection from './GeneralSidebarSection';
+import AiReviCard from './AiReviCard';
 import LoadingErrorSection from './LoadingErrorSection';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
@@ -95,7 +94,14 @@ const ResizableRightSidebar = () => {
     }
 
     if (pageType === 'knowledge') {
-      return <KnowledgeSidebarSection />;
+      return (
+        <AiReviCard
+          title="AI-Revi Kunnskapsbase"
+          description="Sp\u00f8r om revisjonsstandarder og prosedyrer"
+          className="h-full w-full flex flex-col border-l-4 border-l-purple-500"
+          context="knowledge-base"
+        />
+      );
     }
 
     if (isLoading || error) {
@@ -106,7 +112,14 @@ const ResizableRightSidebar = () => {
       return <StreamlinedClientSidebar clientId={clientId} />;
     }
 
-    return <GeneralSidebarSection />;
+    return (
+      <AiReviCard
+        title="AI-Revi Assistent"
+        description="Generell hjelp og veiledning"
+        className="h-full w-full flex flex-col border-l-4 border-l-green-500"
+        context="general"
+      />
+    );
   };
 
   if (isMobile) {
@@ -135,7 +148,7 @@ const ResizableRightSidebar = () => {
             />
             {!isCollapsed && (
               <ScrollArea className="flex-1">
-                <div className="p-4">{renderContent()}</div>
+                <div className="h-full w-full flex flex-col">{renderContent()}</div>
               </ScrollArea>
             )}
           </motion.div>
@@ -180,7 +193,7 @@ const ResizableRightSidebar = () => {
 
         {!isCollapsed && (
           <ScrollArea className="flex-1">
-            <div className="p-4">
+            <div className="h-full w-full flex flex-col">
               {renderContent()}
             </div>
           </ScrollArea>
