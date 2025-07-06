@@ -34,7 +34,7 @@ const AiReviCard: React.FC<AiReviCardProps> = ({
   const systemPrompt = getSystemPrompt(variant)
 
   return (
-    <Card className={cn('h-full w-full flex flex-col', className)}>
+    <Card className={cn('h-full w-full flex flex-col shadow-none border-none rounded-none', className)}>
       <CardHeader className="pb-3">
         <div className="flex items-center gap-2">
           <RevyAvatar size="sm" />

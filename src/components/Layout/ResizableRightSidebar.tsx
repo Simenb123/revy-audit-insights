@@ -81,7 +81,7 @@ const ResizableRightSidebar = () => {
     return (
       <AiReviCard
         variant={pageType as AiReviVariant}
-        className="border-l border-purple-500"
+        className="h-full w-full flex flex-col"
         context={clientId ? 'client-detail' : 'general'}
         clientData={clientId ? { id: clientId } : undefined}
       />
@@ -113,9 +113,7 @@ const ResizableRightSidebar = () => {
               onClose={handleClose}
             />
             {!isCollapsed && (
-              <ScrollArea className="flex-1">
-                <div className="p-4">{renderContent()}</div>
-              </ScrollArea>
+              <ScrollArea className="flex-1">{renderContent()}</ScrollArea>
             )}
           </motion.div>
         </DrawerContent>
@@ -158,11 +156,7 @@ const ResizableRightSidebar = () => {
         />
 
         {!isCollapsed && (
-          <ScrollArea className="flex-1">
-            <div className="p-4">
-              {renderContent()}
-            </div>
-          </ScrollArea>
+          <ScrollArea className="flex-1">{renderContent()}</ScrollArea>
         )}
       </motion.div>
     </div>
