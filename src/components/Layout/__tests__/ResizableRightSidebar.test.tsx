@@ -28,6 +28,17 @@ vi.mock('@/hooks/useClientDetails', () => ({
   })
 }));
 
+vi.mock('@/hooks/useAIRevyVariants', () => ({
+  useAIRevyVariants: () => ({
+    variants: [],
+    selectedVariant: null,
+    isLoading: false,
+    switchVariant: vi.fn(),
+    handleVariantChange: vi.fn(),
+    loadVariants: vi.fn()
+  })
+}));
+
 vi.mock('@/hooks/useUserProfile', () => ({
   useUserProfile: () => ({ data: { userRole: 'employee' } })
 }));
@@ -45,6 +56,6 @@ describe('ResizableRightSidebar', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByText('AI-Revi Assistent')).toBeInTheDocument();
+    expect(screen.getByText('AI-Revi')).toBeInTheDocument();
   });
 });
