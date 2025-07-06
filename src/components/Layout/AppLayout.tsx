@@ -2,7 +2,7 @@ import { logger } from '@/utils/logger';
 
 import React, { useEffect, useState } from 'react';
 import { Outlet, useLocation, Navigate } from 'react-router-dom';
-import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
+import { ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 import { useAuth } from '@/components/Auth/AuthProvider';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import AppHeader from './AppHeader';
@@ -50,7 +50,6 @@ const AppLayout = () => {
                 <ContextualSidebar />
               </ResizablePanel>
 
-              <ResizableHandle />
 
               <ResizablePanel defaultSize={50} minSize={30}>
                 <main className="h-full overflow-auto">
