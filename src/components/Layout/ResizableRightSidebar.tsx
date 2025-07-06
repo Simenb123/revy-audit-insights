@@ -159,12 +159,18 @@ const ResizableRightSidebar = () => {
 
   return (
     <div className="relative flex h-full">
-      <ResizableHandle onMouseDown={handleMouseDown} />
+      {!isCollapsed && (
+        <ResizableHandle onMouseDown={handleMouseDown} />
+      )}
 
       <motion.div
         className="border-l bg-background flex flex-col h-full"
-        style={{ width: `${width}px`, minWidth: '280px', maxWidth: '600px' }}
-        animate={{ width }}
+        style={{
+          width: isCollapsed ? '0px' : `${width}px`,
+          minWidth: isCollapsed ? '0px' : '280px',
+          maxWidth: isCollapsed ? '0px' : '600px'
+        }}
+        animate={{ width: isCollapsed ? 0 : width }}
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
       >
         <SidebarHeader
