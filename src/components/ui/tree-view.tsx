@@ -88,7 +88,7 @@ const TreeViewContent = React.forwardRef<
   }
 
   return (
-    <ul ref={ref} className={cn('pl-6 space-y-1', className)} {...props}>
+    <ul ref={ref} className={cn('pl-6 space-y-1 list-none', className)} {...props}>
       {children}
     </ul>
   );
