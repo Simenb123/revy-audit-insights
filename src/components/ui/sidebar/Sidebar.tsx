@@ -98,12 +98,14 @@ export const Sidebar = React.forwardRef<
             className
           )}
         >
-          <div
-            data-sidebar="sidebar"
-            className="flex h-full flex-col overflow-hidden bg-sidebar group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:border-sidebar-border group-data-[variant=floating]:shadow"
+          <aside
+            className="flex h-full flex-col overflow-hidden
+                       bg-background  /* samsvar med resten av appen */
+                       border-r
+                       data-[state=expanded]:shadow-sm"
           >
             {children}
-          </div>
+          </aside>
         </div>
       </div>
     )
