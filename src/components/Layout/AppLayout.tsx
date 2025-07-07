@@ -6,7 +6,7 @@ import { useAuth } from '@/components/Auth/AuthProvider';
 import { useUserProfile } from '@/hooks/useUserProfile';
 
 import AppHeader from './AppHeader';
-import SidebarContent from './SidebarContent';
+import { SidebarContent } from '@/components/ui/sidebar';
 import PageLoader from './PageLoader';
 import OnboardingCheck from './OnboardingCheck';
 
