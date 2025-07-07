@@ -43,10 +43,7 @@ const AppLayout = () => {
           <div className="main-content flex flex-col overflow-auto">
             <Outlet />
           </div>
-          {/**
-            // Fjern kommentaren dersom/ når høyre kontekst-sidebar skal aktiveres
-            <ResizableRightSidebar />
-          */}
+          <ResizableRightSidebar />
         </div>
       </div>
     </SidebarProvider>
