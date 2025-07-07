@@ -164,9 +164,10 @@ const EnhancedChatRoom = ({
   const pinnedMessages = enhancedMessages.filter(m => m.isPinned);
 
   return (
-    <div className="flex flex-col h-full max-h-[600px]">
-      {/* Chat header */}
-      <CardHeader className="pb-3">
+    <section className="flex flex-col h-full max-h-[600px]">
+      <header>
+        {/* Chat header */}
+        <CardHeader className="pb-3">
         <div className="flex justify-between items-center">
           <CardTitle className="flex items-center gap-2">
             <div className="flex items-center gap-2">
@@ -219,6 +220,7 @@ const EnhancedChatRoom = ({
           </div>
         )}
       </CardHeader>
+      </header>
 
       {/* Meldingsområde */}
       <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -386,7 +388,7 @@ const EnhancedChatRoom = ({
           />
         </div>
       </div>
-    </div>
+    </section>
   );
 };
 
