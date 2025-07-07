@@ -100,10 +100,15 @@ export const Sidebar = React.forwardRef<
         >
           <aside
             data-sidebar="sidebar"
-            className="flex h-full flex-col overflow-hidden bg-background border-r data-[state=expanded]:shadow-sm"
+            className={cn(
+              "flex h-full flex-col overflow-hidden bg-sidebar border-r",
+              "data-[state=expanded]:shadow-sm",
+              className                /* ev. ekstra klasser som prop */
+            )}
           >
-            {children}
-          </aside>
+  {children}
+</aside>
+
         </div>
       </div>
     )
