@@ -130,6 +130,14 @@ This requires `SUPABASE_URL` and `SUPABASE_ANON_KEY` to be set, as described in
 
 The `.env.example` file includes a `VITE_USE_ENHANCED_ANALYSIS` flag. Set this to `true` to use the enhanced document AI functions.
 
+### GitHub Codespaces
+
+You can run the project in **GitHub Codespaces**. After creating a Codespace,
+copy `.env.example` to `.env.local` and fill in the required variables as shown
+above. Install dependencies with `npm install --legacy-peer-deps` and then run
+`npm run dev` from the Codespaces terminal. The dev server will automatically
+load variables from `.env.local`.
+
 ### CI Setup
 
 For automated environments, you can run `scripts/setup-ci.sh` to install dependencies and execute the test suite. This is useful for continuous integration pipelines.
