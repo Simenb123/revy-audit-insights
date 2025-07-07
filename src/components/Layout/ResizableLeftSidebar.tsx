@@ -1,10 +1,10 @@
 import React from 'react'
 import {
   Sidebar as ShadcnSidebar,
-  SidebarContent,
   SidebarHeader,
   SidebarTrigger,
 } from '@/components/ui/sidebar'
+import SidebarContent from '@/components/Layout/SidebarContent'
 import SidebarRail from '@/components/ui/sidebar/SidebarRail'
 import { useSidebar } from '@/components/ui/sidebar/SidebarContext'
 
