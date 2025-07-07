@@ -7,6 +7,13 @@ Dette prosjektet benytter Node, Vite og Supabase Edge Functions. For å teste og
 1. Kopier `.env.example` til `.env.local` og fyll inn påkrevde variabler som `SUPABASE_URL`, `SUPABASE_ANON_KEY` og `OPENAI_API_KEY`.
 2. Installer avhengigheter med `npm install --legacy-peer-deps`.
 
+### GitHub Codespaces
+
+Prosjektet kan også kjøres i **GitHub Codespaces**. Etter at Codespace-miljøet er opprettet,
+kopier `.env.example` til `.env.local` og fyll inn variablene. Kjør deretter
+`npm install --legacy-peer-deps` før du starter utviklingsserveren med
+`npm run dev`.
+
 ## Kørsel av tester
 
 - Kør `npm test` for å kjøre Vitest-enhetene. Disse ligger under `src`-mappen.
