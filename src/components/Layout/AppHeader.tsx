@@ -46,7 +46,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ className = '' }) => {
 
   return (
     <header
-      className={`sticky top-0 z-50 bg-white border-b border-gray-200 h-[var(--header-height)] flex items-center justify-between px-6 ${className}`}
+      className={`sticky top-0 z-50 bg-revio-500 border-b border-revio-600 h-[var(--header-height)] flex items-center justify-between px-6 text-white ${className}`}
     >
 
       <div className="flex items-center gap-2">
@@ -58,7 +58,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ className = '' }) => {
       </div>
 
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="sm" className="text-gray-600 hover:text-gray-900">
+        <Button variant="ghost" size="sm" className="text-white hover:bg-revio-600">
           <Bell className="h-5 w-5" />
         </Button>
         
