@@ -86,7 +86,7 @@ export const Sidebar = React.forwardRef<
           )}
         />
         <div
-            className={cn(
+          className={cn(
             "duration-300 fixed top-[var(--header-height)] h-[calc(100dvh-var(--header-height))] bg-sidebar transition-[left,right,width,transform] ease-in-out md:flex",
             width,
             side === "left"
@@ -99,13 +99,16 @@ export const Sidebar = React.forwardRef<
           )}
         >
           <aside
-            className="flex h-full flex-col overflow-hidden
-                       bg-background  /* samsvar med resten av appen */
-                       border-r
-                       data-[state=expanded]:shadow-sm"
+            data-sidebar="sidebar"
+            className={cn(
+              "flex h-full flex-col overflow-hidden bg-sidebar border-r",
+              "data-[state=expanded]:shadow-sm",
+              className                /* ev. ekstra klasser som prop */
+            )}
           >
-            {children}
-          </aside>
+  {children}
+</aside>
+
         </div>
       </div>
     )
