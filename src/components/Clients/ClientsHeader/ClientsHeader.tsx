@@ -45,7 +45,7 @@ const ClientsHeader: React.FC<ClientsHeaderProps> = ({
   onTestDataToggle
 }) => {
   return (
-    <div className="space-y-4">
+    <header className="space-y-4">
       <div className="flex justify-between items-start">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
@@ -111,7 +111,7 @@ const ClientsHeader: React.FC<ClientsHeaderProps> = ({
           </SelectContent>
         </Select>
       </div>
-    </div>
+    </header>
   );
 };
 
