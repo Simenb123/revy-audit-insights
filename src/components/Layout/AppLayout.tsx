@@ -53,6 +53,7 @@ const AppLayout = () => {
             maxSize={20}
             collapsible
             collapsedSize={3.5}   /* 3.5 rem ikon-rail */
+            className="bg-sidebar"
           >
             <SidebarContent />
           </ResizablePanel>

@@ -33,7 +33,7 @@ vi.mock('@/hooks/useUserProfile', () => ({
 }));
 
 describe('ResizableRightSidebar', () => {
-  it('renders StreamlinedClientSidebar when client id is detected', () => {
+  it('renders the AI-Revi assistant card when a client id is detected', () => {
     const queryClient = new QueryClient();
     render(
       <MemoryRouter initialEntries={[ '/clients/acme-inc' ]}>
@@ -45,6 +45,6 @@ describe('ResizableRightSidebar', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByText('AI-Revi Assistent')).toBeInTheDocument();
+    expect(screen.getByText('AI-Revi')).toBeInTheDocument();
   });
 });
