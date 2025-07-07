@@ -38,6 +38,7 @@ For the audit action editing interface, see [docs/audit-action-editor-ui.md](doc
 For service architecture diagrams of the edge functions, see [docs/backend-endpoints-flow.md](docs/backend-endpoints-flow.md).
 For classification models used across modules, see [docs/classification.md](docs/classification.md).
 For ledger upload column mappings, see [docs/upload-column-mappings.md](docs/upload-column-mappings.md).
+For an overview of the Revio color palette, see [docs/color-palette.md](docs/color-palette.md).
 For running tests in CI see [docs/testing-ci.md](docs/testing-ci.md).
 For an overview of the database structure see [docs/database-overview.md](docs/database-overview.md).
 
