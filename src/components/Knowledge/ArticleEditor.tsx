@@ -29,6 +29,7 @@ import { toast } from "sonner";
 import RichTextEditor from "./RichTextEditor";
 import { useContentTypes, type ContentType } from "@/hooks/knowledge/useContentTypes";
 import { useSubjectAreas } from "@/hooks/knowledge/useSubjectAreas";
+import { DEFAULT_TAG_COLOR } from '@/styles/constants';
 import AIMetadataSuggestions from "./AIMetadataSuggestions";
 import TagSuggestions from "./TagSuggestions";
 
@@ -241,7 +242,7 @@ const ArticleEditor = () => {
             .insert({
               name: tagName.trim().toLowerCase().replace(/\s+/g, '_'),
               display_name: tagName.trim(),
-              color: '#3B82F6', // Default blue color
+              color: DEFAULT_TAG_COLOR, // Default blue color
               category: 'article',
               sort_order: 999,
               is_active: true

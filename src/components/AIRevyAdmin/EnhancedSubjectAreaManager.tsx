@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import createTaxonomyHooks from '@/hooks/knowledge/useTaxonomy';
 import { useSubjectAreas, type SubjectArea } from '@/hooks/knowledge/useSubjectAreas';
+import { COLOR_OPTIONS, STYLE_COLORS } from '@/styles/constants';
 
 const EnhancedSubjectAreaManager = () => {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -40,14 +41,7 @@ const EnhancedSubjectAreaManager = () => {
   const updateSubjectArea = useUpdateSubjectArea();
   const deleteSubjectArea = useDeleteSubjectArea();
 
-  const colorOptions = [
-    { value: '#10B981', label: 'Grønn', color: '#10B981' },
-    { value: '#3B82F6', label: 'Blå', color: '#3B82F6' },
-    { value: '#8B5CF6', label: 'Lilla', color: '#8B5CF6' },
-    { value: '#F59E0B', label: 'Gul', color: '#F59E0B' },
-    { value: '#EF4444', label: 'Rød', color: '#EF4444' },
-    { value: '#6B7280', label: 'Grå', color: '#6B7280' }
-  ];
+  const colorOptions = COLOR_OPTIONS;
 
   const iconOptions = [
     '💰', '📦', '👥', '🏦', '🏭', '📊', '🔍', '📋', '💼', '⚖️'
@@ -292,7 +286,7 @@ const SubjectAreaForm = ({ area, onSubmit, colorOptions, iconOptions }: {
     display_name: area?.display_name || '',
     description: area?.description || '',
     icon: area?.icon || '📋',
-    color: area?.color || '#10B981',
+    color: area?.color || STYLE_COLORS.GREEN,
     sort_order: area?.sort_order || 0,
     is_active: area?.is_active !== undefined ? area.is_active : true
   });

@@ -1,6 +1,7 @@
 import { logger } from '@/utils/logger';
 
 import { supabase } from '@/integrations/supabase/client';
+import { STYLE_COLORS } from '@/styles/constants';
 
 export const getOrCreateContentType = async () => {
   let { data: contentType, error: contentTypeError } = await supabase
@@ -16,7 +17,7 @@ export const getOrCreateContentType = async () => {
         name: 'fagartikkel',
         display_name: 'Fagartikkel',
         description: 'Standard fagartikkel',
-        color: '#3B82F6',
+        color: STYLE_COLORS.BLUE,
         sort_order: 1,
         is_active: true
       })
