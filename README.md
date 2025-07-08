@@ -140,8 +140,12 @@ above. Install dependencies with `npm install --legacy-peer-deps` and then run
 load variables from `.env.local`.
 
 ### CI Setup
-
 For automated environments, you can run `scripts/setup-ci.sh` to install dependencies and execute the test suite. This is useful for continuous integration pipelines.
+
+### Stylelint
+
+Run `npm run lint:css` to lint CSS files locally. Husky runs this command automatically before each commit. The linter fails if you use ID selectors or duplicate Tailwind utilities.
+
 
 ## Deno Edge Function Tests
 
