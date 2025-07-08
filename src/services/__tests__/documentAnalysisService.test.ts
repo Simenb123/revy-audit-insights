@@ -17,6 +17,7 @@ import { analyzeDocumentWithAI, updateDocumentWithAnalysis } from '../documentAn
 
 beforeEach(() => {
   vi.clearAllMocks()
+  process.env.VITE_USE_ENHANCED_ANALYSIS = 'false'
 })
 
 describe('document analysis pipeline', () => {

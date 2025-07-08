@@ -2,6 +2,12 @@ import { logger } from '@/utils/logger';
 import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 import { createTimeoutSignal } from '@/utils/networkHelpers';
 
+export const getDocumentAnalyzerFunctionName = (): string => {
+  return import.meta.env.VITE_USE_ENHANCED_ANALYSIS === 'true'
+    ? 'enhanced-document-ai'
+    : 'document-ai-analyzer';
+};
+
 export interface DocumentAnalysisInput {
   documentId: string;
   fileName: string;
@@ -48,13 +54,14 @@ export const analyzeDocumentWithAI = async (
     logger.error("Supabase is not configured. Document analysis cannot proceed.");
     throw new Error("Supabase not initialized");
   }
-  const useEnhanced = import.meta.env.VITE_USE_ENHANCED_ANALYSIS === 'true';
+  const functionName = getDocumentAnalyzerFunctionName();
+  const useEnhanced = functionName === 'enhanced-document-ai';
 
   try {
     if (useEnhanced) {
       const { signal, clear } = createTimeoutSignal(20000);
 
-    const { data, error } = await supabase.functions.invoke('enhanced-document-ai', {
+    const { data, error } = await supabase.functions.invoke(functionName, {
         body: {
           document_text: input.extractedText,
           file_name: input.fileName,
@@ -84,7 +91,7 @@ export const analyzeDocumentWithAI = async (
 
     const { signal, clear } = createTimeoutSignal(20000);
 
-    const { data, error } = await supabase.functions.invoke('document-ai-analyzer', {
+    const { data, error } = await supabase.functions.invoke(functionName, {
       body: {
         documentId: input.documentId,
         text: input.extractedText,
