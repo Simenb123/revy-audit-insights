@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
+import { STYLE_COLORS } from '@/styles/constants';
 import { Sparkles, Check, X, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -269,7 +270,7 @@ VIKTIG: Svar kun med gyldig JSON, ingen ekstra tekst eller formatering.`,
                           <div className="flex items-center gap-2">
                             <div 
                               className="w-3 h-3 rounded" 
-                              style={{ backgroundColor: type.color || '#3B82F6' }}
+                              style={{ backgroundColor: type.color || STYLE_COLORS.BLUE }}
                             />
                             {type.display_name}
                           </div>
@@ -365,7 +366,7 @@ VIKTIG: Svar kun med gyldig JSON, ingen ekstra tekst eller formatering.`,
                       >
                         <div 
                           className="w-3 h-3 rounded" 
-                          style={{ backgroundColor: area.color || '#10B981' }}
+                          style={{ backgroundColor: area.color || STYLE_COLORS.GREEN }}
                         />
                         {area.display_name}
                       </Label>

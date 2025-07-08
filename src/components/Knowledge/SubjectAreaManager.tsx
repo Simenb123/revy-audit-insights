@@ -14,6 +14,7 @@ import {
 } from '@/hooks/knowledge/useSubjectAreas';
 import { SubjectArea } from '@/types/classification';
 import { toast } from 'sonner';
+import { DEFAULT_SUBJECT_COLOR } from '@/styles/constants';
 
 interface SubjectAreaFormData {
   name: string;
@@ -37,7 +38,7 @@ const SubjectAreaManager = () => {
     display_name: '',
     description: '',
     icon: '',
-    color: '#10B981',
+    color: DEFAULT_SUBJECT_COLOR,
     parent_subject_area_id: ''
   });
 
@@ -47,7 +48,7 @@ const SubjectAreaManager = () => {
       display_name: '',
       description: '',
       icon: '',
-      color: '#10B981',
+      color: DEFAULT_SUBJECT_COLOR,
       parent_subject_area_id: ''
     });
   };

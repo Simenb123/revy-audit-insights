@@ -1,6 +1,7 @@
 import { logger } from '@/utils/logger';
 
 import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
+import { STYLE_COLORS } from '@/styles/constants';
 
 export const createTestArticles = async () => {
   if (!isSupabaseConfigured || !supabase) {
@@ -56,7 +57,7 @@ export const createTestArticles = async () => {
         display_name: 'Fagartikkel',
         description: 'Standard fagartikkel',
         icon: 'file-text',
-        color: '#3B82F6',
+        color: STYLE_COLORS.BLUE,
         sort_order: 1
       })
       .select('id')

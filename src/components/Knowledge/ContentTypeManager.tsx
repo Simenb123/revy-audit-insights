@@ -10,6 +10,7 @@ import { Plus, Edit, Trash2, Eye, EyeOff } from 'lucide-react';
 import createTaxonomyHooks from '@/hooks/knowledge/useTaxonomy';
 import { ContentType } from '@/hooks/knowledge/useContentTypes';
 import ConfirmDeleteDialog from './ConfirmDeleteDialog';
+import { STYLE_COLORS } from '@/styles/constants';
 
 const {
   useTaxonomies: useContentTypes,
@@ -152,7 +153,7 @@ const ContentTypeManager = () => {
                       id="color"
                       name="color"
                       type="color"
-                      defaultValue={editingType?.color || '#3B82F6'}
+                      defaultValue={editingType?.color || STYLE_COLORS.BLUE}
                     />
                   </div>
                   <div>

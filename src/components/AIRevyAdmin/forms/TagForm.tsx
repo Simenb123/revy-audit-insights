@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { type Tag } from '@/hooks/knowledge/useTags';
+import { COLOR_OPTIONS } from '@/styles/constants';
 
 interface TagFormProps {
   defaultValues?: Partial<Tag>;
@@ -29,15 +30,7 @@ const TagForm = ({ defaultValues, onSubmit }: TagFormProps) => {
     onSubmit(formData);
   };
 
-  const colorOptions = [
-    { value: '#3B82F6', label: 'Blå' },
-    { value: '#EF4444', label: 'Rød' },
-    { value: '#10B981', label: 'Grønn' },
-    { value: '#F59E0B', label: 'Gul' },
-    { value: '#8B5CF6', label: 'Lilla' },
-    { value: '#EC4899', label: 'Rosa' },
-    { value: '#6B7280', label: 'Grå' }
-  ];
+  const colorOptions = COLOR_OPTIONS;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">

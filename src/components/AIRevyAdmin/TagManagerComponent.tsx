@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import createTaxonomyHooks from '@/hooks/knowledge/useTaxonomy';
 import { type Tag as TagType } from '@/hooks/knowledge/useTags';
+import { COLOR_OPTIONS } from '@/styles/constants';
 
 const {
   useTaxonomies: useTags,
@@ -243,15 +244,7 @@ const TagForm = ({ tag, onSubmit }: { tag?: TagType | null; onSubmit: (data: any
     onSubmit(formData);
   };
 
-  const colorOptions = [
-    { value: '#3B82F6', label: 'Blå' },
-    { value: '#EF4444', label: 'Rød' },
-    { value: '#10B981', label: 'Grønn' },
-    { value: '#F59E0B', label: 'Gul' },
-    { value: '#8B5CF6', label: 'Lilla' },
-    { value: '#EC4899', label: 'Rosa' },
-    { value: '#6B7280', label: 'Grå' }
-  ];
+  const colorOptions = COLOR_OPTIONS;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">

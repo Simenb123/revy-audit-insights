@@ -1,4 +1,5 @@
 import { logger } from '@/utils/logger';
+import { DEFAULT_TAG_COLOR } from '@/styles/constants';
 
 import React, { useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
@@ -65,7 +66,7 @@ const TagSuggestions = ({
       await createTagMutation.mutateAsync({
         name: newTagName.trim().toLowerCase().replace(/\s+/g, '_'),
         display_name: newTagName.trim(),
-        color: '#3B82F6', // Default blue color
+        color: DEFAULT_TAG_COLOR, // Default blue color
         category: 'custom',
         sort_order: 999,
         is_active: true
