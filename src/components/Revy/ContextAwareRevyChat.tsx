@@ -50,7 +50,7 @@ const ContextAwareRevyChat: React.FC<ContextAwareRevyChatProps> = ({
 
     // Initial greeting with context
     const contextSummary = buildContextSummary();
-    const greeting = `Hei! Jeg er AI-Revi, din intelligente revisjonsassistent. 
+    const greeting = `Hei! Jeg er AI-Revy, din intelligente revisjonsassistent.
 
 Jeg har oversikt over ${client.company_name || client.name} og kan hjelpe deg med:
 
@@ -182,7 +182,7 @@ Trenger du mer spesifikk hjelp med noen av disse områdene?`;
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-lg">
             <Brain className="h-5 w-5 text-purple-600" />
-            AI-Revi Kontekst-Chat
+            AI-Revy Kontekst-Chat
           </CardTitle>
           {onClose && (
             <Button
@@ -249,7 +249,7 @@ Trenger du mer spesifikk hjelp med noen av disse områdene?`;
                 <div className="animate-spin">
                   <Lightbulb className="h-4 w-4" />
                 </div>
-                <span>AI-Revi tenker...</span>
+                <span>AI-Revy tenker...</span>
               </div>
             </div>
           )}
@@ -261,7 +261,7 @@ Trenger du mer spesifikk hjelp med noen av disse områdene?`;
             setMessage={setMessage}
             handleSendMessage={handleSendMessage}
             isTyping={isLoading}
-            placeholder="Spør AI-Revi om noe relatert til denne klienten..."
+            placeholder="Spør AI-Revy om noe relatert til denne klienten..."
           />
         </div>
       </CardContent>

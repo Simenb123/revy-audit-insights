@@ -20,7 +20,7 @@ export async function buildIntelligentSystemPromptWithVariant(
   });
 
   // Start with base system prompt
-  let systemPrompt = `Du er AI-Revi, en AI-drevet revisjonsassistent som hjelper revisorer med faglige spørsmål, dokumentanalyse og revisjonsarbeid.
+  let systemPrompt = `Du er AI-Revy, en AI-drevet revisjonsassistent som hjelper revisorer med faglige spørsmål, dokumentanalyse og revisjonsarbeid.
 
 GRUNNLEGGENDE INSTRUKSJONER:
 - Svar alltid på norsk (bokmål)

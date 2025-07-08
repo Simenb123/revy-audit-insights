@@ -5,7 +5,7 @@ import { RevyContext } from '@/types/revio';
 import EmbeddedRevyAssistant from './Assistant/EmbeddedRevyAssistant';
 import StandaloneRevyAssistant from './Assistant/StandaloneRevyAssistant';
 import { useRevyMessageHandling } from './Assistant/useRevyMessageHandling';
-import { useAIReviVariants } from '@/hooks/useAIReviVariants';
+import { useAIRevyVariants } from '@/hooks/useAIRevyVariants';
 
 interface SmartReviAssistantProps {
   embedded?: boolean;
@@ -26,8 +26,8 @@ const SmartReviAssistant = ({
 }: SmartReviAssistantProps) => {
   const currentContext = context;
 
-  // Use AI-Revi variants hook to get available variants and selection
-  const { variants, selectedVariant: autoSelectedVariant, switchVariant } = useAIReviVariants(currentContext);
+  // Use AI-Revy variants hook to get available variants and selection
+  const { variants, selectedVariant: autoSelectedVariant, switchVariant } = useAIRevyVariants(currentContext);
   
   // Use provided selectedVariant or fallback to auto-selected
   const activeVariant = selectedVariant || autoSelectedVariant;
@@ -49,7 +49,7 @@ const SmartReviAssistant = ({
   // Add context change effect to show visual feedback
   useEffect(() => {
     if (embedded && onContextChange) {
-      logger.log(`🔄 AI-Revi context changed to: ${currentContext}${activeVariant ? ` with variant: ${activeVariant.name}` : ''}`);
+      logger.log(`🔄 AI-Revy context changed to: ${currentContext}${activeVariant ? ` with variant: ${activeVariant.name}` : ''}`);
     }
   }, [currentContext, activeVariant, embedded, onContextChange]);
 

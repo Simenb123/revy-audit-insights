@@ -22,7 +22,7 @@ const OptimizedRevyInput: React.FC<OptimizedRevyInputProps> = ({
   handleSendMessage,
   isTyping,
   isEmbedded = false,
-  placeholder = "Spør AI-Revi...",
+  placeholder = "Spør AI-Revy...",
   suggestions = [],
   onSuggestionClick
 }) => {

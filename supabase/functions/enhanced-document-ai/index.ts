@@ -1,7 +1,7 @@
 
 import { log } from "../_shared/log.ts"
 import { callOpenAI } from "../_shared/openai.ts"
-import type { AIReviVariantName } from "../../../src/constants/aiReviVariants.ts"
+import type { AIRevyVariantName } from "../../../src/constants/aiRevyVariants.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -56,12 +56,12 @@ Gi meg følgende informasjon som JSON:
 }`;
 
     // Enhance prompt based on variant
-    if ((variant_config as { name: AIReviVariantName } | undefined)?.name === 'methodology') {
+    if ((variant_config as { name: AIRevyVariantName } | undefined)?.name === 'methodology') {
       analysisPrompt += `\n\nSPESIELL FOKUS (Metodikk-ekspert):
 - Identifiser relevante ISA-standarder
 - Vurder metodiske tilnærminger
 - Foreslå revisjonshandlinger basert på innholdet`;
-    } else if ((variant_config as { name: AIReviVariantName } | undefined)?.name === 'guide') {
+    } else if ((variant_config as { name: AIRevyVariantName } | undefined)?.name === 'guide') {
       analysisPrompt += `\n\nSPESIELL FOKUS (Klient-veileder):
 - Hvordan påvirker dette den spesifikke klientens revisjon?
 - Konkrete handlinger revisoren bør ta

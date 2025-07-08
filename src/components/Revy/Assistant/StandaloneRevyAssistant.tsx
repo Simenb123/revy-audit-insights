@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Send, Loader2 } from 'lucide-react';
 import KnowledgeStatusIndicator from '../KnowledgeStatusIndicator';
 import RevyAvatar from '../RevyAvatar';
-import AIReviVariantSelector from '@/components/AI/AIReviVariantSelector';
+import AIRevyVariantSelector from '@/components/AI/AIRevyVariantSelector';
 import { RevyMessageList } from './RevyMessageList';
 import { RevyMessage } from '@/types/revio';
 
@@ -44,7 +44,7 @@ const StandaloneRevyAssistant = ({
         <div className="flex items-center gap-3">
           <RevyAvatar />
           <div>
-            <CardTitle className="text-lg font-semibold">AI-Revi</CardTitle>
+            <CardTitle className="text-lg font-semibold">AI-Revy</CardTitle>
             <p className="text-sm text-muted-foreground">
               {contextDisplayName} - {selectedVariant?.description || 'Din smarte revisjonsassistent'}
             </p>
@@ -52,7 +52,7 @@ const StandaloneRevyAssistant = ({
         </div>
         
         {/* AI Variant Selector - Full version for standalone */}
-        <AIReviVariantSelector
+        <AIRevyVariantSelector
           currentContext="general"
           onVariantChange={handleVariantChange}
           compact={false}
@@ -71,7 +71,7 @@ const StandaloneRevyAssistant = ({
           <div className="flex items-center space-x-2">
             <Input
               type="text"
-              placeholder={`Spør ${selectedVariant?.display_name || 'AI-Revi'} om ${contextDisplayName.toLowerCase()}...`}
+              placeholder={`Spør ${selectedVariant?.display_name || 'AI-Revy'} om ${contextDisplayName.toLowerCase()}...`}
               value={input}
               onChange={onInputChange}
               onKeyDown={onKeyDown}

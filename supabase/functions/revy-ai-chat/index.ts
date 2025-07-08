@@ -26,7 +26,7 @@ import { validateAIResponse } from './lib/response-validator.ts'
 import { getVariantContextualTips } from './lib/variant-handler.ts'
 
 export const handler = async (req: Request): Promise<Response> => {
-  log('🤖 AI-Revi Chat function started with enhanced document reading support');
+  log('🤖 AI-Revy Chat function started with enhanced document reading support');
   
   if (isOptions(req)) {
     return handleCors();

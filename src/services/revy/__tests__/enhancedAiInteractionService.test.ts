@@ -47,7 +47,7 @@ describe('generateEnhancedAIResponseWithVariant', () => {
     invokeMock.mockResolvedValueOnce({ data: { articles: [] }, error: null });
     invokeMock.mockResolvedValueOnce({ data: null, error: { message: 'fail' } });
     const res = await generateEnhancedAIResponseWithVariant('m2', 'general', []);
-    expect(res).toContain('AI-Revi');
+    expect(res).toContain('AI-Revy');
   });
 
   it('falls back when response missing', async () => {

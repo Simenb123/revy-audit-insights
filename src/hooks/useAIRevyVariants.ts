@@ -2,11 +2,11 @@ import { logger } from '@/utils/logger';
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import type { AIReviVariantName } from '@/constants/aiReviVariants';
+import type { AIRevyVariantName } from '@/constants/aiRevyVariants';
 
-export interface AIReviVariant {
+export interface AIRevyVariant {
   id: string;
-  name: AIReviVariantName;
+  name: AIRevyVariantName;
   display_name: string;
   description: string;
   system_prompt_template: string;
@@ -16,10 +16,10 @@ export interface AIReviVariant {
   sort_order: number;
 }
 
-export const useAIReviVariants = (context?: string) => {
-  const [variants, setVariants] = useState<AIReviVariant[]>([]);
+export const useAIRevyVariants = (context?: string) => {
+  const [variants, setVariants] = useState<AIRevyVariant[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedVariant, setSelectedVariant] = useState<AIReviVariant | null>(null);
+  const [selectedVariant, setSelectedVariant] = useState<AIRevyVariant | null>(null);
 
   useEffect(() => {
     loadVariants();
@@ -55,17 +55,17 @@ export const useAIReviVariants = (context?: string) => {
         setSelectedVariant(defaultVariant);
       }
     } catch (error) {
-      logger.error('Error loading AI-Revi variants:', error);
+      logger.error('Error loading AI-Revy variants:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const selectDefaultVariant = (availableVariants: AIReviVariant[], currentContext?: string): AIReviVariant => {
+  const selectDefaultVariant = (availableVariants: AIRevyVariant[], currentContext?: string): AIRevyVariant => {
     if (!currentContext) return availableVariants[0];
 
     // Context-based variant selection
-    const contextMapping: Record<string, AIReviVariantName> = {
+    const contextMapping: Record<string, AIRevyVariantName> = {
       'audit-actions': 'methodology',
       'planning': 'methodology',
       'execution': 'methodology',
@@ -83,11 +83,11 @@ export const useAIReviVariants = (context?: string) => {
     return preferred || availableVariants[0];
   };
 
-  const switchVariant = (variant: AIReviVariant) => {
+  const switchVariant = (variant: AIRevyVariant) => {
     setSelectedVariant(variant);
   };
 
-  const handleVariantChange = (variant: AIReviVariant) => {
+  const handleVariantChange = (variant: AIRevyVariant) => {
     switchVariant(variant);
   };
 

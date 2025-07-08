@@ -5,7 +5,7 @@ AI Revy is an intelligent audit assistant built for Norwegian audit firms, provi
 
 ## Features
 
-- **AI-Powered Audit Assistant**: Chat with AI-Revi for audit guidance and support
+- **AI-Powered Audit Assistant**: Chat with AI-Revy for audit guidance and support
 - **Document Management**: Upload, categorize, and analyze audit documents
 - **Knowledge Base**: Comprehensive audit standards and procedure library
 - **Client Management**: Organize and track audit clients and engagements
@@ -171,9 +171,9 @@ Most edge functions now rely on the caller's JWT instead of the powerful service
 
 ## Kilder og sporbarhet
 
-AI-Revi henter automatisk relevante kilder fra kunnskapsartikler og opplastede dokumenter. Etter hvert svar fra assistenten vises disse som klikkbare lenker under overskriften "Kilder og referanser", slik at du enkelt kan åpne kildene og verifisere innholdet.
+AI-Revy henter automatisk relevante kilder fra kunnskapsartikler og opplastede dokumenter. Etter hvert svar fra assistenten vises disse som klikkbare lenker under overskriften "Kilder og referanser", slik at du enkelt kan åpne kildene og verifisere innholdet.
 
-Når AI-Revi finner relevante artikler legger den til en skjult HTML-kommentar i svaret med metadata: `<!-- KNOWLEDGE_ARTICLES: [...] -->`. Frontend-komponenten leser kommentaren og viser de nevnte artiklene som lenker under svaret.
+Når AI-Revy finner relevante artikler legger den til en skjult HTML-kommentar i svaret med metadata: `<!-- KNOWLEDGE_ARTICLES: [...] -->`. Frontend-komponenten leser kommentaren og viser de nevnte artiklene som lenker under svaret.
 
 **Eksempel**:
 
@@ -184,13 +184,13 @@ Når AI-Revi finner relevante artikler legger den til en skjult HTML-kommentar i
 Eksempel på respons fra assistenten:
 
 ```html
-Svar fra AI-Revi...
+Svar fra AI-Revy...
 
 <!-- KNOWLEDGE_ARTICLES: [{"slug":"isa-315","title":"ISA 315"}] -->
 ```
 
 ```
-AI-Revi: Husk å dokumentere risikovurderingen i henhold til ISA 315.
+AI-Revy: Husk å dokumentere risikovurderingen i henhold til ISA 315.
 
 Kilder og referanser:
 [ISA 315] [Revisorloven] [balanse_2023.pdf]

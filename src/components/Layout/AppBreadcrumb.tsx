@@ -92,7 +92,7 @@ function getSegmentName(segment: string, allSegments: string[], index: number): 
     'audit-logs': 'Revisjonslogger',
     'ai-usage': 'AI-bruk',
     'fag': 'Fagstoff',
-    'ai-revy-admin': 'AI-Revi Admin',
+    'ai-revy-admin': 'AI-Revy Admin',
     'regnskap': 'Regnskap',
     'analyser': 'Analyser',
     'regnskapsdata': 'Regnskapsdata',

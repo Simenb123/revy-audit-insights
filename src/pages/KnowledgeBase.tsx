@@ -11,7 +11,7 @@ import SearchResults from '@/components/Knowledge/SearchResults';
 import PDFUploadManager from '@/components/Knowledge/PDFUploadManager';
 import KnowledgeAdminPanel from '@/components/Knowledge/KnowledgeAdminPanel';
 import SecretTrainingArea from '@/components/Knowledge/SecretTrainingArea';
-import AuditActionGenerator from '@/components/AIReviAdmin/AuditActionGenerator';
+import AuditActionGenerator from '@/components/AIRevyAdmin/AuditActionGenerator';
 
 const KnowledgeBase = () => {
   const showAdvanced = import.meta.env.VITE_KNOWLEDGE_ADMIN_ADVANCED === 'true';

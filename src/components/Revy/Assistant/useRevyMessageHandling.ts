@@ -61,7 +61,7 @@ export const useRevyMessageHandling = ({
     
     switch (ctx) {
       case 'client-detail':
-        return `Hei! Jeg er AI-Revi, din smarte revisjonsassistent. Jeg kan hjelpe deg med analyse av ${clientName}.
+        return `Hei! Jeg er AI-Revy, din smarte revisjonsassistent. Jeg kan hjelpe deg med analyse av ${clientName}.
 
 📊 **KLIENTOVERSIKT:**
 - ${docCount} dokumenter tilgjengelig
@@ -73,7 +73,7 @@ Jeg kan hjelpe deg med klientanalyse, dokumentgjennomgang, risikovurdering og re
 🏷️ **EMNER:** Klientanalyse, Dokumenter, Risikovurdering, Revisjonsplanlegging`;
         
       case 'documentation':
-        return `Hei! Jeg er AI-Revi, din dokumentanalyse-ekspart for ${clientName}.
+        return `Hei! Jeg er AI-Revy, din dokumentanalyse-ekspert for ${clientName}.
 
 📁 **DOKUMENTSTATUS:**
 - ${docCount} dokumenter i systemet
@@ -84,7 +84,7 @@ Jeg kan hjelpe deg med å analysere, kategorisere og kvalitetssikre dokumenter. 
 🏷️ **EMNER:** Dokumentanalyse, Kategorisering, Kvalitetssikring, Dokumenttyper`;
         
       case 'audit-actions':
-        return `Hei! Jeg er AI-Revi, din revisjonshandlings-assistent for ${clientName}.
+        return `Hei! Jeg er AI-Revy, din revisjonshandlings-assistent for ${clientName}.
 
 📋 **REVISJONSKONTEXT:**
 - Klient: ${clientName}
@@ -95,7 +95,7 @@ Jeg kan hjelpe deg med planlegging og gjennomføring av revisjonshandlinger, ISA
 🏷️ **EMNER:** Revisjonshandlinger, ISA-standarder, Planlegging, Kvalitetssikring`;
         
       default:
-        return `Hei! Jeg er AI-Revi, din smarte revisjonsassistent. Jeg kan hjelpe deg med revisjon, regnskapsføring, dokumentanalyse og mye mer. Hvordan kan jeg hjelpe deg i dag?
+        return `Hei! Jeg er AI-Revy, din smarte revisjonsassistent. Jeg kan hjelpe deg med revisjon, regnskapsføring, dokumentanalyse og mye mer. Hvordan kan jeg hjelpe deg i dag?
 
 🏷️ **EMNER:** Revisjon, Regnskapsføring, Dokumenter, Rådgivning`;
     }

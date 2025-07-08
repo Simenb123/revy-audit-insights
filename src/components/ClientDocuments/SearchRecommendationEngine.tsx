@@ -193,7 +193,7 @@ const SearchRecommendationEngine: React.FC<SearchRecommendationEngineProps> = ({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Lightbulb className="h-5 w-5 text-yellow-600" />
-          AI-Revi anbefalinger
+          AI-Revy anbefalinger
         </CardTitle>
         <p className="text-sm text-muted-foreground">
           Intelligente søkeforslag basert på dine dokumenter
@@ -240,7 +240,7 @@ const SearchRecommendationEngine: React.FC<SearchRecommendationEngineProps> = ({
         <div className="mt-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
           <div className="flex items-center gap-2 mb-1">
             <Brain className="h-4 w-4 text-purple-600" />
-            <span className="font-medium text-sm text-purple-900">AI-Revi tips</span>
+            <span className="font-medium text-sm text-purple-900">AI-Revy tips</span>
           </div>
           <p className="text-xs text-purple-700">
             Disse anbefalingene er generert basert på dine dokumenters kvalitet, kategorier og opplastningsdatoer. 

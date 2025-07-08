@@ -17,7 +17,7 @@ const TestDataCreator = () => {
           Opprett testdata for kunnskapsbase
         </CardTitle>
         <CardDescription>
-          Legg til eksempel fagartikler og generer embeddings for AI-Revi
+          Legg til eksempel fagartikler og generer embeddings for AI-Revy
         </CardDescription>
       </CardHeader>
       <CardContent>

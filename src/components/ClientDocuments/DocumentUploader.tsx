@@ -213,7 +213,7 @@ const DocumentUploader = ({ clientId, categories, enableAIProgress = false }: Do
                 <SelectValue placeholder="Velg kategori" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="ai-suggest">AI-Revi vil foreslå kategori</SelectItem>
+                <SelectItem value="ai-suggest">AI-Revy vil foreslå kategori</SelectItem>
                 {filteredCategories.map(category => (
                   <SelectItem key={category.id} value={category.category_name}>
                     {category.category_name}

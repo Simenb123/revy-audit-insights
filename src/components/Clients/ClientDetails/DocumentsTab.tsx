@@ -46,7 +46,7 @@ const DocumentsTab = ({ client }: DocumentsTabProps) => {
         <div className="text-blue-700 text-sm space-y-1">
           <p>• Last opp dokumenter og AI vil automatisk lese og analysere innholdet</p>
           <p>• OpenAI Vision API gjør det mulig å lese både tekst og skannet innhold</p>
-          <p>• Spør AI-Revi om dine dokumenter for å få intelligente svar</p>
+          <p>• Spør AI-Revy om dine dokumenter for å få intelligente svar</p>
           <p>• Dokumenter kategoriseres automatisk etter revisjonsområder</p>
         </div>
       </div>

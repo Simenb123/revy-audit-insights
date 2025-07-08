@@ -30,7 +30,7 @@ import PDFDocuments from "./pages/PDFDocuments";
 import AuditLogs from "./pages/AuditLogs";
 import AIUsage from "./pages/AIUsage";
 import KnowledgeBase from "./pages/KnowledgeBase";
-import AIReviAdmin from "./pages/AIReviAdmin";
+import AIRevyAdmin from "./pages/AIRevyAdmin";
 import StandardAccountsAdmin from "./pages/StandardAccountsAdmin";
 import RoleAccessAdmin from "./pages/RoleAccessAdmin";
 import NotFound from "./pages/NotFound";
@@ -80,7 +80,7 @@ function App() {
                   <Route path="ai-usage" element={<AIUsage />} />
                   <Route path="standard-accounts" element={<StandardAccountsAdmin />} />
                   <Route path="fag/*" element={<KnowledgeBase />} />
-                  <Route path="ai-revi-admin" element={<AIReviAdmin />} />
+                  <Route path="ai-revy-admin" element={<AIRevyAdmin />} />
                 </Route>
                 <Route path="*" element={<NotFound />} />
               </Routes>
