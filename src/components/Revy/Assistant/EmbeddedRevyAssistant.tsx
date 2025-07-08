@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -29,6 +29,11 @@ const EmbeddedRevyAssistant: React.FC<EmbeddedRevyAssistantProps> = ({
   onKeyDown,
   onSendMessage
 }) => {
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView?.({ behavior: 'smooth' });
+  }, [messages]);
   return (
     <div className="flex flex-col h-full max-h-96">
       {/* Context indicator */}
@@ -61,6 +66,7 @@ const EmbeddedRevyAssistant: React.FC<EmbeddedRevyAssistantProps> = ({
               AI-Revi tenker...
             </div>
           )}
+          <div ref={messagesEndRef} />
         </div>
       </ScrollArea>
 
