@@ -16,16 +16,16 @@ const DepartmentView = () => {
 
   if (!userProfile || !userDepartment) {
     return (
-      <div className="p-6">
+      <main className="p-6">
         <div className="text-center">
           <p className="text-muted-foreground">Du er ikke tilknyttet en avdeling</p>
         </div>
-      </div>
+      </main>
     );
   }
 
   return (
-    <div className="space-y-6 p-6">
+    <main className="space-y-6 p-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">{userDepartment.name}</h1>
@@ -115,7 +115,7 @@ const DepartmentView = () => {
           </CardContent>
         </Card>
       )}
-    </div>
+    </main>
   );
 };
 

@@ -128,7 +128,7 @@ const Auth = () => {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-background p-4">
+    <main className="flex items-center justify-center min-h-screen bg-background p-4">
       {/* Error dialog for invalid/expired email link */}
       <Dialog open={showErrorDialog} onOpenChange={setShowErrorDialog}>
         <DialogContent>
@@ -272,7 +272,7 @@ const Auth = () => {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </main>
   );
 };
 

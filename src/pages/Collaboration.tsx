@@ -76,9 +76,9 @@ const Collaboration = () => {
 
   if (activeView === 'workspace' && selectedWorkspace) {
     return (
-      <div className="w-full px-4 py-6 md:px-6 lg:px-8">
-        <Button 
-          variant="outline" 
+      <main className="w-full px-4 py-6 md:px-6 lg:px-8">
+        <Button
+          variant="outline"
           onClick={handleBackToOverview}
           className="mb-6 gap-2"
         >
@@ -92,15 +92,15 @@ const Collaboration = () => {
           members={selectedWorkspace.members}
           isOwner={selectedWorkspace.isOwner}
         />
-      </div>
+      </main>
     );
   }
 
   if (activeView === 'video') {
     return (
-      <div className="w-full px-4 py-6 md:px-6 lg:px-8">
-        <Button 
-          variant="outline" 
+      <main className="w-full px-4 py-6 md:px-6 lg:px-8">
+        <Button
+          variant="outline"
           onClick={handleBackToOverview}
           className="mb-6 gap-2"
         >
@@ -113,15 +113,15 @@ const Collaboration = () => {
           isHost={true}
           participants={['Sarah Berg', 'Erik Nordahl']}
         />
-      </div>
+      </main>
     );
   }
 
   if (activeView === 'chat') {
     return (
-      <div className="w-full px-4 py-6 md:px-6 lg:px-8">
-        <Button 
-          variant="outline" 
+      <main className="w-full px-4 py-6 md:px-6 lg:px-8">
+        <Button
+          variant="outline"
           onClick={handleBackToOverview}
           className="mb-6 gap-2"
         >
@@ -136,12 +136,12 @@ const Collaboration = () => {
             participants={['Sarah Berg', 'Erik Nordahl', 'Lisa Hansen']}
           />
         </Card>
-      </div>
+      </main>
     );
   }
 
   return (
-    <div className="w-full px-4 py-6 md:px-6 lg:px-8">
+    <main className="w-full px-4 py-6 md:px-6 lg:px-8">
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-3xl font-bold">Samarbeid</h1>
@@ -377,7 +377,7 @@ const Collaboration = () => {
           </Card>
         </TabsContent>
       </Tabs>
-    </div>
+    </main>
   );
 };
 
