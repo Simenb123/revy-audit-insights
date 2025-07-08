@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Trash2 } from 'lucide-react';
@@ -29,6 +29,11 @@ export const RevyMessageList: React.FC<RevyMessageListProps> = ({
   compact = false,
   isTyping = false
 }) => {
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView?.({ behavior: 'smooth' });
+  }, [messages]);
   if (messages.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full p-4 text-center">
@@ -76,6 +81,7 @@ export const RevyMessageList: React.FC<RevyMessageListProps> = ({
           {isTyping && (
             <div className="p-2 text-sm text-muted-foreground">Skriver…</div>
           )}
+          <div ref={messagesEndRef} />
         </div>
       </ScrollArea>
     </div>
