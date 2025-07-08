@@ -10,7 +10,7 @@ import { ClientAuditAction } from '@/types/audit-actions';
 import { useCreateDocumentVersion } from '@/hooks/useCreateDocumentVersion';
 import { useCreateAuditLog } from '@/hooks/useCreateAuditLog';
 import AIPreviewDialog from '@/components/AuditActions/AIPreviewDialog';
-import { useAIRevyVariants } from '@/hooks/useAIRevyVariants';
+import { useAIReviVariants } from '@/hooks/useAIReviVariants';
 
 type Props = {
   editor: Editor;
@@ -26,7 +26,7 @@ const ReviAIGroup = ({ editor, client, action }: Props) => {
 
   const createVersion = useCreateDocumentVersion();
   const createAuditLog = useCreateAuditLog();
-  const { selectedVariant } = useAIRevyVariants('audit-actions');
+  const { selectedVariant } = useAIReviVariants('audit-actions');
 
   const handleReviHelp = async () => {
     if (!editor || !action || !client) {

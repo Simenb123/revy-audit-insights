@@ -8,12 +8,12 @@ import {
   DocumentAnalysisInput,
   DocumentAnalysisResult
 } from '@/services/documentAnalysisService';
-import { useAIRevyVariants } from './useAIRevyVariants';
+import { useAIReviVariants } from './useAIReviVariants';
 
 export const useEnhancedDocumentAnalysis = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResults, setAnalysisResults] = useState<DocumentAnalysisResult[]>([]);
-  const { selectedVariant } = useAIRevyVariants('documentation');
+  const { selectedVariant } = useAIReviVariants('documentation');
   const { toast } = useToast();
 
   const analyzeDocument = async (input: Omit<DocumentAnalysisInput, 'variant'>) => {

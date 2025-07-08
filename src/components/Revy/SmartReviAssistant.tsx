@@ -5,7 +5,7 @@ import { RevyContext } from '@/types/revio';
 import EmbeddedRevyAssistant from './Assistant/EmbeddedRevyAssistant';
 import StandaloneRevyAssistant from './Assistant/StandaloneRevyAssistant';
 import { useRevyMessageHandling } from './Assistant/useRevyMessageHandling';
-import { useAIRevyVariants } from '@/hooks/useAIRevyVariants';
+import { useAIReviVariants } from '@/hooks/useAIReviVariants';
 
 interface SmartReviAssistantProps {
   embedded?: boolean;
@@ -27,7 +27,7 @@ const SmartReviAssistant = ({
   const currentContext = context;
 
   // Use AI-Revi variants hook to get available variants and selection
-  const { variants, selectedVariant: autoSelectedVariant, switchVariant } = useAIRevyVariants(currentContext);
+  const { variants, selectedVariant: autoSelectedVariant, switchVariant } = useAIReviVariants(currentContext);
   
   // Use provided selectedVariant or fallback to auto-selected
   const activeVariant = selectedVariant || autoSelectedVariant;

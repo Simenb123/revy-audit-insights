@@ -1,13 +1,13 @@
 export const AI_REVY_VARIANT_NAMES = ['methodology', 'professional', 'guide', 'support'] as const;
-export type AIRevyVariantName = typeof AI_REVY_VARIANT_NAMES[number];
+export type AIReviVariantName = typeof AI_REVY_VARIANT_NAMES[number];
 
-export interface AIRevyVariantInfo {
-  name: AIRevyVariantName;
+export interface AIReviVariantInfo {
+  name: AIReviVariantName;
   displayName: string;
   description: string;
 }
 
-export const aiRevyVariants: Record<AIRevyVariantName, AIRevyVariantInfo> = {
+export const aiReviVariants: Record<AIReviVariantName, AIReviVariantInfo> = {
   methodology: {
     name: 'methodology',
     displayName: 'AI-Revi Metodikk',
