@@ -40,9 +40,9 @@ const AppLayout = () => {
 
         <div className="layout-container">
           <ResizableLeftSidebar />
-          <div className="main-content flex flex-col overflow-auto">
+          <main className="main-content flex flex-col overflow-auto">
             <Outlet />
-          </div>
+          </main>
           <ResizableRightSidebar />
         </div>
       </div>

@@ -18,7 +18,7 @@ const SidebarHeader: React.FC<SidebarHeaderProps> = ({
 }) => {
   if (isCollapsed) {
     return (
-      <div className="w-16 border-l bg-background flex flex-col items-center py-4">
+      <header className="w-16 border-l bg-background flex flex-col items-center py-4">
         <Button
           variant="ghost"
           size="sm"
@@ -27,12 +27,12 @@ const SidebarHeader: React.FC<SidebarHeaderProps> = ({
         >
           <ChevronLeft className="h-4 w-4" />
         </Button>
-      </div>
+      </header>
     );
   }
 
   return (
-    <div className="flex justify-between items-center mb-4">
+    <header className="flex justify-between items-center mb-4">
       <h3 className="font-semibold">{title}</h3>
       <div className="flex gap-2">
         {onClose && (
@@ -46,7 +46,7 @@ const SidebarHeader: React.FC<SidebarHeaderProps> = ({
           </Button>
         )}
       </div>
-    </div>
+    </header>
   );
 };
 

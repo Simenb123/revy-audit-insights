@@ -52,7 +52,7 @@ const OrganizationSettings = () => {
 
   if (profileLoading) {
     return (
-      <div className="w-full px-4 py-6 md:px-6 lg:px-8">
+      <main className="w-full px-4 py-6 md:px-6 lg:px-8">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-3xl font-bold">Organisasjonsinnstillinger</h1>
@@ -75,13 +75,13 @@ const OrganizationSettings = () => {
             </div>
           </CardContent>
         </Card>
-      </div>
+      </main>
     );
   }
 
   if (!canAccessSettings) {
     return (
-      <div className="w-full px-4 py-6 md:px-6 lg:px-8">
+      <main className="w-full px-4 py-6 md:px-6 lg:px-8">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-3xl font-bold">Organisasjonsinnstillinger</h1>
@@ -110,12 +110,12 @@ const OrganizationSettings = () => {
             </div>
           </CardContent>
         </Card>
-      </div>
+      </main>
     );
   }
 
   return (
-    <div className="w-full px-4 py-6 md:px-6 lg:px-8">
+    <main className="w-full px-4 py-6 md:px-6 lg:px-8">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold">Organisasjonsinnstillinger</h1>
@@ -299,7 +299,7 @@ const OrganizationSettings = () => {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </main>
   );
 };
 

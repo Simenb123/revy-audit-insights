@@ -135,7 +135,7 @@ const ResizableRightSidebar = () => {
   }
 
   return (
-    <div className="flex-1 h-full overflow-y-auto">
+    <aside className="flex-1 h-full overflow-y-auto">
       {!isCollapsed && (
         <ResizableHandle onMouseDown={handleMouseDown} />
       )}
@@ -159,7 +159,7 @@ const ResizableRightSidebar = () => {
           <ScrollArea className="flex-1">{renderContent()}</ScrollArea>
         )}
       </motion.div>
-    </div>
+    </aside>
   );
 };
 

@@ -4,7 +4,7 @@ import RoleDashboard from '@/components/Dashboard/RoleDashboard';
 
 const Index = () => {
   return (
-    <div className="h-full w-full">
+    <main className="h-full w-full">
       <div className="p-6 max-w-none">
         <div className="mb-6">
           <h1 className="text-3xl font-bold">Dashboard</h1>
@@ -17,7 +17,7 @@ const Index = () => {
           <RoleDashboard />
         </div>
       </div>
-    </div>
+    </main>
   );
 };
 

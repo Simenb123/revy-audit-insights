@@ -124,19 +124,19 @@ const UserProfile = () => {
 
   if (isLoading) {
     return (
-      <div className="w-full px-4 py-6 md:px-6 lg:px-8">
+      <main className="w-full px-4 py-6 md:px-6 lg:px-8">
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
             <p className="mt-2 text-muted-foreground">Laster profil...</p>
           </div>
         </div>
-      </div>
+      </main>
     );
   }
 
   return (
-    <div className="w-full px-4 py-6 md:px-6 lg:px-8">
+    <main className="w-full px-4 py-6 md:px-6 lg:px-8">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold">Min profil</h1>
@@ -301,7 +301,7 @@ const UserProfile = () => {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </main>
   );
 };
 
