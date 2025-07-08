@@ -1,9 +1,9 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { AIRevyVariant } from '@/hooks/useAIRevyVariants';
+import { AIReviVariant } from '@/hooks/useAIReviVariants';
 
 export interface EnhancedAIContext {
-  variant: AIRevyVariant;
+  variant: AIReviVariant;
   documentContext?: {
     categories: string[];
     subjectAreas: string[];
@@ -28,7 +28,7 @@ export interface EnhancedAIContext {
 }
 
 export const buildEnhancedAIPrompt = (
-  variant: AIRevyVariant,
+  variant: AIReviVariant,
   message: string,
   context: EnhancedAIContext
 ): string => {

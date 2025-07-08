@@ -1,6 +1,6 @@
 
 import { log } from '../_shared/log.ts';
-import type { AIRevyVariantName } from '../../../../src/constants/aiRevyVariants.ts';
+import type { AIReviVariantName } from '../../../../src/constants/aiReviVariants.ts';
 
 export async function getVariantSystemPrompt(
   variant: any,
@@ -37,7 +37,7 @@ export function getVariantContextualTips(
     return '';
   }
 
-  const tips: Record<AIRevyVariantName, string> = {
+  const tips: Record<AIReviVariantName, string> = {
     methodology: `Som metodikk-ekspert kan jeg hjelpe deg med ISA-standarder, revisjonsmetodikk og systematiske tilnærminger.`,
     professional: `Som fagekspert kan jeg gi deg dybdegående kunnskap om revisjon, regnskapsføring og lovverk.`,
     guide: `Som klient-veileder kan jeg hjelpe deg med praktisk gjennomføring av ${clientData?.company_name || 'denne klientens'} revisjon.`,

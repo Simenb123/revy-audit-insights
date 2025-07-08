@@ -21,7 +21,7 @@ import CategoryManager from './CategoryManager';
 import ImprovedCategoryManager from './ImprovedCategoryManager';
 import ContentTypeManager from './ContentTypeManager';
 import SearchTestingPanel from './SearchTestingPanel';
-import KnowledgeMonitor from '../AIRevyAdmin/KnowledgeMonitor';
+import KnowledgeMonitor from '../AIReviAdmin/KnowledgeMonitor';
 import SubjectAreaManager from './SubjectAreaManager';
 import OptimalCategoryStructure from './OptimalCategoryStructure';
 import ImprovedCreateActionTemplateForm from '../AuditActions/ImprovedCreateActionTemplateForm';

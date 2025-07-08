@@ -10,23 +10,23 @@ import {
   HelpCircle,
   Check
 } from 'lucide-react';
-import { useAIRevyVariants } from '@/hooks/useAIRevyVariants';
-import type { AIRevyVariantName } from '@/constants/aiRevyVariants';
+import { useAIReviVariants } from '@/hooks/useAIReviVariants';
+import type { AIReviVariantName } from '@/constants/aiReviVariants';
 
-interface AIRevyVariantSelectorProps {
+interface AIReviVariantSelectorProps {
   currentContext: string;
   onVariantChange: (variant: any) => void;
   compact?: boolean;
 }
 
-const AIRevyVariantSelector: React.FC<AIRevyVariantSelectorProps> = ({
+const AIReviVariantSelector: React.FC<AIReviVariantSelectorProps> = ({
   currentContext,
   onVariantChange,
   compact = false
 }) => {
-  const { variants, selectedVariant, switchVariant, isLoading } = useAIRevyVariants(currentContext);
+  const { variants, selectedVariant, switchVariant, isLoading } = useAIReviVariants(currentContext);
 
-  const getVariantIcon = (variantName: AIRevyVariantName) => {
+  const getVariantIcon = (variantName: AIReviVariantName) => {
     switch (variantName) {
       case 'methodology': return <Brain className="h-4 w-4" />;
       case 'professional': return <BookOpen className="h-4 w-4" />;
@@ -36,7 +36,7 @@ const AIRevyVariantSelector: React.FC<AIRevyVariantSelectorProps> = ({
     }
   };
 
-  const getVariantColor = (variantName: AIRevyVariantName) => {
+  const getVariantColor = (variantName: AIReviVariantName) => {
     switch (variantName) {
       case 'methodology': return 'bg-purple-100 text-purple-800 border-purple-200';
       case 'professional': return 'bg-blue-100 text-blue-800 border-blue-200';
@@ -144,4 +144,4 @@ const AIRevyVariantSelector: React.FC<AIRevyVariantSelectorProps> = ({
   );
 };
 
-export default AIRevyVariantSelector;
+export default AIReviVariantSelector;

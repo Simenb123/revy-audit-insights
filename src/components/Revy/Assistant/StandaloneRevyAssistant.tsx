@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Send, Loader2 } from 'lucide-react';
 import KnowledgeStatusIndicator from '../KnowledgeStatusIndicator';
 import RevyAvatar from '../RevyAvatar';
-import AIRevyVariantSelector from '@/components/AI/AIRevyVariantSelector';
+import AIReviVariantSelector from '@/components/AI/AIReviVariantSelector';
 import { RevyMessageList } from './RevyMessageList';
 import { RevyMessage } from '@/types/revio';
 
@@ -52,7 +52,7 @@ const StandaloneRevyAssistant = ({
         </div>
         
         {/* AI Variant Selector - Full version for standalone */}
-        <AIRevyVariantSelector 
+        <AIReviVariantSelector
           currentContext="general"
           onVariantChange={handleVariantChange}
           compact={false}

@@ -2,11 +2,11 @@ import { logger } from '@/utils/logger';
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import type { AIRevyVariantName } from '@/constants/aiRevyVariants';
+import type { AIReviVariantName } from '@/constants/aiReviVariants';
 
-export interface AIRevyVariant {
+export interface AIReviVariant {
   id: string;
-  name: AIRevyVariantName;
+  name: AIReviVariantName;
   display_name: string;
   description: string;
   system_prompt_template: string;
@@ -16,10 +16,10 @@ export interface AIRevyVariant {
   sort_order: number;
 }
 
-export const useAIRevyVariants = (context?: string) => {
-  const [variants, setVariants] = useState<AIRevyVariant[]>([]);
+export const useAIReviVariants = (context?: string) => {
+  const [variants, setVariants] = useState<AIReviVariant[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedVariant, setSelectedVariant] = useState<AIRevyVariant | null>(null);
+  const [selectedVariant, setSelectedVariant] = useState<AIReviVariant | null>(null);
 
   useEffect(() => {
     loadVariants();
@@ -61,11 +61,11 @@ export const useAIRevyVariants = (context?: string) => {
     }
   };
 
-  const selectDefaultVariant = (availableVariants: AIRevyVariant[], currentContext?: string): AIRevyVariant => {
+  const selectDefaultVariant = (availableVariants: AIReviVariant[], currentContext?: string): AIReviVariant => {
     if (!currentContext) return availableVariants[0];
 
     // Context-based variant selection
-    const contextMapping: Record<string, AIRevyVariantName> = {
+    const contextMapping: Record<string, AIReviVariantName> = {
       'audit-actions': 'methodology',
       'planning': 'methodology',
       'execution': 'methodology',
@@ -83,11 +83,11 @@ export const useAIRevyVariants = (context?: string) => {
     return preferred || availableVariants[0];
   };
 
-  const switchVariant = (variant: AIRevyVariant) => {
+  const switchVariant = (variant: AIReviVariant) => {
     setSelectedVariant(variant);
   };
 
-  const handleVariantChange = (variant: AIRevyVariant) => {
+  const handleVariantChange = (variant: AIReviVariant) => {
     switchVariant(variant);
   };
 
