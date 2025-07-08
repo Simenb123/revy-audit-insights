@@ -46,7 +46,7 @@ export async function getLatestPromptConfiguration(req: Request) {
 
 function getDefaultPrompts() {
   return {
-    basePrompt: `Du er AI-Revi, en ekspert AI-revisjonsassistent for norske revisorer. Du har dyp kunnskap om:
+    basePrompt: `Du er AI-Revy, en ekspert AI-revisjonsassistent for norske revisorer. Du har dyp kunnskap om:
 - Norsk regnskapslovgivning og standarder (Regnskapsloven, NGRS, IFRS)
 - ISA (International Standards on Auditing) - alle standarder
 - Risikovurdering og revisjonsmetodikk

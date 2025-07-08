@@ -82,7 +82,7 @@ const KnowledgeOverview = ({
         }
         toast({
           title: "Kunnskapsbase aktivert!",
-          description: `${result.processed} artikler ble prosessert. AI-Revi kan nå søke i fagstoffet.`,
+          description: `${result.processed} artikler ble prosessert. AI-Revy kan nå søke i fagstoffet.`,
         });
       } else {
         if (extraLogging) {

@@ -5,7 +5,7 @@ ADD COLUMN ai_suggested_subject_areas TEXT[] DEFAULT NULL,
 ADD COLUMN ai_revision_phase_relevance JSONB DEFAULT NULL,
 ADD COLUMN ai_isa_standard_references TEXT[] DEFAULT NULL;
 
--- Create table for AI-Revi variants/modes
+-- Create table for AI-Revy variants/modes
 CREATE TABLE ai_revy_variants (
   id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   name TEXT NOT NULL,
@@ -32,22 +32,22 @@ CREATE TABLE document_category_subject_area_mappings (
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
 
--- Insert default AI-Revi variants
+-- Insert default AI-Revy variants
 INSERT INTO ai_revy_variants (name, display_name, description, system_prompt_template, available_contexts, sort_order) VALUES
-('methodology', 'AI-Revi Metodikk', 'Spesialisert på revisjonsmetodikk og ISA-standarder', 
- 'Du er AI-Revi Metodikk, ekspert på revisjonsmetodikk og ISA-standarder. Du hjelper med planlegging, utførelse og dokumentasjon av revisjonshandlinger i henhold til gjeldende standarder.', 
+('methodology', 'AI-Revy Metodikk', 'Spesialisert på revisjonsmetodikk og ISA-standarder', 
+ 'Du er AI-Revy Metodikk, ekspert på revisjonsmetodikk og ISA-standarder. Du hjelper med planlegging, utførelse og dokumentasjon av revisjonshandlinger i henhold til gjeldende standarder.', 
  ARRAY['planning', 'execution', 'completion', 'audit-actions'], 1),
  
-('professional', 'AI-Revi Faglig', 'Faglig støtte innen regnskapslovgivning og bransjeforhold', 
- 'Du er AI-Revi Faglig, ekspert på norsk regnskapslovgivning, IFRS, og bransjespecifikke forhold. Du gir faglig veiledning og tolkning av regnskapsstandarder.', 
+('professional', 'AI-Revy Faglig', 'Faglig støtte innen regnskapslovgivning og bransjeforhold', 
+ 'Du er AI-Revy Faglig, ekspert på norsk regnskapslovgivning, IFRS, og bransjespecifikke forhold. Du gir faglig veiledning og tolkning av regnskapsstandarder.', 
  ARRAY['general', 'client-detail', 'risk-assessment', 'documentation'], 2),
  
-('guide', 'AI-Revi Veileder', 'Veiledende hjelp for nye medarbeidere og opplæring', 
- 'Du er AI-Revi Veileder, som hjelper nye medarbeidere med å forstå revisjonsarbeid. Du gir pedagogiske forklaringer og praktiske tips.', 
+('guide', 'AI-Revy Veileder', 'Veiledende hjelp for nye medarbeidere og opplæring', 
+ 'Du er AI-Revy Veileder, som hjelper nye medarbeidere med å forstå revisjonsarbeid. Du gir pedagogiske forklaringer og praktiske tips.', 
  ARRAY['general', 'collaboration', 'client-detail'], 3),
  
-('support', 'AI-Revi Support', 'Teknisk support og systemhjelp', 
- 'Du er AI-Revi Support, som hjelper med tekniske spørsmål om systemet, dokumentopplasting, og arbeidsflyt.', 
+('support', 'AI-Revy Support', 'Teknisk support og systemhjelp', 
+ 'Du er AI-Revy Support, som hjelper med tekniske spørsmål om systemet, dokumentopplasting, og arbeidsflyt.', 
  ARRAY['general', 'documentation'], 4);
 
 -- Insert mappings between document categories and subject areas

@@ -570,7 +570,7 @@ export const MessageContentParser = ({
             <span className="text-sm font-medium">Dokumentanalyse aktiv</span>
           </div>
           <p className="text-xs text-green-600 mt-1">
-            AI-Revi har funnet og analysert relevante dokumenter for å gi deg et nøyaktig svar
+            AI-Revy har funnet og analysert relevante dokumenter for å gi deg et nøyaktig svar
           </p>
         </div>
       )}

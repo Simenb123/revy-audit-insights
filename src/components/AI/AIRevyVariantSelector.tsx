@@ -10,23 +10,23 @@ import {
   HelpCircle,
   Check
 } from 'lucide-react';
-import { useAIReviVariants } from '@/hooks/useAIReviVariants';
-import type { AIReviVariantName } from '@/constants/aiReviVariants';
+import { useAIRevyVariants } from '@/hooks/useAIRevyVariants';
+import type { AIRevyVariantName } from '@/constants/aiRevyVariants';
 
-interface AIReviVariantSelectorProps {
+interface AIRevyVariantSelectorProps {
   currentContext: string;
   onVariantChange: (variant: any) => void;
   compact?: boolean;
 }
 
-const AIReviVariantSelector: React.FC<AIReviVariantSelectorProps> = ({
+const AIRevyVariantSelector: React.FC<AIRevyVariantSelectorProps> = ({
   currentContext,
   onVariantChange,
   compact = false
 }) => {
-  const { variants, selectedVariant, switchVariant, isLoading } = useAIReviVariants(currentContext);
+  const { variants, selectedVariant, switchVariant, isLoading } = useAIRevyVariants(currentContext);
 
-  const getVariantIcon = (variantName: AIReviVariantName) => {
+  const getVariantIcon = (variantName: AIRevyVariantName) => {
     switch (variantName) {
       case 'methodology': return <Brain className="h-4 w-4" />;
       case 'professional': return <BookOpen className="h-4 w-4" />;
@@ -36,7 +36,7 @@ const AIReviVariantSelector: React.FC<AIReviVariantSelectorProps> = ({
     }
   };
 
-  const getVariantColor = (variantName: AIReviVariantName) => {
+  const getVariantColor = (variantName: AIRevyVariantName) => {
     switch (variantName) {
       case 'methodology': return 'bg-purple-100 text-purple-800 border-purple-200';
       case 'professional': return 'bg-blue-100 text-blue-800 border-blue-200';
@@ -53,7 +53,7 @@ const AIReviVariantSelector: React.FC<AIReviVariantSelectorProps> = ({
   if (compact) {
     return (
       <div className="flex items-center gap-2">
-        <span className="text-xs text-gray-600">AI-Revi:</span>
+        <span className="text-xs text-gray-600">AI-Revy:</span>
         <div className="flex gap-1">
           {variants.map((variant) => (
             <Button
@@ -67,7 +67,7 @@ const AIReviVariantSelector: React.FC<AIReviVariantSelectorProps> = ({
               className="h-6 px-2 text-xs"
             >
               {getVariantIcon(variant.name)}
-              <span className="ml-1">{variant.display_name.replace('AI-Revi ', '')}</span>
+              <span className="ml-1">{variant.display_name.replace('AI-Revy ', '')}</span>
               {selectedVariant?.id === variant.id && <Check className="h-3 w-3 ml-1" />}
             </Button>
           ))}
@@ -82,7 +82,7 @@ const AIReviVariantSelector: React.FC<AIReviVariantSelectorProps> = ({
         <div className="space-y-3">
           <div className="flex items-center gap-2 mb-3">
             <Brain className="h-5 w-5 text-purple-600" />
-            <h4 className="font-medium">Velg AI-Revi variant</h4>
+            <h4 className="font-medium">Velg AI-Revy variant</h4>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -144,4 +144,4 @@ const AIReviVariantSelector: React.FC<AIReviVariantSelectorProps> = ({
   );
 };
 
-export default AIReviVariantSelector;
+export default AIRevyVariantSelector;

@@ -73,7 +73,7 @@ const DocumentInsights: React.FC<DocumentInsightsProps> = ({
         <CardContent className="p-4">
           <div className="flex items-center gap-2">
             <Brain className="h-4 w-4 animate-pulse" />
-            <span className="text-sm text-muted-foreground">AI-Revi analyserer dokumenter...</span>
+            <span className="text-sm text-muted-foreground">AI-Revy analyserer dokumenter...</span>
           </div>
         </CardContent>
       </Card>
@@ -98,7 +98,7 @@ const DocumentInsights: React.FC<DocumentInsightsProps> = ({
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-sm">
           <Brain className="h-4 w-4 text-purple-600" />
-          AI-Revi Dokumentinnsikt
+          AI-Revy Dokumentinnsikt
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">

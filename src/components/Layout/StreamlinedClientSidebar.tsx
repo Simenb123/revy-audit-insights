@@ -51,12 +51,12 @@ const StreamlinedClientSidebar: React.FC<StreamlinedClientSidebarProps> = ({ cli
         )}
       </div>
 
-      {/* AI-Revi Assistant - Always Open */}
+      {/* AI-Revy Assistant - Always Open */}
       <Card className="border-0 shadow-none bg-background/50">
         <CardHeader className="pb-2 pt-3 px-3">
           <CardTitle className="text-sm font-medium flex items-center gap-2">
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-            AI-Revi Assistent
+            AI-Revy Assistent
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">

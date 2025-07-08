@@ -47,5 +47,5 @@ const handleMic = async () => {
 };
 
 // Speak a message
-speakText('Hei AI-Revi');
+speakText('Hei AI-Revy');
 ```

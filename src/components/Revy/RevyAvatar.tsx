@@ -17,7 +17,7 @@ const RevyAvatar: React.FC<RevyAvatarProps> = ({ size = 'md', className }) => {
 
   return (
     <Avatar className={cn(sizeClasses[size], className)}>
-      <AvatarImage src="/lovable-uploads/f813b1e2-df71-4a18-b810-b8b775bf7c90.png" alt="AI-Revi" />
+      <AvatarImage src="/lovable-uploads/f813b1e2-df71-4a18-b810-b8b775bf7c90.png" alt="AI-Revy" />
       <AvatarFallback className="bg-primary text-primary-foreground text-xs font-bold">
         AI
       </AvatarFallback>

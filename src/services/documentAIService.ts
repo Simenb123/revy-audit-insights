@@ -27,7 +27,7 @@ export const generateDocumentInsights = async (context: DocumentAnalysisContext)
     insights.push({
       type: 'category_suggestion',
       title: 'Ukategoriserte dokumenter funnet',
-      description: `${uncategorizedDocs.length} dokumenter mangler kategorisering. AI-Revi kan hjelpe med automatisk kategorisering.`,
+      description: `${uncategorizedDocs.length} dokumenter mangler kategorisering. AI-Revy kan hjelpe med automatisk kategorisering.`,
       confidence: 0.9,
       actionable: true,
       suggestedAction: 'Analyser dokumenter med AI for å foreslå kategorier'
@@ -138,7 +138,7 @@ export const generateSmartDocumentPrompt = (
     subjectAreas: [...new Set(documents.map(d => d.subject_area).filter(Boolean))]
   };
 
-  return `Som AI-Revi, en ekspert på revisjon og dokumentanalyse, skal du hjelpe med følgende forespørsel:
+  return `Som AI-Revy, en ekspert på revisjon og dokumentanalyse, skal du hjelpe med følgende forespørsel:
 
 BRUKERFORESPØRSEL: "${userMessage}"
 

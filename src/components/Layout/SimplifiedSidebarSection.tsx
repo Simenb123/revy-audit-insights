@@ -1,6 +1,6 @@
 
 import React from 'react'
-import AiReviCard from './AiReviCard'
+import AiRevyCard from './AiRevyCard'
 import { RevyContext } from '@/types/revio'
 
 interface SimplifiedSidebarSectionProps {
@@ -19,7 +19,7 @@ const SimplifiedSidebarSection: React.FC<SimplifiedSidebarSectionProps> = ({
   context = 'general'
 }) => {
   return (
-    <AiReviCard
+    <AiRevyCard
       title={title}
       description={description}
       className={className}

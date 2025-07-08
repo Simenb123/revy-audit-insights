@@ -63,7 +63,7 @@ const EmbeddedRevyAssistant: React.FC<EmbeddedRevyAssistantProps> = ({
           {isLoading && (
             <div className="flex items-center gap-2 text-xs text-muted-foreground p-2">
               <Loader2 className="h-3 w-3 animate-spin" />
-              AI-Revi tenker...
+              AI-Revy tenker...
             </div>
           )}
           <div ref={messagesEndRef} />
@@ -76,7 +76,7 @@ const EmbeddedRevyAssistant: React.FC<EmbeddedRevyAssistantProps> = ({
           value={input}
           onChange={onInputChange}
           onKeyDown={onKeyDown}
-          placeholder="Spør AI-Revi..."
+          placeholder="Spør AI-Revy..."
           disabled={isLoading}
           className="text-sm"
         />

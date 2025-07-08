@@ -10,7 +10,7 @@ import { ClientAuditAction } from '@/types/audit-actions';
 import { useCreateDocumentVersion } from '@/hooks/useCreateDocumentVersion';
 import { useCreateAuditLog } from '@/hooks/useCreateAuditLog';
 import AIPreviewDialog from '@/components/AuditActions/AIPreviewDialog';
-import { useAIReviVariants } from '@/hooks/useAIReviVariants';
+import { useAIRevyVariants } from '@/hooks/useAIRevyVariants';
 
 type Props = {
   editor: Editor;
@@ -26,11 +26,11 @@ const ReviAIGroup = ({ editor, client, action }: Props) => {
 
   const createVersion = useCreateDocumentVersion();
   const createAuditLog = useCreateAuditLog();
-  const { selectedVariant } = useAIReviVariants('audit-actions');
+  const { selectedVariant } = useAIRevyVariants('audit-actions');
 
   const handleReviHelp = async () => {
     if (!editor || !action || !client) {
-      toast({ title: "Mangler kontekst", description: "Kan ikke hente hjelp fra AI-Revi uten full kontekst.", variant: "destructive" });
+      toast({ title: "Mangler kontekst", description: "Kan ikke hente hjelp fra AI-Revy uten full kontekst.", variant: "destructive" });
       return;
     }
 
@@ -44,7 +44,7 @@ const ReviAIGroup = ({ editor, client, action }: Props) => {
         content: currentContent,
         versionName: `Før AI-forbedring ${new Date().toLocaleTimeString()}`,
         changeSource: 'user',
-        changeDescription: 'Automatisk lagret versjon før AI-Revi ble kjørt.',
+        changeDescription: 'Automatisk lagret versjon før AI-Revy ble kjørt.',
         clientId: client.id,
         subjectArea: action.subject_area,
         actionName: action.name,
@@ -57,7 +57,7 @@ const ReviAIGroup = ({ editor, client, action }: Props) => {
     }
     
     const prompt = selectedVariant?.name === 'methodology' 
-      ? `Du er AI-Revi Metodikk. Forbedre og utdyp følgende revisjonshandling "${action.name}" med fokus på ISA-standarder og metodikk.
+      ? `Du er AI-Revy Metodikk. Forbedre og utdyp følgende revisjonshandling "${action.name}" med fokus på ISA-standarder og metodikk.
 
 VIKTIG: Inkluder konkrete ISA-referanser og prosedyrer.
 - Spesifiser hvilke ISA-standarder som gjelder
@@ -96,8 +96,8 @@ Eksisterende tekst:\n\n${currentContent}`;
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Ukjent feil";
-      logger.error("Error getting response from AI-Revi:", error);
-      toast({ title: "Feil", description: `Kunne ikke få svar fra AI-Revi: ${errorMessage}`, variant: "destructive" });
+      logger.error("Error getting response from AI-Revy:", error);
+      toast({ title: "Feil", description: `Kunne ikke få svar fra AI-Revy: ${errorMessage}`, variant: "destructive" });
       setOriginalContent(null);
     } finally {
       setIsLoading(false);
@@ -113,7 +113,7 @@ Eksisterende tekst:\n\n${currentContent}`;
         content: aiSuggestion,
         versionName: `AI-forbedring ${new Date().toLocaleTimeString()}`,
         changeSource: 'ai',
-        changeDescription: 'Innhold generert av AI-Revi og godkjent av bruker.',
+        changeDescription: 'Innhold generert av AI-Revy og godkjent av bruker.',
         clientId: client.id,
         subjectArea: action.subject_area,
         actionName: action.name,
@@ -121,7 +121,7 @@ Eksisterende tekst:\n\n${currentContent}`;
       
       editor.chain().focus().setContent(aiSuggestion).run();
       
-      toast({ title: "AI-Revi hjalp til!", description: "Innholdet i editoren ble oppdatert." });
+      toast({ title: "AI-Revy hjalp til!", description: "Innholdet i editoren ble oppdatert." });
 
       createAuditLog.mutate({
         clientId: client.id,
@@ -167,10 +167,10 @@ Eksisterende tekst:\n\n${currentContent}`;
   return (
     <>
       <ToolbarButton
-        tooltip={`Spør ${selectedVariant?.display_name || 'AI-Revi'} om hjelp`}
+        tooltip={`Spør ${selectedVariant?.display_name || 'AI-Revy'} om hjelp`}
         onPressedChange={handleReviHelp}
         disabled={isLoading || isPreviewOpen}
-        aria-label={`Spør ${selectedVariant?.display_name || 'AI-Revi'} om hjelp`}
+        aria-label={`Spør ${selectedVariant?.display_name || 'AI-Revy'} om hjelp`}
       >
         {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Bot className="h-4 w-4" />}
       </ToolbarButton>

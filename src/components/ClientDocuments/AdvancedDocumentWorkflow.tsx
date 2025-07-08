@@ -54,7 +54,7 @@ const AdvancedDocumentWorkflow: React.FC<AdvancedDocumentWorkflowProps> = ({ cli
     {
       id: 'categorization',
       name: 'AI-kategorisering',
-      description: 'AI-Revi kategoriserer og analyserer dokumentene',
+      description: 'AI-Revy kategoriserer og analyserer dokumentene',
       status: documents.some(d => d.ai_confidence_score && d.ai_confidence_score > 0.8) ? 'completed' : 'in_progress',
       documents: documents.filter(d => d.ai_confidence_score).map(d => d.id),
       aiRecommendations: [
@@ -147,7 +147,7 @@ const AdvancedDocumentWorkflow: React.FC<AdvancedDocumentWorkflowProps> = ({ cli
             Dokumentarbeidsflyt
           </CardTitle>
           <p className="text-sm text-muted-foreground">
-            Intelligent arbeidsflyt med AI-Revi guidance og progresjon
+            Intelligent arbeidsflyt med AI-Revy guidance og progresjon
           </p>
         </CardHeader>
         <CardContent>
@@ -238,7 +238,7 @@ const AdvancedDocumentWorkflow: React.FC<AdvancedDocumentWorkflowProps> = ({ cli
                       <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
                         <h4 className="font-medium text-purple-900 mb-2 flex items-center gap-2">
                           <Brain className="h-4 w-4" />
-                          AI-Revi anbefalinger
+                          AI-Revy anbefalinger
                         </h4>
                         <ul className="space-y-1">
                           {stage.aiRecommendations.map((rec, index) => (

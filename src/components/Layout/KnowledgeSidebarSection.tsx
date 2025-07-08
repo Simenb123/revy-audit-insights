@@ -16,7 +16,7 @@ const KnowledgeSidebarSection = () => {
     <div className="space-y-4">
       
       <SimplifiedSidebarSection
-        title="AI-Revi Kunnskapsbase"
+        title="AI-Revy Kunnskapsbase"
         description="Spør om revisjonsstandarder og prosedyrer"
         className="border-l-4 border-l-purple-500"
         context="knowledge-base"

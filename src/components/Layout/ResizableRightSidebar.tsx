@@ -10,7 +10,7 @@ import { useClientLookup } from '@/hooks/useClientLookup';
 import { detectPageType, extractClientId } from './pageDetectionHelpers';
 import ResizableHandle from './ResizableHandle';
 import SidebarHeader from './SidebarHeader';
-import AiReviCard, { AiReviVariant } from '@/components/AiReviCard';
+import AiRevyCard, { AiRevyVariant } from '@/components/AiRevyCard';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 import { useRightSidebar } from './RightSidebarContext';
@@ -79,8 +79,8 @@ const ResizableRightSidebar = () => {
 
   const renderContent = () => {
     return (
-      <AiReviCard
-        variant={pageType as AiReviVariant}
+      <AiRevyCard
+        variant={pageType as AiRevyVariant}
         className="h-full w-full flex flex-col"
         context={clientId ? 'client-detail' : 'general'}
         clientData={clientId ? { id: clientId } : undefined}

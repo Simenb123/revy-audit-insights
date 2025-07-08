@@ -43,7 +43,7 @@ const ClientSidebarSection = () => {
       
       <SimplifiedSidebarSection
         clientData={{ id: clientId }}
-        title="AI-Revi for klient"
+        title="AI-Revy for klient"
         description="Spør om denne klienten"
         className="border-l-4 border-l-blue-500"
         context="client-detail"

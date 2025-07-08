@@ -26,8 +26,8 @@ import {
 import { useClientDocuments } from '@/hooks/useClientDocuments';
 import SearchRecommendationEngine from './SearchRecommendationEngine';
 import { toast } from 'sonner';
-import AIReviVariantSelector from '@/components/AI/AIReviVariantSelector';
-import { useAIReviVariants } from '@/hooks/useAIReviVariants';
+import AIRevyVariantSelector from '@/components/AI/AIRevyVariantSelector';
+import { useAIRevyVariants } from '@/hooks/useAIRevyVariants';
 import { generateEnhancedAIResponseWithVariant } from '@/services/revy/enhancedAiInteractionService';
 
 interface SmartDocumentSearchProps {
@@ -43,7 +43,7 @@ const SmartDocumentSearch: React.FC<SmartDocumentSearchProps> = ({ clientId }) =
   const [isAISearchMode, setIsAISearchMode] = useState(false);
 
   const { getDocumentUrl } = useClientDocuments(clientId);
-  const { selectedVariant, handleVariantChange } = useAIReviVariants('documentation');
+  const { selectedVariant, handleVariantChange } = useAIRevyVariants('documentation');
 
   useEffect(() => {
     loadSearchSuggestions();
@@ -209,7 +209,7 @@ const SmartDocumentSearch: React.FC<SmartDocumentSearchProps> = ({ clientId }) =
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Brain className="h-5 w-5 text-purple-600" />
-            AI-Revi Smart Søk
+            AI-Revy Smart Søk
           </CardTitle>
           <p className="text-sm text-muted-foreground">
             Intelligente søk som forstår mening og sammenheng
@@ -217,7 +217,7 @@ const SmartDocumentSearch: React.FC<SmartDocumentSearchProps> = ({ clientId }) =
         </CardHeader>
         <CardContent className="space-y-6">
           {/* AI Variant Selector */}
-          <AIReviVariantSelector
+          <AIRevyVariantSelector
             currentContext="documentation"
             onVariantChange={handleVariantChange}
             compact={true}

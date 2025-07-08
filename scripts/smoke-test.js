@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Smoke Test Script for AI-Revi Knowledge Search
+ * Smoke Test Script for AI-Revy Knowledge Search
  * Tests that the knowledge-search function returns articles for "ISA 315"
  */
 
@@ -19,7 +19,7 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 async function runSmokeTest() {
-  console.log('🧪 Running AI-Revi Knowledge Search Smoke Test...\n');
+  console.log('🧪 Running AI-Revy Knowledge Search Smoke Test...\n');
   
   try {
     console.log('🔍 Testing knowledge-search with query: "ISA 315"');

@@ -6,15 +6,15 @@ export const getEnhancedContextualTips = async (
 ): Promise<string> => {
   const tips = {
     documentation: [
-      '💡 Tips: Bruk AI-Revi til å analysere dokumentkvalitet og identifisere mangler',
+      '💡 Tips: Bruk AI-Revy til å analysere dokumentkvalitet og identifisere mangler',
       '📋 Husk: Kategoriser dokumenter etter fagområde for bedre oversikt',
       '🔍 Sjekk: AI-konfidensscoren indikerer kvaliteten på automatisk kategorisering',
       '⚡ Effektivt: Bruk bulk-operasjoner for å behandle mange dokumenter samtidig',
-      '📊 Analyse: AI-Revi kan foreslå revisjonshandlinger basert på opplastede dokumenter'
+      '📊 Analyse: AI-Revy kan foreslå revisjonshandlinger basert på opplastede dokumenter'
     ],
     'audit-actions': [
       '🎯 Planlegg: Start med risikovurdering før du velger revisjonshandlinger',
-      '📖 ISA-standarder: AI-Revi kan hjelpe deg identifisere relevante standarder',
+      '📖 ISA-standarder: AI-Revy kan hjelpe deg identifisere relevante standarder',
       '⏰ Tidsbruk: Estimer timer realistisk basert på kompleksitet',
       '✅ Kvalitet: Dokumenter alle funn og konklusjoner grundig',
       '🔄 Oppfølging: Planlegg kontrollaktiviteter for identifiserte risikoområder'
@@ -29,7 +29,7 @@ export const getEnhancedContextualTips = async (
   };
 
   const contextTips = tips[context as keyof typeof tips] || [
-    '💡 AI-Revi er her for å hjelpe deg med alle dine revisjonsbehov',
+    '💡 AI-Revy er her for å hjelpe deg med alle dine revisjonsbehov',
     '🚀 Utforsk ulike funksjoner for å effektivisere arbeidsflyten din'
   ];
 
@@ -41,14 +41,14 @@ export const getEnhancedContextualTips = async (
     if (context === 'documentation' && clientData.documentContext) {
       const stats = clientData.documentContext.documentStats;
       if (stats.uncategorized > 0) {
-        selectedTip = `📋 Du har ${stats.uncategorized} ukategoriserte dokumenter. AI-Revi kan hjelpe med automatisk kategorisering`;
+        selectedTip = `📋 Du har ${stats.uncategorized} ukategoriserte dokumenter. AI-Revy kan hjelpe med automatisk kategorisering`;
       } else if (stats.qualityScore < 70) {
         selectedTip = '🔍 Noen dokumenter har lav AI-sikkerhet. Vurder manuell gjennomgang for bedre kvalitet';
       }
     }
     
     if (context === 'client-detail' && clientData.industry) {
-      selectedTip = `🏢 Bransje: ${clientData.industry}. AI-Revi kan gi bransjetilpassede revisjonsråd`;
+      selectedTip = `🏢 Bransje: ${clientData.industry}. AI-Revy kan gi bransjetilpassede revisjonsråd`;
     }
   }
 

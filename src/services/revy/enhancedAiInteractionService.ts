@@ -104,7 +104,7 @@ const enforceResponseValidation = (response: string, knowledgeArticles: any[], a
 const getIntelligentFallback = (message: string, context: string, selectedVariant?: any): string => {
   const variantContext = selectedVariant ? ` som ${selectedVariant.display_name}` : '';
   
-  return `Hei! Jeg er AI-Revi${variantContext} og jobber med å løse det tekniske problemet som oppstod.
+  return `Hei! Jeg er AI-Revy${variantContext} og jobber med å løse det tekniske problemet som oppstod.
 
 **Om din forespørsel:** "${message.substring(0, 100)}${message.length > 100 ? '...' : ''}"
 
