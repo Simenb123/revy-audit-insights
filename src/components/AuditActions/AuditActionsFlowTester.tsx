@@ -189,7 +189,7 @@ const AuditActionsFlowTester = ({ clientId }: AuditActionsFlowTesterProps) => {
     
     try {
       // Reset alle statuser
-      setTestSteps((prev: TestStep[]) => prev.map(step => ({ ...step, status: 'pending' as const, result: undefined, error: undefined })));
+      setTestSteps((prev: TestStep[]) => prev.map(step => ({ ...step, status: 'pending' as const, result: undefined as any, error: undefined as string | undefined })));
       
       const tests = [
         simulateTemplateLoad,

@@ -18,7 +18,7 @@ vi.mock('@/hooks/useClientDocuments', () => ({
     documentsCount: 0,
     categoriesCount: 0,
     isLoading: false,
-    error: null
+    error: null as Error | null
   })
 }));
 

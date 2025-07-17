@@ -42,9 +42,16 @@ export const useAIRevyVariants = (context?: string) => {
       if (error) throw error;
       
       // Transform database data to match interface
-      const transformedData = data?.map(item => ({
-        ...item,
-        context_requirements: item.context_requirements as Record<string, any> || {}
+      const transformedData: AIRevyVariant[] = data?.map(item => ({
+        id: item.id,
+        name: item.name as AIRevyVariantName,
+        display_name: item.display_name,
+        description: item.description || '',
+        system_prompt_template: item.system_prompt_template,
+        context_requirements: item.context_requirements as Record<string, any> || {},
+        available_contexts: item.available_contexts || [],
+        is_active: item.is_active || false,
+        sort_order: item.sort_order || 0
       })) || [];
       
       setVariants(transformedData);
