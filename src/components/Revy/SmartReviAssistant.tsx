@@ -71,7 +71,9 @@ const SmartReviAssistant = ({
         'accounting-data': 'Regnskapsdata',
         'analysis': 'Analyse',
         'data-upload': 'Opplasting',
-        'knowledge-base': 'Kunnskapsbase'
+        'knowledge-base': 'Kunnskapsbase',
+        'knowledge': 'Kunnskap',
+        'fag': 'Fagområde'
       };
       return contextMap[ctx] || 'Generell assistanse';
     };

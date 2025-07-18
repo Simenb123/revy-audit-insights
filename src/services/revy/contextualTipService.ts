@@ -18,6 +18,8 @@ export const getBasicContextualTip = (context: RevyContext): string => {
     'analysis': 'Analyse-siden er aktiv. Jeg kan hjelpe deg med å tolke grafer, beregne nøkkeltall eller identifisere trender.',
     'data-upload': 'Her kan du laste opp regnskapsdata. Jeg kan veilede deg gjennom prosessen eller hjelpe deg med filformater.',
     'knowledge-base': 'Du er i kunnskapsbasen. Søk etter artikler, ISA-standarder, eller spør meg om faglige temaer.',
+    'knowledge': 'Jeg kan hjelpe deg med å finne og dele kunnskap om revisjonsmetodikk og faglige temaer.',
+    'fag': 'Her kan jeg gi deg faglig veiledning om regnskaps- og revisjonsstandarder.',
     'general': 'Jeg kan hjelpe deg med revisjonsmetodikk, ISA-standarder, regnskapsanalyse eller appfunksjonalitet. Hva lurer du på?'
   };
   
