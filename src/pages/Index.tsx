@@ -3,6 +3,8 @@ import React from 'react';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import WelcomeDashboard from '@/components/Welcome/WelcomeDashboard';
 import RoleDashboard from '@/components/Dashboard/RoleDashboard';
+import KPIWidgets from '@/components/Dashboard/KPIWidgets';
+import QuickActions from '@/components/Dashboard/QuickActions';
 
 const Index = () => {
   const { data: userProfile, isLoading } = useUserProfile();
@@ -33,16 +35,25 @@ const Index = () => {
 
   return (
     <main className="h-full w-full">
-      <div className="p-6 max-w-none">
-        <div className="mb-6">
+      <div className="p-6 max-w-none space-y-6">
+        <div>
           <h1 className="text-3xl font-bold">Dashboard</h1>
           <p className="text-muted-foreground mt-1">
             Oversikt tilpasset din rolle og arbeidsoppgaver
           </p>
         </div>
         
-        <div className="w-full">
-          <RoleDashboard />
+        {/* KPI Widgets */}
+        <KPIWidgets />
+        
+        {/* Quick Actions and Role Dashboard */}
+        <div className="grid gap-6 md:grid-cols-3">
+          <div className="md:col-span-1">
+            <QuickActions />
+          </div>
+          <div className="md:col-span-2">
+            <RoleDashboard />
+          </div>
         </div>
       </div>
     </main>

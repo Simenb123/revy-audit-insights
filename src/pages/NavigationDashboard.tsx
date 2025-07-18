@@ -1,18 +1,104 @@
 
 import React from 'react';
-import MainNavigation from '@/components/Layout/MainNavigation';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Link } from 'react-router-dom';
+import { 
+  Users, Home, BarChart3, Book, Settings, Building2, MessageSquare,
+  UserCog, GraduationCap, FileText, Brain, Database, HelpCircle 
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const NavigationDashboard = () => {
+  const navigationSections = [
+    {
+      title: 'Hovedfunksjoner',
+      description: 'Daglige arbeidsoppgaver og kjernevirksomhet',
+      items: [
+        { name: 'Dashboard', href: '/', icon: Home, description: 'Oversikt og KPIer', color: 'bg-blue-500' },
+        { name: 'Klienter', href: '/clients', icon: Users, description: 'Administrer revisjonsoppdrag', color: 'bg-green-500' },
+        { name: 'Fagstoff', href: '/fag', icon: Book, description: 'Kunnskapsbase og artikler', color: 'bg-purple-500' },
+        { name: 'AI Revy', href: '/ai-revy-admin', icon: Brain, description: 'AI-assistent for revisjon', color: 'bg-orange-500' }
+      ]
+    },
+    {
+      title: 'Organisasjon',
+      description: 'Administrasjon og teamsamarbeid',
+      items: [
+        { name: 'Organisasjon', href: '/organization', icon: Building2, description: 'Firmainnstillinger og struktur', color: 'bg-gray-500' },
+        { name: 'Teams', href: '/teams', icon: UserCog, description: 'Teamadministrasjon', color: 'bg-indigo-500' },
+        { name: 'Kommunikasjon', href: '/communication', icon: MessageSquare, description: 'Chat og meldinger', color: 'bg-teal-500' },
+        { name: 'Opplæring', href: '/training', icon: GraduationCap, description: 'Kurs og sertifisering', color: 'bg-amber-500' }
+      ]
+    },
+    {
+      title: 'Data og rapporter',
+      description: 'Dokumenter, analyser og statistikk',
+      items: [
+        { name: 'Dokumenter', href: '/documents', icon: FileText, description: 'Dokumenthåndtering', color: 'bg-cyan-500' },
+        { name: 'AI-bruk', href: '/ai-usage', icon: BarChart3, description: 'Statistikk og kostnader', color: 'bg-rose-500' },
+        { name: 'Kontoplan', href: '/standard-accounts', icon: Database, description: 'Standard kontooppsett', color: 'bg-emerald-500' }
+      ]
+    },
+    {
+      title: 'System',
+      description: 'Innstillinger og support',
+      items: [
+        { name: 'Innstillinger', href: '/organization/settings', icon: Settings, description: 'Systemkonfigurasjon', color: 'bg-slate-500' },
+        { name: 'Hjelp', href: '/hjelp', icon: HelpCircle, description: 'Brukerstøtte og dokumentasjon', color: 'bg-blue-600' }
+      ]
+    }
+  ];
+
   return (
-    <div className="w-full px-4 py-6 md:px-6 lg:px-8">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold">Hovedmeny</h1>
-        <p className="text-muted-foreground mt-1">
-          Velg en funksjon fra menyen under
+    <div className="w-full px-4 py-6 md:px-6 lg:px-8 space-y-8">
+      <div className="text-center mb-8">
+        <h1 className="text-4xl font-bold mb-2">Hovedmeny</h1>
+        <p className="text-muted-foreground text-lg">
+          Velg en funksjon fra kategoriene under
         </p>
       </div>
       
-      <MainNavigation />
+      {navigationSections.map((section, sectionIndex) => (
+        <Card key={sectionIndex}>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              {section.title}
+              <Badge variant="outline">{section.items.length} funksjoner</Badge>
+            </CardTitle>
+            <CardDescription>{section.description}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              {section.items.map((item) => (
+                <Link
+                  key={item.href}
+                  to={item.href}
+                  className="group block"
+                >
+                  <Card className="h-full transition-all hover:shadow-md hover:scale-105 cursor-pointer">
+                    <CardContent className="p-6">
+                      <div className="flex items-start space-x-4">
+                        <div className={cn('rounded-lg p-2 text-white', item.color)}>
+                          <item.icon className="h-6 w-6" />
+                        </div>
+                        <div className="space-y-1 flex-1">
+                          <h3 className="font-semibold text-sm leading-none group-hover:text-primary transition-colors">
+                            {item.name}
+                          </h3>
+                          <p className="text-xs text-muted-foreground line-clamp-2">
+                            {item.description}
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      ))}
     </div>
   );
 };

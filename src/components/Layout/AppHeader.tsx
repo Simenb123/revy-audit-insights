@@ -17,6 +17,8 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import Logo from './Logo';
+import GlobalSearch from './GlobalSearch';
+import Breadcrumbs from './Breadcrumbs';
 
 interface AppHeaderProps {
   className?: string;
@@ -45,19 +47,25 @@ const AppHeader: React.FC<AppHeaderProps> = ({ className = '' }) => {
     : session?.user?.email || 'Bruker';
 
   return (
-    <header
-      className={`sticky top-0 z-50 bg-revio-500 border-b border-revio-600 h-[var(--header-height)] flex items-center justify-between px-6 text-white ${className}`}
-    >
-
-      <div className="flex items-center gap-2">
-        <h2 className="text-lg font-semibold">Revio</h2>
-
-        <div className="flex items-center">
-          <Logo />
+    <>
+      <header
+        className={`sticky top-0 z-50 bg-revio-500 border-b border-revio-600 h-[var(--header-height)] flex items-center justify-between px-6 text-white ${className}`}
+      >
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-semibold">Revio</h2>
+            <div className="flex items-center">
+              <Logo />
+            </div>
+          </div>
+          
+          {/* Global Search */}
+          <div className="hidden md:block">
+            <GlobalSearch />
+          </div>
         </div>
-      </div>
 
-      <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3">
         <Button variant="ghost" size="sm" className="text-white hover:bg-revio-600">
           <Bell className="h-5 w-5" />
         </Button>
@@ -98,6 +106,12 @@ const AppHeader: React.FC<AppHeaderProps> = ({ className = '' }) => {
         </DropdownMenu>
       </div>
     </header>
+    
+    {/* Breadcrumbs bar */}
+    <div className="bg-muted/30 border-b px-6 py-2">
+      <Breadcrumbs />
+    </div>
+  </>
   );
 };
 

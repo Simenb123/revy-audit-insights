@@ -42,8 +42,9 @@
     --sidebar-width-collapsed: 4rem;
     --sidebar-width-icon: 3rem;
 
-    /* Header height variable */
+    /* Header height variable - increased for breadcrumbs */
     --header-height: 3.5rem;
+    --breadcrumb-height: 2.5rem;
 
     --revio-100: 174 57% 95%;
     --revio-500: 173 49% 39%;
