@@ -80,68 +80,74 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     const initializeAuth = async () => {
       if (!isSupabaseConfigured || !supabase) {
-        logger.error('❌ Supabase not configured. Cannot initialize authentication.');
+        logger.warn('⚠️ Supabase not configured. Running in demo mode.');
         setConnectionStatus('disconnected');
         setIsLoading(false);
         return;
       }
 
-      // Check connection first
-      const connected = await checkSupabaseConnection();
-      setConnectionStatus(connected ? 'connected' : 'disconnected');
-      
-      if (!connected) {
-        logger.error('❌ Supabase connection failed');
-        setIsLoading(false);
-        return;
-      }
-
-      // Set up auth state listener
-      logger.log('🔧 Setting up auth state listener...');
-      const {
-        data: { subscription },
-      } = supabase.auth.onAuthStateChange(async (event, session) => {
-        logger.log('🔐 Auth state changed:', {
-          event,
-          hasSession: !!session,
-          userId: session?.user?.id?.substring(0, 8) || 'none'
-        });
-        
-        setSession(session);
-        setUser(session?.user ?? null);
-        setIsLoading(false);
-
-        // Auto-refresh session if it's about to expire
-        if (session && event === 'SIGNED_IN') {
-          logger.log('⏰ Setting up auto-refresh timer...');
-          setTimeout(refreshSession, 1000 * 60 * 50); // Refresh 10 minutes before expiry
-        }
-      });
-
-      // Check for existing session
       try {
-        logger.log('🔍 Checking for existing session...');
-        const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) {
-          logger.error('❌ Error getting session:', error);
-        } else {
-          logger.log('📋 Session check result:', {
+        // Check connection first
+        const connected = await checkSupabaseConnection();
+        setConnectionStatus(connected ? 'connected' : 'disconnected');
+        
+        if (!connected) {
+          logger.error('❌ Supabase connection failed - running in demo mode');
+          setIsLoading(false);
+          return;
+        }
+
+        // Set up auth state listener
+        logger.log('🔧 Setting up auth state listener...');
+        const {
+          data: { subscription },
+        } = supabase.auth.onAuthStateChange(async (event, session) => {
+          logger.log('🔐 Auth state changed:', {
+            event,
             hasSession: !!session,
             userId: session?.user?.id?.substring(0, 8) || 'none'
           });
+          
+          setSession(session);
+          setUser(session?.user ?? null);
+          setIsLoading(false);
+
+          // Auto-refresh session if it's about to expire
+          if (session && event === 'SIGNED_IN') {
+            logger.log('⏰ Setting up auto-refresh timer...');
+            setTimeout(refreshSession, 1000 * 60 * 50); // Refresh 10 minutes before expiry
+          }
+        });
+
+        // Check for existing session
+        try {
+          logger.log('🔍 Checking for existing session...');
+          const { data: { session }, error } = await supabase.auth.getSession();
+          if (error) {
+            logger.error('❌ Error getting session:', error);
+          } else {
+            logger.log('📋 Session check result:', {
+              hasSession: !!session,
+              userId: session?.user?.id?.substring(0, 8) || 'none'
+            });
+          }
+          setSession(session);
+          setUser(session?.user ?? null);
+        } catch (error) {
+          logger.error('❌ Failed to get session:', error);
+        } finally {
+          setIsLoading(false);
         }
-        setSession(session);
-        setUser(session?.user ?? null);
+
+        return () => {
+          logger.log('🧹 Cleaning up auth subscription...');
+          subscription.unsubscribe();
+        };
       } catch (error) {
-        logger.error('❌ Failed to get session:', error);
-      } finally {
+        logger.error('❌ Auth initialization failed:', error);
+        setConnectionStatus('disconnected');
         setIsLoading(false);
       }
-
-      return () => {
-        logger.log('🧹 Cleaning up auth subscription...');
-        subscription.unsubscribe();
-      };
     };
 
     initializeAuth();

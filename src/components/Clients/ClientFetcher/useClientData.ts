@@ -1,7 +1,9 @@
+
 import { logger } from '@/utils/logger';
 
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
+import { useAuth } from '@/components/Auth/AuthProvider';
 import { toast } from '@/hooks/use-toast';
 import { Client, AuditPhase, ClientRole, RiskArea, ClientDocument, Announcement } from '@/types/revio';
 
@@ -11,9 +13,17 @@ import { Client, AuditPhase, ClientRole, RiskArea, ClientDocument, Announcement 
  * @returns {UseQueryResult<Client[]>} React Query object containing the clients data.
  */
 export function useClientData() {
+  const { connectionStatus } = useAuth();
+  
   return useQuery<Client[]>({
     queryKey: ['clients'],
     queryFn: async () => {
+      // If no connection to Supabase, return demo data
+      if (connectionStatus === 'disconnected' || !isSupabaseConfigured) {
+        logger.log('useClientData: No Supabase connection, returning demo data');
+        return createDemoClients();
+      }
+      
       logger.log('=== STARTING CLIENT DATA FETCH ===');
       
       const { data: clientsData, error: clientsError } = await supabase
@@ -105,10 +115,10 @@ export function useClientData() {
             break;
         }
 
-        const { client_roles, announcements, ...remaningClientData } = client;
+        const { client_roles, announcements, ...remainingClientData } = client;
 
         const transformedClient: Client = {
-          ...remaningClientData,
+          ...remainingClientData,
           phase: mappedPhase,
           riskAreas: clientRiskAreas,
           documents: clientDocuments,
@@ -130,6 +140,45 @@ export function useClientData() {
       return transformedClients;
     },
     staleTime: 1000 * 60 * 5,
-    refetchOnWindowFocus: true
+    refetchOnWindowFocus: true,
+    enabled: true // Always enabled, will handle connection status internally
   });
+}
+
+// Demo data for when Supabase is not connected
+function createDemoClients(): Client[] {
+  return [
+    {
+      id: 'demo-client-1',
+      user_id: 'demo-user-id',
+      name: 'Demo Klient AS',
+      company_name: 'Demo Klient AS',
+      org_number: '123456789',
+      phase: 'planning' as AuditPhase,
+      progress: 45,
+      industry: 'Teknologi',
+      contact_person: 'Ola Nordmann',
+      email: 'ola@democlient.no',
+      phone: '+47 12345678',
+      address: 'Demogate 1',
+      postal_code: '0001',
+      city: 'Oslo',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      riskAreas: [
+        { name: 'Inntektsføring', risk: 'medium' as const },
+        { name: 'Varelagervurdering', risk: 'low' as const }
+      ],
+      documents: [
+        { type: 'annual_report', status: 'pending', dueDate: '2024-03-31' }
+      ],
+      roles: [],
+      announcements: [],
+      equity_capital: 1000000,
+      share_capital: 500000,
+      audit_fee: 75000,
+      board_meetings_per_year: 4,
+      is_test_data: true
+    }
+  ];
 }

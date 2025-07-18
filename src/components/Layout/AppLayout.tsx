@@ -1,3 +1,4 @@
+
 import { logger } from '@/utils/logger';
 
 import React, { useEffect } from 'react';
@@ -20,17 +21,53 @@ import { SidebarProvider } from '@/components/ui/sidebar';
  * - Høyre kontekst-sidebar kan aktiveres senere
  */
 const AppLayout = () => {
-  const { session } = useAuth();
+  const { session, connectionStatus, isLoading } = useAuth();
   const { data: profile, isLoading: profileLoading } = useUserProfile();
 
   useEffect(() => {
-    logger.log('AppLayout mounted, session:', !!session, 'profile loading:', profileLoading);
-  }, [session, profileLoading]);
+    logger.log('AppLayout mounted, session:', !!session, 'profile loading:', profileLoading, 'connection:', connectionStatus);
+  }, [session, profileLoading, connectionStatus]);
 
   /* --- Guard-flows ------------------------------------------------------- */
-  if (!session) return <Navigate to="/auth" replace />;
-  if (profileLoading) return <PageLoader />;
-  if (!profile?.firstName || !profile?.lastName) return <OnboardingCheck />;
+  
+  // If still loading auth, show loader
+  if (isLoading) return <PageLoader message="Laster autentisering..." />;
+  
+  // If no connection to Supabase, allow demo mode
+  if (connectionStatus === 'disconnected') {
+    return (
+      <SidebarProvider>
+        <div className="flex flex-col min-h-screen w-full bg-background">
+          <AppHeader />
+          <div className="layout-container">
+            <ResizableLeftSidebar />
+            <main className="main-content flex flex-col overflow-auto">
+              <div className="p-4 bg-yellow-50 border-b border-yellow-200">
+                <p className="text-sm text-yellow-800">
+                  Demo-modus: Appen kjører uten tilkobling til backend.
+                </p>
+              </div>
+              <Outlet />
+            </main>
+            <ResizableRightSidebar />
+          </div>
+        </div>
+      </SidebarProvider>
+    );
+  }
+  
+  // If no session but connected, redirect to auth
+  if (!session && connectionStatus === 'connected') {
+    return <Navigate to="/auth" replace />;
+  }
+  
+  // If loading profile, show loader
+  if (profileLoading) return <PageLoader message="Laster brukerprofil..." />;
+  
+  // If missing profile data, show onboarding
+  if (session && (!profile?.firstName || !profile?.lastName)) {
+    return <OnboardingCheck />;
+  }
   /* ---------------------------------------------------------------------- */
 
   return (

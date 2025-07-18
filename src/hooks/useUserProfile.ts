@@ -1,16 +1,36 @@
+
 import { logger } from '@/utils/logger';
 
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 import { UserProfile } from '@/types/organization';
 import { useAuth } from '@/components/Auth/AuthProvider';
 
 export function useUserProfile() {
-  const { session } = useAuth();
+  const { session, connectionStatus } = useAuth();
   
   return useQuery({
     queryKey: ['userProfile', session?.user?.id],
     queryFn: async (): Promise<UserProfile | null> => {
+      // If no connection to Supabase, return demo profile
+      if (connectionStatus === 'disconnected' || !isSupabaseConfigured) {
+        logger.log('useUserProfile: No Supabase connection, returning demo profile');
+        return {
+          id: 'demo-user-id',
+          email: 'demo@example.com',
+          firstName: 'Demo',
+          lastName: 'User',
+          workplaceCompanyName: 'Demo Revisjonsselskap',
+          auditFirmId: null,
+          departmentId: null,
+          userRole: 'employee',
+          hireDate: null,
+          isActive: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+      }
+      
       if (!session?.user?.id) {
         logger.log('useUserProfile: No session or user ID available');
         return null;
@@ -51,7 +71,7 @@ export function useUserProfile() {
         updatedAt: data.updated_at
       };
     },
-    enabled: !!session?.user?.id,
+    enabled: true, // Always enabled, will handle connection status internally
     staleTime: 1000 * 60 * 5, // 5 minutes
     retry: 1,
   });
