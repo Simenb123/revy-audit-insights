@@ -176,7 +176,7 @@ export interface PlanningModuleStatus {
 }
 
 // Re-export types from revio.d.ts for compatibility
-export type RevyContext = 'dashboard' | 'client-overview' | 'client-detail' | 'audit-actions' | 'risk-assessment' | 'documentation' | 'collaboration' | 'communication' | 'team-management' | 'drill-down' | 'mapping' | 'general' | 'accounting-data' | 'analysis' | 'data-upload' | 'knowledge-base';
+export type RevyContext = 'dashboard' | 'client-overview' | 'client-detail' | 'audit-actions' | 'risk-assessment' | 'documentation' | 'collaboration' | 'communication' | 'team-management' | 'drill-down' | 'mapping' | 'general' | 'accounting-data' | 'analysis' | 'data-upload' | 'knowledge-base' | 'knowledge' | 'fag';
 
 export type RevyChatSession = {
   id: string;
