@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/components/Auth/AuthProvider";
 import { RevyContextProvider } from "@/components/RevyContext/RevyContextProvider";
+import { AIGlobalProvider } from "@/components/AI/AIGlobalProvider";
+import { DataCacheProvider } from "@/components/Optimization/DataCache";
 import AppLayout from "@/components/Layout/AppLayout";
 import { RightSidebarProvider } from "@/components/Layout/RightSidebarContext";
 import Index from "./pages/Index";
@@ -33,6 +35,7 @@ import KnowledgeBase from "./pages/KnowledgeBase";
 import AIRevyAdmin from "./pages/AIRevyAdmin";
 import StandardAccountsAdmin from "./pages/StandardAccountsAdmin";
 import RoleAccessAdmin from "./pages/RoleAccessAdmin";
+import PerformanceMonitoring from "./pages/PerformanceMonitoring";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -41,9 +44,11 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <AuthProvider>
-          <BrowserRouter>
-            <RevyContextProvider>
+        <DataCacheProvider>
+          <AIGlobalProvider>
+            <AuthProvider>
+              <BrowserRouter>
+                <RevyContextProvider>
               <Routes>
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/setup" element={<OrganizationSetup />} />
@@ -81,16 +86,19 @@ function App() {
                   <Route path="standard-accounts" element={<StandardAccountsAdmin />} />
                   <Route path="fag/*" element={<KnowledgeBase />} />
                   <Route path="ai-revy-admin" element={<AIRevyAdmin />} />
+                  <Route path="performance" element={<PerformanceMonitoring />} />
                 </Route>
                 <Route path="*" element={<NotFound />} />
               </Routes>
-              <Toaster />
-            </RevyContextProvider>
-          </BrowserRouter>
-        </AuthProvider>
-      </TooltipProvider>
-    </QueryClientProvider>
-  );
+                <Toaster />
+              </RevyContextProvider>
+            </BrowserRouter>
+          </AuthProvider>
+        </AIGlobalProvider>
+      </DataCacheProvider>
+    </TooltipProvider>
+  </QueryClientProvider>
+);
 }
 
 export default App;
