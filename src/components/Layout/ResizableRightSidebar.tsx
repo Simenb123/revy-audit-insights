@@ -4,12 +4,10 @@ import { useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Drawer, DrawerTrigger, DrawerContent } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
-import { MessageSquare } from 'lucide-react';
+import { MessageSquare, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useClientLookup } from '@/hooks/useClientLookup';
 import { detectPageType, extractClientId } from './pageDetectionHelpers';
-import ResizableHandle from './ResizableHandle';
-import SidebarHeader from './SidebarHeader';
 import AiRevyCard, { AiRevyVariant } from '@/components/AiRevyCard';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
@@ -26,10 +24,6 @@ const ResizableRightSidebar = () => {
   } = useRightSidebar();
   const isMobile = useIsMobile();
   const [isDragging, setIsDragging] = useState(false);
-  const handleClose = useCallback(() => {
-    setIsHidden(true);
-    setIsCollapsed(false);
-  }, [setIsHidden, setIsCollapsed]);
   const location = useLocation();
   const pageType = detectPageType(location.pathname);
   const clientIdOrOrg = extractClientId(location.pathname);
@@ -44,8 +38,7 @@ const ResizableRightSidebar = () => {
   const handleMouseMove = useCallback(
     (e: MouseEvent) => {
       if (!isDragging) return;
-
-      const newWidth = Math.max(280, Math.min(600, window.innerWidth - e.clientX));
+      const newWidth = Math.max(320, Math.min(600, window.innerWidth - e.clientX));
       setWidth(newWidth);
     },
     [isDragging, setWidth]
@@ -66,14 +59,28 @@ const ResizableRightSidebar = () => {
     }
   }, [isDragging, handleMouseMove, handleMouseUp]);
 
+  const toggleSidebar = () => {
+    if (isHidden) {
+      setIsHidden(false);
+      setIsCollapsed(false);
+    } else {
+      setIsCollapsed(!isCollapsed);
+    }
+  };
+
+  const closeSidebar = () => {
+    setIsHidden(true);
+    setIsCollapsed(false);
+  };
+
   const getPageTitle = () => {
     switch (pageType) {
       case 'admin':
-        return 'Admin';
+        return 'Admin Assistent';
       case 'knowledge':
         return 'Kunnskapsbase';
       default:
-        return clientId ? 'Klient' : 'Assistent';
+        return clientId ? 'Klient Assistent' : 'AI Assistent';
     }
   };
 
@@ -81,85 +88,130 @@ const ResizableRightSidebar = () => {
     return (
       <AiRevyCard
         variant={pageType as AiRevyVariant}
-        className="h-full w-full flex flex-col"
+        className="h-full w-full flex flex-col border-0"
         context={clientId ? 'client-detail' : 'general'}
         clientData={clientId ? { id: clientId } : undefined}
       />
     );
   };
 
+  // Mobile version
   if (isMobile) {
     return (
       <Drawer open={!isHidden} onOpenChange={(open) => setIsHidden(!open)}>
         <DrawerTrigger asChild>
           <Button
-            variant="ghost"
+            variant="outline"
             size="icon"
-            className="fixed bottom-4 right-4 z-50"
+            className="fixed bottom-4 right-4 z-50 h-12 w-12 rounded-full shadow-lg bg-primary text-primary-foreground hover:bg-primary/90"
           >
             <MessageSquare className="h-5 w-5" />
           </Button>
         </DrawerTrigger>
-        <DrawerContent className="p-0">
-          <motion.div
-            initial={{ x: '100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '100%' }}
-            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-            className="h-[90vh] flex flex-col"
-          >
-            <SidebarHeader
-              title={getPageTitle()}
-              onClose={handleClose}
-            />
-            {!isCollapsed && (
-              <ScrollArea className="flex-1">{renderContent()}</ScrollArea>
-            )}
-          </motion.div>
+        <DrawerContent className="h-[85vh] p-0">
+          <div className="flex flex-col h-full">
+            <div className="flex items-center justify-between p-4 border-b">
+              <h3 className="text-lg font-semibold">{getPageTitle()}</h3>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={closeSidebar}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <ScrollArea className="flex-1">
+              {renderContent()}
+            </ScrollArea>
+          </div>
         </DrawerContent>
       </Drawer>
     );
   }
 
+  // Desktop version - hidden state
   if (isHidden) {
     return (
-      <Button
-        variant="ghost"
-        size="icon"
-        className="border-l"
-        onClick={() => setIsHidden(false)}
-      >
-        <MessageSquare className="h-5 w-5" />
-      </Button>
+      <div className="flex flex-col">
+        <Button
+          variant="outline"
+          size="icon"
+          className="m-2 h-8 w-8"
+          onClick={() => setIsHidden(false)}
+        >
+          <MessageSquare className="h-4 w-4" />
+        </Button>
+      </div>
     );
   }
 
   return (
-    <aside className="flex-1 h-full overflow-y-auto">
+    <div className="flex">
+      {/* Resize handle */}
       {!isCollapsed && (
-        <ResizableHandle onMouseDown={handleMouseDown} />
+        <div
+          className="w-1 bg-border hover:bg-primary/20 cursor-col-resize transition-colors"
+          onMouseDown={handleMouseDown}
+        />
       )}
 
+      {/* Sidebar content */}
       <motion.div
-        className="border-l bg-background flex flex-col h-full"
+        className="bg-background border-l flex flex-col"
         style={{
-          width: isCollapsed ? '0px' : `${width}px`,
-          minWidth: isCollapsed ? '0px' : '280px',
-          maxWidth: isCollapsed ? '0px' : '600px'
+          width: isCollapsed ? 48 : width,
+          minWidth: isCollapsed ? 48 : 320,
+          maxWidth: isCollapsed ? 48 : 600
         }}
-        animate={{ width: isCollapsed ? 0 : width }}
+        animate={{ width: isCollapsed ? 48 : width }}
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
       >
-        <SidebarHeader
-          title={getPageTitle()}
-          onClose={handleClose}
-        />
+        {/* Header */}
+        <div className="flex items-center justify-between p-3 border-b bg-muted/30">
+          {!isCollapsed && (
+            <h3 className="text-sm font-medium truncate">{getPageTitle()}</h3>
+          )}
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6"
+              onClick={toggleSidebar}
+            >
+              {isCollapsed ? (
+                <ChevronLeft className="h-3 w-3" />
+              ) : (
+                <ChevronRight className="h-3 w-3" />
+              )}
+            </Button>
+            {!isCollapsed && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6"
+                onClick={closeSidebar}
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            )}
+          </div>
+        </div>
 
+        {/* Content */}
         {!isCollapsed && (
-          <ScrollArea className="flex-1">{renderContent()}</ScrollArea>
+          <ScrollArea className="flex-1">
+            {renderContent()}
+          </ScrollArea>
+        )}
+
+        {/* Collapsed state - just icon */}
+        {isCollapsed && (
+          <div className="flex-1 flex items-center justify-center">
+            <MessageSquare className="h-5 w-5 text-muted-foreground" />
+          </div>
         )}
       </motion.div>
-    </aside>
+    </div>
   );
 };
 

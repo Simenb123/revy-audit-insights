@@ -37,14 +37,10 @@
     --sidebar-border: 175 20% 50%;
     --sidebar-ring: 174 57% 80%;
 
-    /* Fixed sidebar width variables */
-    --sidebar-width: 12rem;
-    --sidebar-width-collapsed: 4rem;
-    --sidebar-width-icon: 3rem;
-
-    /* Header height variable - increased for breadcrumbs */
-    --header-height: 3.5rem;
-    --breadcrumb-height: 2.5rem;
+    /* Layout variables */
+    --sidebar-width: 280px;
+    --sidebar-width-icon: 56px;
+    --header-height: 4rem;
 
     --revio-100: 174 57% 95%;
     --revio-500: 173 49% 39%;
@@ -108,39 +104,6 @@
   .revy-assistant-container [role="alert"] {
     display: none;
   }
-
-  /* Ensure proper layout constraints */
-  .layout-container {
-    display: flex;
-    width: 100%;
-    min-height: 100vh;
-  }
-  
-  .sidebar-left {
-    flex-shrink: 0;
-    width: var(--sidebar-width);
-    transition: width 300ms ease-in-out;
-  }
-  
-  .sidebar-left.collapsed {
-    width: var(--sidebar-width-collapsed);
-  }
-  
-  .sidebar-right {
-    flex-shrink: 0;
-    width: 20rem; /* 320px - fixed width for right sidebar */
-    transition: width 300ms ease-in-out;
-  }
-  
-  .sidebar-right.collapsed {
-    width: var(--sidebar-width-collapsed);
-  }
-  
-  .main-content {
-    flex: 1;
-    min-width: 0; /* Prevents flex item from overflowing */
-    overflow: auto;
-  }
 }
 
 @layer base {
@@ -185,7 +148,7 @@
 
   /* Fix for paragraphs and lists in Tiptap editor */
   .prose p {
-    @apply my-4; /* Add vertical space between paragraphs */
+    @apply my-4;
   }
 
   .prose ul {
@@ -201,11 +164,11 @@
   }
   
   .prose li > p {
-    @apply my-0; /* Remove paragraph margins inside list items */
+    @apply my-0;
   }
 
   .prose ul ul, .prose ul ol, .prose ol ul, .prose ol ol {
-    @apply my-2 ml-5; /* Indent nested lists */
+    @apply my-2 ml-5;
   }
 
   /* Custom styles for Tiptap Task Lists */

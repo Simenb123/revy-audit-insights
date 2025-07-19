@@ -1,3 +1,4 @@
+
 import { logger } from '@/utils/logger';
 
 import React from 'react';
@@ -47,10 +48,8 @@ const AppHeader: React.FC<AppHeaderProps> = ({ className = '' }) => {
     : session?.user?.email || 'Bruker';
 
   return (
-    <>
-      <header
-        className={`sticky top-0 z-50 bg-revio-500 border-b border-revio-600 h-[var(--header-height)] flex items-center justify-between px-6 text-white ${className}`}
-      >
+    <div className="sticky top-0 z-50 bg-background border-b">
+      <header className="bg-revio-500 border-b border-revio-600 flex items-center justify-between px-6 py-3 text-white">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
             <h2 className="text-lg font-semibold">Revio</h2>
@@ -66,52 +65,52 @@ const AppHeader: React.FC<AppHeaderProps> = ({ className = '' }) => {
         </div>
 
         <div className="flex items-center gap-3">
-        <Button variant="ghost" size="sm" className="text-white hover:bg-revio-600">
-          <Bell className="h-5 w-5" />
-        </Button>
-        
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-              <Avatar className="h-8 w-8">
-                <AvatarFallback className="text-xs bg-gray-100 text-gray-700">
-                  {userInitials}
-                </AvatarFallback>
-              </Avatar>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-56" align="end" forceMount>
-            <DropdownMenuLabel className="font-normal">
-              <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none">{userName}</p>
-                <p className="text-xs leading-none text-muted-foreground">
-                  {session?.user?.email}
-                </p>
-              </div>
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => navigate('/profile')}>
-              <User className="mr-2 h-4 w-4" />
-              <span>Profil</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate('/organization-settings')}>
-              <Settings className="mr-2 h-4 w-4" />
-              <span>Innstillinger</span>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleSignOut}>
-              Logg ut
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+          <Button variant="ghost" size="sm" className="text-white hover:bg-revio-600">
+            <Bell className="h-5 w-5" />
+          </Button>
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                <Avatar className="h-8 w-8">
+                  <AvatarFallback className="text-xs bg-gray-100 text-gray-700">
+                    {userInitials}
+                  </AvatarFallback>
+                </Avatar>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56" align="end" forceMount>
+              <DropdownMenuLabel className="font-normal">
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm font-medium leading-none">{userName}</p>
+                  <p className="text-xs leading-none text-muted-foreground">
+                    {session?.user?.email}
+                  </p>
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => navigate('/profile')}>
+                <User className="mr-2 h-4 w-4" />
+                <span>Profil</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/organization-settings')}>
+                <Settings className="mr-2 h-4 w-4" />
+                <span>Innstillinger</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleSignOut}>
+                Logg ut
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </header>
+      
+      {/* Breadcrumbs bar */}
+      <div className="bg-muted/30 border-b px-6 py-2">
+        <Breadcrumbs />
       </div>
-    </header>
-    
-    {/* Breadcrumbs bar */}
-    <div className="bg-muted/30 border-b px-6 py-2">
-      <Breadcrumbs />
     </div>
-  </>
   );
 };
 
