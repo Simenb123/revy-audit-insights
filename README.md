@@ -141,11 +141,11 @@ load variables from `.env.local`.
 
 ### CI Setup
 
-For automated environments, you can run `scripts/setup-ci.sh` to install dependencies and execute the test suite. This is useful for continuous integration pipelines.
+For automated environments, you can run `scripts/setup-ci.sh` to install dependencies and execute both the Node and Deno test suites. The script automatically installs Deno before running the tests, which makes it well suited for continuous integration pipelines.
 
 ## Deno Edge Function Tests
 
-Install Deno (for example with `npm install -g deno`) and run:
+Install Deno (for example with `curl -fsSL https://deno.land/install.sh | sh`) and run:
 
 ```bash
  deno test supabase/functions
