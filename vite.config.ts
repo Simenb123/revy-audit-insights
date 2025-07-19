@@ -5,26 +5,35 @@ import path from "path";
 import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
-export default defineConfig(({ mode }) => ({
-  server: {
-    host: "::",
-    port: 8080,
-  },
-  plugins: [
-    react(),
-    mode === 'development' &&
-    componentTagger(),
-  ].filter(Boolean),
-  resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
+export default defineConfig(({ mode }) => {
+  // Check if we're running in Lovable environment
+  const isLovableEnvironment = process.env.NODE_ENV !== 'production' || 
+                               process.env.LOVABLE === 'true' ||
+                               typeof window !== 'undefined';
+  
+  // Always enable componentTagger in development or Lovable environment
+  const shouldEnableTagger = mode === 'development' || isLovableEnvironment;
+
+  return {
+    server: {
+      host: "::",
+      port: 8080,
     },
-  },
-  define: {
-    // Define environment variables at build time
-    'import.meta.env.SUPABASE_URL': JSON.stringify(process.env.SUPABASE_URL || ''),
-    'import.meta.env.SUPABASE_ANON_KEY': JSON.stringify(process.env.SUPABASE_ANON_KEY || ''),
-    'import.meta.env.SUPABASE_FUNCTIONS_URL': JSON.stringify(process.env.SUPABASE_FUNCTIONS_URL || ''),
-    'import.meta.env.SUPABASE_SERVICE_ROLE_KEY': JSON.stringify(process.env.SUPABASE_SERVICE_ROLE_KEY || ''),
-  },
-}));
+    plugins: [
+      react(),
+      shouldEnableTagger && componentTagger(),
+    ].filter(Boolean),
+    resolve: {
+      alias: {
+        "@": path.resolve(__dirname, "./src"),
+      },
+    },
+    define: {
+      // Define environment variables at build time
+      'import.meta.env.SUPABASE_URL': JSON.stringify(process.env.SUPABASE_URL || ''),
+      'import.meta.env.SUPABASE_ANON_KEY': JSON.stringify(process.env.SUPABASE_ANON_KEY || ''),
+      'import.meta.env.SUPABASE_FUNCTIONS_URL': JSON.stringify(process.env.SUPABASE_FUNCTIONS_URL || ''),
+      'import.meta.env.SUPABASE_SERVICE_ROLE_KEY': JSON.stringify(process.env.SUPABASE_SERVICE_ROLE_KEY || ''),
+    },
+  };
+});
