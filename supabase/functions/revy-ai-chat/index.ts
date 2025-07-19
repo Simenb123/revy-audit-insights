@@ -1,3 +1,4 @@
+
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
@@ -13,10 +14,13 @@ serve(async (req) => {
   }
 
   try {
+    console.log('🚀 AI-Revy chat function started');
+    
     const requestBody = await req.json();
     const { message, context = 'general', variantName = 'support' } = requestBody;
 
     if (!message) {
+      console.log('❌ No message provided');
       return new Response(JSON.stringify({ 
         error: 'Message is required' 
       }), {
@@ -25,18 +29,26 @@ serve(async (req) => {
       });
     }
 
+    console.log('📝 Processing message:', message.substring(0, 50) + '...');
+
     // Check for OpenAI API key
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openaiApiKey) {
+      console.error('❌ OpenAI API key not configured');
       throw new Error('OpenAI API key is not configured');
     }
 
     console.log('🔍 Starting knowledge search for:', message.substring(0, 50));
 
-    // First, search for relevant knowledge articles
+    // Search for relevant knowledge articles with timeout
     let knowledgeContext = '';
     try {
       const knowledgeSearchUrl = 'https://fxelhfwaoizqyecikscu.supabase.co/functions/v1/knowledge-search';
+      
+      // Create AbortController for timeout handling
+      const abortController = new AbortController();
+      const timeoutId = setTimeout(() => abortController.abort(), 15000); // 15 second timeout
+      
       const knowledgeResponse = await fetch(knowledgeSearchUrl, {
         method: 'POST',
         headers: {
@@ -44,7 +56,10 @@ serve(async (req) => {
           'Authorization': req.headers.get('Authorization') || '',
         },
         body: JSON.stringify({ query: message }),
+        signal: abortController.signal,
       });
+
+      clearTimeout(timeoutId);
 
       if (knowledgeResponse.ok) {
         const knowledgeData = await knowledgeResponse.json();
@@ -63,9 +78,15 @@ ${relevantArticles.map((article: any) => `
 
 VIKTIG: Når du refererer til disse artiklene, bruk lenkeformat: [Artikkelnavn](/fag/artikkel/${article.slug})`;
         }
+      } else {
+        console.log('⚠️ Knowledge search responded with status:', knowledgeResponse.status);
       }
     } catch (error) {
-      console.log('⚠️ Knowledge search failed:', error.message);
+      if (error.name === 'AbortError') {
+        console.log('⚠️ Knowledge search timed out after 15 seconds');
+      } else {
+        console.log('⚠️ Knowledge search failed:', error.message);
+      }
     }
 
     // Build system prompt
@@ -83,49 +104,86 @@ ${knowledgeContext}
 VIKTIG: Avslutt ALLTID svaret ditt med en linje som inneholder: "🏷️ **EMNER:** [liste over relevante norske emner adskilt med komma]"
 Dette er påkrevd for at grensesnittet skal fungere korrekt.`;
 
-    // Call OpenAI
+    // Call OpenAI with timeout handling
     console.log('🤖 Calling OpenAI API...');
-    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openaiApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: message }
-        ],
-        temperature: 0.3,
-        max_tokens: 1500,
-      }),
-    });
+    
+    const abortController = new AbortController();
+    const timeoutId = setTimeout(() => abortController.abort(), 30000); // 30 second timeout
+    
+    try {
+      const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openaiApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: message }
+          ],
+          temperature: 0.3,
+          max_tokens: 1500,
+        }),
+        signal: abortController.signal,
+      });
 
-    if (!openaiResponse.ok) {
-      throw new Error(`OpenAI API error: ${openaiResponse.status}`);
+      clearTimeout(timeoutId);
+
+      if (!openaiResponse.ok) {
+        const errorText = await openaiResponse.text();
+        console.error('❌ OpenAI API error:', openaiResponse.status, errorText);
+        throw new Error(`OpenAI API error: ${openaiResponse.status} - ${errorText}`);
+      }
+
+      const openaiData = await openaiResponse.json();
+      const aiResponse = openaiData.choices[0].message.content;
+
+      console.log('✅ AI response generated successfully');
+
+      return new Response(JSON.stringify({
+        response: aiResponse,
+        variantUsed: variantName,
+        hasKnowledgeReferences: knowledgeContext.length > 0
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+
+    } catch (error) {
+      clearTimeout(timeoutId);
+      
+      if (error.name === 'AbortError') {
+        console.error('⏰ OpenAI API request timed out');
+        throw new Error('AI request timed out. Please try again.');
+      } else {
+        throw error;
+      }
     }
-
-    const openaiData = await openaiResponse.json();
-    const aiResponse = openaiData.choices[0].message.content;
-
-    console.log('✅ AI response generated successfully');
-
-    return new Response(JSON.stringify({
-      response: aiResponse,
-      variantUsed: variantName,
-      hasKnowledgeReferences: knowledgeContext.length > 0
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
 
   } catch (error) {
     console.error('💥 Error in revy-ai-chat:', error);
+    
+    // Provide helpful error message based on error type
+    let errorMessage = 'Intern serverfeil. Prøv igjen senere.';
+    let statusCode = 500;
+    
+    if (error.message.includes('timeout') || error.message.includes('timed out')) {
+      errorMessage = 'Forespørselen tok for lang tid. Prøv igjen om litt.';
+      statusCode = 408;
+    } else if (error.message.includes('OpenAI')) {
+      errorMessage = 'AI-tjenesten er midlertidig utilgjengelig. Prøv igjen senere.';
+      statusCode = 503;
+    } else if (error.message.includes('not configured')) {
+      errorMessage = 'AI-tjenesten er ikke konfigurert riktig.';
+      statusCode = 503;
+    }
+    
     return new Response(JSON.stringify({
-      error: 'Intern serverfeil. Prøv igjen senere.',
+      error: errorMessage,
       details: error.message
     }), {
-      status: 500,
+      status: statusCode,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }

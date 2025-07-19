@@ -1,9 +1,7 @@
-import "../xhr.ts";
-import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import type { Database } from '../../../src/integrations/supabase/types.ts';
-import { getSupabase } from "../_shared/supabaseClient.ts";
-import { log } from "../_shared/log.ts";
-import { getUserFromRequest, hasPermittedRole } from "../_shared/auth.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -29,39 +27,34 @@ interface SearchArticle {
   category?: { name: string; id: string } | null;
 }
 
-interface TagMappingEntry {
-  articleSlug: string;
-  articleTitle: string;
-  matchedTags: string[];
-  relevanceScore: number;
-  contentType: string;
-  category: string;
-  updated_at?: string;
-  published_at?: string;
-}
-
-interface KnowledgeSearchResponse {
-  articles: SearchArticle[];
-  tagMapping: Record<string, TagMappingEntry>;
-  message?: string;
-  error?: string;
+function getSupabaseClient(req: Request) {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? 'https://fxelhfwaoizqyecikscu.supabase.co';
+  const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ4ZWxoZndhb2l6cXllY2lrc2N1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUxNjM2NzksImV4cCI6MjA2MDczOTY3OX0.h20hURN-5qCAtI8tZaHpEoCnNmfdhIuYJG3tgXyvKqc';
+  
+  console.log('🔐 Initializing Supabase client with URL:', supabaseUrl.substring(0, 30) + '...');
+  
+  return createClient<Database>(supabaseUrl, supabaseAnonKey, {
+    global: { headers: { Authorization: req.headers.get('Authorization') || '' } }
+  });
 }
 
 async function getEmbedding(text: string, openAIApiKey: string) {
   try {
-    log('🔄 Getting embedding for text:', text.substring(0, 50) + '...');
+    console.log('🔄 Getting embedding for text:', text.substring(0, 50) + '...');
     const response = await fetch('https://api.openai.com/v1/embeddings', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${openAIApiKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ model: 'text-embedding-3-small', input: text.replace(/\n/g, ' ') }),
     });
+    
     if (!response.ok) {
-        const errorBody = await response.text();
-        console.error("❌ OpenAI embedding error:", errorBody);
-        throw new Error('Failed to get embedding from OpenAI');
+      const errorBody = await response.text();
+      console.error("❌ OpenAI embedding error:", errorBody);
+      throw new Error('Failed to get embedding from OpenAI');
     }
+    
     const data = await response.json();
-    log('✅ Embedding generated successfully');
+    console.log('✅ Embedding generated successfully');
     return data.data[0].embedding;
   } catch (error) {
     console.error('❌ Error getting embedding:', error);
@@ -78,17 +71,14 @@ function sanitizeWords(text: string): string[] {
   return cleaned.split(' ').filter(word => word.length > 1);
 }
 
-async function keywordSearch(
-  supabase: SupabaseClient<Database>,
-  query: string
-): Promise<SearchArticle[]> {
-  log('🔎 Enhanced keyword search for:', query);
+async function keywordSearch(supabase: any, query: string): Promise<SearchArticle[]> {
+  console.log('🔎 Enhanced keyword search for:', query);
 
   const words = sanitizeWords(query);
-  log('📝 Search words:', words);
+  console.log('📝 Search words:', words);
   
   if (words.length === 0) {
-    log('⚠️ No valid search words found');
+    console.log('⚠️ No valid search words found');
     return [];
   }
   
@@ -100,7 +90,7 @@ async function keywordSearch(
     
     const searchConditions = [titleConditions, summaryConditions, contentConditions, refConditions].join(',');
     
-    log('📊 Executing database query...');
+    console.log('📊 Executing database query...');
     const { data, error } = await supabase
       .from('knowledge_articles')
       .select(`
@@ -121,16 +111,14 @@ async function keywordSearch(
       .order('view_count', { ascending: false })
       .limit(20);
 
-    const typedData = data as SearchArticle[] | null;
-      
     if (error) {
       console.error('❌ Keyword search database error:', error);
       throw error;
     }
     
-    log(`✅ Keyword search found ${typedData?.length || 0} articles`);
+    console.log(`✅ Keyword search found ${data?.length || 0} articles`);
 
-    return (typedData || []).map((article: SearchArticle) => {
+    return (data || []).map((article: any) => {
       let relevanceScore = 0;
       const titleLower = (article.title || '').toLowerCase();
       const summaryLower = (article.summary || '').toLowerCase();
@@ -157,71 +145,21 @@ async function keywordSearch(
   }
 }
 
-function createTagMapping(
-  articles: SearchArticle[],
-  keywords: string[]
-): Record<string, TagMappingEntry> {
-  const mapping: Record<string, TagMappingEntry> = {};
-  
-  keywords.forEach(keyword => {
-    const keywordLower = keyword.toLowerCase();
-    let bestMatch = null;
-    let bestScore = 0;
-    
-    articles.forEach(article => {
-      let score = 0;
-      
-      if (article.title && article.title.toLowerCase().includes(keywordLower)) score += 5;
-      if (article.reference_code && article.reference_code.toLowerCase().includes(keywordLower)) score += 4;
-      if (article.summary && article.summary.toLowerCase().includes(keywordLower)) score += 2;
-      
-      if (score > bestScore) {
-        bestScore = score;
-        bestMatch = article;
-      }
-    });
-    
-    if (bestMatch && bestScore > 0) {
-      mapping[keyword] = {
-        articleSlug: bestMatch.slug,
-        articleTitle: bestMatch.title,
-        matchedTags: [],
-        relevanceScore: bestScore,
-        contentType: 'fagartikkel',
-        category: bestMatch.category?.name || 'Ukategoriseret',
-        updated_at: bestMatch.updated_at,
-        published_at: bestMatch.published_at
-      };
-    }
-  });
-  
-  return mapping;
-}
-
-export async function handler(req: Request): Promise<Response> {
+export default async function handler(req: Request): Promise<Response> {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const user = getUserFromRequest(req);
+    console.log('🚀 Knowledge search function started');
     
-    // Allow guest access for knowledge search since articles are public
-    if (user) {
-      log('🚀 Knowledge search function started for user', user?.sub?.slice(0, 8));
-    } else {
-      log('🚀 Knowledge search function started for guest user');
-    }
-    
-    // Improved JSON parsing with better error handling
     let requestBody: KnowledgeSearchRequest;
     try {
       const bodyText = await req.text();
-      log('📝 Raw request body length:', bodyText?.length || 0);
+      console.log('📝 Raw request body length:', bodyText?.length || 0);
       
       if (!bodyText || bodyText.trim() === '') {
-        log('⚠️ Empty request body received, using fallback');
-        // Return empty results instead of throwing error
+        console.log('⚠️ Empty request body received, using fallback');
         return new Response(JSON.stringify({
           articles: [],
           tagMapping: {},
@@ -245,7 +183,7 @@ export async function handler(req: Request): Promise<Response> {
 
     const { query } = requestBody;
     if (!query || query.trim() === '') {
-      log('⚠️ No query parameter provided');
+      console.log('⚠️ No query parameter provided');
       return new Response(JSON.stringify({
         articles: [],
         tagMapping: {},
@@ -256,15 +194,12 @@ export async function handler(req: Request): Promise<Response> {
       });
     }
 
-    log('🔍 Knowledge search for query:', query.substring(0, 50) + '...');
+    console.log('🔍 Knowledge search for query:', query.substring(0, 50) + '...');
 
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+    const supabase = getSupabaseClient(req);
 
-    log('🔗 Creating Supabase client...');
-    const supabase: SupabaseClient<Database> = getSupabase(req);
-
-
-    log('📊 Checking total published articles...');
+    console.log('📊 Checking total published articles...');
     const { count: totalCount, error: countError } = await supabase
       .from('knowledge_articles')
       .select('*', { count: 'exact', head: true })
@@ -275,10 +210,10 @@ export async function handler(req: Request): Promise<Response> {
       throw countError;
     }
     
-    log(`📈 Total published articles: ${totalCount || 0}`);
+    console.log(`📈 Total published articles: ${totalCount || 0}`);
     
     if (!totalCount || totalCount === 0) {
-      log('⚠️ No published articles found');
+      console.log('⚠️ No published articles found');
       return new Response(JSON.stringify({
         articles: [],
         tagMapping: {}
@@ -291,10 +226,10 @@ export async function handler(req: Request): Promise<Response> {
     
     if (openAIApiKey) {
       try {
-        log('🧠 Attempting semantic search...');
+        console.log('🧠 Attempting semantic search...');
         const queryEmbedding = await getEmbedding(query, openAIApiKey);
         
-        log('🔍 Calling match_knowledge_articles RPC...');
+        console.log('🔍 Calling match_knowledge_articles RPC...');
         const { data, error } = await supabase.rpc('match_knowledge_articles', {
           p_query_embedding: queryEmbedding,
           p_match_threshold: 0.7,
@@ -304,46 +239,42 @@ export async function handler(req: Request): Promise<Response> {
         if (error) {
           console.error('❌ Semantic search RPC error:', error);
         } else {
-            semanticResults = data || [];
-            log(`✅ Semantic search found ${semanticResults.length} articles`);
+          semanticResults = data || [];
+          console.log(`✅ Semantic search found ${semanticResults.length} articles`);
         }
       } catch (e) {
         console.error("❌ Error during semantic search:", e.message);
       }
     } else {
-      log('⚠️ No OpenAI API key, skipping semantic search');
+      console.log('⚠️ No OpenAI API key, skipping semantic search');
     }
     
-    log('🔤 Performing keyword search...');
+    console.log('🔤 Performing keyword search...');
     const keywordResults = await keywordSearch(supabase, query);
 
     const combinedResults = [...(semanticResults || []), ...keywordResults];
     const uniqueResults = Array.from(new Map(combinedResults.map(item => [item.id, item])).values());
     
     uniqueResults.sort((a, b) => {
-        if (b.similarity !== a.similarity) {
-            return b.similarity - a.similarity;
-        }
-        return (b.view_count || 0) - (a.view_count || 0);
+      if (b.similarity !== a.similarity) {
+        return b.similarity - a.similarity;
+      }
+      return (b.view_count || 0) - (a.view_count || 0);
     });
 
     const finalResults = uniqueResults.slice(0, 20);
     
-    const keywords = sanitizeWords(query);
-    const tagMapping = createTagMapping(finalResults, keywords);
-    
-    log(`✅ Returning ${finalResults.length} unique search results with tag mappings`);
+    console.log(`✅ Returning ${finalResults.length} unique search results`);
 
     return new Response(JSON.stringify({
       articles: finalResults,
-      tagMapping: tagMapping
+      tagMapping: {}
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
     console.error('💥 Critical error in knowledge-search function:', error);
-    // Return empty results instead of error to prevent breaking the AI chat
     return new Response(JSON.stringify({
       articles: [],
       tagMapping: {},
@@ -355,6 +286,4 @@ export async function handler(req: Request): Promise<Response> {
   }
 }
 
-if (import.meta.main) {
-  Deno.serve(handler);
-}
+Deno.serve(handler);

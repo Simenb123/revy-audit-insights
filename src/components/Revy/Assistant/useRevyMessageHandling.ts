@@ -1,3 +1,4 @@
+
 import { logger } from '@/utils/logger';
 
 import { useState, useEffect } from 'react';
@@ -5,7 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/Auth/AuthProvider';
 import { RevyContext, RevyChatMessage, RevyMessage } from '@/types/revio';
-import { generateEnhancedAIResponseWithVariant } from '@/services/revy/enhancedAiInteractionService';
+import { toast } from 'sonner';
 
 interface UseRevyMessageHandlingProps {
   context: RevyContext;
@@ -166,7 +167,7 @@ Jeg kan hjelpe deg med planlegging og gjennomføring av revisjonshandlinger, ISA
   };
 
   const handleSendMessage = async () => {
-    if (!input.trim() || isLoading || !session?.user?.id) return;
+    if (!input.trim() || isLoading) return;
 
     const userMessage = input.trim();
     setInput('');
@@ -190,39 +191,32 @@ Jeg kan hjelpe deg med planlegging og gjennomføring av revisjonshandlinger, ISA
     setMessages(updatedMessages);
 
     try {
-      logger.log(`🤖 Generating AI response with context: ${context} and variant:`, selectedVariant?.name || 'default');
+      logger.log(`🤖 Sending message to AI-Revy with context: ${context}`);
       
-      // Convert RevyMessage[] to RevyChatMessage[] format expected by the enhanced AI service
-      const chatHistory: RevyChatMessage[] = updatedMessages.map(msg => ({
-        id: msg.id || crypto.randomUUID(),
-        session_id: sessionId || '',
-        sender: msg.sender === 'assistant' ? 'revy' : msg.sender,
-        content: typeof msg.content === 'string' ? msg.content : String(msg.content),
-        created_at: msg.timestamp.toISOString(),
-        metadata: {}
-      }));
-
-      // Use enhanced AI service - now fully secure with no direct OpenAI calls
-      const aiResponse = await generateEnhancedAIResponseWithVariant(
-        userMessage,
-        context,
-        chatHistory,
-        clientData,
-        userRole,
-        sessionId,
-        selectedVariant
-      );
-
-      logger.log('🔍 AI response received with context-aware content:', {
-        context: context,
-        variant: selectedVariant?.name,
-        responseLength: aiResponse.length
+      // Call the improved revy-ai-chat function directly
+      const { data, error } = await supabase.functions.invoke('revy-ai-chat', {
+        body: {
+          message: userMessage,
+          context: context,
+          variantName: selectedVariant?.name || 'support'
+        }
       });
+
+      if (error) {
+        console.error('❌ Supabase function error:', error);
+        throw new Error(error.message || 'Failed to get AI response');
+      }
+
+      if (!data || !data.response) {
+        throw new Error('No response received from AI');
+      }
+
+      logger.log('🔍 AI response received:', data.response.substring(0, 100) + '...');
 
       const aiMessage: RevyMessage = {
         id: crypto.randomUUID(),
         sender: 'assistant',
-        content: aiResponse,
+        content: data.response,
         timestamp: new Date(),
       };
 
@@ -233,35 +227,57 @@ Jeg kan hjelpe deg med planlegging og gjennomføring av revisjonshandlinger, ISA
         try {
           await supabase.from('revy_chat_messages').insert([
             { session_id: sessionId, sender: 'user', content: userMessage },
-            { session_id: sessionId, sender: 'revy', content: aiResponse }
+            { session_id: sessionId, sender: 'revy', content: data.response }
           ]);
         } catch (error) {
           logger.error('Error saving messages:', error);
         }
       }
 
+      // Show success toast if knowledge was used
+      if (data.hasKnowledgeReferences) {
+        toast.success('AI-Revy brukte fagartikler', {
+          description: 'Svaret er basert på relevant faginnhold'
+        });
+      }
+
     } catch (error) {
       logger.error('Error getting AI response:', error);
       
-      const errorMessage: RevyMessage = {
-        id: crypto.randomUUID(),
-        sender: 'assistant',
-        content: `Beklager, jeg opplever tekniske problemer akkurat nå. Dette kan skyldes:
+      let errorMessage = `Beklager, jeg opplever tekniske problemer akkurat nå. 
 
-• Nettverksforbindelse problemer
-• Midlertidig utilgjengelighet av AI-tjenester
-• Overbelastning av systemet
+**Feilmelding:** ${error.message}
 
 **Forslag:**
 • Prøv igjen om litt
 • Sjekk internett-tilkoblingen din
 • Kontakt support hvis problemet vedvarer
 
-🏷️ **EMNER:** Teknisk support, Feilsøking, AI-assistanse`,
+🏷️ **EMNER:** Teknisk support, Feilsøking, AI-assistanse`;
+
+      // Show user-friendly toast
+      if (error.message.includes('timeout') || error.message.includes('timed out')) {
+        toast.error('Forespørselen tok for lang tid', {
+          description: 'Prøv å gjenta spørsmålet ditt'
+        });
+      } else if (error.message.includes('503') || error.message.includes('temporarily unavailable')) {
+        toast.error('AI-tjenesten er midlertidig utilgjengelig', {
+          description: 'Prøv igjen om noen minutter'
+        });
+      } else {
+        toast.error('Teknisk feil', {
+          description: 'AI-Revy kunne ikke svare på spørsmålet ditt'
+        });
+      }
+
+      const errorAiMessage: RevyMessage = {
+        id: crypto.randomUUID(),
+        sender: 'assistant',
+        content: errorMessage,
         timestamp: new Date(),
       };
 
-      setMessages(prev => [...prev, errorMessage]);
+      setMessages(prev => [...prev, errorAiMessage]);
     } finally {
       setIsLoading(false);
       setIsAnalyzingDocuments(false);
