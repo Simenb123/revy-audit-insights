@@ -205,16 +205,13 @@ export async function handler(req: Request): Promise<Response> {
 
   try {
     const user = getUserFromRequest(req);
-    const permittedRoles = ['admin', 'partner', 'manager', 'employee'];
-    if (!hasPermittedRole(user, permittedRoles)) {
-      log('❌ Unauthorized request', { userId: user?.sub, role: user?.user_role || user?.role });
-      return new Response(JSON.stringify({ articles: [], tagMapping: {}, error: 'Forbidden' }), {
-        status: 403,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+    
+    // Allow guest access for knowledge search since articles are public
+    if (user) {
+      log('🚀 Knowledge search function started for user', user?.sub?.slice(0, 8));
+    } else {
+      log('🚀 Knowledge search function started for guest user');
     }
-
-    log('🚀 Knowledge search function started for user', user?.sub?.slice(0, 8));
     
     // Improved JSON parsing with better error handling
     let requestBody: KnowledgeSearchRequest;
