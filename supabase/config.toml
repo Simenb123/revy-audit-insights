@@ -10,6 +10,8 @@
     verify_jwt = true
   [functions.document-ai-analyzer]
     verify_jwt = true
+  [functions.revy-ai-chat]
+    verify_jwt = false
   [functions.syncKunngjoring]
     verify_jwt = false
   [functions.text-to-speech]
