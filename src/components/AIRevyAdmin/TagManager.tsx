@@ -4,7 +4,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Hash, Plus, Tag as TagIcon, Edit, Trash2 } from 'lucide-react';
 import EntityManager from '@/components/common/EntityManager';
-import { useTags, useCreateTag, useUpdateTag, useDeleteTag, type Tag as TagType } from '@/hooks/knowledge/useTags';
+import { useTags, useCreateTag, useUpdateTag, useDeleteTag, type Tag } from '@/hooks/knowledge/useTags';
 import TagForm from './forms/TagForm';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -29,7 +29,7 @@ const categoryLabels: Record<string, string> = {
   'custom': 'Tilpasset'
 };
 
-const TagCard = ({ tag, actions }: { tag: TagType; actions: { select: () => void; edit: () => void; remove: () => void; selected: boolean } }) => (
+const TagCard = ({ tag, actions }: { tag: Tag; actions: { select: () => void; edit: () => void; remove: () => void; selected: boolean } }) => (
   <Card className={`cursor-pointer transition-colors hover:bg-accent/50 ${actions.selected ? 'border-primary' : ''}`}>
     <CardContent className="p-4">
       <div className="flex items-start justify-between">
@@ -67,7 +67,7 @@ const TagCard = ({ tag, actions }: { tag: TagType; actions: { select: () => void
   </Card>
 );
 
-const TagDetails = ({ tag }: { tag: TagType }) => (
+const TagDetails = ({ tag }: { tag: Tag }) => (
   <div className="space-y-4">
     <div className="grid grid-cols-2 gap-4">
       <div>
@@ -110,10 +110,10 @@ const TagManager = () => {
   const updateTag = useUpdateTag();
   const deleteTag = useDeleteTag();
 
-  const filteredTags = filterCategory === 'all' ? tags : tags.filter((tag: TagType) => tag.category === filterCategory);
+  const filteredTags = filterCategory === 'all' ? tags : tags.filter((tag: Tag) => tag.category === filterCategory);
 
   return (
-    <EntityManager<TagType>
+    <EntityManager<Tag>
       items={filteredTags}
       isLoading={isLoading}
       itemKey={(t) => t.id}
@@ -123,7 +123,7 @@ const TagManager = () => {
       FormComponent={({ item, onSubmit }) => (
         <TagForm defaultValues={item ?? undefined} onSubmit={onSubmit} />
       )}
-      renderItem={(tag: TagType, actions) => (
+      renderItem={(tag: Tag, actions) => (
         <TagCard tag={tag} actions={actions} />
       )}
       header={(
