@@ -48,8 +48,8 @@ const AppHeader: React.FC<AppHeaderProps> = ({ className = '' }) => {
     : session?.user?.email || 'Bruker';
 
   return (
-    <div className="sticky top-0 z-50 bg-background border-b">
-      <header className="bg-revio-500 border-b border-revio-600 flex items-center justify-between px-6 py-3 text-white">
+    <div className="sticky top-0 z-50 bg-background border-b shadow-sm">
+      <header className="bg-revio-500 border-b border-revio-600 flex items-center justify-between px-6 py-3 text-white h-16">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
             <h2 className="text-lg font-semibold">Revio</h2>
@@ -107,7 +107,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ className = '' }) => {
       </header>
       
       {/* Breadcrumbs bar */}
-      <div className="bg-muted/30 border-b px-6 py-2">
+      <div className="bg-muted/30 border-b px-6 py-2 h-10">
         <Breadcrumbs />
       </div>
     </div>

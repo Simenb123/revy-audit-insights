@@ -83,11 +83,13 @@ const ResizableLeftSidebar = () => {
       collapsible="icon"
       className="border-r bg-sidebar"
     >
-      <SidebarHeader className="flex flex-row items-center justify-between p-4">
-        {!isCollapsed && (
-          <h3 className="text-sm font-medium text-sidebar-foreground">Navigation</h3>
-        )}
-        <SidebarTrigger />
+      <SidebarHeader className="p-2">
+        <div className="flex items-center justify-between">
+          {!isCollapsed && (
+            <h3 className="text-sm font-medium text-sidebar-foreground px-2">Navigation</h3>
+          )}
+          <SidebarTrigger className="h-8 w-8" />
+        </div>
       </SidebarHeader>
       
       <SidebarContent>
