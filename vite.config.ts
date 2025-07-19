@@ -8,8 +8,7 @@ import { componentTagger } from "lovable-tagger";
 export default defineConfig(({ mode }) => {
   // Check if we're running in Lovable environment
   const isLovableEnvironment = process.env.NODE_ENV !== 'production' || 
-                               process.env.LOVABLE === 'true' ||
-                               typeof window !== 'undefined';
+                               process.env.LOVABLE === 'true';
   
   // Always enable componentTagger in development or Lovable environment
   const shouldEnableTagger = mode === 'development' || isLovableEnvironment;
