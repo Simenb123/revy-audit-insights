@@ -81,31 +81,35 @@ const ResizableLeftSidebar = () => {
   return (
     <ShadcnSidebar
       collapsible="icon"
-      className="border-r bg-sidebar"
+      className="bg-sidebar border-0"
     >
       <SidebarHeader className="p-2">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-center">
           {!isCollapsed && (
             <h3 className="text-sm font-medium text-sidebar-foreground px-2">Navigation</h3>
           )}
-          <SidebarTrigger className="h-8 w-8" />
+          <SidebarTrigger className="h-8 w-8 ml-auto" />
         </div>
       </SidebarHeader>
       
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="space-y-1">
               {navigationItems.map((item) => {
                 const isActive = location.pathname === item.url || 
                   (item.url !== '/' && location.pathname.startsWith(item.url))
                 
                 return (
                   <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild isActive={isActive}>
-                      <Link to={item.url} className="flex items-center gap-3">
-                        <item.icon className="h-4 w-4" />
-                        <span>{item.title}</span>
+                    <SidebarMenuButton 
+                      asChild 
+                      isActive={isActive}
+                      className={isCollapsed ? "justify-center px-2" : "justify-start px-3"}
+                    >
+                      <Link to={item.url} className={isCollapsed ? "flex items-center justify-center" : "flex items-center gap-3"}>
+                        <item.icon className="h-4 w-4 flex-shrink-0" />
+                        {!isCollapsed && <span>{item.title}</span>}
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
