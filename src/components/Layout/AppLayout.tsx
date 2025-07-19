@@ -39,20 +39,20 @@ const AppLayout = () => {
     return (
       <div className="min-h-screen flex flex-col bg-background">
         <AppHeader />
-        <SidebarProvider>
-          <div className="flex flex-1">
+        <div className="flex flex-1 relative">
+          <SidebarProvider>
             <ResizableLeftSidebar />
-            <main className="flex-1 overflow-auto">
-              <div className="p-4 bg-yellow-50 border-b border-yellow-200">
-                <p className="text-sm text-yellow-800">
-                  Demo-modus: Appen kjører uten tilkobling til backend.
-                </p>
-              </div>
-              <Outlet />
-            </main>
-            <ResizableRightSidebar />
-          </div>
-        </SidebarProvider>
+          </SidebarProvider>
+          <main className="flex-1 overflow-auto">
+            <div className="p-4 bg-yellow-50 border-b border-yellow-200">
+              <p className="text-sm text-yellow-800">
+                Demo-modus: Appen kjører uten tilkobling til backend.
+              </p>
+            </div>
+            <Outlet />
+          </main>
+          <ResizableRightSidebar />
+        </div>
       </div>
     );
   }
@@ -74,15 +74,15 @@ const AppLayout = () => {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <AppHeader />
-      <SidebarProvider>
-        <div className="flex flex-1">
+      <div className="flex flex-1 relative">
+        <SidebarProvider>
           <ResizableLeftSidebar />
-          <main className="flex-1 overflow-auto">
-            <Outlet />
-          </main>
-          <ResizableRightSidebar />
-        </div>
-      </SidebarProvider>
+        </SidebarProvider>
+        <main className="flex-1 overflow-auto">
+          <Outlet />
+        </main>
+        <ResizableRightSidebar />
+      </div>
     </div>
   );
 };

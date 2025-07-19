@@ -146,7 +146,7 @@ const ResizableRightSidebar = () => {
   }
 
   return (
-    <div className="flex">
+    <div className="fixed right-0 top-16 bottom-0 z-40 flex">
       {/* Resize handle */}
       {!isCollapsed && (
         <div
@@ -157,7 +157,7 @@ const ResizableRightSidebar = () => {
 
       {/* Sidebar content */}
       <motion.div
-        className="bg-background border-l flex flex-col"
+        className="bg-background border-l flex flex-col h-full"
         style={{
           width: isCollapsed ? 48 : width,
           minWidth: isCollapsed ? 48 : 320,
