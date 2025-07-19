@@ -107,7 +107,14 @@ For the embedded generation trigger to work properly, you may need to set custom
 
 1. Clone the repository
 2. Install dependencies: `npm install --legacy-peer-deps`
-3. Run the test suite to verify the setup: `npm test`
+3. *(Optional)* Merge `package.extend.json` into `package.json` if you plan to run the Cypress tests. The file adds a `cypress:run` script and installs Cypress as a dev dependency. A simple merge command is:
+
+   ```bash
+   jq -s '.[0] * .[1]' package.json package.extend.json > package.json
+   npm install --legacy-peer-deps
+   ```
+
+4. Run the test suite to verify the setup: `npm test`
 
 To quickly verify that the Supabase edge functions respond you can run the
 smoke test script:
@@ -119,9 +126,9 @@ node scripts/smoke-test.js
 This requires `SUPABASE_URL` and `SUPABASE_ANON_KEY` to be set, as described in
 [docs/testing-ci.md](docs/testing-ci.md).
 
-4. Copy `.env.example` to `.env.local` and fill in your credentials
-5. Start the development server: `npm run dev` (it will automatically load `.env.local`)
-6. To deploy edge functions, store your secrets with:
+5. Copy `.env.example` to `.env.local` and fill in your credentials
+6. Start the development server: `npm run dev` (it will automatically load `.env.local`)
+7. To deploy edge functions, store your secrets with:
    ```bash
    supabase functions secrets set \
      SUPABASE_URL=<your-project-url> \
