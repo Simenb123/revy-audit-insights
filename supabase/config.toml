@@ -10,8 +10,6 @@
     verify_jwt = true
   [functions.document-ai-analyzer]
     verify_jwt = true
-  [functions.revy-ai-chat]
-    verify_jwt = true
   [functions.syncKunngjoring]
     verify_jwt = false
   [functions.text-to-speech]
@@ -19,6 +17,6 @@
   [functions.voice-to-text]
     verify_jwt = true
   [functions.knowledge-search]
-    verify_jwt = true
+    verify_jwt = false
   [functions.generate-embeddings]
     verify_jwt = true
