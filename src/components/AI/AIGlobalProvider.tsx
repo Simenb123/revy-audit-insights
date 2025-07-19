@@ -27,6 +27,9 @@ interface AIGlobalState {
   // Real-time state
   activeUsers: string[];
   sharedContext: any;
+
+  // Conversation history
+  messageHistory: { sender: 'user' | 'assistant'; content: string }[];
 }
 
 interface CachedResponse {
@@ -40,7 +43,8 @@ interface CachedResponse {
 interface AIAction {
   type: 'SET_SESSION' | 'SET_CONTEXT' | 'SET_VARIANT' | 'SET_STREAMING' | 
         'SET_PROCESSING' | 'ADD_CACHE' | 'SET_ERROR' | 'UPDATE_CONNECTION' |
-        'ADD_QUERY' | 'UPDATE_SHARED_CONTEXT' | 'RESET_STATE';
+        'ADD_QUERY' | 'UPDATE_SHARED_CONTEXT' | 'RESET_STATE' |
+        'ADD_MESSAGE' | 'CLEAR_HISTORY';
   payload?: any;
 }
 
@@ -56,7 +60,8 @@ const initialState: AIGlobalState = {
   lastError: null,
   connectionStatus: 'disconnected',
   activeUsers: [],
-  sharedContext: {}
+  sharedContext: {},
+  messageHistory: []
 };
 
 const aiGlobalReducer = (state: AIGlobalState, action: AIAction): AIGlobalState => {
@@ -102,6 +107,16 @@ const aiGlobalReducer = (state: AIGlobalState, action: AIAction): AIGlobalState 
       
     case 'UPDATE_SHARED_CONTEXT':
       return { ...state, sharedContext: { ...state.sharedContext, ...action.payload } };
+
+    case 'ADD_MESSAGE':
+      const maxHistory = 12;
+      return {
+        ...state,
+        messageHistory: [...state.messageHistory, action.payload].slice(-maxHistory)
+      };
+
+    case 'CLEAR_HISTORY':
+      return { ...state, messageHistory: [] };
       
     case 'RESET_STATE':
       return { ...initialState, connectionStatus: state.connectionStatus };
@@ -171,6 +186,7 @@ export const AIGlobalProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     dispatch({ type: 'SET_SESSION', payload: null });
     dispatch({ type: 'SET_STREAMING', payload: false });
     dispatch({ type: 'SET_PROCESSING', payload: false });
+    dispatch({ type: 'CLEAR_HISTORY' });
     logger.log('AI Global: Session ended');
   }, []);
 
@@ -279,6 +295,12 @@ export const AIGlobalProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
 
     try {
+      // Capture previous messages for context
+      const historyForRequest = state.messageHistory.slice(-6);
+
+      // Add user message to history
+      dispatch({ type: 'ADD_MESSAGE', payload: { sender: 'user', content: message } });
+
       // Check cache first if enabled
       const cacheKey = JSON.stringify({
         message,
@@ -303,7 +325,10 @@ export const AIGlobalProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         clientData: clientData || state.sharedContext.clientData,
         sessionId: state.currentSession,
         userId: session?.user?.id,
-        history: [] as any[], // TODO: Implement history management
+        history: historyForRequest.map(h => ({
+          sender: h.sender === 'assistant' ? 'revy' : h.sender,
+          content: h.content
+        })),
         contextData: {
           ...state.contextData,
           ...state.sharedContext,
@@ -340,6 +365,9 @@ export const AIGlobalProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setCachedResponse(cacheKey, aiResponse, tags);
       }
 
+      // Add AI response to history
+      dispatch({ type: 'ADD_MESSAGE', payload: { sender: 'assistant', content: aiResponse } });
+
       logger.log('AI Global: Message sent successfully', {
         responseLength: aiResponse.length,
         cached: useCache
@@ -371,6 +399,7 @@ export const AIGlobalProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const resetState = useCallback(() => {
     dispatch({ type: 'RESET_STATE' });
+    dispatch({ type: 'CLEAR_HISTORY' });
     logger.log('AI Global: State reset');
   }, []);
 
