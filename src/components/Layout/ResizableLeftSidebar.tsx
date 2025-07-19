@@ -82,6 +82,7 @@ const ResizableLeftSidebar = () => {
     <ShadcnSidebar
       collapsible="icon"
       className="bg-sidebar border-0"
+      style={{ width: isCollapsed ? '56px' : '200px' }}
     >
       <SidebarHeader className="p-2">
         <div className="flex items-center justify-center">
@@ -106,6 +107,7 @@ const ResizableLeftSidebar = () => {
                       asChild 
                       isActive={isActive}
                       className={isCollapsed ? "justify-center px-2" : "justify-start px-3"}
+                      tooltip={isCollapsed ? item.title : undefined}
                     >
                       <Link to={item.url} className={isCollapsed ? "flex items-center justify-center" : "flex items-center gap-3"}>
                         <item.icon className="h-4 w-4 flex-shrink-0" />
