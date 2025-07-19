@@ -20,9 +20,16 @@ interface Prediction {
   description: string;
 }
 
+interface ForecastPoint {
+  period: string;
+  actual: number | null;
+  predicted: number;
+  confidence: number;
+}
+
 const PredictiveAnalytics = ({ client }: PredictiveAnalyticsProps) => {
   const [predictions, setPredictions] = useState<Prediction[]>([]);
-  const [forecastData, setForecastData] = useState<any[]>([]);
+  const [forecastData, setForecastData] = useState<ForecastPoint[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
 
   const generatePredictions = async () => {
@@ -66,7 +73,7 @@ const PredictiveAnalytics = ({ client }: PredictiveAnalyticsProps) => {
       }
     ];
 
-    const forecast = [
+    const forecast: ForecastPoint[] = [
       { period: 'Q1 2024', actual: 12500, predicted: 12500, confidence: 95 },
       { period: 'Q2 2024', actual: null, predicted: 13750, confidence: 87 },
       { period: 'Q3 2024', actual: null, predicted: 14200, confidence: 78 },

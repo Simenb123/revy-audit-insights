@@ -13,11 +13,14 @@ interface AdvancedFilePreviewProps {
   onClose: () => void;
 }
 
+type ExcelCell = string | number | boolean | null;
+type ExcelRow = ExcelCell[];
+
 const AdvancedFilePreview = ({ file, isOpen, onClose }: AdvancedFilePreviewProps) => {
   const [previewContent, setPreviewContent] = useState<string | null>(null);
   const [previewType, setPreviewType] = useState<'text' | 'image' | 'pdf' | 'excel' | 'unsupported'>('unsupported');
   const [isLoading, setIsLoading] = useState(false);
-  const [excelData, setExcelData] = useState<any[][]>([]);
+  const [excelData, setExcelData] = useState<ExcelRow[]>([]);
   const [pdfPages, setPdfPages] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(0);
   const [zoom, setZoom] = useState(1);
@@ -44,9 +47,13 @@ const AdvancedFilePreview = ({ file, isOpen, onClose }: AdvancedFilePreviewProps
           const workbook = XLSX.read(arrayBuffer, { type: 'array' });
           const sheetName = workbook.SheetNames[0];
           const sheet = workbook.Sheets[sheetName];
-          const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1, range: 0, defval: '' });
-          
-          setExcelData(jsonData.slice(0, 20) as any[][]); // Show first 20 rows
+          const jsonData = XLSX.utils.sheet_to_json(sheet, {
+            header: 1,
+            range: 0,
+            defval: ''
+          }) as ExcelRow[];
+
+          setExcelData(jsonData.slice(0, 20)); // Show first 20 rows
           setPreviewType('excel');
         } else if (file.type.includes('text') || file.name.endsWith('.txt')) {
           const text = await file.text();
