@@ -211,3 +211,8 @@ For technical support or questions about AI Revy, please contact the development
 The application currently relies on the `xlsx` (SheetJS) library at version `0.18.5` for reading Excel files. Some spreadsheets fail to parse correctly due to a bug in this release, and there are no newer versions available that resolve the issue. Until SheetJS publishes a fix, uploaded workbooks containing complex formulas or macros may not import as expected.
 
 If reliable Excel parsing becomes critical, consider swapping `xlsx` with an alternative such as [ExcelJS](https://github.com/exceljs/exceljs) or [PapaParse](https://www.papaparse.com/) for CSV handling.
+
+## License
+
+Released under the [MIT License](LICENSE).
+
