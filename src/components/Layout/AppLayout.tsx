@@ -37,12 +37,12 @@ const AppLayout = () => {
   // If no connection to Supabase, allow demo mode
   if (connectionStatus === 'disconnected') {
     return (
-      <div className="min-h-screen flex flex-col bg-background">
+      <div className="min-h-screen bg-background">
         <AppHeader />
         <SidebarProvider>
-          <div className="flex flex-1">
+          <div className="flex">
             <ResizableLeftSidebar />
-            <main className="flex-1 overflow-auto" style={{ marginRight: '400px' }}>
+            <main className="flex-1 overflow-auto min-h-[calc(100vh-4rem)]" style={{ marginRight: '400px' }}>
               <div className="p-4 bg-yellow-50 border-b border-yellow-200">
                 <p className="text-sm text-yellow-800">
                   Demo-modus: Appen kjører uten tilkobling til backend.
@@ -72,12 +72,12 @@ const AppLayout = () => {
   /* ---------------------------------------------------------------------- */
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen bg-background">
       <AppHeader />
       <SidebarProvider>
-        <div className="flex flex-1">
+        <div className="flex">
           <ResizableLeftSidebar />
-          <main className="flex-1 overflow-auto" style={{ marginRight: '400px' }}>
+          <main className="flex-1 overflow-auto min-h-[calc(100vh-4rem)]" style={{ marginRight: '400px' }}>
             <Outlet />
           </main>
         </div>
