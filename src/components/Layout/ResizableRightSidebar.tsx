@@ -171,30 +171,18 @@ const ResizableRightSidebar = () => {
           {!isCollapsed && (
             <h3 className="text-sm font-medium truncate">{getPageTitle()}</h3>
           )}
-          <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6"
-              onClick={toggleSidebar}
-            >
-              {isCollapsed ? (
-                <ChevronLeft className="h-3 w-3" />
-              ) : (
-                <ChevronRight className="h-3 w-3" />
-              )}
-            </Button>
-            {!isCollapsed && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6"
-                onClick={closeSidebar}
-              >
-                <X className="h-3 w-3" />
-              </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6"
+            onClick={toggleSidebar}
+          >
+            {isCollapsed ? (
+              <ChevronLeft className="h-3 w-3" />
+            ) : (
+              <ChevronRight className="h-3 w-3" />
             )}
-          </div>
+          </Button>
         </div>
 
         {/* Content */}
