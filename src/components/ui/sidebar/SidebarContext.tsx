@@ -4,9 +4,9 @@ import { TooltipProvider } from "@/components/ui/tooltip"
 
 const SIDEBAR_COOKIE_NAME = "sidebar:state"
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
-const SIDEBAR_WIDTH = "var(--sidebar-width)"
-const SIDEBAR_WIDTH_MOBILE = "var(--sidebar-width)"
-const SIDEBAR_WIDTH_ICON = "var(--sidebar-width-collapsed)"
+const SIDEBAR_WIDTH = "160px"
+const SIDEBAR_WIDTH_MOBILE = "160px"
+const SIDEBAR_WIDTH_ICON = "56px"
 const SIDEBAR_KEYBOARD_SHORTCUT = "Shift+B" // Changed from "b" to "Shift+B"
 
 type SidebarContext = {
@@ -134,7 +134,20 @@ export const SidebarProvider = React.forwardRef<
       <SidebarContext.Provider value={contextValue}>
         <TooltipProvider delayDuration={0}>
           <div
-            style={style}
+            style={
+              {
+                ...(state === "collapsed"
+                  ? {
+                      "--sidebar-width": SIDEBAR_WIDTH_ICON,
+                      "--sidebar-width-icon": SIDEBAR_WIDTH_ICON,
+                    }
+                  : {
+                      "--sidebar-width": SIDEBAR_WIDTH,
+                      "--sidebar-width-icon": SIDEBAR_WIDTH_ICON,
+                    }),
+                ...style,
+              } as React.CSSProperties
+            }
             className={cn(
               "group/sidebar-wrapper flex min-h-screen w-full",
               className
