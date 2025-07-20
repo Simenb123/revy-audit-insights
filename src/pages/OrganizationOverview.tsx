@@ -1,5 +1,3 @@
-import { logger } from '@/utils/logger';
-
 import React from 'react';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { useDepartments } from '@/hooks/useDepartments';
