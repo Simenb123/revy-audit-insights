@@ -137,10 +137,10 @@ const ResizableLeftSidebar = () => {
           : 'var(--sidebar-width)' 
       }}
     >
-      <SidebarHeader className="p-2">
+      <SidebarHeader className="p-1">
         <div className="flex items-center justify-center">
           {!isCollapsed && (
-            <h3 className="text-sm font-medium text-sidebar-foreground px-2">Navigation</h3>
+            <h3 className="text-xs font-medium text-sidebar-foreground px-1">Navigation</h3>
           )}
           <SidebarTrigger className="h-8 w-8 ml-auto" />
         </div>
@@ -160,10 +160,10 @@ const ResizableLeftSidebar = () => {
                     <SidebarMenuButton 
                       asChild 
                       isActive={isItemActive}
-                      className={isCollapsed ? "justify-center p-1" : "justify-start pl-1 pr-1"}
+                      className={isCollapsed ? "justify-center p-0" : "justify-start pl-0 pr-0"}
                       tooltip={isCollapsed ? item.title : undefined}
                     >
-                      <Link to={item.url} className={isCollapsed ? "flex items-center justify-center w-full h-full" : "flex items-center gap-1 w-full"}>
+                      <Link to={item.url} className={isCollapsed ? "flex items-center justify-center w-full h-full" : "flex items-center gap-1 w-full pl-1"}>
                         <item.icon className="h-4 w-4 flex-shrink-0" />
                         {!isCollapsed && <span className="text-xs truncate">{item.title}</span>}
                       </Link>
@@ -189,10 +189,10 @@ const ResizableLeftSidebar = () => {
                       <SidebarMenuButton 
                         asChild 
                         isActive={isItemActive}
-                        className={isCollapsed ? "justify-center p-1" : "justify-start pl-1 pr-1"}
+                        className={isCollapsed ? "justify-center p-0" : "justify-start pl-0 pr-0"}
                         tooltip={isCollapsed ? item.title : undefined}
                       >
-                        <Link to={item.url} className={isCollapsed ? "flex items-center justify-center w-full h-full" : "flex items-center gap-1 w-full"}>
+                        <Link to={item.url} className={isCollapsed ? "flex items-center justify-center w-full h-full" : "flex items-center gap-1 w-full pl-1"}>
                           <item.icon className="h-4 w-4 flex-shrink-0" />
                           {!isCollapsed && <span className="text-xs truncate">{item.title}</span>}
                         </Link>
@@ -218,10 +218,10 @@ const ResizableLeftSidebar = () => {
                     <SidebarMenuButton 
                       asChild 
                       isActive={isItemActive}
-                      className={isCollapsed ? "justify-center p-1" : "justify-start pl-1 pr-1"}
+                      className={isCollapsed ? "justify-center p-0" : "justify-start pl-0 pr-0"}
                       tooltip={isCollapsed ? item.title : undefined}
                     >
-                      <Link to={item.url} className={isCollapsed ? "flex items-center justify-center w-full h-full" : "flex items-center gap-1 w-full"}>
+                      <Link to={item.url} className={isCollapsed ? "flex items-center justify-center w-full h-full" : "flex items-center gap-1 w-full pl-1"}>
                         <item.icon className="h-4 w-4 flex-shrink-0" />
                         {!isCollapsed && <span className="text-xs truncate">{item.title}</span>}
                       </Link>
