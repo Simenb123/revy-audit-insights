@@ -82,7 +82,7 @@ const ResizableLeftSidebar = () => {
     <ShadcnSidebar
       collapsible="icon"
       className="bg-sidebar border-0"
-      style={{ width: isCollapsed ? '56px' : '160px' }}
+      style={{ width: isCollapsed ? '56px' : '240px' }}
     >
       <SidebarHeader className="p-2">
         <div className="flex items-center justify-center">
