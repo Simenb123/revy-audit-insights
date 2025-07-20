@@ -1,4 +1,3 @@
-import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
 import { useRevyContext } from '@/components/RevyContext/RevyContextProvider';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +9,8 @@ import ClientsHeader from '@/components/Clients/ClientsHeader/ClientsHeader';
 import { useClientData } from '@/components/Clients/ClientFetcher/useClientData';
 import { useClientFilters } from '@/components/Clients/ClientFilters/useClientFilters';
 import { useBrregRefresh } from '@/hooks/useBrregRefresh';
+import StandardPageLayout from '@/components/Layout/StandardPageLayout';
+import FlexibleGrid from '@/components/Layout/FlexibleGrid';
 
 const ClientsOverview = () => {
   const { setContext } = useRevyContext();
@@ -45,7 +46,7 @@ const ClientsOverview = () => {
       try {
         setAnnouncements([]);
       } catch (error) {
-        logger.error('Error fetching announcements:', error);
+        console.error('Error fetching announcements:', error);
       }
     };
     
@@ -66,9 +67,8 @@ const ClientsOverview = () => {
   }
 
   return (
-    <div className="h-full overflow-auto">
-      {/* Header */}
-      <div className="p-4 border-b bg-background">
+    <StandardPageLayout
+      header={
         <ClientsHeader 
           title="Mine klienter"
           subtitle="Oversikt over klienter og revisjonsstatus"
@@ -84,37 +84,34 @@ const ClientsOverview = () => {
           showTestData={showTestData}
           onTestDataToggle={setShowTestData}
         />
+      }
+    >
+      {/* Stats Grid */}
+      <div className="mb-6">
+        <ClientStatsGrid clients={clients} announcements={announcements} />
       </div>
       
-      {/* Main Content */}
-      <div className="p-4">
-        {/* Stats Grid */}
-        <div className="mb-6">
-          <ClientStatsGrid clients={clients} announcements={announcements} />
+      {/* Main Content Grid - Mer plass til klienttabellen */}
+      <FlexibleGrid>
+        <div className="col-span-full xl:col-span-8">
+          <Card>
+            <CardHeader>
+              <CardTitle>Klientliste</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ClientsTable 
+                clients={filteredClients} 
+                onRowSelect={handleRowSelect}
+                selectedClientId={selectedClientId}
+              />
+            </CardContent>
+          </Card>
         </div>
-        
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          <div className="col-span-1 lg:col-span-3">
-            <Card>
-              <CardHeader>
-                <CardTitle>Klientliste</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ClientsTable 
-                  clients={filteredClients} 
-                  onRowSelect={handleRowSelect}
-                  selectedClientId={selectedClientId}
-                />
-              </CardContent>
-            </Card>
-          </div>
-          <div className="col-span-1">
-            <AnnouncementsList announcements={announcements} />
-          </div>
+        <div className="col-span-full xl:col-span-4">
+          <AnnouncementsList announcements={announcements} />
         </div>
-      </div>
-    </div>
+      </FlexibleGrid>
+    </StandardPageLayout>
   );
 };
 
