@@ -160,12 +160,12 @@ const ResizableLeftSidebar = () => {
                     <SidebarMenuButton 
                       asChild 
                       isActive={isItemActive}
-                      className={isCollapsed ? "justify-center px-2" : "justify-start px-3"}
+                      className={isCollapsed ? "justify-center px-1" : "justify-start px-2"}
                       tooltip={isCollapsed ? item.title : undefined}
                     >
-                      <Link to={item.url} className={isCollapsed ? "flex items-center justify-center" : "flex items-center gap-3"}>
+                      <Link to={item.url} className={isCollapsed ? "flex items-center justify-center w-full h-full" : "flex items-center gap-2"}>
                         <item.icon className="h-4 w-4 flex-shrink-0" />
-                        {!isCollapsed && <span>{item.title}</span>}
+                        {!isCollapsed && <span className="text-xs">{item.title}</span>}
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -189,12 +189,12 @@ const ResizableLeftSidebar = () => {
                       <SidebarMenuButton 
                         asChild 
                         isActive={isItemActive}
-                        className={isCollapsed ? "justify-center px-2" : "justify-start px-3"}
+                        className={isCollapsed ? "justify-center px-1" : "justify-start px-2"}
                         tooltip={isCollapsed ? item.title : undefined}
                       >
-                        <Link to={item.url} className={isCollapsed ? "flex items-center justify-center" : "flex items-center gap-3"}>
+                        <Link to={item.url} className={isCollapsed ? "flex items-center justify-center w-full h-full" : "flex items-center gap-2"}>
                           <item.icon className="h-4 w-4 flex-shrink-0" />
-                          {!isCollapsed && <span>{item.title}</span>}
+                          {!isCollapsed && <span className="text-xs">{item.title}</span>}
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -218,12 +218,12 @@ const ResizableLeftSidebar = () => {
                     <SidebarMenuButton 
                       asChild 
                       isActive={isItemActive}
-                      className={isCollapsed ? "justify-center px-2" : "justify-start px-3"}
+                      className={isCollapsed ? "justify-center px-1" : "justify-start px-2"}
                       tooltip={isCollapsed ? item.title : undefined}
                     >
-                      <Link to={item.url} className={isCollapsed ? "flex items-center justify-center" : "flex items-center gap-3"}>
+                      <Link to={item.url} className={isCollapsed ? "flex items-center justify-center w-full h-full" : "flex items-center gap-2"}>
                         <item.icon className="h-4 w-4 flex-shrink-0" />
-                        {!isCollapsed && <span>{item.title}</span>}
+                        {!isCollapsed && <span className="text-xs">{item.title}</span>}
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
