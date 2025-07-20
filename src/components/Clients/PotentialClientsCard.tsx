@@ -8,7 +8,8 @@ import { Link } from 'react-router-dom'
 
 export function PotentialClientsCard() {
   const { data: userProfile } = useUserProfile()
-  const auditorOrgNumber = userProfile?.auditFirm?.org_number
+  // For now, we'll need to implement auditor org number lookup separately
+  const auditorOrgNumber: string | undefined = undefined // TODO: Get from audit firm lookup
   
   const { data: summary, isLoading } = usePotentialClientsSummary(auditorOrgNumber)
 

@@ -37,11 +37,10 @@ export function BulkDiscoveryDialog({ children }: BulkDiscoveryDialogProps) {
     }
   }
 
-  // Pre-fill with user's firm org number if available
+  // Pre-fill with user's workplace company name if available
   const handleOpen = (open: boolean) => {
-    if (open && userProfile?.auditFirm?.org_number && !auditorOrgNumber) {
-      setAuditorOrgNumber(userProfile.auditFirm.org_number)
-      setAuditorName(userProfile.auditFirm.name || '')
+    if (open && userProfile?.workplaceCompanyName && !auditorName) {
+      setAuditorName(userProfile.workplaceCompanyName)
     }
     setOpen(open)
   }
