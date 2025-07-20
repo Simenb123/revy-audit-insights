@@ -66,7 +66,7 @@ export const useClientHistoryStats = (clientId: string) => {
         brreg_syncs: 0,
         role_changes: 0,
         auditor_changes: 0,
-        last_change_at: null
+        last_change_at: null as string | null
       }
     },
     enabled: !!clientId

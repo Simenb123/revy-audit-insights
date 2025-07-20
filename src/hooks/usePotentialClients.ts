@@ -121,7 +121,7 @@ export const useUpdatePotentialClientStatus = () => {
   const queryClient = useQueryClient()
   
   return useMutation({
-    mutationFn: async ({ id, status, notes }: { id: string; status: PotentialClientStatus; notes?: string }) => {
+    mutationFn: async ({ id, status, notes }: { id: string; status: PotentialClientStatus; notes?: string }): Promise<null> => {
       // Temporarily disabled until database types are updated
       return null
     },
