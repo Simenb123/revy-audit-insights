@@ -12,10 +12,10 @@ const ResponsiveLayout: React.FC<ResponsiveLayoutProps> = ({
   children,
   className
 }) => {
-  const { isOpen: rightSidebarOpen, width: rightSidebarWidth } = useRightSidebar();
+  const { isCollapsed, isHidden, width: rightSidebarWidth } = useRightSidebar();
   
   // Calculate dynamic margin based on right sidebar state
-  const rightMargin = rightSidebarOpen ? rightSidebarWidth : 0;
+  const rightMargin = (!isCollapsed && !isHidden) ? rightSidebarWidth : 0;
 
   return (
     <main 
