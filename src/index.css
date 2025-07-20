@@ -1,4 +1,4 @@
-
+@import './styles/design-tokens.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -37,11 +37,6 @@
     --sidebar-border: 175 20% 50%;
     --sidebar-ring: 174 57% 80%;
 
-    /* Layout variables */
-    --sidebar-width: 280px;
-    --sidebar-width-icon: 56px;
-    --header-height: 4rem;
-
     --revio-100: 174 57% 95%;
     --revio-500: 173 49% 39%;
     --revio-600: 173 49% 35%;
@@ -72,6 +67,35 @@
 }
 
 @layer utilities {
+  /* Layout Utilities */
+  .container-responsive {
+    @apply w-full mx-auto px-4 sm:px-6 lg:px-8;
+    max-width: var(--container-xl);
+  }
+  
+  .content-spacing {
+    @apply space-y-6 md:space-y-8 lg:space-y-10;
+  }
+  
+  .section-spacing {
+    @apply py-8 md:py-12 lg:py-16;
+  }
+  
+  .page-spacing {
+    @apply px-4 py-6 md:px-6 md:py-8 lg:px-8 lg:py-10;
+  }
+
+  /* Z-index utilities */
+  .z-dropdown { z-index: var(--z-dropdown); }
+  .z-sticky { z-index: var(--z-sticky); }
+  .z-fixed { z-index: var(--z-fixed); }
+  .z-modal-backdrop { z-index: var(--z-modal-backdrop); }
+  .z-modal { z-index: var(--z-modal); }
+  .z-popover { z-index: var(--z-popover); }
+  .z-tooltip { z-index: var(--z-tooltip); }
+  .z-toast { z-index: var(--z-toast); }
+
+  /* Existing utilities */
   .drag-handle {
     @apply cursor-grab active:cursor-grabbing;
   }

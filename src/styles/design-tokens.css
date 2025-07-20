@@ -1,0 +1,77 @@
+
+/* Design Tokens - Global CSS Variables */
+:root {
+  /* Spacing Scale - Mobile First */
+  --space-1: 0.25rem;    /* 4px */
+  --space-2: 0.5rem;     /* 8px */
+  --space-3: 0.75rem;    /* 12px */
+  --space-4: 1rem;       /* 16px */
+  --space-5: 1.25rem;    /* 20px */
+  --space-6: 1.5rem;     /* 24px */
+  --space-8: 2rem;       /* 32px */
+  --space-10: 2.5rem;    /* 40px */
+  --space-12: 3rem;      /* 48px */
+  --space-16: 4rem;      /* 64px */
+  --space-20: 5rem;      /* 80px */
+
+  /* Container Widths */
+  --container-sm: 640px;
+  --container-md: 768px;
+  --container-lg: 1024px;
+  --container-xl: 1280px;
+  --container-2xl: 1536px;
+
+  /* Layout Dimensions */
+  --sidebar-width: 160px;
+  --sidebar-width-collapsed: 56px;
+  --right-sidebar-width: 400px;
+  --header-height: 4rem;
+
+  /* Responsive Breakpoints */
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+  --breakpoint-2xl: 1536px;
+
+  /* Content Max Widths */
+  --content-max-width: 1200px;
+  --reading-width: 65ch;
+  
+  /* Z-index Scale */
+  --z-dropdown: 1000;
+  --z-sticky: 1020;
+  --z-fixed: 1030;
+  --z-modal-backdrop: 1040;
+  --z-modal: 1050;
+  --z-popover: 1060;
+  --z-tooltip: 1070;
+  --z-toast: 1080;
+}
+
+/* Responsive Design Utilities */
+@media (min-width: 768px) {
+  :root {
+    --space-1: 0.25rem;
+    --space-2: 0.5rem;
+    --space-3: 0.75rem;
+    --space-4: 1rem;
+    --space-5: 1.25rem;
+    --space-6: 1.5rem;
+    --space-8: 2rem;
+    --space-10: 2.5rem;
+    --space-12: 3rem;
+    --space-16: 4rem;
+    --space-20: 5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --space-8: 2.5rem;    /* 40px */
+    --space-10: 3rem;     /* 48px */
+    --space-12: 4rem;     /* 64px */
+    --space-16: 5rem;     /* 80px */
+    --space-20: 6rem;     /* 96px */
+  }
+}

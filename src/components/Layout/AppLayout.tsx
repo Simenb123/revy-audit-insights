@@ -9,17 +9,18 @@ import { useUserProfile } from '@/hooks/useUserProfile';
 import AppHeader from './AppHeader';
 import ResizableRightSidebar from './ResizableRightSidebar';
 import ResizableLeftSidebar from './ResizableLeftSidebar';
+import ResponsiveLayout from './ResponsiveLayout';
 import PageLoader from './PageLoader';
 import OnboardingCheck from './OnboardingCheck';
 
 import { SidebarProvider } from '@/components/ui/sidebar';
 
 /**
- * Hovedlayout for hele app-skallet.
- * - Fast sticky header på toppen
- * - Venstre kollapsbar sidebar (tekst + ikon-rail på 3.5 rem)
- * - Midtparti med sideinnhold (<Outlet /> fra React-Router)
- * - Høyre kontekst-sidebar kan aktiveres senere
+ * Hovedlayout for hele app-skallet med responsivt design
+ * - Sticky header på toppen
+ * - Venstre kollapsbar sidebar 
+ * - Responsivt hovedinnhold som tilpasser seg sidebar-bredder
+ * - Høyre kontekst-sidebar som skjules på mobile
  */
 const AppLayout = () => {
   const { session, connectionStatus, isLoading } = useAuth();
@@ -42,17 +43,19 @@ const AppLayout = () => {
         <SidebarProvider>
           <div className="flex">
             <ResizableLeftSidebar />
-            <main className="flex-1 overflow-auto min-h-[calc(100vh-4rem)]" style={{ marginRight: '400px' }}>
+            <ResponsiveLayout>
               <div className="p-4 bg-yellow-50 border-b border-yellow-200">
                 <p className="text-sm text-yellow-800">
                   Demo-modus: Appen kjører uten tilkobling til backend.
                 </p>
               </div>
               <Outlet />
-            </main>
+            </ResponsiveLayout>
           </div>
         </SidebarProvider>
-        <ResizableRightSidebar />
+        <div className="hidden lg:block">
+          <ResizableRightSidebar />
+        </div>
       </div>
     );
   }
@@ -77,12 +80,15 @@ const AppLayout = () => {
       <SidebarProvider>
         <div className="flex">
           <ResizableLeftSidebar />
-          <main className="flex-1 overflow-auto min-h-[calc(100vh-4rem)]" style={{ marginRight: '400px' }}>
+          <ResponsiveLayout>
             <Outlet />
-          </main>
+          </ResponsiveLayout>
         </div>
       </SidebarProvider>
-      <ResizableRightSidebar />
+      {/* Right sidebar hidden on mobile, visible on desktop */}
+      <div className="hidden lg:block">
+        <ResizableRightSidebar />
+      </div>
     </div>
   );
 };
