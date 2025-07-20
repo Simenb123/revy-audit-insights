@@ -16,7 +16,7 @@ import Subscript from '@tiptap/extension-subscript';
 import Superscript from '@tiptap/extension-superscript';
 import CharacterCount from '@tiptap/extension-character-count';
 import { LineHeight } from './LineHeight';
-import FontSize from '@tiptap/extension-font-size';
+// FontSize extension temporarily removed due to v2/v3 compatibility issues
 import TaskList from '@tiptap/extension-task-list';
 import TaskItem from '@tiptap/extension-task-item';
 
@@ -50,9 +50,7 @@ export const editorExtensions = [
   }),
   Underline,
   TextStyle,
-  FontSize.configure({
-    types: ['textStyle'],
-  }),
+  // FontSize temporarily removed - will be re-added once v2/v3 compatibility is resolved
   FontFamily.configure({
     types: ['textStyle'],
   }),
