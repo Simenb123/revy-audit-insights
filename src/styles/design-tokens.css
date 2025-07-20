@@ -27,6 +27,19 @@
   --right-sidebar-width: 400px;
   --header-height: 4rem;
 
+  /* Global Layout Variables */
+  --page-max-width: 1400px;
+  --page-padding-x: var(--space-4);
+  --page-padding-y: var(--space-6);
+  --content-gap: var(--space-6);
+  --section-gap: var(--space-8);
+  
+  /* Consistent Content Widths */
+  --content-narrow: 600px;
+  --content-medium: 800px;
+  --content-wide: 1200px;
+  --content-full: 100%;
+
   /* Responsive Breakpoints */
   --breakpoint-sm: 640px;
   --breakpoint-md: 768px;
@@ -52,26 +65,17 @@
 /* Responsive Design Utilities */
 @media (min-width: 768px) {
   :root {
-    --space-1: 0.25rem;
-    --space-2: 0.5rem;
-    --space-3: 0.75rem;
-    --space-4: 1rem;
-    --space-5: 1.25rem;
-    --space-6: 1.5rem;
-    --space-8: 2rem;
-    --space-10: 2.5rem;
-    --space-12: 3rem;
-    --space-16: 4rem;
-    --space-20: 5rem;
+    --page-padding-x: var(--space-6);
+    --page-padding-y: var(--space-8);
+    --content-gap: var(--space-8);
   }
 }
 
 @media (min-width: 1024px) {
   :root {
-    --space-8: 2.5rem;    /* 40px */
-    --space-10: 3rem;     /* 48px */
-    --space-12: 4rem;     /* 64px */
-    --space-16: 5rem;     /* 80px */
-    --space-20: 6rem;     /* 96px */
+    --page-padding-x: var(--space-8);
+    --page-padding-y: var(--space-10);
+    --content-gap: var(--space-10);
+    --section-gap: var(--space-12);
   }
 }

@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { useAllUserProfiles } from '@/hooks/useAllUserProfiles';
@@ -7,6 +8,9 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Shield } from 'lucide-react';
 import type { UserRole } from '@/types/organization';
+import StandardPageLayout from '@/components/Layout/StandardPageLayout';
+import ConstrainedWidth from '@/components/Layout/ConstrainedWidth';
+import PageHeader from '@/components/Layout/PageHeader';
 
 const RoleAccessAdmin = () => {
   const { data: userProfile } = useUserProfile();
@@ -17,7 +21,7 @@ const RoleAccessAdmin = () => {
 
   if (!canAccess) {
     return (
-      <div className="p-6">
+      <ConstrainedWidth width="medium">
         <Card>
           <CardContent className="pt-6 text-center">
             <Shield className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
@@ -25,68 +29,73 @@ const RoleAccessAdmin = () => {
             <p className="text-muted-foreground">Du har ikke tilgang til rolleadministrasjon.</p>
           </CardContent>
         </Card>
-      </div>
+      </ConstrainedWidth>
     );
   }
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Rolleadministrasjon</h1>
-          <p className="text-muted-foreground">Endre roller for brukere i organisasjonen</p>
-        </div>
-      </div>
-      <Card>
-        <CardHeader>
-          <CardTitle>Brukere</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {isLoading && <p>Laster...</p>}
-          {users && users.length > 0 && (
-            <table className="min-w-full text-sm">
-              <thead>
-                <tr className="text-left">
-                  <th className="py-2">Navn</th>
-                  <th className="py-2">E-post</th>
-                  <th className="py-2">Rolle</th>
-                </tr>
-              </thead>
-              <tbody>
-                {users.map((u) => (
-                  <tr key={u.id} className="border-t">
-                    <td className="py-2">{u.first_name} {u.last_name}</td>
-                    <td className="py-2">{u.email}</td>
-                    <td className="py-2">
-                      <div className="flex items-center gap-2">
-                        <Select
-                          value={u.user_role}
-                          onValueChange={(value: UserRole) => updateRole.mutate({ userId: u.id, role: value })}
-                        >
-                          <SelectTrigger className="w-[150px]">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="admin">Admin</SelectItem>
-                            <SelectItem value="partner">Partner</SelectItem>
-                            <SelectItem value="manager">Manager</SelectItem>
-                            <SelectItem value="employee">Employee</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        {updateRole.isPending && updateRole.variables?.userId === u.id && (
-                          <span>Oppdaterer...</span>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-          {users && users.length === 0 && <p>Ingen brukere funnet.</p>}
-        </CardContent>
-      </Card>
-    </div>
+    <ConstrainedWidth width="wide">
+      <StandardPageLayout
+        header={
+          <PageHeader
+            title="Rolleadministrasjon"
+            subtitle="Endre roller for brukere i organisasjonen"
+          />
+        }
+      >
+        <Card>
+          <CardHeader>
+            <CardTitle>Brukere</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {isLoading && <p>Laster...</p>}
+            {users && users.length > 0 && (
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-sm">
+                  <thead>
+                    <tr className="text-left">
+                      <th className="py-2">Navn</th>
+                      <th className="py-2">E-post</th>
+                      <th className="py-2">Rolle</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {users.map((u) => (
+                      <tr key={u.id} className="border-t">
+                        <td className="py-2">{u.first_name} {u.last_name}</td>
+                        <td className="py-2">{u.email}</td>
+                        <td className="py-2">
+                          <div className="flex items-center gap-2">
+                            <Select
+                              value={u.user_role}
+                              onValueChange={(value: UserRole) => updateRole.mutate({ userId: u.id, role: value })}
+                            >
+                              <SelectTrigger className="w-[150px]">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="admin">Admin</SelectItem>
+                                <SelectItem value="partner">Partner</SelectItem>
+                                <SelectItem value="manager">Manager</SelectItem>
+                                <SelectItem value="employee">Employee</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            {updateRole.isPending && updateRole.variables?.userId === u.id && (
+                              <span>Oppdaterer...</span>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            {users && users.length === 0 && <p>Ingen brukere funnet.</p>}
+          </CardContent>
+        </Card>
+      </StandardPageLayout>
+    </ConstrainedWidth>
   );
 };
 

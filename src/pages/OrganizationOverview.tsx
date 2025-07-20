@@ -8,6 +8,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Building2, Users, Briefcase, ArrowLeft, Settings, MessageSquare } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import StandardPageLayout from '@/components/Layout/StandardPageLayout';
+import FlexibleGrid from '@/components/Layout/FlexibleGrid';
+import ConstrainedWidth from '@/components/Layout/ConstrainedWidth';
+import PageHeader from '@/components/Layout/PageHeader';
+import { logger } from '@/utils/logger';
 
 const OrganizationOverview = () => {
   const { data: userProfile, isLoading: profileLoading } = useUserProfile();
@@ -18,7 +23,7 @@ const OrganizationOverview = () => {
 
   if (profileLoading) {
     return (
-      <div className="w-full px-4 py-6 md:px-6 lg:px-8">
+      <ConstrainedWidth width="medium">
         <div className="animate-pulse">
           <div className="h-8 bg-gray-200 rounded w-64 mb-2"></div>
           <div className="h-4 bg-gray-200 rounded w-96 mb-6"></div>
@@ -28,13 +33,13 @@ const OrganizationOverview = () => {
             ))}
           </div>
         </div>
-      </div>
+      </ConstrainedWidth>
     );
   }
 
   if (!userProfile) {
     return (
-      <div className="w-full px-4 py-6 md:px-6 lg:px-8">
+      <ConstrainedWidth width="medium">
         <Card>
           <CardContent className="pt-6 text-center">
             <p className="text-red-600 mb-4">Kunne ikke laste brukerdata</p>
@@ -43,7 +48,7 @@ const OrganizationOverview = () => {
             </Link>
           </CardContent>
         </Card>
-      </div>
+      </ConstrainedWidth>
     );
   }
 
@@ -52,23 +57,23 @@ const OrganizationOverview = () => {
   const isAdmin = userProfile.userRole === 'admin' || userProfile.userRole === 'partner';
 
   return (
-    <div className="w-full px-4 py-6 md:px-6 lg:px-8">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-3xl font-bold">Organisasjonsoversikt</h1>
-          <p className="text-muted-foreground mt-1">
-            Oversikt over din organisasjon og rolle
-          </p>
-        </div>
-        <Link to="/dashboard">
-          <Button variant="outline" className="gap-2">
-            <ArrowLeft className="h-4 w-4" />
-            Tilbake
-          </Button>
-        </Link>
-      </div>
-
-      <div className="space-y-6">
+    <ConstrainedWidth width="wide">
+      <StandardPageLayout
+        header={
+          <div className="flex justify-between items-center">
+            <PageHeader
+              title="Organisasjonsoversikt"
+              subtitle="Oversikt over din organisasjon og rolle"
+            />
+            <Link to="/dashboard">
+              <Button variant="outline" className="gap-2">
+                <ArrowLeft className="h-4 w-4" />
+                Tilbake
+              </Button>
+            </Link>
+          </div>
+        }
+      >
         {/* User Info Card */}
         <Card>
           <CardHeader>
@@ -99,7 +104,7 @@ const OrganizationOverview = () => {
         </Card>
 
         {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <FlexibleGrid columns={{ sm: 1, md: 3 }} gap="md">
           <Card>
             <CardContent className="flex items-center justify-center p-6">
               <div className="text-center">
@@ -129,7 +134,7 @@ const OrganizationOverview = () => {
               </div>
             </CardContent>
           </Card>
-        </div>
+        </FlexibleGrid>
 
         {/* Department Info */}
         <Card>
@@ -163,7 +168,7 @@ const OrganizationOverview = () => {
             <CardTitle>Hurtighandlinger</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <FlexibleGrid columns={{ sm: 1, md: 3 }} gap="md">
               <Button asChild className="h-16 flex-col">
                 <Link to="/team">
                   <Briefcase className="h-5 w-5 mb-1" />
@@ -186,11 +191,11 @@ const OrganizationOverview = () => {
                   </Link>
                 </Button>
               )}
-            </div>
+            </FlexibleGrid>
           </CardContent>
         </Card>
-      </div>
-    </div>
+      </StandardPageLayout>
+    </ConstrainedWidth>
   );
 };
 

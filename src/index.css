@@ -1,3 +1,4 @@
+
 @import './styles/design-tokens.css';
 @tailwind base;
 @tailwind components;
@@ -67,22 +68,36 @@
 }
 
 @layer utilities {
+  /* Global Layout Utilities */
+  .page-container {
+    @apply w-full max-w-[var(--page-max-width)] mx-auto px-[var(--page-padding-x)] py-[var(--page-padding-y)];
+  }
+  
+  .content-section {
+    @apply space-y-[var(--content-gap)];
+  }
+  
+  .section-spacing {
+    @apply space-y-[var(--section-gap)];
+  }
+
+  /* Content Width Utilities */
+  .content-narrow {
+    @apply max-w-[var(--content-narrow)] mx-auto;
+  }
+  
+  .content-medium {
+    @apply max-w-[var(--content-medium)] mx-auto;
+  }
+  
+  .content-wide {
+    @apply max-w-[var(--content-wide)] mx-auto;
+  }
+
   /* Layout Utilities */
   .container-responsive {
     @apply w-full mx-auto px-4 sm:px-6 lg:px-8;
     max-width: var(--container-xl);
-  }
-  
-  .content-spacing {
-    @apply space-y-6 md:space-y-8 lg:space-y-10;
-  }
-  
-  .section-spacing {
-    @apply py-8 md:py-12 lg:py-16;
-  }
-  
-  .page-spacing {
-    @apply px-4 py-6 md:px-6 md:py-8 lg:px-8 lg:py-10;
   }
 
   /* Z-index utilities */
