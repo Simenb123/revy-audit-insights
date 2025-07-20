@@ -130,7 +130,7 @@ const ResizableLeftSidebar = () => {
   return (
     <ShadcnSidebar
       collapsible="icon"
-      className="bg-sidebar border-0"
+      className="border-0"
       style={{ 
         width: isCollapsed 
           ? 'var(--sidebar-width-collapsed)' 
