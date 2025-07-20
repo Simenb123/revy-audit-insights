@@ -11,6 +11,7 @@ import { AuditPhase } from "@/types/revio";
 import { Client } from "@/types/revio";
 import { useClientAuditActions } from "@/hooks/useAuditActions";
 import { phaseInfo } from "@/constants/phaseInfo";
+import Overview from "./ClientDashboard/Overview";
 
 interface PhaseContentProps {
   phase: AuditPhase;
@@ -65,8 +66,9 @@ const PhaseContent: React.FC<PhaseContentProps> = ({ phase, client }) => {
       </Card>
 
       {/* Phase Content Tabs */}
-      <Tabs defaultValue="actions" className="w-full">
+      <Tabs defaultValue="overview" className="w-full">
         <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="overview">Oversikt</TabsTrigger>
           <TabsTrigger value="actions" className="gap-2">
             <Target className="w-4 h-4" />
             Handlinger
@@ -76,23 +78,26 @@ const PhaseContent: React.FC<PhaseContentProps> = ({ phase, client }) => {
               </Badge>
             )}
           </TabsTrigger>
+          <TabsTrigger value="documents" className="gap-2">
+            <FileText className="w-4 w-4" />
+            Dokumenter
+          </TabsTrigger>
           <TabsTrigger value="planning" className="gap-2">
             <BookOpen className="w-4 h-4" />
             Planlegging
           </TabsTrigger>
-          <TabsTrigger value="documents" className="gap-2">
-            <FileText className="w-4 h-4" />
-            Dokumenter
-          </TabsTrigger>
-          <TabsTrigger value="overview">Oversikt</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="overview" className="space-y-4">
+          <Overview 
+            client={client}
+            documentCount={0}
+            nextAuditDeadline="Ikke angitt"
+          />
+        </TabsContent>
 
         <TabsContent value="actions" className="space-y-4">
           <ActionsContainer clientId={client.id} phase={phase} />
-        </TabsContent>
-
-        <TabsContent value="planning">
-          <PlanningContainer clientId={client.id} />
         </TabsContent>
 
         <TabsContent value="documents">
@@ -102,51 +107,8 @@ const PhaseContent: React.FC<PhaseContentProps> = ({ phase, client }) => {
           />
         </TabsContent>
 
-        <TabsContent value="overview" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Handlinger</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{phaseActions.length}</div>
-                <p className="text-sm text-muted-foreground">
-                  {completedActions.length} fullført
-                </p>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Status</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Badge className={info.color}>
-                  {info.label}
-                </Badge>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Aktiv fase
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Fremdrift</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {phaseActions.length > 0 
-                    ? Math.round((completedActions.length / phaseActions.length) * 100)
-                    : 0
-                  }%
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  av handlinger fullført
-                </p>
-              </CardContent>
-            </Card>
-          </div>
+        <TabsContent value="planning">
+          <PlanningContainer clientId={client.id} />
         </TabsContent>
       </Tabs>
     </div>
