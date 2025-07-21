@@ -211,7 +211,7 @@ const IntelligentAIChat: React.FC<IntelligentAIChatProps> = ({
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Brain className="h-5 w-5 text-primary" />
+            <Brain className="h-6 w-6 text-primary" />
             <CardTitle className="text-lg">AI Revy</CardTitle>
             {getConnectionStatusIcon()}
           </div>
@@ -266,7 +266,7 @@ const IntelligentAIChat: React.FC<IntelligentAIChatProps> = ({
           <div className="space-y-4">
             {messages.length === 0 && (
               <div className="text-center text-muted-foreground py-8">
-                <Brain className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <Brain className="h-9 w-9 mx-auto mb-2 opacity-50" />
                 <p>Start en samtale med AI Revy</p>
                 <p className="text-xs mt-1">
                   Spør om revisjonsoppgaver, fagstoff, eller klientarbeid
