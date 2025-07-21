@@ -135,18 +135,20 @@ export const SidebarProvider = React.forwardRef<
         <TooltipProvider delayDuration={0}>
           <div
             style={
-              {
-                ...(state === "collapsed"
-                  ? {
-                      "--sidebar-width": SIDEBAR_WIDTH_ICON,
-                      "--sidebar-width-icon": SIDEBAR_WIDTH_ICON,
-                    }
-                  : {
-                      "--sidebar-width": SIDEBAR_WIDTH,
-                      "--sidebar-width-icon": SIDEBAR_WIDTH_ICON,
-                    }),
-                ...style,
-              } as React.CSSProperties
+                {
+                  ...(state === "collapsed"
+                    ? {
+                        "--sidebar-width": SIDEBAR_WIDTH_ICON,
+                        "--sidebar-width-icon": SIDEBAR_WIDTH_ICON,
+                        "--sidebar-width-collapsed": SIDEBAR_WIDTH_ICON,
+                      }
+                    : {
+                        "--sidebar-width": SIDEBAR_WIDTH,
+                        "--sidebar-width-icon": SIDEBAR_WIDTH_ICON,
+                        "--sidebar-width-collapsed": SIDEBAR_WIDTH_ICON,
+                      }),
+                  ...style,
+                } as React.CSSProperties
             }
             className={cn(
               "group/sidebar-wrapper flex min-h-screen w-full",
