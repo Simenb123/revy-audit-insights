@@ -91,14 +91,27 @@ function getSegmentName(segment: string, allSegments: string[], index: number): 
     'documents': 'Dokumenter',
     'audit-logs': 'Revisjonslogger',
     'ai-usage': 'AI-bruk',
-    'fag': 'Fagstoff',
+    'fag': 'Kunnskapsbase',
     'ai-revy-admin': 'AI-Revy Admin',
     'regnskap': 'Regnskap',
     'analyser': 'Analyser',
     'regnskapsdata': 'Regnskapsdata',
     'spesialdata': 'Spesialdata',
     'transaksjoner': 'Transaksjoner',
-    'import': 'Import'
+    'import': 'Import',
+    // Knowledge Base specific paths
+    'kategori': 'Kategori',
+    'artikkel': 'Artikkel',
+    'ny': 'Ny artikkel',
+    'ny-artikkel': 'Ny artikkel',
+    'rediger': 'Rediger',
+    'mine': 'Mine artikler',
+    'favoritter': 'Mine favoritter',
+    'sok': 'Søkeresultater',
+    'upload': 'Last opp PDF',
+    'admin': 'Administrasjon',
+    'hemmelig-ai-trening': 'AI-trening',
+    'revisjonshandlinger': 'Revisjonshandlinger'
   };
 
   // Handle org numbers (9-digit numbers)

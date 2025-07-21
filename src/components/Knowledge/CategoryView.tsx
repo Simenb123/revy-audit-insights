@@ -6,11 +6,13 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 import { supabase } from '@/integrations/supabase/client';
 import { KnowledgeCategory, KnowledgeArticle, ContentType } from '@/types/knowledge';
 import ContentTypeBadge from './ContentTypeBadge';
 import { Plus, Clock, Eye } from 'lucide-react';
+import KnowledgeLayout from './KnowledgeLayout';
+import KnowledgeArticleCard from './KnowledgeArticleCard';
+import { useFavoriteArticles } from '@/hooks/knowledge/useFavoriteArticles';
 
 const CategoryView = () => {
   const { categoryId } = useParams<{ categoryId: string }>();
@@ -121,42 +123,29 @@ const CategoryView = () => {
     );
   }
 
-  return (
-    <div className="space-y-6">
-      {/* Breadcrumb */}
-      <Breadcrumb>
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink asChild>
-              <Link to="/fag">Fagområder</Link>
-            </BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbPage>{category.name}</BreadcrumbPage>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
+  const { toggleFavorite, isFavorite } = useFavoriteArticles();
 
-      {/* Category Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">{category.name}</h1>
-          {category.description && (
-            <p className="text-muted-foreground mt-1">{category.description}</p>
-          )}
-        </div>
-        <Button asChild>
-          <Link to="/fag/ny-artikkel" state={{ categoryId: category?.id }}>
-            <Plus className="w-4 h-4 mr-2" />
-            Ny artikkel
-          </Link>
-        </Button>
-      </div>
+  const actions = (
+    <Button asChild>
+      <Link to="/fag/ny-artikkel" state={{ categoryId: category?.id }}>
+        <Plus className="w-4 h-4 mr-2" />
+        Ny artikkel
+      </Link>
+    </Button>
+  );
+
+  return (
+    <KnowledgeLayout 
+      title={category.name}
+      actions={actions}
+    >
+      {category.description && (
+        <p className="text-muted-foreground -mt-2 mb-6">{category.description}</p>
+      )}
 
       {/* Subcategories */}
       {subcategories && subcategories.length > 0 && (
-        <div>
+        <div className="mb-8">
           <h2 className="text-lg font-semibold mb-3">Underkategorier</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {subcategories.map((subcategory) => (
@@ -181,55 +170,22 @@ const CategoryView = () => {
       <div>
         <h2 className="text-lg font-semibold mb-4">Artikler i kategori</h2>
         {isLoadingArticles ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="space-y-4">
             {[1, 2, 3].map((i) => (
-              <Card key={i} className="animate-pulse">
-                <CardHeader>
-                  <div className="h-4 bg-muted rounded w-3/4"></div>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-3 bg-muted rounded w-full mb-2"></div>
-                  <div className="h-3 bg-muted rounded w-2/3"></div>
-                </CardContent>
-              </Card>
+              <div key={i} className="animate-pulse">
+                <div className="h-32 bg-muted rounded"></div>
+              </div>
             ))}
           </div>
         ) : articles.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="space-y-4">
             {articles.map((article) => (
-              <Link key={article.id} to={`/fag/artikkel/${article.slug}`}>
-                <Card className="hover:shadow-md transition-shadow cursor-pointer">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base">{article.title}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-muted-foreground mb-4 line-clamp-2">
-                      {article.summary || 'Ingen sammendrag tilgjengelig.'}
-                    </p>
-                    <div className="flex flex-wrap items-center gap-2 mb-3">
-                      {article.content_type_entity && (
-                        <ContentTypeBadge contentType={article.content_type_entity} size="sm" />
-                      )}
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <Eye className="w-3 h-3" />
-                        {article.view_count}
-                      </div>
-                    </div>
-                    {article.article_tags && article.article_tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1">
-                        {article.article_tags.slice(0, 3).map((tag: any) => (
-                          <Badge key={tag.id} variant="outline" className="text-xs">
-                            {tag.display_name}
-                          </Badge>
-                        ))}
-                        {article.article_tags.length > 3 && (
-                          <Badge variant="outline" className="text-xs">+{article.article_tags.length - 3}</Badge>
-                        )}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </Link>
+              <KnowledgeArticleCard 
+                key={article.id}
+                article={article}
+                onToggleFavorite={toggleFavorite}
+                isFavorite={isFavorite(article.id)}
+              />
             ))}
           </div>
         ) : (
@@ -244,7 +200,7 @@ const CategoryView = () => {
           </div>
         )}
       </div>
-    </div>
+    </KnowledgeLayout>
   );
 };
 
