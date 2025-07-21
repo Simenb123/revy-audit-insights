@@ -13,7 +13,9 @@ import {
   Sparkles,
   FileText,
   Users,
-  ListChecks
+  ListChecks,
+  Trash2,
+  Edit3
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useUnifiedTags } from '@/hooks/knowledge/useUnifiedTags';
@@ -25,6 +27,8 @@ import KnowledgeMonitor from '../AIRevyAdmin/KnowledgeMonitor';
 import SubjectAreaManager from './SubjectAreaManager';
 import OptimalCategoryStructure from './OptimalCategoryStructure';
 import ImprovedCreateActionTemplateForm from '../AuditActions/ImprovedCreateActionTemplateForm';
+import { DataCleanupManager } from './DataCleanupManager';
+import { BulkEditManager } from './BulkEditManager';
 
 interface KnowledgeAdminPanelProps {
   /** Enable additional administrative functionality */
@@ -53,7 +57,7 @@ const KnowledgeAdminPanel = ({ showAdvanced = false }: KnowledgeAdminPanelProps)
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className={`grid w-full grid-cols-${showAdvanced ? '10' : '5'}`}>
+        <TabsList className={`grid w-full grid-cols-${showAdvanced ? '12' : '7'}`}>
           <TabsTrigger value="overview">
             <Settings className="w-4 h-4 mr-2" />
             Overview
@@ -61,6 +65,14 @@ const KnowledgeAdminPanel = ({ showAdvanced = false }: KnowledgeAdminPanelProps)
           <TabsTrigger value="monitor">
             <Database className="w-4 h-4 mr-2" />
             Monitor
+          </TabsTrigger>
+          <TabsTrigger value="cleanup">
+            <Trash2 className="w-4 h-4 mr-2" />
+            Opprydding
+          </TabsTrigger>
+          <TabsTrigger value="bulk-edit">
+            <Edit3 className="w-4 h-4 mr-2" />
+            Bulk-edit
           </TabsTrigger>
           <TabsTrigger value="testing">
             <TestTube className="w-4 h-4 mr-2" />
@@ -178,6 +190,14 @@ const KnowledgeAdminPanel = ({ showAdvanced = false }: KnowledgeAdminPanelProps)
 
         <TabsContent value="monitor">
           <KnowledgeMonitor />
+        </TabsContent>
+
+        <TabsContent value="cleanup">
+          <DataCleanupManager />
+        </TabsContent>
+
+        <TabsContent value="bulk-edit">
+          <BulkEditManager />
         </TabsContent>
 
         <TabsContent value="testing">
