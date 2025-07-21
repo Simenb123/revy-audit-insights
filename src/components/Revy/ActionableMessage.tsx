@@ -64,7 +64,6 @@ const ActionableMessage = ({ content, links = [], sources = [] }: ActionableMess
                   <button
                     onClick={() => navigate(href)}
                     className="text-primary hover:underline inline-flex items-center gap-1"
-                    {...props}
                   >
                     {children}
                     <ArrowRight className="h-3 w-3" />
