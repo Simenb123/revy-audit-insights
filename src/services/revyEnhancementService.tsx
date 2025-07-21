@@ -1,5 +1,7 @@
+
 import { logger } from '@/utils/logger';
 import { RevyContext, ProactiveAction } from '@/types/revio';
+import { FileText, ExternalLink, AlertCircle, Users, TrendingUp, Book } from 'lucide-react';
 
 export interface EnhancedResponse {
   content: string;
@@ -9,7 +11,7 @@ export interface EnhancedResponse {
     path?: string;
     url?: string;
     action?: () => void;
-    iconName?: string;
+    icon?: React.ReactNode;
     variant?: 'default' | 'secondary' | 'outline';
   }>;
   sources: Array<{
@@ -44,7 +46,7 @@ export const enhanceAIResponse = (
         type: 'knowledge',
         text: linkText,
         path: linkPath,
-        iconName: 'Book',
+        icon: <Book className="h-3 w-3" />,
         variant: 'outline'
       });
     } else if (linkPath.startsWith('/')) {
@@ -53,7 +55,7 @@ export const enhanceAIResponse = (
         type: 'navigation',
         text: linkText,
         path: linkPath,
-        iconName: 'TrendingUp',
+        icon: <TrendingUp className="h-3 w-3" />,
         variant: 'outline'
       });
     } else if (linkPath.startsWith('http')) {
@@ -62,7 +64,7 @@ export const enhanceAIResponse = (
         type: 'external',
         text: linkText,
         url: linkPath,
-        iconName: 'ExternalLink',
+        icon: <ExternalLink className="h-3 w-3" />,
         variant: 'outline'
       });
     }
@@ -125,35 +127,35 @@ export const enhanceAIResponse = (
       keywords: ['risikovurdering', 'risiko', 'risikoanalyse'],
       text: 'Gå til Risikoanalyse',
       path: '/risikoanalyse',
-      iconName: 'AlertCircle',
+      icon: <AlertCircle className="h-3 w-3" />,
       variant: 'outline' as const
     },
     {
       keywords: ['klient', 'klientdetaljer', 'klientinformasjon'],
       text: 'Se klientdetaljer',
       path: clientData?.id ? `/klienter/${clientData.id}` : '/klienter',
-      iconName: 'Users',
+      icon: <Users className="h-3 w-3" />,
       variant: 'outline' as const
     },
     {
       keywords: ['revisjonshandlinger', 'handlinger', 'oppgaver'],
       text: 'Vis revisjonshandlinger',
       path: clientData?.id ? `/klienter/${clientData.id}?tab=actions` : '/klienter',
-      iconName: 'FileText',
+      icon: <FileText className="h-3 w-3" />,
       variant: 'outline' as const
     },
     {
       keywords: ['dokumentasjon', 'arbeidspapirer', 'dokumenter'],
       text: 'Last opp dokumenter',
       path: '/data-import',
-      iconName: 'FileText',
+      icon: <FileText className="h-3 w-3" />,
       variant: 'outline' as const
     },
     {
       keywords: ['kunnskapsbase', 'fagstoff', 'veiledning'],
       text: 'Utforsk kunnskapsbase',
       path: '/kunnskap',
-      iconName: 'Book',
+      icon: <Book className="h-3 w-3" />,
       variant: 'outline' as const
     }
   ];
@@ -167,7 +169,7 @@ export const enhanceAIResponse = (
           type: 'navigation' as const,
           text: pattern.text,
           path: pattern.path,
-          iconName: pattern.iconName,
+          icon: pattern.icon,
           variant: pattern.variant
         });
       }
@@ -180,7 +182,7 @@ export const enhanceAIResponse = (
       type: 'action',
       text: 'Start risikovurdering',
       path: `/klienter/${clientData?.id}/risk-assessment`,
-      iconName: 'AlertCircle',
+      icon: <AlertCircle className="h-3 w-3" />,
       variant: 'default'
     });
   }
@@ -190,7 +192,7 @@ export const enhanceAIResponse = (
       type: 'navigation',
       text: 'Se fremdrift',
       path: `/klienter/${clientData.id}?tab=progress`,
-      iconName: 'TrendingUp',
+      icon: <TrendingUp className="h-3 w-3" />,
       variant: 'secondary'
     });
   }
