@@ -12,6 +12,7 @@ interface ImportMetaEnv {
   readonly VITE_SUPABASE_SERVICE_ROLE_KEY?: string;
   readonly VITE_USE_ENHANCED_ANALYSIS?: string;
   readonly VITE_KNOWLEDGE_ADMIN_ADVANCED?: string;
+  readonly VITE_OPENAI_API_KEY?: string;
 }
 
 interface ImportMeta {
