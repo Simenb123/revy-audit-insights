@@ -62,16 +62,16 @@ serve(async (req) => {
 
       if (knowledgeResponse.ok) {
         const knowledgeData = await knowledgeResponse.json()
-        console.log('📚 Knowledge search found:', knowledgeData.results?.length || 0, 'articles')
+        console.log('📚 Knowledge search found:', knowledgeData.articles?.length || 0, 'articles')
         
-        if (knowledgeData.results && knowledgeData.results.length > 0) {
+        if (knowledgeData.articles && knowledgeData.articles.length > 0) {
           hasKnowledgeReferences = true
-          knowledgeArticles = knowledgeData.results
-          knowledgeContext = `
+          knowledgeArticles = knowledgeData.articles
+knowledgeContext = `
 TILGJENGELIG FAGKUNNSKAP:
 Du har tilgang til følgende fagartikler som kan være relevante for brukerens spørsmål:
 
-${knowledgeData.results.map(article => `
+${knowledgeData.articles.map(article => `
 - Tittel: ${article.title}
   Sammendrag: ${article.summary || 'Ingen sammendrag'}
   ${article.content ? `Innhold: ${article.content.substring(0, 500)}...` : ''}
