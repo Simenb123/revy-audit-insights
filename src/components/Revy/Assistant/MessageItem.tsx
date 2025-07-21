@@ -3,6 +3,8 @@ import React from 'react';
 import { cn } from '@/lib/utils';
 import { RevyMessage } from '@/types/revio';
 import RevyAvatar from '../RevyAvatar';
+import ActionableMessage from '../ActionableMessage';
+import ReactMarkdown from 'react-markdown';
 
 interface MessageItemProps {
   message: RevyMessage;
@@ -14,7 +16,7 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, compact = false }) =
   
   return (
     <div className={cn(
-      "flex gap-2",
+      "flex gap-2 animate-fade-in",
       compact ? "mb-2" : "mb-4",
       !isAssistant && "flex-row-reverse"
     )}>
@@ -31,10 +33,20 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, compact = false }) =
           "rounded-lg px-3 py-2 text-sm break-words",
           compact ? "text-xs" : "text-sm",
           isAssistant 
-            ? "bg-muted text-foreground" 
+            ? "bg-muted text-foreground shadow-sm" 
             : "bg-primary text-primary-foreground"
         )}>
-          {message.content}
+          {isAssistant ? (
+            <ActionableMessage 
+              content={typeof message.content === 'string' ? message.content : ''}
+              links={message.links || []}
+              sources={message.sources || []}
+            />
+          ) : (
+            <ReactMarkdown className="prose prose-sm max-w-none">
+              {typeof message.content === 'string' ? message.content : ''}
+            </ReactMarkdown>
+          )}
         </div>
         
         {!compact && (

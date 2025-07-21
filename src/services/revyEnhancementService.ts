@@ -1,7 +1,7 @@
-import { logger } from '@/utils/logger';
 
-import { useNavigate } from 'react-router-dom';
+import { logger } from '@/utils/logger';
 import { RevyContext, ProactiveAction } from '@/types/revio';
+import { FileText, ExternalLink, AlertCircle, Users, TrendingUp, Book } from 'lucide-react';
 
 export interface EnhancedResponse {
   content: string;
@@ -25,63 +25,64 @@ export interface EnhancedResponse {
 export const enhanceAIResponse = (
   rawResponse: string,
   context: string,
-  clientData?: any
+  clientData?: any,
+  knowledgeArticles?: any[]
 ): EnhancedResponse => {
   const links: EnhancedResponse['links'] = [];
   const sources: EnhancedResponse['sources'] = [];
   let content = rawResponse;
 
-  // Extract and create navigation links based on keywords
-  const navigationPatterns = [
-    {
-      keywords: ['risikovurdering', 'risiko', 'risikoanalyse'],
-      text: 'Gå til Risikoanalyse',
-      path: '/risikoanalyse',
-      variant: 'outline' as const
-    },
-    {
-      keywords: ['klient', 'klientdetaljer', 'klientinformasjon'],
-      text: 'Se klientdetaljer',
-      path: clientData?.id ? `/klienter/${clientData.id}` : '/klienter',
-      variant: 'outline' as const
-    },
-    {
-      keywords: ['revisjonshandlinger', 'handlinger', 'oppgaver'],
-      text: 'Vis revisjonshandlinger',
-      path: clientData?.id ? `/klienter/${clientData.id}?tab=actions` : '/klienter',
-      variant: 'outline' as const
-    },
-    {
-      keywords: ['dokumentasjon', 'arbeidspapirer', 'dokumenter'],
-      text: 'Last opp dokumenter',
-      path: '/data-import',
-      variant: 'outline' as const
-    },
-    {
-      keywords: ['regnskapsdata', 'regnskap', 'balanse'],
-      text: 'Analyser regnskapsdata',
-      path: '/analyse',
-      variant: 'outline' as const
-    },
-    {
-      keywords: ['kunnskapsbase', 'fagstoff', 'veiledning'],
-      text: 'Utforsk kunnskapsbase',
-      path: '/kunnskap',
-      variant: 'outline' as const
-    }
-  ];
-
-  // Add relevant navigation links based on content
-  navigationPatterns.forEach(pattern => {
-    if (pattern.keywords.some(keyword => content.toLowerCase().includes(keyword))) {
+  // Parse markdown links from AI response
+  const markdownLinkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+  let match;
+  
+  while ((match = markdownLinkRegex.exec(content)) !== null) {
+    const linkText = match[1];
+    const linkPath = match[2];
+    
+    // Check if it's an internal article link
+    if (linkPath.startsWith('/fag/artikkel/')) {
       links.push({
-        type: 'navigation' as const,
-        text: pattern.text,
-        path: pattern.path,
-        variant: pattern.variant
+        type: 'knowledge',
+        text: linkText,
+        path: linkPath,
+        icon: <Book className="h-3 w-3" />,
+        variant: 'outline'
+      });
+    } else if (linkPath.startsWith('/')) {
+      // Internal navigation link
+      links.push({
+        type: 'navigation',
+        text: linkText,
+        path: linkPath,
+        icon: <TrendingUp className="h-3 w-3" />,
+        variant: 'outline'
+      });
+    } else if (linkPath.startsWith('http')) {
+      // External link
+      links.push({
+        type: 'external',
+        text: linkText,
+        url: linkPath,
+        icon: <ExternalLink className="h-3 w-3" />,
+        variant: 'outline'
       });
     }
-  });
+  }
+
+  // Add sources from knowledge articles if provided
+  if (knowledgeArticles && knowledgeArticles.length > 0) {
+    knowledgeArticles.forEach(article => {
+      if (article.title && content.includes(article.title)) {
+        sources.push({
+          title: article.title,
+          type: 'knowledge',
+          reference: article.slug,
+          url: article.slug ? `/fag/artikkel/${article.slug}` : undefined
+        });
+      }
+    });
+  }
 
   // Extract ISA references and add as sources
   const isaMatches = content.match(/ISA\s+(\d+)/g);
@@ -120,12 +121,68 @@ export const enhanceAIResponse = (
     });
   }
 
+  // Context-specific navigation links
+  const navigationPatterns = [
+    {
+      keywords: ['risikovurdering', 'risiko', 'risikoanalyse'],
+      text: 'Gå til Risikoanalyse',
+      path: '/risikoanalyse',
+      icon: <AlertCircle className="h-3 w-3" />,
+      variant: 'outline' as const
+    },
+    {
+      keywords: ['klient', 'klientdetaljer', 'klientinformasjon'],
+      text: 'Se klientdetaljer',
+      path: clientData?.id ? `/klienter/${clientData.id}` : '/klienter',
+      icon: <Users className="h-3 w-3" />,
+      variant: 'outline' as const
+    },
+    {
+      keywords: ['revisjonshandlinger', 'handlinger', 'oppgaver'],
+      text: 'Vis revisjonshandlinger',
+      path: clientData?.id ? `/klienter/${clientData.id}?tab=actions` : '/klienter',
+      icon: <FileText className="h-3 w-3" />,
+      variant: 'outline' as const
+    },
+    {
+      keywords: ['dokumentasjon', 'arbeidspapirer', 'dokumenter'],
+      text: 'Last opp dokumenter',
+      path: '/data-import',
+      icon: <FileText className="h-3 w-3" />,
+      variant: 'outline' as const
+    },
+    {
+      keywords: ['kunnskapsbase', 'fagstoff', 'veiledning'],
+      text: 'Utforsk kunnskapsbase',
+      path: '/kunnskap',
+      icon: <Book className="h-3 w-3" />,
+      variant: 'outline' as const
+    }
+  ];
+
+  // Add relevant navigation links based on content
+  navigationPatterns.forEach(pattern => {
+    if (pattern.keywords.some(keyword => content.toLowerCase().includes(keyword))) {
+      // Only add if not already present
+      if (!links.some(link => link.path === pattern.path)) {
+        links.push({
+          type: 'navigation' as const,
+          text: pattern.text,
+          path: pattern.path,
+          icon: pattern.icon,
+          variant: pattern.variant
+        });
+      }
+    }
+  });
+
   // Context-specific enhancements
   if (context === 'risk-assessment') {
     links.push({
       type: 'action',
       text: 'Start risikovurdering',
       path: `/klienter/${clientData?.id}/risk-assessment`,
+      icon: <AlertCircle className="h-3 w-3" />,
       variant: 'default'
     });
   }
@@ -135,13 +192,14 @@ export const enhanceAIResponse = (
       type: 'navigation',
       text: 'Se fremdrift',
       path: `/klienter/${clientData.id}?tab=progress`,
+      icon: <TrendingUp className="h-3 w-3" />,
       variant: 'secondary'
     });
   }
 
   return {
     content,
-    links: links.slice(0, 3), // Limit to 3 most relevant links
+    links: links.slice(0, 4), // Limit to 4 most relevant links
     sources: [...new Set(sources.map(s => JSON.stringify(s)))].map(s => JSON.parse(s)) // Remove duplicates
   };
 };

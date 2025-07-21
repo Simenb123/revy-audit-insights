@@ -1,10 +1,10 @@
 
 import { logger } from '@/utils/logger';
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/Auth/AuthProvider';
 import { RevyContext, RevyChatMessage, RevyMessage } from '@/types/revio';
+import { enhanceAIResponse } from '@/services/revyEnhancementService';
 import { toast } from 'sonner';
 
 interface UseRevyMessageHandlingProps {
@@ -126,43 +126,45 @@ export const useRevyMessageHandling = ({
     
     switch (ctx) {
       case 'client-detail':
-        return `Hei! Jeg er AI-Revy, din smarte revisjonsassistent. Jeg kan hjelpe deg med analyse av ${clientName}.
+        return `Hei! Jeg er **AI-Revy**, din smarte revisjonsassistent. Jeg kan hjelpe deg med analyse av ${clientName}.
 
-📊 **KLIENTOVERSIKT:**
-- ${docCount} dokumenter tilgjengelig
-- Kategorier: ${categories.length > 0 ? categories.join(', ') : 'Ingen kategorier ennå'}
-- Siste dokumenter: ${recentDocs.length > 0 ? recentDocs.map((d: any) => d.name).join(', ') : 'Ingen dokumenter ennå'}
+## 📊 KLIENTOVERSIKT
+- **${docCount} dokumenter** tilgjengelig
+- **Kategorier:** ${categories.length > 0 ? categories.join(', ') : 'Ingen kategorier ennå'}
+- **Siste dokumenter:** ${recentDocs.length > 0 ? recentDocs.map((d: any) => d.name).join(', ') : 'Ingen dokumenter ennå'}
 
-Jeg kan hjelpe deg med klientanalyse, dokumentgjennomgang, risikovurdering og revisjonsplanlegging. Hva vil du vite om denne klienten?
+Jeg kan hjelpe deg med **klientanalyse**, **dokumentgjennomgang**, **risikovurdering** og **revisjonsplanlegging**. Hva vil du vite om denne klienten?
 
-🏷️ **EMNER:** Klientanalyse, Dokumenter, Risikovurdering, Revisjonsplanlegging`;
+**🏷️ EMNER:** Klientanalyse • Dokumenter • Risikovurdering • Revisjonsplanlegging`;
         
       case 'documentation':
-        return `Hei! Jeg er AI-Revy, din dokumentanalyse-ekspert for ${clientName}.
+        return `Hei! Jeg er **AI-Revy**, din dokumentanalyse-ekspert for ${clientName}.
 
-📁 **DOKUMENTSTATUS:**
-- ${docCount} dokumenter i systemet
-- Kategorier: ${categories.length > 0 ? categories.join(', ') : 'Venter på kategorisering'}
+## 📁 DOKUMENTSTATUS
+- **${docCount} dokumenter** i systemet
+- **Kategorier:** ${categories.length > 0 ? categories.join(', ') : 'Venter på kategorisering'}
 
-Jeg kan hjelpe deg med å analysere, kategorisere og kvalitetssikre dokumenter. Spør meg om dokumenttyper, kategorisering eller kvalitetsvurderinger.
+Jeg kan hjelpe deg med å **analysere**, **kategorisere** og **kvalitetssikre** dokumenter. Spør meg om dokumenttyper, kategorisering eller kvalitetsvurderinger.
 
-🏷️ **EMNER:** Dokumentanalyse, Kategorisering, Kvalitetssikring, Dokumenttyper`;
+**🏷️ EMNER:** Dokumentanalyse • Kategorisering • Kvalitetssikring • Dokumenttyper`;
         
       case 'audit-actions':
-        return `Hei! Jeg er AI-Revy, din revisjonshandlings-assistent for ${clientName}.
+        return `Hei! Jeg er **AI-Revy**, din revisjonshandlings-assistent for ${clientName}.
 
-📋 **REVISJONSKONTEXT:**
-- Klient: ${clientName}
-- ${docCount} dokumenter tilgjengelig for analyse
+## 📋 REVISJONSKONTEXT
+- **Klient:** ${clientName}
+- **${docCount} dokumenter** tilgjengelig for analyse
 
-Jeg kan hjelpe deg med planlegging og gjennomføring av revisjonshandlinger, ISA-standarder og kvalitetssikring.
+Jeg kan hjelpe deg med **planlegging** og **gjennomføring** av revisjonshandlinger, **ISA-standarder** og **kvalitetssikring**.
 
-🏷️ **EMNER:** Revisjonshandlinger, ISA-standarder, Planlegging, Kvalitetssikring`;
+**🏷️ EMNER:** Revisjonshandlinger • ISA-standarder • Planlegging • Kvalitetssikring`;
         
       default:
-        return `Hei! Jeg er AI-Revy, din smarte revisjonsassistent. Jeg kan hjelpe deg med revisjon, regnskapsføring, dokumentanalyse og mye mer. Hvordan kan jeg hjelpe deg i dag?
+        return `Hei! Jeg er **AI-Revy**, din smarte revisjonsassistent. 
 
-🏷️ **EMNER:** Revisjon, Regnskapsføring, Dokumenter, Rådgivning`;
+Jeg kan hjelpe deg med **revisjon**, **regnskapsføring**, **dokumentanalyse** og mye mer. Hvordan kan jeg hjelpe deg i dag?
+
+**🏷️ EMNER:** Revisjon • Regnskapsføring • Dokumenter • Rådgivning`;
     }
   };
 
@@ -196,12 +198,16 @@ Jeg kan hjelpe deg med planlegging og gjennomføring av revisjonshandlinger, ISA
           logger.log(`💬 Loaded ${loadedMessages.length} previous messages from session ${sessionId}`);
         } else {
           // Add welcome message for new sessions
-          const welcomeMessage = getContextualWelcomeMessage(context, clientData);
+          const welcomeContent = getContextualWelcomeMessage(context, clientData);
+          const enhancedWelcome = enhanceAIResponse(welcomeContent, context, clientData);
+          
           const welcomeMsg: RevyMessage = {
             id: crypto.randomUUID(),
             sender: 'assistant',
-            content: welcomeMessage,
+            content: enhancedWelcome.content,
             timestamp: new Date(),
+            links: enhancedWelcome.links,
+            sources: enhancedWelcome.sources
           };
           setMessages([welcomeMsg]);
           
@@ -212,7 +218,7 @@ Jeg kan hjelpe deg med planlegging og gjennomføring av revisjonshandlinger, ISA
               .insert({
                 session_id: sessionId,
                 sender: 'revy',
-                content: welcomeMessage
+                content: welcomeContent
               });
 
             if (saveError) {
@@ -305,11 +311,21 @@ Jeg kan hjelpe deg med planlegging og gjennomføring av revisjonshandlinger, ISA
 
       logger.log('🔍 AI response received:', data.response.substring(0, 100) + '...');
 
+      // Enhance the AI response with links and sources
+      const enhancedResponse = enhanceAIResponse(
+        data.response, 
+        context, 
+        clientData, 
+        data.knowledgeArticles
+      );
+
       const aiMessage: RevyMessage = {
         id: crypto.randomUUID(),
         sender: 'assistant',
-        content: data.response,
+        content: enhancedResponse.content,
         timestamp: new Date(),
+        links: enhancedResponse.links,
+        sources: enhancedResponse.sources
       };
 
       setMessages(prev => [...prev, aiMessage]);
@@ -350,9 +366,7 @@ Jeg kan hjelpe deg med planlegging og gjennomføring av revisjonshandlinger, ISA
 **Forslag:**
 • Prøv igjen om litt
 • Sjekk internett-tilkoblingen din
-• Kontakt support hvis problemet vedvarer
-
-🏷️ **EMNER:** Teknisk support, Feilsøking, AI-assistanse`;
+• Kontakt support hvis problemet vedvarer`;
 
       // Show user-friendly toast
       if (error.message.includes('timeout') || error.message.includes('timed out')) {
