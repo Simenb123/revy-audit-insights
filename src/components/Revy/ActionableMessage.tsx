@@ -3,7 +3,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, ArrowRight, FileText, Users, TrendingUp, AlertCircle } from 'lucide-react';
+import { ExternalLink, ArrowRight, FileText, Users, TrendingUp, AlertCircle, Book } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
 interface ActionableLink {
@@ -12,7 +12,7 @@ interface ActionableLink {
   path?: string;
   url?: string;
   action?: () => void;
-  icon?: React.ReactNode;
+  iconName?: string;
   variant?: 'default' | 'secondary' | 'outline';
 }
 
@@ -49,6 +49,19 @@ const ActionableMessage = ({ content, links = [], sources = [] }: ActionableMess
       case 'knowledge': return <FileText className="h-3 w-3" />;
       case 'client': return <Users className="h-3 w-3" />;
       default: return <FileText className="h-3 w-3" />;
+    }
+  };
+
+  const getIconByName = (iconName?: string) => {
+    if (!iconName) return null;
+    switch (iconName) {
+      case 'Book': return <Book className="h-3 w-3" />;
+      case 'FileText': return <FileText className="h-3 w-3" />;
+      case 'Users': return <Users className="h-3 w-3" />;
+      case 'TrendingUp': return <TrendingUp className="h-3 w-3" />;
+      case 'AlertCircle': return <AlertCircle className="h-3 w-3" />;
+      case 'ExternalLink': return <ExternalLink className="h-3 w-3" />;
+      default: return null;
     }
   };
 
@@ -128,7 +141,7 @@ const ActionableMessage = ({ content, links = [], sources = [] }: ActionableMess
               onClick={() => handleLinkClick(link)}
               className="text-xs h-7 hover-scale"
             >
-              {link.icon && <span className="mr-1">{link.icon}</span>}
+              {getIconByName(link.iconName) && <span className="mr-1">{getIconByName(link.iconName)}</span>}
               {link.text}
               {link.type === 'navigation' && <ArrowRight className="h-3 w-3 ml-1" />}
               {link.type === 'external' && <ExternalLink className="h-3 w-3 ml-1" />}
