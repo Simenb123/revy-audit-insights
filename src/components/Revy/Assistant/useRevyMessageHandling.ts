@@ -234,7 +234,6 @@ Jeg kan hjelpe deg med planlegging og gjennomføring av revisjonshandlinger, ISA
   }, [sessionId, session?.user?.id, context, clientData]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    console.log('Input change detected:', e.target.value);
     setInput(e.target.value);
   };
 
@@ -246,7 +245,6 @@ Jeg kan hjelpe deg med planlegging og gjennomføring av revisjonshandlinger, ISA
   };
 
   const handleSendMessage = async () => {
-    console.log('Send message called:', { input, isLoading, isAuthenticated: !!session?.user?.id });
     if (!input.trim() || isLoading) return;
 
     if (!session?.user?.id) {

@@ -135,7 +135,7 @@ async function keywordSearch(supabase: any, query: string): Promise<SearchArticl
       return { 
         ...article, 
         similarity: Math.min(relevanceScore / 10, 1.0),
-        category: article.category ? { name: article.category.name } : null 
+        category: article.category ? { name: article.category.name, id: article.category.id } : null 
       };
     }).sort((a: SearchArticle, b: SearchArticle) => (b.similarity || 0) - (a.similarity || 0));
     
@@ -222,7 +222,7 @@ export default async function handler(req: Request): Promise<Response> {
       });
     }
 
-    let semanticResults = [];
+    let semanticResults: SearchArticle[] = [];
     
     if (openAIApiKey) {
       try {
@@ -252,12 +252,12 @@ export default async function handler(req: Request): Promise<Response> {
     console.log('🔤 Performing keyword search...');
     const keywordResults = await keywordSearch(supabase, query);
 
-    const combinedResults = [...(semanticResults || []), ...keywordResults];
+    const combinedResults = [...semanticResults, ...keywordResults];
     const uniqueResults = Array.from(new Map(combinedResults.map(item => [item.id, item])).values());
     
     uniqueResults.sort((a, b) => {
       if (b.similarity !== a.similarity) {
-        return b.similarity - a.similarity;
+        return (b.similarity || 0) - (a.similarity || 0);
       }
       return (b.view_count || 0) - (a.view_count || 0);
     });

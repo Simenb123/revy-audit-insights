@@ -38,6 +38,9 @@ serve(async (req) => {
       throw new Error('OpenAI API key is not configured');
     }
 
+    // Log API key format for debugging (first 8 characters only)
+    console.log('🔑 OpenAI API key format check:', openaiApiKey.substring(0, 8));
+
     console.log('🔍 Starting knowledge search for:', message.substring(0, 50));
 
     // Search for relevant knowledge articles with timeout
@@ -74,9 +77,10 @@ ${relevantArticles.map((article: any) => `
 - Tittel: ${article.title}
   Sammendrag: ${article.summary || 'Ingen sammendrag'}
   ${article.content ? `Innhold: ${article.content.substring(0, 500)}...` : ''}
+  ${article.slug ? `Link: [${article.title}](/fag/artikkel/${article.slug})` : ''}
 `).join('')}
 
-VIKTIG: Når du refererer til disse artiklene, bruk lenkeformat: [Artikkelnavn](/fag/artikkel/${article.slug})`;
+VIKTIG: Når du refererer til disse artiklene, bruk lenkeformat som vist over.`;
         }
       } else {
         console.log('⚠️ Knowledge search responded with status:', knowledgeResponse.status);
@@ -140,7 +144,7 @@ Dette er påkrevd for at grensesnittet skal fungere korrekt.`;
       const openaiData = await openaiResponse.json();
       const aiResponse = openaiData.choices[0].message.content;
 
-      console.log('✅ AI response generated successfully');
+      console.log('✅ AI response generated successfully:', aiResponse.substring(0, 100) + '...');
 
       return new Response(JSON.stringify({
         response: aiResponse,
