@@ -1,3 +1,4 @@
+
 import { logger } from '@/utils/logger';
 
 import React from "react";
@@ -31,6 +32,7 @@ import { useContentTypes, type ContentType } from "@/hooks/knowledge/useContentT
 import { useSubjectAreas } from "@/hooks/knowledge/useSubjectAreas";
 import AIMetadataSuggestions from "./AIMetadataSuggestions";
 import TagSuggestions from "./TagSuggestions";
+import KnowledgeLayout from "./KnowledgeLayout";
 
 interface ArticleFormData {
   title: string;
@@ -85,7 +87,6 @@ const ArticleEditor = () => {
     },
   });
 
-  // Use hooks to get content types and subject areas from database
   const { data: contentTypes = [] } = useContentTypes();
   const { data: subjectAreas = [] } = useSubjectAreas();
 
@@ -133,7 +134,6 @@ const ArticleEditor = () => {
   React.useEffect(() => {
     if (article && !isLoadingArticle) {
       logger.log("Setting form values from article:", article);
-      // Find the content type ID based on the article's content_type_id
       let contentTypeId = contentTypes.length > 0 ? contentTypes[0]?.id : "";
       if (article.content_type_id) {
         contentTypeId = article.content_type_id;
@@ -154,7 +154,6 @@ const ArticleEditor = () => {
     }
   }, [article, isLoadingArticle, form, contentTypes]);
 
-  // Update form default when content types are loaded
   React.useEffect(() => {
     if (contentTypes.length > 0 && !form.getValues("contentTypeId")) {
       form.setValue("contentTypeId", contentTypes[0].id);
@@ -168,7 +167,6 @@ const ArticleEditor = () => {
     contentTypeId: string;
     summary?: string;
   }) => {
-    // Apply suggestions to form
     if (tags.length > 0) {
       form.setValue("tags", tags.join(", "));
     }
@@ -197,9 +195,7 @@ const ArticleEditor = () => {
     }
   };
 
-  // Improved slug generation with uniqueness handling
   const generateUniqueSlug = async (value: string): Promise<string> => {
-    // value might already be a slug or just a title
     const baseSlug = generateSlug(value);
 
     try {
@@ -217,17 +213,14 @@ const ArticleEditor = () => {
       return `${baseSlug}-${Date.now().toString().slice(-6)}`;
     }
 
-    // If base slug exists, add timestamp suffix
     return `${baseSlug}-${Date.now().toString().slice(-6)}`;
   };
 
-  // Helper function to create tags in unified system
   const createTagsInUnifiedSystem = async (tagNames: string[]) => {
     for (const tagName of tagNames) {
       if (!tagName.trim()) continue;
       
       try {
-        // Check if tag already exists in unified system
         const { data: existingTag } = await supabase
           .from('tags')
           .select('id')
@@ -235,13 +228,12 @@ const ArticleEditor = () => {
           .single();
 
         if (!existingTag) {
-          // Create new tag in unified system
           const { error: tagError } = await supabase
             .from('tags')
             .insert({
               name: tagName.trim().toLowerCase().replace(/\s+/g, '_'),
               display_name: tagName.trim(),
-              color: '#3B82F6', // Default blue color
+              color: '#3B82F6',
               category: 'article',
               sort_order: 999,
               is_active: true
@@ -265,7 +257,6 @@ const ArticleEditor = () => {
 
       logger.log("Saving article with data:", data);
 
-      // Validate required fields
       if (!data.title.trim()) {
         throw new Error("Tittel er påkrevd");
       }
@@ -280,11 +271,9 @@ const ArticleEditor = () => {
         throw new Error("Kategori er påkrevd");
       }
 
-      // Generate unique slug
       const desiredSlug = data.slug || data.title;
       const finalSlug = await generateUniqueSlug(desiredSlug);
       
-      // Process tags and create them in unified system
       const tagNames = data.tags
         ? data.tags
             .split(",")
@@ -292,19 +281,17 @@ const ArticleEditor = () => {
             .filter(Boolean)
         : [];
 
-      // Create tags in unified system before saving article
       if (tagNames.length > 0) {
         await createTagsInUnifiedSystem(tagNames);
       }
       
-      // Only use content_type_id, NOT content_type (which doesn't exist in the database)
       const articleData = {
         title: data.title.trim(),
         slug: finalSlug,
         summary: data.summary || null,
         content: data.content,
         category_id: data.categoryId,
-        content_type_id: data.contentTypeId || null, // Only store the ID
+        content_type_id: data.contentTypeId || null,
         status: data.status,
         author_id: session.user.id,
         published_at:
@@ -333,15 +320,12 @@ const ArticleEditor = () => {
         }
         savedArticle = result as KnowledgeArticle;
 
-        // Update subject area mappings
         if (data.subjectAreaIds && data.subjectAreaIds.length > 0) {
-          // Delete existing mappings
           await supabase
             .from("article_subject_areas")
             .delete()
             .eq("article_id", articleId);
 
-          // Insert new mappings
           const subjectAreaMappings = data.subjectAreaIds.map(subjectAreaId => ({
             article_id: articleId,
             subject_area_id: subjectAreaId
@@ -372,7 +356,6 @@ const ArticleEditor = () => {
         }
         savedArticle = result as KnowledgeArticle;
 
-        // Insert subject area mappings for new articles
         if (data.subjectAreaIds && data.subjectAreaIds.length > 0) {
           const subjectAreaMappings = data.subjectAreaIds.map(subjectAreaId => ({
             article_id: savedArticle.id,
@@ -421,40 +404,29 @@ const ArticleEditor = () => {
     );
   }
 
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button 
-            variant="ghost" 
-            size="sm"
-            onClick={() => navigate('/fag')}
-            className="flex items-center gap-2"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Tilbake til fagstoff
-          </Button>
-          <h1 className="text-2xl font-bold">
-            {isEditing ? "Rediger artikkel" : "Ny artikkel"}
-          </h1>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button 
-            type="submit" 
-            disabled={saveMutation.isPending}
-            onClick={form.handleSubmit(onSubmit)}
-            className="flex items-center gap-2"
-          >
-            <Save className="w-4 h-4" />
-            {saveMutation.isPending ? "Lagrer..." : "Lagre"}
-          </Button>
-          <Button variant="outline" onClick={() => navigate('/fag')}>
-            <X className="w-4 h-4 mr-2" />
-            Avbryt
-          </Button>
-        </div>
-      </div>
+  const actions = (
+    <div className="flex items-center gap-2">
+      <Button 
+        type="submit" 
+        disabled={saveMutation.isPending}
+        onClick={form.handleSubmit(onSubmit)}
+        className="flex items-center gap-2"
+      >
+        <Save className="w-4 h-4" />
+        {saveMutation.isPending ? "Lagrer..." : "Lagre"}
+      </Button>
+      <Button variant="outline" onClick={() => navigate('/fag')}>
+        <X className="w-4 h-4 mr-2" />
+        Avbryt
+      </Button>
+    </div>
+  );
 
+  return (
+    <KnowledgeLayout
+      title={isEditing ? "Rediger artikkel" : "Ny artikkel"}
+      actions={actions}
+    >
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         {/* AI Metadata Suggestions */}
         <AIMetadataSuggestions
@@ -467,225 +439,236 @@ const ArticleEditor = () => {
           availableSubjectAreas={subjectAreas}
         />
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main content area */}
-          <div className="lg:col-span-2 space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Artikkeldetaljer</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="title">Tittel *</Label>
-                    <Input
-                      id="title"
-                      {...form.register("title", { required: "Tittel er påkrevd" })}
-                      onBlur={(e) => {
-                        if (!form.getValues("slug")) {
-                          const base = generateSlug(e.target.value);
-                          form.setValue("slug", base);
-                          checkSlugUnique(base);
-                        }
-                      }}
-                    />
-                    {form.formState.errors.title && (
-                      <p className="text-sm text-destructive">
-                        {form.formState.errors.title.message}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="slug">URL-slug *</Label>
-                    <Input
-                      id="slug"
-                      {...form.register("slug", {
-                        required: "URL-slug er påkrevd",
-                      })}
-                      onBlur={(e) => checkSlugUnique(e.target.value)}
-                    />
-                    {form.formState.errors.slug && (
-                      <p className="text-sm text-destructive">
-                        {form.formState.errors.slug.message}
-                      </p>
-                    )}
-                    {slugError && (
-                      <p className="text-sm text-destructive">{slugError}</p>
-                    )}
-                  </div>
-                </div>
-
+        {/* Main content area - single column layout */}
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Artikkeldetaljer</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="summary">Sammendrag</Label>
-                  <Textarea
-                    id="summary"
-                    {...form.register("summary")}
-                    rows={3}
-                    placeholder="Kort beskrivelse av artikkelen..."
+                  <Label htmlFor="title">Tittel *</Label>
+                  <Input
+                    id="title"
+                    {...form.register("title", { required: "Tittel er påkrevd" })}
+                    onBlur={(e) => {
+                      if (!form.getValues("slug")) {
+                        const base = generateSlug(e.target.value);
+                        form.setValue("slug", base);
+                        checkSlugUnique(base);
+                      }
+                    }}
                   />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="categoryId">Kategori *</Label>
-                    <Controller
-                      name="categoryId"
-                      control={form.control}
-                      rules={{ required: "Kategori er påkrevd" }}
-                      render={({ field }) => (
-                        <Select value={field.value} onValueChange={field.onChange}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Velg kategori" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {categories?.map((category) => (
-                              <SelectItem key={category.id} value={category.id}>
-                                {category.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      )}
-                    />
-                    {form.formState.errors.categoryId && (
-                      <p className="text-sm text-destructive">
-                        {form.formState.errors.categoryId.message}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="contentTypeId">Innholdstype</Label>
-                    <Controller
-                      name="contentTypeId"
-                      control={form.control}
-                      render={({ field }) => (
-                        <Select value={field.value} onValueChange={field.onChange}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Velg innholdstype" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {contentTypes.map((type: ContentType) => (
-                              <SelectItem key={type.id} value={type.id}>
-                                <div className="flex items-center gap-2">
-                                  <div 
-                                    className="w-3 h-3 rounded" 
-                                    style={{ backgroundColor: type.color }}
-                                  />
-                                  {type.display_name}
-                                </div>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      )}
-                    />
-                  </div>
-                </div>
-
-                {/* Subject Areas */}
-                <div className="space-y-2">
-                  <Label>Emneområder</Label>
-                  <div className="grid grid-cols-2 gap-3">
-                    {subjectAreas.map((area) => (
-                      <Controller
-                        key={area.id}
-                        name="subjectAreaIds"
-                        control={form.control}
-                        render={({ field }) => (
-                          <div className="flex items-center space-x-2">
-                            <Checkbox
-                              id={`area-${area.id}`}
-                              checked={field.value.includes(area.id)}
-                              onCheckedChange={(checked) => {
-                                const newValue = checked
-                                  ? [...field.value, area.id]
-                                  : field.value.filter(id => id !== area.id);
-                                field.onChange(newValue);
-                              }}
-                            />
-                            <Label
-                              htmlFor={`area-${area.id}`}
-                              className="text-sm font-normal cursor-pointer flex items-center gap-2"
-                            >
-                              <div 
-                                className="w-3 h-3 rounded" 
-                                style={{ backgroundColor: area.color }}
-                              />
-                              {area.display_name}
-                            </Label>
-                          </div>
-                        )}
-                      />
-                    ))}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="status">Status</Label>
-                    <Controller
-                      name="status"
-                      control={form.control}
-                      render={({ field }) => (
-                        <Select value={field.value} onValueChange={field.onChange}>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="draft">Utkast</SelectItem>
-                            <SelectItem value="published">Publisert</SelectItem>
-                            <SelectItem value="archived">Arkivert</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      )}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="reference_code">Referansekode</Label>
-                    <Input
-                      id="reference_code"
-                      {...form.register("reference_code")}
-                      placeholder="f.eks. ISA 200.15"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="content">Innhold *</Label>
-                  <Controller
-                    name="content"
-                    control={form.control}
-                    rules={{ required: "Innhold er påkrevd" }}
-                    render={({ field }) => (
-                      <RichTextEditor
-                        content={field.value}
-                        onChange={field.onChange}
-                      />
-                    )}
-                  />
-                  {form.formState.errors.content && (
+                  {form.formState.errors.title && (
                     <p className="text-sm text-destructive">
-                      {form.formState.errors.content.message}
+                      {form.formState.errors.title.message}
                     </p>
                   )}
                 </div>
-              </CardContent>
-            </Card>
-          </div>
 
-          {/* Sidebar with tags and suggestions */}
-          <div className="space-y-6">
-            <TagSuggestions
-              currentTags={form.watch("tags")}
-              onTagsChange={(tags) => form.setValue("tags", tags)}
-            />
-          </div>
+                <div className="space-y-2">
+                  <Label htmlFor="slug">URL-slug *</Label>
+                  <Input
+                    id="slug"
+                    {...form.register("slug", {
+                      required: "URL-slug er påkrevd",
+                    })}
+                    onBlur={(e) => checkSlugUnique(e.target.value)}
+                  />
+                  {form.formState.errors.slug && (
+                    <p className="text-sm text-destructive">
+                      {form.formState.errors.slug.message}
+                    </p>
+                  )}
+                  {slugError && (
+                    <p className="text-sm text-destructive">{slugError}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="summary">Sammendrag</Label>
+                <Textarea
+                  id="summary"
+                  {...form.register("summary")}
+                  rows={3}
+                  placeholder="Kort beskrivelse av artikkelen..."
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="categoryId">Kategori *</Label>
+                  <Controller
+                    name="categoryId"
+                    control={form.control}
+                    rules={{ required: "Kategori er påkrevd" }}
+                    render={({ field }) => (
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Velg kategori" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {categories?.map((category) => (
+                            <SelectItem key={category.id} value={category.id}>
+                              {category.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                  {form.formState.errors.categoryId && (
+                    <p className="text-sm text-destructive">
+                      {form.formState.errors.categoryId.message}
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="contentTypeId">Innholdstype</Label>
+                  <Controller
+                    name="contentTypeId"
+                    control={form.control}
+                    render={({ field }) => (
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Velg innholdstype" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {contentTypes.map((type: ContentType) => (
+                            <SelectItem key={type.id} value={type.id}>
+                              <div className="flex items-center gap-2">
+                                <div 
+                                  className="w-3 h-3 rounded" 
+                                  style={{ backgroundColor: type.color }}
+                                />
+                                {type.display_name}
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Emneområder</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  {subjectAreas.map((area) => (
+                    <Controller
+                      key={area.id}
+                      name="subjectAreaIds"
+                      control={form.control}
+                      render={({ field }) => (
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`area-${area.id}`}
+                            checked={field.value.includes(area.id)}
+                            onCheckedChange={(checked) => {
+                              const newValue = checked
+                                ? [...field.value, area.id]
+                                : field.value.filter(id => id !== area.id);
+                              field.onChange(newValue);
+                            }}
+                          />
+                          <Label
+                            htmlFor={`area-${area.id}`}
+                            className="text-sm font-normal cursor-pointer flex items-center gap-2"
+                          >
+                            <div 
+                              className="w-3 h-3 rounded" 
+                              style={{ backgroundColor: area.color }}
+                            />
+                            {area.display_name}
+                          </Label>
+                        </div>
+                      )}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="status">Status</Label>
+                  <Controller
+                    name="status"
+                    control={form.control}
+                    render={({ field }) => (
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="draft">Utkast</SelectItem>
+                          <SelectItem value="published">Publisert</SelectItem>
+                          <SelectItem value="archived">Arkivert</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="reference_code">Referansekode</Label>
+                  <Input
+                    id="reference_code"
+                    {...form.register("reference_code")}
+                    placeholder="f.eks. ISA 200.15"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="content">Innhold *</Label>
+                <Controller
+                  name="content"
+                  control={form.control}
+                  rules={{ required: "Innhold er påkrevd" }}
+                  render={({ field }) => (
+                    <RichTextEditor
+                      content={field.value}
+                      onChange={field.onChange}
+                    />
+                  )}
+                />
+                {form.formState.errors.content && (
+                  <p className="text-sm text-destructive">
+                    {form.formState.errors.content.message}
+                  </p>
+                )}
+              </div>
+
+              {/* Tags moved to under content for better layout */}
+              <div className="space-y-2">
+                <Label htmlFor="tags">Tags</Label>
+                <Controller
+                  name="tags"
+                  control={form.control}
+                  render={({ field }) => (
+                    <div className="space-y-2">
+                      <Input
+                        id="tags"
+                        {...field}
+                        placeholder="Legg til tags, separert med komma"
+                      />
+                      <TagSuggestions
+                        currentTags={field.value}
+                        onTagsChange={field.onChange}
+                      />
+                    </div>
+                  )}
+                />
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </form>
-    </div>
+    </KnowledgeLayout>
   );
 };
 
