@@ -113,7 +113,7 @@ const TagManager = () => {
   const filteredTags = filterCategory === 'all' ? tags : tags.filter((tag: Tag) => tag.category === filterCategory);
 
   return (
-    <EntityManager<Tag>
+    <EntityManager
       items={filteredTags}
       isLoading={isLoading}
       itemKey={(t) => t.id}
