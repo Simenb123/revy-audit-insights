@@ -128,14 +128,17 @@ const ResizableLeftSidebar = () => {
   const filteredAdminItems = adminItems.filter(item => canAccessAdminItem(item.roles))
 
   return (
-    <ShadcnSidebar
-      collapsible="icon"
-      className="border-r border-sidebar-border bg-sidebar"
-      style={{ 
-        width: isCollapsed 
-          ? 'var(--sidebar-width-collapsed)' 
-          : 'var(--sidebar-width)' 
-      }}
+      <ShadcnSidebar
+        collapsible="icon"
+        className="border-r border-sidebar-border bg-sidebar"
+        style={{
+          width: isCollapsed
+            ? 'var(--sidebar-width-icon)'
+            : 'var(--sidebar-width)',
+          minWidth: isCollapsed
+            ? 'var(--sidebar-width-icon)'
+            : 'var(--sidebar-width)'
+        }}
     >
       <SidebarHeader className="p-1">
         <div className="flex items-center justify-center">
