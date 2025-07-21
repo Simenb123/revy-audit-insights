@@ -1,3 +1,4 @@
+
 import { logger } from '@/utils/logger';
 
 import React, { useState, useEffect } from 'react';
@@ -5,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
   MessageSquare, 
   FileText, 
@@ -15,12 +17,15 @@ import {
   CheckCircle,
   Clock,
   Brain,
-  Lightbulb
+  Lightbulb,
+  LogIn
 } from 'lucide-react';
 import { useClientDocuments } from '@/hooks/useClientDocuments';
+import { useAuth } from '@/components/Auth/AuthProvider';
 import { Client } from '@/types/revio';
 import { getContextualSuggestions } from '@/services/enhancedRevyService';
 import { RevyInput } from './Assistant/RevyInput';
+import { useRevyMessageHandling } from './Assistant/useRevyMessageHandling';
 
 interface ContextAwareRevyChatProps {
   client: Client;
@@ -33,111 +38,28 @@ const ContextAwareRevyChat: React.FC<ContextAwareRevyChatProps> = ({
   onClose,
   className = ''
 }) => {
+  const { session, isLoading: authLoading } = useAuth();
   const { documents = [] } = useClientDocuments(client?.id || '');
-  const [messages, setMessages] = useState<Array<{ sender: 'user' | 'assistant'; content: string; timestamp: Date }>>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [message, setMessage] = useState('');
 
   // Ensure documents is always an array
   const safeDocuments = Array.isArray(documents) ? documents : [];
 
-  useEffect(() => {
-    // Only initialize if we have a valid client
-    if (!client?.id) {
-      console.warn('⚠️ [CONTEXT_CHAT] No valid client provided');
-      return;
-    }
-
-    // Initial greeting with context
-    const contextSummary = buildContextSummary();
-    const greeting = `Hei! Jeg er AI-Revy, din intelligente revisjonsassistent.
-
-Jeg har oversikt over ${client.company_name || client.name} og kan hjelpe deg med:
-
-${contextSummary}
-
-Hva kan jeg hjelpe deg med i dag?`;
-
-    setMessages([{
-      sender: 'assistant',
-      content: greeting,
-      timestamp: new Date()
-    }]);
-  }, [client, safeDocuments]);
-
-  const buildContextSummary = () => {
-    const context = [];
-    
-    if (safeDocuments.length > 0) {
-      const highConfidenceDocs = safeDocuments.filter(d => 
-        d.ai_confidence_score && d.ai_confidence_score >= 0.8
-      ).length;
-      
-      context.push(`📊 ${safeDocuments.length} dokumenter (${highConfidenceDocs} AI-validerte)`);
-    }
-    
-    if (client?.phase) {
-      const phaseNames = {
-        engagement: 'Oppdrags-fase',
-        planning: 'Planlegging',
-        execution: 'Gjennomføring',
-        completion: 'Ferdigstillelse',
-        reporting: 'Rapportering',
-        risk_assessment: 'Risikovurdering',
-        overview: 'Oversikt'
-      } as Record<string, string>;
-      context.push(`🎯 Fase: ${phaseNames[client.phase] || client.phase}`);
-    }
-    
-    if (client?.industry) {
-      context.push(`🏢 Bransje: ${client.industry}`);
-    }
-    
-    return context.length > 0 ? context.join('\n') : 'Generell revisjonsrådgivning';
-  };
-
-  const handleSendMessage = async () => {
-    if (!message.trim()) return;
-
-    const userMessage = {
-      sender: 'user' as const,
-      content: message.trim(),
-      timestamp: new Date()
-    };
-
-    setMessages(prev => [...prev, userMessage]);
-    setMessage('');
-    setIsLoading(true);
-
-    try {
-      // For now, provide a simple response using the contextual suggestions
-      const suggestions = getContextualSuggestions('client-detail', client);
-      const response = `Basert på informasjonen om ${client?.company_name || client?.name}, her er noen forslag:
-
-${suggestions.slice(0, 2).map(s => `• ${s}`).join('\n')}
-
-Trenger du mer spesifikk hjelp med noen av disse områdene?`;
-
-      const assistantMessage = {
-        sender: 'assistant' as const,
-        content: response,
-        timestamp: new Date()
-      };
-
-      setMessages(prev => [...prev, assistantMessage]);
-
-    } catch (error) {
-      logger.error('Error getting chat response:', error);
-      const errorMessage = {
-        sender: 'assistant' as const,
-        content: 'Beklager, jeg kunne ikke behandle forespørselen din akkurat nå. Prøv igjen.',
-        timestamp: new Date()
-      };
-      setMessages(prev => [...prev, errorMessage]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const {
+    messages,
+    input,
+    isLoading: messageLoading,
+    isAnalyzingDocuments,
+    handleInputChange,
+    handleKeyDown,
+    handleSendMessage,
+    isAuthenticated,
+    sessionId
+  } = useRevyMessageHandling({
+    context: 'client-detail',
+    clientData: client,
+    selectedVariant: { name: 'support' }
+  });
 
   const getContextBadges = () => {
     const badges = [];
@@ -176,6 +98,48 @@ Trenger du mer spesifikk hjelp med noen av disse områdene?`;
     );
   }
 
+  // Show authentication required state
+  if (!isAuthenticated && !authLoading) {
+    return (
+      <Card className={`h-full flex flex-col ${className}`}>
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Brain className="h-5 w-5 text-purple-600" />
+            AI-Revy Kontekst-Chat
+          </CardTitle>
+        </CardHeader>
+        
+        <CardContent className="flex-1 flex flex-col items-center justify-center p-6">
+          <LogIn className="h-12 w-12 text-muted-foreground mb-4" />
+          <h3 className="text-lg font-semibold mb-2">Innlogging kreves</h3>
+          <p className="text-muted-foreground text-center mb-4">
+            Du må være innlogget for å bruke AI-Revy chat-funksjonen.
+          </p>
+          <Alert className="w-full max-w-md">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Logg inn for å starte en samtale med AI-Revy om {client.company_name || client.name}.
+            </AlertDescription>
+          </Alert>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Show loading state
+  if (authLoading || (isAuthenticated && !sessionId)) {
+    return (
+      <Card className={`h-full flex flex-col ${className}`}>
+        <CardContent className="flex-1 flex items-center justify-center p-6">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-2"></div>
+            <p className="text-muted-foreground">Starter AI-Revy...</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className={`h-full flex flex-col ${className}`}>
       <CardHeader className="pb-3">
@@ -209,6 +173,12 @@ Trenger du mer spesifikk hjelp med noen av disse områdene?`;
         
         <div className="flex flex-wrap gap-2 mt-2">
           {getContextBadges()}
+          {sessionId && (
+            <Badge variant="outline" className="text-xs">
+              <CheckCircle className="h-3 w-3 mr-1 text-green-500" />
+              Tilkoblet
+            </Badge>
+          )}
         </div>
       </CardHeader>
       
@@ -243,13 +213,15 @@ Trenger du mer spesifikk hjelp med noen av disse områdene?`;
             </div>
           ))}
           
-          {isLoading && (
+          {(messageLoading || isAnalyzingDocuments) && (
             <div className="flex justify-start">
               <div className="bg-gray-100 text-gray-900 p-3 rounded-lg flex items-center gap-2">
                 <div className="animate-spin">
                   <Lightbulb className="h-4 w-4" />
                 </div>
-                <span>AI-Revy tenker...</span>
+                <span>
+                  {isAnalyzingDocuments ? 'Analyserer dokumenter...' : 'AI-Revy tenker...'}
+                </span>
               </div>
             </div>
           )}
@@ -257,11 +229,12 @@ Trenger du mer spesifikk hjelp med noen av disse områdene?`;
         
         <div className="p-4 border-t">
           <RevyInput
-            message={message}
-            setMessage={setMessage}
+            message={input}
+            setMessage={(value) => handleInputChange({ target: { value } } as any)}
             handleSendMessage={handleSendMessage}
-            isTyping={isLoading}
+            isTyping={messageLoading}
             placeholder="Spør AI-Revy om noe relatert til denne klienten..."
+            onKeyDown={handleKeyDown}
           />
         </div>
       </CardContent>

@@ -2,7 +2,6 @@
 import { logger } from '@/utils/logger';
 
 import { useState, useEffect } from 'react';
-import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/Auth/AuthProvider';
 import { RevyContext, RevyChatMessage, RevyMessage } from '@/types/revio';
@@ -28,18 +27,69 @@ export const useRevyMessageHandling = ({
   const { session } = useAuth();
   const [sessionId, setSessionId] = useState<string | null>(null);
 
-  // Generate session ID
+  // Create or load session
   useEffect(() => {
-    const generateSessionId = async () => {
-      const newSessionId = uuidv4();
-      setSessionId(newSessionId);
-      logger.log('💬 New session ID generated:', newSessionId);
+    const initializeSession = async () => {
+      if (!session?.user?.id) {
+        logger.warn('No authenticated user - cannot initialize Revy session');
+        return;
+      }
+
+      try {
+        // First, try to find existing session for this context
+        const { data: existingSessions, error: fetchError } = await supabase
+          .from('revy_chat_sessions')
+          .select('*')
+          .eq('user_id', session.user.id)
+          .eq('context', context)
+          .eq('client_id', clientData?.id || null)
+          .order('updated_at', { ascending: false })
+          .limit(1);
+
+        if (fetchError) {
+          logger.error('Error fetching existing sessions:', fetchError);
+          throw fetchError;
+        }
+
+        let currentSessionId: string;
+
+        if (existingSessions && existingSessions.length > 0) {
+          // Use existing session
+          currentSessionId = existingSessions[0].id;
+          logger.log('💬 Using existing session:', currentSessionId);
+        } else {
+          // Create new session
+          const { data: newSession, error: createError } = await supabase
+            .from('revy_chat_sessions')
+            .insert({
+              user_id: session.user.id,
+              client_id: clientData?.id || null,
+              context: context,
+              title: `${context} - ${clientData?.company_name || 'General'}`
+            })
+            .select()
+            .single();
+
+          if (createError) {
+            logger.error('Error creating new session:', createError);
+            throw createError;
+          }
+
+          currentSessionId = newSession.id;
+          logger.log('💬 Created new session:', currentSessionId);
+        }
+
+        setSessionId(currentSessionId);
+      } catch (error) {
+        logger.error('Failed to initialize session:', error);
+        toast.error('Kunne ikke starte chat-sesjon', {
+          description: 'Prøv å laste siden på nytt eller logg inn igjen.'
+        });
+      }
     };
 
-    if (!sessionId) {
-      generateSessionId();
-    }
-  }, [sessionId]);
+    initializeSession();
+  }, [session?.user?.id, context, clientData?.id, clientData?.company_name]);
 
   // Function to detect if message is asking about documents
   const isDocumentQuery = (message: string): boolean => {
@@ -67,7 +117,7 @@ export const useRevyMessageHandling = ({
 📊 **KLIENTOVERSIKT:**
 - ${docCount} dokumenter tilgjengelig
 - Kategorier: ${categories.length > 0 ? categories.join(', ') : 'Ingen kategorier ennå'}
- - Siste dokumenter: ${recentDocs.length > 0 ? recentDocs.map((d: any) => d.name).join(', ') : 'Ingen dokumenter ennå'}
+- Siste dokumenter: ${recentDocs.length > 0 ? recentDocs.map((d: any) => d.name).join(', ') : 'Ingen dokumenter ennå'}
 
 Jeg kan hjelpe deg med klientanalyse, dokumentgjennomgang, risikovurdering og revisjonsplanlegging. Hva vil du vite om denne klienten?
 
@@ -105,50 +155,64 @@ Jeg kan hjelpe deg med planlegging og gjennomføring av revisjonshandlinger, ISA
   // Load previous messages from session or add welcome message
   useEffect(() => {
     const loadPreviousMessages = async () => {
-      if (sessionId && session?.user?.id) {
-        try {
-          const { data, error } = await supabase
-            .from('revy_chat_messages')
-            .select('*')
-            .eq('session_id', sessionId)
-            .order('created_at', { ascending: true });
+      if (!sessionId || !session?.user?.id) {
+        return;
+      }
 
-          if (error) {
-            logger.error('Error loading messages:', error);
-          } else if (data && data.length > 0) {
-            const loadedMessages: RevyMessage[] = data.map(msg => ({
-              id: msg.id,
-              sender: msg.sender === 'revy' ? 'assistant' : msg.sender as 'user' | 'assistant',
-              content: msg.content,
-              timestamp: new Date(msg.created_at),
-            }));
-            setMessages(loadedMessages);
-            logger.log(`💬 Loaded ${loadedMessages.length} previous messages from session ${sessionId}`);
-          } else {
-            // Add welcome message for new sessions
-            const welcomeMessage = getContextualWelcomeMessage(context, clientData);
-            const welcomeMsg: RevyMessage = {
-              id: crypto.randomUUID(),
-              sender: 'assistant',
-              content: welcomeMessage,
-              timestamp: new Date(),
-            };
-            setMessages([welcomeMsg]);
-            
-            // Save welcome message to database
-            try {
-              await supabase.from('revy_chat_messages').insert({
+      try {
+        const { data, error } = await supabase
+          .from('revy_chat_messages')
+          .select('*')
+          .eq('session_id', sessionId)
+          .order('created_at', { ascending: true });
+
+        if (error) {
+          logger.error('Error loading messages:', error);
+          throw error;
+        }
+
+        if (data && data.length > 0) {
+          const loadedMessages: RevyMessage[] = data.map(msg => ({
+            id: msg.id,
+            sender: msg.sender === 'revy' ? 'assistant' : msg.sender as 'user' | 'assistant',
+            content: msg.content,
+            timestamp: new Date(msg.created_at),
+          }));
+          setMessages(loadedMessages);
+          logger.log(`💬 Loaded ${loadedMessages.length} previous messages from session ${sessionId}`);
+        } else {
+          // Add welcome message for new sessions
+          const welcomeMessage = getContextualWelcomeMessage(context, clientData);
+          const welcomeMsg: RevyMessage = {
+            id: crypto.randomUUID(),
+            sender: 'assistant',
+            content: welcomeMessage,
+            timestamp: new Date(),
+          };
+          setMessages([welcomeMsg]);
+          
+          // Save welcome message to database
+          try {
+            const { error: saveError } = await supabase
+              .from('revy_chat_messages')
+              .insert({
                 session_id: sessionId,
                 sender: 'revy',
                 content: welcomeMessage
               });
-            } catch (saveError) {
+
+            if (saveError) {
               logger.error('Error saving welcome message:', saveError);
             }
+          } catch (saveError) {
+            logger.error('Error saving welcome message:', saveError);
           }
-        } catch (error) {
-          logger.error('Error loading messages:', error);
         }
+      } catch (error) {
+        logger.error('Error loading messages:', error);
+        toast.error('Kunne ikke laste chat-historie', {
+          description: 'Prøv å laste siden på nytt.'
+        });
       }
     };
 
@@ -168,6 +232,20 @@ Jeg kan hjelpe deg med planlegging og gjennomføring av revisjonshandlinger, ISA
 
   const handleSendMessage = async () => {
     if (!input.trim() || isLoading) return;
+
+    if (!session?.user?.id) {
+      toast.error('Du må være innlogget for å chatte', {
+        description: 'Logg inn for å fortsette samtalen.'
+      });
+      return;
+    }
+
+    if (!sessionId) {
+      toast.error('Ingen aktiv chat-sesjon', {
+        description: 'Prøv å laste siden på nytt.'
+      });
+      return;
+    }
 
     const userMessage = input.trim();
     setInput('');
@@ -223,15 +301,22 @@ Jeg kan hjelpe deg med planlegging og gjennomføring av revisjonshandlinger, ISA
       setMessages(prev => [...prev, aiMessage]);
 
       // Save messages to session
-      if (sessionId) {
-        try {
-          await supabase.from('revy_chat_messages').insert([
+      try {
+        const { error: saveError } = await supabase
+          .from('revy_chat_messages')
+          .insert([
             { session_id: sessionId, sender: 'user', content: userMessage },
             { session_id: sessionId, sender: 'revy', content: data.response }
           ]);
-        } catch (error) {
-          logger.error('Error saving messages:', error);
+
+        if (saveError) {
+          logger.error('Error saving messages:', saveError);
+          toast.error('Kunne ikke lagre meldinger', {
+            description: 'Meldingene vises i chatten, men lagres ikke permanent.'
+          });
         }
+      } catch (saveError) {
+        logger.error('Error saving messages:', saveError);
       }
 
       // Show success toast if knowledge was used
@@ -284,6 +369,7 @@ Jeg kan hjelpe deg med planlegging og gjennomføring av revisjonshandlinger, ISA
     }
   };
 
+  // Return authentication state along with other values
   return {
     messages,
     input,
@@ -291,6 +377,8 @@ Jeg kan hjelpe deg med planlegging og gjennomføring av revisjonshandlinger, ISA
     isAnalyzingDocuments,
     handleInputChange,
     handleKeyDown,
-    handleSendMessage
+    handleSendMessage,
+    isAuthenticated: !!session?.user?.id,
+    sessionId
   };
 };
