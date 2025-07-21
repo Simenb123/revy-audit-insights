@@ -17,9 +17,10 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import Logo from './Logo';
+import { Link } from 'react-router-dom';
+// Removed the Revi icon logo from the header. The "Revio" text will act as the
+// main logo and link to the dashboard instead.
 import GlobalSearch from './GlobalSearch';
-import Breadcrumbs from './Breadcrumbs';
 
 interface AppHeaderProps {
   className?: string;
@@ -50,11 +51,13 @@ const AppHeader: React.FC<AppHeaderProps> = ({ className = '' }) => {
   return (
     <header className="sticky top-0 z-50 bg-revio-500 border-b border-revio-600 flex items-center justify-between px-6 py-3 text-white h-16 shadow-sm">
       <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2">
-          <h2 className="text-lg font-semibold">Revio</h2>
-          <div className="flex items-center">
-            <Logo />
-          </div>
+        <div className="flex items-center">
+          <Link
+            to="/"
+            className="text-2xl font-extrabold tracking-wide text-white hover:opacity-90"
+          >
+            Revio
+          </Link>
         </div>
         
         {/* Global Search */}
