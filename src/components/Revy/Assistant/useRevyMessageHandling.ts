@@ -287,21 +287,14 @@ Jeg kan hjelpe deg med planlegging og gjennomføring av revisjonshandlinger, ISA
     try {
       logger.log(`🤖 Sending message to AI-Revy with context: ${context}`);
       
-      // Call the improved revy-ai-chat function directly with timeout
-      const timeoutPromise = new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error('Request timeout')), 30000)
-      );
-      
-      const apiPromise = supabase.functions.invoke('revy-ai-chat', {
+      // Call the improved revy-ai-chat function directly
+      const { data, error } = await supabase.functions.invoke('revy-ai-chat', {
         body: {
           message: userMessage,
           context: context,
           variantName: selectedVariant?.name || 'support'
         }
       });
-
-      const result = await Promise.race([apiPromise, timeoutPromise]);
-      const { data, error } = result;
 
       if (error) {
         console.error('❌ Supabase function error:', error);
