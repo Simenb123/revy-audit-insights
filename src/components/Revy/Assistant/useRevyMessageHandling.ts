@@ -37,14 +37,22 @@ export const useRevyMessageHandling = ({
 
       try {
         // First, try to find existing session for this context
-        const { data: existingSessions, error: fetchError } = await supabase
+        let query = supabase
           .from('revy_chat_sessions')
           .select('*')
           .eq('user_id', session.user.id)
           .eq('context', context)
-          .eq('client_id', clientData?.id || null)
           .order('updated_at', { ascending: false })
           .limit(1);
+
+        // Handle client_id properly - only add filter if we have a valid client ID
+        if (clientData?.id && typeof clientData.id === 'string' && clientData.id.trim() !== '') {
+          query = query.eq('client_id', clientData.id);
+        } else {
+          query = query.is('client_id', null);
+        }
+
+        const { data: existingSessions, error: fetchError } = await query;
 
         if (fetchError) {
           logger.error('Error fetching existing sessions:', fetchError);
@@ -59,14 +67,20 @@ export const useRevyMessageHandling = ({
           logger.log('💬 Using existing session:', currentSessionId);
         } else {
           // Create new session
+          const sessionData: any = {
+            user_id: session.user.id,
+            context: context,
+            title: `${context} - ${clientData?.company_name || 'General'}`
+          };
+
+          // Only add client_id if we have a valid client ID
+          if (clientData?.id && typeof clientData.id === 'string' && clientData.id.trim() !== '') {
+            sessionData.client_id = clientData.id;
+          }
+
           const { data: newSession, error: createError } = await supabase
             .from('revy_chat_sessions')
-            .insert({
-              user_id: session.user.id,
-              client_id: clientData?.id || null,
-              context: context,
-              title: `${context} - ${clientData?.company_name || 'General'}`
-            })
+            .insert(sessionData)
             .select()
             .single();
 
