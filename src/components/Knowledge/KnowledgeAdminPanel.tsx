@@ -15,7 +15,9 @@ import {
   Users,
   ListChecks,
   Trash2,
-  Edit3
+  Edit3,
+  TreePine,
+  Brain
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useUnifiedTags } from '@/hooks/knowledge/useUnifiedTags';
@@ -29,6 +31,8 @@ import OptimalCategoryStructure from './OptimalCategoryStructure';
 import ImprovedCreateActionTemplateForm from '../AuditActions/ImprovedCreateActionTemplateForm';
 import { DataCleanupManager } from './DataCleanupManager';
 import { BulkEditManager } from './BulkEditManager';
+import { UnifiedCategoryManager } from './UnifiedCategoryManager';
+import { AIRevyIntegrationPanel } from './AIRevyIntegrationPanel';
 
 interface KnowledgeAdminPanelProps {
   /** Enable additional administrative functionality */
@@ -57,7 +61,7 @@ const KnowledgeAdminPanel = ({ showAdvanced = false }: KnowledgeAdminPanelProps)
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className={`grid w-full grid-cols-${showAdvanced ? '12' : '7'}`}>
+        <TabsList className={`grid w-full grid-cols-${showAdvanced ? '9' : '9'}`}>
           <TabsTrigger value="overview">
             <Settings className="w-4 h-4 mr-2" />
             Overview
@@ -85,6 +89,14 @@ const KnowledgeAdminPanel = ({ showAdvanced = false }: KnowledgeAdminPanelProps)
           <TabsTrigger value="content-types">
             <Wrench className="w-4 h-4 mr-2" />
             Content Types
+          </TabsTrigger>
+          <TabsTrigger value="unified-categories">
+            <TreePine className="w-4 h-4 mr-2" />
+            Nye kategorier
+          </TabsTrigger>
+          <TabsTrigger value="ai-integration">
+            <Brain className="w-4 h-4 mr-2" />
+            AI-Integrasjon
           </TabsTrigger>
           {showAdvanced && (
             <>
@@ -210,6 +222,14 @@ const KnowledgeAdminPanel = ({ showAdvanced = false }: KnowledgeAdminPanelProps)
 
         <TabsContent value="content-types">
           <ContentTypeManager />
+        </TabsContent>
+
+        <TabsContent value="unified-categories">
+          <UnifiedCategoryManager />
+        </TabsContent>
+
+        <TabsContent value="ai-integration">
+          <AIRevyIntegrationPanel />
         </TabsContent>
         {showAdvanced && (
           <>

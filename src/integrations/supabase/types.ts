@@ -584,6 +584,38 @@ export type Database = {
           },
         ]
       }
+      article_unified_categories: {
+        Row: {
+          article_id: string
+          created_at: string
+          id: string
+          relevance_score: number | null
+          unified_category_id: string
+        }
+        Insert: {
+          article_id: string
+          created_at?: string
+          id?: string
+          relevance_score?: number | null
+          unified_category_id: string
+        }
+        Update: {
+          article_id?: string
+          created_at?: string
+          id?: string
+          relevance_score?: number | null
+          unified_category_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "article_unified_categories_unified_category_id_fkey"
+            columns: ["unified_category_id"]
+            isOneToOne: false
+            referencedRelation: "unified_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_action_document_mappings: {
         Row: {
           action_template_id: string | null
@@ -3482,6 +3514,71 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      unified_categories: {
+        Row: {
+          audit_phases: string[] | null
+          category_type: string
+          color: string
+          compliance_framework: string[] | null
+          created_at: string
+          description: string | null
+          display_name: string
+          icon: string | null
+          id: string
+          is_active: boolean
+          isa_standard_reference: string[] | null
+          name: string
+          parent_id: string | null
+          risk_level: string | null
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          audit_phases?: string[] | null
+          category_type?: string
+          color?: string
+          compliance_framework?: string[] | null
+          created_at?: string
+          description?: string | null
+          display_name: string
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          isa_standard_reference?: string[] | null
+          name: string
+          parent_id?: string | null
+          risk_level?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          audit_phases?: string[] | null
+          category_type?: string
+          color?: string
+          compliance_framework?: string[] | null
+          created_at?: string
+          description?: string | null
+          display_name?: string
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          isa_standard_reference?: string[] | null
+          name?: string
+          parent_id?: string | null
+          risk_level?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "unified_categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "unified_categories"
             referencedColumns: ["id"]
           },
         ]
