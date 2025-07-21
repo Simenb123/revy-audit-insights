@@ -18,7 +18,7 @@ const KnowledgeBase = () => {
   return (
     <div className="container mx-auto py-6 space-y-6">
       <Routes>
-        <Route index element={<KnowledgeOverview extraLogging />} />
+        <Route index element={<KnowledgeOverview />} />
         <Route path="kategori/:categoryId" element={<CategoryView />} />
         <Route path="artikkel/:slug" element={<ArticleView />} />
         <Route path="ny" element={<ArticleEditor />} />

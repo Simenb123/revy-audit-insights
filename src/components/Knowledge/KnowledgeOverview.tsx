@@ -49,7 +49,9 @@ const KnowledgeOverview = () => {
           category:knowledge_categories(id, name),
           content_type_entity:content_types(id, name, display_name, color),
           article_subject_areas(subject_area_id),
-          article_tags(tag_id)
+          article_tags:knowledge_article_tags(
+            tag:tags(id, name, display_name, color)
+          )
         `)
         .eq('status', 'published')
         .order('updated_at', { ascending: false });
@@ -69,16 +71,22 @@ const KnowledgeOverview = () => {
       const { data, error } = await query;
       if (error) throw error;
 
+      // Transform the article_tags to match the expected structure
+      const transformedData = data.map(article => ({
+        ...article,
+        article_tags: article.article_tags?.map((tagRel: any) => tagRel.tag) || []
+      }));
+
       // Filter by subject areas if any are selected
       if (selectedSubjectAreas.length > 0) {
-        return data.filter(article => 
+        return transformedData.filter(article => 
           article.article_subject_areas?.some(asa => 
             selectedSubjectAreas.includes(asa.subject_area_id)
           )
         );
       }
 
-      return data;
+      return transformedData;
     },
   });
 
