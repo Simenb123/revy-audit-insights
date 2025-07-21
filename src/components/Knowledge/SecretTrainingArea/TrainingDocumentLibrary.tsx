@@ -173,25 +173,25 @@ const TrainingDocumentLibrary = () => {
                 className="pl-10"
               />
             </div>
-            <Select value={filterType} onValueChange={setFilterType}>
+            <Select value={filterType || "all"} onValueChange={(value) => setFilterType(value === "all" ? "" : value)}>
               <SelectTrigger className="w-48">
                 <Filter className="h-4 w-4 mr-2" />
                 <SelectValue placeholder="Dokumenttype" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Alle typer</SelectItem>
+                <SelectItem value="all">Alle typer</SelectItem>
                 <SelectItem value="hovedbok">Hovedbok</SelectItem>
                 <SelectItem value="saldobalanse">Saldobalanse</SelectItem>
                 <SelectItem value="resultat">Resultat</SelectItem>
                 <SelectItem value="kontoplaner">Kontoplaner</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={filterSystem} onValueChange={setFilterSystem}>
+            <Select value={filterSystem || "all"} onValueChange={(value) => setFilterSystem(value === "all" ? "" : value)}>
               <SelectTrigger className="w-48">
                 <SelectValue placeholder="System" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Alle systemer</SelectItem>
+                <SelectItem value="all">Alle systemer</SelectItem>
                 <SelectItem value="visma_business">Visma Business</SelectItem>
                 <SelectItem value="poweroffice">PowerOffice</SelectItem>
                 <SelectItem value="tripletex">Tripletex</SelectItem>

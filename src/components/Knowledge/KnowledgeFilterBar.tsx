@@ -67,12 +67,12 @@ const KnowledgeFilterBar = ({
         </div>
 
         {/* Category Filter */}
-        <Select value={selectedCategory || ""} onValueChange={onCategoryChange}>
+        <Select value={selectedCategory || "all"} onValueChange={(value) => onCategoryChange(value === "all" ? "" : value)}>
           <SelectTrigger className="w-48">
             <SelectValue placeholder="Alle kategorier" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Alle kategorier</SelectItem>
+            <SelectItem value="all">Alle kategorier</SelectItem>
             {categories.map((category) => (
               <SelectItem key={category.id} value={category.id}>
                 {category.name}
@@ -82,12 +82,12 @@ const KnowledgeFilterBar = ({
         </Select>
 
         {/* Content Type Filter */}
-        <Select value={selectedContentType || ""} onValueChange={onContentTypeChange}>
+        <Select value={selectedContentType || "all"} onValueChange={(value) => onContentTypeChange(value === "all" ? "" : value)}>
           <SelectTrigger className="w-48">
             <SelectValue placeholder="Alle typer" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Alle typer</SelectItem>
+            <SelectItem value="all">Alle typer</SelectItem>
             {contentTypes.map((type) => (
               <SelectItem key={type.id} value={type.id}>
                 <div className="flex items-center gap-2">

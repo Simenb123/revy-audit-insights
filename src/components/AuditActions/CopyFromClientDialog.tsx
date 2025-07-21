@@ -83,7 +83,7 @@ const CopyFromClientDialog = ({
               </SelectTrigger>
               <SelectContent>
                 {clientsLoading ? (
-                  <SelectItem value="" disabled>
+                  <SelectItem value="loading" disabled>
                     Laster...
                   </SelectItem>
                 ) : (

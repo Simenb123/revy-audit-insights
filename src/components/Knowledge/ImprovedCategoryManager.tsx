@@ -427,14 +427,14 @@ const CategoryForm = ({
       <div>
         <Label htmlFor="parent_category">Overordnet kategori</Label>
         <Select 
-          value={formData.parent_category_id} 
-          onValueChange={(value) => setFormData(prev => ({ ...prev, parent_category_id: value }))}
+          value={formData.parent_category_id || "none"} 
+          onValueChange={(value) => setFormData(prev => ({ ...prev, parent_category_id: value === "none" ? "" : value }))}
         >
           <SelectTrigger>
             <SelectValue placeholder="Velg overordnet kategori (valgfritt)" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Ingen (rot-kategori)</SelectItem>
+            <SelectItem value="none">Ingen (rot-kategori)</SelectItem>
             {allCategories
               .filter(cat => cat.id !== category?.id)
               .map((cat) => (
