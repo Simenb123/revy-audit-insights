@@ -1,6 +1,5 @@
 import { logger } from '@/utils/logger';
-
-import * as XLSX from 'xlsx';
+import { parseXlsxSafely, getWorksheetDataSafely } from '@/utils/secureXlsx';
 import { supabase } from "@/integrations/supabase/client";
 
 interface LogEntry {
@@ -137,59 +136,46 @@ export const processExcelFile = async (
 
   addLog(`Authenticated as user: ${session.user.id.substring(0, 8)}... (${session.user.email})`);
 
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
+  try {
+    // Use secure XLSX parsing directly
+    const workbook = await parseXlsxSafely(file);
     
-    reader.onload = async (e) => {
-      try {
-        const data = new Uint8Array(e.target?.result as ArrayBuffer);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-        
-        addLog(`Excel file read successfully. Sheet name: ${workbook.SheetNames[0]}`);
-        
-        const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 'A' });
-        addLog(`Raw data rows: ${jsonData.length}`);
-        
-        const rows: string[] = jsonData
-          .map(row => {
-            const value = (row as any).A?.toString().trim();
-            return value;
-          })
-          .filter(Boolean);
+    addLog(`Excel file read securely. Sheet name: ${workbook.SheetNames[0]}`);
+    
+    const jsonData = getWorksheetDataSafely(workbook);
+    addLog(`Raw data rows: ${jsonData.length}`);
+    
+    const rows: string[] = jsonData
+      .map(row => {
+        const value = (row as any).A?.toString().trim();
+        return value;
+      })
+      .filter(Boolean);
 
-        addLog(`Filtered rows: ${rows.length}`);
-        addLog(`First 5 org numbers: ${rows.slice(0, 5).join(', ')}`);
+    addLog(`Filtered rows: ${rows.length}`);
+    addLog(`First 5 org numbers: ${rows.slice(0, 5).join(', ')}`);
 
-        let successful = 0;
-        const processedClients = [];
-        
-        for (let i = 0; i < rows.length; i++) {
-          const orgNumber = rows[i];
-          addLog(`Processing row ${i+1}: org number ${orgNumber}`);
-          
-          const result = await processOrgNumber(orgNumber, addLog);
-          if (result) {
-            successful++;
-            addLog(`Successfully added client: ${result.name} (${result.id})`);
-            processedClients.push(result);
-          }
-          
-          onProgress(i + 1, rows.length);
-        }
-
-        onSuccess(successful, rows.length, processedClients);
-        resolve({ successful, total: rows.length });
-      } catch (error) {
-        reject(error);
+    let successful = 0;
+    const processedClients = [];
+    
+    for (let i = 0; i < rows.length; i++) {
+      const orgNumber = rows[i];
+      addLog(`Processing row ${i+1}: org number ${orgNumber}`);
+      
+      const result = await processOrgNumber(orgNumber, addLog);
+      if (result) {
+        successful++;
+        addLog(`Successfully added client: ${result.name} (${result.id})`);
+        processedClients.push(result);
       }
-    };
+      
+      onProgress(i + 1, rows.length);
+    }
 
-    reader.onerror = (error) => {
-      addLog(`FileReader error: ${reader.error?.message || 'Unknown error'}`);
-      reject(error);
-    };
-
-    reader.readAsArrayBuffer(file);
-  });
+    onSuccess(successful, rows.length, processedClients);
+    return { successful, total: rows.length };
+  } catch (error) {
+    addLog(`Error processing Excel file: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw error;
+  }
 };

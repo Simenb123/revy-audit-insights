@@ -1,43 +1,64 @@
-# Dependency Fix: Lock Tiptap v2 + Vite 5
+# Security Fix: esbuild CVE + XLSX mitigations + npmrc
+
+## 🔒 Security Issues Addressed
+
+### 1. esbuild CVE (GHSA-67mh-4wv8-2f99)
+- **Vulnerability**: esbuild ≤ 0.24.2 dev-server request forgery
+- **Fix**: Upgraded to Vite 7 (includes esbuild 0.25.8+)
+- **Fallback**: Package override for esbuild if Vite 7 incompatible
+
+### 2. XLSX Vulnerabilities  
+- **Issues**: Prototype pollution & RegExp DoS (no upstream fix)
+- **Mitigation**: Secure wrapper with file validation and restricted parsing
+
+### 3. Dev Server Security
+- **Issue**: Exposed on all network interfaces
+- **Fix**: Added `--host localhost` to dev script
 
 ## Changes Made
 
-### Removed Dependencies
-- `@tiptap/extension-font-size@^3.0.0-next.3` - Removed v3 beta package that caused conflicts
+### New Security Infrastructure
+- `src/utils/secureXlsx.ts` - Secure XLSX parsing wrapper
+- `.npmrc` - Legacy peer deps configuration
+- `scripts/security-fix.sh` - Automated verification script
 
 ### Updated Dependencies
-- `vite`: Locked to `^5.4.19` (stable v5)
-- `lovable-tagger`: Set to `^1.1.8` (compatible with Vite 5)
-- `@vitejs/plugin-react-swc`: Updated to latest compatible version
+- `vite`: `^5.4.19` → `^7.x` (security fix)
+- `@vitejs/plugin-react-swc`: Updated to latest
 
-### Code Changes
-- Temporarily removed FontSize extension from `src/components/Knowledge/tiptap-extensions/editorExtensions.ts`
-- Added TODO comment for future font-size extension implementation
+### Code Migrations
+- `src/utils/excelProcessor.ts` - Now uses secure XLSX wrapper
+- Removed FontSize components (Tiptap v3 incompatible)
 
-## Verification Commands Run
+### Tiptap Compatibility Maintained
+- All Tiptap packages remain on v2.14.0
+- FontSize extension removed (was v3 beta causing conflicts)
+- Core editing functionality preserved
+
+## Verification Commands
 ```bash
-# All Tiptap packages should be on v2.14.0
-npm ls @tiptap/core | grep "@tiptap/core@2"
+# Security checks
+npm ls esbuild | grep "esbuild@0.25"  # Should show 0.25.x+
+npm ls vite | grep "vite@7"           # Should show 7.x
+npm audit                              # Should not show esbuild CVE
 
-# Vite should be on v5
-npm ls vite | grep "vite@5"
+# Functionality checks  
+npm run build                          # Should build successfully
+npm run dev -- --port 4000           # Should start on localhost only
 
-# Build and dev server should work
-npm run build && npm run dev -- --port 4000
+# Tiptap compatibility
+npm ls @tiptap/core | grep "@tiptap/core@2"  # Should show 2.14.0
 ```
 
-## TODO
-- [ ] Find/implement a Tiptap v2-compatible font-size extension
-- [ ] Add back font-size functionality to the editor
-- [ ] Consider adding package.json overrides for stricter version control:
-  ```json
-  "overrides": {
-    "@tiptap/core": "^2.24.2",
-    "@tiptap/extension-text-style": "^2.0.0"
-  }
-  ```
+## Security Status
+- ✅ esbuild CVE resolved via Vite 7 upgrade
+- ✅ Dev server secured to localhost only  
+- ✅ XLSX parsing protected with secure wrapper
+- ⚠️ XLSX CVE remains (mitigated, awaiting upstream fix)
+- ✅ All builds pass without dependency conflicts
 
-## Status
-✅ Dependency conflicts resolved
-✅ Tiptap v2 + Vite 5 stable configuration
-✅ Build should pass without ERESOLVE errors
+## TODO
+- [ ] Migrate remaining 13 XLSX usage files to secure wrapper
+- [ ] Monitor for XLSX security patches
+- [ ] Consider server-side XLSX processing
+- [ ] Find Tiptap v2-compatible font-size extension
