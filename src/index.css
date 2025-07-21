@@ -29,7 +29,7 @@
     --radius: 0.5rem;
 
     /* Sidebar farger - lys variant */
-    --sidebar-background: 159 85% 18%;
+    --sidebar-background: var(--revio-500);
     --sidebar-foreground: 0 0% 100%;
     --sidebar-primary: 174 57% 80%;
     --sidebar-primary-foreground: 159 85% 18%;
