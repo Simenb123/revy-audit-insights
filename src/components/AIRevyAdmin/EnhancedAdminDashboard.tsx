@@ -32,6 +32,7 @@ import WorkflowManager from './WorkflowManager';
 import TagManager from './TagManager';
 import EnhancedContentTypeManager from './EnhancedContentTypeManager';
 import EnhancedSubjectAreaManager from './EnhancedSubjectAreaManager';
+import { SubjectAreaManager } from '../Admin/SubjectAreaManager';
 
 const EnhancedAdminDashboard = () => {
   return (
@@ -103,7 +104,7 @@ const EnhancedAdminDashboard = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <EnhancedSubjectAreaManager />
+              <SubjectAreaManager />
             </CardContent>
           </Card>
         </TabsContent>
