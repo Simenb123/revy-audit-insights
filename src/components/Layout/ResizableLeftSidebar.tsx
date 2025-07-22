@@ -25,7 +25,8 @@ import {
   MessageSquare,
   Database,
   Brain,
-  UserCog
+  UserCog,
+  GraduationCap
 } from 'lucide-react'
 import { useUserProfile } from '@/hooks/useUserProfile'
 
@@ -98,6 +99,11 @@ const resourceItems = [
     title: 'Kunnskapsbase',
     url: '/fag',
     icon: BookOpen,
+  },
+  {
+    title: 'Revisjons Akademiet',
+    url: '/academy',
+    icon: GraduationCap,
   },
   {
     title: 'Kommunikasjon',
