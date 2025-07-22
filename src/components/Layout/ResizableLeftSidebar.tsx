@@ -152,7 +152,7 @@ const ResizableLeftSidebar = () => {
       <SidebarContent>
         {/* Klientarbeid seksjon */}
         <SidebarGroup>
-          <SidebarGroupLabel>Klientarbeid</SidebarGroupLabel>
+          {!isCollapsed && <SidebarGroupLabel>Klientarbeid</SidebarGroupLabel>}
           <SidebarGroupContent>
             <SidebarMenu className="space-y-1">
               {clientWorkItems.map((item) => {
@@ -163,10 +163,10 @@ const ResizableLeftSidebar = () => {
                     <SidebarMenuButton 
                       asChild 
                       isActive={isItemActive}
-                      className={isCollapsed ? "justify-center p-0" : "justify-start pl-0 pr-0"}
+                      className={isCollapsed ? "justify-center p-2" : "justify-start pl-2 pr-2"}
                       tooltip={isCollapsed ? item.title : undefined}
                     >
-                      <Link to={item.url} className={isCollapsed ? "flex items-center justify-center w-full h-full" : "flex items-center gap-1 w-full pl-1"}>
+                      <Link to={item.url} className={isCollapsed ? "flex items-center justify-center w-full h-full" : "flex items-center gap-2 w-full"}>
                         <item.icon className="h-4 w-4 flex-shrink-0" />
                         {!isCollapsed && <span className="text-xs truncate">{item.title}</span>}
                       </Link>
@@ -181,7 +181,7 @@ const ResizableLeftSidebar = () => {
         {/* Administrasjon seksjon - kun hvis brukeren har tilgang til minst ett element */}
         {filteredAdminItems.length > 0 && (
           <SidebarGroup>
-            <SidebarGroupLabel>Administrasjon</SidebarGroupLabel>
+            {!isCollapsed && <SidebarGroupLabel>Administrasjon</SidebarGroupLabel>}
             <SidebarGroupContent>
               <SidebarMenu className="space-y-1">
                 {filteredAdminItems.map((item) => {
@@ -192,10 +192,10 @@ const ResizableLeftSidebar = () => {
                       <SidebarMenuButton 
                         asChild 
                         isActive={isItemActive}
-                        className={isCollapsed ? "justify-center p-0" : "justify-start pl-0 pr-0"}
+                        className={isCollapsed ? "justify-center p-2" : "justify-start pl-2 pr-2"}
                         tooltip={isCollapsed ? item.title : undefined}
                       >
-                        <Link to={item.url} className={isCollapsed ? "flex items-center justify-center w-full h-full" : "flex items-center gap-1 w-full pl-1"}>
+                        <Link to={item.url} className={isCollapsed ? "flex items-center justify-center w-full h-full" : "flex items-center gap-2 w-full"}>
                           <item.icon className="h-4 w-4 flex-shrink-0" />
                           {!isCollapsed && <span className="text-xs truncate">{item.title}</span>}
                         </Link>
@@ -210,7 +210,7 @@ const ResizableLeftSidebar = () => {
 
         {/* Ressurser seksjon */}
         <SidebarGroup>
-          <SidebarGroupLabel>Ressurser</SidebarGroupLabel>
+          {!isCollapsed && <SidebarGroupLabel>Ressurser</SidebarGroupLabel>}
           <SidebarGroupContent>
             <SidebarMenu className="space-y-1">
               {resourceItems.map((item) => {
@@ -221,10 +221,10 @@ const ResizableLeftSidebar = () => {
                     <SidebarMenuButton 
                       asChild 
                       isActive={isItemActive}
-                      className={isCollapsed ? "justify-center p-0" : "justify-start pl-0 pr-0"}
+                      className={isCollapsed ? "justify-center p-2" : "justify-start pl-2 pr-2"}
                       tooltip={isCollapsed ? item.title : undefined}
                     >
-                      <Link to={item.url} className={isCollapsed ? "flex items-center justify-center w-full h-full" : "flex items-center gap-1 w-full pl-1"}>
+                      <Link to={item.url} className={isCollapsed ? "flex items-center justify-center w-full h-full" : "flex items-center gap-2 w-full"}>
                         <item.icon className="h-4 w-4 flex-shrink-0" />
                         {!isCollapsed && <span className="text-xs truncate">{item.title}</span>}
                       </Link>
