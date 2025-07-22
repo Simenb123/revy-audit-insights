@@ -36,6 +36,7 @@ import AIRevyAdmin from "./pages/AIRevyAdmin";
 import StandardAccountsAdmin from "./pages/StandardAccountsAdmin";
 import RoleAccessAdmin from "./pages/RoleAccessAdmin";
 import PerformanceMonitoring from "./pages/PerformanceMonitoring";
+import Academy from "./pages/Academy";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -85,6 +86,7 @@ function App() {
                   <Route path="ai-usage" element={<AIUsage />} />
                   <Route path="standard-accounts" element={<StandardAccountsAdmin />} />
                   <Route path="fag/*" element={<KnowledgeBase />} />
+                  <Route path="academy" element={<Academy />} />
                   <Route path="ai-revy-admin" element={<AIRevyAdmin />} />
                   <Route path="performance" element={<PerformanceMonitoring />} />
                 </Route>
