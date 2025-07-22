@@ -19,9 +19,12 @@ const GlobalLayoutContainer: React.FC<GlobalLayoutContainerProps> = ({
   const { isCollapsed, isHidden, width: rightSidebarWidth } = useRightSidebar();
   
   // Calculate dynamic margin based on right sidebar state
-  const rightMargin = (!disableRightSidebarOffset && !isCollapsed && !isHidden && window.innerWidth >= 1024) 
-    ? rightSidebarWidth 
-    : 0;
+  const rightMargin = React.useMemo(() => {
+    if (disableRightSidebarOffset || isHidden || typeof window === 'undefined' || window.innerWidth < 1024) {
+      return 0;
+    }
+    return isCollapsed ? 56 : rightSidebarWidth; // 56px for collapsed state
+  }, [disableRightSidebarOffset, isCollapsed, isHidden, rightSidebarWidth]);
 
   const maxWidthClasses = {
     narrow: 'max-w-[var(--content-narrow)]',
