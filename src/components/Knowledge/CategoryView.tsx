@@ -17,6 +17,9 @@ import { useFavoriteArticles } from '@/hooks/knowledge/useFavoriteArticles';
 const CategoryView = () => {
   const { categoryId } = useParams<{ categoryId: string }>();
   const categoryIdentifier = categoryId;
+  
+  // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
+  const { toggleFavorite, isFavorite } = useFavoriteArticles();
 
   // Check if categoryId is a valid UUID format
   const isValidUUID = (str: string | undefined) => {
@@ -123,7 +126,6 @@ const CategoryView = () => {
     );
   }
 
-  const { toggleFavorite, isFavorite } = useFavoriteArticles();
 
   const actions = (
     <Button asChild>
