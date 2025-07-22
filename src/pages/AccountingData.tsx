@@ -1,10 +1,11 @@
+
 import { logger } from '@/utils/logger';
 
 import React from 'react';
 import { useParams } from 'react-router-dom';
 import { useClientDetails } from '@/hooks/useClientDetails';
 import { Skeleton } from '@/components/ui/skeleton';
-import AccountingDataUploader from '@/components/Accounting/AccountingDataUploader';
+import RegnskapsDataManager from '@/components/Accounting/RegnskapsDataManager';
 import ClientBreadcrumb from '@/components/Clients/ClientDetails/ClientBreadcrumb';
 
 const AccountingData = () => {
@@ -18,7 +19,7 @@ const AccountingData = () => {
 
   if (isLoading) {
     return (
-      <main className="space-y-6">
+      <main className="space-y-6 p-6">
         <Skeleton className="h-8 w-64" />
         <Skeleton className="h-64 w-full" />
       </main>
@@ -49,10 +50,9 @@ const AccountingData = () => {
   }
 
   return (
-    <main className="space-y-6">
+    <main className="space-y-6 p-6">
       <ClientBreadcrumb client={client} />
-
-      <AccountingDataUploader
+      <RegnskapsDataManager
         clientId={client.id}
         clientName={client.name}
       />

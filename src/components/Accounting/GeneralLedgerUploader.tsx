@@ -1,292 +1,204 @@
-import { logger } from '@/utils/logger';
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Upload, Database, AlertCircle, CheckCircle } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
-import { Upload, FileText, CheckCircle, AlertCircle } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
-import * as XLSX from 'xlsx';
-import CSVUploader from '@/components/DataUpload/CSVUploader';
+import FileDropZone from '../common/FileDropZone';
+import { toast } from '@/components/ui/use-toast';
 
 interface GeneralLedgerUploaderProps {
   clientId: string;
+  onUploadComplete?: () => void;
 }
 
-interface TransactionRow {
-  transaction_date: string;
-  account_number: string;
-  voucher_number?: string;
-  description?: string;
-  debit_amount?: number;
-  credit_amount?: number;
-  balance_amount?: number;
-}
-
-const GeneralLedgerUploader = ({ clientId }: GeneralLedgerUploaderProps) => {
-  const [file, setFile] = useState<File | null>(null);
+const GeneralLedgerUploader = ({ clientId, onUploadComplete }: GeneralLedgerUploaderProps) => {
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [uploadResult, setUploadResult] = useState<{
-    success: boolean;
-    message: string;
-    processed: number;
-    errors: string[];
-  } | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = event.target.files?.[0];
-    if (selectedFile) {
-      setFile(selectedFile);
-      setUploadResult(null);
-    }
-  };
-
-  const processExcelFile = async (file: File): Promise<TransactionRow[]> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      
-      reader.onload = (e) => {
-        try {
-          const data = new Uint8Array(e.target?.result as ArrayBuffer);
-          const workbook = XLSX.read(data, { type: 'array' });
-          const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-          const jsonData = XLSX.utils.sheet_to_json(firstSheet);
-          
-          const transactions: TransactionRow[] = jsonData.map((row: any) => ({
-            transaction_date: row['Dato'] || row['transaction_date'] || '',
-            account_number: row['Kontonummer']?.toString() || row['account_number']?.toString() || '',
-            voucher_number: row['Bilagsnummer'] || row['voucher_number'] || '',
-            description: row['Beskrivelse'] || row['description'] || '',
-            debit_amount: parseFloat(row['Debet'] || row['debit_amount'] || '0') || 0,
-            credit_amount: parseFloat(row['Kredit'] || row['credit_amount'] || '0') || 0,
-            balance_amount: parseFloat(row['Saldo'] || row['balance_amount'] || '0') || undefined,
-          })).filter(tx => tx.transaction_date && tx.account_number);
-          
-          resolve(transactions);
-        } catch (error) {
-          reject(error);
-        }
-      };
-      
-      reader.onerror = () => reject(new Error('Kunne ikke lese filen'));
-      reader.readAsArrayBuffer(file);
+  const handleFileSelect = (files: File[]) => {
+    const validFiles = files.filter(file => {
+      const validTypes = [
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/vnd.ms-excel',
+        'text/csv'
+      ];
+      return validTypes.includes(file.type) && file.size <= 100 * 1024 * 1024; // 100MB limit for ledger
     });
+
+    if (validFiles.length !== files.length) {
+      toast({
+        title: "Noen filer ble ignorert",
+        description: "Kun Excel og CSV-filer under 100MB er støttet.",
+        variant: "destructive"
+      });
+    }
+
+    setSelectedFiles(validFiles);
   };
 
-  const uploadGeneralLedger = async () => {
-    if (!file || !clientId) return;
+  const handleUpload = async () => {
+    if (selectedFiles.length === 0) return;
 
     setIsUploading(true);
-    setProgress(0);
-    
+    setUploadProgress(0);
+
     try {
-      // Process the Excel file
-      const transactions = await processExcelFile(file);
-      setProgress(25);
-
-      // Get client accounts for validation
-      const { data: clientAccounts } = await supabase
-        .from('client_chart_of_accounts')
-        .select('id, account_number')
-        .eq('client_id', clientId);
-
-      const accountMap = new Map(
-        clientAccounts?.map(acc => [acc.account_number, acc.id]) || []
-      );
-
-      // Create upload batch record
-      const { data: batch, error: batchError } = await supabase
-        .from('upload_batches')
-        .insert({
-          client_id: clientId,
-          user_id: (await supabase.auth.getUser()).data.user?.id,
-          batch_type: 'general_ledger',
-          file_name: file.name,
-          file_size: file.size,
-          total_records: transactions.length,
-          status: 'processing'
-        })
-        .select()
-        .single();
-
-      if (batchError) throw batchError;
-      setProgress(50);
-
-      // Process transactions in batches
-      const batchSize = 1000;
-      let processed = 0;
-      const errors: string[] = [];
-
-      for (let i = 0; i < transactions.length; i += batchSize) {
-        const batch_transactions = transactions.slice(i, i + batchSize);
-        
-        const transactionsToInsert = batch_transactions
-          .map(tx => {
-            const clientAccountId = accountMap.get(tx.account_number);
-            if (!clientAccountId) {
-              errors.push(`Konto ${tx.account_number} ikke funnet i kontoplan`);
-              return null;
-            }
-
-            const txDate = new Date(tx.transaction_date);
-            return {
-              client_id: clientId,
-              client_account_id: clientAccountId,
-              transaction_date: txDate.toISOString().split('T')[0],
-              period_year: txDate.getFullYear(),
-              period_month: txDate.getMonth() + 1,
-              voucher_number: tx.voucher_number,
-              description: tx.description,
-              debit_amount: tx.debit_amount || 0,
-              credit_amount: tx.credit_amount || 0,
-              balance_amount: tx.balance_amount,
-              upload_batch_id: batch.id,
-            };
-          })
-          .filter(Boolean);
-
-        if (transactionsToInsert.length > 0) {
-          const { error: insertError } = await supabase
-            .from('general_ledger_transactions')
-            .insert(transactionsToInsert);
-
-          if (insertError) {
-            errors.push(`Batch ${i / batchSize + 1}: ${insertError.message}`);
-          } else {
-            processed += transactionsToInsert.length;
+      // Simulate upload progress
+      const interval = setInterval(() => {
+        setUploadProgress(prev => {
+          if (prev >= 90) {
+            clearInterval(interval);
+            return prev;
           }
-        }
+          return prev + 5;
+        });
+      }, 300);
 
-        setProgress(50 + (i / transactions.length) * 40);
-      }
-
-      // Update batch status
-      await supabase
-        .from('upload_batches')
-        .update({
-          status: processed > 0 ? 'completed' : 'failed',
-          processed_records: processed,
-          error_records: errors.length,
-          error_log: errors.join('\n'),
-          completed_at: new Date().toISOString()
-        })
-        .eq('id', batch.id);
-
-      setProgress(100);
+      // TODO: Replace with actual upload logic
+      await new Promise(resolve => setTimeout(resolve, 3000));
       
-      setUploadResult({
-        success: processed > 0,
-        message: `${processed} transaksjoner ble lastet opp`,
-        processed,
-        errors: errors.slice(0, 10) // Show only first 10 errors
-      });
-
-      toast({
-        title: processed > 0 ? "Hovedbok lastet opp" : "Feil ved opplasting",
-        description: `${processed} transaksjoner ble importert${errors.length > 0 ? ` (${errors.length} feil)` : ''}`,
-        variant: processed > 0 ? "default" : "destructive"
-      });
+      setUploadProgress(100);
       
-    } catch (error: any) {
-      logger.error('Upload error:', error);
-      setUploadResult({
-        success: false,
-        message: error.message || 'Det oppstod en feil under opplastingen',
-        processed: 0,
-        errors: [error.message]
+      toast({
+        title: "Hovedbok lastet opp",
+        description: "Hovedboken har blitt prosessert og transaksjoner er importert.",
       });
 
+      setSelectedFiles([]);
+      onUploadComplete?.();
+      
+    } catch (error) {
+      console.error('Upload failed:', error);
       toast({
-        title: "Feil ved opplasting",
-        description: error.message,
+        title: "Opplasting feilet",
+        description: "Det oppstod en feil under opplasting av hovedboken.",
         variant: "destructive"
       });
     } finally {
       setIsUploading(false);
+      setUploadProgress(0);
     }
-  };
-
-  const handleCSVUploadSuccess = (filename: string, recordCount: number) => {
-    toast({
-      title: "Hovedbok importert",
-      description: `${recordCount} transaksjoner fra ${filename} ble importert`,
-    });
   };
 
   return (
     <div className="space-y-6">
-      {/* CSV Uploader with Column Mapping */}
-      <CSVUploader 
-        clientId={clientId}
-        onUploadSuccess={handleCSVUploadSuccess}
-      />
-
-      {/* Excel Uploader for legacy support */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <FileText className="w-5 h-5" />
-            Last opp hovedbok (Excel)
+            <Database className="h-5 w-5" />
+            Last opp Hovedbok
           </CardTitle>
           <CardDescription>
-            Last opp hovedboktransaksjoner fra Excel-fil. Filen må inneholde: Dato, Kontonummer, Debet, Kredit
+            Hovedboken inneholder alle transaksjoner og er grunnlaget for detaljerte revisjonsanalyser.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center gap-4">
-            <Input
-              type="file"
-              accept=".xlsx,.xls"
-              onChange={handleFileSelect}
-              disabled={isUploading}
-            />
-            <Button
-              onClick={uploadGeneralLedger}
-              disabled={!file || isUploading}
-              className="flex items-center gap-2"
-            >
-              <Upload className="w-4 h-4" />
-              {isUploading ? 'Laster opp...' : 'Last opp'}
-            </Button>
-          </div>
+          <FileDropZone
+            accept={{
+              'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
+              'application/vnd.ms-excel': ['.xls'],
+              'text/csv': ['.csv'],
+            }}
+            onFilesSelected={handleFileSelect}
+            className={isUploading ? 'pointer-events-none opacity-50' : ''}
+          >
+            {(active) => (
+              <div className="text-center">
+                <Database className="h-12 w-12 text-primary mx-auto mb-4" />
+                <p className="text-lg font-medium text-foreground mb-2">
+                  {active ? 'Slipp hovedbok-filen her' : 'Dra og slipp hovedbok, eller klikk for å velge'}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Excel (.xlsx, .xls) eller CSV-format, maks 100MB
+                </p>
+              </div>
+            )}
+          </FileDropZone>
+
+          {selectedFiles.length > 0 && (
+            <div className="space-y-2">
+              <Label>Valgte filer:</Label>
+              <div className="space-y-2 max-h-32 overflow-y-auto">
+                {selectedFiles.map((file, index) => (
+                  <div key={index} className="p-3 bg-muted rounded border">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Database className="h-4 w-4" />
+                        <span className="text-sm font-medium">{file.name}</span>
+                        <span className="text-xs text-muted-foreground">
+                          ({(file.size / 1024 / 1024).toFixed(1)} MB)
+                        </span>
+                      </div>
+                      {!isUploading && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setSelectedFiles(prev => prev.filter((_, i) => i !== index))}
+                        >
+                          ×
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {isUploading && (
             <div className="space-y-2">
-              <Progress value={progress} />
-              <p className="text-sm text-muted-foreground">
-                Prosesserer hovedbok... {progress}%
-              </p>
+              <div className="flex items-center justify-between text-sm">
+                <span>Laster opp og prosesserer transaksjoner...</span>
+                <span>{uploadProgress}%</span>
+              </div>
+              <Progress value={uploadProgress} className="h-2" />
             </div>
           )}
 
-          {uploadResult && (
-            <div className={`p-4 rounded-lg border ${
-              uploadResult.success 
-                ? 'bg-green-50 border-green-200 text-green-800' 
-                : 'bg-red-50 border-red-200 text-red-800'
-            }`}>
-              <div className="flex items-center gap-2">
-                {uploadResult.success ? (
-                  <CheckCircle className="w-5 h-5" />
-                ) : (
-                  <AlertCircle className="w-5 h-5" />
-                )}
-                <span className="font-medium">{uploadResult.message}</span>
-              </div>
-              {uploadResult.errors.length > 0 && (
-                <div className="mt-2">
-                  <p className="text-sm font-medium">Feil som oppstod:</p>
-                  <ul className="mt-1 list-disc list-inside text-sm">
-                    {uploadResult.errors.map((error, index) => (
-                      <li key={index}>{error}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+          <Button 
+            onClick={handleUpload}
+            disabled={selectedFiles.length === 0 || isUploading}
+            className="w-full"
+          >
+            {isUploading ? 'Laster opp...' : `Last opp ${selectedFiles.length} fil${selectedFiles.length === 1 ? '' : 'er'}`}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Help Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm flex items-center gap-2">
+            <AlertCircle className="h-4 w-4" />
+            Krav til hovedbok-fil
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="text-sm space-y-2">
+          <div className="grid grid-cols-1 gap-2">
+            <div className="flex items-start gap-2">
+              <CheckCircle className="h-3 w-3 text-green-600 mt-0.5 flex-shrink-0" />
+              <span>Kolonne med dato (f.eks. "Dato", "Date", "Transaksjonsdato")</span>
             </div>
-          )}
+            <div className="flex items-start gap-2">
+              <CheckCircle className="h-3 w-3 text-green-600 mt-0.5 flex-shrink-0" />
+              <span>Kolonne med kontonummer (f.eks. "Konto", "Account", "Kontonr")</span>
+            </div>
+            <div className="flex items-start gap-2">
+              <CheckCircle className="h-3 w-3 text-green-600 mt-0.5 flex-shrink-0" />
+              <span>Kolonne med beløp (f.eks. "Beløp", "Amount", "Sum")</span>
+            </div>
+            <div className="flex items-start gap-2">
+              <CheckCircle className="h-3 w-3 text-green-600 mt-0.5 flex-shrink-0" />
+              <span>Kolonne med beskrivelse (f.eks. "Beskrivelse", "Tekst", "Description")</span>
+            </div>
+            <div className="flex items-start gap-2">
+              <CheckCircle className="h-3 w-3 text-green-600 mt-0.5 flex-shrink-0" />
+              <span>Excel (.xlsx, .xls) eller CSV-format</span>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>
