@@ -37,7 +37,6 @@ const GlobalLayoutContainer: React.FC<GlobalLayoutContainerProps> = ({
         'min-h-[calc(100vh-var(--header-height))]',
         'w-full mx-auto',
         maxWidthClasses[maxWidth],
-        'px-[var(--page-padding-x)] py-[var(--page-padding-y)]',
         className
       )}
       style={{ 

@@ -1,7 +1,6 @@
 
 import React from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import AppBreadcrumb from '@/components/Layout/AppBreadcrumb';
+import GlobalSubHeader from '@/components/Layout/GlobalSubHeader';
 
 interface KnowledgeLayoutProps {
   children: React.ReactNode;
@@ -11,32 +10,22 @@ interface KnowledgeLayoutProps {
 }
 
 const KnowledgeLayout = ({ children, title, actions, filters }: KnowledgeLayoutProps) => {
+  const moduleIndicator = (
+    <div className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
+      Kunnskapsbase
+    </div>
+  );
+
   return (
-    <div className="space-y-6">
-      {/* Breadcrumb Navigation */}
-      <div className="flex items-center justify-between">
-        <AppBreadcrumb />
-        {actions && <div className="flex items-center gap-2">{actions}</div>}
-      </div>
-
-      {/* Title */}
-      {title && (
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">{title}</h1>
-        </div>
-      )}
-
-      {/* Horizontal Filter Bar */}
-      {filters && (
-        <Card className="mb-6">
-          <CardContent className="p-4">
-            {filters}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Main Content */}
-      <div className="w-full">
+    <div className="flex flex-col h-full">
+      <GlobalSubHeader
+        title={title}
+        actions={actions}
+        filters={filters}
+        moduleIndicator={moduleIndicator}
+      />
+      
+      <div className="flex-1 p-4 space-y-4">
         {children}
       </div>
     </div>

@@ -44,7 +44,7 @@ const AppLayout = () => {
           <div className="flex">
             <ResizableLeftSidebar />
             <ResponsiveLayout>
-              <div className="p-4 bg-yellow-50 border-b border-yellow-200">
+              <div className="p-3 bg-yellow-50 border-b border-yellow-200">
                 <p className="text-sm text-yellow-800">
                   Demo-modus: Appen kjører uten tilkobling til backend.
                 </p>

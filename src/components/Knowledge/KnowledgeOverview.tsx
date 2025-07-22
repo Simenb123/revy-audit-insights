@@ -1,9 +1,7 @@
-
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
 import { Plus, Upload, Settings, BookOpen, Users, TrendingUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -127,13 +125,13 @@ const KnowledgeOverview = () => {
   const actions = (
     <>
       <Link to="/fag/ny-artikkel">
-        <Button className="flex items-center gap-2">
+        <Button size="sm" className="flex items-center gap-2">
           <Plus className="w-4 h-4" />
           Ny artikkel
         </Button>
       </Link>
       <Link to="/fag/upload">
-        <Button variant="outline" className="flex items-center gap-2">
+        <Button variant="outline" size="sm" className="flex items-center gap-2">
           <Upload className="w-4 h-4" />
           Last opp PDF
         </Button>
@@ -169,8 +167,8 @@ const KnowledgeOverview = () => {
       actions={actions}
       filters={filters}
     >
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      {/* Stats Cards - Reduced margin */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Totalt artikler</CardTitle>
@@ -202,47 +200,47 @@ const KnowledgeOverview = () => {
         </Card>
       </div>
 
-      {/* Quick Navigation */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+      {/* Quick Navigation - Reduced spacing */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-6">
         <Link to="/fag/mine">
           <Card className="hover:shadow-md transition-shadow cursor-pointer">
-            <CardContent className="p-4 text-center">
-              <BookOpen className="w-8 h-8 mx-auto mb-2 text-primary" />
-              <h3 className="font-medium">Mine artikler</h3>
+            <CardContent className="p-3 text-center">
+              <BookOpen className="w-6 h-6 mx-auto mb-2 text-primary" />
+              <h3 className="font-medium text-sm">Mine artikler</h3>
             </CardContent>
           </Card>
         </Link>
         
         <Link to="/fag/favoritter">
           <Card className="hover:shadow-md transition-shadow cursor-pointer">
-            <CardContent className="p-4 text-center">
-              <BookOpen className="w-8 h-8 mx-auto mb-2 text-primary" />
-              <h3 className="font-medium">Favoritter</h3>
+            <CardContent className="p-3 text-center">
+              <BookOpen className="w-6 h-6 mx-auto mb-2 text-primary" />
+              <h3 className="font-medium text-sm">Favoritter</h3>
             </CardContent>
           </Card>
         </Link>
         
         <Link to="/fag/upload">
           <Card className="hover:shadow-md transition-shadow cursor-pointer">
-            <CardContent className="p-4 text-center">
-              <Upload className="w-8 h-8 mx-auto mb-2 text-primary" />
-              <h3 className="font-medium">Last opp PDF</h3>
+            <CardContent className="p-3 text-center">
+              <Upload className="w-6 h-6 mx-auto mb-2 text-primary" />
+              <h3 className="font-medium text-sm">Last opp PDF</h3>
             </CardContent>
           </Card>
         </Link>
         
         <Link to="/fag/admin">
           <Card className="hover:shadow-md transition-shadow cursor-pointer">
-            <CardContent className="p-4 text-center">
-              <Settings className="w-8 h-8 mx-auto mb-2 text-primary" />
-              <h3 className="font-medium">Administrasjon</h3>
+            <CardContent className="p-3 text-center">
+              <Settings className="w-6 h-6 mx-auto mb-2 text-primary" />
+              <h3 className="font-medium text-sm">Administrasjon</h3>
             </CardContent>
           </Card>
         </Link>
       </div>
 
       {/* Articles List */}
-      <div className="space-y-4">
+      <div className="space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">
             {searchQuery ? `Søkeresultater (${articles.length})` : `Alle artikler (${articles.length})`}
@@ -250,12 +248,12 @@ const KnowledgeOverview = () => {
         </div>
 
         {isLoading ? (
-          <div className="grid gap-4">
+          <div className="grid gap-3">
             {[1, 2, 3].map((i) => (
               <Card key={i} className="animate-pulse">
-                <CardContent className="p-6">
+                <CardContent className="p-4">
                   <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                  <div className="h-3 bg-gray-200 rounded w-1/2 mb-4"></div>
+                  <div className="h-3 bg-gray-200 rounded w-1/2 mb-3"></div>
                   <div className="h-3 bg-gray-200 rounded w-full mb-2"></div>
                   <div className="h-3 bg-gray-200 rounded w-2/3"></div>
                 </CardContent>
@@ -264,7 +262,7 @@ const KnowledgeOverview = () => {
           </div>
         ) : articles.length === 0 ? (
           <Card>
-            <CardContent className="p-8 text-center">
+            <CardContent className="p-6 text-center">
               <BookOpen className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
               <h3 className="text-lg font-medium mb-2">Ingen artikler funnet</h3>
               <p className="text-muted-foreground mb-4">
@@ -279,7 +277,7 @@ const KnowledgeOverview = () => {
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {articles.map((article) => (
               <KnowledgeArticleCard
                 key={article.id}

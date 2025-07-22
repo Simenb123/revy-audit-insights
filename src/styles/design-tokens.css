@@ -21,19 +21,18 @@
   --container-xl: 1280px;
   --container-2xl: 1536px;
 
-  /* Layout Dimensions */
-  /* Increased sidebar width by 20px */
-  --sidebar-width: 160px;
+  /* Layout Dimensions - Reduced sidebar gaps */
+  --sidebar-width: 140px;
   --sidebar-width-collapsed: 56px;
-  --right-sidebar-width: 400px;
+  --right-sidebar-width: 360px;
   --header-height: 4rem;
 
-  /* Global Layout Variables */
+  /* Global Layout Variables - Tighter spacing */
   --page-max-width: 1400px;
   --page-padding-x: var(--space-4);
-  --page-padding-y: var(--space-6);
-  --content-gap: var(--space-6);
-  --section-gap: var(--space-8);
+  --page-padding-y: var(--space-3);
+  --content-gap: var(--space-4);
+  --section-gap: var(--space-6);
   
   /* Consistent Content Widths */
   --content-narrow: 600px;
@@ -63,20 +62,20 @@
   --z-toast: 1080;
 }
 
-/* Responsive Design Utilities */
+/* Responsive Design Utilities - Tighter on larger screens */
 @media (min-width: 768px) {
   :root {
-    --page-padding-x: var(--space-6);
-    --page-padding-y: var(--space-8);
-    --content-gap: var(--space-8);
+    --page-padding-x: var(--space-5);
+    --page-padding-y: var(--space-4);
+    --content-gap: var(--space-5);
   }
 }
 
 @media (min-width: 1024px) {
   :root {
-    --page-padding-x: var(--space-8);
-    --page-padding-y: var(--space-10);
-    --content-gap: var(--space-10);
-    --section-gap: var(--space-12);
+    --page-padding-x: var(--space-6);
+    --page-padding-y: var(--space-5);
+    --content-gap: var(--space-6);
+    --section-gap: var(--space-8);
   }
 }
