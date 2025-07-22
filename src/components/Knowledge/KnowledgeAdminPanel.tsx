@@ -47,9 +47,9 @@ const KnowledgeAdminPanel = ({ showAdvanced = false }: KnowledgeAdminPanelProps)
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Knowledge Base Administration</h1>
+          <h1 className="text-3xl font-bold">Kunnskapsbase - Artikkel Admin</h1>
           <p className="text-muted-foreground">
-            Manage articles, categories, and search functionality
+            Administrer artikler, kategorier og søkefunksjonalitet. For systemadministrasjon av emneområder og innholdstyper, bruk AI Revy Admin.
           </p>
         </div>
         {showAdvanced && (
@@ -60,68 +60,49 @@ const KnowledgeAdminPanel = ({ showAdvanced = false }: KnowledgeAdminPanelProps)
         )}
       </div>
 
+      <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
+        <div className="flex items-start gap-3">
+          <div className="bg-amber-100 p-2 rounded">
+            <Brain className="h-5 w-5 text-amber-600" />
+          </div>
+          <div>
+            <h3 className="font-medium text-amber-900">Anbefaling: Bruk AI Revy Admin</h3>
+            <p className="text-sm text-amber-700 mt-1">
+              For administrasjon av emneområder, innholdstyper og tags, anbefaler vi å bruke{' '}
+              <a 
+                href="/ai-revy-admin" 
+                className="underline font-medium hover:text-amber-800"
+              >
+                AI Revy Admin
+              </a>
+              . Denne siden fokuserer kun på artikkel-spesifikke oppgaver.
+            </p>
+          </div>
+        </div>
+      </div>
+
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className={`grid w-full grid-cols-${showAdvanced ? '9' : '9'}`}>
-          <TabsTrigger value="overview">
-            <Settings className="w-4 h-4 mr-2" />
-            Overview
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="overview" className="flex items-center gap-2">
+            <Settings className="w-4 h-4" />
+            <span className="hidden sm:inline">Oversikt</span>
           </TabsTrigger>
-          <TabsTrigger value="monitor">
-            <Database className="w-4 h-4 mr-2" />
-            Monitor
+          <TabsTrigger value="articles" className="flex items-center gap-2">
+            <FileText className="w-4 h-4" />
+            <span className="hidden sm:inline">Artikler</span>
           </TabsTrigger>
-          <TabsTrigger value="cleanup">
-            <Trash2 className="w-4 h-4 mr-2" />
-            Opprydding
+          <TabsTrigger value="categories" className="flex items-center gap-2">
+            <FolderTree className="w-4 h-4" />
+            <span className="hidden sm:inline">Kategorier</span>
           </TabsTrigger>
-          <TabsTrigger value="bulk-edit">
-            <Edit3 className="w-4 h-4 mr-2" />
-            Bulk-edit
+          <TabsTrigger value="testing" className="flex items-center gap-2">
+            <TestTube className="w-4 h-4" />
+            <span className="hidden sm:inline">Søke-test</span>
           </TabsTrigger>
-          <TabsTrigger value="testing">
-            <TestTube className="w-4 h-4 mr-2" />
-            Search Testing
+          <TabsTrigger value="monitor" className="flex items-center gap-2">
+            <Database className="w-4 h-4" />
+            <span className="hidden sm:inline">Monitor</span>
           </TabsTrigger>
-          <TabsTrigger value="categories">
-            <BarChart3 className="w-4 h-4 mr-2" />
-            Categories
-          </TabsTrigger>
-          <TabsTrigger value="content-types">
-            <Wrench className="w-4 h-4 mr-2" />
-            Content Types
-          </TabsTrigger>
-          <TabsTrigger value="unified-categories">
-            <TreePine className="w-4 h-4 mr-2" />
-            Nye kategorier
-          </TabsTrigger>
-          <TabsTrigger value="ai-integration">
-            <Brain className="w-4 h-4 mr-2" />
-            AI-Integrasjon
-          </TabsTrigger>
-          {showAdvanced && (
-            <>
-              <TabsTrigger value="audit-actions" className="flex items-center gap-2">
-                <ListChecks className="h-4 w-4" />
-                Actions
-              </TabsTrigger>
-              <TabsTrigger value="subject-areas" className="flex items-center gap-2">
-                <Users className="h-4 w-4" />
-                Subjects
-              </TabsTrigger>
-              <TabsTrigger value="tags" className="flex items-center gap-2">
-                <Tags className="h-4 w-4" />
-                Tags
-              </TabsTrigger>
-              <TabsTrigger value="structure" className="flex items-center gap-2">
-                <Sparkles className="h-4 w-4" />
-                Structure
-              </TabsTrigger>
-              <TabsTrigger value="analysis" className="flex items-center gap-2">
-                <Database className="h-4 w-4" />
-                Analysis
-              </TabsTrigger>
-            </>
-          )}
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
@@ -200,36 +181,59 @@ const KnowledgeAdminPanel = ({ showAdvanced = false }: KnowledgeAdminPanelProps)
           </div>
         </TabsContent>
 
-        <TabsContent value="monitor">
-          <KnowledgeMonitor />
-        </TabsContent>
-
-        <TabsContent value="cleanup">
-          <DataCleanupManager />
-        </TabsContent>
-
-        <TabsContent value="bulk-edit">
-          <BulkEditManager />
-        </TabsContent>
-
-        <TabsContent value="testing">
-          <SearchTestingPanel />
+        <TabsContent value="articles" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Artikkel-administrasjon</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Administrer publiserte og upubliserte artikler
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="text-center p-4 border rounded-lg">
+                    <div className="text-2xl font-bold text-green-600">156</div>
+                    <div className="text-sm text-muted-foreground">Publiserte artikler</div>
+                  </div>
+                  <div className="text-center p-4 border rounded-lg">
+                    <div className="text-2xl font-bold text-yellow-600">23</div>
+                    <div className="text-sm text-muted-foreground">Utkast</div>
+                  </div>
+                  <div className="text-center p-4 border rounded-lg">
+                    <div className="text-2xl font-bold text-red-600">5</div>
+                    <div className="text-sm text-muted-foreground">Arkiverte</div>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <a 
+                    href="/fag/ny" 
+                    className="bg-primary text-primary-foreground px-4 py-2 rounded text-sm hover:bg-primary/90"
+                  >
+                    Ny artikkel
+                  </a>
+                  <a 
+                    href="/fag/mine" 
+                    className="bg-secondary text-secondary-foreground px-4 py-2 rounded text-sm hover:bg-secondary/90"
+                  >
+                    Mine artikler
+                  </a>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="categories">
           {showAdvanced ? <ImprovedCategoryManager /> : <CategoryManager />}
         </TabsContent>
 
-        <TabsContent value="content-types">
-          <ContentTypeManager />
+        <TabsContent value="testing">
+          <SearchTestingPanel />
         </TabsContent>
 
-        <TabsContent value="unified-categories">
-          <UnifiedCategoryManager />
-        </TabsContent>
-
-        <TabsContent value="ai-integration">
-          <AIRevyIntegrationPanel />
+        <TabsContent value="monitor">
+          <KnowledgeMonitor />
         </TabsContent>
         {showAdvanced && (
           <>
