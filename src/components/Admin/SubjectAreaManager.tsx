@@ -83,14 +83,14 @@ const SubjectAreaForm: React.FC<{
       <div>
         <Label htmlFor="parent">Overordnet emne</Label>
         <Select 
-          value={formData.parent_subject_area_id} 
-          onValueChange={(value) => setFormData(prev => ({ ...prev, parent_subject_area_id: value || undefined }))}
+          value={formData.parent_subject_area_id || "none"} 
+          onValueChange={(value) => setFormData(prev => ({ ...prev, parent_subject_area_id: value === "none" ? undefined : value }))}
         >
           <SelectTrigger>
             <SelectValue placeholder="Velg overordnet emne (valgfritt)" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Ingen (hovedemne)</SelectItem>
+            <SelectItem value="none">Ingen (hovedemne)</SelectItem>
             {parentOptions.map(option => (
               <SelectItem key={option.id} value={option.id}>
                 {option.display_name}
