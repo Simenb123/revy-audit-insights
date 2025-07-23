@@ -227,39 +227,35 @@ export async function processCSVFile(file: File): Promise<FilePreview> {
   }
 }
 
-// Intelligent column mapping
+// Enhanced column mapping with Norwegian language support and content analysis
 export function suggestColumnMappings(
   headers: string[],
-  fieldDefinitions: FieldDefinition[]
+  fieldDefinitions: FieldDefinition[],
+  sampleData?: string[][],
+  historicalMappings?: Record<string, string>
 ): ColumnMapping[] {
   const mappings: ColumnMapping[] = [];
   
-  for (const header of headers) {
-    const normalizedHeader = header.toLowerCase().trim();
+  for (let i = 0; i < headers.length; i++) {
+    const header = headers[i];
+    const normalizedHeader = normalizeNorwegianText(header);
+    
     let bestMatch: { field: FieldDefinition; confidence: number } | null = null;
     
-    for (const field of fieldDefinitions) {
-      // Exact match
-      if (field.aliases.some(alias => alias.toLowerCase() === normalizedHeader)) {
-        bestMatch = { field, confidence: 1.0 };
-        break;
+    // Check historical mappings first
+    if (historicalMappings && historicalMappings[header]) {
+      const historicalField = fieldDefinitions.find(f => f.key === historicalMappings[header]);
+      if (historicalField) {
+        bestMatch = { field: historicalField, confidence: 0.95 };
       }
-      
-      // Partial match
-      const partialMatches = field.aliases.filter(alias => 
-        normalizedHeader.includes(alias.toLowerCase()) || 
-        alias.toLowerCase().includes(normalizedHeader)
-      );
-      
-      if (partialMatches.length > 0) {
-        const confidence = Math.max(...partialMatches.map(alias => {
-          const similarity = normalizedHeader.length > 0 ? 
-            Math.min(alias.length, normalizedHeader.length) / 
-            Math.max(alias.length, normalizedHeader.length) : 0;
-          return similarity * 0.8; // Reduced confidence for partial matches
-        }));
+    }
+    
+    // If no historical match, analyze header and content
+    if (!bestMatch) {
+      for (const field of fieldDefinitions) {
+        const confidence = calculateFieldConfidence(header, normalizedHeader, field, sampleData?.[i]);
         
-        if (!bestMatch || confidence > bestMatch.confidence) {
+        if (confidence > 0.3 && (!bestMatch || confidence > bestMatch.confidence)) {
           bestMatch = { field, confidence };
         }
       }
@@ -275,6 +271,168 @@ export function suggestColumnMappings(
   }
   
   return mappings;
+}
+
+// Normalize Norwegian text for better matching
+function normalizeNorwegianText(text: string): string {
+  return text.toLowerCase().trim()
+    .replace(/æ/g, 'ae')
+    .replace(/ø/g, 'o')
+    .replace(/å/g, 'a')
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// Calculate confidence score for field matching
+function calculateFieldConfidence(
+  originalHeader: string,
+  normalizedHeader: string,
+  field: FieldDefinition,
+  sampleData?: string[]
+): number {
+  let confidence = 0;
+  
+  // 1. Exact alias match (highest confidence)
+  const exactMatch = field.aliases.find(alias => 
+    normalizeNorwegianText(alias) === normalizedHeader
+  );
+  if (exactMatch) {
+    confidence = 1.0;
+  } else {
+    // 2. Partial alias matching with Norwegian awareness
+    let bestAliasMatch = 0;
+    for (const alias of field.aliases) {
+      const normalizedAlias = normalizeNorwegianText(alias);
+      
+      // Check if header contains alias or vice versa
+      if (normalizedHeader.includes(normalizedAlias) || normalizedAlias.includes(normalizedHeader)) {
+        const similarity = Math.min(normalizedAlias.length, normalizedHeader.length) / 
+                          Math.max(normalizedAlias.length, normalizedHeader.length);
+        bestAliasMatch = Math.max(bestAliasMatch, similarity * 0.85);
+      }
+      
+      // Fuzzy matching for common misspellings
+      const fuzzyScore = calculateFuzzyMatch(normalizedHeader, normalizedAlias);
+      bestAliasMatch = Math.max(bestAliasMatch, fuzzyScore * 0.7);
+    }
+    confidence = bestAliasMatch;
+  }
+  
+  // 3. Content-based validation (boost confidence if data matches expected type)
+  if (sampleData && sampleData.length > 0 && confidence > 0.4) {
+    const contentValidation = validateContentType(sampleData, field.type);
+    if (contentValidation > 0.8) {
+      confidence = Math.min(confidence * 1.2, 1.0); // Boost confidence
+    } else if (contentValidation < 0.3) {
+      confidence *= 0.6; // Reduce confidence for type mismatch
+    }
+  }
+  
+  // 4. Norwegian-specific patterns
+  confidence = applyNorwegianPatterns(originalHeader, field, confidence);
+  
+  return Math.min(confidence, 1.0);
+}
+
+// Simple fuzzy matching for misspellings
+function calculateFuzzyMatch(str1: string, str2: string): number {
+  const maxLen = Math.max(str1.length, str2.length);
+  if (maxLen === 0) return 1.0;
+  
+  const distance = levenshteinDistance(str1, str2);
+  return (maxLen - distance) / maxLen;
+}
+
+// Levenshtein distance calculation
+function levenshteinDistance(str1: string, str2: string): number {
+  const matrix = Array(str2.length + 1).fill(null).map(() => Array(str1.length + 1).fill(null));
+  
+  for (let i = 0; i <= str1.length; i++) matrix[0][i] = i;
+  for (let j = 0; j <= str2.length; j++) matrix[j][0] = j;
+  
+  for (let j = 1; j <= str2.length; j++) {
+    for (let i = 1; i <= str1.length; i++) {
+      const substitutionCost = str1[i - 1] === str2[j - 1] ? 0 : 1;
+      matrix[j][i] = Math.min(
+        matrix[j][i - 1] + 1, // deletion
+        matrix[j - 1][i] + 1, // insertion
+        matrix[j - 1][i - 1] + substitutionCost // substitution
+      );
+    }
+  }
+  
+  return matrix[str2.length][str1.length];
+}
+
+// Validate if content matches expected data type
+function validateContentType(sampleData: string[], expectedType: 'text' | 'number' | 'date'): number {
+  const validSamples = sampleData.filter(val => val && val.trim()).slice(0, 5);
+  if (validSamples.length === 0) return 0.5;
+  
+  let validCount = 0;
+  
+  for (const value of validSamples) {
+    const trimmedValue = value.trim();
+    
+    switch (expectedType) {
+      case 'number':
+        // Handle Norwegian number formats (comma as decimal separator)
+        const normalizedNumber = trimmedValue.replace(/\s/g, '').replace(',', '.');
+        if (!isNaN(Number(normalizedNumber)) && normalizedNumber !== '') {
+          validCount++;
+        }
+        break;
+      case 'date':
+        // Try various date formats
+        const datePatterns = [
+          /^\d{1,2}[./-]\d{1,2}[./-]\d{2,4}$/, // DD.MM.YYYY or DD/MM/YYYY
+          /^\d{4}[./-]\d{1,2}[./-]\d{1,2}$/, // YYYY.MM.DD
+          /^\d{1,2}\.\s?\w+\s?\d{4}$/ // DD. Month YYYY (Norwegian)
+        ];
+        
+        if (datePatterns.some(pattern => pattern.test(trimmedValue)) || !isNaN(Date.parse(trimmedValue))) {
+          validCount++;
+        }
+        break;
+      case 'text':
+        // Text is always valid, but prefer non-numeric content
+        if (isNaN(Number(trimmedValue.replace(/[^\d.,-]/g, '')))) {
+          validCount++;
+        } else {
+          validCount += 0.5; // Partial credit for numeric text
+        }
+        break;
+    }
+  }
+  
+  return validCount / validSamples.length;
+}
+
+// Apply Norwegian-specific matching patterns
+function applyNorwegianPatterns(header: string, field: FieldDefinition, currentConfidence: number): number {
+  const lowerHeader = header.toLowerCase();
+  
+  // Norwegian accounting terms
+  const norwegianPatterns: Record<string, string[]> = {
+    'account_number': ['konto', 'kontonr', 'kontonummer', 'kto'],
+    'account_name': ['kontonavn', 'beskrivelse', 'tekst', 'navn'],
+    'debit_balance': ['debet', 'soll', 'dr', 'driftskost'],
+    'credit_balance': ['kredit', 'have', 'cr', 'driftsinnt'],
+    'opening_balance': ['ingående', 'åpning', 'start', 'periode_start'],
+    'closing_balance': ['utgående', 'avslutning', 'slutt', 'periode_slutt'],
+    'account_type': ['type', 'art', 'kategori', 'gruppe']
+  };
+  
+  if (norwegianPatterns[field.key]) {
+    for (const pattern of norwegianPatterns[field.key]) {
+      if (lowerHeader.includes(pattern)) {
+        return Math.max(currentConfidence, 0.8);
+      }
+    }
+  }
+  
+  return currentConfidence;
 }
 
 // Validate data types

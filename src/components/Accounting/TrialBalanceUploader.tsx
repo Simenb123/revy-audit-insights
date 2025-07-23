@@ -14,6 +14,7 @@ import {
 } from '@/utils/fileProcessing';
 import { FilePreview } from '@/components/DataUpload/FilePreview';
 import { SmartColumnMapping } from '@/components/DataUpload/SmartColumnMapping';
+import { DataManagementPanel } from '@/components/DataUpload/DataManagementPanel';
 import { logger } from '@/utils/logger';
 
 interface AccountRow {
@@ -25,17 +26,24 @@ interface AccountRow {
 
 interface TrialBalanceUploaderProps {
   clientId: string;
+  orgNumber?: string;
   onUploadComplete?: () => void;
 }
 
-const TrialBalanceUploader = ({ clientId, onUploadComplete }: TrialBalanceUploaderProps) => {
+const TrialBalanceUploader = ({ clientId, orgNumber, onUploadComplete }: TrialBalanceUploaderProps) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<FilePreviewType | null>(null);
   const [showMapping, setShowMapping] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [processedRows, setProcessedRows] = useState(0);
-  const [step, setStep] = useState<'select' | 'preview' | 'mapping' | 'uploading'>('select');
+  const [step, setStep] = useState<'select' | 'preview' | 'mapping' | 'uploading' | 'success'>('select');
+  const [lastUpload, setLastUpload] = useState<{
+    fileName: string;
+    recordsImported: number;
+    uploadDate: string;
+    dataType: string;
+  } | null>(null);
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
@@ -188,6 +196,16 @@ const TrialBalanceUploader = ({ clientId, onUploadComplete }: TrialBalanceUpload
 
       setUploadProgress(100);
       
+      // Set upload summary
+      setLastUpload({
+        fileName: file.name,
+        recordsImported: successful,
+        uploadDate: new Date().toLocaleDateString('no-NO'),
+        dataType: 'Saldobalanse'
+      });
+
+      setStep('success');
+      
       toast({
         title: "Saldobalanse lastet opp",
         description: `${successful} av ${accounts.length} kontoer ble importert`,
@@ -219,18 +237,20 @@ const TrialBalanceUploader = ({ clientId, onUploadComplete }: TrialBalanceUpload
     );
   }
 
-  // Show file preview
+  // Show enhanced file preview with inline mapping
   if (step === 'preview' && filePreview && selectedFile) {
     return (
       <div className="space-y-4">
-        <FilePreview preview={filePreview} fileName={selectedFile.name} />
-        <div className="flex justify-between">
+        <FilePreview 
+          preview={filePreview} 
+          fileName={selectedFile.name}
+          fieldDefinitions={TRIAL_BALANCE_FIELDS}
+          showMapping={true}
+          onMappingComplete={handleMappingComplete}
+        />
+        <div className="flex justify-start">
           <Button variant="outline" onClick={handleBackToSelect}>
-            Tilbake
-          </Button>
-          <Button onClick={handlePreviewContinue} className="flex items-center gap-2">
-            <Eye className="w-4 h-4" />
-            Fortsett til mapping
+            Tilbake til filvalg
           </Button>
         </div>
       </div>
@@ -254,6 +274,24 @@ const TrialBalanceUploader = ({ clientId, onUploadComplete }: TrialBalanceUpload
           </p>
         </CardContent>
       </Card>
+    );
+  }
+
+  // Show success view with data management
+  if (step === 'success' && lastUpload) {
+    return (
+      <div className="space-y-4">
+        <DataManagementPanel 
+          clientId={clientId}
+          orgNumber={orgNumber}
+          lastUploadSummary={lastUpload}
+        />
+        <div className="flex justify-start">
+          <Button onClick={handleBackToSelect}>
+            Last opp ny fil
+          </Button>
+        </div>
+      </div>
     );
   }
 
