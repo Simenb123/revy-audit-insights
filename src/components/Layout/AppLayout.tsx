@@ -41,7 +41,7 @@ const AppLayout = () => {
       <div className="min-h-screen bg-background">
         <AppHeader />
         <SidebarProvider>
-          <div className="flex">
+        <div className="flex gap-4">
             <ResizableLeftSidebar />
             <ResponsiveLayout>
               <div className="p-3 bg-yellow-50 border-b border-yellow-200">
@@ -78,7 +78,7 @@ const AppLayout = () => {
     <div className="min-h-screen bg-background">
       <AppHeader />
       <SidebarProvider>
-        <div className="flex">
+        <div className="flex gap-4">
           <ResizableLeftSidebar />
           <ResponsiveLayout>
             <Outlet />
