@@ -47,41 +47,24 @@ export function useBrregRefresh({ clients }: UseBrregRefreshOptions) {
         try {
           logger.log(`Fetching data for ${client.name} (${client.org_number})`);
 
-          const functionsUrl =
-            import.meta.env.SUPABASE_FUNCTIONS_URL ||
-            import.meta.env.VITE_SUPABASE_FUNCTIONS_URL;
-          const { signal, clear } = createTimeoutSignal(20000);
-
-          const response = await fetch(`${functionsUrl}/brreg`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              ...(authHeader ? { Authorization: authHeader } : {}),
-            },
-            body: JSON.stringify({ query: client.org_number }),
-            signal,
+          const { data, error: functionError } = await supabase.functions.invoke('brreg', {
+            body: { query: client.org_number }
           });
 
-          clear();
-
-          if (response.status === 404 || response.status === 429) {
-            failedClients.push(client.name);
-            continue;
-          }
-          if (response.status === 502) {
-            const errorData = await response.json();
-            if (errorData?.error === "Authentication error with Brønnøysund API") {
+          if (functionError) {
+            logger.error(`Function error for ${client.name}:`, functionError);
+            if (functionError.message?.includes('Authentication error with Brønnøysund API')) {
               apiAuthError = true;
-              failedClients.push(client.name);
-              continue;
             }
-          }
-          if (!response.ok) {
             failedClients.push(client.name);
             continue;
           }
 
-          const data = await response.json();
+          if (!data) {
+            logger.error(`No data returned for ${client.name}`);
+            failedClients.push(client.name);
+            continue;
+          }
           logger.log(`Received data for ${client.name}:`, data);
           
           if (!data.basis || !data.basis.organisasjonsnummer) {
