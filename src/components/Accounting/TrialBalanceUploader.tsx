@@ -2,134 +2,84 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { FileText, Upload, Eye } from 'lucide-react';
+import { toast } from 'sonner';
+import { Upload, Database, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
+import EnhancedPreview from '@/components/DataUpload/EnhancedPreview';
+import { DataManagementPanel } from '@/components/DataUpload/DataManagementPanel';
 import { 
   processExcelFile, 
   processCSVFile, 
-  TRIAL_BALANCE_FIELDS,
-  convertDataWithMapping,
-  FilePreview as FilePreviewType
+  FilePreview, 
+  convertDataWithMapping
 } from '@/utils/fileProcessing';
-import { FilePreview } from '@/components/DataUpload/FilePreview';
-import { SmartColumnMapping } from '@/components/DataUpload/SmartColumnMapping';
-import { DataManagementPanel } from '@/components/DataUpload/DataManagementPanel';
-import { logger } from '@/utils/logger';
 
 interface AccountRow {
   account_number: string;
   account_name: string;
-  balance?: number;
-  account_type?: string;
+  balance_current_year?: number;
+  balance_last_year?: number;
 }
 
 interface TrialBalanceUploaderProps {
   clientId: string;
-  orgNumber?: string;
   onUploadComplete?: () => void;
 }
 
-const TrialBalanceUploader = ({ clientId, orgNumber, onUploadComplete }: TrialBalanceUploaderProps) => {
+const TrialBalanceUploader = ({ clientId, onUploadComplete }: TrialBalanceUploaderProps) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [filePreview, setFilePreview] = useState<FilePreviewType | null>(null);
+  const [filePreview, setFilePreview] = useState<FilePreview | null>(null);
   const [showMapping, setShowMapping] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
+  const [convertedData, setConvertedData] = useState<any[]>([]);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [processedRows, setProcessedRows] = useState(0);
-  const [step, setStep] = useState<'select' | 'preview' | 'mapping' | 'uploading' | 'success'>('select');
-  const [lastUpload, setLastUpload] = useState<{
-    fileName: string;
-    recordsImported: number;
-    uploadDate: string;
-    dataType: string;
-  } | null>(null);
+  const [step, setStep] = useState<'select' | 'upload' | 'success'>('select');
 
-  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files && event.target.files[0]) {
-      const file = event.target.files[0];
-      const extension = file.name.toLowerCase().split('.').pop();
-      
-      if (!['xlsx', 'xls', 'csv'].includes(extension || '')) {
-        toast({
-          title: "Ugyldig filtype",
-          description: "Kun Excel (.xlsx, .xls) og CSV-filer er støttet",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      setSelectedFile(file);
-      setStep('preview');
-      
-      try {
-        let preview: FilePreviewType;
-        if (extension === 'csv') {
-          preview = await processCSVFile(file);
-        } else {
-          preview = await processExcelFile(file);
-        }
-        setFilePreview(preview);
-      } catch (error) {
-        logger.error('File processing error:', error);
-        toast({
-          title: "Feil ved lesing av fil",
-          description: error instanceof Error ? error.message : "Ukjent feil",
-          variant: "destructive"
-        });
-        setStep('select');
-      }
+  const handleFileSelect = async (file: File) => {
+    const extension = file.name.toLowerCase().split('.').pop();
+    
+    if (!['xlsx', 'xls', 'csv'].includes(extension || '')) {
+      toast.error('Kun Excel (.xlsx, .xls) og CSV-filer er støttet');
+      return;
     }
-  };
 
-  const handlePreviewContinue = () => {
-    setStep('mapping');
-    setShowMapping(true);
+    setSelectedFile(file);
+    
+    try {
+      let preview: FilePreview;
+      if (extension === 'csv') {
+        preview = await processCSVFile(file);
+      } else {
+        preview = await processExcelFile(file);
+      }
+      setFilePreview(preview);
+      setShowMapping(true);
+    } catch (error) {
+      toast.error('Feil ved lesing av fil');
+      console.error(error);
+    }
   };
 
   const handleMappingComplete = async (mapping: Record<string, string>) => {
     if (!filePreview || !selectedFile) return;
     
     setShowMapping(false);
-    setStep('uploading');
+    setStep('upload');
     
     try {
       const convertedData = convertDataWithMapping(filePreview, mapping);
-      const accounts: AccountRow[] = convertedData.map(row => ({
-        account_number: row.account_number?.toString() || '',
-        account_name: row.account_name?.toString() || '',
-        balance: parseFloat(row.balance?.toString().replace(/[^\d.,-]/g, '') || '0'),
-        account_type: row.account_type?.toString().toLowerCase() || 'asset'
-      })).filter(account => account.account_number && account.account_name);
-      
-      await uploadTrialBalance(accounts, selectedFile);
+      setConvertedData(convertedData);
+      await uploadTrialBalance(convertedData, selectedFile);
     } catch (error) {
-      logger.error('Data conversion error:', error);
-      toast({
-        title: "Feil ved datakonvertering",
-        description: error instanceof Error ? error.message : "Ukjent feil",
-        variant: "destructive"
-      });
-      setStep('mapping');
+      toast.error('Feil ved datakonvertering');
+      console.error(error);
+      setStep('select');
     }
   };
 
-  const handleMappingCancel = () => {
-    setShowMapping(false);
-    setStep('preview');
-  };
-
-  const handleBackToSelect = () => {
-    setSelectedFile(null);
-    setFilePreview(null);
-    setStep('select');
-  };
-
-  const uploadTrialBalance = async (accounts: AccountRow[], file: File) => {
+  const uploadTrialBalance = async (accounts: any[], file: File) => {
     if (!clientId) return;
 
     try {
-      setIsUploading(true);
       setUploadProgress(10);
 
       // Create upload batch record
@@ -151,20 +101,19 @@ const TrialBalanceUploader = ({ clientId, orgNumber, onUploadComplete }: TrialBa
       if (batchError) throw batchError;
       setUploadProgress(30);
 
-      // Insert accounts one by one with progress tracking
+      // Insert accounts with progress tracking
       let successful = 0;
       for (let i = 0; i < accounts.length; i++) {
         const account = accounts[i];
         
         try {
-          // Insert into client_chart_of_accounts with only existing columns
           const { error: insertError } = await supabase
             .from('client_chart_of_accounts')
             .upsert({
               client_id: clientId,
-              account_number: account.account_number,
-              account_name: account.account_name,
-              account_type: account.account_type,
+              account_number: account.account_number?.toString() || '',
+              account_name: account.account_name?.toString() || '',
+              account_type: 'asset',
               is_active: true
             }, { 
               onConflict: 'client_id,account_number',
@@ -173,14 +122,11 @@ const TrialBalanceUploader = ({ clientId, orgNumber, onUploadComplete }: TrialBa
 
           if (!insertError) {
             successful++;
-          } else {
-            logger.error(`Error inserting account ${account.account_number}:`, insertError);
           }
         } catch (error) {
-          logger.error(`Error inserting account ${account.account_number}:`, error);
+          console.error(`Error inserting account:`, error);
         }
         
-        setProcessedRows(i + 1);
         setUploadProgress(30 + ((i + 1) / accounts.length) * 60);
       }
 
@@ -195,157 +141,120 @@ const TrialBalanceUploader = ({ clientId, orgNumber, onUploadComplete }: TrialBa
         .eq('id', batch.id);
 
       setUploadProgress(100);
-      
-      // Set upload summary
-      setLastUpload({
-        fileName: file.name,
-        recordsImported: successful,
-        uploadDate: new Date().toLocaleDateString('no-NO'),
-        dataType: 'Saldobalanse'
-      });
-
       setStep('success');
       
-      toast({
-        title: "Saldobalanse lastet opp",
-        description: `${successful} av ${accounts.length} kontoer ble importert`,
-      });
-
+      toast.success(`${successful} av ${accounts.length} kontoer ble importert`);
       onUploadComplete?.();
       
     } catch (error: any) {
-      logger.error('Upload error:', error);
-      toast({
-        title: "Feil ved opplasting",
-        description: error.message,
-        variant: "destructive"
-      });
-    } finally {
-      setIsUploading(false);
+      toast.error('Feil ved opplasting');
+      console.error(error);
     }
   };
 
-  // Show smart column mapping
-  if (showMapping && filePreview) {
-    return (
-      <SmartColumnMapping
-        preview={filePreview}
-        fieldDefinitions={TRIAL_BALANCE_FIELDS}
-        onComplete={handleMappingComplete}
-        onCancel={handleMappingCancel}
-      />
-    );
-  }
-
-  // Show enhanced file preview with inline mapping
-  if (step === 'preview' && filePreview && selectedFile) {
-    return (
-      <div className="space-y-4">
-        <FilePreview 
-          preview={filePreview} 
-          fileName={selectedFile.name}
-          fieldDefinitions={TRIAL_BALANCE_FIELDS}
-          showMapping={true}
-          onMappingComplete={handleMappingComplete}
-        />
-        <div className="flex justify-start">
-          <Button variant="outline" onClick={handleBackToSelect}>
-            Tilbake til filvalg
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  // Show uploading progress
-  if (step === 'uploading') {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Upload className="w-5 h-5" />
-            Laster opp saldobalanse
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Progress value={uploadProgress} />
-          <p className="text-sm text-muted-foreground">
-            Prosesserer {processedRows} rader... {uploadProgress}%
-          </p>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  // Show success view with data management
-  if (step === 'success' && lastUpload) {
-    return (
-      <div className="space-y-4">
-        <DataManagementPanel 
-          clientId={clientId}
-          orgNumber={orgNumber}
-          lastUploadSummary={lastUpload}
-        />
-        <div className="flex justify-start">
-          <Button onClick={handleBackToSelect}>
-            Last opp ny fil
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  // Default file selection view
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <FileText className="w-5 h-5" />
-          Last opp saldobalanse
-        </CardTitle>
-        <CardDescription>
-          Last opp saldobalanse fra Excel- eller CSV-fil med intelligent kolonnegjenkjenning
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/50 transition-colors">
-          <input
-            type="file"
-            accept=".xlsx,.xls,.csv"
-            onChange={handleFileSelect}
-            className="hidden"
-            id="trial-balance-upload"
-          />
-          <label htmlFor="trial-balance-upload" className="cursor-pointer">
-            <Upload className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-sm text-foreground mb-2">
-              Dra og slipp filen her, eller klikk for å velge
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Støtter Excel (.xlsx, .xls) og CSV-filer
-            </p>
-          </label>
-        </div>
+    <div className="space-y-6">
+      {showMapping && filePreview && (
+        <EnhancedPreview
+          preview={filePreview}
+          fileName={selectedFile?.name || ''}
+          clientId={clientId}
+          fileType="trial_balance"
+          onMappingComplete={handleMappingComplete}
+          onCancel={() => setShowMapping(false)}
+        />
+      )}
 
-        <div className="bg-muted/50 rounded-lg p-4">
-          <h4 className="font-medium mb-2 flex items-center gap-2">
-            <FileText className="w-4 h-4" />
-            Påkrevde kolonner
-          </h4>
-          <div className="grid grid-cols-2 gap-2 text-sm">
-            {TRIAL_BALANCE_FIELDS.filter(f => f.required).map(field => (
-              <div key={field.key} className="flex items-center gap-2">
-                <span className="w-2 h-2 bg-destructive rounded-full"></span>
-                <span>{field.label}</span>
-              </div>
-            ))}
+      {step === 'success' && (
+        <DataManagementPanel 
+          uploadedData={convertedData}
+          dataType="trial_balance"
+          clientId={clientId}
+          onStartOver={() => {
+            setStep('select');
+            setSelectedFile(null);
+            setFilePreview(null);
+            setConvertedData([]);
+            setShowMapping(false);
+          }}
+        />
+      )}
+
+      {step === 'upload' && (
+        <div className="space-y-4">
+          <div className="text-center">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-full mb-4">
+              <Upload className="w-8 h-8 text-primary" />
+            </div>
+            <h3 className="text-lg font-semibold mb-2">Laster opp saldobalanse...</h3>
+            <p className="text-muted-foreground">
+              Behandler {convertedData.length} kontoer
+            </p>
           </div>
-          <p className="text-xs text-muted-foreground mt-2">
-            Systemet gjenkjenner automatisk kolonner på norsk og engelsk
-          </p>
+          
+          <div className="max-w-md mx-auto">
+            <Progress value={uploadProgress} className="mb-2" />
+            <p className="text-sm text-center text-muted-foreground">
+              {uploadProgress}% fullført
+            </p>
+          </div>
         </div>
-      </CardContent>
-    </Card>
+      )}
+
+      {!showMapping && step !== 'success' && step !== 'upload' && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Database className="w-5 h-5" />
+              Last opp saldobalanse
+            </CardTitle>
+            <CardDescription>
+              Last opp Excel eller CSV-fil med saldobalanse for {clientId}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div
+              className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center hover:border-muted-foreground/50 transition-colors cursor-pointer"
+              onClick={() => document.getElementById('file-input')?.click()}
+            >
+              <Upload className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-lg font-medium mb-2">
+                Klikk for å velge fil eller dra og slipp her
+              </p>
+              <p className="text-muted-foreground mb-4">
+                Excel (.xlsx) eller CSV-filer opptil 100MB
+              </p>
+              <input
+                id="file-input"
+                type="file"
+                accept=".xlsx,.xls,.csv"
+                onChange={(e) => e.target.files?.[0] && handleFileSelect(e.target.files[0])}
+                className="hidden"
+              />
+            </div>
+
+            <div className="bg-muted/50 rounded-lg p-4">
+              <h4 className="font-medium mb-2 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4" />
+                Påkrevd format
+              </h4>
+              <div className="text-sm text-muted-foreground space-y-1">
+                <p>Filen må inneholde følgende kolonner:</p>
+                <ul className="list-disc list-inside space-y-1 ml-4">
+                  <li><strong>Kontonummer:</strong> Unikt kontonummer (påkrevd)</li>
+                  <li><strong>Kontonavn:</strong> Beskrivende navn for kontoen (påkrevd)</li>
+                  <li><strong>Saldo i fjor:</strong> Inngående saldo (valgfri)</li>
+                  <li><strong>Saldo i år:</strong> Utgående saldo (påkrevd)</li>
+                </ul>
+                <p className="mt-2 text-xs">
+                  Kolonnenavn kan variere - AI-assistenten vil hjelpe deg med mapping.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
   );
 };
 

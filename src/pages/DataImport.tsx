@@ -4,6 +4,7 @@ import { useParams, useLocation } from 'react-router-dom';
 import DataUploadHub from '@/components/DataUpload/DataUploadHub';
 import AccountingDataUploader from '@/components/Accounting/AccountingDataUploader';
 import { useClientDetails } from '@/hooks/useClientDetails';
+import ResponsiveLayout from '@/components/Layout/ResponsiveLayout';
 
 const DataImport = () => {
   const { orgNumber } = useParams<{ orgNumber: string }>();
@@ -14,19 +15,43 @@ const DataImport = () => {
   
   // If we're on a specific data category route, show the appropriate uploader
   if (location.pathname.includes('/grunnlagsdata')) {
-    return <AccountingDataUploader clientId={clientId} clientName={clientName} />;
+    return (
+      <ResponsiveLayout maxWidth="full">
+        <div className="p-6">
+          <AccountingDataUploader clientId={clientId} clientName={clientName} />
+        </div>
+      </ResponsiveLayout>
+    );
   }
   
   if (location.pathname.includes('/spesialdata')) {
-    return <AccountingDataUploader clientId={clientId} clientName={clientName} />;
+    return (
+      <ResponsiveLayout maxWidth="full">
+        <div className="p-6">
+          <AccountingDataUploader clientId={clientId} clientName={clientName} />
+        </div>
+      </ResponsiveLayout>
+    );
   }
   
   if (location.pathname.includes('/transaksjoner')) {
-    return <AccountingDataUploader clientId={clientId} clientName={clientName} />;
+    return (
+      <ResponsiveLayout maxWidth="full">
+        <div className="p-6">
+          <AccountingDataUploader clientId={clientId} clientName={clientName} />
+        </div>
+      </ResponsiveLayout>
+    );
   }
   
   if (location.pathname.includes('/import')) {
-    return <AccountingDataUploader clientId={clientId} clientName={clientName} />;
+    return (
+      <ResponsiveLayout maxWidth="full">
+        <div className="p-6">
+          <AccountingDataUploader clientId={clientId} clientName={clientName} />
+        </div>
+      </ResponsiveLayout>
+    );
   }
   
   // Default: show the data upload hub if we're in a client context
@@ -35,10 +60,16 @@ const DataImport = () => {
   }
   
   // Fallback for non-client context
-  return <AccountingDataUploader 
-    clientId="" 
-    clientName="Ingen klient valgt" 
-  />;
+  return (
+    <ResponsiveLayout maxWidth="full">
+      <div className="p-6">
+        <AccountingDataUploader 
+          clientId="" 
+          clientName="Ingen klient valgt" 
+        />
+      </div>
+    </ResponsiveLayout>
+  );
 };
 
 export default DataImport;

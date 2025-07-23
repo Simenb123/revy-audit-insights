@@ -1763,6 +1763,48 @@ export type Database = {
           },
         ]
       }
+      column_mapping_history: {
+        Row: {
+          client_id: string
+          confidence_score: number | null
+          created_at: string
+          file_name: string | null
+          file_type: string
+          id: string
+          is_manual_override: boolean | null
+          source_column: string
+          target_field: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          client_id: string
+          confidence_score?: number | null
+          created_at?: string
+          file_name?: string | null
+          file_type: string
+          id?: string
+          is_manual_override?: boolean | null
+          source_column: string
+          target_field: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          client_id?: string
+          confidence_score?: number | null
+          created_at?: string
+          file_name?: string | null
+          file_type?: string
+          id?: string
+          is_manual_override?: boolean | null
+          source_column?: string
+          target_field?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       content_types: {
         Row: {
           color: string
@@ -2305,6 +2347,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      field_definitions: {
+        Row: {
+          aliases: string[] | null
+          created_at: string
+          data_type: string
+          field_key: string
+          field_label: string
+          file_type: string
+          id: string
+          is_active: boolean | null
+          is_required: boolean
+          sort_order: number | null
+          updated_at: string
+        }
+        Insert: {
+          aliases?: string[] | null
+          created_at?: string
+          data_type?: string
+          field_key: string
+          field_label: string
+          file_type: string
+          id?: string
+          is_active?: boolean | null
+          is_required?: boolean
+          sort_order?: number | null
+          updated_at?: string
+        }
+        Update: {
+          aliases?: string[] | null
+          created_at?: string
+          data_type?: string
+          field_key?: string
+          field_label?: string
+          file_type?: string
+          id?: string
+          is_active?: boolean | null
+          is_required?: boolean
+          sort_order?: number | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       general_ledger_transactions: {
         Row: {
