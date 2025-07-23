@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
+import GlobalLayoutContainer from '@/components/Layout/GlobalLayoutContainer';
 import KnowledgeOverview from '@/components/Knowledge/KnowledgeOverview';
 import CategoryView from '@/components/Knowledge/CategoryView';
 import ArticleView from '@/components/Knowledge/ArticleView';
@@ -16,7 +17,7 @@ import AuditActionGenerator from '@/components/AIRevyAdmin/AuditActionGenerator'
 const KnowledgeBase = () => {
   const showAdvanced = import.meta.env.VITE_KNOWLEDGE_ADMIN_ADVANCED === 'true';
   return (
-    <div className="h-full">
+    <GlobalLayoutContainer className="h-full" maxWidth="wide">
       <Routes>
         <Route index element={<KnowledgeOverview />} />
         <Route path="kategori/:categoryId" element={<CategoryView />} />
@@ -32,7 +33,7 @@ const KnowledgeBase = () => {
         <Route path="hemmelig-ai-trening" element={<SecretTrainingArea />} />
         <Route path="revisjonshandlinger" element={<AuditActionGenerator />} />
       </Routes>
-    </div>
+    </GlobalLayoutContainer>
   );
 };
 
