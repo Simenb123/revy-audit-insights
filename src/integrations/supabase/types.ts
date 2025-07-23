@@ -960,6 +960,57 @@ export type Database = {
           },
         ]
       }
+      bulk_import_sessions: {
+        Row: {
+          auditor_name: string | null
+          auditor_org_number: string
+          completed_at: string | null
+          error_message: string | null
+          id: string
+          lost_clients: number | null
+          new_potential_clients: number | null
+          session_data: Json | null
+          session_type: string
+          started_at: string
+          started_by: string | null
+          status: string
+          total_found: number | null
+          updated_clients: number | null
+        }
+        Insert: {
+          auditor_name?: string | null
+          auditor_org_number: string
+          completed_at?: string | null
+          error_message?: string | null
+          id?: string
+          lost_clients?: number | null
+          new_potential_clients?: number | null
+          session_data?: Json | null
+          session_type: string
+          started_at?: string
+          started_by?: string | null
+          status?: string
+          total_found?: number | null
+          updated_clients?: number | null
+        }
+        Update: {
+          auditor_name?: string | null
+          auditor_org_number?: string
+          completed_at?: string | null
+          error_message?: string | null
+          id?: string
+          lost_clients?: number | null
+          new_potential_clients?: number | null
+          session_data?: Json | null
+          session_type?: string
+          started_at?: string
+          started_by?: string | null
+          status?: string
+          total_found?: number | null
+          updated_clients?: number | null
+        }
+        Relationships: []
+      }
       chat_rooms: {
         Row: {
           created_at: string
@@ -2933,6 +2984,68 @@ export type Database = {
           {
             foreignKeyName: "planning_module_statuses_client_id_fkey"
             columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      potential_clients: {
+        Row: {
+          auditor_name: string | null
+          auditor_org_number: string
+          brreg_data: Json | null
+          company_name: string
+          contact_info: Json | null
+          converted_to_client_id: string | null
+          created_at: string
+          created_by: string | null
+          discovered_at: string
+          id: string
+          last_seen_at: string
+          notes: string | null
+          org_number: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          auditor_name?: string | null
+          auditor_org_number: string
+          brreg_data?: Json | null
+          company_name: string
+          contact_info?: Json | null
+          converted_to_client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          discovered_at?: string
+          id?: string
+          last_seen_at?: string
+          notes?: string | null
+          org_number: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          auditor_name?: string | null
+          auditor_org_number?: string
+          brreg_data?: Json | null
+          company_name?: string
+          contact_info?: Json | null
+          converted_to_client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          discovered_at?: string
+          id?: string
+          last_seen_at?: string
+          notes?: string | null
+          org_number?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "potential_clients_converted_to_client_id_fkey"
+            columns: ["converted_to_client_id"]
             isOneToOne: false
             referencedRelation: "clients"
             referencedColumns: ["id"]
