@@ -9,7 +9,7 @@ import { useUserProfile } from '@/hooks/useUserProfile';
 import AppHeader from './AppHeader';
 import ResizableRightSidebar from './ResizableRightSidebar';
 import ResizableLeftSidebar from './ResizableLeftSidebar';
-import ResponsiveLayout from './ResponsiveLayout';
+import GlobalLayoutContainer from './GlobalLayoutContainer';
 import PageLoader from './PageLoader';
 import OnboardingCheck from './OnboardingCheck';
 
@@ -43,14 +43,14 @@ const AppLayout = () => {
         <SidebarProvider>
         <div className="flex flex-1">
             <ResizableLeftSidebar />
-            <ResponsiveLayout>
+            <GlobalLayoutContainer className="flex flex-col">
               <div className="p-3 bg-yellow-50 border-b border-yellow-200">
                 <p className="text-sm text-yellow-800">
                   Demo-modus: Appen kjører uten tilkobling til backend.
                 </p>
               </div>
               <Outlet />
-            </ResponsiveLayout>
+            </GlobalLayoutContainer>
             {/* Right sidebar as part of flex layout on desktop */}
             <div className="hidden lg:block">
               <ResizableRightSidebar />
@@ -81,9 +81,9 @@ const AppLayout = () => {
       <SidebarProvider>
         <div className="flex flex-1">
           <ResizableLeftSidebar />
-          <ResponsiveLayout>
+          <GlobalLayoutContainer>
             <Outlet />
-          </ResponsiveLayout>
+          </GlobalLayoutContainer>
           {/* Right sidebar as part of flex layout on desktop */}
           <div className="hidden lg:block">
             <ResizableRightSidebar />
