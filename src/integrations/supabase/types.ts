@@ -1176,6 +1176,59 @@ export type Database = {
           },
         ]
       }
+      client_auditor_history: {
+        Row: {
+          auditor_name: string | null
+          auditor_org_number: string
+          auditor_type: string | null
+          brreg_data: Json | null
+          client_id: string
+          created_at: string
+          discovered_via: string
+          id: string
+          is_current: boolean
+          updated_at: string
+          valid_from: string
+          valid_to: string | null
+        }
+        Insert: {
+          auditor_name?: string | null
+          auditor_org_number: string
+          auditor_type?: string | null
+          brreg_data?: Json | null
+          client_id: string
+          created_at?: string
+          discovered_via?: string
+          id?: string
+          is_current?: boolean
+          updated_at?: string
+          valid_from: string
+          valid_to?: string | null
+        }
+        Update: {
+          auditor_name?: string | null
+          auditor_org_number?: string
+          auditor_type?: string | null
+          brreg_data?: Json | null
+          client_id?: string
+          created_at?: string
+          discovered_via?: string
+          id?: string
+          is_current?: boolean
+          updated_at?: string
+          valid_from?: string
+          valid_to?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_auditor_history_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_chart_of_accounts: {
         Row: {
           account_name: string
@@ -1386,30 +1439,104 @@ export type Database = {
           },
         ]
       }
-      client_roles: {
+      client_history_logs: {
         Row: {
-          client_id: string | null
-          from_date: string | null
+          change_metadata: Json | null
+          change_source: string
+          change_type: string
+          changed_by: string | null
+          client_id: string
+          created_at: string
+          description: string | null
+          field_name: string | null
           id: string
-          name: string | null
-          role_type: string | null
-          to_date: string | null
+          new_value: string | null
+          old_value: string | null
         }
         Insert: {
-          client_id?: string | null
-          from_date?: string | null
+          change_metadata?: Json | null
+          change_source?: string
+          change_type: string
+          changed_by?: string | null
+          client_id: string
+          created_at?: string
+          description?: string | null
+          field_name?: string | null
           id?: string
-          name?: string | null
-          role_type?: string | null
-          to_date?: string | null
+          new_value?: string | null
+          old_value?: string | null
         }
         Update: {
+          change_metadata?: Json | null
+          change_source?: string
+          change_type?: string
+          changed_by?: string | null
+          client_id?: string
+          created_at?: string
+          description?: string | null
+          field_name?: string | null
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_history_logs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_roles: {
+        Row: {
+          brreg_data: Json | null
+          client_id: string | null
+          created_at: string | null
+          discovered_via: string | null
+          from_date: string | null
+          id: string
+          is_current: boolean | null
+          name: string | null
+          org_number: string | null
+          person_id: string | null
+          role_description: string | null
+          role_type: string | null
+          to_date: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          brreg_data?: Json | null
           client_id?: string | null
+          created_at?: string | null
+          discovered_via?: string | null
           from_date?: string | null
           id?: string
+          is_current?: boolean | null
           name?: string | null
+          org_number?: string | null
+          person_id?: string | null
+          role_description?: string | null
           role_type?: string | null
           to_date?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          brreg_data?: Json | null
+          client_id?: string | null
+          created_at?: string | null
+          discovered_via?: string | null
+          from_date?: string | null
+          id?: string
+          is_current?: boolean | null
+          name?: string | null
+          org_number?: string | null
+          person_id?: string | null
+          role_description?: string | null
+          role_type?: string | null
+          to_date?: string | null
+          updated_at?: string | null
         }
         Relationships: [
           {
@@ -1484,14 +1611,18 @@ export type Database = {
           address: string | null
           address_line: string | null
           audit_fee: number | null
+          auditor_since: string | null
           bank_account: string | null
           board_meetings_per_year: number | null
+          brreg_sync_version: number | null
           ceo: string | null
           chair: string | null
           city: string | null
           company_name: string
           contact_person: string | null
           created_at: string
+          current_auditor_name: string | null
+          current_auditor_org_number: string | null
           department: string | null
           department_id: string | null
           email: string | null
@@ -1501,6 +1632,7 @@ export type Database = {
           industry: string | null
           internal_controls: string | null
           is_test_data: boolean | null
+          last_brreg_sync_at: string | null
           municipality_code: string | null
           municipality_name: string | null
           nace_code: string | null
@@ -1528,14 +1660,18 @@ export type Database = {
           address?: string | null
           address_line?: string | null
           audit_fee?: number | null
+          auditor_since?: string | null
           bank_account?: string | null
           board_meetings_per_year?: number | null
+          brreg_sync_version?: number | null
           ceo?: string | null
           chair?: string | null
           city?: string | null
           company_name: string
           contact_person?: string | null
           created_at?: string
+          current_auditor_name?: string | null
+          current_auditor_org_number?: string | null
           department?: string | null
           department_id?: string | null
           email?: string | null
@@ -1545,6 +1681,7 @@ export type Database = {
           industry?: string | null
           internal_controls?: string | null
           is_test_data?: boolean | null
+          last_brreg_sync_at?: string | null
           municipality_code?: string | null
           municipality_name?: string | null
           nace_code?: string | null
@@ -1572,14 +1709,18 @@ export type Database = {
           address?: string | null
           address_line?: string | null
           audit_fee?: number | null
+          auditor_since?: string | null
           bank_account?: string | null
           board_meetings_per_year?: number | null
+          brreg_sync_version?: number | null
           ceo?: string | null
           chair?: string | null
           city?: string | null
           company_name?: string
           contact_person?: string | null
           created_at?: string
+          current_auditor_name?: string | null
+          current_auditor_org_number?: string | null
           department?: string | null
           department_id?: string | null
           email?: string | null
@@ -1589,6 +1730,7 @@ export type Database = {
           industry?: string | null
           internal_controls?: string | null
           is_test_data?: boolean | null
+          last_brreg_sync_at?: string | null
           municipality_code?: string | null
           municipality_name?: string | null
           nace_code?: string | null
@@ -4003,6 +4145,15 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_potential_clients_summary: {
+        Args: { p_auditor_org_number: string }
+        Returns: {
+          total_potential: number
+          new_this_week: number
+          converted: number
+          lost: number
+        }[]
+      }
       get_user_department: {
         Args: { user_uuid: string }
         Returns: string
@@ -4014,6 +4165,12 @@ export type Database = {
       get_user_role: {
         Args: { user_uuid: string }
         Returns: Database["public"]["Enums"]["user_role_type"]
+      }
+      get_user_teams: {
+        Args: { user_uuid: string }
+        Returns: {
+          team_id: string
+        }[]
       }
       increment_cache_hit: {
         Args: { hash_to_update: string }
