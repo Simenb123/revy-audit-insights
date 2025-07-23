@@ -8,6 +8,8 @@ import TeamDetails from '@/components/Teams/TeamDetails';
 import { useTeamManagement } from '@/hooks/useTeamManagement';
 import TeamManagementHeader from '@/components/Teams/TeamManagementHeader';
 import TeamOverview from '@/components/Teams/TeamOverview';
+import ConstrainedWidth from '@/components/Layout/ConstrainedWidth';
+import StandardPageLayout from '@/components/Layout/StandardPageLayout';
 
 const TeamManagement = () => {
   const {
@@ -34,11 +36,15 @@ const TeamManagement = () => {
   }
 
   return (
-    <div className="w-full px-4 py-6 md:px-6 lg:px-8">
-      <TeamManagementHeader 
-        canCreateTeams={canCreateTeams}
-        onCreateTeam={() => setIsCreateDialogOpen(true)}
-      />
+    <ConstrainedWidth width="wide">
+      <StandardPageLayout
+        header={
+          <TeamManagementHeader
+            canCreateTeams={canCreateTeams}
+            onCreateTeam={() => setIsCreateDialogOpen(true)}
+          />
+        }
+      >
 
       <Tabs defaultValue="teams" className="space-y-6">
         <TabsList>
@@ -82,12 +88,13 @@ const TeamManagement = () => {
         </TabsContent>
       </Tabs>
 
-      <CreateTeamDialog 
-        open={isCreateDialogOpen}
-        onOpenChange={setIsCreateDialogOpen}
-        onTeamCreated={refetchTeams}
-      />
-    </div>
+        <CreateTeamDialog
+          open={isCreateDialogOpen}
+          onOpenChange={setIsCreateDialogOpen}
+          onTeamCreated={refetchTeams}
+        />
+      </StandardPageLayout>
+    </ConstrainedWidth>
   );
 };
 
