@@ -34,7 +34,7 @@ const RoleAccessAdmin = () => {
   }
 
   return (
-    <ConstrainedWidth width="wide">
+    <ConstrainedWidth width="full">
       <StandardPageLayout
         header={
           <PageHeader
