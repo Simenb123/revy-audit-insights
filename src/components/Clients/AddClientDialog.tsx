@@ -117,12 +117,12 @@ const AddClientDialog: React.FC<AddClientDialogProps> = ({ open, onOpenChange, o
           new Date(result.registreringsdatoEnhetsregisteret).toISOString().split('T')[0] : null,
         homepage: result.hjemmeside,
         user_id: user.user.id,
-        phase: 'engagement',
+        phase: 'engagement' as const,
         progress: 0,
         is_test_data: false
       };
 
-      const { error } = await supabase.from('clients').insert([clientData]);
+      const { error } = await supabase.from('clients').insert(clientData);
 
       if (error) throw error;
 
