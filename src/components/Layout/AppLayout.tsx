@@ -38,7 +38,7 @@ const AppLayout = () => {
   // If no connection to Supabase, allow demo mode
   if (connectionStatus === 'disconnected') {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background flex flex-col gap-[var(--content-gap)]">
         <AppHeader />
         <SidebarProvider>
         <div className="flex gap-2">
@@ -75,7 +75,7 @@ const AppLayout = () => {
   /* ---------------------------------------------------------------------- */
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col gap-[var(--content-gap)]">
       <AppHeader />
       <SidebarProvider>
         <div className="flex gap-2">
