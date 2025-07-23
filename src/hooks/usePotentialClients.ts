@@ -90,11 +90,11 @@ export const useBulkDiscovery = () => {
   
   return useMutation({
     mutationFn: async ({ auditorOrgNumber, auditorName }: { 
-      auditorOrgNumber: string; 
+      auditorOrgNumber: string;
       auditorName?: string 
     }) => {
       const { data, error } = await supabase.functions.invoke('brreg-bulk-discovery', {
-        body: { auditorOrgNumber, auditorName }
+        body: { auditor_org_number: auditorOrgNumber, auditor_name: auditorName }
       })
 
       if (error) throw error

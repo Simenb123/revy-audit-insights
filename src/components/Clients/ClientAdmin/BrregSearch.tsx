@@ -18,6 +18,21 @@ const BrregSearch: React.FC<BrregSearchProps> = ({ onSelectClient, isSearching, 
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<BrregSearchResult[]>([]);
+  const [selectedResult, setSelectedResult] = useState<BrregSearchResult | null>(null);
+  const [showDetailView, setShowDetailView] = useState(false);
+
+  // Debounced search effect
+  React.useEffect(() => {
+    if (searchTerm.length >= 3) {
+      const timeoutId = setTimeout(() => {
+        handleSearch();
+      }, 500); // 500ms delay
+
+      return () => clearTimeout(timeoutId);
+    } else {
+      setSearchResults([]);
+    }
+  }, [searchTerm]);
 
   const handleSearch = async () => {
     if (searchTerm.length < 3) {
@@ -96,6 +111,24 @@ const BrregSearch: React.FC<BrregSearchProps> = ({ onSelectClient, isSearching, 
     }
   };
 
+  const handleSelectResult = (result: BrregSearchResult) => {
+    setSelectedResult(result);
+    setShowDetailView(true);
+  };
+
+  const handleBackToResults = () => {
+    setShowDetailView(false);
+    setSelectedResult(null);
+  };
+
+  const handleImportClient = () => {
+    if (selectedResult) {
+      onSelectClient(selectedResult);
+      setShowDetailView(false);
+      setSelectedResult(null);
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -109,7 +142,6 @@ const BrregSearch: React.FC<BrregSearchProps> = ({ onSelectClient, isSearching, 
               placeholder="Firmanavn eller organisasjonsnummer..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
               disabled={isSearching}
             />
           </div>
@@ -130,37 +162,72 @@ const BrregSearch: React.FC<BrregSearchProps> = ({ onSelectClient, isSearching, 
           </div>
         )}
         
-        {!isSearching && searchResults.length > 0 && (
-          <div className="border rounded-md">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left p-3">Organisasjonsnummer</th>
-                  <th className="text-left p-3">Navn</th>
-                  <th className="text-left p-3">Type</th>
-                  <th className="p-3"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {searchResults.map((result) => (
-                  <tr key={result.organisasjonsnummer} className="border-b hover:bg-muted/50">
-                    <td className="p-3 font-mono text-sm">{result.organisasjonsnummer}</td>
-                    <td className="p-3">{result.navn}</td>
-                    <td className="p-3">{result.organisasjonsform?.beskrivelse || 'Ukjent'}</td>
-                    <td className="p-3 text-right">
-                      <Button 
-                        variant="secondary" 
-                        size="sm"
-                        onClick={() => onSelectClient(result)}
-                      >
-                        Importer
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        {showDetailView && selectedResult ? (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Button variant="outline" onClick={handleBackToResults}>
+                ← Tilbake til søkeresultater
+              </Button>
+              <Button onClick={handleImportClient}>
+                Importer klient
+              </Button>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Organisasjonsnummer</label>
+                <Input value={selectedResult.organisasjonsnummer} disabled />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Navn</label>
+                <Input value={selectedResult.navn} disabled />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Organisasjonsform</label>
+                <Input value={selectedResult.organisasjonsform?.beskrivelse || 'Ukjent'} disabled />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Registreringsdato</label>
+                <Input value={selectedResult.registreringsdatoEnhetsregisteret || 'Ukjent'} disabled />
+              </div>
+              {selectedResult.hjemmeside && (
+                <div>
+                  <label className="block text-sm font-medium mb-1">Hjemmeside</label>
+                  <Input value={selectedResult.hjemmeside} disabled />
+                </div>
+              )}
+            </div>
           </div>
+        ) : (
+          !isSearching && searchResults.length > 0 && (
+            <div className="space-y-2">
+              {searchResults.map((result) => (
+                <div 
+                  key={result.organisasjonsnummer} 
+                  className="border rounded-md p-4 hover:bg-muted/50 cursor-pointer transition-colors"
+                  onClick={() => handleSelectResult(result)}
+                >
+                  <div className="flex justify-between items-start">
+                    <div className="space-y-1">
+                      <h3 className="font-medium">{result.navn}</h3>
+                      <p className="text-sm text-muted-foreground font-mono">{result.organisasjonsnummer}</p>
+                      <p className="text-sm text-muted-foreground">{result.organisasjonsform?.beskrivelse || 'Ukjent'}</p>
+                    </div>
+                    <Button 
+                      variant="secondary" 
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSelectClient(result);
+                      }}
+                    >
+                      Importer
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
         )}
 
         {!isSearching && searchTerm.length >= 3 && searchResults.length === 0 && (
