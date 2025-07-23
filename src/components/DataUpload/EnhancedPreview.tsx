@@ -4,9 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { ChevronDown, CheckCircle, AlertCircle, Brain, Zap } from 'lucide-react';
-import { FilePreview } from '@/utils/fileProcessing';
-import { getFieldDefinitions, saveColumnMappingHistory, getHistoricalMappings, FieldDefinition } from '@/utils/fieldDefinitions';
-import { suggestColumnMappings, ColumnMapping } from '@/utils/fileProcessing';
+import { FilePreview, suggestColumnMappings, ColumnMapping, FieldDefinition } from '@/utils/fileProcessing';
+import { getFieldDefinitions, saveColumnMappingHistory, getHistoricalMappings } from '@/utils/fieldDefinitions';
 
 interface EnhancedPreviewProps {
   preview: FilePreview;
@@ -25,7 +24,7 @@ const EnhancedPreview: React.FC<EnhancedPreviewProps> = ({
   onMappingComplete,
   onCancel
 }) => {
-  const [fieldDefinitions, setFieldDefinitions] = useState<FieldDefinition[]>([]);
+  const [fieldDefinitions, setFieldDefinitions] = useState<any[]>([]);
   const [mapping, setMapping] = useState<Record<string, string>>({});
   const [suggestedMappings, setSuggestedMappings] = useState<ColumnMapping[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -42,10 +41,19 @@ const EnhancedPreview: React.FC<EnhancedPreviewProps> = ({
       // Get historical mappings for this client and file type
       const historicalMappings = await getHistoricalMappings(clientId, fileType);
 
+      // Convert database fields to FieldDefinition format for AI suggestions
+      const convertedFields: FieldDefinition[] = fields.map(f => ({
+        key: f.field_key,
+        label: f.field_label,
+        required: f.is_required,
+        type: f.data_type as 'text' | 'number' | 'date',
+        aliases: f.aliases || []
+      }));
+
       // Generate AI suggestions with enhanced algorithm
       const suggestions = suggestColumnMappings(
         preview.headers,
-        fields,
+        convertedFields,
         preview.rows.slice(0, 10), // Sample data for content validation
         historicalMappings
       );
@@ -70,7 +78,7 @@ const EnhancedPreview: React.FC<EnhancedPreviewProps> = ({
 
   const handleMappingChange = (sourceColumn: string, targetField: string) => {
     const newMapping = { ...mapping };
-    if (targetField === '') {
+    if (targetField === '' || targetField === 'none') {
       delete newMapping[sourceColumn];
     } else {
       newMapping[sourceColumn] = targetField;
@@ -252,7 +260,7 @@ const EnhancedPreview: React.FC<EnhancedPreviewProps> = ({
                             <SelectValue placeholder="Velg felt..." />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="">-- Ikke tildelt --</SelectItem>
+                            <SelectItem value="none">-- Ikke tildelt --</SelectItem>
                             {fieldDefinitions
                               .sort((a, b) => a.sort_order - b.sort_order)
                               .map((field) => (

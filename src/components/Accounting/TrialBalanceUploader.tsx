@@ -167,15 +167,12 @@ const TrialBalanceUploader = ({ clientId, onUploadComplete }: TrialBalanceUpload
 
       {step === 'success' && (
         <DataManagementPanel 
-          uploadedData={convertedData}
-          dataType="trial_balance"
           clientId={clientId}
-          onStartOver={() => {
-            setStep('select');
-            setSelectedFile(null);
-            setFilePreview(null);
-            setConvertedData([]);
-            setShowMapping(false);
+          lastUploadSummary={{
+            fileName: selectedFile?.name || '',
+            recordsImported: convertedData.length,
+            uploadDate: new Date().toLocaleDateString('nb-NO'),
+            dataType: "Saldobalanse"
           }}
         />
       )}
