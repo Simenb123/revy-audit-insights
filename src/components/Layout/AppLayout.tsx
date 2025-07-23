@@ -38,10 +38,10 @@ const AppLayout = () => {
   // If no connection to Supabase, allow demo mode
   if (connectionStatus === 'disconnected') {
     return (
-      <div className="min-h-screen bg-background flex flex-col gap-[var(--content-gap)]">
+      <div className="min-h-screen bg-background flex flex-col">
         <AppHeader />
         <SidebarProvider>
-        <div className="flex gap-2">
+          <div className="flex flex-1 min-h-0">
             <ResizableLeftSidebar />
             <ResponsiveLayout>
               <div className="p-3 bg-yellow-50 border-b border-yellow-200">
@@ -51,11 +51,11 @@ const AppLayout = () => {
               </div>
               <Outlet />
             </ResponsiveLayout>
+            <div className="hidden lg:block">
+              <ResizableRightSidebar />
+            </div>
           </div>
         </SidebarProvider>
-        <div className="hidden lg:block">
-          <ResizableRightSidebar />
-        </div>
       </div>
     );
   }
@@ -75,20 +75,20 @@ const AppLayout = () => {
   /* ---------------------------------------------------------------------- */
 
   return (
-    <div className="min-h-screen bg-background flex flex-col gap-[var(--content-gap)]">
+    <div className="min-h-screen bg-background flex flex-col">
       <AppHeader />
       <SidebarProvider>
-        <div className="flex gap-2">
+        <div className="flex flex-1 min-h-0">
           <ResizableLeftSidebar />
           <ResponsiveLayout>
             <Outlet />
           </ResponsiveLayout>
+          {/* Right sidebar as part of flex layout */}
+          <div className="hidden lg:block">
+            <ResizableRightSidebar />
+          </div>
         </div>
       </SidebarProvider>
-      {/* Right sidebar hidden on mobile, visible on desktop */}
-      <div className="hidden lg:block">
-        <ResizableRightSidebar />
-      </div>
     </div>
   );
 };
