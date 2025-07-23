@@ -50,6 +50,50 @@ const OrganizationSettings = () => {
     }
   }, [auditFirm]);
 
+  const handleSaveFirm = async () => {
+    if (!auditFirm?.id) {
+      toast({
+        title: "Feil",
+        description: "Kan ikke finne revisjonsfirma å oppdatere",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('audit_firms')
+        .update({
+          name: firmData.name,
+          org_number: firmData.orgNumber,
+          address: firmData.address,
+          city: firmData.city,
+          postal_code: firmData.postalCode,
+          phone: firmData.phone,
+          email: firmData.email,
+          website: firmData.website
+        })
+        .eq('id', auditFirm.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Suksess",
+        description: "Firmainformasjon er oppdatert"
+      });
+    } catch (error) {
+      console.error('Error updating firm:', error);
+      toast({
+        title: "Feil",
+        description: "Kunne ikke oppdatere firmainformasjon",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (profileLoading) {
     return (
       <main className="w-full px-4 py-6 md:px-6 lg:px-8">
@@ -177,15 +221,15 @@ const OrganizationSettings = () => {
                   placeholder="Navn på revisjonsfirmaet"
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="orgNumber">Organisasjonsnummer</Label>
-                <Input
-                  id="orgNumber"
-                  value={firmData.orgNumber}
-                  onChange={(e) => setFirmData({ ...firmData, orgNumber: e.target.value })}
-                  placeholder="123456789"
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="orgNumber">Organisasjonsnummer</Label>
+                  <Input
+                    id="orgNumber"
+                    value={firmData.orgNumber}
+                    onChange={(e) => setFirmData({ ...firmData, orgNumber: e.target.value })}
+                    placeholder="123456789"
+                  />
+                </div>
             </div>
 
             <div className="space-y-2">
@@ -199,24 +243,24 @@ const OrganizationSettings = () => {
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="postalCode">Postnummer</Label>
-                <Input
-                  id="postalCode"
-                  value={firmData.postalCode}
-                  onChange={(e) => setFirmData({ ...firmData, postalCode: e.target.value })}
-                  placeholder="0001"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="city">Poststed</Label>
-                <Input
-                  id="city"
-                  value={firmData.city}
-                  onChange={(e) => setFirmData({ ...firmData, city: e.target.value })}
-                  placeholder="Oslo"
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="postalCode">Postnummer</Label>
+                  <Input
+                    id="postalCode"
+                    value={firmData.postalCode}
+                    onChange={(e) => setFirmData({ ...firmData, postalCode: e.target.value })}
+                    placeholder="0001"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="city">Poststed</Label>
+                  <Input
+                    id="city"
+                    value={firmData.city}
+                    onChange={(e) => setFirmData({ ...firmData, city: e.target.value })}
+                    placeholder="Oslo"
+                  />
+                </div>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
@@ -251,7 +295,7 @@ const OrganizationSettings = () => {
               />
             </div>
 
-            <Button disabled={loading}>
+            <Button onClick={handleSaveFirm} disabled={loading}>
               {loading ? 'Lagrer...' : 'Lagre endringer'}
             </Button>
           </CardContent>

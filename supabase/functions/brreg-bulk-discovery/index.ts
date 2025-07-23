@@ -82,63 +82,78 @@ serve(async (req) => {
       throw sessionError
     }
 
-    // Search BRREG for companies with this auditor
-    // We need to use the enheter API with filtering, or fetch all and filter client-side
-    // For now, let's try a more direct approach by searching for all companies
-    // and then filtering by those that use this auditor org number
-    let allCompanies: BRREGCompany[] = []
-    let page = 0
-    const pageSize = 100
-    
+    // Search BRREG for companies with this auditor using the roller API
+    // This API gives us all the roles (including auditor roles) for a specific organization
     console.log(`Starting bulk discovery search for auditor: ${auditor_org_number}`)
     
-    // For demo purposes, let's search for a smaller subset first
-    // In a real implementation, you might want to use multiple API calls or a different strategy
-    const searchUrl = `https://data.brreg.no/enhetsregisteret/api/enheter?size=${pageSize}&page=${page}`
-    console.log(`Fetching companies from: ${searchUrl}`)
+    let allCompanies: BRREGCompany[] = []
+    let page = 0
+    let hasMorePages = true
     
-    const searchResponse = await fetch(searchUrl)
-    if (!searchResponse.ok) {
-      throw new Error(`BRREG API error: ${searchResponse.status}`)
-    }
-    
-    const searchData = await searchResponse.json()
-    const enheter = searchData._embedded?.enheter || []
-    
-    console.log(`Found ${enheter.length} companies in search results`)
-    
-    // Now we need to check each company for their auditor information
-    // This is a simplified approach - for a full implementation you'd need to be more systematic
-    const companies: BRREGCompany[] = []
-    
-    for (const enhet of enheter.slice(0, 10)) { // Limit to first 10 for demo
+    while (hasMorePages && page < 50) { // Safety limit of 50 pages (5000 records)
       try {
-        // Get detailed company info including roles
-        const detailUrl = `https://data.brreg.no/enhetsregisteret/api/enheter/${enhet.organisasjonsnummer}`
-        const detailResponse = await fetch(detailUrl)
+        // Use the roller API to find all entities where this auditor has a role
+        const rollerUrl = `https://data.brreg.no/enhetsregisteret/api/roller/person?organisasjonsnummer=${auditor_org_number}&page=${page}&size=100`
+        console.log(`Fetching page ${page} from roles API: ${rollerUrl}`)
         
-        if (detailResponse.ok) {
-          const detailData = await detailResponse.json()
-          
-          // Check if this company has the auditor we're looking for
-          // This is a simplified check - you might need to fetch roles separately
-          if (detailData.organisasjonsnummer && detailData.navn) {
-            // For demo purposes, add some companies to show the functionality works
-            // In a real implementation, you'd check the actual auditor relationships
-            companies.push({
-              organisasjonsnummer: detailData.organisasjonsnummer,
-              navn: detailData.navn,
-              organisasjonsform: detailData.organisasjonsform,
-              hjemmeside: detailData.hjemmeside,
-              postadresse: detailData.postadresse,
-              forretningsadresse: detailData.forretningsadresse
-            })
+        const rollerResponse = await fetch(rollerUrl)
+        if (!rollerResponse.ok) {
+          console.log(`Roller API returned ${rollerResponse.status}, trying alternative approach`)
+          break
+        }
+        
+        const rollerData = await rollerResponse.json()
+        const roller = rollerData._embedded?.roller || []
+        
+        console.log(`Found ${roller.length} roles on page ${page}`)
+        
+        // Extract unique organization numbers from roles
+        const orgNumbers = new Set<string>()
+        for (const rolle of roller) {
+          if (rolle.enhet?.organisasjonsnummer) {
+            orgNumbers.add(rolle.enhet.organisasjonsnummer)
           }
         }
+        
+        console.log(`Found ${orgNumbers.size} unique organizations on page ${page}`)
+        
+        // Fetch detailed company information for each organization
+        for (const orgNumber of orgNumbers) {
+          try {
+            const detailUrl = `https://data.brreg.no/enhetsregisteret/api/enheter/${orgNumber}`
+            const detailResponse = await fetch(detailUrl)
+            
+            if (detailResponse.ok) {
+              const detailData = await detailResponse.json()
+              
+              if (detailData.organisasjonsnummer && detailData.navn) {
+                allCompanies.push({
+                  organisasjonsnummer: detailData.organisasjonsnummer,
+                  navn: detailData.navn,
+                  organisasjonsform: detailData.organisasjonsform,
+                  hjemmeside: detailData.hjemmeside,
+                  postadresse: detailData.postadresse,
+                  forretningsadresse: detailData.forretningsadresse
+                })
+              }
+            }
+          } catch (err) {
+            console.log(`Error fetching details for ${orgNumber}:`, err)
+          }
+        }
+        
+        // Check if there are more pages
+        hasMorePages = roller.length === 100 && rollerData.page?.totalPages > page + 1
+        page++
+        
       } catch (err) {
-        console.log(`Error fetching details for ${enhet.organisasjonsnummer}:`, err)
+        console.log(`Error on page ${page}:`, err)
+        break
       }
     }
+    
+    console.log(`Total companies found across all pages: ${allCompanies.length}`)
+    const companies = allCompanies
 
     console.log(`Found ${companies.length} companies for auditor ${auditor_org_number}`)
 
