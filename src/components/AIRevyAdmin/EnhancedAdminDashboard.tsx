@@ -1,5 +1,6 @@
 
 import React from 'react';
+import GlobalLayoutContainer from '@/components/Layout/GlobalLayoutContainer';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -36,7 +37,7 @@ import { SubjectAreaManager } from '../Admin/SubjectAreaManager';
 
 const EnhancedAdminDashboard = () => {
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <GlobalLayoutContainer className="py-6 space-y-6" maxWidth="wide">
       <div className="flex items-center gap-3 mb-6">
         <Brain className="h-8 w-8 text-primary" />
         <div>
@@ -201,7 +202,7 @@ const EnhancedAdminDashboard = () => {
           </Card>
         </TabsContent>
       </Tabs>
-    </div>
+    </GlobalLayoutContainer>
   );
 };
 
