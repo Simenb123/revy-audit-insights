@@ -2,7 +2,7 @@
 import React from 'react';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import WelcomeDashboard from '@/components/Welcome/WelcomeDashboard';
-import StandardPageLayout from '@/components/Layout/StandardPageLayout';
+import PageLayout from '@/components/Layout/PageLayout';
 import FlexibleGrid from '@/components/Layout/FlexibleGrid';
 import ConstrainedWidth from '@/components/Layout/ConstrainedWidth';
 import PageHeader from '@/components/Layout/PageHeader';
@@ -58,16 +58,16 @@ const Index = () => {
   ];
 
   return (
-    <ConstrainedWidth width="wide">
-      <StandardPageLayout
-        header={
-          <PageHeader
-            title="Dashboard"
-            subtitle={`Velkommen tilbake, ${userProfile?.firstName || 'Bruker'}`}
-            size="lg"
-          />
-        }
-      >
+    <PageLayout
+      width="wide"
+      header={
+        <PageHeader
+          title="Dashboard"
+          subtitle={`Velkommen tilbake, ${userProfile?.firstName || 'Bruker'}`}
+          size="lg"
+        />
+      }
+    >
         <FlexibleGrid 
           columns={{ sm: 1, md: 2, lg: 3 }} 
           gap="md"
@@ -157,8 +157,7 @@ const Index = () => {
             </CardContent>
           </Card>
         </FlexibleGrid>
-      </StandardPageLayout>
-    </ConstrainedWidth>
+      </PageLayout>
   );
 };
 
