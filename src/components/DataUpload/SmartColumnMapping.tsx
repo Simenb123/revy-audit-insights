@@ -5,18 +5,24 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { 
-  FieldDefinition, 
-  ColumnMapping, 
-  suggestColumnMappings, 
   validateDataTypes,
   FilePreview 
 } from '@/utils/fileProcessing';
-import { Brain, CheckCircle, AlertTriangle, Zap } from 'lucide-react';
+import { 
+  FieldDefinition, 
+  suggestEnhancedColumnMappings,
+  saveColumnMappingHistory
+} from '@/utils/fieldDefinitions';
+import { Brain, CheckCircle, AlertTriangle, Zap, Info, TrendingUp } from 'lucide-react';
 
 interface SmartColumnMappingProps {
   preview: FilePreview;
   fieldDefinitions: FieldDefinition[];
+  clientId: string;
+  fileType: string;
+  fileName?: string;
   onComplete: (mapping: Record<string, string>) => void;
   onCancel: () => void;
 }
@@ -24,28 +30,54 @@ interface SmartColumnMappingProps {
 export const SmartColumnMapping: React.FC<SmartColumnMappingProps> = ({
   preview,
   fieldDefinitions,
+  clientId,
+  fileType,
+  fileName,
   onComplete,
   onCancel
 }) => {
   const [mapping, setMapping] = useState<Record<string, string>>({});
-  const [suggestedMappings, setSuggestedMappings] = useState<ColumnMapping[]>([]);
+  const [suggestedMappings, setSuggestedMappings] = useState<Array<{
+    sourceColumn: string;
+    targetField: string;
+    confidence: number;
+    reasoning: string;
+  }>>([]);
   const [validationErrors, setValidationErrors] = useState<Record<string, string[]>>({});
   const [isValidating, setIsValidating] = useState(false);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(true);
 
   // Auto-suggest mappings on component mount
   useEffect(() => {
-    const suggestions = suggestColumnMappings(preview.headers, fieldDefinitions);
-    setSuggestedMappings(suggestions);
-    
-    // Auto-apply high-confidence suggestions
-    const autoMapping: Record<string, string> = {};
-    suggestions.forEach(suggestion => {
-      if (suggestion.confidence > 0.8) {
-        autoMapping[suggestion.sourceColumn] = suggestion.targetField;
+    const loadSuggestions = async () => {
+      setIsLoadingSuggestions(true);
+      try {
+        const suggestions = await suggestEnhancedColumnMappings(
+          clientId,
+          fileType,
+          preview.headers,
+          preview.rows,
+          fileName
+        );
+        setSuggestedMappings(suggestions);
+        
+        // Auto-apply high-confidence suggestions
+        const autoMapping: Record<string, string> = {};
+        suggestions.forEach(suggestion => {
+          if (suggestion.confidence > 0.8) {
+            autoMapping[suggestion.sourceColumn] = suggestion.targetField;
+          }
+        });
+        setMapping(autoMapping);
+      } catch (error) {
+        console.error('Error loading suggestions:', error);
+      } finally {
+        setIsLoadingSuggestions(false);
       }
-    });
-    setMapping(autoMapping);
-  }, [preview.headers, fieldDefinitions]);
+    };
+
+    loadSuggestions();
+  }, [clientId, fileType, preview.headers, preview.rows, fileName]);
 
   // Validate data types when mapping changes
   useEffect(() => {
@@ -57,13 +89,13 @@ export const SmartColumnMapping: React.FC<SmartColumnMappingProps> = ({
     Object.entries(mapping).forEach(([sourceColumn, targetField]) => {
       if (targetField === 'none') return;
       
-      const field = fieldDefinitions.find(f => f.key === targetField);
+      const field = fieldDefinitions.find(f => f.field_key === targetField);
       if (!field) return;
       
       const columnIndex = preview.headers.indexOf(sourceColumn);
       if (columnIndex === -1) return;
       
-      const validation = validateDataTypes(preview.rows, columnIndex, field.type);
+      const validation = validateDataTypes(preview.rows, columnIndex, field.data_type);
       if (!validation.valid) {
         errors[sourceColumn] = validation.errors;
       }
@@ -92,8 +124,8 @@ export const SmartColumnMapping: React.FC<SmartColumnMappingProps> = ({
     Object.keys(mapping).find(col => mapping[col] === fieldKey);
 
   const getRequiredFieldsStatus = () => {
-    const requiredFields = fieldDefinitions.filter(f => f.required);
-    const mappedRequired = requiredFields.filter(f => getMappedField(f.key));
+    const requiredFields = fieldDefinitions.filter(f => f.is_required);
+    const mappedRequired = requiredFields.filter(f => getMappedField(f.field_key));
     return {
       total: requiredFields.length,
       mapped: mappedRequired.length,
@@ -165,12 +197,21 @@ export const SmartColumnMapping: React.FC<SmartColumnMappingProps> = ({
                           {header || `Kolonne ${index + 1}`}
                         </code>
                         {suggestion && (
-                          <Badge 
-                            variant="secondary" 
-                            className={`text-xs ${getConfidenceColor(suggestion.confidence)} text-white`}
-                          >
-                            {Math.round(suggestion.confidence * 100)}%
-                          </Badge>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Badge 
+                                  variant="secondary" 
+                                  className={`text-xs ${getConfidenceColor(suggestion.confidence)} text-white cursor-help`}
+                                >
+                                  {Math.round(suggestion.confidence * 100)}%
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="max-w-64">
+                                <p className="text-sm">{suggestion.reasoning}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         )}
                       </div>
                       {/* Sample data */}
@@ -201,15 +242,15 @@ export const SmartColumnMapping: React.FC<SmartColumnMappingProps> = ({
                           <SelectItem value="none">Ignorer kolonne</SelectItem>
                           {fieldDefinitions.map(field => (
                             <SelectItem 
-                              key={field.key} 
-                              value={field.key}
-                              disabled={getMappedField(field.key) === header ? false : !!getMappedField(field.key)}
+                              key={field.field_key} 
+                              value={field.field_key}
+                              disabled={getMappedField(field.field_key) === header ? false : !!getMappedField(field.field_key)}
                             >
                               <div className="flex items-center gap-2">
-                                {field.label}
-                                {field.required && <span className="text-destructive">*</span>}
+                                {field.field_label}
+                                {field.is_required && <span className="text-destructive">*</span>}
                                 <Badge variant="outline" className="ml-auto">
-                                  {field.type}
+                                  {field.data_type}
                                 </Badge>
                               </div>
                             </SelectItem>
@@ -241,7 +282,23 @@ export const SmartColumnMapping: React.FC<SmartColumnMappingProps> = ({
           Avbryt
         </Button>
         <Button 
-          onClick={() => onComplete(mapping)}
+          onClick={async () => {
+            // Save mapping history before completing
+            const mappingPromises = Object.entries(mapping).map(([sourceColumn, targetField]) => {
+              const suggestion = getSuggestionForColumn(sourceColumn);
+              return saveColumnMappingHistory(
+                clientId,
+                fileType,
+                sourceColumn,
+                targetField,
+                suggestion?.confidence || 0.5,
+                suggestion?.confidence < 0.8, // Manual override if low confidence
+                fileName
+              );
+            });
+            await Promise.all(mappingPromises);
+            onComplete(mapping);
+          }}
           disabled={!requiredStatus.complete || isValidating}
           className="flex items-center gap-2"
         >

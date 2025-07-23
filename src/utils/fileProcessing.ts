@@ -234,43 +234,70 @@ export function suggestColumnMappings(
   sampleData?: string[][],
   historicalMappings?: Record<string, string>
 ): ColumnMapping[] {
-  const mappings: ColumnMapping[] = [];
-  
-  for (let i = 0; i < headers.length; i++) {
-    const header = headers[i];
-    const normalizedHeader = normalizeNorwegianText(header);
-    
-    let bestMatch: { field: FieldDefinition; confidence: number } | null = null;
-    
-    // Check historical mappings first
+  const suggestions: ColumnMapping[] = [];
+
+  for (const header of headers) {
+    let bestMatch: FieldDefinition | null = null;
+    let bestConfidence = 0;
+
+    // Check historical mappings first with higher confidence
     if (historicalMappings && historicalMappings[header]) {
       const historicalField = fieldDefinitions.find(f => f.key === historicalMappings[header]);
       if (historicalField) {
-        bestMatch = { field: historicalField, confidence: 0.95 };
+        suggestions.push({
+          sourceColumn: header,
+          targetField: historicalField.key,
+          confidence: 0.98 // Very high confidence for exact historical matches
+        });
+        continue;
       }
     }
-    
-    // If no historical match, analyze header and content
-    if (!bestMatch) {
-      for (const field of fieldDefinitions) {
-        const confidence = calculateFieldConfidence(header, normalizedHeader, field, sampleData?.[i]);
+
+    // Enhanced matching with context awareness
+    for (const field of fieldDefinitions) {
+      let confidence = calculateFieldConfidence(header, normalizeNorwegianText(header), field);
+      
+      // Apply Norwegian pattern matching
+      confidence = applyNorwegianPatterns(header, field, confidence);
+      
+      // Apply context-based matching (e.g., account number patterns)
+      confidence = applyContextualMatching(header, field, confidence, sampleData, headers);
+      
+      if (confidence > bestConfidence) {
+        bestConfidence = confidence;
+        bestMatch = field;
+      }
+    }
+
+    // Enhanced content validation if sample data is available
+    if (bestMatch && sampleData && sampleData.length > 0) {
+      const columnIndex = headers.indexOf(header);
+      if (columnIndex !== -1) {
+        const columnData = sampleData.map(row => row[columnIndex] || '').filter(val => val.trim() !== '');
+        const contentConfidence = validateContentType(columnData, bestMatch.type);
         
-        if (confidence > 0.3 && (!bestMatch || confidence > bestMatch.confidence)) {
-          bestMatch = { field, confidence };
+        // Apply smart content-based confidence adjustment
+        if (contentConfidence > 0.8) {
+          bestConfidence = Math.min(bestConfidence * 1.1, 1.0); // Boost confidence for good content match
+        } else if (contentConfidence < 0.5) {
+          bestConfidence = bestConfidence * 0.7; // Reduce confidence for poor content match
+        } else {
+          bestConfidence = bestConfidence * contentConfidence;
         }
       }
     }
-    
-    if (bestMatch && bestMatch.confidence > 0.3) {
-      mappings.push({
+
+    // Lower threshold for better suggestions
+    if (bestMatch && bestConfidence > 0.25) {
+      suggestions.push({
         sourceColumn: header,
-        targetField: bestMatch.field.key,
-        confidence: bestMatch.confidence
+        targetField: bestMatch.key,
+        confidence: Math.min(bestConfidence, 0.99) // Cap at 99% to reserve 100% for perfect matches
       });
     }
   }
-  
-  return mappings;
+
+  return suggestions.sort((a, b) => b.confidence - a.confidence);
 }
 
 // Normalize Norwegian text for better matching
@@ -409,25 +436,135 @@ function validateContentType(sampleData: string[], expectedType: 'text' | 'numbe
   return validCount / validSamples.length;
 }
 
+// Apply context-based matching for better pattern recognition
+function applyContextualMatching(
+  header: string, 
+  field: FieldDefinition, 
+  currentConfidence: number, 
+  sampleData?: string[][], 
+  headers?: string[]
+): number {
+  const lowerHeader = header.toLowerCase();
+  
+  // Enhanced Norwegian accounting patterns with contextual awareness
+  const contextualPatterns: Record<string, {
+    patterns: string[];
+    contextBoosts: { pattern: string; boost: number }[];
+    contentValidators?: (data: string[]) => number;
+  }> = {
+    'account_number': {
+      patterns: ['konto', 'kontonr', 'kontonummer', 'kto', 'account_no', 'acc_no'],
+      contextBoosts: [
+        { pattern: 'nummer', boost: 0.15 },
+        { pattern: 'nr', boost: 0.1 },
+        { pattern: 'no', boost: 0.1 }
+      ],
+      contentValidators: (data) => {
+        // Account numbers are typically 4-8 digit patterns
+        const validAccountNumbers = data.filter(val => /^\d{4,8}$/.test(val.trim())).length;
+        return validAccountNumbers / Math.max(data.length, 1);
+      }
+    },
+    'account_name': {
+      patterns: ['navn', 'name', 'beskrivelse', 'description', 'tekst', 'text'],
+      contextBoosts: [
+        { pattern: 'konto', boost: 0.2 },
+        { pattern: 'account', boost: 0.15 }
+      ]
+    },
+    'opening_balance': {
+      patterns: ['inngående', 'ingående', 'åpning', 'opening', 'start', 'initial'],
+      contextBoosts: [
+        { pattern: 'saldo', boost: 0.2 },
+        { pattern: 'balance', boost: 0.15 },
+        { pattern: 'periode', boost: 0.1 }
+      ]
+    },
+    'closing_balance': {
+      patterns: ['utgående', 'avslutning', 'closing', 'slutt', 'final'],
+      contextBoosts: [
+        { pattern: 'saldo', boost: 0.2 },
+        { pattern: 'balance', boost: 0.15 },
+        { pattern: 'periode', boost: 0.1 }
+      ]
+    },
+    'debit_amount': {
+      patterns: ['debet', 'debit', 'skal', 'dr'],
+      contextBoosts: [
+        { pattern: 'beløp', boost: 0.15 },
+        { pattern: 'amount', boost: 0.15 },
+        { pattern: 'sum', boost: 0.1 }
+      ]
+    },
+    'credit_amount': {
+      patterns: ['kredit', 'credit', 'have', 'haver', 'cr'],
+      contextBoosts: [
+        { pattern: 'beløp', boost: 0.15 },
+        { pattern: 'amount', boost: 0.15 },
+        { pattern: 'sum', boost: 0.1 }
+      ]
+    }
+  };
+
+  const fieldPattern = contextualPatterns[field.key];
+  if (!fieldPattern) return currentConfidence;
+
+  let boost = 0;
+
+  // Check main patterns
+  for (const pattern of fieldPattern.patterns) {
+    if (lowerHeader.includes(pattern)) {
+      boost = Math.max(boost, 0.3);
+      break;
+    }
+  }
+
+  // Apply context boosts
+  for (const contextBoost of fieldPattern.contextBoosts) {
+    if (lowerHeader.includes(contextBoost.pattern)) {
+      boost += contextBoost.boost;
+    }
+  }
+
+  // Content validation boost
+  if (fieldPattern.contentValidators && sampleData && headers) {
+    const columnIndex = headers.indexOf(header);
+    if (columnIndex !== -1 && sampleData.length > 0) {
+      const columnData = sampleData.map(row => row[columnIndex] || '').filter(val => val.trim());
+      const contentScore = fieldPattern.contentValidators(columnData);
+      if (contentScore > 0.7) {
+        boost += 0.2;
+      }
+    }
+  }
+
+  return Math.min(currentConfidence + boost, 1.0);
+}
+
 // Apply Norwegian-specific matching patterns
 function applyNorwegianPatterns(header: string, field: FieldDefinition, currentConfidence: number): number {
   const lowerHeader = header.toLowerCase();
   
-  // Norwegian accounting terms
+  // Enhanced Norwegian accounting terms with regional variations
   const norwegianPatterns: Record<string, string[]> = {
-    'account_number': ['konto', 'kontonr', 'kontonummer', 'kto'],
-    'account_name': ['kontonavn', 'beskrivelse', 'tekst', 'navn'],
-    'debit_balance': ['debet', 'soll', 'dr', 'driftskost'],
-    'credit_balance': ['kredit', 'have', 'cr', 'driftsinnt'],
-    'opening_balance': ['ingående', 'åpning', 'start', 'periode_start'],
-    'closing_balance': ['utgående', 'avslutning', 'slutt', 'periode_slutt'],
-    'account_type': ['type', 'art', 'kategori', 'gruppe']
+    'account_number': ['konto', 'kontonr', 'kontonummer', 'kto', 'kontokode'],
+    'account_name': ['kontonavn', 'kontobeskrivelse', 'kontotekst', 'navn', 'beskrivelse'],
+    'debit_amount': ['debet', 'soll', 'dr', 'driftskost', 'skal'],
+    'credit_amount': ['kredit', 'have', 'haver', 'cr', 'driftsinnt'],
+    'opening_balance': ['inngående', 'ingående', 'åpningssaldo', 'startsaldo', 'periode_start'],
+    'closing_balance': ['utgående', 'sluttsaldo', 'sluttbalanse', 'periode_slutt'],
+    'account_type': ['kontotype', 'type', 'art', 'kategori', 'gruppe', 'kontokategori'],
+    'transaction_date': ['dato', 'bilagsdato', 'transaksjonsdato', 'regnskapsdato'],
+    'voucher_number': ['bilagsnr', 'bilagsnummer', 'dok_nr', 'dokumentnummer', 'ref'],
+    'description': ['beskrivelse', 'bilagstekst', 'tekst', 'forklaring', 'notater'],
+    'amount': ['beløp', 'sum', 'verdi', 'total'],
+    'vat_code': ['mva', 'mvakode', 'mva_kode', 'skatt']
   };
   
   if (norwegianPatterns[field.key]) {
     for (const pattern of norwegianPatterns[field.key]) {
       if (lowerHeader.includes(pattern)) {
-        return Math.max(currentConfidence, 0.8);
+        return Math.max(currentConfidence, 0.75);
       }
     }
   }
