@@ -49,8 +49,16 @@ export const usePotentialClients = (auditorOrgNumber?: string) => {
   return useQuery({
     queryKey: ['potential-clients', auditorOrgNumber],
     queryFn: async () => {
-      // Temporarily disabled until database types are updated
-      return [] as PotentialClient[]
+      if (!auditorOrgNumber) return []
+      
+      const { data, error } = await supabase
+        .from('potential_clients')
+        .select('*')
+        .eq('auditor_org_number', auditorOrgNumber)
+        .order('discovered_at', { ascending: false })
+
+      if (error) throw error
+      return data as PotentialClient[]
     },
     enabled: !!auditorOrgNumber
   })
@@ -62,12 +70,27 @@ export const usePotentialClientsSummary = (auditorOrgNumber?: string) => {
     queryFn: async () => {
       if (!auditorOrgNumber) return null
       
-      // Temporarily disabled until database types are updated
+      const { data, error } = await supabase
+        .from('potential_clients')
+        .select('status, discovered_at')
+        .eq('auditor_org_number', auditorOrgNumber)
+
+      if (error) throw error
+
+      const total_potential = data.filter(p => p.status === 'potential').length
+      const currentMonth = new Date()
+      currentMonth.setDate(1)
+      const new_this_month = data.filter(p => 
+        p.status === 'potential' && new Date(p.discovered_at) >= currentMonth
+      ).length
+      const converted_count = data.filter(p => p.status === 'converted').length
+      const lost_count = data.filter(p => p.status === 'lost').length
+
       return {
-        total_potential: 0,
-        new_this_month: 0,
-        converted_count: 0,
-        lost_count: 0
+        total_potential,
+        new_this_month,
+        converted_count,
+        lost_count
       } as PotentialClientsSummary
     },
     enabled: !!auditorOrgNumber
@@ -78,8 +101,16 @@ export const useBulkImportSessions = (auditorOrgNumber?: string) => {
   return useQuery({
     queryKey: ['bulk-import-sessions', auditorOrgNumber],
     queryFn: async () => {
-      // Temporarily disabled until database types are updated
-      return [] as BulkImportSession[]
+      if (!auditorOrgNumber) return []
+      
+      const { data, error } = await supabase
+        .from('bulk_import_sessions')
+        .select('*')
+        .eq('auditor_org_number', auditorOrgNumber)
+        .order('started_at', { ascending: false })
+
+      if (error) throw error
+      return data as BulkImportSession[]
     },
     enabled: !!auditorOrgNumber
   })
