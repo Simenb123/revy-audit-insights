@@ -41,7 +41,7 @@ const AppLayout = () => {
       <div className="min-h-screen bg-background flex flex-col gap-[var(--content-gap)]">
         <AppHeader />
         <SidebarProvider>
-        <div className="flex gap-2">
+        <div className="flex">
             <ResizableLeftSidebar />
             <ResponsiveLayout>
               <div className="p-3 bg-yellow-50 border-b border-yellow-200">
@@ -78,7 +78,7 @@ const AppLayout = () => {
     <div className="min-h-screen bg-background flex flex-col gap-[var(--content-gap)]">
       <AppHeader />
       <SidebarProvider>
-        <div className="flex gap-2">
+        <div className="flex">
           <ResizableLeftSidebar />
           <ResponsiveLayout>
             <Outlet />
