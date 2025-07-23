@@ -3,9 +3,10 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search } from 'lucide-react';
+import { Search, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { BrregSearchResult } from '@/types/revio';
+import { supabase } from '@/integrations/supabase/client';
 
 interface BrregSearchProps {
   onSelectClient: (result: BrregSearchResult) => void;
@@ -13,41 +14,12 @@ interface BrregSearchProps {
   setIsSearching: (value: boolean) => void;
 }
 
-// Mock Brønnøysundregisteret API resultat
-const mockBrregResults: BrregSearchResult[] = [
-  {
-    organisasjonsnummer: '912345678',
-    navn: 'NORDHEIM AS',
-    organisasjonsform: {
-      kode: 'AS',
-      beskrivelse: 'Aksjeselskap'
-    },
-    registreringsdatoEnhetsregisteret: '2010-05-10T00:00:00.000Z',
-    hjemmeside: 'www.nordheim.no',
-    registrertIForetaksregisteret: true,
-    registrertIStiftelsesregisteret: false,
-    registrertIFrivillighetsregisteret: false
-  },
-  {
-    organisasjonsnummer: '945678901',
-    navn: 'NORDHEIM EIENDOM AS',
-    organisasjonsform: {
-      kode: 'AS',
-      beskrivelse: 'Aksjeselskap'
-    },
-    registreringsdatoEnhetsregisteret: '2015-06-20T00:00:00.000Z',
-    registrertIForetaksregisteret: true,
-    registrertIStiftelsesregisteret: false,
-    registrertIFrivillighetsregisteret: false
-  }
-];
-
 const BrregSearch: React.FC<BrregSearchProps> = ({ onSelectClient, isSearching, setIsSearching }) => {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<BrregSearchResult[]>([]);
 
-  const handleSearch = () => {
+  const handleSearch = async () => {
     if (searchTerm.length < 3) {
       toast({
         title: "Søkeord for kort",
@@ -58,13 +30,57 @@ const BrregSearch: React.FC<BrregSearchProps> = ({ onSelectClient, isSearching, 
     }
 
     setIsSearching(true);
+    setSearchResults([]);
 
-    // I en ekte app ville dette være en API-kall til Brønnøysundregisteret
-    // For nå simulerer vi en API-respons med timeout
-    setTimeout(() => {
-      setSearchResults(mockBrregResults);
+    try {
+      const { data, error } = await supabase.functions.invoke('brreg', {
+        body: { query: searchTerm }
+      });
+
+      if (error) {
+        console.error('BRREG search error:', error);
+        toast({
+          title: "Søkefeil",
+          description: "Kunne ikke søke i Brønnøysundregisteret. Prøv igjen senere.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      if (data?.basis) {
+        // Single result from organization number search
+        const result: BrregSearchResult = {
+          organisasjonsnummer: data.basis.organisasjonsnummer,
+          navn: data.basis.navn,
+          organisasjonsform: data.basis.organisasjonsform,
+          registreringsdatoEnhetsregisteret: data.basis.registreringsdatoEnhetsregisteret,
+          hjemmeside: data.basis.hjemmeside,
+          registrertIForetaksregisteret: true,
+          registrertIStiftelsesregisteret: false,
+          registrertIFrivillighetsregisteret: false
+        };
+        setSearchResults([result]);
+      } else if (data?.results && Array.isArray(data.results)) {
+        // Multiple results from name search
+        setSearchResults(data.results);
+      } else {
+        setSearchResults([]);
+        toast({
+          title: "Ingen resultater",
+          description: "Ingen selskaper funnet med det søkeordet",
+          variant: "destructive"
+        });
+      }
+    } catch (error: any) {
+      console.error('Search error:', error);
+      toast({
+        title: "Søkefeil",
+        description: error.message || "En feil oppstod under søket",
+        variant: "destructive"
+      });
+    } finally {
       setIsSearching(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -81,53 +97,67 @@ const BrregSearch: React.FC<BrregSearchProps> = ({ onSelectClient, isSearching, 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              disabled={isSearching}
             />
           </div>
-          <Button onClick={handleSearch} disabled={isSearching} className="flex items-center gap-2">
-            <Search size={18} />
-            <span>Søk</span>
+          <Button onClick={handleSearch} disabled={isSearching || searchTerm.length < 3} className="flex items-center gap-2">
+            {isSearching ? (
+              <Loader2 size={18} className="animate-spin" />
+            ) : (
+              <Search size={18} />
+            )}
+            <span>{isSearching ? 'Søker...' : 'Søk'}</span>
           </Button>
         </div>
         
-        {isSearching ? (
-          <div className="text-center py-6">Søker...</div>
-        ) : (
-          searchResults.length > 0 && (
-            <div className="border rounded-md">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-3">Organisasjonsnummer</th>
-                    <th className="text-left p-3">Navn</th>
-                    <th className="text-left p-3">Type</th>
-                    <th className="p-3"></th>
+        {isSearching && (
+          <div className="text-center py-6">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
+            <p className="text-muted-foreground">Søker i Brønnøysundregisteret...</p>
+          </div>
+        )}
+        
+        {!isSearching && searchResults.length > 0 && (
+          <div className="border rounded-md">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b">
+                  <th className="text-left p-3">Organisasjonsnummer</th>
+                  <th className="text-left p-3">Navn</th>
+                  <th className="text-left p-3">Type</th>
+                  <th className="p-3"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {searchResults.map((result) => (
+                  <tr key={result.organisasjonsnummer} className="border-b hover:bg-muted/50">
+                    <td className="p-3 font-mono text-sm">{result.organisasjonsnummer}</td>
+                    <td className="p-3">{result.navn}</td>
+                    <td className="p-3">{result.organisasjonsform?.beskrivelse || 'Ukjent'}</td>
+                    <td className="p-3 text-right">
+                      <Button 
+                        variant="secondary" 
+                        size="sm"
+                        onClick={() => onSelectClient(result)}
+                      >
+                        Importer
+                      </Button>
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {searchResults.map((result) => (
-                    <tr key={result.organisasjonsnummer} className="border-b hover:bg-muted/50">
-                      <td className="p-3">{result.organisasjonsnummer}</td>
-                      <td className="p-3">{result.navn}</td>
-                      <td className="p-3">{result.organisasjonsform.beskrivelse}</td>
-                      <td className="p-3 text-right">
-                        <Button 
-                          variant="secondary" 
-                          size="sm"
-                          onClick={() => onSelectClient(result)}
-                        >
-                          Velg
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {!isSearching && searchTerm.length >= 3 && searchResults.length === 0 && (
+          <div className="text-center py-6 text-muted-foreground">
+            <p>Ingen resultater funnet for "{searchTerm}"</p>
+          </div>
         )}
       </CardContent>
       <CardFooter className="text-sm text-muted-foreground">
-        I en fullverdig løsning vil dette være en direkteintegrasjon mot Brønnøysundregisteret API.
+        Søk med organisasjonsnummer (9 siffer) eller firmnavn (minimum 3 tegn)
       </CardFooter>
     </Card>
   );

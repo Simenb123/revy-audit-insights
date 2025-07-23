@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useRevyContext } from '@/components/RevyContext/RevyContextProvider';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,6 +7,7 @@ import ClientStatsGrid from '@/components/Clients/ClientStats/ClientStatsGrid';
 import ClientsTable from '@/components/Clients/ClientsTable/ClientsTable';
 import AnnouncementsList from '@/components/Clients/Announcements/AnnouncementsList';
 import ClientsHeader from '@/components/Clients/ClientsHeader/ClientsHeader';
+import AddClientDialog from '@/components/Clients/AddClientDialog';
 import { useClientData } from '@/components/Clients/ClientFetcher/useClientData';
 import { useClientFilters } from '@/components/Clients/ClientFilters/useClientFilters';
 import { useBrregRefresh } from '@/hooks/useBrregRefresh';
@@ -16,9 +18,10 @@ const ClientsOverview = () => {
   const { setContext } = useRevyContext();
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+  const [showAddClientDialog, setShowAddClientDialog] = useState(false);
   
   // Fetch client data
-  const { data: clients = [], isLoading, error } = useClientData();
+  const { data: clients = [], isLoading, error, refetch } = useClientData();
   
   // Handle BRREG API refresh
   const { handleRefreshBrregData, isRefreshing, hasApiError, refreshProgress } = useBrregRefresh({ clients });
@@ -38,6 +41,11 @@ const ClientsOverview = () => {
   // Handle row selection
   const handleRowSelect = (client: Client) => {
     setSelectedClientId(client.id);
+  };
+
+  // Handle client added
+  const handleClientAdded = () => {
+    refetch();
   };
 
   // Fetch announcements when component mounts
@@ -83,6 +91,7 @@ const ClientsOverview = () => {
           refreshProgress={refreshProgress}
           showTestData={showTestData}
           onTestDataToggle={setShowTestData}
+          onAddClient={() => setShowAddClientDialog(true)}
         />
       }
     >
@@ -111,6 +120,13 @@ const ClientsOverview = () => {
           <AnnouncementsList announcements={announcements} />
         </div>
       </FlexibleGrid>
+
+      {/* Add Client Dialog */}
+      <AddClientDialog
+        open={showAddClientDialog}
+        onOpenChange={setShowAddClientDialog}
+        onClientAdded={handleClientAdded}
+      />
     </StandardPageLayout>
   );
 };

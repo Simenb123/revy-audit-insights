@@ -2,7 +2,7 @@
 import React from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, RefreshCw, AlertTriangle } from 'lucide-react';
+import { Search, RefreshCw, AlertTriangle, UserPlus, Database } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
 import TestDataFilter from './TestDataFilter';
+import { BulkDiscoveryDialog } from '../BulkDiscoveryDialog';
 
 interface ClientsHeaderProps {
   title: string;
@@ -27,6 +28,7 @@ interface ClientsHeaderProps {
   refreshProgress: number;
   showTestData?: boolean;
   onTestDataToggle?: (show: boolean) => void;
+  onAddClient?: () => void;
 }
 
 const ClientsHeader: React.FC<ClientsHeaderProps> = ({
@@ -42,7 +44,8 @@ const ClientsHeader: React.FC<ClientsHeaderProps> = ({
   hasApiError,
   refreshProgress,
   showTestData = true,
-  onTestDataToggle
+  onTestDataToggle,
+  onAddClient
 }) => {
   return (
     <header className="space-y-4">
@@ -58,6 +61,20 @@ const ClientsHeader: React.FC<ClientsHeaderProps> = ({
               showTestData={showTestData} 
               onToggle={onTestDataToggle} 
             />
+          )}
+          
+          <BulkDiscoveryDialog>
+            <Button variant="outline" className="flex items-center gap-2">
+              <Database size={16} />
+              Bulk discovery
+            </Button>
+          </BulkDiscoveryDialog>
+          
+          {onAddClient && (
+            <Button onClick={onAddClient} className="flex items-center gap-2">
+              <UserPlus size={16} />
+              Ny klient
+            </Button>
           )}
           
           <Button
