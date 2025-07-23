@@ -7,6 +7,15 @@ import { Upload, FileSpreadsheet, AlertCircle, CheckCircle } from 'lucide-react'
 import { Progress } from '@/components/ui/progress';
 import FileDropZone from '../common/FileDropZone';
 import { toast } from '@/components/ui/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import * as XLSX from 'xlsx';
+
+interface AccountRow {
+  account_number: string;
+  account_name: string;
+  balance?: number;
+  account_type?: string;
+}
 
 interface TrialBalanceUploaderProps {
   clientId: string;
@@ -17,6 +26,9 @@ const TrialBalanceUploader = ({ clientId, onUploadComplete }: TrialBalanceUpload
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [processedRows, setProcessedRows] = useState(0);
+  const [totalRows, setTotalRows] = useState(0);
+  const [successCount, setSuccessCount] = useState(0);
 
   const handleFileSelect = (files: File[]) => {
     const validFiles = files.filter(file => {
@@ -39,6 +51,107 @@ const TrialBalanceUploader = ({ clientId, onUploadComplete }: TrialBalanceUpload
     setSelectedFiles(validFiles);
   };
 
+  const processExcelFile = async (file: File): Promise<AccountRow[]> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      
+      reader.onload = (e) => {
+        try {
+          const data = new Uint8Array(e.target?.result as ArrayBuffer);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+          const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+          
+          const accounts: AccountRow[] = jsonData.map((row: any) => ({
+            account_number: row['Kontonummer']?.toString() || row['account_number']?.toString() || '',
+            account_name: row['Kontonavn'] || row['account_name'] || row['Kontonavn'] || row['Beskrivelse'] || '',
+            balance: parseFloat(row['Balanse'] || row['Saldo'] || row['Balance'] || '0') || 0,
+            account_type: 'asset' // Default type for trial balance accounts
+          })).filter(account => account.account_number && account.account_name);
+          
+          resolve(accounts);
+        } catch (error) {
+          reject(error);
+        }
+      };
+      
+      reader.onerror = () => reject(new Error('Kunne ikke lese filen'));
+      reader.readAsArrayBuffer(file);
+    });
+  };
+
+  const uploadTrialBalance = async (accounts: AccountRow[], file: File) => {
+    try {
+      const batchId = crypto.randomUUID();
+      
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      // Create upload batch
+      const { error: batchError } = await supabase
+        .from('upload_batches')
+        .insert({
+          client_id: clientId,
+          user_id: user.id,
+          batch_type: 'chart_of_accounts',
+          file_name: file.name,
+          file_size: file.size,
+          total_records: accounts.length,
+          status: 'processing'
+        });
+
+      if (batchError) throw batchError;
+
+      let processed = 0;
+      let successful = 0;
+
+      // Insert accounts with batch tracking
+      for (const account of accounts) {
+        try {
+          const { error } = await supabase
+            .from('client_chart_of_accounts')
+            .insert({
+              client_id: clientId,
+              account_number: account.account_number,
+              account_name: account.account_name,
+              account_type: account.account_type,
+              opening_balance: account.balance || 0,
+              batch_id: batchId
+            });
+
+          if (!error) successful++;
+          processed++;
+          
+          const progress = Math.round((processed / accounts.length) * 100);
+          setUploadProgress(progress);
+          setProcessedRows(processed);
+          setTotalRows(accounts.length);
+          setSuccessCount(successful);
+          
+        } catch (error) {
+          console.error('Error inserting account:', error);
+          processed++;
+        }
+      }
+
+      // Update batch status
+      await supabase
+        .from('upload_batches')
+        .update({
+          status: 'completed',
+          processed_records: successful,
+          completed_at: new Date().toISOString()
+        })
+        .eq('id', batchId);
+
+      return successful;
+    } catch (error) {
+      console.error('Upload error:', error);
+      throw error;
+    }
+  };
+
   const handleUpload = async () => {
     if (selectedFiles.length === 0) return;
 
@@ -46,25 +159,13 @@ const TrialBalanceUploader = ({ clientId, onUploadComplete }: TrialBalanceUpload
     setUploadProgress(0);
 
     try {
-      // Simulate upload progress
-      const interval = setInterval(() => {
-        setUploadProgress(prev => {
-          if (prev >= 90) {
-            clearInterval(interval);
-            return prev;
-          }
-          return prev + 10;
-        });
-      }, 200);
-
-      // TODO: Replace with actual upload logic
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      setUploadProgress(100);
+      const file = selectedFiles[0];
+      const accounts = await processExcelFile(file);
+      const successful = await uploadTrialBalance(accounts, file);
       
       toast({
         title: "Saldobalanse lastet opp",
-        description: "Saldobalansen har blitt prosessert og kontoplan er opprettet.",
+        description: `${successful} kontoer ble opprettet fra saldobalansen.`,
       });
 
       setSelectedFiles([]);
@@ -80,6 +181,9 @@ const TrialBalanceUploader = ({ clientId, onUploadComplete }: TrialBalanceUpload
     } finally {
       setIsUploading(false);
       setUploadProgress(0);
+      setProcessedRows(0);
+      setTotalRows(0);
+      setSuccessCount(0);
     }
   };
 
