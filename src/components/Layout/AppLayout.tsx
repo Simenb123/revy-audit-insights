@@ -41,7 +41,7 @@ const AppLayout = () => {
       <div className="min-h-screen bg-background flex flex-col gap-[var(--content-gap)]">
         <AppHeader />
         <SidebarProvider>
-        <div className="flex">
+        <div className="flex flex-1">
             <ResizableLeftSidebar />
             <ResponsiveLayout>
               <div className="p-3 bg-yellow-50 border-b border-yellow-200">
@@ -51,11 +51,12 @@ const AppLayout = () => {
               </div>
               <Outlet />
             </ResponsiveLayout>
+            {/* Right sidebar as part of flex layout on desktop */}
+            <div className="hidden lg:block">
+              <ResizableRightSidebar />
+            </div>
           </div>
         </SidebarProvider>
-        <div className="hidden lg:block">
-          <ResizableRightSidebar />
-        </div>
       </div>
     );
   }
@@ -78,17 +79,17 @@ const AppLayout = () => {
     <div className="min-h-screen bg-background flex flex-col gap-[var(--content-gap)]">
       <AppHeader />
       <SidebarProvider>
-        <div className="flex">
+        <div className="flex flex-1">
           <ResizableLeftSidebar />
           <ResponsiveLayout>
             <Outlet />
           </ResponsiveLayout>
+          {/* Right sidebar as part of flex layout on desktop */}
+          <div className="hidden lg:block">
+            <ResizableRightSidebar />
+          </div>
         </div>
       </SidebarProvider>
-      {/* Right sidebar hidden on mobile, visible on desktop */}
-      <div className="hidden lg:block">
-        <ResizableRightSidebar />
-      </div>
     </div>
   );
 };

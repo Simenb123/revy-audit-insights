@@ -146,7 +146,7 @@ const ResizableRightSidebar = () => {
   }
 
   return (
-    <div className="fixed right-0 top-16 bottom-0 z-40 flex">
+    <div className="flex min-h-[calc(100vh-var(--header-height))]">
       {/* Resize handle */}
       {!isCollapsed && (
         <div
