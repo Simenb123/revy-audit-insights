@@ -54,20 +54,33 @@ const BrregSearch: React.FC<BrregSearchProps> = ({ onSelectClient, isSearching, 
           navn: data.basis.navn,
           organisasjonsform: data.basis.organisasjonsform,
           registreringsdatoEnhetsregisteret: data.basis.registreringsdatoEnhetsregisteret,
-          hjemmeside: data.basis.hjemmeside,
+          hjemmeside: data.basis.homepage,
           registrertIForetaksregisteret: true,
           registrertIStiftelsesregisteret: false,
           registrertIFrivillighetsregisteret: false
         };
         setSearchResults([result]);
+      } else if (data?._embedded?.enheter && Array.isArray(data._embedded.enheter)) {
+        // Multiple results from name search (raw Brønnøysund API response)
+        const results = data._embedded.enheter.map((item: any) => ({
+          organisasjonsnummer: item.organisasjonsnummer,
+          navn: item.navn,
+          organisasjonsform: item.organisasjonsform,
+          registreringsdatoEnhetsregisteret: item.registreringsdatoEnhetsregisteret,
+          hjemmeside: item.hjemmeside,
+          registrertIForetaksregisteret: true,
+          registrertIStiftelsesregisteret: false,
+          registrertIFrivillighetsregisteret: false
+        }));
+        setSearchResults(results);
       } else if (data?.results && Array.isArray(data.results)) {
-        // Multiple results from name search
+        // Multiple results from processed response
         setSearchResults(data.results);
       } else {
         setSearchResults([]);
         toast({
           title: "Ingen resultater",
-          description: "Ingen selskaper funnet med det søkeordet",
+          description: `Ingen selskaper funnet for "${searchTerm}"`,
           variant: "destructive"
         });
       }
