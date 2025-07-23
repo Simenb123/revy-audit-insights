@@ -146,18 +146,18 @@ const ResizableRightSidebar = () => {
   }
 
   return (
-    <div className="flex h-full">
+    <div className="fixed right-0 top-16 bottom-0 z-40 flex">
       {/* Resize handle */}
       {!isCollapsed && (
         <div
-          className="w-1 bg-border hover:bg-primary/20 cursor-col-resize transition-colors flex-shrink-0"
+          className="w-1 bg-border hover:bg-primary/20 cursor-col-resize transition-colors"
           onMouseDown={handleMouseDown}
         />
       )}
 
       {/* Sidebar content */}
       <motion.div
-        className="bg-background border-l flex flex-col h-full flex-shrink-0"
+        className="bg-background border-l flex flex-col h-full"
         style={{
           width: isCollapsed ? 48 : width,
           minWidth: isCollapsed ? 48 : 320,
@@ -167,7 +167,7 @@ const ResizableRightSidebar = () => {
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-3 border-b bg-muted/30 flex-shrink-0">
+        <div className="flex items-center justify-between p-3 border-b bg-muted/30">
           {!isCollapsed && (
             <h3 className="text-sm font-medium truncate">{getPageTitle()}</h3>
           )}
@@ -187,7 +187,7 @@ const ResizableRightSidebar = () => {
 
         {/* Content */}
         {!isCollapsed && (
-          <ScrollArea className="flex-1 min-h-0">
+          <ScrollArea className="flex-1">
             {renderContent()}
           </ScrollArea>
         )}
