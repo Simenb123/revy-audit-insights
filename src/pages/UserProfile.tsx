@@ -9,6 +9,8 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { User, Lock, ArrowLeft, Save } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import ConstrainedWidth from '@/components/Layout/ConstrainedWidth';
+import StandardPageLayout from '@/components/Layout/StandardPageLayout';
 
 const UserProfile = () => {
   const { data: userProfile, isLoading, refetch } = useUserProfile();
@@ -124,35 +126,40 @@ const UserProfile = () => {
 
   if (isLoading) {
     return (
-      <main className="w-full px-4 py-6 md:px-6 lg:px-8">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-            <p className="mt-2 text-muted-foreground">Laster profil...</p>
+      <ConstrainedWidth width="wide">
+        <StandardPageLayout>
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+              <p className="mt-2 text-muted-foreground">Laster profil...</p>
+            </div>
           </div>
-        </div>
-      </main>
+        </StandardPageLayout>
+      </ConstrainedWidth>
     );
   }
 
   return (
-    <main className="w-full px-4 py-6 md:px-6 lg:px-8">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-3xl font-bold">Min profil</h1>
-          <p className="text-muted-foreground">
-            Administrer dine personlige opplysninger og kontoinnstillinger
-          </p>
-        </div>
-        <Link to="/dashboard">
-          <Button variant="outline" className="gap-2">
-            <ArrowLeft className="h-4 w-4" />
-            Tilbake til dashboard
-          </Button>
-        </Link>
-      </div>
-
-      <div className="grid gap-6 max-w-2xl">
+    <ConstrainedWidth width="wide">
+      <StandardPageLayout
+        header={
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h1 className="text-3xl font-bold">Min profil</h1>
+              <p className="text-muted-foreground">
+                Administrer dine personlige opplysninger og kontoinnstillinger
+              </p>
+            </div>
+            <Link to="/dashboard">
+              <Button variant="outline" className="gap-2">
+                <ArrowLeft className="h-4 w-4" />
+                Tilbake til dashboard
+              </Button>
+            </Link>
+          </div>
+        }
+      >
+        <div className="grid gap-6 max-w-2xl">
         {/* Profile Information */}
         <Card>
           <CardHeader>
@@ -301,7 +308,8 @@ const UserProfile = () => {
           </CardContent>
         </Card>
       </div>
-    </main>
+      </StandardPageLayout>
+    </ConstrainedWidth>
   );
 };
 

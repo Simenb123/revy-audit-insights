@@ -12,6 +12,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Building2, Users, Settings, Plus, Shield, ArrowLeft } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Link } from 'react-router-dom';
+import ConstrainedWidth from '@/components/Layout/ConstrainedWidth';
+import StandardPageLayout from '@/components/Layout/StandardPageLayout';
 
 const OrganizationSettings = () => {
   const { data: userProfile, isLoading: profileLoading } = useUserProfile();
@@ -52,86 +54,99 @@ const OrganizationSettings = () => {
 
   if (profileLoading) {
     return (
-      <main className="w-full px-4 py-6 md:px-6 lg:px-8">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-3xl font-bold">Organisasjonsinnstillinger</h1>
-            <p className="text-muted-foreground">
-              Administrer firmainformasjon og avdelinger
-            </p>
-          </div>
-          <Link to="/dashboard">
-            <Button variant="outline" className="gap-2">
-              <ArrowLeft className="h-4 w-4" />
-              Tilbake til hovedmeny
-            </Button>
-          </Link>
-        </div>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-              <p className="mt-2 text-muted-foreground">Laster brukerprofil...</p>
+      <ConstrainedWidth width="wide">
+        <StandardPageLayout
+          header={
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h1 className="text-3xl font-bold">Organisasjonsinnstillinger</h1>
+                <p className="text-muted-foreground">
+                  Administrer firmainformasjon og avdelinger
+                </p>
+              </div>
+              <Link to="/dashboard">
+                <Button variant="outline" className="gap-2">
+                  <ArrowLeft className="h-4 w-4" />
+                  Tilbake til hovedmeny
+                </Button>
+              </Link>
             </div>
-          </CardContent>
-        </Card>
-      </main>
+          }
+        >
+          <Card>
+            <CardContent className="pt-6">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+                <p className="mt-2 text-muted-foreground">Laster brukerprofil...</p>
+              </div>
+            </CardContent>
+          </Card>
+        </StandardPageLayout>
+      </ConstrainedWidth>
     );
   }
 
   if (!canAccessSettings) {
     return (
-      <main className="w-full px-4 py-6 md:px-6 lg:px-8">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-3xl font-bold">Organisasjonsinnstillinger</h1>
-            <p className="text-muted-foreground">
-              Administrer firmainformasjon og avdelinger
-            </p>
-          </div>
-          <Link to="/dashboard">
-            <Button variant="outline" className="gap-2">
-              <ArrowLeft className="h-4 w-4" />
-              Tilbake til hovedmeny
-            </Button>
-          </Link>
-        </div>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <Shield className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h2 className="text-xl font-semibold mb-2">Tilgang nektet</h2>
-              <p className="text-muted-foreground mb-4">
-                Du har ikke tilgang til organisasjonsinnstillinger. Kun administratorer og partnere kan endre disse innstillingene.
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Din nåværende rolle: <strong>{userProfile?.userRole || 'Ukjent'}</strong>
-              </p>
+      <ConstrainedWidth width="wide">
+        <StandardPageLayout
+          header={
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h1 className="text-3xl font-bold">Organisasjonsinnstillinger</h1>
+                <p className="text-muted-foreground">
+                  Administrer firmainformasjon og avdelinger
+                </p>
+              </div>
+              <Link to="/dashboard">
+                <Button variant="outline" className="gap-2">
+                  <ArrowLeft className="h-4 w-4" />
+                  Tilbake til hovedmeny
+                </Button>
+              </Link>
             </div>
-          </CardContent>
-        </Card>
-      </main>
+          }
+        >
+          <Card>
+            <CardContent className="pt-6">
+              <div className="text-center">
+                <Shield className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                <h2 className="text-xl font-semibold mb-2">Tilgang nektet</h2>
+                <p className="text-muted-foreground mb-4">
+                  Du har ikke tilgang til organisasjonsinnstillinger. Kun administratorer og partnere kan endre disse innstillingene.
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Din nåværende rolle: <strong>{userProfile?.userRole || 'Ukjent'}</strong>
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </StandardPageLayout>
+      </ConstrainedWidth>
     );
   }
 
   return (
-    <main className="w-full px-4 py-6 md:px-6 lg:px-8">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-3xl font-bold">Organisasjonsinnstillinger</h1>
-          <p className="text-muted-foreground">
-            Administrer firmainformasjon og avdelinger
-          </p>
-        </div>
-        <Link to="/dashboard">
-          <Button variant="outline" className="gap-2">
-            <ArrowLeft className="h-4 w-4" />
-            Tilbake til hovedmeny
-          </Button>
-        </Link>
-      </div>
-
-      <div className="space-y-6">
+    <ConstrainedWidth width="wide">
+      <StandardPageLayout
+        header={
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h1 className="text-3xl font-bold">Organisasjonsinnstillinger</h1>
+              <p className="text-muted-foreground">
+                Administrer firmainformasjon og avdelinger
+              </p>
+            </div>
+            <Link to="/dashboard">
+              <Button variant="outline" className="gap-2">
+                <ArrowLeft className="h-4 w-4" />
+                Tilbake til hovedmeny
+              </Button>
+            </Link>
+          </div>
+        }
+      >
+        <div className="space-y-6">
         {/* Current User Info */}
         <Card>
           <CardHeader>
@@ -299,7 +314,8 @@ const OrganizationSettings = () => {
           </CardContent>
         </Card>
       </div>
-    </main>
+      </StandardPageLayout>
+    </ConstrainedWidth>
   );
 };
 
