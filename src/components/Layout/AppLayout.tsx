@@ -9,7 +9,7 @@ import { useUserProfile } from '@/hooks/useUserProfile';
 import AppHeader from './AppHeader';
 import ResizableRightSidebar from './ResizableRightSidebar';
 import ResizableLeftSidebar from './ResizableLeftSidebar';
-import GlobalLayoutContainer from './GlobalLayoutContainer';
+import ResponsiveLayout from './ResponsiveLayout';
 import PageLoader from './PageLoader';
 import OnboardingCheck from './OnboardingCheck';
 
@@ -41,22 +41,21 @@ const AppLayout = () => {
       <div className="min-h-screen bg-background flex flex-col gap-[var(--content-gap)]">
         <AppHeader />
         <SidebarProvider>
-        <div className="flex flex-1">
+        <div className="flex">
             <ResizableLeftSidebar />
-            <GlobalLayoutContainer className="flex flex-col">
+            <ResponsiveLayout>
               <div className="p-3 bg-yellow-50 border-b border-yellow-200">
                 <p className="text-sm text-yellow-800">
                   Demo-modus: Appen kjører uten tilkobling til backend.
                 </p>
               </div>
               <Outlet />
-            </GlobalLayoutContainer>
-            {/* Right sidebar as part of flex layout on desktop */}
-            <div className="hidden lg:block">
-              <ResizableRightSidebar />
-            </div>
+            </ResponsiveLayout>
           </div>
         </SidebarProvider>
+        <div className="hidden lg:block">
+          <ResizableRightSidebar />
+        </div>
       </div>
     );
   }
@@ -79,17 +78,17 @@ const AppLayout = () => {
     <div className="min-h-screen bg-background flex flex-col gap-[var(--content-gap)]">
       <AppHeader />
       <SidebarProvider>
-        <div className="flex flex-1">
+        <div className="flex">
           <ResizableLeftSidebar />
-          <GlobalLayoutContainer>
+          <ResponsiveLayout>
             <Outlet />
-          </GlobalLayoutContainer>
-          {/* Right sidebar as part of flex layout on desktop */}
-          <div className="hidden lg:block">
-            <ResizableRightSidebar />
-          </div>
+          </ResponsiveLayout>
         </div>
       </SidebarProvider>
+      {/* Right sidebar hidden on mobile, visible on desktop */}
+      <div className="hidden lg:block">
+        <ResizableRightSidebar />
+      </div>
     </div>
   );
 };

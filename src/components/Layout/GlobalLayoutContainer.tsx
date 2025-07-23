@@ -16,7 +16,15 @@ const GlobalLayoutContainer: React.FC<GlobalLayoutContainerProps> = ({
   maxWidth = 'wide',
   disableRightSidebarOffset = false
 }) => {
-  // Right sidebar is now part of flex layout, no margin needed
+  const { isCollapsed, isHidden, width: rightSidebarWidth } = useRightSidebar();
+  
+  // Calculate dynamic margin based on right sidebar state
+  const rightMargin = React.useMemo(() => {
+    if (disableRightSidebarOffset || isHidden || typeof window === 'undefined' || window.innerWidth < 1024) {
+      return 0;
+    }
+    return isCollapsed ? 56 : rightSidebarWidth; // 56px for collapsed state
+  }, [disableRightSidebarOffset, isCollapsed, isHidden, rightSidebarWidth]);
 
   const maxWidthClasses = {
     narrow: 'max-w-[var(--content-narrow)]',
@@ -30,10 +38,13 @@ const GlobalLayoutContainer: React.FC<GlobalLayoutContainerProps> = ({
       className={cn(
         'flex-1 overflow-auto transition-all duration-300 ease-in-out',
         'min-h-[calc(100vh-var(--header-height))]',
-        'w-full',
+        'w-full mx-auto',
         maxWidthClasses[maxWidth],
         className
       )}
+      style={{ 
+        marginRight: `${rightMargin}px`
+      }}
     >
       {children}
     </main>
