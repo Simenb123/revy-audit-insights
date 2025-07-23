@@ -123,14 +123,14 @@ const ClientDetail = () => {
   };
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-4 p-6">
       <ClientBreadcrumb client={client} />
       
       <Routes>
         <Route 
           path="/" 
           element={
-            <div className="space-y-6">
+            <div className="space-y-4">
               <RevisionWorkflow 
                 currentPhase={client.phase || 'overview'} 
                 progress={client.progress || 0}

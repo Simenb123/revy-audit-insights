@@ -15,41 +15,33 @@ const DataImport = () => {
   
   // If we're on a specific data category route, show the appropriate uploader
   if (location.pathname.includes('/grunnlagsdata')) {
-    return (
-      <ResponsiveLayout maxWidth="full">
-        <div className="p-6">
-          <AccountingDataUploader clientId={clientId} clientName={clientName} />
-        </div>
-      </ResponsiveLayout>
-    );
+  return (
+    <ResponsiveLayout maxWidth="wide">
+      <AccountingDataUploader clientId={clientId} clientName={clientName} />
+    </ResponsiveLayout>
+  );
   }
   
   if (location.pathname.includes('/spesialdata')) {
     return (
-      <ResponsiveLayout maxWidth="full">
-        <div className="p-6">
-          <AccountingDataUploader clientId={clientId} clientName={clientName} />
-        </div>
+      <ResponsiveLayout maxWidth="wide">
+        <AccountingDataUploader clientId={clientId} clientName={clientName} />
       </ResponsiveLayout>
     );
   }
   
   if (location.pathname.includes('/transaksjoner')) {
     return (
-      <ResponsiveLayout maxWidth="full">
-        <div className="p-6">
-          <AccountingDataUploader clientId={clientId} clientName={clientName} />
-        </div>
+      <ResponsiveLayout maxWidth="wide">
+        <AccountingDataUploader clientId={clientId} clientName={clientName} />
       </ResponsiveLayout>
     );
   }
   
   if (location.pathname.includes('/import')) {
     return (
-      <ResponsiveLayout maxWidth="full">
-        <div className="p-6">
-          <AccountingDataUploader clientId={clientId} clientName={clientName} />
-        </div>
+      <ResponsiveLayout maxWidth="wide">
+        <AccountingDataUploader clientId={clientId} clientName={clientName} />
       </ResponsiveLayout>
     );
   }
@@ -61,13 +53,11 @@ const DataImport = () => {
   
   // Fallback for non-client context
   return (
-    <ResponsiveLayout maxWidth="full">
-      <div className="p-6">
-        <AccountingDataUploader 
-          clientId="" 
-          clientName="Ingen klient valgt" 
-        />
-      </div>
+    <ResponsiveLayout maxWidth="wide">
+      <AccountingDataUploader 
+        clientId="" 
+        clientName="Ingen klient valgt" 
+      />
     </ResponsiveLayout>
   );
 };

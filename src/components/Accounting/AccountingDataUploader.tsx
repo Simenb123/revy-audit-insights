@@ -7,7 +7,6 @@ import ChartOfAccountsUploader from './ChartOfAccountsUploader';
 import AccountMappingTable from './AccountMappingTable';
 import GeneralLedgerUploader from './GeneralLedgerUploader';
 import TrialBalanceUploader from './TrialBalanceUploader';
-import ColumnMappingAdmin from '@/components/DataUpload/ColumnMappingAdmin';
 
 interface AccountingDataUploaderProps {
   clientId: string;
@@ -30,12 +29,11 @@ const AccountingDataUploader = ({ clientId, clientName }: AccountingDataUploader
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="chart-of-accounts">Kontoplan</TabsTrigger>
           <TabsTrigger value="mapping">Kontomapping</TabsTrigger>
           <TabsTrigger value="general-ledger">Hovedbok</TabsTrigger>
           <TabsTrigger value="trial-balance">Saldobalanse</TabsTrigger>
-          <TabsTrigger value="admin">Admin</TabsTrigger>
         </TabsList>
 
         <TabsContent value="chart-of-accounts" className="space-y-4">
@@ -58,10 +56,6 @@ const AccountingDataUploader = ({ clientId, clientName }: AccountingDataUploader
 
         <TabsContent value="trial-balance" className="space-y-4">
           <TrialBalanceUploader clientId={clientId} />
-        </TabsContent>
-        
-        <TabsContent value="admin" className="space-y-4">
-          <ColumnMappingAdmin />
         </TabsContent>
       </Tabs>
     </div>

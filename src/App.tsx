@@ -37,6 +37,8 @@ import StandardAccountsAdmin from "./pages/StandardAccountsAdmin";
 import RoleAccessAdmin from "./pages/RoleAccessAdmin";
 import PerformanceMonitoring from "./pages/PerformanceMonitoring";
 import Academy from "./pages/Academy";
+import GeneralLedgerUpload from "./pages/GeneralLedgerUpload";
+import TrialBalanceUpload from "./pages/TrialBalanceUpload";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -63,6 +65,8 @@ function App() {
                   <Route path="klienter/:orgNumber/regnskap" element={<AccountingData />} />
                   <Route path="klienter/:orgNumber/analyser" element={<ClientDetail />} />
                   <Route path="klienter/:orgNumber/regnskapsdata" element={<DataImport />} />
+                  <Route path="klienter/:orgNumber/hovedbok" element={<GeneralLedgerUpload />} />
+                  <Route path="klienter/:orgNumber/saldobalanse" element={<TrialBalanceUpload />} />
                   <Route path="klienter/:orgNumber/grunnlagsdata" element={<DataImport />} />
                   <Route path="klienter/:orgNumber/spesialdata" element={<DataImport />} />
                   <Route path="klienter/:orgNumber/transaksjoner" element={<DataImport />} />

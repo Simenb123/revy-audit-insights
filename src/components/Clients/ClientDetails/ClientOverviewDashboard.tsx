@@ -39,7 +39,7 @@ const ClientOverviewDashboard = ({ client }: ClientOverviewDashboardProps) => {
       return {
         title: 'Last opp Saldobalanse',
         description: 'Start med å laste opp saldobalanse for å etablere kontostruktur',
-        action: () => navigate(`/klienter/${client.org_number}/regnskapsdata`),
+        action: () => navigate(`/klienter/${client.org_number}/saldobalanse`),
         urgent: true
       };
     }
@@ -48,7 +48,7 @@ const ClientOverviewDashboard = ({ client }: ClientOverviewDashboardProps) => {
       return {
         title: 'Last opp Hovedbok',
         description: 'Last opp hovedbok for å få tilgang til alle transaksjoner',
-        action: () => navigate(`/klienter/${client.org_number}/regnskapsdata`),
+        action: () => navigate(`/klienter/${client.org_number}/hovedbok`),
         urgent: true
       };
     }
