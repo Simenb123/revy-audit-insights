@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Building2, Users, Briefcase, ArrowLeft, Settings, MessageSquare } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import StandardPageLayout from '@/components/Layout/StandardPageLayout';
+import PageLayout from '@/components/Layout/PageLayout';
 import FlexibleGrid from '@/components/Layout/FlexibleGrid';
 import ConstrainedWidth from '@/components/Layout/ConstrainedWidth';
 import PageHeader from '@/components/Layout/PageHeader';
@@ -55,23 +55,23 @@ const OrganizationOverview = () => {
   const isAdmin = userProfile.userRole === 'admin' || userProfile.userRole === 'partner';
 
   return (
-    <ConstrainedWidth width="wide">
-      <StandardPageLayout
-        header={
-          <div className="flex justify-between items-center">
-            <PageHeader
-              title="Organisasjonsoversikt"
-              subtitle="Oversikt over din organisasjon og rolle"
-            />
-            <Link to="/dashboard">
-              <Button variant="outline" className="gap-2">
-                <ArrowLeft className="h-4 w-4" />
-                Tilbake
-              </Button>
-            </Link>
-          </div>
-        }
-      >
+    <PageLayout
+      width="wide"
+      header={
+        <div className="flex justify-between items-center">
+          <PageHeader
+            title="Organisasjonsoversikt"
+            subtitle="Oversikt over din organisasjon og rolle"
+          />
+          <Link to="/dashboard">
+            <Button variant="outline" className="gap-2">
+              <ArrowLeft className="h-4 w-4" />
+              Tilbake
+            </Button>
+          </Link>
+        </div>
+      }
+    >
         {/* User Info Card */}
         <Card>
           <CardHeader>
@@ -192,8 +192,7 @@ const OrganizationOverview = () => {
             </FlexibleGrid>
           </CardContent>
         </Card>
-      </StandardPageLayout>
-    </ConstrainedWidth>
+      </PageLayout>
   );
 };
 

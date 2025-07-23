@@ -11,7 +11,7 @@ import AddClientDialog from '@/components/Clients/AddClientDialog';
 import { useClientData } from '@/components/Clients/ClientFetcher/useClientData';
 import { useClientFilters } from '@/components/Clients/ClientFilters/useClientFilters';
 import { useBrregRefresh } from '@/hooks/useBrregRefresh';
-import StandardPageLayout from '@/components/Layout/StandardPageLayout';
+import PageLayout from '@/components/Layout/PageLayout';
 import FlexibleGrid from '@/components/Layout/FlexibleGrid';
 
 const ClientsOverview = () => {
@@ -75,9 +75,10 @@ const ClientsOverview = () => {
   }
 
   return (
-    <StandardPageLayout
+    <PageLayout
+      width="wide"
       header={
-        <ClientsHeader 
+        <ClientsHeader
           title="Mine klienter"
           subtitle="Oversikt over klienter og revisjonsstatus"
           searchTerm={searchTerm}
@@ -127,7 +128,7 @@ const ClientsOverview = () => {
         onOpenChange={setShowAddClientDialog}
         onClientAdded={handleClientAdded}
       />
-    </StandardPageLayout>
+    </PageLayout>
   );
 };
 

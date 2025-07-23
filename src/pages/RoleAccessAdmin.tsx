@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Shield } from 'lucide-react';
 import type { UserRole } from '@/types/organization';
-import StandardPageLayout from '@/components/Layout/StandardPageLayout';
+import PageLayout from '@/components/Layout/PageLayout';
 import ConstrainedWidth from '@/components/Layout/ConstrainedWidth';
 import PageHeader from '@/components/Layout/PageHeader';
 
@@ -34,15 +34,15 @@ const RoleAccessAdmin = () => {
   }
 
   return (
-    <ConstrainedWidth width="full">
-      <StandardPageLayout
-        header={
-          <PageHeader
-            title="Rolleadministrasjon"
-            subtitle="Endre roller for brukere i organisasjonen"
-          />
-        }
-      >
+    <PageLayout
+      width="full"
+      header={
+        <PageHeader
+          title="Rolleadministrasjon"
+          subtitle="Endre roller for brukere i organisasjonen"
+        />
+      }
+    >
         <Card>
           <CardHeader>
             <CardTitle>Brukere</CardTitle>
@@ -94,8 +94,7 @@ const RoleAccessAdmin = () => {
             {users && users.length === 0 && <p>Ingen brukere funnet.</p>}
           </CardContent>
         </Card>
-      </StandardPageLayout>
-    </ConstrainedWidth>
+      </PageLayout>
   );
 };
 
