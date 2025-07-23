@@ -38,7 +38,7 @@ const GlobalLayoutContainer: React.FC<GlobalLayoutContainerProps> = ({
       className={cn(
         'flex-1 overflow-auto transition-all duration-300 ease-in-out',
         'min-h-[calc(100vh-var(--header-height))]',
-        'w-full mx-auto',
+        'w-full ml-0',
         maxWidthClasses[maxWidth],
         className
       )}
