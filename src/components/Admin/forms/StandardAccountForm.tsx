@@ -83,9 +83,31 @@ const StandardAccountForm = ({ defaultValues, onSubmit }: StandardAccountFormPro
     }
   }, [standardNumber, form]);
 
+  const handleSubmit = async (data: StandardAccountFormData) => {
+    try {
+      console.log('Form data being submitted:', JSON.stringify(data, null, 2));
+      
+      // Ensure calculation_formula is properly formatted
+      const formattedData = {
+        ...data,
+        calculation_formula: data.calculation_formula || null,
+        category: data.category || null,
+        analysis_group: data.analysis_group || null,
+        parent_line_id: data.parent_line_id || null,
+      };
+      
+      console.log('Formatted data for submission:', JSON.stringify(formattedData, null, 2));
+      
+      await onSubmit(formattedData);
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      console.error('Error details:', JSON.stringify(error, null, 2));
+    }
+  };
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <FormField
             control={form.control}
