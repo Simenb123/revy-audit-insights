@@ -33,7 +33,7 @@ const GridLayoutContainer: React.FC<GridLayoutContainerProps> = ({
 
   return (
     <div 
-      className={cn('app-grid', className)}
+      className={cn('app-grid transition-[grid-template-columns] duration-300 ease-in-out', className)}
       style={{ 
         gridTemplateColumns: getGridTemplateColumns()
       }}

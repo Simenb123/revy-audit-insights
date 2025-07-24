@@ -144,16 +144,11 @@ const ResizableRightSidebar = () => {
   }
 
   return (
-    <motion.div
-      className="sticky top-[var(--header-height)] bg-background border-l flex flex-col z-10"
+    <div
+      className="sticky top-[var(--header-height)] bg-background border-l flex flex-col z-10 w-full"
       style={{
-        width: isCollapsed ? 48 : width,
-        minWidth: isCollapsed ? 48 : 320,
-        maxWidth: isCollapsed ? 48 : 600,
         height: 'calc(100vh - var(--header-height))'
       }}
-      animate={{ width: isCollapsed ? 48 : width }}
-      transition={{ type: 'spring', stiffness: 300, damping: 30 }}
     >
       {/* Resize handle */}
       {!isCollapsed && (
@@ -199,7 +194,7 @@ const ResizableRightSidebar = () => {
           </ScrollArea>
         </>
       )}
-    </motion.div>
+    </div>
   );
 };
 
