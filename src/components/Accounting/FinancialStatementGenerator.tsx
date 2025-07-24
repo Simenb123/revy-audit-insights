@@ -108,7 +108,9 @@ const FinancialStatementGenerator = ({ clientId, period }: FinancialStatementGen
             </span>
             {line.calculation_formula && (
               <span className="text-xs text-muted-foreground">
-                ({line.calculation_formula})
+                ({typeof line.calculation_formula === 'string' 
+                  ? line.calculation_formula 
+                  : JSON.stringify(line.calculation_formula)})
               </span>
             )}
           </div>
