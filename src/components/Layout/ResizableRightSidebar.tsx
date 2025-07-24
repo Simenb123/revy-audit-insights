@@ -145,7 +145,7 @@ const ResizableRightSidebar = () => {
 
   return (
     <div
-      className="bg-background border-l flex flex-col"
+      className="sticky top-[var(--header-height)] bg-background border-l flex flex-col z-10"
       style={{
         height: 'calc(100vh - var(--header-height))'
       }}
