@@ -22,6 +22,14 @@ export interface StandardAccount {
   account_type: 'asset' | 'liability' | 'equity' | 'revenue' | 'expense';
   category?: string;
   analysis_group?: string;
+  line_type?: 'detail' | 'subtotal' | 'calculation';
+  display_order?: number;
+  is_total_line?: boolean;
+  sign_multiplier?: number;
+  calculation_formula?: string;
+  parent_line_id?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface AccountMapping {
@@ -86,6 +94,7 @@ export function useStandardAccounts() {
       return (data || []).map(a => ({
         ...a,
         account_type: a.account_type as StandardAccount['account_type'],
+        line_type: a.line_type as StandardAccount['line_type'],
       }));
     },
   });
@@ -125,7 +134,8 @@ export function useAccountMappings(clientId: string) {
         standard_account: mapping.standard_account
           ? {
               ...mapping.standard_account,
-              account_type: mapping.standard_account.account_type as StandardAccount['account_type']
+              account_type: mapping.standard_account.account_type as StandardAccount['account_type'],
+              line_type: mapping.standard_account.line_type as StandardAccount['line_type']
             }
           : undefined
       }));

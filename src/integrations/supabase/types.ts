@@ -3586,31 +3586,57 @@ export type Database = {
         Row: {
           account_type: string
           analysis_group: string | null
+          calculation_formula: string | null
           category: string | null
           created_at: string
+          display_order: number
           id: string
+          is_total_line: boolean
+          line_type: string
+          parent_line_id: string | null
+          sign_multiplier: number
           standard_name: string
           standard_number: string
         }
         Insert: {
           account_type: string
           analysis_group?: string | null
+          calculation_formula?: string | null
           category?: string | null
           created_at?: string
+          display_order?: number
           id?: string
+          is_total_line?: boolean
+          line_type?: string
+          parent_line_id?: string | null
+          sign_multiplier?: number
           standard_name: string
           standard_number: string
         }
         Update: {
           account_type?: string
           analysis_group?: string | null
+          calculation_formula?: string | null
           category?: string | null
           created_at?: string
+          display_order?: number
           id?: string
+          is_total_line?: boolean
+          line_type?: string
+          parent_line_id?: string | null
+          sign_multiplier?: number
           standard_name?: string
           standard_number?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "standard_accounts_parent_line_id_fkey"
+            columns: ["parent_line_id"]
+            isOneToOne: false
+            referencedRelation: "standard_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       subject_areas: {
         Row: {

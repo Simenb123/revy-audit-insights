@@ -13,6 +13,12 @@ const accountSchema = z.object({
   account_type: z.enum(['asset', 'liability', 'equity', 'revenue', 'expense']),
   category: z.string().optional(),
   analysis_group: z.string().optional(),
+  line_type: z.enum(['detail', 'subtotal', 'calculation']).default('detail'),
+  display_order: z.number().default(0),
+  is_total_line: z.boolean().default(false),
+  sign_multiplier: z.number().default(1),
+  calculation_formula: z.string().optional(),
+  parent_line_id: z.string().optional(),
 });
 
 export type StandardAccountFormData = z.infer<typeof accountSchema>;
@@ -31,6 +37,12 @@ const StandardAccountForm = ({ defaultValues, onSubmit }: StandardAccountFormPro
       account_type: 'asset',
       category: '',
       analysis_group: '',
+      line_type: 'detail',
+      display_order: 0,
+      is_total_line: false,
+      sign_multiplier: 1,
+      calculation_formula: '',
+      parent_line_id: '',
       ...defaultValues,
     },
   });
@@ -111,6 +123,101 @@ const StandardAccountForm = ({ defaultValues, onSubmit }: StandardAccountFormPro
               <FormLabel>Analysegruppe</FormLabel>
               <FormControl>
                 <Input {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="line_type"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Linjetype</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="detail">Detaljlinje</SelectItem>
+                    <SelectItem value="subtotal">Delsum</SelectItem>
+                    <SelectItem value="calculation">Beregning</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="display_order"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Visningsrekkefølge</FormLabel>
+                <FormControl>
+                  <Input type="number" {...field} onChange={(e) => field.onChange(parseInt(e.target.value) || 0)} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="is_total_line"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                <div className="space-y-0.5">
+                  <FormLabel className="text-base">Summering</FormLabel>
+                  <div className="text-sm text-muted-foreground">
+                    Er dette en summeringslinje?
+                  </div>
+                </div>
+                <FormControl>
+                  <input
+                    type="checkbox"
+                    checked={field.value}
+                    onChange={field.onChange}
+                    className="h-4 w-4"
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="sign_multiplier"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Fortegn</FormLabel>
+                <Select onValueChange={(value) => field.onChange(parseInt(value))} defaultValue={field.value?.toString()}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="1">Positiv (+)</SelectItem>
+                    <SelectItem value="-1">Negativ (-)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+        <FormField
+          control={form.control}
+          name="calculation_formula"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Beregningsformel</FormLabel>
+              <FormControl>
+                <Input {...field} placeholder="f.eks. 19 + 79" />
               </FormControl>
               <FormMessage />
             </FormItem>

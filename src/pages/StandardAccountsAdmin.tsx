@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import StandardAccountManager from '@/components/Admin/StandardAccountManager';
 import AccountMappingRulesManager from '@/components/Admin/AccountMappingRulesManager';
+import FinancialStatementGenerator from '@/components/Accounting/FinancialStatementGenerator';
 
 const StandardAccountsAdmin = () => {
   return (
@@ -10,6 +11,7 @@ const StandardAccountsAdmin = () => {
         <TabsList>
           <TabsTrigger value="accounts">Standardkontoer</TabsTrigger>
           <TabsTrigger value="mapping-rules">Mappingregler</TabsTrigger>
+          <TabsTrigger value="preview">Forhåndsvisning</TabsTrigger>
         </TabsList>
         
         <TabsContent value="accounts">
@@ -18,6 +20,10 @@ const StandardAccountsAdmin = () => {
         
         <TabsContent value="mapping-rules">
           <AccountMappingRulesManager />
+        </TabsContent>
+        
+        <TabsContent value="preview">
+          <FinancialStatementGenerator clientId="demo" period="2024" />
         </TabsContent>
       </Tabs>
     </div>
