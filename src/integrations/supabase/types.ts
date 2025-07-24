@@ -155,6 +155,57 @@ export type Database = {
           },
         ]
       }
+      account_relationships: {
+        Row: {
+          child_account_id: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          metadata: Json | null
+          parent_account_id: string | null
+          relationship_type: string
+          updated_at: string
+          weight: number | null
+        }
+        Insert: {
+          child_account_id?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          metadata?: Json | null
+          parent_account_id?: string | null
+          relationship_type: string
+          updated_at?: string
+          weight?: number | null
+        }
+        Update: {
+          child_account_id?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          metadata?: Json | null
+          parent_account_id?: string | null
+          relationship_type?: string
+          updated_at?: string
+          weight?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_relationships_child_account_id_fkey"
+            columns: ["child_account_id"]
+            isOneToOne: false
+            referencedRelation: "standard_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_relationships_parent_account_id_fkey"
+            columns: ["parent_account_id"]
+            isOneToOne: false
+            referencedRelation: "standard_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       action_ai_metadata: {
         Row: {
           action_template_id: string | null
@@ -2476,6 +2527,162 @@ export type Database = {
         }
         Relationships: []
       }
+      formula_definitions: {
+        Row: {
+          category: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          formula_expression: Json
+          id: string
+          is_active: boolean
+          is_system_formula: boolean
+          metadata: Json | null
+          name: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          formula_expression: Json
+          id?: string
+          is_active?: boolean
+          is_system_formula?: boolean
+          metadata?: Json | null
+          name: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          formula_expression?: Json
+          id?: string
+          is_active?: boolean
+          is_system_formula?: boolean
+          metadata?: Json | null
+          name?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: []
+      }
+      formula_usage_logs: {
+        Row: {
+          account_id: string | null
+          client_id: string | null
+          created_at: string
+          execution_time_ms: number | null
+          formula_id: string | null
+          id: string
+          input_values: Json | null
+          metadata: Json | null
+          result_value: number | null
+          session_id: string | null
+          usage_context: string | null
+          user_id: string | null
+        }
+        Insert: {
+          account_id?: string | null
+          client_id?: string | null
+          created_at?: string
+          execution_time_ms?: number | null
+          formula_id?: string | null
+          id?: string
+          input_values?: Json | null
+          metadata?: Json | null
+          result_value?: number | null
+          session_id?: string | null
+          usage_context?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          account_id?: string | null
+          client_id?: string | null
+          created_at?: string
+          execution_time_ms?: number | null
+          formula_id?: string | null
+          id?: string
+          input_values?: Json | null
+          metadata?: Json | null
+          result_value?: number | null
+          session_id?: string | null
+          usage_context?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "formula_usage_logs_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "standard_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "formula_usage_logs_formula_id_fkey"
+            columns: ["formula_id"]
+            isOneToOne: false
+            referencedRelation: "formula_definitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      formula_variables: {
+        Row: {
+          category: string | null
+          created_at: string
+          created_by: string | null
+          data_type: string
+          description: string | null
+          display_name: string
+          id: string
+          is_active: boolean
+          is_system_variable: boolean
+          metadata: Json | null
+          name: string
+          updated_at: string
+          value_expression: Json | null
+          variable_type: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_type?: string
+          description?: string | null
+          display_name: string
+          id?: string
+          is_active?: boolean
+          is_system_variable?: boolean
+          metadata?: Json | null
+          name: string
+          updated_at?: string
+          value_expression?: Json | null
+          variable_type?: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_type?: string
+          description?: string | null
+          display_name?: string
+          id?: string
+          is_active?: boolean
+          is_system_variable?: boolean
+          metadata?: Json | null
+          name?: string
+          updated_at?: string
+          value_expression?: Json | null
+          variable_type?: string
+        }
+        Relationships: []
+      }
       general_ledger_transactions: {
         Row: {
           balance_amount: number | null
@@ -3585,48 +3792,72 @@ export type Database = {
       standard_accounts: {
         Row: {
           account_type: string
+          ai_tags: string[] | null
           analysis_group: string | null
+          audit_significance: string | null
+          business_rules: Json | null
           calculation_formula: Json | null
           category: string | null
+          complexity_score: number | null
           created_at: string
           display_order: number
           id: string
           is_total_line: boolean
+          last_used_at: string | null
           line_type: string
+          ml_features: Json | null
           parent_line_id: string | null
           sign_multiplier: number
           standard_name: string
           standard_number: string
+          usage_frequency: number | null
+          validation_rules: Json | null
         }
         Insert: {
           account_type: string
+          ai_tags?: string[] | null
           analysis_group?: string | null
+          audit_significance?: string | null
+          business_rules?: Json | null
           calculation_formula?: Json | null
           category?: string | null
+          complexity_score?: number | null
           created_at?: string
           display_order?: number
           id?: string
           is_total_line?: boolean
+          last_used_at?: string | null
           line_type?: string
+          ml_features?: Json | null
           parent_line_id?: string | null
           sign_multiplier?: number
           standard_name: string
           standard_number: string
+          usage_frequency?: number | null
+          validation_rules?: Json | null
         }
         Update: {
           account_type?: string
+          ai_tags?: string[] | null
           analysis_group?: string | null
+          audit_significance?: string | null
+          business_rules?: Json | null
           calculation_formula?: Json | null
           category?: string | null
+          complexity_score?: number | null
           created_at?: string
           display_order?: number
           id?: string
           is_total_line?: boolean
+          last_used_at?: string | null
           line_type?: string
+          ml_features?: Json | null
           parent_line_id?: string | null
           sign_multiplier?: number
           standard_name?: string
           standard_number?: string
+          usage_frequency?: number | null
+          validation_rules?: Json | null
         }
         Relationships: [
           {

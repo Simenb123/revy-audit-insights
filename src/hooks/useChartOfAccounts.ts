@@ -30,6 +30,15 @@ export interface StandardAccount {
   parent_line_id?: string;
   created_at?: string;
   updated_at?: string;
+  // Enhanced AI/ML metadata
+  complexity_score?: number;
+  ai_tags?: string[];
+  usage_frequency?: number;
+  last_used_at?: string;
+  validation_rules?: any;
+  business_rules?: any;
+  audit_significance?: 'low' | 'medium' | 'high' | 'critical';
+  ml_features?: any;
 }
 
 export interface AccountMapping {
@@ -95,6 +104,7 @@ export function useStandardAccounts() {
         ...a,
         account_type: a.account_type as StandardAccount['account_type'],
         line_type: a.line_type as StandardAccount['line_type'],
+        audit_significance: a.audit_significance as StandardAccount['audit_significance'],
       }));
     },
   });
@@ -135,7 +145,8 @@ export function useAccountMappings(clientId: string) {
           ? {
               ...mapping.standard_account,
               account_type: mapping.standard_account.account_type as StandardAccount['account_type'],
-              line_type: mapping.standard_account.line_type as StandardAccount['line_type']
+              line_type: mapping.standard_account.line_type as StandardAccount['line_type'],
+              audit_significance: mapping.standard_account.audit_significance as StandardAccount['audit_significance']
             }
           : undefined
       }));
