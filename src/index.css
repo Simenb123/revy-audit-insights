@@ -68,6 +68,37 @@
 }
 
 @layer utilities {
+  /* CSS Grid Layout System */
+  .app-grid {
+    display: grid;
+    grid-template-areas: 
+      "left-sidebar main-content right-sidebar";
+    min-height: calc(100vh - var(--header-height));
+    transition: grid-template-columns 300ms ease-in-out;
+  }
+
+  /* Mobile Layout - Stack everything */
+  @media (max-width: 1023px) {
+    .app-grid {
+      grid-template-areas: "main-content";
+      grid-template-columns: 1fr !important;
+    }
+  }
+
+  .grid-left-sidebar {
+    grid-area: left-sidebar;
+  }
+
+  .grid-main-content {
+    grid-area: main-content;
+    min-width: 0; /* Prevents grid overflow */
+    overflow: hidden;
+  }
+
+  .grid-right-sidebar {
+    grid-area: right-sidebar;
+  }
+
   /* Global Layout Utilities */
   .page-container {
     @apply w-full max-w-[var(--page-max-width)] mx-auto px-[var(--page-padding-x)] py-[var(--page-padding-y)];

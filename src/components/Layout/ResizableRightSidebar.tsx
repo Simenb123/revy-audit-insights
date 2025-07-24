@@ -132,25 +132,23 @@ const ResizableRightSidebar = () => {
   // Desktop version - hidden state
   if (isHidden) {
     return (
-      <div className="flex flex-col">
-        <Button
-          variant="outline"
-          size="icon"
-          className="m-2 h-8 w-8"
-          onClick={() => setIsHidden(false)}
-        >
-          <MessageSquare className="h-4 w-4" />
-        </Button>
-      </div>
+      <Button
+        variant="outline"
+        size="icon"
+        className="fixed top-20 right-4 z-50 h-10 w-10 shadow-lg bg-background border"
+        onClick={() => setIsHidden(false)}
+      >
+        <MessageSquare className="h-4 w-4" />
+      </Button>
     );
   }
 
   return (
-    <div className="fixed right-0 top-16 bottom-0 z-40 flex">
+    <div className="flex h-full">
       {/* Resize handle */}
       {!isCollapsed && (
         <div
-          className="w-1 bg-border hover:bg-primary/20 cursor-col-resize transition-colors"
+          className="w-1 bg-border hover:bg-primary/20 cursor-col-resize transition-colors flex-shrink-0"
           onMouseDown={handleMouseDown}
         />
       )}

@@ -26,7 +26,15 @@
   --sidebar-width-collapsed: 56px;
   --sidebar-width-icon: 56px;  /* Shadcn sidebar variable */
   --right-sidebar-width: 360px;
+  --right-sidebar-width-collapsed: 48px;
   --header-height: 4rem;
+
+  /* CSS Grid Layout Variables */
+  --grid-left-sidebar: var(--sidebar-width);
+  --grid-left-sidebar-collapsed: var(--sidebar-width-collapsed);
+  --grid-right-sidebar: var(--right-sidebar-width);
+  --grid-right-sidebar-collapsed: var(--right-sidebar-width-collapsed);
+  --grid-right-sidebar-hidden: 0px;
 
   /* Global Layout Variables - Tighter spacing */
   --page-max-width: 1400px;

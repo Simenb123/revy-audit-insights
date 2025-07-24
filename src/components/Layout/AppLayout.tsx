@@ -10,10 +10,13 @@ import AppHeader from './AppHeader';
 import ResizableRightSidebar from './ResizableRightSidebar';
 import ResizableLeftSidebar from './ResizableLeftSidebar';
 import ResponsiveLayout from './ResponsiveLayout';
+import GridLayoutContainer from './GridLayoutContainer';
 import PageLoader from './PageLoader';
 import OnboardingCheck from './OnboardingCheck';
 
 import { SidebarProvider } from '@/components/ui/sidebar';
+import { useRightSidebar } from './RightSidebarContext';
+import { useSidebar } from '@/components/ui/sidebar';
 
 /**
  * Hovedlayout for hele app-skallet med responsivt design
@@ -38,24 +41,28 @@ const AppLayout = () => {
   // If no connection to Supabase, allow demo mode
   if (connectionStatus === 'disconnected') {
     return (
-      <div className="min-h-screen bg-background flex flex-col gap-[var(--content-gap)]">
+      <div className="min-h-screen bg-background flex flex-col">
         <AppHeader />
         <SidebarProvider>
-        <div className="flex">
-            <ResizableLeftSidebar />
-            <ResponsiveLayout>
-              <div className="p-3 bg-yellow-50 border-b border-yellow-200">
-                <p className="text-sm text-yellow-800">
-                  Demo-modus: Appen kjører uten tilkobling til backend.
-                </p>
-              </div>
-              <Outlet />
-            </ResponsiveLayout>
-          </div>
+          <GridLayoutContainer>
+            <div className="grid-left-sidebar">
+              <ResizableLeftSidebar />
+            </div>
+            <div className="grid-main-content">
+              <ResponsiveLayout>
+                <div className="p-3 bg-yellow-50 border-b border-yellow-200">
+                  <p className="text-sm text-yellow-800">
+                    Demo-modus: Appen kjører uten tilkobling til backend.
+                  </p>
+                </div>
+                <Outlet />
+              </ResponsiveLayout>
+            </div>
+            <div className="grid-right-sidebar hidden lg:block">
+              <ResizableRightSidebar />
+            </div>
+          </GridLayoutContainer>
         </SidebarProvider>
-        <div className="hidden lg:block">
-          <ResizableRightSidebar />
-        </div>
       </div>
     );
   }
@@ -75,20 +82,23 @@ const AppLayout = () => {
   /* ---------------------------------------------------------------------- */
 
   return (
-    <div className="min-h-screen bg-background flex flex-col gap-[var(--content-gap)]">
+    <div className="min-h-screen bg-background flex flex-col">
       <AppHeader />
       <SidebarProvider>
-        <div className="flex">
-          <ResizableLeftSidebar />
-          <ResponsiveLayout>
-            <Outlet />
-          </ResponsiveLayout>
-        </div>
+        <GridLayoutContainer>
+          <div className="grid-left-sidebar">
+            <ResizableLeftSidebar />
+          </div>
+          <div className="grid-main-content">
+            <ResponsiveLayout>
+              <Outlet />
+            </ResponsiveLayout>
+          </div>
+          <div className="grid-right-sidebar hidden lg:block">
+            <ResizableRightSidebar />
+          </div>
+        </GridLayoutContainer>
       </SidebarProvider>
-      {/* Right sidebar hidden on mobile, visible on desktop */}
-      <div className="hidden lg:block">
-        <ResizableRightSidebar />
-      </div>
     </div>
   );
 };
