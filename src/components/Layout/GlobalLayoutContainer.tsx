@@ -25,8 +25,10 @@ const GlobalLayoutContainer: React.FC<GlobalLayoutContainerProps> = ({
       className={cn(
         'overflow-auto',
         'min-h-[calc(100vh-var(--header-height))]',
-        'w-full mx-auto px-4',
+        'w-full mx-auto px-4 pr-6',
         maxWidthClasses[maxWidth],
+        // Add top border line for visual consistency
+        'border-t-2 border-t-border/50',
         className
       )}
     >

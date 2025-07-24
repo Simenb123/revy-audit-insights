@@ -144,60 +144,62 @@ const ResizableRightSidebar = () => {
   }
 
   return (
-    <div className="flex h-full">
+    <motion.div
+      className="sticky top-[var(--header-height)] bg-background border-l flex flex-col z-10"
+      style={{
+        width: isCollapsed ? 2 : width,
+        minWidth: isCollapsed ? 2 : 320,
+        maxWidth: isCollapsed ? 2 : 600,
+        height: 'calc(100vh - var(--header-height))'
+      }}
+      animate={{ width: isCollapsed ? 2 : width }}
+      transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+    >
       {/* Resize handle */}
       {!isCollapsed && (
         <div
-          className="w-1 bg-border hover:bg-primary/20 cursor-col-resize transition-colors flex-shrink-0"
+          className="absolute left-0 top-0 w-1 h-full bg-border hover:bg-primary/20 cursor-col-resize transition-colors z-20"
           onMouseDown={handleMouseDown}
         />
       )}
 
-      {/* Sidebar content */}
-      <motion.div
-        className="bg-background border-l flex flex-col h-full"
-        style={{
-          width: isCollapsed ? 48 : width,
-          minWidth: isCollapsed ? 48 : 320,
-          maxWidth: isCollapsed ? 48 : 600
-        }}
-        animate={{ width: isCollapsed ? 48 : width }}
-        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between p-3 border-b bg-muted/30">
-          {!isCollapsed && (
-            <h3 className="text-sm font-medium truncate">{getPageTitle()}</h3>
-          )}
+      {/* Collapsed state - thin line with expand button */}
+      {isCollapsed && (
+        <div className="relative w-full h-full bg-border">
           <Button
             variant="ghost"
             size="icon"
-            className="h-6 w-6"
+            className="absolute top-4 left-0 h-6 w-6 -ml-3 bg-background border shadow-sm"
             onClick={toggleSidebar}
           >
-            {isCollapsed ? (
-              <ChevronLeft className="h-3 w-3" />
-            ) : (
-              <ChevronRight className="h-3 w-3" />
-            )}
+            <ChevronLeft className="h-3 w-3" />
           </Button>
         </div>
+      )}
 
-        {/* Content */}
-        {!isCollapsed && (
+      {/* Expanded content */}
+      {!isCollapsed && (
+        <>
+          {/* Header with top border line */}
+          <div className="flex items-center justify-between p-3 border-b bg-muted/30 border-t-2 border-t-border/50">
+            <h3 className="text-sm font-medium truncate">{getPageTitle()}</h3>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6"
+              onClick={toggleSidebar}
+            >
+              <ChevronRight className="h-3 w-3" />
+            </Button>
+          </div>
+
+          {/* Content */}
           <ScrollArea className="flex-1">
             {renderContent()}
           </ScrollArea>
-        )}
-
-        {/* Collapsed state - just icon */}
-        {isCollapsed && (
-          <div className="flex-1 flex items-center justify-center">
-            <MessageSquare className="h-5 w-5 text-muted-foreground" />
-          </div>
-        )}
-      </motion.div>
-    </div>
+        </>
+      )}
+    </motion.div>
   );
 };
 
