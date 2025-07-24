@@ -8,15 +8,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from '@/components/ui/form';
 import { SimpleFormulaBuilder, SimpleFormulaData } from './SimpleFormulaBuilder';
 import { useStandardAccounts } from '@/hooks/useChartOfAccounts';
-import { useAccountCategories } from '@/hooks/useAccountCategories';
-import { useMainGroups } from '@/hooks/useMainGroups';
 
 const accountSchema = z.object({
   standard_number: z.string().min(1, 'Kontonummer er påkrevd'),
   standard_name: z.string().min(1, 'Kontonavn er påkrevd'),
   account_type: z.enum(['asset', 'liability', 'equity', 'revenue', 'expense']),
-  category: z.string().optional(),
-  main_group: z.string().optional(),
   line_type: z.enum(['detail', 'subtotal', 'calculation']).default('detail'),
   display_order: z.number().default(0),
   is_total_line: z.boolean().default(false),
@@ -33,7 +29,6 @@ const accountSchema = z.object({
     }).strict(),
     z.null()
   ]).optional(),
-  parent_line_id: z.string().optional(),
 }).refine((data) => {
   // Require calculation formula only for calculation or subtotal line types
   if ((data.line_type === 'calculation' || data.line_type === 'subtotal') && !data.calculation_formula) {
@@ -54,8 +49,6 @@ interface StandardAccountFormProps {
 
 const StandardAccountForm = ({ defaultValues, onSubmit }: StandardAccountFormProps) => {
   const { data: standardAccounts = [] } = useStandardAccounts();
-  const { data: accountCategories = [] } = useAccountCategories();
-  const { data: mainGroups = [] } = useMainGroups();
   
   const form = useForm<StandardAccountFormData>({
     resolver: zodResolver(accountSchema),
@@ -63,14 +56,11 @@ const StandardAccountForm = ({ defaultValues, onSubmit }: StandardAccountFormPro
       standard_number: defaultValues?.standard_number || '',
       standard_name: defaultValues?.standard_name || '',
       account_type: defaultValues?.account_type || 'asset',
-      category: defaultValues?.category || '',
-      main_group: defaultValues?.main_group || '',
       line_type: defaultValues?.line_type || 'detail',
       display_order: defaultValues?.display_order || 0,
       is_total_line: defaultValues?.is_total_line || false,
       sign_multiplier: defaultValues?.sign_multiplier || 1,
       calculation_formula: defaultValues?.calculation_formula || null,
-      parent_line_id: defaultValues?.parent_line_id || '',
     },
   });
 
@@ -118,78 +108,32 @@ const StandardAccountForm = ({ defaultValues, onSubmit }: StandardAccountFormPro
             )}
           />
         </div>
-          <FormField
-            control={form.control}
-            name="account_type"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Kontotype</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="asset">Eiendel</SelectItem>
-                    <SelectItem value="liability">Gjeld</SelectItem>
-                    <SelectItem value="equity">Egenkapital</SelectItem>
-                    <SelectItem value="revenue">Inntekt</SelectItem>
-                    <SelectItem value="expense">Kostnad</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+        
         <FormField
           control={form.control}
-          name="category"
+          name="account_type"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Kategori</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value || ''}>
+              <FormLabel>Kontotype</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="Velg kategori..." />
+                    <SelectValue />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {accountCategories.map((category) => (
-                    <SelectItem key={category.id} value={category.name}>
-                      {category.name}
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="asset">Eiendel</SelectItem>
+                  <SelectItem value="liability">Gjeld</SelectItem>
+                  <SelectItem value="equity">Egenkapital</SelectItem>
+                  <SelectItem value="revenue">Inntekt</SelectItem>
+                  <SelectItem value="expense">Kostnad</SelectItem>
                 </SelectContent>
               </Select>
               <FormMessage />
             </FormItem>
           )}
         />
-        <FormField
-          control={form.control}
-          name="main_group"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Hovedgruppe</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value || ''}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Velg hovedgruppe..." />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {mainGroups.map((group) => (
-                    <SelectItem key={group.id} value={group.name}>
-                      {group.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+
         <div className="grid grid-cols-2 gap-4">
           <FormField
             control={form.control}
