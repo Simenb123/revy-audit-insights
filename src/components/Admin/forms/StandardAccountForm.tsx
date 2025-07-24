@@ -13,10 +13,13 @@ const accountSchema = z.object({
   standard_number: z.string().min(1, 'Kontonummer er påkrevd'),
   standard_name: z.string().min(1, 'Kontonavn er påkrevd'),
   account_type: z.enum(['asset', 'liability', 'equity', 'revenue', 'expense']),
+  category: z.string().optional(),
+  analysis_group: z.string().optional(),
   line_type: z.enum(['detail', 'subtotal', 'calculation']).default('detail'),
   display_order: z.number().default(0),
   is_total_line: z.boolean().default(false),
   sign_multiplier: z.number().default(1),
+  parent_line_id: z.string().optional().nullable(),
   calculation_formula: z.union([
     z.object({
       type: z.literal('formula'),
@@ -28,7 +31,7 @@ const accountSchema = z.object({
       }))
     }).strict(),
     z.null()
-  ]).optional(),
+  ]).optional().nullable(),
 }).refine((data) => {
   // Require calculation formula only for calculation or subtotal line types
   if ((data.line_type === 'calculation' || data.line_type === 'subtotal') && !data.calculation_formula) {
@@ -56,10 +59,13 @@ const StandardAccountForm = ({ defaultValues, onSubmit }: StandardAccountFormPro
       standard_number: defaultValues?.standard_number || '',
       standard_name: defaultValues?.standard_name || '',
       account_type: defaultValues?.account_type || 'asset',
+      category: defaultValues?.category || undefined,
+      analysis_group: defaultValues?.analysis_group || undefined,
       line_type: defaultValues?.line_type || 'detail',
       display_order: defaultValues?.display_order || 0,
       is_total_line: defaultValues?.is_total_line || false,
       sign_multiplier: defaultValues?.sign_multiplier || 1,
+      parent_line_id: defaultValues?.parent_line_id || null,
       calculation_formula: defaultValues?.calculation_formula || null,
     },
   });
