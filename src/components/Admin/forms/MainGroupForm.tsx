@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
-import { AnalysisGroup } from '@/hooks/useAnalysisGroups';
+import { MainGroup } from '@/hooks/useMainGroups';
 
 const groupSchema = z.object({
   name: z.string().min(1, 'Navn er påkrevd'),
@@ -14,23 +14,22 @@ const groupSchema = z.object({
   category: z.string().optional(),
 });
 
-export type AnalysisGroupFormData = z.infer<typeof groupSchema>;
+export type MainGroupFormData = z.infer<typeof groupSchema>;
 
-interface AnalysisGroupFormProps {
-  item?: AnalysisGroup | null;
-  onSubmit: (data: AnalysisGroupFormData) => void;
+interface MainGroupFormProps {
+  item?: MainGroup | null;
+  onSubmit: (data: MainGroupFormData) => void;
 }
 
 const categories = [
-  'Lønnsomhet',
-  'Likviditet',
-  'Soliditet',
-  'Effektivitet',
-  'Vekst'
+  'income_statement',
+  'balance_sheet', 
+  'cash_flow',
+  'notes'
 ];
 
-const AnalysisGroupForm = ({ item, onSubmit }: AnalysisGroupFormProps) => {
-  const form = useForm<AnalysisGroupFormData>({
+const MainGroupForm = ({ item, onSubmit }: MainGroupFormProps) => {
+  const form = useForm<MainGroupFormData>({
     resolver: zodResolver(groupSchema),
     defaultValues: {
       name: item?.name || '',
@@ -47,7 +46,7 @@ const AnalysisGroupForm = ({ item, onSubmit }: AnalysisGroupFormProps) => {
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Navn</FormLabel>
+              <FormLabel>Hovedgruppenavn</FormLabel>
               <FormControl>
                 <Input {...field} />
               </FormControl>
@@ -77,15 +76,14 @@ const AnalysisGroupForm = ({ item, onSubmit }: AnalysisGroupFormProps) => {
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="Velg kategori..." />
+                    <SelectValue placeholder="Velg regnskapstype..." />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {categories.map((category) => (
-                    <SelectItem key={category} value={category}>
-                      {category}
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="income_statement">Resultatregnskap</SelectItem>
+                  <SelectItem value="balance_sheet">Balanse</SelectItem>
+                  <SelectItem value="cash_flow">Kontantstrøm</SelectItem>
+                  <SelectItem value="notes">Noter</SelectItem>
                 </SelectContent>
               </Select>
               <FormMessage />
@@ -100,4 +98,4 @@ const AnalysisGroupForm = ({ item, onSubmit }: AnalysisGroupFormProps) => {
   );
 };
 
-export default AnalysisGroupForm;
+export default MainGroupForm;

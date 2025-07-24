@@ -6,17 +6,17 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from '@/components/ui/form';
-import { EnhancedFormulaBuilder, FormulaData } from './EnhancedFormulaBuilder';
+import { SimpleFormulaBuilder, SimpleFormulaData } from './SimpleFormulaBuilder';
 import { useStandardAccounts } from '@/hooks/useChartOfAccounts';
 import { useAccountCategories } from '@/hooks/useAccountCategories';
-import { useAnalysisGroups } from '@/hooks/useAnalysisGroups';
+import { useMainGroups } from '@/hooks/useMainGroups';
 
 const accountSchema = z.object({
   standard_number: z.string().min(1, 'Kontonummer er påkrevd'),
   standard_name: z.string().min(1, 'Kontonavn er påkrevd'),
   account_type: z.enum(['asset', 'liability', 'equity', 'revenue', 'expense']),
   category: z.string().optional(),
-  analysis_group: z.string().optional(),
+  main_group: z.string().optional(),
   line_type: z.enum(['detail', 'subtotal', 'calculation']).default('detail'),
   display_order: z.number().default(0),
   is_total_line: z.boolean().default(false),
@@ -26,9 +26,9 @@ const accountSchema = z.object({
       type: z.literal('formula'),
       terms: z.array(z.object({
         id: z.string(),
-        account: z.string().optional(),
-        operator: z.enum(['+', '-', '*', '/']).optional(),
-        value: z.string().optional(),
+        account_number: z.string(),
+        account_name: z.string(),
+        operator: z.enum(['+', '-']),
       }))
     }).strict(),
     z.null()
@@ -55,7 +55,7 @@ interface StandardAccountFormProps {
 const StandardAccountForm = ({ defaultValues, onSubmit }: StandardAccountFormProps) => {
   const { data: standardAccounts = [] } = useStandardAccounts();
   const { data: accountCategories = [] } = useAccountCategories();
-  const { data: analysisGroups = [] } = useAnalysisGroups();
+  const { data: mainGroups = [] } = useMainGroups();
   
   const form = useForm<StandardAccountFormData>({
     resolver: zodResolver(accountSchema),
@@ -64,7 +64,7 @@ const StandardAccountForm = ({ defaultValues, onSubmit }: StandardAccountFormPro
       standard_name: defaultValues?.standard_name || '',
       account_type: defaultValues?.account_type || 'asset',
       category: defaultValues?.category || '',
-      analysis_group: defaultValues?.analysis_group || '',
+      main_group: defaultValues?.main_group || '',
       line_type: defaultValues?.line_type || 'detail',
       display_order: defaultValues?.display_order || 0,
       is_total_line: defaultValues?.is_total_line || false,
@@ -168,18 +168,18 @@ const StandardAccountForm = ({ defaultValues, onSubmit }: StandardAccountFormPro
         />
         <FormField
           control={form.control}
-          name="analysis_group"
+          name="main_group"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Analysegruppe</FormLabel>
+              <FormLabel>Hovedgruppe</FormLabel>
               <Select onValueChange={field.onChange} value={field.value || ''}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="Velg analysegruppe..." />
+                    <SelectValue placeholder="Velg hovedgruppe..." />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {analysisGroups.map((group) => (
+                  {mainGroups.map((group) => (
                     <SelectItem key={group.id} value={group.name}>
                       {group.name}
                     </SelectItem>
@@ -283,8 +283,8 @@ const StandardAccountForm = ({ defaultValues, onSubmit }: StandardAccountFormPro
                   Beregningsformel (påkrevd)
                 </FormLabel>
                 <FormControl>
-                  <EnhancedFormulaBuilder
-                    value={field.value as FormulaData | null}
+                  <SimpleFormulaBuilder
+                    value={field.value as SimpleFormulaData | null}
                     onChange={field.onChange}
                     standardAccounts={standardAccounts.map(acc => ({
                       standard_number: acc.standard_number,
@@ -293,7 +293,7 @@ const StandardAccountForm = ({ defaultValues, onSubmit }: StandardAccountFormPro
                   />
                 </FormControl>
                 <FormDescription>
-                  Bygg opp beregningsformelen ved å velge kontoer og operatorer.
+                  Legg til kontoer som skal summeres eller trekkes fra for denne linjen.
                 </FormDescription>
                 <FormMessage />
               </FormItem>

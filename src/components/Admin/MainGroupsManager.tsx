@@ -4,28 +4,28 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Edit, Trash2 } from 'lucide-react';
 import EntityManager from '@/components/common/EntityManager';
-import AnalysisGroupForm from './forms/AnalysisGroupForm';
+import MainGroupForm from './forms/MainGroupForm';
 import { 
-  useAnalysisGroups, 
-  useCreateAnalysisGroup, 
-  useUpdateAnalysisGroup, 
-  useDeleteAnalysisGroup,
-  AnalysisGroup 
-} from '@/hooks/useAnalysisGroups';
+  useMainGroups, 
+  useCreateMainGroup, 
+  useUpdateMainGroup, 
+  useDeleteMainGroup,
+  MainGroup 
+} from '@/hooks/useMainGroups';
 import { toast } from 'sonner';
 
-const AnalysisGroupsManager = () => {
-  const { data: groups = [], isLoading } = useAnalysisGroups();
-  const createMutation = useCreateAnalysisGroup();
-  const updateMutation = useUpdateAnalysisGroup();
-  const deleteMutation = useDeleteAnalysisGroup();
+const MainGroupsManager = () => {
+  const { data: groups = [], isLoading } = useMainGroups();
+  const createMutation = useCreateMainGroup();
+  const updateMutation = useUpdateMainGroup();
+  const deleteMutation = useDeleteMainGroup();
 
   const handleCreate = async (data: any) => {
     try {
       await createMutation.mutateAsync(data);
-      toast.success('Analysegruppe opprettet');
+      toast.success('Hovedgruppe opprettet');
     } catch (error) {
-      toast.error('Feil ved opprettelse av analysegruppe');
+      toast.error('Feil ved opprettelse av hovedgruppe');
       throw error;
     }
   };
@@ -33,9 +33,9 @@ const AnalysisGroupsManager = () => {
   const handleUpdate = async (id: string, data: any) => {
     try {
       await updateMutation.mutateAsync({ id, ...data });
-      toast.success('Analysegruppe oppdatert');
+      toast.success('Hovedgruppe oppdatert');
     } catch (error) {
-      toast.error('Feil ved oppdatering av analysegruppe');
+      toast.error('Feil ved oppdatering av hovedgruppe');
       throw error;
     }
   };
@@ -43,14 +43,14 @@ const AnalysisGroupsManager = () => {
   const handleDelete = async (id: string) => {
     try {
       await deleteMutation.mutateAsync(id);
-      toast.success('Analysegruppe slettet');
+      toast.success('Hovedgruppe slettet');
     } catch (error) {
-      toast.error('Feil ved sletting av analysegruppe');
+      toast.error('Feil ved sletting av hovedgruppe');
       throw error;
     }
   };
 
-  const renderGroupCard = (group: AnalysisGroup, actions: any) => (
+  const renderGroupCard = (group: MainGroup, actions: any) => (
     <Card key={group.id} className={`cursor-pointer border-2 ${
       actions.selected ? 'border-primary' : 'border-border'
     }`}>
@@ -99,13 +99,13 @@ const AnalysisGroupsManager = () => {
       isLoading={isLoading}
       itemKey={(group) => group.id}
       renderItem={renderGroupCard}
-      FormComponent={AnalysisGroupForm}
+      FormComponent={MainGroupForm}
       onCreate={handleCreate}
       onUpdate={handleUpdate}
       onDelete={handleDelete}
-      header={<CardTitle>Analysegrupper</CardTitle>}
+      header={<CardTitle>Hovedgrupper</CardTitle>}
     />
   );
 };
 
-export default AnalysisGroupsManager;
+export default MainGroupsManager;

@@ -560,36 +560,6 @@ export type Database = {
           },
         ]
       }
-      analysis_groups: {
-        Row: {
-          category: string | null
-          created_at: string
-          description: string | null
-          id: string
-          is_system_group: boolean | null
-          name: string
-          updated_at: string
-        }
-        Insert: {
-          category?: string | null
-          created_at?: string
-          description?: string | null
-          id?: string
-          is_system_group?: boolean | null
-          name: string
-          updated_at?: string
-        }
-        Update: {
-          category?: string | null
-          created_at?: string
-          description?: string | null
-          id?: string
-          is_system_group?: boolean | null
-          name?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       analysis_results: {
         Row: {
           client_id: string
@@ -3257,6 +3227,36 @@ export type Database = {
           minimum_score?: number | null
           name?: string
           target_role?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      main_groups: {
+        Row: {
+          category: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_system_group: boolean | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_system_group?: boolean | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_system_group?: boolean | null
+          name?: string
           updated_at?: string
         }
         Relationships: []

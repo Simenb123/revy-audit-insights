@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
-export interface AnalysisGroup {
+export interface MainGroup {
   id: string;
   name: string;
   description?: string;
@@ -11,12 +11,12 @@ export interface AnalysisGroup {
   updated_at: string;
 }
 
-export const useAnalysisGroups = () => {
+export const useMainGroups = () => {
   return useQuery({
-    queryKey: ['analysis-groups'],
+    queryKey: ['main-groups'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('analysis_groups')
+        .from('main_groups')
         .select('*')
         .order('name', { ascending: true });
 
@@ -26,13 +26,13 @@ export const useAnalysisGroups = () => {
   });
 };
 
-export const useCreateAnalysisGroup = () => {
+export const useCreateMainGroup = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async (group: Omit<AnalysisGroup, 'id' | 'created_at' | 'updated_at'>) => {
+    mutationFn: async (group: Omit<MainGroup, 'id' | 'created_at' | 'updated_at'>) => {
       const { data, error } = await supabase
-        .from('analysis_groups')
+        .from('main_groups')
         .insert([group])
         .select()
         .single();
@@ -41,18 +41,18 @@ export const useCreateAnalysisGroup = () => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['analysis-groups'] });
+      queryClient.invalidateQueries({ queryKey: ['main-groups'] });
     },
   });
 };
 
-export const useUpdateAnalysisGroup = () => {
+export const useUpdateMainGroup = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async ({ id, ...updates }: Partial<AnalysisGroup> & { id: string }) => {
+    mutationFn: async ({ id, ...updates }: Partial<MainGroup> & { id: string }) => {
       const { data, error } = await supabase
-        .from('analysis_groups')
+        .from('main_groups')
         .update(updates)
         .eq('id', id)
         .select()
@@ -62,25 +62,25 @@ export const useUpdateAnalysisGroup = () => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['analysis-groups'] });
+      queryClient.invalidateQueries({ queryKey: ['main-groups'] });
     },
   });
 };
 
-export const useDeleteAnalysisGroup = () => {
+export const useDeleteMainGroup = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
-        .from('analysis_groups')
+        .from('main_groups')
         .delete()
         .eq('id', id);
 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['analysis-groups'] });
+      queryClient.invalidateQueries({ queryKey: ['main-groups'] });
     },
   });
 };
