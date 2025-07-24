@@ -34,6 +34,7 @@ import TagManager from './TagManager';
 import EnhancedContentTypeManager from './EnhancedContentTypeManager';
 import EnhancedSubjectAreaManager from './EnhancedSubjectAreaManager';
 import { SubjectAreaManager } from '../Admin/SubjectAreaManager';
+import ColumnMappingAdmin from '@/components/DataUpload/ColumnMappingAdmin';
 
 const EnhancedAdminDashboard = () => {
   return (
@@ -53,7 +54,7 @@ const EnhancedAdminDashboard = () => {
       </div>
 
       <Tabs defaultValue="subject-areas" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-10">
+        <TabsList className="grid w-full grid-cols-11">
           <TabsTrigger value="subject-areas" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
             Emner
@@ -93,6 +94,10 @@ const EnhancedAdminDashboard = () => {
           <TabsTrigger value="analytics" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
             Analyser
+          </TabsTrigger>
+          <TabsTrigger value="column-mapping" className="flex items-center gap-2">
+            <Database className="h-4 w-4" />
+            Kolonne-mapping
           </TabsTrigger>
         </TabsList>
 
@@ -198,6 +203,20 @@ const EnhancedAdminDashboard = () => {
             </CardHeader>
             <CardContent>
               <UsageAnalytics />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="column-mapping">
+          <Card>
+            <CardHeader>
+              <CardTitle>Kolonne-mapping Administrasjon</CardTitle>
+              <CardDescription>
+                Administrer feltdefinisjoner og aliaser for dataopplasting
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ColumnMappingAdmin />
             </CardContent>
           </Card>
         </TabsContent>
