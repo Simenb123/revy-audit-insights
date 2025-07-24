@@ -147,12 +147,12 @@ const ResizableRightSidebar = () => {
     <motion.div
       className="sticky top-[var(--header-height)] bg-background border-l flex flex-col z-10"
       style={{
-        width: isCollapsed ? 2 : width,
-        minWidth: isCollapsed ? 2 : 320,
-        maxWidth: isCollapsed ? 2 : 600,
+        width: isCollapsed ? 48 : width,
+        minWidth: isCollapsed ? 48 : 320,
+        maxWidth: isCollapsed ? 48 : 600,
         height: 'calc(100vh - var(--header-height))'
       }}
-      animate={{ width: isCollapsed ? 2 : width }}
+      animate={{ width: isCollapsed ? 48 : width }}
       transition={{ type: 'spring', stiffness: 300, damping: 30 }}
     >
       {/* Resize handle */}
@@ -163,16 +163,16 @@ const ResizableRightSidebar = () => {
         />
       )}
 
-      {/* Collapsed state - thin line with expand button */}
+      {/* Collapsed state - 48px width with expand button */}
       {isCollapsed && (
-        <div className="relative w-full h-full bg-border">
+        <div className="relative w-full h-full bg-background border-t-2 border-t-border/50 flex flex-col items-center">
           <Button
             variant="ghost"
             size="icon"
-            className="absolute top-4 left-0 h-6 w-6 -ml-3 bg-background border shadow-sm"
+            className="mt-4 h-8 w-8 bg-background border shadow-sm"
             onClick={toggleSidebar}
           >
-            <ChevronLeft className="h-3 w-3" />
+            <ChevronLeft className="h-4 w-4" />
           </Button>
         </div>
       )}

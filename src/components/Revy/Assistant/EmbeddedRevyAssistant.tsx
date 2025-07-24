@@ -37,41 +37,43 @@ const EmbeddedRevyAssistant: React.FC<EmbeddedRevyAssistantProps> = ({
   return (
     <div className="flex flex-col h-full">
       {/* Context indicator */}
-      <div className="mb-2">
+      <div className="mb-2 px-3 pt-3">
         <Badge variant="outline" className="text-xs">
           {contextDisplayName}
           {selectedVariant && ` • ${selectedVariant.display_name}`}
         </Badge>
       </div>
 
-      {/* Messages area - compact */}
-      <ScrollArea className="flex-1 mb-3">
-        <div className="space-y-2 pr-2">
-          {messages.length === 0 ? (
-            <div className="text-xs text-muted-foreground p-2 text-center">
-              Spør meg om hjelp med revisjonen
-            </div>
-          ) : (
-            messages.map((message) => (
-              <MessageItem 
-                key={message.id} 
-                message={message} 
-                compact={true}
-              />
-            ))
-          )}
-          {isLoading && (
-            <div className="flex items-center gap-2 text-xs text-muted-foreground p-2">
-              <Loader2 className="h-3 w-3 animate-spin" />
-              AI-Revy tenker...
-            </div>
-          )}
-          <div ref={messagesEndRef} />
-        </div>
-      </ScrollArea>
+      {/* Messages area - scrollable */}
+      <div className="flex-1 overflow-hidden">
+        <ScrollArea className="h-full">
+          <div className="space-y-2 px-3 pb-3">
+            {messages.length === 0 ? (
+              <div className="text-xs text-muted-foreground p-2 text-center">
+                Spør meg om hjelp med revisjonen
+              </div>
+            ) : (
+              messages.map((message) => (
+                <MessageItem 
+                  key={message.id} 
+                  message={message} 
+                  compact={true}
+                />
+              ))
+            )}
+            {isLoading && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground p-2">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                AI-Revy tenker...
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+        </ScrollArea>
+      </div>
 
-      {/* Input area */}
-      <div className="flex gap-2">
+      {/* Input area - sticky at bottom */}
+      <div className="sticky bottom-0 bg-background border-t p-3 flex gap-2">
         <Input
           value={input}
           onChange={onInputChange}

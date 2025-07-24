@@ -25,8 +25,8 @@ const GridLayoutContainer: React.FC<GridLayoutContainerProps> = ({
       return `${leftSidebarWidth} 1fr 0px`;
     }
     
-    // Use minimal width for collapsed sidebar (2px) or actual width for expanded
-    const rightSidebarWidth = rightCollapsed ? '2px' : `${rightWidth}px`;
+    // Use 48px for collapsed sidebar or actual width for expanded
+    const rightSidebarWidth = rightCollapsed ? '48px' : `${rightWidth}px`;
     
     return `${leftSidebarWidth} 1fr ${rightSidebarWidth}`;
   };
