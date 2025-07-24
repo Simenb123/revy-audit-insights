@@ -113,7 +113,7 @@ const TrialBalanceUploader = ({ clientId, onUploadComplete }: TrialBalanceUpload
               client_id: clientId,
               account_number: account.account_number?.toString() || '',
               account_name: account.account_name?.toString() || '',
-              account_type: 'asset',
+              account_type: 'eiendeler' as const,
               is_active: true
             }, { 
               onConflict: 'client_id,account_number',

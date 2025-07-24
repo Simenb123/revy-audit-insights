@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Upload, FileSpreadsheet, CheckCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { convertAccountType } from '@/utils/accountTypeMapping';
 import ColumnMappingInterface from './ColumnMappingInterface';
 
 interface CSVUploaderProps {
@@ -190,7 +191,7 @@ const CSVUploader = ({ clientId, onUploadSuccess }: CSVUploaderProps) => {
       client_id: clientId,
       account_number: accountNumber,
       account_name: generateAccountName(accountNumber),
-      account_type: determineAccountType(accountNumber),
+      account_type: convertAccountType(determineAccountType(accountNumber)) as "eiendeler" | "gjeld" | "egenkapital" | "resultat",
       is_active: true
     }));
 

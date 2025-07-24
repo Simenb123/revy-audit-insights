@@ -13,7 +13,7 @@ const accountSchema = z.object({
   id: z.string().optional(),
   standard_number: z.string().min(1, 'Kontonummer er påkrevd'),
   standard_name: z.string().min(1, 'Kontonavn er påkrevd'),
-  account_type: z.enum(['asset', 'liability', 'equity', 'revenue', 'expense']),
+  account_type: z.enum(['eiendeler', 'gjeld', 'egenkapital', 'resultat']),
   category: z.string().optional(),
   analysis_group: z.string().optional(),
   line_type: z.enum(['detail', 'subtotal', 'calculation']).default('detail'),
@@ -62,7 +62,7 @@ const StandardAccountForm = ({ defaultValues, onSubmit }: StandardAccountFormPro
     defaultValues: defaultValues || {
       standard_number: '',
       standard_name: '',
-      account_type: 'asset',
+      account_type: 'eiendeler',
       category: '',
       analysis_group: 'balance_sheet',
       line_type: 'detail',
@@ -82,7 +82,7 @@ const StandardAccountForm = ({ defaultValues, onSubmit }: StandardAccountFormPro
       form.reset({
         standard_number: '',
         standard_name: '',
-        account_type: 'asset',
+        account_type: 'eiendeler',
         category: '',
         analysis_group: 'balance_sheet',
         line_type: 'detail',
@@ -172,11 +172,10 @@ const StandardAccountForm = ({ defaultValues, onSubmit }: StandardAccountFormPro
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="asset">Eiendel</SelectItem>
-                    <SelectItem value="liability">Gjeld</SelectItem>
-                    <SelectItem value="equity">Egenkapital</SelectItem>
-                    <SelectItem value="revenue">Inntekt</SelectItem>
-                    <SelectItem value="expense">Kostnad</SelectItem>
+                    <SelectItem value="eiendeler">Eiendel</SelectItem>
+                    <SelectItem value="gjeld">Gjeld</SelectItem>
+                    <SelectItem value="egenkapital">Egenkapital</SelectItem>
+                    <SelectItem value="resultat">Inntekt/Kostnad</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />

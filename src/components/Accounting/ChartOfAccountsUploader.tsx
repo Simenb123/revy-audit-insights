@@ -8,6 +8,7 @@ import { FileText, CheckCircle, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import * as XLSX from 'xlsx';
+import { convertAccountType } from '@/utils/accountTypeMapping';
 import AccountCSVMapping from './AccountCSVMapping';
 
 interface ChartOfAccountsUploaderProps {
@@ -188,7 +189,7 @@ const ChartOfAccountsUploader = ({ clientId, onUploadComplete }: ChartOfAccounts
         client_id: clientId,
         account_number: account.account_number,
         account_name: account.account_name,
-        account_type: account.account_type,
+        account_type: convertAccountType(account.account_type) as "eiendeler" | "gjeld" | "egenkapital" | "resultat",
         is_active: true
       }));
 
