@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Trash2, Edit, Plus, Upload, Download } from 'lucide-react';
 import { toast } from 'sonner';
+import * as XLSX from 'xlsx';
 import { 
   useAccountMappingRules, 
   useCreateAccountMappingRule,
@@ -108,62 +109,101 @@ const AccountMappingRulesManager = () => {
     input.onchange = (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (file) {
-        processCSVImport(file);
+        processFileImport(file);
       }
     };
     input.click();
   };
 
-  const processCSVImport = async (file: File) => {
-    const text = await file.text();
-    const lines = text.split('\n').filter(line => line.trim());
-    const headers = lines[0].split(',').map(h => h.trim());
-    
-    // Check if it matches your format: StartKonto, SluttKonto, Regnnr, Regnskapslinje
-    const expectedHeaders = ['StartKonto', 'SluttKonto', 'Regnnr', 'Regnskapslinje'];
-    const hasCorrectFormat = expectedHeaders.every(header => 
-      headers.some(h => h.toLowerCase().includes(header.toLowerCase()))
-    );
-    
-    if (!hasCorrectFormat) {
-      toast.error('CSV-filen må ha kolonnene: StartKonto, SluttKonto, Regnnr, Regnskapslinje');
-      return;
-    }
-    
-    const rules = [];
-    for (let i = 1; i < lines.length; i++) {
-      const values = lines[i].split(',').map(v => v.trim());
-      if (values.length >= 4) {
-        const startKonto = parseInt(values[0]);
-        const sluttKonto = parseInt(values[1]);
-        const regnnr = values[2];
-        const regnskapslinje = values[3];
-        
-        // Find the standard account by number
-        const standardAccount = standardAccounts?.find(a => a.standard_number === regnnr);
-        if (standardAccount) {
-          rules.push({
-            rule_name: regnskapslinje,
-            account_range_start: startKonto,
-            account_range_end: sluttKonto,
-            standard_account_id: standardAccount.id,
-            confidence_score: 0.9,
-            is_active: true
-          });
+  const processFileImport = async (file: File) => {
+    try {
+      let data: any[][] = [];
+      
+      if (file.name.endsWith('.csv')) {
+        // Process CSV file
+        const text = await file.text();
+        const lines = text.split('\n').filter(line => line.trim());
+        data = lines.map(line => line.split(',').map(cell => cell.trim()));
+      } else if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+        // Process Excel file
+        const buffer = await file.arrayBuffer();
+        const workbook = XLSX.read(buffer, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        data = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
+      } else {
+        toast.error('Filformat ikke støttet. Bruk CSV eller Excel-filer.');
+        return;
+      }
+
+      if (data.length === 0) {
+        toast.error('Filen er tom eller kan ikke leses.');
+        return;
+      }
+
+      const headers = data[0].map(h => String(h).trim());
+      
+      // Check if it matches your format: StartKonto, SluttKonto, Regnnr, Regnskapslinje
+      const expectedHeaders = ['StartKonto', 'SluttKonto', 'Regnnr', 'Regnskapslinje'];
+      const hasCorrectFormat = expectedHeaders.every(header => 
+        headers.some(h => h.toLowerCase().includes(header.toLowerCase()))
+      );
+      
+      if (!hasCorrectFormat) {
+        toast.error('Filen må ha kolonnene: StartKonto, SluttKonto, Regnnr, Regnskapslinje');
+        return;
+      }
+      
+      const rules = [];
+      for (let i = 1; i < data.length; i++) {
+        const values = data[i].map(v => String(v || '').trim());
+        if (values.length >= 4 && values[0] && values[1] && values[2] && values[3]) {
+          const startKonto = parseInt(values[0]);
+          const sluttKonto = parseInt(values[1]);
+          const regnnr = values[2];
+          const regnskapslinje = values[3];
+          
+          if (isNaN(startKonto) || isNaN(sluttKonto)) continue;
+          
+          // Find the standard account by number
+          const standardAccount = standardAccounts?.find(a => a.standard_number === regnnr);
+          if (standardAccount) {
+            rules.push({
+              rule_name: regnskapslinje,
+              account_range_start: startKonto,
+              account_range_end: sluttKonto,
+              standard_account_id: standardAccount.id,
+              confidence_score: 0.9,
+              is_active: true
+            });
+          } else {
+            console.warn(`Regnskapsnummer ${regnnr} ikke funnet i standardkontoer`);
+          }
         }
       }
-    }
-    
-    // Bulk create rules
-    for (const rule of rules) {
-      try {
-        await createRule.mutateAsync(rule);
-      } catch (error) {
-        console.error('Error creating rule:', error);
+      
+      if (rules.length === 0) {
+        toast.error('Ingen gyldige regler funnet i filen');
+        return;
       }
+      
+      // Bulk create rules
+      let successCount = 0;
+      for (const rule of rules) {
+        try {
+          await createRule.mutateAsync(rule);
+          successCount++;
+        } catch (error) {
+          console.error('Error creating rule:', error);
+        }
+      }
+      
+      toast.success(`Importerte ${successCount} av ${rules.length} regler`);
+      
+    } catch (error) {
+      console.error('Import error:', error);
+      toast.error('Feil ved import av fil');
     }
-    
-    toast.success(`Importerte ${rules.length} regler`);
   };
 
   const handleCSVExport = () => {
@@ -289,7 +329,7 @@ const AccountMappingRulesManager = () => {
             <div className="flex gap-2">
               <Button variant="outline" onClick={handleCSVImport}>
                 <Upload className="h-4 w-4 mr-2" />
-                Importer CSV
+                Importer CSV/Excel
               </Button>
               <Button variant="outline" onClick={handleCSVExport}>
                 <Download className="h-4 w-4 mr-2" />
