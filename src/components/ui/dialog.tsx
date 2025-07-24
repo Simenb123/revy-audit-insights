@@ -88,18 +88,15 @@ const DialogContent = React.forwardRef<
         }}
         {...props}
       >
-        <div
-          ref={contentRef}
-          onMouseDown={handleMouseDown}
-          className={cn(
-            draggable && "cursor-move select-none",
-            "absolute inset-x-0 top-0 h-8 flex items-center justify-center"
-          )}
-        >
-          {draggable && (
+        {draggable && (
+          <div
+            ref={contentRef}
+            onMouseDown={handleMouseDown}
+            className="absolute inset-x-0 top-0 h-8 flex items-center justify-center cursor-move select-none bg-muted/20 rounded-t-lg"
+          >
             <div className="w-8 h-1 bg-muted-foreground rounded-full opacity-50" />
-          )}
-        </div>
+          </div>
+        )}
         {children}
         <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
           <X className="h-4 w-4" />

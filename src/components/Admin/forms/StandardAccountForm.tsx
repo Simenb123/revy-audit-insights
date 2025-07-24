@@ -47,42 +47,53 @@ const accountSchema = z.object({
 export type StandardAccountFormData = z.infer<typeof accountSchema>;
 
 interface StandardAccountFormProps {
-  defaultValues?: Partial<StandardAccountFormData>;
+  defaultValues?: StandardAccountFormData | null;
   onSubmit: (data: StandardAccountFormData) => void;
 }
 
 const StandardAccountForm = ({ defaultValues, onSubmit }: StandardAccountFormProps) => {
   const { data: standardAccounts = [] } = useStandardAccounts();
   
-  // Debug logging
-  console.log('StandardAccountForm rendered with:', {
-    defaultValues,
-    hasId: Boolean(defaultValues?.id),
-    hasStandardNumber: Boolean(defaultValues?.standard_number)
-  });
-  
-  // Check if we're editing an existing account - more robust check
+  // Check if we're editing - only true if defaultValues exists with valid id and standard_number
   const isEditing = Boolean(defaultValues && defaultValues.id && defaultValues.standard_number);
-  
-  console.log('isEditing determined as:', isEditing);
   
   const form = useForm<StandardAccountFormData>({
     resolver: zodResolver(accountSchema),
-    defaultValues: {
-      id: defaultValues?.id || undefined,
-      standard_number: defaultValues?.standard_number || '',
-      standard_name: defaultValues?.standard_name || '',
-      account_type: defaultValues?.account_type || 'asset',
-      category: defaultValues?.category || undefined,
-      analysis_group: defaultValues?.analysis_group || undefined,
-      line_type: defaultValues?.line_type || 'detail',
-      display_order: defaultValues?.display_order || 0,
-      is_total_line: defaultValues?.is_total_line || false,
-      sign_multiplier: defaultValues?.sign_multiplier || 1,
-      parent_line_id: defaultValues?.parent_line_id || null,
-      calculation_formula: defaultValues?.calculation_formula || null,
+    defaultValues: defaultValues || {
+      standard_number: '',
+      standard_name: '',
+      account_type: 'asset',
+      category: '',
+      analysis_group: 'balance_sheet',
+      line_type: 'detail',
+      display_order: 0,
+      is_total_line: false,
+      sign_multiplier: 1,
+      parent_line_id: null,
+      calculation_formula: null,
     },
   });
+
+  // Reset form when defaultValues changes (especially when switching between create/edit)
+  React.useEffect(() => {
+    if (defaultValues) {
+      form.reset(defaultValues);
+    } else {
+      form.reset({
+        standard_number: '',
+        standard_name: '',
+        account_type: 'asset',
+        category: '',
+        analysis_group: 'balance_sheet',
+        line_type: 'detail',
+        display_order: 0,
+        is_total_line: false,
+        sign_multiplier: 1,
+        parent_line_id: null,
+        calculation_formula: null,
+      });
+    }
+  }, [defaultValues, form]);
 
   // Watch for changes in standard_number to auto-calculate display_order
   const standardNumber = form.watch('standard_number');
@@ -99,23 +110,17 @@ const StandardAccountForm = ({ defaultValues, onSubmit }: StandardAccountFormPro
 
   const handleSubmit = async (data: StandardAccountFormData) => {
     try {
-      console.log('Form data being submitted:', JSON.stringify(data, null, 2));
-      
-      // Ensure calculation_formula is properly formatted
+      // Format the data properly for submission
       const formattedData = {
         ...data,
-        calculation_formula: data.calculation_formula || null,
-        category: data.category || null,
-        analysis_group: data.analysis_group || null,
-        parent_line_id: data.parent_line_id || null,
+        display_order: Number(data.display_order),
+        sign_multiplier: Number(data.sign_multiplier),
+        is_total_line: Boolean(data.is_total_line),
       };
-      
-      console.log('Formatted data for submission:', JSON.stringify(formattedData, null, 2));
       
       await onSubmit(formattedData);
     } catch (error) {
       console.error('Error submitting form:', error);
-      console.error('Error details:', JSON.stringify(error, null, 2));
     }
   };
 

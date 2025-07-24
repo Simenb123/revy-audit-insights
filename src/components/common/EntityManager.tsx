@@ -8,7 +8,7 @@ export interface EntityManagerProps<T> {
   isLoading?: boolean;
   itemKey: (item: T) => string;
   renderItem: (item: T, actions: { select: () => void; edit: () => void; remove: () => void; selected: boolean }) => React.ReactNode;
-  FormComponent: React.ComponentType<{ item?: T | null; onSubmit: (data: any) => void }>;
+  FormComponent: React.ComponentType<{ defaultValues?: T | null; onSubmit: (data: any) => void }>;
   onCreate: (data: any) => Promise<void>;
   onUpdate: (id: string, data: any) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
@@ -46,7 +46,10 @@ function EntityManager<T>({
 
   const handleCreateDialogChange = (open: boolean) => {
     setCreateDialogOpen(open);
-    // No need to clear anything since create dialog doesn't pass item prop
+    if (!open) {
+      // Ensure selected item is cleared when create dialog closes
+      setSelectedItem(null);
+    }
   };
 
   const handleEditDialogChange = (open: boolean) => {
@@ -75,14 +78,14 @@ function EntityManager<T>({
               <DialogTrigger asChild>
                 <Button className="gap-2">Ny</Button>
               </DialogTrigger>
-              <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto" aria-describedby="create-dialog-description">
+              <DialogContent className="max-w-7xl max-h-[95vh] overflow-y-auto" draggable aria-describedby="create-dialog-description">
                 <DialogHeader>
                   <DialogTitle>Opprett</DialogTitle>
                   <div id="create-dialog-description" className="sr-only">
                     Opprett ny enhet
                   </div>
                 </DialogHeader>
-                <FormComponent onSubmit={handleCreate} />
+                <FormComponent defaultValues={null} onSubmit={handleCreate} />
               </DialogContent>
             </Dialog>
           </div>
@@ -105,14 +108,14 @@ function EntityManager<T>({
       </Card>
 
       <Dialog open={editDialogOpen} onOpenChange={handleEditDialogChange}>
-        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto" aria-describedby="edit-dialog-description">
+        <DialogContent className="max-w-7xl max-h-[95vh] overflow-y-auto" draggable aria-describedby="edit-dialog-description">
           <DialogHeader>
             <DialogTitle>Rediger</DialogTitle>
             <div id="edit-dialog-description" className="sr-only">
               Rediger eksisterende enhet
             </div>
           </DialogHeader>
-          <FormComponent item={selectedItem} onSubmit={handleEdit} />
+          <FormComponent defaultValues={selectedItem} onSubmit={handleEdit} />
         </DialogContent>
       </Dialog>
 

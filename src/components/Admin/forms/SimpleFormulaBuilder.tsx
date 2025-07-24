@@ -102,22 +102,33 @@ export const SimpleFormulaBuilder = ({ value, onChange, standardAccounts, disabl
   };
 
   return (
-    <Card>
-      <CardHeader className="pb-4">
-        <CardTitle className="text-base">Beregningsformel</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Formula Terms */}
-        <div className="space-y-2">
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-medium">Beregningsformel</h3>
+        <Button 
+          variant="outline" 
+          onClick={addTerm}
+          disabled={disabled}
+          className="h-7 text-xs px-2"
+          size="sm"
+        >
+          <Plus className="h-3 w-3 mr-1" />
+          Legg til
+        </Button>
+      </div>
+      
+      {/* Formula Terms - Compact Grid Layout */}
+      {terms.length > 0 && (
+        <div className="space-y-1 max-h-48 overflow-y-auto border rounded-md p-2 bg-muted/20">
           {terms.map((term, index) => (
-            <div key={term.id} className="flex items-center gap-2 p-2 border rounded-md bg-muted/30">
+            <div key={term.id} className="flex items-center gap-1 text-xs">
               {index > 0 && (
                 <Select 
                   value={term.operator} 
                   onValueChange={(operator: '+' | '-') => updateTerm(term.id, { operator })}
                   disabled={disabled}
                 >
-                  <SelectTrigger className="w-12 h-8">
+                  <SelectTrigger className="w-8 h-6 text-xs">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -132,9 +143,9 @@ export const SimpleFormulaBuilder = ({ value, onChange, standardAccounts, disabl
                 onValueChange={(value) => handleAccountChange(term.id, value)}
                 options={accountOptions}
                 placeholder="Velg konto..."
-                searchPlaceholder="Søk på nummer eller navn..."
+                searchPlaceholder="Søk..."
                 disabled={disabled}
-                className="flex-1 h-8"
+                className="flex-1 h-6 text-xs"
               />
               
               <Button
@@ -142,35 +153,22 @@ export const SimpleFormulaBuilder = ({ value, onChange, standardAccounts, disabl
                 size="sm"
                 onClick={() => removeTerm(term.id)}
                 disabled={disabled}
-                className="h-8 w-8 p-0"
+                className="h-6 w-6 p-0"
               >
-                <X className="h-3 w-3" />
+                <X className="h-2 w-2" />
               </Button>
             </div>
           ))}
         </div>
+      )}
 
-        {/* Add Term Button */}
-        <Button 
-          variant="outline" 
-          onClick={addTerm}
-          disabled={disabled}
-          className="w-full h-8"
-          size="sm"
-        >
-          <Plus className="h-3 w-3 mr-1" />
-          Legg til konto
-        </Button>
-
-        {/* Preview */}
-        {terms.length > 0 && (
-          <div className="p-2 bg-muted rounded-md">
-            <h4 className="text-xs font-medium mb-1">Forhåndsvisning:</h4>
-            <p className="text-xs font-mono text-muted-foreground">{formatPreview()}</p>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+      {/* Preview - More Compact */}
+      {terms.length > 0 && (
+        <div className="text-xs text-muted-foreground bg-muted/30 p-2 rounded border">
+          <span className="font-medium">Formel:</span> {formatPreview()}
+        </div>
+      )}
+    </div>
   );
 };
 

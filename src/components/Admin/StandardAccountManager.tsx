@@ -89,8 +89,8 @@ const StandardAccountManager = () => {
       onCreate={async (data) => { await createAccount.mutateAsync(data); }}
       onUpdate={async (id, data) => { await updateAccount.mutateAsync({ id, ...data }); }}
       onDelete={async (id) => { await deleteAccount.mutateAsync(id); }}
-      FormComponent={({ item, onSubmit }) => (
-        <StandardAccountForm defaultValues={item ?? undefined} onSubmit={onSubmit} />
+      FormComponent={({ defaultValues, onSubmit }) => (
+        <StandardAccountForm defaultValues={defaultValues} onSubmit={onSubmit} />
       )}
       renderItem={(account, actions) => (
         <StandardAccountCard account={account} actions={actions} />

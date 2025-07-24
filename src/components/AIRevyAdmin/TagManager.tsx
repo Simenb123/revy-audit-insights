@@ -120,8 +120,8 @@ const TagManager = () => {
       onCreate={async (data) => { await createTag.mutateAsync(data); }}
       onUpdate={async (id, data) => { await updateTag.mutateAsync({ id, ...data }); }}
       onDelete={async (id) => { await deleteTag.mutateAsync(id); }}
-      FormComponent={({ item, onSubmit }) => (
-        <TagForm defaultValues={item ?? undefined} onSubmit={onSubmit} />
+      FormComponent={({ defaultValues, onSubmit }) => (
+        <TagForm defaultValues={defaultValues} onSubmit={onSubmit} />
       )}
       renderItem={(tag: Tag, actions) => (
         <TagCard tag={tag} actions={actions} />
