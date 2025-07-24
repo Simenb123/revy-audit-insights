@@ -62,7 +62,7 @@ function EntityManager<T>({
               <DialogTrigger asChild>
                 <Button className="gap-2">Ny</Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-w-2xl">
                 <DialogHeader>
                   <DialogTitle>Opprett</DialogTitle>
                 </DialogHeader>
@@ -89,7 +89,7 @@ function EntityManager<T>({
       </Card>
 
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Rediger</DialogTitle>
           </DialogHeader>

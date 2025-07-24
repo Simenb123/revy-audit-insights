@@ -80,7 +80,7 @@ export const FormulaBuilder = ({ value, onChange, standardAccounts, disabled }: 
               <SelectTrigger className="w-16">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-background border shadow-md z-50">
                 <SelectItem value="+">+</SelectItem>
                 <SelectItem value="-">-</SelectItem>
                 <SelectItem value="*">×</SelectItem>
@@ -97,7 +97,7 @@ export const FormulaBuilder = ({ value, onChange, standardAccounts, disabled }: 
             <SelectTrigger className="flex-1">
               <SelectValue placeholder="Velg konto..." />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-background border shadow-md z-50 max-h-60">
               {standardAccounts.map((account) => (
                 <SelectItem key={account.standard_number} value={account.standard_number}>
                   {account.standard_number} - {account.standard_name}
