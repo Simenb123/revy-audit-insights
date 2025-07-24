@@ -44,24 +44,18 @@ const AppLayout = () => {
       <div className="min-h-screen bg-background flex flex-col">
         <AppHeader />
         <SidebarProvider>
-          <GridLayoutContainer>
-            <div className="grid-left-sidebar">
-              <ResizableLeftSidebar />
+        <GridLayoutContainer>
+          <ResizableLeftSidebar />
+          <ResponsiveLayout>
+            <div className="p-3 bg-yellow-50 border-b border-yellow-200">
+              <p className="text-sm text-yellow-800">
+                Demo-modus: Appen kjører uten tilkobling til backend.
+              </p>
             </div>
-            <div className="grid-main-content">
-              <ResponsiveLayout>
-                <div className="p-3 bg-yellow-50 border-b border-yellow-200">
-                  <p className="text-sm text-yellow-800">
-                    Demo-modus: Appen kjører uten tilkobling til backend.
-                  </p>
-                </div>
-                <Outlet />
-              </ResponsiveLayout>
-            </div>
-            <div className="grid-right-sidebar">
-              <ResizableRightSidebar />
-            </div>
-          </GridLayoutContainer>
+            <Outlet />
+          </ResponsiveLayout>
+          <ResizableRightSidebar />
+        </GridLayoutContainer>
         </SidebarProvider>
       </div>
     );
@@ -86,17 +80,11 @@ const AppLayout = () => {
       <AppHeader />
       <SidebarProvider>
         <GridLayoutContainer>
-          <div className="grid-left-sidebar">
-            <ResizableLeftSidebar />
-          </div>
-          <div className="grid-main-content">
-            <ResponsiveLayout>
-              <Outlet />
-            </ResponsiveLayout>
-          </div>
-          <div className="grid-right-sidebar">
-            <ResizableRightSidebar />
-          </div>
+          <ResizableLeftSidebar />
+          <ResponsiveLayout>
+            <Outlet />
+          </ResponsiveLayout>
+          <ResizableRightSidebar />
         </GridLayoutContainer>
       </SidebarProvider>
     </div>

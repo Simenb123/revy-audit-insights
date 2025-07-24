@@ -71,36 +71,19 @@
   /* CSS Grid Layout System */
   .app-grid {
     display: grid;
-    grid-template-areas: 
-      "left-sidebar main-content right-sidebar";
     min-height: calc(100vh - var(--header-height));
-    transition: grid-template-columns 300ms ease-in-out;
+    /* grid-template-columns will be set dynamically by GridLayoutContainer */
   }
 
   /* Mobile Layout - Stack everything */
   @media (max-width: 1023px) {
     .app-grid {
-      grid-template-areas: "main-content";
       grid-template-columns: 1fr !important;
     }
     
-    .grid-right-sidebar {
+    .app-grid > *:not(:nth-child(2)) {
       display: none;
     }
-  }
-
-  .grid-left-sidebar {
-    grid-area: left-sidebar;
-  }
-
-  .grid-main-content {
-    grid-area: main-content;
-    min-width: 0; /* Prevents grid overflow */
-    overflow: hidden;
-  }
-
-  .grid-right-sidebar {
-    grid-area: right-sidebar;
   }
 
   /* Global Layout Utilities */
