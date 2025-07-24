@@ -5,7 +5,12 @@ import SmartReviAssistant from '@/components/Revy/SmartReviAssistant'
 import { cn } from '@/lib/utils'
 import { RevyContext } from '@/types/revio'
 
-export type AiRevyVariant = 'dashboard' | 'knowledge' | 'client'
+export type AiRevyVariant =
+  | 'dashboard'
+  | 'knowledge'
+  | 'client'
+  | 'admin'
+  | 'general'
 
 interface AiRevyCardProps {
   variant: AiRevyVariant
@@ -19,7 +24,9 @@ const getSystemPrompt = (variant: AiRevyVariant): string => {
   const prompts: Record<AiRevyVariant, string> = {
     dashboard: 'Du er AI-Revy og hjelper brukeren i dashboardet.',
     knowledge: 'Du er AI-Revy og svarer på kunnskapsbaserte spørsmål.',
-    client: 'Du er AI-Revy med fokus på valgt klient.'
+    client: 'Du er AI-Revy med fokus på valgt klient.',
+    admin: 'Du er AI-Revy og bistår administratorer med oppgaver i admin-grensesnittet.',
+    general: 'Du er AI-Revy og hjelper brukeren generelt.'
   }
   return prompts[variant]
 }

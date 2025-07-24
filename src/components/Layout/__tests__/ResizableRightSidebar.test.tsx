@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -9,8 +9,9 @@ vi.mock('@/hooks/useIsMobile', () => ({
   useIsMobile: () => false
 }));
 
+const useClientLookupMock = vi.fn().mockReturnValue({ data: { id: 'uuid' } });
 vi.mock('@/hooks/useClientLookup', () => ({
-  useClientLookup: () => ({ data: { id: 'uuid' } })
+  useClientLookup: (...args: any[]) => useClientLookupMock(...args)
 }));
 
 vi.mock('@/hooks/useClientDocuments', () => ({
@@ -33,6 +34,9 @@ vi.mock('@/hooks/useUserProfile', () => ({
 }));
 
 describe('ResizableRightSidebar', () => {
+  beforeEach(() => {
+    useClientLookupMock.mockReturnValue({ data: { id: 'uuid' } });
+  });
   it('renders the AI-Revy assistant card when a client id is detected', () => {
     const queryClient = new QueryClient();
     render(
@@ -46,5 +50,37 @@ describe('ResizableRightSidebar', () => {
     );
 
     expect(screen.getByText('AI-Revy')).toBeInTheDocument();
+  });
+
+  it('renders the admin assistant on admin pages', () => {
+    const queryClient = new QueryClient();
+    useClientLookupMock.mockReturnValueOnce({ data: undefined });
+    render(
+      <MemoryRouter initialEntries={['/ai-revy-admin']}>
+        <QueryClientProvider client={queryClient}>
+          <RightSidebarProvider>
+            <ResizableRightSidebar />
+          </RightSidebarProvider>
+        </QueryClientProvider>
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText('Admin Assistent')).toBeInTheDocument();
+  });
+
+  it('renders the general assistant when no client id is present', () => {
+    const queryClient = new QueryClient();
+    useClientLookupMock.mockReturnValueOnce({ data: undefined });
+    render(
+      <MemoryRouter initialEntries={['/dashboard']}>
+        <QueryClientProvider client={queryClient}>
+          <RightSidebarProvider>
+            <ResizableRightSidebar />
+          </RightSidebarProvider>
+        </QueryClientProvider>
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText('AI Assistent')).toBeInTheDocument();
   });
 });

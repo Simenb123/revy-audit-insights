@@ -85,9 +85,17 @@ const ResizableRightSidebar = () => {
   };
 
   const renderContent = () => {
+    const variant: AiRevyVariant = clientId
+      ? 'client'
+      : pageType === 'admin'
+        ? 'admin'
+        : pageType === 'knowledge'
+          ? 'knowledge'
+          : 'general';
+
     return (
       <AiRevyCard
-        variant={pageType as AiRevyVariant}
+        variant={variant}
         className="h-full w-full flex flex-col border-0"
         context={clientId ? 'client-detail' : 'general'}
         clientData={clientId ? { id: clientId } : undefined}
