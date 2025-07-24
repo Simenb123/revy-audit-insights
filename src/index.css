@@ -83,6 +83,10 @@
       grid-template-areas: "main-content";
       grid-template-columns: 1fr !important;
     }
+    
+    .grid-right-sidebar {
+      display: none;
+    }
   }
 
   .grid-left-sidebar {

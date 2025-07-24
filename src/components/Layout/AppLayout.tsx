@@ -58,7 +58,7 @@ const AppLayout = () => {
                 <Outlet />
               </ResponsiveLayout>
             </div>
-            <div className="grid-right-sidebar hidden lg:block">
+            <div className="grid-right-sidebar">
               <ResizableRightSidebar />
             </div>
           </GridLayoutContainer>
@@ -94,7 +94,7 @@ const AppLayout = () => {
               <Outlet />
             </ResponsiveLayout>
           </div>
-          <div className="grid-right-sidebar hidden lg:block">
+          <div className="grid-right-sidebar">
             <ResizableRightSidebar />
           </div>
         </GridLayoutContainer>
