@@ -60,18 +60,17 @@ const StandardAccountForm = ({ defaultValues, onSubmit }: StandardAccountFormPro
   const form = useForm<StandardAccountFormData>({
     resolver: zodResolver(accountSchema),
     defaultValues: {
-      standard_number: '',
-      standard_name: '',
-      account_type: 'asset',
-      category: '',
-      analysis_group: '',
-      line_type: 'detail',
-      display_order: 0,
-      is_total_line: false,
-      sign_multiplier: 1,
-      calculation_formula: null,
-      parent_line_id: '',
-      ...defaultValues,
+      standard_number: defaultValues?.standard_number || '',
+      standard_name: defaultValues?.standard_name || '',
+      account_type: defaultValues?.account_type || 'asset',
+      category: defaultValues?.category || '',
+      analysis_group: defaultValues?.analysis_group || '',
+      line_type: defaultValues?.line_type || 'detail',
+      display_order: defaultValues?.display_order || 0,
+      is_total_line: defaultValues?.is_total_line || false,
+      sign_multiplier: defaultValues?.sign_multiplier || 1,
+      calculation_formula: defaultValues?.calculation_formula || null,
+      parent_line_id: defaultValues?.parent_line_id || '',
     },
   });
 
@@ -119,37 +118,37 @@ const StandardAccountForm = ({ defaultValues, onSubmit }: StandardAccountFormPro
             )}
           />
         </div>
-        <FormField
-          control={form.control}
-          name="account_type"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Kontotype</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="asset">Eiendel</SelectItem>
-                  <SelectItem value="liability">Gjeld</SelectItem>
-                  <SelectItem value="equity">Egenkapital</SelectItem>
-                  <SelectItem value="revenue">Inntekt</SelectItem>
-                  <SelectItem value="expense">Kostnad</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+          <FormField
+            control={form.control}
+            name="account_type"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Kontotype</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="asset">Eiendel</SelectItem>
+                    <SelectItem value="liability">Gjeld</SelectItem>
+                    <SelectItem value="equity">Egenkapital</SelectItem>
+                    <SelectItem value="revenue">Inntekt</SelectItem>
+                    <SelectItem value="expense">Kostnad</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         <FormField
           control={form.control}
           name="category"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Kategori</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <Select onValueChange={field.onChange} value={field.value || ''}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Velg kategori..." />
@@ -173,7 +172,7 @@ const StandardAccountForm = ({ defaultValues, onSubmit }: StandardAccountFormPro
           render={({ field }) => (
             <FormItem>
               <FormLabel>Analysegruppe</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <Select onValueChange={field.onChange} value={field.value || ''}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Velg analysegruppe..." />
@@ -198,7 +197,7 @@ const StandardAccountForm = ({ defaultValues, onSubmit }: StandardAccountFormPro
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Linjetype</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue />
@@ -257,7 +256,7 @@ const StandardAccountForm = ({ defaultValues, onSubmit }: StandardAccountFormPro
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Fortegn</FormLabel>
-                <Select onValueChange={(value) => field.onChange(parseInt(value))} defaultValue={field.value?.toString()}>
+                <Select onValueChange={(value) => field.onChange(parseInt(value))} value={field.value?.toString()}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue />

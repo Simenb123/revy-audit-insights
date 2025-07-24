@@ -62,9 +62,12 @@ function EntityManager<T>({
               <DialogTrigger asChild>
                 <Button className="gap-2">Ny</Button>
               </DialogTrigger>
-              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto" aria-describedby="create-dialog-description">
                 <DialogHeader>
                   <DialogTitle>Opprett</DialogTitle>
+                  <div id="create-dialog-description" className="sr-only">
+                    Opprett ny enhet
+                  </div>
                 </DialogHeader>
                 <FormComponent onSubmit={handleCreate} />
               </DialogContent>
@@ -89,9 +92,12 @@ function EntityManager<T>({
       </Card>
 
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto" aria-describedby="edit-dialog-description">
           <DialogHeader>
             <DialogTitle>Rediger</DialogTitle>
+            <div id="edit-dialog-description" className="sr-only">
+              Rediger eksisterende enhet
+            </div>
           </DialogHeader>
           <FormComponent item={selectedItem} onSubmit={handleEdit} />
         </DialogContent>
