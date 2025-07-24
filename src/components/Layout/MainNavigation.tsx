@@ -22,7 +22,6 @@ const MainNavigation = () => {
   const navigation = [
     { name: 'Dashbord', href: '/dashboard', icon: Home },
     { name: 'Klienter', href: '/clients', icon: Users },
-    { name: 'Organisasjon', href: '/organization', icon: Building2 },
     { name: 'Kommunikasjon', href: '/communication', icon: MessageSquare },
     { name: 'Teams', href: '/teams', icon: UserCog },
     { name: 'Opplæring', href: '/training', icon: GraduationCap },

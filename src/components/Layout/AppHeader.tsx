@@ -81,11 +81,11 @@ const AppHeader: React.FC<AppHeaderProps> = ({ className = '' }) => {
           <DropdownMenuContent className="w-56" align="end">
             <DropdownMenuLabel>Innstillinger</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => navigate('/organization')}>
-              Organisasjon
+            <DropdownMenuItem onClick={() => navigate('/organization/settings')}>
+              Organisasjonsinnstillinger
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate('/organization/users')}>
-              Brukeradministrasjon
+            <DropdownMenuItem onClick={() => navigate('/organization')}>
+              Organisasjonsoversikt
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => navigate('/organization/roles')}>
               Rolleadministrasjon
