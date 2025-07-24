@@ -10,6 +10,7 @@ import { SimpleFormulaBuilder, SimpleFormulaData } from './SimpleFormulaBuilder'
 import { useStandardAccounts } from '@/hooks/useChartOfAccounts';
 
 const accountSchema = z.object({
+  id: z.string().optional(),
   standard_number: z.string().min(1, 'Kontonummer er påkrevd'),
   standard_name: z.string().min(1, 'Kontonavn er påkrevd'),
   account_type: z.enum(['asset', 'liability', 'equity', 'revenue', 'expense']),
@@ -53,9 +54,13 @@ interface StandardAccountFormProps {
 const StandardAccountForm = ({ defaultValues, onSubmit }: StandardAccountFormProps) => {
   const { data: standardAccounts = [] } = useStandardAccounts();
   
+  // Check if we're editing an existing account (has id) vs creating new
+  const isEditing = Boolean(defaultValues?.id);
+  
   const form = useForm<StandardAccountFormData>({
     resolver: zodResolver(accountSchema),
     defaultValues: {
+      id: defaultValues?.id || undefined,
       standard_number: defaultValues?.standard_number || '',
       standard_name: defaultValues?.standard_name || '',
       account_type: defaultValues?.account_type || 'asset',
@@ -107,8 +112,9 @@ const StandardAccountForm = ({ defaultValues, onSubmit }: StandardAccountFormPro
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+        {/* Basic Information */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
             control={form.control}
             name="standard_number"
@@ -137,32 +143,32 @@ const StandardAccountForm = ({ defaultValues, onSubmit }: StandardAccountFormPro
           />
         </div>
         
-        <FormField
-          control={form.control}
-          name="account_type"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Kontotype</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="asset">Eiendel</SelectItem>
-                  <SelectItem value="liability">Gjeld</SelectItem>
-                  <SelectItem value="equity">Egenkapital</SelectItem>
-                  <SelectItem value="revenue">Inntekt</SelectItem>
-                  <SelectItem value="expense">Kostnad</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <div className="grid grid-cols-2 gap-4">
+        {/* Account Type and Line Settings */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <FormField
+            control={form.control}
+            name="account_type"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Kontotype</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="asset">Eiendel</SelectItem>
+                    <SelectItem value="liability">Gjeld</SelectItem>
+                    <SelectItem value="equity">Egenkapital</SelectItem>
+                    <SelectItem value="revenue">Inntekt</SelectItem>
+                    <SelectItem value="expense">Kostnad</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
           <FormField
             control={form.control}
             name="line_type"
@@ -199,7 +205,9 @@ const StandardAccountForm = ({ defaultValues, onSubmit }: StandardAccountFormPro
             )}
           />
         </div>
-        <div className="grid grid-cols-2 gap-4">
+
+        {/* Advanced Settings */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
             control={form.control}
             name="is_total_line"
@@ -244,6 +252,7 @@ const StandardAccountForm = ({ defaultValues, onSubmit }: StandardAccountFormPro
             )}
           />
         </div>
+
         {/* Calculation Formula - Only show for calculation and subtotal lines */}
         {(lineType === 'calculation' || lineType === 'subtotal') && (
           <FormField
@@ -272,8 +281,9 @@ const StandardAccountForm = ({ defaultValues, onSubmit }: StandardAccountFormPro
             )}
           />
         )}
-        <div className="flex gap-2">
-          <Button type="submit">{defaultValues ? 'Oppdater' : 'Opprett'}</Button>
+
+        <div className="flex gap-2 pt-4">
+          <Button type="submit">{isEditing ? 'Oppdater' : 'Opprett'}</Button>
         </div>
       </form>
     </Form>
