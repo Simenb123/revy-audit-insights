@@ -14,6 +14,92 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_mapping_rules: {
+        Row: {
+          account_range_end: number
+          account_range_start: number
+          confidence_score: number | null
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean | null
+          rule_name: string
+          standard_account_id: string
+          updated_at: string
+        }
+        Insert: {
+          account_range_end: number
+          account_range_start: number
+          confidence_score?: number | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          rule_name: string
+          standard_account_id: string
+          updated_at?: string
+        }
+        Update: {
+          account_range_end?: number
+          account_range_start?: number
+          confidence_score?: number | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          rule_name?: string
+          standard_account_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      account_mapping_suggestions: {
+        Row: {
+          approved_by: string | null
+          client_account_id: string
+          client_id: string
+          confidence_score: number | null
+          created_at: string
+          id: string
+          rule_id: string | null
+          status: string | null
+          suggested_standard_account_id: string
+          updated_at: string
+        }
+        Insert: {
+          approved_by?: string | null
+          client_account_id: string
+          client_id: string
+          confidence_score?: number | null
+          created_at?: string
+          id?: string
+          rule_id?: string | null
+          status?: string | null
+          suggested_standard_account_id: string
+          updated_at?: string
+        }
+        Update: {
+          approved_by?: string | null
+          client_account_id?: string
+          client_id?: string
+          confidence_score?: number | null
+          created_at?: string
+          id?: string
+          rule_id?: string | null
+          status?: string | null
+          suggested_standard_account_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_mapping_suggestions_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "account_mapping_rules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       account_mappings: {
         Row: {
           client_account_id: string
