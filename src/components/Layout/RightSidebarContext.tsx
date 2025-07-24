@@ -24,7 +24,9 @@ export const RightSidebarProvider = ({ children }: { children: React.ReactNode }
   const [isHidden, setIsHidden] = useState(false);
   const [width, setWidth] = useState(() => {
     const stored = localStorage.getItem('rightSidebarWidth');
-    return stored ? parseInt(stored, 10) : 320;
+    const parsed = stored ? parseInt(stored, 10) : NaN;
+    const clamped = Math.min(600, Math.max(320, isNaN(parsed) ? 320 : parsed));
+    return clamped;
   });
 
   useEffect(() => {
