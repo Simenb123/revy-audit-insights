@@ -59,7 +59,7 @@ const SecretTrainingArea = () => {
   }
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <div className="w-full px-8 py-6 space-y-6">
       {/* Header with visibility toggle */}
       <Card className="border-red-200 bg-gradient-to-r from-red-50 to-orange-50">
         <CardHeader>
