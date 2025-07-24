@@ -34,6 +34,12 @@ import {
   type StandardAccount,
 } from '@/hooks/useChartOfAccounts';
 import StandardAccountForm from './forms/StandardAccountForm';
+import { 
+  getAccountTypeColor, 
+  getLineTypeStyle, 
+  getCategoryColor, 
+  getLineTypeBadgeVariant 
+} from '@/utils/accountColors';
 
 type SortField = 'standard_number' | 'standard_name' | 'account_type' | 'category' | 'display_order';
 type SortDirection = 'asc' | 'desc';
@@ -225,11 +231,17 @@ const StandardAccountTable = () => {
               <TableHead className="w-24">Handlinger</TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody>
+           <TableBody>
             {filteredAndSortedAccounts.map((account) => {
               const indentLevel = getIndentLevel(account);
+              const lineTypeStyle = getLineTypeStyle(account);
+              const accountTypeColors = getAccountTypeColor(account.account_type);
+              
               return (
-                <TableRow key={account.id} className="hover:bg-muted/50">
+                <TableRow 
+                  key={account.id} 
+                  className={`${lineTypeStyle.row} transition-colors`}
+                >
                   <TableCell>
                     <div 
                       className="font-mono flex items-center"
@@ -244,19 +256,37 @@ const StandardAccountTable = () => {
                   <TableCell className="font-medium">
                     {account.standard_name}
                     {account.is_total_line && (
-                      <Badge variant="secondary" className="ml-2 text-xs">Sum</Badge>
+                      <Badge variant="secondary" className="ml-2 text-xs bg-revio-100 text-revio-800 border-revio-200">
+                        Sum
+                      </Badge>
                     )}
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline">{account.account_type}</Badge>
+                    <Badge 
+                      variant="outline" 
+                      className={accountTypeColors.badge}
+                    >
+                      {account.account_type}
+                    </Badge>
                   </TableCell>
-                  <TableCell>{account.category || '-'}</TableCell>
+                  <TableCell>
+                    {account.category ? (
+                      <Badge 
+                        variant="outline" 
+                        className={getCategoryColor(account.category)}
+                      >
+                        {account.category}
+                      </Badge>
+                    ) : (
+                      '-'
+                    )}
+                  </TableCell>
                   <TableCell>{account.analysis_group || '-'}</TableCell>
                   <TableCell>
                     {account.line_type && (
                       <Badge 
-                        variant={account.line_type === 'calculation' ? 'default' : 'secondary'}
-                        className="text-xs"
+                        variant={getLineTypeBadgeVariant(account.line_type) as any}
+                        className={`text-xs ${lineTypeStyle.badge}`}
                       >
                         {account.line_type}
                       </Badge>
