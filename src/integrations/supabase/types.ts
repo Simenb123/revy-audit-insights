@@ -1400,7 +1400,7 @@ export type Database = {
         Row: {
           account_name: string
           account_number: string
-          account_type: string
+          account_type: Database["public"]["Enums"]["account_type_enum"]
           client_id: string
           created_at: string
           id: string
@@ -1411,7 +1411,7 @@ export type Database = {
         Insert: {
           account_name: string
           account_number: string
-          account_type: string
+          account_type: Database["public"]["Enums"]["account_type_enum"]
           client_id: string
           created_at?: string
           id?: string
@@ -1422,7 +1422,7 @@ export type Database = {
         Update: {
           account_name?: string
           account_number?: string
-          account_type?: string
+          account_type?: Database["public"]["Enums"]["account_type_enum"]
           client_id?: string
           created_at?: string
           id?: string
@@ -3851,7 +3851,7 @@ export type Database = {
       }
       standard_accounts: {
         Row: {
-          account_type: string
+          account_type: Database["public"]["Enums"]["account_type_enum"]
           ai_tags: string[] | null
           analysis_group: string | null
           audit_significance: string | null
@@ -3874,7 +3874,7 @@ export type Database = {
           validation_rules: Json | null
         }
         Insert: {
-          account_type: string
+          account_type: Database["public"]["Enums"]["account_type_enum"]
           ai_tags?: string[] | null
           analysis_group?: string | null
           audit_significance?: string | null
@@ -3897,7 +3897,7 @@ export type Database = {
           validation_rules?: Json | null
         }
         Update: {
-          account_type?: string
+          account_type?: Database["public"]["Enums"]["account_type_enum"]
           ai_tags?: string[] | null
           analysis_group?: string | null
           audit_significance?: string | null
@@ -4703,6 +4703,7 @@ export type Database = {
       }
     }
     Enums: {
+      account_type_enum: "eiendeler" | "gjeld" | "egenkapital" | "resultat"
       action_status:
         | "not_started"
         | "in_progress"
@@ -4888,6 +4889,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      account_type_enum: ["eiendeler", "gjeld", "egenkapital", "resultat"],
       action_status: [
         "not_started",
         "in_progress",

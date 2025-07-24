@@ -65,8 +65,32 @@ const EnhancedSubjectAreaManager = () => {
     setSelectedArea(null);
   };
 
-  const handleDeleteArea = async (areaId: string) => {
-    await deleteSubjectArea.mutateAsync(areaId);
+  const handleDeleteArea = async (area: SubjectArea) => {
+    // Check if this area has children
+    const hasChildren = subjectAreas.some(a => a.parent_subject_area_id === area.id);
+    const childCount = subjectAreas.filter(a => a.parent_subject_area_id === area.id).length;
+    
+    let confirmMessage = `Er du sikker på at du vil slette "${area.display_name}"?`;
+    
+    if (hasChildren) {
+      confirmMessage += `\n\nDette vil også slette ${childCount} underemne${childCount !== 1 ? 'r' : ''} og alle relaterte data (handlingsmaler, handlinger, etc.).`;
+    } else {
+      confirmMessage += `\n\nDette vil også slette alle relaterte data (handlingsmaler, handlinger, etc.).`;
+    }
+    
+    confirmMessage += `\n\nDenne handlingen kan ikke angres.`;
+    
+    if (window.confirm(confirmMessage)) {
+      try {
+        await deleteSubjectArea.mutateAsync(area.id);
+        // Reset selected area if it was the deleted one
+        if (selectedArea?.id === area.id) {
+          setSelectedArea(null);
+        }
+      } catch (error) {
+        console.error('Feil ved sletting av emneområde:', error);
+      }
+    }
   };
 
   const handleToggleActive = async (area: SubjectArea) => {
@@ -136,7 +160,7 @@ const EnhancedSubjectAreaManager = () => {
                     setSelectedArea(area);
                     setEditDialogOpen(true);
                   }}
-                  onDelete={() => handleDeleteArea(area.id)}
+                  onDelete={() => handleDeleteArea(area)}
                   onToggleActive={() => handleToggleActive(area)}
                   onMove={handleMoveArea}
                   selected={selectedArea?.id === area.id}
@@ -199,7 +223,7 @@ const SubjectAreaCard = ({ area, onSelect, onEdit, onDelete, onToggleActive, onM
   area: SubjectArea;
   onSelect: (area: SubjectArea) => void;
   onEdit: () => void;
-  onDelete: (id: string) => void;
+  onDelete: (area: SubjectArea) => void;
   onToggleActive: () => void;
   onMove: (area: SubjectArea, direction: 'up' | 'down') => void;
   selected: boolean;
@@ -270,7 +294,7 @@ const SubjectAreaCard = ({ area, onSelect, onEdit, onDelete, onToggleActive, onM
               size="sm" 
               variant="ghost" 
               className="h-8 w-8 p-0 text-destructive"
-              onClick={() => onDelete(area.id)}
+              onClick={() => onDelete(area)}
             >
               <Trash2 className="h-4 w-4" />
             </Button>

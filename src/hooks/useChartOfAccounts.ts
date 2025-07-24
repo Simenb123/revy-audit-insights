@@ -8,7 +8,7 @@ export interface ChartOfAccount {
   client_id: string;
   account_number: string;
   account_name: string;
-  account_type: 'asset' | 'liability' | 'equity' | 'revenue' | 'expense';
+  account_type: 'eiendeler' | 'gjeld' | 'egenkapital' | 'resultat';
   parent_account_id?: string;
   is_active: boolean;
   created_at: string;
@@ -19,7 +19,7 @@ export interface StandardAccount {
   id: string;
   standard_number: string;
   standard_name: string;
-  account_type: 'asset' | 'liability' | 'equity' | 'revenue' | 'expense';
+  account_type: 'eiendeler' | 'gjeld' | 'egenkapital' | 'resultat';
   category?: string;
   analysis_group?: string;
   line_type?: 'detail' | 'subtotal' | 'calculation';
@@ -75,7 +75,7 @@ export function useChartOfAccounts(clientId: string) {
       // Type cast the account_type to match our interface
       return (data || []).map(account => ({
         ...account,
-        account_type: account.account_type as 'asset' | 'liability' | 'equity' | 'revenue' | 'expense'
+        account_type: account.account_type as 'eiendeler' | 'gjeld' | 'egenkapital' | 'resultat'
       }));
     },
     enabled: !!clientId,
@@ -225,12 +225,12 @@ export function useCreateStandardAccount() {
     mutationFn: async (data: Omit<StandardAccount, 'id' | 'created_at'>) => {
       const { data: result, error } = await supabase
         .from('standard_accounts')
-        .insert(data)
+        .insert(data as any)
         .select()
         .single();
 
       if (error) throw error;
-      return result as StandardAccount;
+      return result as any;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['standard-accounts'] });
@@ -256,13 +256,13 @@ export function useUpdateStandardAccount() {
     mutationFn: async ({ id, ...updates }: Partial<StandardAccount> & { id: string }) => {
       const { data, error } = await supabase
         .from('standard_accounts')
-        .update(updates)
+        .update(updates as any)
         .eq('id', id)
         .select()
         .single();
 
       if (error) throw error;
-      return data as StandardAccount;
+      return data as any;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['standard-accounts'] });
