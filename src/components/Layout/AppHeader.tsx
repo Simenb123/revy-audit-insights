@@ -71,6 +71,25 @@ const AppHeader: React.FC<AppHeaderProps> = ({ className = '' }) => {
           <Bell className="h-5 w-5" />
         </Button>
         
+        {/* Settings Dropdown */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="sm" className="text-white hover:bg-revio-600">
+              <Settings className="h-5 w-5" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-56" align="end">
+            <DropdownMenuLabel>Innstillinger</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => navigate('/organization')}>
+              Organisasjon
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate('/organization/users')}>
+              Brukeradministrasjon
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-8 w-8 rounded-full">
@@ -94,10 +113,6 @@ const AppHeader: React.FC<AppHeaderProps> = ({ className = '' }) => {
             <DropdownMenuItem onClick={() => navigate('/profile')}>
               <User className="mr-2 h-4 w-4" />
               <span>Profil</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate('/organization-settings')}>
-              <Settings className="mr-2 h-4 w-4" />
-              <span>Innstillinger</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleSignOut}>
