@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import StandardAccountManager from '@/components/Admin/StandardAccountManager';
+import StandardAccountTable from '@/components/Admin/StandardAccountTable';
 import AccountMappingRulesManager from '@/components/Admin/AccountMappingRulesManager';
 import FinancialStatementGenerator from '@/components/Accounting/FinancialStatementGenerator';
 
@@ -15,7 +15,7 @@ const StandardAccountsAdmin = () => {
         </TabsList>
         
         <TabsContent value="accounts">
-          <StandardAccountManager />
+          <StandardAccountTable />
         </TabsContent>
         
         <TabsContent value="mapping-rules">
