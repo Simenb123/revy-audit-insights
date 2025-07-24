@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { extractClientId } from '../pageDetectionHelpers';
+import { extractClientId, detectPageType } from '../pageDetectionHelpers';
 
 describe('extractClientId', () => {
   it('detects org numbers in klienter routes', () => {
@@ -22,5 +22,20 @@ describe('extractClientId', () => {
 
   it('returns empty string when no id present', () => {
     expect(extractClientId('/dashboard')).toBe('');
+  });
+});
+
+describe('detectPageType', () => {
+  it('returns admin for admin routes', () => {
+    expect(detectPageType('/ai-revy-admin/settings')).toBe('admin');
+    expect(detectPageType('/audit-logs')).toBe('admin');
+  });
+
+  it('returns knowledge for knowledge base pages', () => {
+    expect(detectPageType('/fag/article')).toBe('knowledge');
+  });
+
+  it('defaults to general', () => {
+    expect(detectPageType('/dashboard')).toBe('general');
   });
 });

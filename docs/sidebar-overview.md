@@ -2,27 +2,22 @@
 
 This guide explains how the assistant sidebar on the right side of the screen is built.
 
-The legacy `Sidebar` and `FloatingRevyAssistant` components have been removed
-in favor of a more unified sidebar implementation.
+The legacy `Sidebar` and `FloatingRevyAssistant` components have been removed in favor of a unified approach.
 
 ## AssistantSidebar
 
-`AssistantSidebar` is a wrapper component that displays the sidebar as a drawer on small screens and as a normal panel on desktop. Inside it we render `ResizableRightSidebar`, which holds the actual content.
+`AssistantSidebar` is a wrapper that shows the sidebar as a drawer on small screens and as a panel on desktop. Inside it we render `ResizableRightSidebar`, which holds the actual content.
 
 ## ResizableRightSidebar
 
-`ResizableRightSidebar` manages the width, collapsed state and what content is shown. The header is provided by `SidebarHeader`, which contains the collapse toggle. The width is stored in `RightSidebarContext` so it persists between pages. The sidebar can be resized by dragging the divider.
+`ResizableRightSidebar` manages the width, collapsed state and visibility. The header and collapse toggle are provided via `SidebarHeader`. The width is stored in `RightSidebarContext` so it persists between pages and can be resized by dragging the divider.
 
-The component looks at the current route to decide which section to render:
+Instead of switching between multiple sidebar components, the current implementation always renders the `AiRevyCard` component. The card adapts based on the current route:
 
-- **AdminSidebarSection** – shown when the path points to admin pages.
-- **KnowledgeSidebarSection** – shown on knowledge base pages.
-- **StreamlinedClientSidebar** – shown when a client id is found in the URL. This section always embeds `SmartReviAssistant` so the assistant can answer questions about the selected client.
-- **GeneralSidebarSection** – used on all other pages. It shows a simplified card with quick help.
+- `detectPageType` categorises the path as `admin`, `knowledge` or `general`.
+- `extractClientId` checks the URL for a client identifier.
+- These values are passed to `AiRevyCard` to adjust the assistant\'s prompt and context.
 
-A loading or error state will display `LoadingErrorSection` instead when client data is still being fetched.
+On mobile the card is shown inside a `Drawer` with its own header. On desktop it can be collapsed or hidden entirely.
 
-`SmartReviAssistant` is the main chat interface used across the app. The dedicated `RightSidebar/AssistantSidebar` component uses it directly, and `StreamlinedClientSidebar` embeds it with client information for contextual replies.
-
-Going forward, any new sidebar features should be built on top of `ResizableRightSidebar` and `SmartReviAssistant` to keep the experience consistent across pages.
-
+`SmartReviAssistant` is embedded inside `AiRevyCard` and provides the chat interface used across the app. Any new sidebar features should extend this setup so the experience remains consistent.
