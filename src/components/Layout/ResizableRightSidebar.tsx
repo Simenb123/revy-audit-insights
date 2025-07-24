@@ -30,16 +30,25 @@ const ResizableRightSidebar = () => {
   const { data: clientLookup } = useClientLookup(clientIdOrOrg);
   const clientId = clientLookup?.id;
 
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-  }, []);
+  const startWidthRef = React.useRef(width);
+
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      startWidthRef.current = width;
+      setIsDragging(true);
+    },
+    [width]
+  );
 
   const handleMouseMove = useCallback(
     (e: MouseEvent) => {
       if (!isDragging) return;
-      const newWidth = Math.max(320, Math.min(600, window.innerWidth - e.clientX));
-      setWidth(newWidth);
+      const rawWidth = window.innerWidth - e.clientX;
+      const clampedWidth = Math.max(320, Math.min(startWidthRef.current, rawWidth));
+      if (clampedWidth < startWidthRef.current) {
+        setWidth(clampedWidth);
+      }
     },
     [isDragging, setWidth]
   );
