@@ -54,8 +54,8 @@ interface StandardAccountFormProps {
 const StandardAccountForm = ({ defaultValues, onSubmit }: StandardAccountFormProps) => {
   const { data: standardAccounts = [] } = useStandardAccounts();
   
-  // Check if we're editing an existing account (has id) vs creating new
-  const isEditing = Boolean(defaultValues?.id);
+  // Check if we're editing an existing account (has id and data) vs creating new
+  const isEditing = Boolean(defaultValues?.id && defaultValues?.standard_number);
   
   const form = useForm<StandardAccountFormData>({
     resolver: zodResolver(accountSchema),
@@ -207,18 +207,12 @@ const StandardAccountForm = ({ defaultValues, onSubmit }: StandardAccountFormPro
         </div>
 
         {/* Advanced Settings */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <FormField
             control={form.control}
             name="is_total_line"
             render={({ field }) => (
-              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                <div className="space-y-0.5">
-                  <FormLabel className="text-base">Summering</FormLabel>
-                  <div className="text-sm text-muted-foreground">
-                    Er dette en summeringslinje?
-                  </div>
-                </div>
+              <FormItem className="flex flex-row items-center space-x-2">
                 <FormControl>
                   <input
                     type="checkbox"
@@ -227,6 +221,7 @@ const StandardAccountForm = ({ defaultValues, onSubmit }: StandardAccountFormPro
                     className="h-4 w-4"
                   />
                 </FormControl>
+                <FormLabel className="text-sm font-normal">Sumlinje</FormLabel>
               </FormItem>
             )}
           />
