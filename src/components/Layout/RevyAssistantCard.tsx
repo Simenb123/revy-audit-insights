@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils'
 import SmartReviAssistant from '@/components/Revy/SmartReviAssistant'
 import { RevyContext } from '@/types/revio'
 
-interface AiRevyCardProps {
+interface RevyAssistantCardProps {
   title: string
   description: string
   className?: string
@@ -15,7 +15,7 @@ interface AiRevyCardProps {
   userRole?: string
 }
 
-const AiRevyCard: React.FC<AiRevyCardProps> = ({
+const RevyAssistantCard: React.FC<RevyAssistantCardProps> = ({
   title,
   description,
   className = '',
@@ -47,4 +47,4 @@ const AiRevyCard: React.FC<AiRevyCardProps> = ({
   )
 };
 
-export default AiRevyCard;
+export default RevyAssistantCard;

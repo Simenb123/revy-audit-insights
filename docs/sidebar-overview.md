@@ -24,5 +24,12 @@ A loading or error state will display `LoadingErrorSection` instead when client 
 
 `SmartReviAssistant` is the main chat interface used across the app. The dedicated `RightSidebar/AssistantSidebar` component uses it directly, and `StreamlinedClientSidebar` embeds it with client information for contextual replies.
 
+Two small wrapper components expose the assistant in card form:
+
+- **AiRevySidebarCard** – shown inside the right sidebar. It accepts a `variant` prop (`dashboard`, `knowledge` or `client`) and sets a matching system prompt.
+- **RevyAssistantCard** – a simpler card used in sidebar sections that only need a custom title and description.
+
+The similar names previously caused confusion, so `AiRevySidebarCard` lives in `src/components` while `RevyAssistantCard` resides in `src/components/Layout`.
+
 Going forward, any new sidebar features should be built on top of `ResizableRightSidebar` and `SmartReviAssistant` to keep the experience consistent across pages.
 

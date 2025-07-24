@@ -7,7 +7,7 @@ import { RevyContext } from '@/types/revio'
 
 export type AiRevyVariant = 'dashboard' | 'knowledge' | 'client'
 
-interface AiRevyCardProps {
+interface AiRevySidebarCardProps {
   variant: AiRevyVariant
   className?: string
   context?: RevyContext
@@ -24,7 +24,7 @@ const getSystemPrompt = (variant: AiRevyVariant): string => {
   return prompts[variant]
 }
 
-const AiRevyCard: React.FC<AiRevyCardProps> = ({
+const AiRevySidebarCard: React.FC<AiRevySidebarCardProps> = ({
   variant,
   className = '',
   context = 'general',
@@ -56,4 +56,4 @@ const AiRevyCard: React.FC<AiRevyCardProps> = ({
   )
 }
 
-export default AiRevyCard
+export default AiRevySidebarCard

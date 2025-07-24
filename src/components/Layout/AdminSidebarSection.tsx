@@ -1,9 +1,9 @@
 
 import React from 'react';
-import AiRevyCard from '@/components/AiRevyCard';
+import AiRevySidebarCard from '@/components/AiRevySidebarCard';
 
 const AdminSidebarSection: React.FC = () => {
-  return <AiRevyCard variant="dashboard" className="border-l border-purple-500" />;
+  return <AiRevySidebarCard variant="dashboard" className="border-l border-purple-500" />;
 };
 
 export default AdminSidebarSection;

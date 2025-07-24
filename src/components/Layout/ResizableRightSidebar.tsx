@@ -8,7 +8,7 @@ import { MessageSquare, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useClientLookup } from '@/hooks/useClientLookup';
 import { detectPageType, extractClientId } from './pageDetectionHelpers';
-import AiRevyCard, { AiRevyVariant } from '@/components/AiRevyCard';
+import AiRevySidebarCard, { AiRevyVariant } from '@/components/AiRevySidebarCard';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 import { useRightSidebar } from './RightSidebarContext';
@@ -86,7 +86,7 @@ const ResizableRightSidebar = () => {
 
   const renderContent = () => {
     return (
-      <AiRevyCard
+      <AiRevySidebarCard
         variant={pageType as AiRevyVariant}
         className="h-full w-full flex flex-col border-0"
         context={clientId ? 'client-detail' : 'general'}
