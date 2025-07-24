@@ -54,8 +54,17 @@ interface StandardAccountFormProps {
 const StandardAccountForm = ({ defaultValues, onSubmit }: StandardAccountFormProps) => {
   const { data: standardAccounts = [] } = useStandardAccounts();
   
-  // Check if we're editing an existing account (has id and data) vs creating new
-  const isEditing = Boolean(defaultValues?.id && defaultValues?.standard_number);
+  // Debug logging
+  console.log('StandardAccountForm rendered with:', {
+    defaultValues,
+    hasId: Boolean(defaultValues?.id),
+    hasStandardNumber: Boolean(defaultValues?.standard_number)
+  });
+  
+  // Check if we're editing an existing account - more robust check
+  const isEditing = Boolean(defaultValues && defaultValues.id && defaultValues.standard_number);
+  
+  console.log('isEditing determined as:', isEditing);
   
   const form = useForm<StandardAccountFormData>({
     resolver: zodResolver(accountSchema),

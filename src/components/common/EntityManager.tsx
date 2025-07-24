@@ -44,6 +44,19 @@ function EntityManager<T>({
     setSelectedItem(null);
   };
 
+  const handleCreateDialogChange = (open: boolean) => {
+    setCreateDialogOpen(open);
+    // No need to clear anything since create dialog doesn't pass item prop
+  };
+
+  const handleEditDialogChange = (open: boolean) => {
+    setEditDialogOpen(open);
+    if (!open) {
+      // Clear selected item when edit dialog closes to prevent state persistence
+      setSelectedItem(null);
+    }
+  };
+
   const handleDelete = async (item: T) => {
     await onDelete(itemKey(item));
   };
@@ -58,7 +71,7 @@ function EntityManager<T>({
         <CardHeader>
           <div className="flex items-center justify-between">
             {header ?? <CardTitle>Liste</CardTitle>}
-            <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+            <Dialog open={createDialogOpen} onOpenChange={handleCreateDialogChange}>
               <DialogTrigger asChild>
                 <Button className="gap-2">Ny</Button>
               </DialogTrigger>
@@ -91,7 +104,7 @@ function EntityManager<T>({
         </CardContent>
       </Card>
 
-      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+      <Dialog open={editDialogOpen} onOpenChange={handleEditDialogChange}>
         <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto" aria-describedby="edit-dialog-description">
           <DialogHeader>
             <DialogTitle>Rediger</DialogTitle>
