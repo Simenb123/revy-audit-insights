@@ -166,7 +166,7 @@ const ResizableRightSidebar = () => {
         />
       )}
 
-      {/* Collapsed state - 48px width with expand button */}
+      {/* Collapsed state - 32px width with expand button */}
       {isCollapsed && (
         <div className="relative h-full bg-background border-t-2 border-t-border/50 flex flex-col items-center">
           <Button
