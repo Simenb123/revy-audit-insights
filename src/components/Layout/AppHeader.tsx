@@ -87,6 +87,9 @@ const AppHeader: React.FC<AppHeaderProps> = ({ className = '' }) => {
             <DropdownMenuItem onClick={() => navigate('/organization/users')}>
               Brukeradministrasjon
             </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate('/organization/roles')}>
+              Rolleadministrasjon
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
         
