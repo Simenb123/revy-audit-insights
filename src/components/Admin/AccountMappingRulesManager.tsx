@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Trash2, Edit, Plus, Upload, Download } from 'lucide-react';
+import { toast } from 'sonner';
 import { 
   useAccountMappingRules, 
   useCreateAccountMappingRule,
@@ -101,29 +102,91 @@ const AccountMappingRulesManager = () => {
   };
 
   const handleCSVImport = () => {
-    // TODO: Implement CSV import functionality
-    console.log('CSV import functionality to be implemented');
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.csv,.xlsx,.xls';
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        processCSVImport(file);
+      }
+    };
+    input.click();
+  };
+
+  const processCSVImport = async (file: File) => {
+    const text = await file.text();
+    const lines = text.split('\n').filter(line => line.trim());
+    const headers = lines[0].split(',').map(h => h.trim());
+    
+    // Check if it matches your format: StartKonto, SluttKonto, Regnnr, Regnskapslinje
+    const expectedHeaders = ['StartKonto', 'SluttKonto', 'Regnnr', 'Regnskapslinje'];
+    const hasCorrectFormat = expectedHeaders.every(header => 
+      headers.some(h => h.toLowerCase().includes(header.toLowerCase()))
+    );
+    
+    if (!hasCorrectFormat) {
+      toast.error('CSV-filen må ha kolonnene: StartKonto, SluttKonto, Regnnr, Regnskapslinje');
+      return;
+    }
+    
+    const rules = [];
+    for (let i = 1; i < lines.length; i++) {
+      const values = lines[i].split(',').map(v => v.trim());
+      if (values.length >= 4) {
+        const startKonto = parseInt(values[0]);
+        const sluttKonto = parseInt(values[1]);
+        const regnnr = values[2];
+        const regnskapslinje = values[3];
+        
+        // Find the standard account by number
+        const standardAccount = standardAccounts?.find(a => a.standard_number === regnnr);
+        if (standardAccount) {
+          rules.push({
+            rule_name: regnskapslinje,
+            account_range_start: startKonto,
+            account_range_end: sluttKonto,
+            standard_account_id: standardAccount.id,
+            confidence_score: 0.9,
+            is_active: true
+          });
+        }
+      }
+    }
+    
+    // Bulk create rules
+    for (const rule of rules) {
+      try {
+        await createRule.mutateAsync(rule);
+      } catch (error) {
+        console.error('Error creating rule:', error);
+      }
+    }
+    
+    toast.success(`Importerte ${rules.length} regler`);
   };
 
   const handleCSVExport = () => {
     if (!rules) return;
     
     const csvContent = [
-      ['Regelnavn', 'Fra kontonummer', 'Til kontonummer', 'Standardkonto', 'Konfidensgrad'].join(','),
-      ...rules.map(rule => [
-        rule.rule_name,
-        rule.account_range_start,
-        rule.account_range_end,
-        rule.standard_account_id,
-        rule.confidence_score
-      ].join(','))
+      ['StartKonto', 'SluttKonto', 'Regnnr', 'Regnskapslinje'].join(','),
+      ...rules.map(rule => {
+        const standardAccount = standardAccounts?.find(a => a.id === rule.standard_account_id);
+        return [
+          rule.account_range_start,
+          rule.account_range_end,
+          standardAccount?.standard_number || '',
+          standardAccount?.standard_name || ''
+        ].join(',');
+      })
     ].join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'mapping-regler.csv';
+    a.download = 'kontomapping-intervaller.csv';
     a.click();
     window.URL.revokeObjectURL(url);
   };
@@ -193,37 +256,24 @@ const AccountMappingRulesManager = () => {
                         />
                       </div>
                     </div>
-                    <div>
-                      <Label htmlFor="standard_account_id">Standardkonto</Label>
-                      <Select
-                        value={formData.standard_account_id}
-                        onValueChange={(value) => setFormData(prev => ({ ...prev, standard_account_id: value }))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Velg standardkonto" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {standardAccounts?.map(account => (
-                            <SelectItem key={account.id} value={account.id}>
-                              {account.standard_number} - {account.standard_name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor="confidence_score">Konfidensgrad</Label>
-                      <Input
-                        id="confidence_score"
-                        type="number"
-                        step="0.1"
-                        min="0"
-                        max="1"
-                        value={formData.confidence_score}
-                        onChange={(e) => setFormData(prev => ({ ...prev, confidence_score: parseFloat(e.target.value) }))}
-                        required
-                      />
-                    </div>
+                     <div>
+                       <Label htmlFor="standard_account_id">Regnskapsnummer og navn</Label>
+                       <Select
+                         value={formData.standard_account_id}
+                         onValueChange={(value) => setFormData(prev => ({ ...prev, standard_account_id: value }))}
+                       >
+                         <SelectTrigger>
+                           <SelectValue placeholder="Velg regnskapslinje" />
+                         </SelectTrigger>
+                         <SelectContent>
+                           {standardAccounts?.map(account => (
+                             <SelectItem key={account.id} value={account.id}>
+                               {account.standard_number} - {account.standard_name}
+                             </SelectItem>
+                           ))}
+                         </SelectContent>
+                       </Select>
+                     </div>
                     <DialogFooter>
                       <Button type="button" variant="outline" onClick={resetForm}>
                         Avbryt
@@ -257,13 +307,10 @@ const AccountMappingRulesManager = () => {
                     <Badge variant="secondary">
                       {rule.account_range_start} - {rule.account_range_end}
                     </Badge>
-                    <Badge variant="outline">
-                      Konfidensgrad: {(rule.confidence_score * 100).toFixed(0)}%
-                    </Badge>
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    Standardkonto: {standardAccounts?.find(a => a.id === rule.standard_account_id)?.standard_name}
-                  </p>
+                   <p className="text-sm text-muted-foreground">
+                     {standardAccounts?.find(a => a.id === rule.standard_account_id)?.standard_number} - {standardAccounts?.find(a => a.id === rule.standard_account_id)?.standard_name}
+                   </p>
                 </div>
                 <div className="flex gap-2">
                   <Button
