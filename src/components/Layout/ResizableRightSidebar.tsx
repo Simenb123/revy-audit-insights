@@ -147,12 +147,12 @@ const ResizableRightSidebar = () => {
     <motion.div
       className="sticky top-[var(--header-height)] bg-background border-l flex flex-col z-10"
       style={{
-        width: isCollapsed ? 2 : width,
-        minWidth: isCollapsed ? 2 : 320,
-        maxWidth: isCollapsed ? 2 : 600,
+        width: isCollapsed ? 32 : width,
+        minWidth: isCollapsed ? 32 : 320,
+        maxWidth: isCollapsed ? 32 : 600,
         height: 'calc(100vh - var(--header-height))'
       }}
-      animate={{ width: isCollapsed ? 2 : width }}
+      animate={{ width: isCollapsed ? 32 : width }}
       transition={{ type: 'spring', stiffness: 300, damping: 30 }}
     >
       {/* Resize handle */}
@@ -163,13 +163,13 @@ const ResizableRightSidebar = () => {
         />
       )}
 
-      {/* Collapsed state - thin line with expand button */}
+      {/* Collapsed state - narrow sidebar with expand button */}
       {isCollapsed && (
-        <div className="relative w-full h-full bg-border">
+        <div className="relative w-full h-full bg-background border-t-2 border-t-border/50">
           <Button
             variant="ghost"
             size="icon"
-            className="absolute top-4 left-0 h-6 w-6 -ml-3 bg-background border shadow-sm"
+            className="absolute top-3 left-1/2 transform -translate-x-1/2 h-6 w-6"
             onClick={toggleSidebar}
           >
             <ChevronLeft className="h-3 w-3" />
@@ -181,7 +181,7 @@ const ResizableRightSidebar = () => {
       {!isCollapsed && (
         <>
           {/* Header with top border line */}
-          <div className="flex items-center justify-between p-3 border-b bg-muted/30 border-t-2 border-t-border/50">
+          <div className="flex items-center justify-between p-3 border-b bg-muted/30 border-t-2 border-t-border/50 flex-shrink-0">
             <h3 className="text-sm font-medium truncate">{getPageTitle()}</h3>
             <Button
               variant="ghost"
@@ -193,10 +193,10 @@ const ResizableRightSidebar = () => {
             </Button>
           </div>
 
-          {/* Content */}
-          <ScrollArea className="flex-1">
+          {/* Content - flexible height container */}
+          <div className="flex-1 min-h-0">
             {renderContent()}
-          </ScrollArea>
+          </div>
         </>
       )}
     </motion.div>
