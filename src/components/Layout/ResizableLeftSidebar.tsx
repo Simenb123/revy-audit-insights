@@ -62,24 +62,6 @@ const clientWorkItems = [
 // Administrative områder - rollebasert tilgang
 const adminItems = [
   {
-    title: 'Organisasjon',
-    url: '/organization',
-    icon: Building,
-    roles: ['admin', 'partner', 'manager', 'employee'] as const,
-  },
-  {
-    title: 'Brukeradministrasjon',
-    url: '/organization/roles',
-    icon: UserCog,
-    roles: ['admin', 'partner'] as const,
-  },
-  {
-    title: 'Innstillinger',
-    url: '/organization/settings',
-    icon: Settings,
-    roles: ['admin', 'partner', 'manager'] as const,
-  },
-  {
     title: 'AI Revy Admin',
     url: '/ai-revy-admin',
     icon: Brain,

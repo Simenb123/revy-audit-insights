@@ -38,11 +38,6 @@ const SidebarNav = ({ collapsed = false }: SidebarNavProps) => {
       label: "Klienter"
     },
     {
-      to: "/organization",
-      icon: Building2,
-      label: "Organisasjon"
-    },
-    {
       to: "/communication",
       icon: MessageSquare,
       label: "Kommunikasjon"
@@ -85,11 +80,6 @@ const SidebarNav = ({ collapsed = false }: SidebarNavProps) => {
   ];
 
   const settingsItems = [
-    {
-      to: "/organization/settings",
-      icon: Settings,
-      label: "Innstillinger"
-    },
     {
       to: "/hjelp",
       icon: HelpCircle,
