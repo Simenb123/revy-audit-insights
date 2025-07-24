@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, X, Calculator, Parentheses, Variable } from 'lucide-react';
+import { useFormulaVariables } from '@/hooks/useFormulas';
 
 export interface FormulaTerm {
   id: string;
@@ -35,7 +36,8 @@ interface EnhancedFormulaBuilderProps {
   disabled?: boolean;
 }
 
-const systemVariables = [
+// Fallback system variables if database is not available
+const fallbackSystemVariables = [
   { name: 'gross_profit_margin', display_name: 'Bruttofortjenestegrad', category: 'profitability' },
   { name: 'operating_margin', display_name: 'Driftsgrad', category: 'profitability' },
   { name: 'equity_ratio', display_name: 'Egenkapitalandel', category: 'solvency' },
@@ -45,7 +47,17 @@ const systemVariables = [
 
 export const EnhancedFormulaBuilder = ({ value, onChange, standardAccounts, disabled }: EnhancedFormulaBuilderProps) => {
   const [activeTab, setActiveTab] = useState('basic');
+  const { data: formulaVariables = [] } = useFormulaVariables();
   const formula: FormulaData = value || { type: 'formula' as const, terms: [], variables: {}, metadata: {} };
+  
+  // Use database variables if available, otherwise fallback to hardcoded ones
+  const systemVariables = formulaVariables.length > 0 
+    ? formulaVariables.map(v => ({
+        name: v.name,
+        display_name: v.display_name || v.name,
+        category: v.variable_type || 'general'
+      }))
+    : fallbackSystemVariables;
 
   const addTerm = (type: FormulaTerm['type'], data?: Partial<FormulaTerm>) => {
     const newTerm: FormulaTerm = {

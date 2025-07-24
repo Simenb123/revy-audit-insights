@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_categories: {
+        Row: {
+          color: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_system_category: boolean | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_system_category?: boolean | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_system_category?: boolean | null
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       account_mapping_rules: {
         Row: {
           account_range_end: number
@@ -529,6 +559,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      analysis_groups: {
+        Row: {
+          category: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_system_group: boolean | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_system_group?: boolean | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_system_group?: boolean | null
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       analysis_results: {
         Row: {

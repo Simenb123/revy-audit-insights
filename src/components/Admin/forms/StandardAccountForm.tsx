@@ -8,6 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from '@/components/ui/form';
 import { EnhancedFormulaBuilder, FormulaData } from './EnhancedFormulaBuilder';
 import { useStandardAccounts } from '@/hooks/useChartOfAccounts';
+import { useAccountCategories } from '@/hooks/useAccountCategories';
+import { useAnalysisGroups } from '@/hooks/useAnalysisGroups';
 
 const accountSchema = z.object({
   standard_number: z.string().min(1, 'Kontonummer er påkrevd'),
@@ -52,6 +54,8 @@ interface StandardAccountFormProps {
 
 const StandardAccountForm = ({ defaultValues, onSubmit }: StandardAccountFormProps) => {
   const { data: standardAccounts = [] } = useStandardAccounts();
+  const { data: accountCategories = [] } = useAccountCategories();
+  const { data: analysisGroups = [] } = useAnalysisGroups();
   
   const form = useForm<StandardAccountFormData>({
     resolver: zodResolver(accountSchema),
@@ -145,9 +149,20 @@ const StandardAccountForm = ({ defaultValues, onSubmit }: StandardAccountFormPro
           render={({ field }) => (
             <FormItem>
               <FormLabel>Kategori</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Velg kategori..." />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {accountCategories.map((category) => (
+                    <SelectItem key={category.id} value={category.name}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <FormMessage />
             </FormItem>
           )}
@@ -158,9 +173,20 @@ const StandardAccountForm = ({ defaultValues, onSubmit }: StandardAccountFormPro
           render={({ field }) => (
             <FormItem>
               <FormLabel>Analysegruppe</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Velg analysegruppe..." />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {analysisGroups.map((group) => (
+                    <SelectItem key={group.id} value={group.name}>
+                      {group.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <FormMessage />
             </FormItem>
           )}
