@@ -8,8 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 
 const accountSchema = z.object({
-  standard_number: z.string().min(1),
-  standard_name: z.string().min(1),
+  standard_number: z.string().min(1, 'Kontonummer er påkrevd'),
+  standard_name: z.string().min(1, 'Kontonavn er påkrevd'),
   account_type: z.enum(['asset', 'liability', 'equity', 'revenue', 'expense']),
   category: z.string().optional(),
   analysis_group: z.string().optional(),
@@ -19,6 +19,15 @@ const accountSchema = z.object({
   sign_multiplier: z.number().default(1),
   calculation_formula: z.string().optional(),
   parent_line_id: z.string().optional(),
+}).refine((data) => {
+  // Require calculation formula only for calculation or subtotal line types
+  if ((data.line_type === 'calculation' || data.line_type === 'subtotal') && !data.calculation_formula?.trim()) {
+    return false;
+  }
+  return true;
+}, {
+  message: 'Beregningsformel er påkrevd for beregnings- og delsumlinjer',
+  path: ['calculation_formula'],
 });
 
 export type StandardAccountFormData = z.infer<typeof accountSchema>;
@@ -46,6 +55,19 @@ const StandardAccountForm = ({ defaultValues, onSubmit }: StandardAccountFormPro
       ...defaultValues,
     },
   });
+
+  // Watch for changes in standard_number to auto-calculate display_order
+  const standardNumber = form.watch('standard_number');
+  const lineType = form.watch('line_type');
+
+  React.useEffect(() => {
+    if (standardNumber && /^\d+$/.test(standardNumber)) {
+      const displayOrder = parseInt(standardNumber);
+      if (form.getValues('display_order') === 0 || form.getValues('display_order') === displayOrder) {
+        form.setValue('display_order', displayOrder);
+      }
+    }
+  }, [standardNumber, form]);
 
   return (
     <Form {...form}>
@@ -215,10 +237,27 @@ const StandardAccountForm = ({ defaultValues, onSubmit }: StandardAccountFormPro
           name="calculation_formula"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Beregningsformel</FormLabel>
+              <FormLabel>
+                Beregningsformel
+                {(lineType === 'calculation' || lineType === 'subtotal') && (
+                  <span className="text-destructive ml-1">*</span>
+                )}
+              </FormLabel>
               <FormControl>
-                <Input {...field} placeholder="f.eks. 19 + 79" />
+                <Input 
+                  {...field} 
+                  placeholder={
+                    lineType === 'calculation' || lineType === 'subtotal' 
+                      ? "f.eks. 19 + 79 (påkrevd for denne linjetypen)" 
+                      : "f.eks. 19 + 79 (valgfritt)"
+                  }
+                />
               </FormControl>
+              {(lineType === 'calculation' || lineType === 'subtotal') && (
+                <div className="text-sm text-muted-foreground">
+                  Beregningsformel er påkrevd for beregnings- og delsumlinjer
+                </div>
+              )}
               <FormMessage />
             </FormItem>
           )}
