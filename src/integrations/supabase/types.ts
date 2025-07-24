@@ -3586,7 +3586,7 @@ export type Database = {
         Row: {
           account_type: string
           analysis_group: string | null
-          calculation_formula: string | null
+          calculation_formula: Json | null
           category: string | null
           created_at: string
           display_order: number
@@ -3601,7 +3601,7 @@ export type Database = {
         Insert: {
           account_type: string
           analysis_group?: string | null
-          calculation_formula?: string | null
+          calculation_formula?: Json | null
           category?: string | null
           created_at?: string
           display_order?: number
@@ -3616,7 +3616,7 @@ export type Database = {
         Update: {
           account_type?: string
           analysis_group?: string | null
-          calculation_formula?: string | null
+          calculation_formula?: Json | null
           category?: string | null
           created_at?: string
           display_order?: number

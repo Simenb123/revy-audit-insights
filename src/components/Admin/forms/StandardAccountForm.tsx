@@ -5,7 +5,9 @@ import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
+import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from '@/components/ui/form';
+import { FormulaBuilder, FormulaData } from './FormulaBuilder';
+import { useStandardAccounts } from '@/hooks/useChartOfAccounts';
 
 const accountSchema = z.object({
   standard_number: z.string().min(1, 'Kontonummer er påkrevd'),
@@ -17,11 +19,22 @@ const accountSchema = z.object({
   display_order: z.number().default(0),
   is_total_line: z.boolean().default(false),
   sign_multiplier: z.number().default(1),
-  calculation_formula: z.string().optional(),
+  calculation_formula: z.union([
+    z.object({
+      type: z.literal('formula'),
+      terms: z.array(z.object({
+        id: z.string(),
+        account: z.string().optional(),
+        operator: z.enum(['+', '-', '*', '/']).optional(),
+        value: z.string().optional(),
+      }))
+    }).strict(),
+    z.null()
+  ]).optional(),
   parent_line_id: z.string().optional(),
 }).refine((data) => {
   // Require calculation formula only for calculation or subtotal line types
-  if ((data.line_type === 'calculation' || data.line_type === 'subtotal') && !data.calculation_formula?.trim()) {
+  if ((data.line_type === 'calculation' || data.line_type === 'subtotal') && !data.calculation_formula) {
     return false;
   }
   return true;
@@ -38,6 +51,8 @@ interface StandardAccountFormProps {
 }
 
 const StandardAccountForm = ({ defaultValues, onSubmit }: StandardAccountFormProps) => {
+  const { data: standardAccounts = [] } = useStandardAccounts();
+  
   const form = useForm<StandardAccountFormData>({
     resolver: zodResolver(accountSchema),
     defaultValues: {
@@ -50,7 +65,7 @@ const StandardAccountForm = ({ defaultValues, onSubmit }: StandardAccountFormPro
       display_order: 0,
       is_total_line: false,
       sign_multiplier: 1,
-      calculation_formula: '',
+      calculation_formula: null,
       parent_line_id: '',
       ...defaultValues,
     },
@@ -232,36 +247,34 @@ const StandardAccountForm = ({ defaultValues, onSubmit }: StandardAccountFormPro
             )}
           />
         </div>
-        <FormField
-          control={form.control}
-          name="calculation_formula"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>
-                Beregningsformel
-                {(lineType === 'calculation' || lineType === 'subtotal') && (
-                  <span className="text-destructive ml-1">*</span>
-                )}
-              </FormLabel>
-              <FormControl>
-                <Input 
-                  {...field} 
-                  placeholder={
-                    lineType === 'calculation' || lineType === 'subtotal' 
-                      ? "f.eks. 19 + 79 (påkrevd for denne linjetypen)" 
-                      : "f.eks. 19 + 79 (valgfritt)"
-                  }
-                />
-              </FormControl>
-              {(lineType === 'calculation' || lineType === 'subtotal') && (
-                <div className="text-sm text-muted-foreground">
-                  Beregningsformel er påkrevd for beregnings- og delsumlinjer
-                </div>
-              )}
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        {/* Calculation Formula - Only show for calculation and subtotal lines */}
+        {(lineType === 'calculation' || lineType === 'subtotal') && (
+          <FormField
+            control={form.control}
+            name="calculation_formula"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  Beregningsformel (påkrevd)
+                </FormLabel>
+                <FormControl>
+                  <FormulaBuilder
+                    value={field.value as FormulaData | null}
+                    onChange={field.onChange}
+                    standardAccounts={standardAccounts.map(acc => ({
+                      standard_number: acc.standard_number,
+                      standard_name: acc.standard_name
+                    }))}
+                  />
+                </FormControl>
+                <FormDescription>
+                  Bygg opp beregningsformelen ved å velge kontoer og operatorer.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
         <div className="flex gap-2">
           <Button type="submit">{defaultValues ? 'Oppdater' : 'Opprett'}</Button>
         </div>

@@ -26,7 +26,7 @@ export interface StandardAccount {
   display_order?: number;
   is_total_line?: boolean;
   sign_multiplier?: number;
-  calculation_formula?: string;
+  calculation_formula?: any; // Changed to any to handle both string and JSON
   parent_line_id?: string;
   created_at?: string;
   updated_at?: string;
