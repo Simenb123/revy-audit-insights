@@ -75,19 +75,23 @@
     /* grid-template-columns will be set dynamically by GridLayoutContainer */
   }
 
-  /* Mobile Layout - Show only main content */
+  /* Mobile Layout - Show only main content properly */
   @media (max-width: 1023px) {
     .app-grid {
       grid-template-columns: 1fr !important;
+      grid-template-rows: 1fr !important;
+      min-height: calc(100vh - var(--header-height));
     }
     
     .app-grid > *:first-child,
     .app-grid > *:last-child {
-      display: none;
+      display: none !important;
     }
     
     .app-grid > *:nth-child(2) {
-      display: block;
+      display: block !important;
+      min-height: 0;
+      overflow: auto;
     }
   }
 

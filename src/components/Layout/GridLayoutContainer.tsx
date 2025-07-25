@@ -35,10 +35,15 @@ const GridLayoutContainer: React.FC<GridLayoutContainerProps> = ({
     <div
       className={cn(
         'w-full app-grid transition-[grid-template-columns] duration-300 ease-in-out',
+        // Ensure mobile shows main content properly
+        'min-h-0',
         className
       )}
       style={{
-        gridTemplateColumns: getGridTemplateColumns()
+        gridTemplateColumns: getGridTemplateColumns(),
+        // Ensure mobile grid works correctly
+        display: 'grid',
+        height: 'auto'
       }}
     >
       {children}
