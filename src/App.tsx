@@ -38,6 +38,7 @@ import RoleAccessAdmin from "./pages/RoleAccessAdmin";
 import PerformanceMonitoring from "./pages/PerformanceMonitoring";
 import Academy from "./pages/Academy";
 import AccountRelationshipsPage from "./pages/Admin/AccountRelationships";
+import AuditActionLibrary from "./pages/Admin/AuditActionLibrary";
 import GeneralLedgerUpload from "./pages/GeneralLedgerUpload";
 import TrialBalanceUpload from "./pages/TrialBalanceUpload";
 import NotFound from "./pages/NotFound";
@@ -91,6 +92,7 @@ function App() {
                   <Route path="ai-usage" element={<AIUsage />} />
                   <Route path="standard-accounts" element={<StandardAccountsAdmin />} />
                   <Route path="admin/account-relationships" element={<AccountRelationshipsPage />} />
+                  <Route path="admin/audit-action-library" element={<AuditActionLibrary />} />
                   <Route path="fag/*" element={<KnowledgeBase />} />
                   <Route path="academy" element={<Academy />} />
                   <Route path="ai-revy-admin" element={<AIRevyAdmin />} />

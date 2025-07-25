@@ -869,6 +869,98 @@ export type Database = {
           },
         ]
       }
+      audit_action_area_mappings: {
+        Row: {
+          action_template_id: string | null
+          audit_area_id: string | null
+          created_at: string
+          id: string
+          relevance_level: string
+          sort_order: number | null
+        }
+        Insert: {
+          action_template_id?: string | null
+          audit_area_id?: string | null
+          created_at?: string
+          id?: string
+          relevance_level?: string
+          sort_order?: number | null
+        }
+        Update: {
+          action_template_id?: string | null
+          audit_area_id?: string | null
+          created_at?: string
+          id?: string
+          relevance_level?: string
+          sort_order?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_action_area_mappings_action_template_id_fkey"
+            columns: ["action_template_id"]
+            isOneToOne: false
+            referencedRelation: "audit_action_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_action_area_mappings_audit_area_id_fkey"
+            columns: ["audit_area_id"]
+            isOneToOne: false
+            referencedRelation: "audit_areas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_action_contexts: {
+        Row: {
+          action_template_id: string | null
+          applicable_conditions: Json | null
+          context_description: string | null
+          context_name: string
+          created_at: string
+          estimated_hours_adjustment: number | null
+          id: string
+          modified_documentation_requirements: string | null
+          modified_procedures: string
+          risk_level_adjustment: string | null
+          updated_at: string
+        }
+        Insert: {
+          action_template_id?: string | null
+          applicable_conditions?: Json | null
+          context_description?: string | null
+          context_name: string
+          created_at?: string
+          estimated_hours_adjustment?: number | null
+          id?: string
+          modified_documentation_requirements?: string | null
+          modified_procedures: string
+          risk_level_adjustment?: string | null
+          updated_at?: string
+        }
+        Update: {
+          action_template_id?: string | null
+          applicable_conditions?: Json | null
+          context_description?: string | null
+          context_name?: string
+          created_at?: string
+          estimated_hours_adjustment?: number | null
+          id?: string
+          modified_documentation_requirements?: string | null
+          modified_procedures?: string
+          risk_level_adjustment?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_action_contexts_action_template_id_fkey"
+            columns: ["action_template_id"]
+            isOneToOne: false
+            referencedRelation: "audit_action_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_action_document_mappings: {
         Row: {
           action_template_id: string | null
@@ -946,6 +1038,109 @@ export type Database = {
             columns: ["isa_standard_id"]
             isOneToOne: false
             referencedRelation: "isa_standards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_action_recommendations: {
+        Row: {
+          action_template_id: string | null
+          ai_metadata: Json | null
+          client_id: string | null
+          created_at: string
+          id: string
+          reasoning: string | null
+          recommendation_score: number
+          risk_assessment_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          action_template_id?: string | null
+          ai_metadata?: Json | null
+          client_id?: string | null
+          created_at?: string
+          id?: string
+          reasoning?: string | null
+          recommendation_score?: number
+          risk_assessment_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          action_template_id?: string | null
+          ai_metadata?: Json | null
+          client_id?: string | null
+          created_at?: string
+          id?: string
+          reasoning?: string | null
+          recommendation_score?: number
+          risk_assessment_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_action_recommendations_action_template_id_fkey"
+            columns: ["action_template_id"]
+            isOneToOne: false
+            referencedRelation: "audit_action_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_action_recommendations_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_action_recommendations_risk_assessment_id_fkey"
+            columns: ["risk_assessment_id"]
+            isOneToOne: false
+            referencedRelation: "client_risk_assessments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_action_risk_mappings: {
+        Row: {
+          action_template_id: string | null
+          created_at: string
+          effectiveness_level: string
+          id: string
+          response_type: string
+          risk_factor_id: string | null
+        }
+        Insert: {
+          action_template_id?: string | null
+          created_at?: string
+          effectiveness_level?: string
+          id?: string
+          response_type?: string
+          risk_factor_id?: string | null
+        }
+        Update: {
+          action_template_id?: string | null
+          created_at?: string
+          effectiveness_level?: string
+          id?: string
+          response_type?: string
+          risk_factor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_action_risk_mappings_action_template_id_fkey"
+            columns: ["action_template_id"]
+            isOneToOne: false
+            referencedRelation: "audit_action_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_action_risk_mappings_risk_factor_id_fkey"
+            columns: ["risk_factor_id"]
+            isOneToOne: false
+            referencedRelation: "risk_factors"
             referencedColumns: ["id"]
           },
         ]
@@ -1774,6 +1969,60 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "client_history_logs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_risk_assessments: {
+        Row: {
+          assessed_by: string | null
+          assessment_date: string
+          assessment_notes: string | null
+          audit_area_id: string | null
+          client_id: string | null
+          created_at: string
+          id: string
+          risk_factors: Json | null
+          risk_level: string
+          updated_at: string
+        }
+        Insert: {
+          assessed_by?: string | null
+          assessment_date?: string
+          assessment_notes?: string | null
+          audit_area_id?: string | null
+          client_id?: string | null
+          created_at?: string
+          id?: string
+          risk_factors?: Json | null
+          risk_level?: string
+          updated_at?: string
+        }
+        Update: {
+          assessed_by?: string | null
+          assessment_date?: string
+          assessment_notes?: string | null
+          audit_area_id?: string | null
+          client_id?: string | null
+          created_at?: string
+          id?: string
+          risk_factors?: Json | null
+          risk_level?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_risk_assessments_audit_area_id_fkey"
+            columns: ["audit_area_id"]
+            isOneToOne: false
+            referencedRelation: "audit_areas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_risk_assessments_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
