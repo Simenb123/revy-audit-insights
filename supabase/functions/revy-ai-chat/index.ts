@@ -104,10 +104,12 @@ RETNINGSLINJER:
 - Vær konkret og praktisk
 - Referer til ISA-standarder når relevant
 - Bruk markdown for formatering (** for fet tekst, ## for overskrifter, - for lister)
-- Lag lenker til fagartikler når du refererer til dem
+- Lag lenker til fagartikler når du refererer til dem: [Artikkeltittel](/fag/artikkel/slug)
+- Strukturer svar med overskrifter og punktlister for bedre lesbarhet
+- Gi oppfølgingsspørsmål når det er relevant
 - Vær profesjonell men vennlig
-- Hvis du ikke vet noe, si det ærlig
-- Ved tekniske spørsmål, gi trinnvise instruksjoner
+- Hvis du ikke vet noe, si det ærlig og foreslå hvor bruker kan finne mer informasjon
+- Ved tekniske spørsmål, gi trinnvise instruksjoner med konkrete eksempler
 
 ${context === 'client-detail' ? 'Du hjelper med klient-spesifikke spørsmål og analyse.' : ''}
 ${context === 'documentation' ? 'Du fokuserer på dokumentanalyse og kvalitetssikring.' : ''}
@@ -129,8 +131,8 @@ ${context === 'risk-assessment' ? 'Du fokuserer på risikovurdering og kontrolle
           { role: 'system', content: systemPrompt },
           { role: 'user', content: message }
         ],
-        max_tokens: 1000,
-        temperature: 0.3,
+        max_tokens: 1200,
+        temperature: 0.2,
       }),
     })
 

@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { FileText, ExternalLink, Tag, Copy, Check, Book, Scale, FileCode, Gavel } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { extractTagsFromContent } from './TagExtractor';
 import ContentTypeBadge from '@/components/Knowledge/ContentTypeBadge';
@@ -396,9 +396,9 @@ export const MessageContentParser = ({
                 const formattedDate = dateStr ? new Date(dateStr).toLocaleDateString('nb-NO') : null;
 
                 return (
-                  <a
+                  <Link
                     key={`article-${i}-${matchIndex}`}
-                    href={`/fag/artikkel/${match[2]}`}
+                    to={`/fag/artikkel/${match[2]}`}
                     className="block hover:underline px-4 py-2 rounded-lg transition-all duration-200 group shadow-sm bg-white border border-gray-200 hover:shadow-md"
                   >
                     <div className="flex items-center gap-2">
@@ -414,7 +414,7 @@ export const MessageContentParser = ({
                         {formattedDate ? ` • ${formattedDate}` : ''}
                       </div>
                     )}
-                  </a>
+                  </Link>
                 );
               })}
             </div>
@@ -592,9 +592,9 @@ export const MessageContentParser = ({
           <ul className="space-y-1 list-disc list-inside">
             {knowledgeArticles.map((article: any) => (
               <li key={article.slug || article.id} className="text-sm">
-                <a href={`/fag/artikkel/${article.slug}`} className="text-blue-600 hover:underline">
+                <Link to={`/fag/artikkel/${article.slug}`} className="text-blue-600 hover:underline">
                   {article.title}
-                </a>{' '}
+                </Link>{' '}
                 {article.reference_code && (
                   <span className="text-xs text-gray-500">({article.reference_code})</span>
                 )}

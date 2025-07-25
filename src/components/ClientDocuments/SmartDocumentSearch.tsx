@@ -105,10 +105,22 @@ const SmartDocumentSearch: React.FC<SmartDocumentSearchProps> = ({ clientId }) =
         aiPrompt,
         'documentation',
         [],
-        { id: clientId },
+        undefined, // Can't use { id: clientId } as it doesn't match Client interface
         'employee',
         undefined,
-        selectedVariant
+        selectedVariant ? {
+          id: selectedVariant.id,
+          name: selectedVariant.name,
+          display_name: selectedVariant.display_name,
+          description: selectedVariant.description,
+          system_prompt_prefix: selectedVariant.system_prompt_template,
+          model_config: {
+            temperature: 0.2,
+            max_tokens: 1200,
+            model: 'gpt-4o-mini'
+          },
+          context_types: selectedVariant.available_contexts
+        } : undefined
       );
 
       // Parse AI response for actionable suggestions

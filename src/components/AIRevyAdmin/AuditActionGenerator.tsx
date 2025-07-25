@@ -94,7 +94,12 @@ const AuditActionGenerator = () => {
 
       const aiResponse = await generateEnhancedAIResponseWithVariant(
         prompt,
-        'audit-actions'
+        'audit-actions',
+        [], // history
+        undefined, // clientData
+        'employee', // userRole
+        undefined, // sessionId
+        undefined // selectedVariant
       );
 
       let parsed: any;

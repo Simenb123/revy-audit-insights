@@ -1,487 +1,170 @@
 import { logger } from '@/utils/logger';
+import { supabase } from '@/integrations/supabase/client';
+import { Client } from '@/types/revio';
 
-import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
-import { RevyContext } from '@/types/revio';
-import { toast } from 'sonner';
-import { createTimeoutSignal } from '@/utils/networkHelpers';
-
-interface Variant {
+export interface AIVariant {
+  id: string;
   name: string;
   display_name: string;
   description: string;
-  model: string;
-  prompt: string;
+  system_prompt_prefix: string;
+  model_config: {
+    temperature: number;
+    max_tokens: number;
+    model: string;
+  };
+  context_types: string[];
 }
 
-// Simple cache implementation
-const cache = new Map<string, { response: string; timestamp: number }>();
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
-
-const generateRequestHash = (message: string, context: string, clientId?: string, variantName?: string): string => {
-  const hashInput = `${message}-${context}-${clientId || ''}-${variantName || ''}`;
-  return btoa(hashInput).replace(/[^a-zA-Z0-9]/g, '');
-};
-
-const getCachedResponse = async (hash: string): Promise<string | null> => {
-  const cached = cache.get(hash);
-  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-    return cached.response;
-  }
-  cache.delete(hash);
-  return null;
-};
-
-const cacheResponse = async (hash: string, response: string): Promise<void> => {
-  cache.set(hash, { response, timestamp: Date.now() });
-};
-
-const logAIUsage = async (
-  userId?: string,
-  promptTokens: number = 0,
-  completionTokens: number = 0,
-  totalTokens: number = 0,
-  model: string = 'gpt-4o-mini',
-  requestType: string = 'enhanced_chat',
-  context?: string,
-  clientId?: string,
-  responseTime?: number,
-  sessionId?: string,
-  variantName?: string,
-  errorMessage?: string
-): Promise<void> => {
-  try {
-    logger.log('📊 Logging AI usage:', {
-      userId: userId?.substring(0, 8) + '...',
-      promptTokens,
-      completionTokens,
-      totalTokens,
-      model,
-      requestType,
-      variantName
-    });
-  } catch (error) {
-    logger.error('❌ Error logging AI usage:', error);
-  }
-};
-
-const getModelForVariant = (selectedVariant?: any): string => {
-  if (selectedVariant?.model) {
-    return selectedVariant.model;
-  }
-  return 'gpt-4o-mini';
-};
-
-const buildVariantSystemPrompt = (variant: any, context: string, clientData?: any, userRole?: string): string => {
-  let prompt = variant?.prompt || '';
-
-  // Replace placeholders
-  prompt = prompt.replace(/{{context}}/g, context);
-  prompt = prompt.replace(/{{client}}/g, clientData?.company_name || clientData?.name || 'klienten');
-  prompt = prompt.replace(/{{userRole}}/g, userRole || 'bruker');
-
-  return prompt;
-};
-
-const enforceResponseValidation = (response: string, knowledgeArticles: any[], articleTagMapping: Record<string, any>): string => {
-  let validatedResponse = response;
-
-  // Enforce tag section
-  if (!validatedResponse.includes('🏷️ **EMNER:**')) {
-    validatedResponse += '\n\n🏷️ **EMNER:** ';
-    if (Object.keys(articleTagMapping).length > 0) {
-      validatedResponse += Object.keys(articleTagMapping).slice(0, 3).join(', ');
-    } else if (knowledgeArticles.length > 0) {
-      validatedResponse += knowledgeArticles.slice(0, 3).map(a => a.title).join(', ');
-    } else {
-      validatedResponse += 'Revisjon, Regnskap';
-    }
-  }
-
-  return validatedResponse;
-};
-
-// Enhanced fallback that provides helpful response
-const getIntelligentFallback = (message: string, context: string, selectedVariant?: any): string => {
-  const variantContext = selectedVariant ? ` som ${selectedVariant.display_name}` : '';
-  
-  return `Hei! Jeg er AI-Revy${variantContext} og jobber med å løse det tekniske problemet som oppstod.
-
-**Om din forespørsel:** "${message.substring(0, 100)}${message.length > 100 ? '...' : ''}"
-
-Jeg forstår at du spør om **${context}**, og jeg jobber med å få tilgang til kunnskapsbasen for å gi deg et relevant svar.
-
-**Midlertidige råd:**
-• Prøv å omformulere spørsmålet ditt
-• Vær mer spesifikk om hva du trenger hjelp til
-• Sjekk om du har tilgang til internett-tilkobling
-
-Jeg kommer tilbake med et fullstendig svar så snart det tekniske problemet er løst.
-
-🏷️ **EMNER:** Teknisk support, AI-assistanse, ${context}`;
-};
-
-const buildEnhancedContextWithVariantAndDocuments = async (
-  context: string,
-  clientData?: any,
-  historyLength: number = 0,
-  userRole?: string,  
-  selectedVariant?: any,
-  message?: string
-) => {
-  logger.log('🏗️ Building enhanced context with variant and document search support:', { context, variantName: selectedVariant?.name, hasClientData: !!clientData });
-
-  let knowledgeArticles: any[] = [];
-  let articleTagMapping: Record<string, any> = {};
-  let documentResults: any[] = [];
-  let hasSpecificDocumentFound = false;
-
-  // Enhanced knowledge search with better error handling and mobile support
-  if (message && message.trim()) {
-    try {
-      logger.log('🔍 Starting knowledge search with proper request format...');
-      
-      // Get current user session for authorization
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      // Ensure proper JSON request body
-      const requestBody = {
-        query: message.trim()
-      };
-
-      logger.log('📤 Sending knowledge search request:', requestBody);
-
-      const { signal, clear } = createTimeoutSignal(20000);
-
-      const { data, error } = await supabase.functions.invoke('knowledge-search', {
-        body: requestBody,
-        headers: {
-          'Content-Type': 'application/json',
-          ...(session?.access_token && { 'Authorization': `Bearer ${session.access_token}` })
-        },
-        signal
-      } as any);
-
-      clear();
-
-      if (error) {
-        logger.error('❌ Knowledge search failed:', error);
-        toast.error('Kunne ikke hente fagartikler – prøv igjen senere.');
-        // Continue without knowledge base instead of failing
-        logger.log('⚠️ Continuing without knowledge base results');
-      } else if (data) {
-        // Handle response structure { articles, tagMapping }
-        knowledgeArticles = data?.articles || [];
-        articleTagMapping = data?.tagMapping || {};
-        
-        logger.log(`✅ Knowledge search successful: ${knowledgeArticles.length} articles found`);
-        logger.log('📊 Article tag mapping:', Object.keys(articleTagMapping).length, 'mappings');
-        
-        // Check if we found specific documents the user asked about
-        if (knowledgeArticles.length > 0) {
-          hasSpecificDocumentFound = knowledgeArticles.some((article: any) => 
-            article.title.toLowerCase().includes('isa 315') ||
-            article.reference_code?.toLowerCase().includes('isa 315') ||
-            article.content?.toLowerCase().includes('isa 315')
-          );
-        }
-      }
-    } catch (error: any) {
-      if (error.name === 'AbortError') {
-        toast.error('Tilkoblingen tok for lang tid, prøv igjen senere.');
-      } else {
-        logger.error('❌ Knowledge search error:', error);
-        // Don't throw here - let the main function handle fallback
-        logger.log('⚠️ Knowledge search failed, continuing without it');
-      }
-    }
-  }
-
-  // Get client document information if available
-  if (clientData?.id) {
-    try {
-      const { data: documents } = await supabase
-        .from('client_documents_files')
-        .select('*')
-        .eq('client_id', clientData.id)
-        .limit(10);
-      
-      documentResults = documents || [];
-    } catch (error: any) {
-      if (error.name === 'AbortError') {
-        toast.error('Tilkoblingen tok for lang tid, prøv igjen senere.');
-      } else {
-        logger.error('❌ Error loading client documents:', error);
-      }
-    }
-  }
-
-  return {
-    knowledgeArticles,
-    articleTagMapping,
-    documentResults,
-    hasSpecificDocumentFound,
-    context,
-    clientData,
-    historyLength,
-    userRole,
-    selectedVariant: selectedVariant || null
-  };
-};
-
-export const generateEnhancedAIResponseWithVariant = async (
+export async function generateEnhancedAIResponseWithVariant(
   message: string,
   context: string,
-  history: any[] = [],
-  clientData?: any,
+  history: any[],
+  clientData?: Client,
   userRole?: string,
   sessionId?: string,
-  selectedVariant?: any
-): Promise<string> => {
-  if (!isSupabaseConfigured || !supabase) {
-    logger.error("Supabase is not configured. AI response cannot be generated.");
-    return "Supabase not initialized";
-  }
-  const startTime = Date.now();
-  
-  logger.log('🚀 generateEnhancedAIResponseWithVariant called with:', {
-    message: message.substring(0, 50) + '...',
-    context,
-    userRole,
-    hasClientData: !!clientData,
-    historyLength: history.length,
-    variantName: selectedVariant?.name || 'default',
-    sessionId
-  });
-  
+  selectedVariant?: AIVariant
+): Promise<string> {
   try {
-    logger.log('📝 Enhanced request received:', {
-      message: message.substring(0, 50) + '...',
-      context,
-      userRole,
-      userId: (await supabase.auth.getUser()).data.user?.id?.substring(0, 8) + '...',
-      hasClientData: !!clientData,
-      historyLength: history.length,
-      variantName: selectedVariant?.name,
-      sessionId
-    });
-
-    // Check cache first
-    const requestHash = generateRequestHash(message, context, clientData?.id, selectedVariant?.name);
-    const cachedResponse = await getCachedResponse(requestHash);
+    logger.log('🚀 Enhanced AI interaction starting with variant:', selectedVariant?.name);
     
-    if (cachedResponse) {
-      logger.log('💾 Using cached response for variant request');
-      return cachedResponse;
-    }
+    // Build enhanced context with client data and document status
+    const enhancedContext = buildEnhancedContext(context, clientData, userRole);
     
-    logger.log('🧐 Cache miss for variant request, proceeding to generate new response.');
-    
-    // Build enhanced context with document search support
-    const enhancedContextData = await buildEnhancedContextWithVariantAndDocuments(
-      context,
-      clientData,
-      history.length,
-      userRole,
-      selectedVariant,
-      message
-    );
-
-    logger.log('🧠 Enhanced variant-aware context built with document support:', {
-      knowledgeArticleCount: enhancedContextData.knowledgeArticles.length,
-      articleTagMappingCount: Object.keys(enhancedContextData.articleTagMapping).length,
-      hasClientContext: !!clientData,
-      hasDocumentResults: enhancedContextData.documentResults.length > 0,
-      specificDocumentFound: enhancedContextData.hasSpecificDocumentFound,
-      generalDocumentsFound: enhancedContextData.documentResults.length,
-      isGuestMode: !(await supabase.auth.getUser()).data.user,
-      variantName: selectedVariant?.name,
-      variantDescription: selectedVariant?.description
-    });
-
-    // Select model based on variant or default
-    const model = getModelForVariant(selectedVariant);
-    logger.log('🎯 Selected model:', model, 'for variant:', selectedVariant?.name);
-
-    // Use the revy-ai-chat function for all AI communication
-    logger.log('🚀 Calling revy-ai-chat function with enhanced prompt...');
-    
-    const requestPayload = {
+    // Prepare request data
+    const requestData = {
       message,
-      context,
-      history: history.slice(-6),
-      clientData,
+      context: enhancedContext,
+      history: history.slice(-5), // Keep last 5 messages for context
+      clientData: clientData ? {
+        id: clientData.id,
+        name: clientData.name,
+        industry: clientData.industry,
+        company_name: clientData.company_name,
+        has_documents: calculateDocumentQualityScore(clientData) > 0,
+        document_quality_score: calculateDocumentQualityScore(clientData),
+        risk_profile: determineRiskProfile(clientData)
+      } : undefined,
       userRole,
       sessionId,
-      selectedVariant,
-      model,
-      // Pass the knowledge articles directly to ensure they're used
-      knowledgeArticles: enhancedContextData.knowledgeArticles,
-      articleTagMapping: enhancedContextData.articleTagMapping
+      variantName: selectedVariant?.name || 'default',
+      variantConfig: selectedVariant ? {
+        temperature: selectedVariant.model_config.temperature,
+        max_tokens: selectedVariant.model_config.max_tokens,
+        model: selectedVariant.model_config.model,
+        system_prompt_prefix: selectedVariant.system_prompt_prefix
+      } : undefined
     };
 
-    logger.log('📤 Sending request to revy-ai-chat with payload:', {
-      messageLength: message.length,
-      context,
-      historyLength: requestPayload.history.length,
-      hasKnowledgeArticles: requestPayload.knowledgeArticles.length > 0,
-      knowledgeArticleCount: requestPayload.knowledgeArticles.length,
-      hasArticleTagMapping: Object.keys(requestPayload.articleTagMapping).length > 0,
-      variantName: selectedVariant?.name || 'default',
-      sessionId
-    });
+    logger.log('📤 Sending enhanced request to AI service');
     
-    const { signal, clear } = createTimeoutSignal(20000);
-
     const { data, error } = await supabase.functions.invoke('revy-ai-chat', {
-      body: requestPayload,
-      signal
-    } as any);
-
-    clear();
-
-    logger.log('📥 Response from revy-ai-chat:', {
-      hasData: !!data,
-      hasError: !!error,
-      dataKeys: data ? Object.keys(data) : [],
-      errorMessage: error?.message,
-      dataType: typeof data,
-      responseField: data?.response ? 'present' : 'missing',
-      responseLength: data?.response?.length || 0,
-      responsePreview: data?.response?.substring(0, 100) || 'N/A',
-      sessionId
+      body: requestData
     });
 
     if (error) {
-      logger.error('❌ revy-ai-chat function error:', error);
-      // Use intelligent fallback
-      const fallbackResponse = getIntelligentFallback(message, context, selectedVariant);
-      const validatedResponse = enforceResponseValidation(fallbackResponse, enhancedContextData.knowledgeArticles, enhancedContextData.articleTagMapping);
-      await cacheResponse(requestHash, validatedResponse);
-      return validatedResponse;
+      logger.error('❌ Enhanced AI interaction failed:', error);
+      return getEnhancedFallbackResponse(context, error.message, selectedVariant);
     }
 
-    if (!data) {
-      logger.error('❌ No data received from revy-ai-chat function');
-      const fallbackResponse = getIntelligentFallback(message, context, selectedVariant);
-      const validatedResponse = enforceResponseValidation(fallbackResponse, enhancedContextData.knowledgeArticles, enhancedContextData.articleTagMapping);
-      await cacheResponse(requestHash, validatedResponse);
-      return validatedResponse;
+    if (!data?.response) {
+      logger.warn('⚠️ No response from enhanced AI service');
+      return getEnhancedFallbackResponse(context, 'No response', selectedVariant);
     }
 
-    let aiResponse = data?.response || 'Beklager, jeg kunne ikke generere et svar.';
-    logger.log('🤖 AI response extracted:', {
-      responseLength: aiResponse.length,
-      responseType: typeof aiResponse,
-      isEmpty: !aiResponse || aiResponse.trim() === '',
-      hasContent: aiResponse && aiResponse.length > 0,
-      preview: aiResponse.substring(0, 100) + '...',
-      sessionId
-    });
+    logger.log('✅ Enhanced AI response received successfully');
+    return data.response;
 
-    if (!aiResponse || typeof aiResponse !== 'string' || aiResponse.trim() === '') {
-      logger.error('❌ Invalid AI response format:', { aiResponse, type: typeof aiResponse });
-      const fallbackResponse = getIntelligentFallback(message, context, selectedVariant);
-      const validatedResponse = enforceResponseValidation(fallbackResponse, enhancedContextData.knowledgeArticles, enhancedContextData.articleTagMapping);
-      await cacheResponse(requestHash, validatedResponse);
-      return validatedResponse;
-    }
-
-    // Inject variant information if available
-    if (selectedVariant) {
-      logger.log('🎭 Injected variant info into response');
-    }
-
-    // Enforce response validation with document-aware content
-    logger.log('🔧 ENFORCING response validation with document-aware content...');
-    aiResponse = enforceResponseValidation(aiResponse, enhancedContextData.knowledgeArticles, enhancedContextData.articleTagMapping);
-
-    if (enhancedContextData.knowledgeArticles.length === 0) {
-      aiResponse += '\n\nFant ingen relevante artikler i kunnskapsbasen.';
-    }
-
-    const responseTime = Date.now() - startTime;
-
-    logger.log('✅ Document-enhanced AI response generated successfully:', {
-      responseLength: aiResponse.length,
-      responseTime: `${responseTime}ms`,
-      isGuestMode: !(await supabase.auth.getUser()).data.user,
-      hasStandardizedTags: /🏷️\s*\*\*[Ee][Mm][Nn][Ee][Rr]:?\*\*/.test(aiResponse),
-      hasArticleMappings: Object.keys(enhancedContextData.articleTagMapping).length > 0,
-      hasDocumentReferences: enhancedContextData.knowledgeArticles.length > 0,
-      variantUsed: selectedVariant?.name || 'default',
-      finalResponsePreview: aiResponse.substring(0, 200) + '...',
-      sessionId
-    });
-
-    // Cache and log the response
-    await Promise.all([
-      cacheResponse(requestHash, aiResponse),
-      logAIUsage(
-        (await supabase.auth.getUser()).data.user?.id,
-        0, // Token counting handled by the function
-        0,
-        0,
-        model,
-        'enhanced_chat',
-        context,
-        clientData?.id,
-        responseTime,
-        sessionId,
-        selectedVariant?.name
-      )
-    ]);
-
-    logger.log('✅ AI usage logged successfully');
-    logger.log('📊 Usage logged successfully with variant and document info');
-    logger.log('✅ Document-enhanced response cached successfully');
-
-    logger.log('🎯 Returning final AI response:', {
-      length: aiResponse.length,
-      hasContent: !!aiResponse && aiResponse.trim().length > 0,
-      isString: typeof aiResponse === 'string',
-      sessionId
-    });
-
-    return aiResponse;
-
-  } catch (error: any) {
-    const responseTime = Date.now() - startTime;
-    logger.error('💥 Enhanced AI response generation failed, using fallback:', error);
-
-    if (error.name === 'AbortError') {
-      return 'Tilkoblingen tok for lang tid, prøv igjen senere';
-    }
-    
-    // SECURE FALLBACK: No direct OpenAI calls
-    const fallbackResponse = getIntelligentFallback(message, context, selectedVariant);
-    const validatedResponse = enforceResponseValidation(fallbackResponse, [], {});
-    
-    // Log error
-    await logAIUsage(
-      (await supabase.auth.getUser()).data.user?.id,
-      0,
-      0,
-      0,
-      getModelForVariant(selectedVariant),
-      'error_fallback',
-      context,
-      clientData?.id,
-      responseTime,
-      sessionId,
-      selectedVariant?.name,
-      error.message
-    );
-
-    await cacheResponse(generateRequestHash(message, context, clientData?.id, selectedVariant?.name), validatedResponse);
-    return validatedResponse;
+  } catch (error) {
+    logger.error('💥 Enhanced AI interaction error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return getEnhancedFallbackResponse(context, errorMessage, selectedVariant);
   }
-};
+}
 
-export {
-  getModelForVariant,
-  buildVariantSystemPrompt,
-  enforceResponseValidation,
-  generateRequestHash,
-  getCachedResponse,
-  cacheResponse
-};
+function buildEnhancedContext(context: string, clientData?: Client, userRole?: string): string {
+  let enhancedContext = context;
+  
+  if (clientData) {
+    const qualityScore = calculateDocumentQualityScore(clientData);
+    const documentStatus = qualityScore > 0 ? 'har dokumenter' : 'mangler dokumenter';
+    
+    enhancedContext += `_client_enhanced:${clientData.name}_documents:${documentStatus}_quality:${qualityScore}`;
+  }
+  
+  if (userRole) {
+    enhancedContext += `_role:${userRole}`;
+  }
+  
+  return enhancedContext;
+}
+
+function calculateDocumentQualityScore(client: Client): number {
+  // Simple scoring based on available client data
+  let score = 0;
+  
+  // Basic score for having client data
+  if (client.name) score += 20;
+  if (client.company_name) score += 20;
+  if (client.industry) score += 30;
+  if (client.org_number) score += 30;
+  
+  return Math.min(score, 100);
+}
+
+function determineRiskProfile(client: Client): 'low' | 'medium' | 'high' {
+  const factors = [
+    !client.company_name, // Missing company name = higher risk
+    !client.industry, // No industry = higher risk
+    calculateDocumentQualityScore(client) < 50 // Low quality data = higher risk
+  ];
+  
+  const riskFactors = factors.filter(Boolean).length;
+  
+  if (riskFactors >= 2) return 'high';
+  if (riskFactors >= 1) return 'medium';
+  return 'low';
+}
+
+function getEnhancedFallbackResponse(context: string, errorType: string, selectedVariant?: AIVariant): string {
+  const variantName = selectedVariant?.display_name || 'AI-Revy';
+  
+  const fallbacks: Record<string, string> = {
+    'audit-actions': `Beklager, ${variantName} er ikke tilgjengelig akkurat nå. For revisjonshandlinger kan du:
+    
+• Sjekke ISA-standardene direkte
+• Se eksisterende arbeidspapirsaker 
+• Kontakte en kollega for veiledning
+• Prøv igjen om litt
+
+Feil: ${errorType}`,
+
+    'documentation': `Beklager, ${variantName} er ikke tilgjengelig akkurat nå. For dokumentanalyse kan du:
+    
+• Bruke standard sjekklister
+• Se tidligere lignende klienter
+• Kontrollere dokumentkrav manuelt
+• Prøv igjen om litt
+
+Feil: ${errorType}`,
+
+    'client-detail': `Beklager, ${variantName} er ikke tilgjengelig akkurat nå. For klientanalyse kan du:
+    
+• Sjekke regnskapsdataene direkte
+• Se historiske revisjonsnotater
+• Kontrollere bransjetall manuelt
+• Prøv igjen om litt
+
+Feil: ${errorType}`,
+
+    'default': `Beklager, ${variantName} er ikke tilgjengelig akkurat nå. Du kan:
+    
+• Prøve igjen om litt
+• Sjekke kunnskapsbasen manuelt
+• Kontakte support hvis problemet vedvarer
+
+Feil: ${errorType}`
+  };
+
+  return fallbacks[context] || fallbacks['default'];
+}

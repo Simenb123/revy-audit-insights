@@ -81,14 +81,26 @@ Svar kun med den oppdaterte HTML-formaterte teksten, uten ekstra kommentarer ell
 Eksisterende tekst:\n\n${currentContent}`;
 
     try {
-      const response = await generateEnhancedAIResponseWithVariant(
+    const response = await generateEnhancedAIResponseWithVariant(
         prompt,
         'audit-actions',
         [], // history
         client, // clientData with enhanced document context
         'employee', // userRole
         undefined, // sessionId
-        selectedVariant // Selected AI variant
+        selectedVariant ? {
+          id: selectedVariant.id,
+          name: selectedVariant.name,
+          display_name: selectedVariant.display_name,
+          description: selectedVariant.description,
+          system_prompt_prefix: selectedVariant.system_prompt_template,
+          model_config: {
+            temperature: 0.2,
+            max_tokens: 1200,
+            model: 'gpt-4o-mini'
+          },
+          context_types: selectedVariant.available_contexts
+        } : undefined // Convert AIRevyVariant to AIVariant
       );
       
       setAiSuggestion(response);
