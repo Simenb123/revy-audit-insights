@@ -118,9 +118,10 @@ const ResizableRightSidebar = () => {
       <Drawer open={!isHidden} onOpenChange={(open) => setIsHidden(!open)}>
         <DrawerTrigger asChild>
           <Button
-            variant="outline"
+            variant="default"
             size="icon"
-            className="fixed bottom-4 right-4 z-50 h-12 w-12 rounded-full shadow-lg bg-primary text-primary-foreground hover:bg-primary/90"
+            className="fixed bottom-4 right-4 z-50 h-12 w-12 max-h-12 max-w-12 rounded-full shadow-lg"
+            style={{ maxWidth: '48px', maxHeight: '48px' }}
           >
             <MessageSquare className="h-5 w-5" />
           </Button>
