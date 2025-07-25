@@ -2539,6 +2539,51 @@ export type Database = {
           },
         ]
       }
+      document_cross_references: {
+        Row: {
+          confidence_score: number | null
+          created_at: string
+          id: string
+          reference_text: string | null
+          reference_type: string
+          source_document_id: string | null
+          target_document_id: string | null
+        }
+        Insert: {
+          confidence_score?: number | null
+          created_at?: string
+          id?: string
+          reference_text?: string | null
+          reference_type: string
+          source_document_id?: string | null
+          target_document_id?: string | null
+        }
+        Update: {
+          confidence_score?: number | null
+          created_at?: string
+          id?: string
+          reference_text?: string | null
+          reference_type?: string
+          source_document_id?: string | null
+          target_document_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_cross_references_source_document_id_fkey"
+            columns: ["source_document_id"]
+            isOneToOne: false
+            referencedRelation: "legal_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_cross_references_target_document_id_fkey"
+            columns: ["target_document_id"]
+            isOneToOne: false
+            referencedRelation: "legal_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       document_metadata: {
         Row: {
           amount_fields: Json | null
@@ -3700,6 +3745,278 @@ export type Database = {
         }
         Relationships: []
       }
+      legal_citations: {
+        Row: {
+          citation_context: string | null
+          citation_text: string
+          created_at: string
+          document_id: string | null
+          id: string
+          is_verified: boolean | null
+          position_end: number | null
+          position_start: number | null
+          provision_id: string | null
+        }
+        Insert: {
+          citation_context?: string | null
+          citation_text: string
+          created_at?: string
+          document_id?: string | null
+          id?: string
+          is_verified?: boolean | null
+          position_end?: number | null
+          position_start?: number | null
+          provision_id?: string | null
+        }
+        Update: {
+          citation_context?: string | null
+          citation_text?: string
+          created_at?: string
+          document_id?: string | null
+          id?: string
+          is_verified?: boolean | null
+          position_end?: number | null
+          position_start?: number | null
+          provision_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legal_citations_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "legal_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_citations_provision_id_fkey"
+            columns: ["provision_id"]
+            isOneToOne: false
+            referencedRelation: "legal_provisions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      legal_document_types: {
+        Row: {
+          authority_weight: number | null
+          color: string | null
+          created_at: string
+          description: string | null
+          display_name: string
+          hierarchy_level: number
+          icon: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          authority_weight?: number | null
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          display_name: string
+          hierarchy_level?: number
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          authority_weight?: number | null
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          display_name?: string
+          hierarchy_level?: number
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      legal_documents: {
+        Row: {
+          content: string
+          created_at: string
+          document_number: string | null
+          document_status: string | null
+          document_type_id: string | null
+          effective_date: string | null
+          embedding: string | null
+          expiry_date: string | null
+          id: string
+          is_primary_source: boolean | null
+          issuing_authority: string | null
+          publication_date: string | null
+          source_url: string | null
+          summary: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          document_number?: string | null
+          document_status?: string | null
+          document_type_id?: string | null
+          effective_date?: string | null
+          embedding?: string | null
+          expiry_date?: string | null
+          id?: string
+          is_primary_source?: boolean | null
+          issuing_authority?: string | null
+          publication_date?: string | null
+          source_url?: string | null
+          summary?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          document_number?: string | null
+          document_status?: string | null
+          document_type_id?: string | null
+          effective_date?: string | null
+          embedding?: string | null
+          expiry_date?: string | null
+          id?: string
+          is_primary_source?: boolean | null
+          issuing_authority?: string | null
+          publication_date?: string | null
+          source_url?: string | null
+          summary?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legal_documents_document_type_id_fkey"
+            columns: ["document_type_id"]
+            isOneToOne: false
+            referencedRelation: "legal_document_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      legal_provisions: {
+        Row: {
+          content: string | null
+          created_at: string
+          hierarchy_path: string | null
+          id: string
+          is_active: boolean | null
+          law_full_name: string | null
+          law_identifier: string
+          parent_provision_id: string | null
+          provision_number: string
+          provision_type: string
+          sort_order: number | null
+          title: string
+          updated_at: string
+          valid_from: string | null
+          valid_until: string | null
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          hierarchy_path?: string | null
+          id?: string
+          is_active?: boolean | null
+          law_full_name?: string | null
+          law_identifier: string
+          parent_provision_id?: string | null
+          provision_number: string
+          provision_type: string
+          sort_order?: number | null
+          title: string
+          updated_at?: string
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          hierarchy_path?: string | null
+          id?: string
+          is_active?: boolean | null
+          law_full_name?: string | null
+          law_identifier?: string
+          parent_provision_id?: string | null
+          provision_number?: string
+          provision_type?: string
+          sort_order?: number | null
+          title?: string
+          updated_at?: string
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legal_provisions_parent_provision_id_fkey"
+            columns: ["parent_provision_id"]
+            isOneToOne: false
+            referencedRelation: "legal_provisions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      legal_subject_area_mappings: {
+        Row: {
+          confidence_score: number | null
+          created_at: string
+          document_id: string | null
+          id: string
+          provision_id: string | null
+          relevance_level: string | null
+          subject_area_id: string | null
+        }
+        Insert: {
+          confidence_score?: number | null
+          created_at?: string
+          document_id?: string | null
+          id?: string
+          provision_id?: string | null
+          relevance_level?: string | null
+          subject_area_id?: string | null
+        }
+        Update: {
+          confidence_score?: number | null
+          created_at?: string
+          document_id?: string | null
+          id?: string
+          provision_id?: string | null
+          relevance_level?: string | null
+          subject_area_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legal_subject_area_mappings_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "legal_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_subject_area_mappings_provision_id_fkey"
+            columns: ["provision_id"]
+            isOneToOne: false
+            referencedRelation: "legal_provisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_subject_area_mappings_subject_area_id_fkey"
+            columns: ["subject_area_id"]
+            isOneToOne: false
+            referencedRelation: "subject_areas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       main_groups: {
         Row: {
           category: string | null
@@ -4156,6 +4473,51 @@ export type Database = {
             columns: ["department_id"]
             isOneToOne: false
             referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      provision_document_relations: {
+        Row: {
+          context_description: string | null
+          created_at: string
+          document_id: string | null
+          id: string
+          provision_id: string | null
+          relation_type: string
+          relevance_score: number | null
+        }
+        Insert: {
+          context_description?: string | null
+          created_at?: string
+          document_id?: string | null
+          id?: string
+          provision_id?: string | null
+          relation_type: string
+          relevance_score?: number | null
+        }
+        Update: {
+          context_description?: string | null
+          created_at?: string
+          document_id?: string | null
+          id?: string
+          provision_id?: string | null
+          relation_type?: string
+          relevance_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "provision_document_relations_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "legal_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "provision_document_relations_provision_id_fkey"
+            columns: ["provision_id"]
+            isOneToOne: false
+            referencedRelation: "legal_provisions"
             referencedColumns: ["id"]
           },
         ]
