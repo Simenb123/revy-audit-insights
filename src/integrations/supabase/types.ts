@@ -44,6 +44,44 @@ export type Database = {
         }
         Relationships: []
       }
+      account_custom_attributes: {
+        Row: {
+          attribute_name: string
+          attribute_type: string | null
+          attribute_value: string | null
+          created_at: string
+          id: string
+          standard_account_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          attribute_name: string
+          attribute_type?: string | null
+          attribute_value?: string | null
+          created_at?: string
+          id?: string
+          standard_account_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          attribute_name?: string
+          attribute_type?: string | null
+          attribute_value?: string | null
+          created_at?: string
+          id?: string
+          standard_account_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_custom_attributes_standard_account_id_fkey"
+            columns: ["standard_account_id"]
+            isOneToOne: false
+            referencedRelation: "standard_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       account_mapping_rules: {
         Row: {
           account_range_end: number
@@ -230,6 +268,54 @@ export type Database = {
           {
             foreignKeyName: "account_relationships_parent_account_id_fkey"
             columns: ["parent_account_id"]
+            isOneToOne: false
+            referencedRelation: "standard_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      account_risk_mappings: {
+        Row: {
+          created_at: string
+          id: string
+          impact_description: string | null
+          mitigation_notes: string | null
+          risk_factor_id: string | null
+          risk_level: string | null
+          standard_account_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          impact_description?: string | null
+          mitigation_notes?: string | null
+          risk_factor_id?: string | null
+          risk_level?: string | null
+          standard_account_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          impact_description?: string | null
+          mitigation_notes?: string | null
+          risk_factor_id?: string | null
+          risk_level?: string | null
+          standard_account_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_risk_mappings_risk_factor_id_fkey"
+            columns: ["risk_factor_id"]
+            isOneToOne: false
+            referencedRelation: "risk_factors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_risk_mappings_standard_account_id_fkey"
+            columns: ["standard_account_id"]
             isOneToOne: false
             referencedRelation: "standard_accounts"
             referencedColumns: ["id"]
@@ -1034,6 +1120,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      audit_areas: {
+        Row: {
+          audit_number: number
+          color: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          is_system_area: boolean | null
+          name: string
+          sort_order: number | null
+          updated_at: string
+        }
+        Insert: {
+          audit_number: number
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_system_area?: boolean | null
+          name: string
+          sort_order?: number | null
+          updated_at?: string
+        }
+        Update: {
+          audit_number?: number
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_system_area?: boolean | null
+          name?: string
+          sort_order?: number | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       audit_firms: {
         Row: {
@@ -2011,6 +2136,51 @@ export type Database = {
         }
         Relationships: []
       }
+      data_import_exports: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          error_details: Json | null
+          file_name: string
+          file_size: number | null
+          id: string
+          operation_type: string
+          records_failed: number | null
+          records_processed: number | null
+          records_successful: number | null
+          status: string | null
+          user_id: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          error_details?: Json | null
+          file_name: string
+          file_size?: number | null
+          id?: string
+          operation_type: string
+          records_failed?: number | null
+          records_processed?: number | null
+          records_successful?: number | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          error_details?: Json | null
+          file_name?: string
+          file_size?: number | null
+          id?: string
+          operation_type?: string
+          records_failed?: number | null
+          records_processed?: number | null
+          records_successful?: number | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       departments: {
         Row: {
           audit_firm_id: string
@@ -2511,6 +2681,56 @@ export type Database = {
             columns: ["client_audit_action_id"]
             isOneToOne: false
             referencedRelation: "client_audit_actions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      estimate_indicators: {
+        Row: {
+          audit_considerations: string | null
+          complexity_level: string | null
+          created_at: string
+          estimate_type: string | null
+          estimation_method: string | null
+          id: string
+          is_estimate: boolean | null
+          key_assumptions: string | null
+          sensitivity_analysis_required: boolean | null
+          standard_account_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          audit_considerations?: string | null
+          complexity_level?: string | null
+          created_at?: string
+          estimate_type?: string | null
+          estimation_method?: string | null
+          id?: string
+          is_estimate?: boolean | null
+          key_assumptions?: string | null
+          sensitivity_analysis_required?: boolean | null
+          standard_account_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          audit_considerations?: string | null
+          complexity_level?: string | null
+          created_at?: string
+          estimate_type?: string | null
+          estimation_method?: string | null
+          id?: string
+          is_estimate?: boolean | null
+          key_assumptions?: string | null
+          sensitivity_analysis_required?: boolean | null
+          standard_account_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estimate_indicators_standard_account_id_fkey"
+            columns: ["standard_account_id"]
+            isOneToOne: true
+            referencedRelation: "standard_accounts"
             referencedColumns: ["id"]
           },
         ]
@@ -3741,6 +3961,47 @@ export type Database = {
           },
         ]
       }
+      related_party_indicators: {
+        Row: {
+          created_at: string
+          description: string | null
+          disclosure_requirements: string | null
+          id: string
+          indicator_type: string | null
+          is_related_party: boolean | null
+          standard_account_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          disclosure_requirements?: string | null
+          id?: string
+          indicator_type?: string | null
+          is_related_party?: boolean | null
+          standard_account_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          disclosure_requirements?: string | null
+          id?: string
+          indicator_type?: string | null
+          is_related_party?: boolean | null
+          standard_account_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "related_party_indicators_standard_account_id_fkey"
+            columns: ["standard_account_id"]
+            isOneToOne: true
+            referencedRelation: "standard_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       revy_chat_messages: {
         Row: {
           content: string
@@ -3845,6 +4106,96 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      risk_factors: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          is_system_risk: boolean | null
+          name: string
+          risk_category: string | null
+          risk_level: string | null
+          risk_number: number
+          sort_order: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_system_risk?: boolean | null
+          name: string
+          risk_category?: string | null
+          risk_level?: string | null
+          risk_number: number
+          sort_order?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_system_risk?: boolean | null
+          name?: string
+          risk_category?: string | null
+          risk_level?: string | null
+          risk_number?: number
+          sort_order?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      standard_account_audit_area_mappings: {
+        Row: {
+          audit_area_id: string | null
+          created_at: string
+          id: string
+          is_primary: boolean | null
+          notes: string | null
+          relevance_score: number | null
+          standard_account_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          audit_area_id?: string | null
+          created_at?: string
+          id?: string
+          is_primary?: boolean | null
+          notes?: string | null
+          relevance_score?: number | null
+          standard_account_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          audit_area_id?: string | null
+          created_at?: string
+          id?: string
+          is_primary?: boolean | null
+          notes?: string | null
+          relevance_score?: number | null
+          standard_account_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "standard_account_audit_area_mappings_audit_area_id_fkey"
+            columns: ["audit_area_id"]
+            isOneToOne: false
+            referencedRelation: "audit_areas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "standard_account_audit_area_mappings_standard_account_id_fkey"
+            columns: ["standard_account_id"]
+            isOneToOne: false
+            referencedRelation: "standard_accounts"
             referencedColumns: ["id"]
           },
         ]
