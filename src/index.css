@@ -75,14 +75,19 @@
     /* grid-template-columns will be set dynamically by GridLayoutContainer */
   }
 
-  /* Mobile Layout - Stack everything */
+  /* Mobile Layout - Show only main content */
   @media (max-width: 1023px) {
     .app-grid {
       grid-template-columns: 1fr !important;
     }
     
-    .app-grid > *:not(:nth-child(2)) {
+    .app-grid > *:first-child,
+    .app-grid > *:last-child {
       display: none;
+    }
+    
+    .app-grid > *:nth-child(2) {
+      display: block;
     }
   }
 
