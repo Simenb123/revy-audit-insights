@@ -25,7 +25,7 @@ import Communication from "./pages/Communication";
 import Collaboration from "./pages/Collaboration";
 import Training from "./pages/Training";
 import NavigationDashboard from "./pages/NavigationDashboard";
-import LedgerPage from "./pages/LedgerPage";
+
 import AccountingData from "./pages/AccountingData";
 import DataImport from "./pages/DataImport";
 import PDFDocuments from "./pages/PDFDocuments";
@@ -84,7 +84,7 @@ function App() {
                   <Route path="communication" element={<Communication />} />
                   <Route path="collaboration" element={<Collaboration />} />
                   <Route path="training" element={<Training />} />
-                  <Route path="ledger" element={<LedgerPage />} />
+                  
                   <Route path="accounting" element={<AccountingData />} />
                   <Route path="data-import" element={<DataImport />} />
                   <Route path="documents" element={<PDFDocuments />} />

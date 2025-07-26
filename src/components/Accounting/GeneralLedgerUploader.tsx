@@ -155,15 +155,46 @@ const GeneralLedgerUploader = ({ clientId, onUploadComplete }: GeneralLedgerUplo
       )}
 
       {step === 'success' && (
-        <DataManagementPanel 
-          clientId={clientId}
-          lastUploadSummary={{
-            fileName: selectedFile?.name || '',
-            recordsImported: convertedData.length,
-            uploadDate: new Date().toLocaleDateString('nb-NO'),
-            dataType: "Hovedbok"
-          }}
-        />
+        <div className="space-y-6">
+          <Card className="border-green-200 bg-green-50">
+            <CardContent className="pt-6">
+              <div className="text-center">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
+                  <Database className="w-8 h-8 text-green-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-green-800 mb-2">
+                  Hovedbok lastet opp!
+                </h3>
+                <p className="text-green-700 mb-4">
+                  {convertedData.length} transaksjoner ble importert fra {selectedFile?.name}
+                </p>
+                <button
+                  onClick={() => {
+                    setStep('select');
+                    setSelectedFile(null);
+                    setFilePreview(null);
+                    setConvertedData([]);
+                    setUploadProgress(0);
+                  }}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+                >
+                  <Upload className="w-4 h-4" />
+                  Last opp ny fil
+                </button>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <DataManagementPanel 
+            clientId={clientId}
+            lastUploadSummary={{
+              fileName: selectedFile?.name || '',
+              recordsImported: convertedData.length,
+              uploadDate: new Date().toLocaleDateString('nb-NO'),
+              dataType: "Hovedbok"
+            }}
+          />
+        </div>
       )}
 
       {step === 'upload' && (
