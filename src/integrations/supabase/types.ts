@@ -5615,6 +5615,12 @@ export type Database = {
         Args: { user_uuid: string }
         Returns: Database["public"]["Enums"]["user_role_type"]
       }
+      get_user_team_ids: {
+        Args: { user_uuid: string }
+        Returns: {
+          team_id: string
+        }[]
+      }
       get_user_teams: {
         Args: { user_uuid: string }
         Returns: {
