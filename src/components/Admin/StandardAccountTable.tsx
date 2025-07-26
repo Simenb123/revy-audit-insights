@@ -157,7 +157,7 @@ const StandardAccountTable = () => {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 w-full">
       {/* Header with filters and create button */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -217,7 +217,7 @@ const StandardAccountTable = () => {
       </div>
 
       {/* Table */}
-      <div className="border rounded-lg">
+      <div className="border rounded-lg w-full">
         <Table>
           <TableHeader>
             <TableRow>

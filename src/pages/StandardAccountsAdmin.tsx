@@ -8,7 +8,7 @@ import MainGroupsManager from '@/components/Admin/MainGroupsManager';
 
 const StandardAccountsAdmin = () => {
   return (
-    <div className="container mx-auto py-6">
+    <div className="w-full py-6">
       <Tabs defaultValue="accounts" className="space-y-6">
         <TabsList>
           <TabsTrigger value="accounts">Standardkontoer</TabsTrigger>
