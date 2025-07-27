@@ -138,7 +138,7 @@ ${context === 'risk-assessment' ? 'Du fokuserer på risikovurdering og kontrolle
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: image ? 'gpt-4o' : 'gpt-4o-mini',
         messages: [
           { role: 'system', content: systemPrompt },
           userMessage
