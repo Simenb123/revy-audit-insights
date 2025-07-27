@@ -42,7 +42,7 @@ For service architecture diagrams of the edge functions, see [docs/backend-endpo
 For classification models used across modules, see [docs/classification.md](docs/classification.md).
 For ledger upload column mappings, see [docs/upload-column-mappings.md](docs/upload-column-mappings.md).
 For an overview of the Revio color palette, see [docs/color-palette.md](docs/color-palette.md).
-For details on the page layout components, see [docs/page-layout.md](docs/page-layout.md).
+For details on the page layout components and full-width defaults, see [docs/page-layout.md](docs/page-layout.md).
 For running tests in CI see [docs/testing-ci.md](docs/testing-ci.md).
 For an overview of the database structure see [docs/database-overview.md](docs/database-overview.md).
 
