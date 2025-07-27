@@ -46,7 +46,7 @@ const AppLayout = () => {
         <SidebarProvider>
         <GridLayoutContainer>
           <ResizableLeftSidebar />
-          <ResponsiveLayout>
+          <ResponsiveLayout maxWidth="wide">
             <div className="p-3 bg-yellow-50 border-b border-yellow-200">
               <p className="text-sm text-yellow-800">
                 Demo-modus: Appen kjører uten tilkobling til backend.
@@ -81,7 +81,7 @@ const AppLayout = () => {
       <SidebarProvider>
         <GridLayoutContainer>
           <ResizableLeftSidebar />
-          <ResponsiveLayout>
+          <ResponsiveLayout maxWidth="wide">
             <Outlet />
           </ResponsiveLayout>
           <ResizableRightSidebar />

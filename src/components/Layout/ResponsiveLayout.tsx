@@ -11,7 +11,7 @@ interface ResponsiveLayoutProps {
 const ResponsiveLayout: React.FC<ResponsiveLayoutProps> = ({
   children,
   className,
-  maxWidth = 'wide'
+  maxWidth = 'full'
 }) => {
   return (
     <GlobalLayoutContainer
