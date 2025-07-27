@@ -10,6 +10,7 @@ AI Revy is an intelligent audit assistant built for Norwegian audit firms, provi
 - **Knowledge Base**: Comprehensive audit standards and procedure library
 - **Client Management**: Organize and track audit clients and engagements
 - **Team Collaboration**: Real-time collaboration tools for audit teams
+- **Full-Width Page Design**: Most pages now use `ResponsiveLayout` with no width limit so content spans the entire viewport
 
 ## Voice Features
 
@@ -19,6 +20,8 @@ your `.env.local` file. See [docs/voice-functions.md](docs/voice-functions.md)
 for detailed API examples.
 
 ## Project Overview
+
+Most pages render inside the `ResponsiveLayout` wrapper. Using `maxWidth="full"` removes any width limit so content fills the viewport.
 
 For a high-level tour of the architecture and key modules, see [docs/project-overview.md](docs/project-overview.md).
 For the document processing pipeline, see [docs/document-workflow.md](docs/document-workflow.md).
