@@ -13,12 +13,9 @@ serve(async (req) => {
   }
 
   try {
-    const { message, context, variantName, image } = await req.json()
+    const { message, context, variantName } = await req.json()
     console.log('🚀 AI-Revy chat function started')
     console.log('📝 Processing message:', message.substring(0, 50) + '...')
-    if (image) {
-      console.log('🖼️ Image provided for analysis')
-    }
 
     // Get environment variables
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
@@ -121,15 +118,6 @@ ${context === 'risk-assessment' ? 'Du fokuserer på risikovurdering og kontrolle
 
     console.log('🤖 Calling OpenAI API...')
 
-    // Prepare user message with optional image
-    const userMessage: any = { role: 'user', content: message }
-    if (image) {
-      userMessage.content = [
-        { type: 'text', text: message },
-        { type: 'image_url', image_url: { url: image } }
-      ]
-    }
-
     // Call OpenAI API
     const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -138,10 +126,10 @@ ${context === 'risk-assessment' ? 'Du fokuserer på risikovurdering og kontrolle
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: image ? 'gpt-4o' : 'gpt-4o-mini',
+        model: 'gpt-4o-mini',
         messages: [
           { role: 'system', content: systemPrompt },
-          userMessage
+          { role: 'user', content: message }
         ],
         max_tokens: 1200,
         temperature: 0.2,
@@ -159,15 +147,11 @@ ${context === 'risk-assessment' ? 'Du fokuserer på risikovurdering og kontrolle
 
     console.log('✅ AI response generated successfully:', aiResponse.substring(0, 100) + '...')
 
-    // Generate suggested actions based on AI analysis
-    const suggestedActions = generateSuggestedActions(message, aiResponse, image, context)
-
     return new Response(JSON.stringify({
       response: aiResponse,
       hasKnowledgeReferences,
       knowledgeArticles,
-      context,
-      suggestedActions
+      context
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
@@ -183,78 +167,3 @@ ${context === 'risk-assessment' ? 'Du fokuserer på risikovurdering og kontrolle
     })
   }
 })
-
-function generateSuggestedActions(message: string, aiResponse: string, image?: string, context?: string) {
-  const actions = []
-  
-  // Text-based action detection
-  if (message.toLowerCase().includes('inventar') || aiResponse.toLowerCase().includes('inventar')) {
-    actions.push({
-      type: 'add_to_inventory',
-      label: 'Legg til i inventar',
-      description: 'Registrer som inventarelement',
-      icon: 'package'
-    })
-  }
-  
-  if (message.toLowerCase().includes('dokument') || aiResponse.toLowerCase().includes('dokument')) {
-    actions.push({
-      type: 'add_to_documents',
-      label: 'Arkiver som dokument',
-      description: 'Lagre i dokumentarkivet',
-      icon: 'file-text'
-    })
-  }
-  
-  if (message.toLowerCase().includes('vin') || aiResponse.toLowerCase().includes('vin')) {
-    actions.push({
-      type: 'add_to_wine_cellar',
-      label: 'Legg til i vinlager',
-      description: 'Registrer i vinlageret',
-      icon: 'wine'
-    })
-  }
-  
-  if (message.toLowerCase().includes('hyttebook') || message.toLowerCase().includes('aktivitet')) {
-    actions.push({
-      type: 'add_to_guestbook',
-      label: 'Legg til i hytteboka',
-      description: 'Opprett utkast til hytteboka',
-      icon: 'book-open'
-    })
-  }
-  
-  if (message.toLowerCase().includes('sjekkliste') || aiResponse.toLowerCase().includes('sjekkliste')) {
-    actions.push({
-      type: 'add_to_checklist',
-      label: 'Legg til i sjekkliste',
-      description: 'Opprett sjekklistepunkt',
-      icon: 'check-square'
-    })
-  }
-  
-  // Image-based action detection
-  if (image) {
-    // Always suggest inventory for images unless other specific categories detected
-    if (!actions.some(a => a.type === 'add_to_inventory')) {
-      actions.push({
-        type: 'add_to_inventory',
-        label: 'Registrer gjenstand',
-        description: 'Legg til dette i inventaret',
-        icon: 'package'
-      })
-    }
-    
-    // Always suggest document archiving for images
-    if (!actions.some(a => a.type === 'add_to_documents')) {
-      actions.push({
-        type: 'add_to_documents',
-        label: 'Arkiver bilde',
-        description: 'Lagre som dokument',
-        icon: 'image'
-      })
-    }
-  }
-  
-  return actions
-}
