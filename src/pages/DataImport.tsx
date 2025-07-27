@@ -16,7 +16,7 @@ const DataImport = () => {
   // If we're on a specific data category route, show the appropriate uploader
   if (location.pathname.includes('/grunnlagsdata')) {
   return (
-    <ResponsiveLayout maxWidth="wide">
+    <ResponsiveLayout maxWidth="full">
       <AccountingDataUploader clientId={clientId} clientName={clientName} />
     </ResponsiveLayout>
   );
@@ -24,7 +24,7 @@ const DataImport = () => {
   
   if (location.pathname.includes('/spesialdata')) {
     return (
-      <ResponsiveLayout maxWidth="wide">
+      <ResponsiveLayout maxWidth="full">
         <AccountingDataUploader clientId={clientId} clientName={clientName} />
       </ResponsiveLayout>
     );
@@ -32,7 +32,7 @@ const DataImport = () => {
   
   if (location.pathname.includes('/transaksjoner')) {
     return (
-      <ResponsiveLayout maxWidth="wide">
+      <ResponsiveLayout maxWidth="full">
         <AccountingDataUploader clientId={clientId} clientName={clientName} />
       </ResponsiveLayout>
     );
@@ -40,7 +40,7 @@ const DataImport = () => {
   
   if (location.pathname.includes('/import')) {
     return (
-      <ResponsiveLayout maxWidth="wide">
+      <ResponsiveLayout maxWidth="full">
         <AccountingDataUploader clientId={clientId} clientName={clientName} />
       </ResponsiveLayout>
     );
@@ -53,7 +53,7 @@ const DataImport = () => {
   
   // Fallback for non-client context
   return (
-    <ResponsiveLayout maxWidth="wide">
+    <ResponsiveLayout maxWidth="full">
       <AccountingDataUploader 
         clientId="" 
         clientName="Ingen klient valgt" 
