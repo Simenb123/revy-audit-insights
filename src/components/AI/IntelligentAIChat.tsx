@@ -15,13 +15,27 @@ import {
   CheckCircle,
   Users,
   FileText,
-  Settings
+  Settings,
+  ImageIcon,
+  Package,
+  Wine,
+  BookOpen,
+  CheckSquare,
+  X
 } from 'lucide-react';
 import { useAIGlobal } from './AIGlobalProvider';
 import { useRevyContext } from '@/components/RevyContext/RevyContextProvider';
 import { useAIRevyVariants } from '@/hooks/useAIRevyVariants';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+
+interface SuggestedAction {
+  type: string;
+  label: string;
+  description: string;
+  icon: string;
+}
 
 interface Message {
   id: string;
@@ -31,6 +45,8 @@ interface Message {
   variant?: string;
   cached?: boolean;
   processingTime?: number;
+  image?: string;
+  suggestedActions?: SuggestedAction[];
 }
 
 interface IntelligentAIChatProps {
@@ -55,6 +71,7 @@ const IntelligentAIChat: React.FC<IntelligentAIChatProps> = ({
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [metrics, setMetrics] = useState({
     responseTime: 0,
     cacheHits: 0,
@@ -93,11 +110,13 @@ const IntelligentAIChat: React.FC<IntelligentAIChatProps> = ({
       id: `user_${Date.now()}`,
       content: input.trim(),
       sender: 'user',
-      timestamp: new Date()
+      timestamp: new Date(),
+      image: selectedImage || undefined
     };
 
     setMessages(prev => [...prev, userMessage]);
     setInput('');
+    setSelectedImage(null);
     setIsLoading(true);
     
     const startTime = Date.now();
@@ -113,12 +132,20 @@ const IntelligentAIChat: React.FC<IntelligentAIChatProps> = ({
       const cachedResponse = aiState.responseCache.get(cacheKey);
       const isFromCache = !!cachedResponse;
 
-      const response = await sendMessage(input.trim(), {
-        clientData: contextData,
-        streaming: enableStreaming,
-        priority: 'normal',
-        useCache: true
+      // Send message with image if present
+      const messageData = {
+        message: input.trim(),
+        context: aiState.currentContext,
+        variantName: aiState.selectedVariant?.name,
+        ...(selectedImage && { image: selectedImage })
+      };
+
+      const { data, error } = await supabase.functions.invoke('revy-ai-chat', {
+        body: messageData
       });
+
+      if (error) throw error;
+      const response = data.response;
 
       const processingTime = Date.now() - startTime;
 
@@ -129,7 +156,8 @@ const IntelligentAIChat: React.FC<IntelligentAIChatProps> = ({
         timestamp: new Date(),
         variant: aiState.selectedVariant?.display_name,
         cached: isFromCache,
-        processingTime
+        processingTime,
+        suggestedActions: data.suggestedActions || []
       };
 
       setMessages(prev => [...prev, aiMessage]);
@@ -194,6 +222,37 @@ const IntelligentAIChat: React.FC<IntelligentAIChatProps> = ({
       }
     }
   }, [messages]);
+
+  const handleImageUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setSelectedImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  }, []);
+
+  const handleActionClick = useCallback((action: SuggestedAction, messageContent: string) => {
+    toast.info(`Handling action: ${action.label}`, {
+      description: action.description
+    });
+    // Here we would implement the actual action handlers
+    console.log('Action clicked:', action, 'for message:', messageContent);
+  }, []);
+
+  const getActionIcon = (iconName: string) => {
+    const icons = {
+      'package': Package,
+      'file-text': FileText,
+      'image': ImageIcon,
+      'wine': Wine,
+      'book-open': BookOpen,
+      'check-square': CheckSquare
+    };
+    return icons[iconName as keyof typeof icons] || Package;
+  };
 
   const getConnectionStatusIcon = () => {
     switch (aiState.connectionStatus) {
@@ -290,6 +349,16 @@ const IntelligentAIChat: React.FC<IntelligentAIChatProps> = ({
                       : 'bg-muted text-muted-foreground'
                   )}
                 >
+                  {/* Display image if present */}
+                  {message.image && (
+                    <div className="mb-2">
+                      <img 
+                        src={message.image} 
+                        alt="Uploaded image" 
+                        className="max-w-full h-auto rounded border max-h-48 object-contain"
+                      />
+                    </div>
+                  )}
                   {message.content}
                   
                   {/* Message metadata */}
@@ -319,6 +388,27 @@ const IntelligentAIChat: React.FC<IntelligentAIChatProps> = ({
                       </div>
                     )}
                   </div>
+                  
+                  {/* Suggested Actions */}
+                  {message.sender === 'ai' && message.suggestedActions && message.suggestedActions.length > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {message.suggestedActions.map((action, index) => {
+                        const IconComponent = getActionIcon(action.icon);
+                        return (
+                          <Button
+                            key={index}
+                            variant="outline"
+                            size="sm"
+                            className="text-xs h-7"
+                            onClick={() => handleActionClick(action, message.content)}
+                          >
+                            <IconComponent className="h-3 w-3 mr-1" />
+                            {action.label}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
@@ -359,16 +449,50 @@ const IntelligentAIChat: React.FC<IntelligentAIChatProps> = ({
 
         {/* Input area */}
         <div className="space-y-2">
+          {/* Image preview */}
+          {selectedImage && (
+            <div className="relative inline-block">
+              <img 
+                src={selectedImage} 
+                alt="Selected" 
+                className="max-h-24 rounded border object-contain"
+              />
+              <Button
+                variant="ghost"
+                size="sm"
+                className="absolute -top-2 -right-2 h-6 w-6 p-0 bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                onClick={() => setSelectedImage(null)}
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            </div>
+          )}
+          
           <div className="flex gap-2">
-            <Textarea
-              ref={inputRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Spør AI Revy om hjelp..."
-              className="min-h-[60px] resize-none"
-              disabled={isLoading || aiState.isProcessing}
-            />
+            <div className="flex-1 relative">
+              <Textarea
+                ref={inputRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Spør AI Revy om hjelp..."
+                className="min-h-[60px] resize-none pr-10"
+                disabled={isLoading || aiState.isProcessing}
+              />
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="hidden"
+                id="image-upload"
+              />
+              <label
+                htmlFor="image-upload"
+                className="absolute right-2 top-2 p-1 hover:bg-muted rounded cursor-pointer"
+              >
+                <ImageIcon className="h-4 w-4" />
+              </label>
+            </div>
             <div className="flex flex-col gap-1">
               <Button
                 onClick={handleSendMessage}
