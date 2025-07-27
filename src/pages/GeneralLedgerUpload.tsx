@@ -12,7 +12,7 @@ const GeneralLedgerUpload = () => {
 
   if (isLoading) {
     return (
-      <GlobalLayoutContainer maxWidth="wide">
+      <GlobalLayoutContainer maxWidth="full">
         <div className="p-6 space-y-6">
           <Skeleton className="h-8 w-64" />
           <Skeleton className="h-64 w-full" />
@@ -23,7 +23,7 @@ const GeneralLedgerUpload = () => {
 
   if (error || !client) {
     return (
-      <GlobalLayoutContainer maxWidth="wide">
+      <GlobalLayoutContainer maxWidth="full">
         <div className="p-6 text-center py-12">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">Klient ikke funnet</h1>
           <p className="text-gray-600">
@@ -35,7 +35,7 @@ const GeneralLedgerUpload = () => {
   }
 
   return (
-    <GlobalLayoutContainer maxWidth="wide">
+    <GlobalLayoutContainer maxWidth="full">
       <div className="p-6 space-y-6">
         <ClientBreadcrumb client={client} />
         

@@ -18,7 +18,7 @@ const Communication = () => {
 
   if (profileLoading || roomsLoading) {
     return (
-      <ConstrainedWidth width="wide">
+      <ConstrainedWidth width="full">
         <StandardPageLayout>
           <div className="animate-pulse">
             <div className="h-8 bg-gray-200 rounded w-64 mb-2"></div>
@@ -35,7 +35,7 @@ const Communication = () => {
   }
 
   return (
-    <ConstrainedWidth width="wide">
+    <ConstrainedWidth width="full">
       <StandardPageLayout
         header={
           <div className="flex justify-between items-center mb-6">

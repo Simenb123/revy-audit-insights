@@ -21,7 +21,7 @@ const OrganizationOverview = () => {
 
   if (profileLoading) {
     return (
-      <ConstrainedWidth width="medium">
+      <ConstrainedWidth width="full">
         <div className="animate-pulse">
           <div className="h-8 bg-gray-200 rounded w-64 mb-2"></div>
           <div className="h-4 bg-gray-200 rounded w-96 mb-6"></div>
@@ -37,7 +37,7 @@ const OrganizationOverview = () => {
 
   if (!userProfile) {
     return (
-      <ConstrainedWidth width="medium">
+      <ConstrainedWidth width="full">
         <Card>
           <CardContent className="pt-6 text-center">
             <p className="text-red-600 mb-4">Kunne ikke laste brukerdata</p>
@@ -56,7 +56,7 @@ const OrganizationOverview = () => {
 
   return (
     <PageLayout
-      width="wide"
+      width="full"
       header={
         <div className="flex justify-between items-center">
           <PageHeader

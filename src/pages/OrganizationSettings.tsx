@@ -98,7 +98,7 @@ const OrganizationSettings = () => {
 
   if (profileLoading) {
     return (
-      <ConstrainedWidth width="wide">
+      <ConstrainedWidth width="full">
         <StandardPageLayout
           header={
             <div className="flex items-center justify-between mb-6">
@@ -132,7 +132,7 @@ const OrganizationSettings = () => {
 
   if (!canAccessSettings) {
     return (
-      <ConstrainedWidth width="wide">
+      <ConstrainedWidth width="full">
         <StandardPageLayout
           header={
             <div className="flex items-center justify-between mb-6">
@@ -171,7 +171,7 @@ const OrganizationSettings = () => {
   }
 
   return (
-    <ConstrainedWidth width="wide">
+    <ConstrainedWidth width="full">
       <StandardPageLayout
         header={
           <div className="flex items-center justify-between mb-6">
