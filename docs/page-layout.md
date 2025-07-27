@@ -17,7 +17,7 @@ This project uses a small set of layout wrappers to keep page spacing consistent
 Typical pages nest these components:
 
 ```tsx
-<ResponsiveLayout>
+<ResponsiveLayout maxWidth="full">
   <ConstrainedWidth width="wide">
     <StandardPageLayout
       header={<PageHeader title="Title" />}
