@@ -172,14 +172,27 @@ const ClientOverviewDashboard = ({ client }: ClientOverviewDashboardProps) => {
               </div>
             </div>
 
-            <Button 
-              variant="outline" 
-              className="w-full gap-2"
-              onClick={() => navigate(`/klienter/${client.org_number}/regnskapsdata`)}
-            >
-              <Database className="h-4 w-4" />
-              Administrer regnskapsdata
-            </Button>
+            <div className="space-y-2">
+              <Button 
+                variant="outline" 
+                className="w-full gap-2"
+                onClick={() => navigate(`/klienter/${client.org_number}/regnskapsdata`)}
+              >
+                <Database className="h-4 w-4" />
+                Administrer regnskapsdata
+              </Button>
+              
+              {accountingDataComplete && (
+                <Button 
+                  variant="default" 
+                  className="w-full gap-2"
+                  onClick={() => navigate(`/klienter/${client.org_number}/analyser`)}
+                >
+                  <TrendingUp className="h-4 w-4" />
+                  Analyser regnskapsdata
+                </Button>
+              )}
+            </div>
           </CardContent>
         </Card>
 

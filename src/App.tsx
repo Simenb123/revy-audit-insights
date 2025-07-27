@@ -42,6 +42,7 @@ import AccountRelationshipsPage from "./pages/Admin/AccountRelationships";
 import AuditActionLibrary from "./pages/Admin/AuditActionLibrary";
 import GeneralLedgerUpload from "./pages/GeneralLedgerUpload";
 import TrialBalanceUpload from "./pages/TrialBalanceUpload";
+import AnalysisPage from "./pages/AnalysisPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -66,7 +67,7 @@ function App() {
                   <Route path="clients/:id" element={<ProtectedRoute><ClientDetail /></ProtectedRoute>} />
                   <Route path="klienter/:orgNumber" element={<ProtectedRoute><ClientDetail /></ProtectedRoute>} />
                   <Route path="klienter/:orgNumber/regnskap" element={<AccountingData />} />
-                  <Route path="klienter/:orgNumber/analyser" element={<ClientDetail />} />
+                  <Route path="klienter/:orgNumber/analyser" element={<AnalysisPage />} />
                   <Route path="klienter/:orgNumber/regnskapsdata" element={<DataImport />} />
                   <Route path="klienter/:orgNumber/hovedbok" element={<GeneralLedgerUpload />} />
                   <Route path="klienter/:orgNumber/saldobalanse" element={<TrialBalanceUpload />} />

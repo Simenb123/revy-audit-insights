@@ -14,6 +14,9 @@ import DrillDownTable from './DrillDownTable';
 import MaterialityBanner from './MaterialityBanner';
 import VersionSelector from './VersionSelector';
 import VersionHistory from './VersionHistory';
+import GeneralLedgerTable from '@/components/Accounting/GeneralLedgerTable';
+import TrialBalanceTable from '@/components/Accounting/TrialBalanceTable';
+import { useAccountingData } from '@/hooks/useAccountingData';
 import { format } from 'date-fns';
 
 const materialityThresholds = {
@@ -30,10 +33,15 @@ const documentVersions: DocumentVersion[] = [
   { id: '4', version_name: 'Årsregnskap 2022 (endelig)', created_at: '2023-03-20T12:00:00.000Z', client_audit_action_id: 'a1', content: '', change_source: 'user', created_by_user_id: 'u1', change_description: null },
 ];
 
-const AccountingExplorer = () => {
+interface AccountingExplorerProps {
+  clientId: string;
+}
+
+const AccountingExplorer = ({ clientId }: AccountingExplorerProps) => {
   const [activeTab, setActiveTab] = useState('overview');
   const [selectedVersion, setSelectedVersion] = useState<DocumentVersion>(documentVersions[0]);
-  
+  const { data: accountingData, isLoading } = useAccountingData(clientId);
+
   const handleVersionChange = (version: DocumentVersion) => {
     setSelectedVersion(version);
   };
@@ -89,31 +97,11 @@ const AccountingExplorer = () => {
             </TabsContent>
             
             <TabsContent value="ledger" className="mt-0">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Hovedbok</CardTitle>
-                  <CardDescription>
-                    {selectedVersion.version_name} ({format(new Date(selectedVersion.created_at), 'dd.MM.yyyy')})
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p>Innhold for hovedbok kommer her...</p>
-                </CardContent>
-              </Card>
+              <GeneralLedgerTable clientId={clientId} />
             </TabsContent>
             
             <TabsContent value="balances" className="mt-0">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Saldobalanse</CardTitle>
-                  <CardDescription>
-                    {selectedVersion.version_name} ({format(new Date(selectedVersion.created_at), 'dd.MM.yyyy')})
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p>Innhold for saldobalanse kommer her...</p>
-                </CardContent>
-              </Card>
+              <TrialBalanceTable clientId={clientId} />
             </TabsContent>
             
             <TabsContent value="journal" className="mt-0">
