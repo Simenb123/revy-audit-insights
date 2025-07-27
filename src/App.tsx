@@ -9,6 +9,7 @@ import { AIGlobalProvider } from "@/components/AI/AIGlobalProvider";
 import { DataCacheProvider } from "@/components/Optimization/DataCache";
 import AppLayout from "@/components/Layout/AppLayout";
 import { RightSidebarProvider } from "@/components/Layout/RightSidebarContext";
+import ProtectedRoute from "@/components/Auth/ProtectedRoute";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import OrganizationSetup from "./pages/OrganizationSetup";
@@ -58,12 +59,12 @@ function App() {
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/setup" element={<OrganizationSetup />} />
                 <Route path="/" element={<RightSidebarProvider><AppLayout /></RightSidebarProvider>}>
-                  <Route index element={<Index />} />
-                  <Route path="dashboard" element={<NavigationDashboard />} />
-                  <Route path="clients" element={<ClientsOverview />} />
-                  <Route path="klienter" element={<ClientsOverview />} />
-                  <Route path="clients/:id" element={<ClientDetail />} />
-                  <Route path="klienter/:orgNumber" element={<ClientDetail />} />
+                  <Route index element={<ProtectedRoute><Index /></ProtectedRoute>} />
+                  <Route path="dashboard" element={<ProtectedRoute><NavigationDashboard /></ProtectedRoute>} />
+                  <Route path="clients" element={<ProtectedRoute><ClientsOverview /></ProtectedRoute>} />
+                  <Route path="klienter" element={<ProtectedRoute><ClientsOverview /></ProtectedRoute>} />
+                  <Route path="clients/:id" element={<ProtectedRoute><ClientDetail /></ProtectedRoute>} />
+                  <Route path="klienter/:orgNumber" element={<ProtectedRoute><ClientDetail /></ProtectedRoute>} />
                   <Route path="klienter/:orgNumber/regnskap" element={<AccountingData />} />
                   <Route path="klienter/:orgNumber/analyser" element={<ClientDetail />} />
                   <Route path="klienter/:orgNumber/regnskapsdata" element={<DataImport />} />
