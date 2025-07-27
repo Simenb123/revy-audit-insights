@@ -76,7 +76,7 @@ const ClientsOverview = () => {
 
   return (
     <PageLayout
-      width="wide"
+      width="full"
       header={
         <ClientsHeader
           title="Mine klienter"

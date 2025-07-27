@@ -15,7 +15,7 @@ const Index = () => {
   // Show loading state
   if (isLoading) {
     return (
-      <ConstrainedWidth width="medium">
+      <ConstrainedWidth width="full">
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
@@ -59,7 +59,7 @@ const Index = () => {
 
   return (
     <PageLayout
-      width="wide"
+      width="full"
       header={
         <PageHeader
           title="Dashboard"

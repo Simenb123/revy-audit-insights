@@ -17,7 +17,7 @@ import AuditActionGenerator from '@/components/AIRevyAdmin/AuditActionGenerator'
 const KnowledgeBase = () => {
   const showAdvanced = import.meta.env.VITE_KNOWLEDGE_ADMIN_ADVANCED === 'true';
   return (
-    <GlobalLayoutContainer className="h-full" maxWidth="wide">
+    <GlobalLayoutContainer className="h-full" maxWidth="full">
       <Routes>
         <Route index element={<KnowledgeOverview />} />
         <Route path="kategori/:categoryId" element={<CategoryView />} />

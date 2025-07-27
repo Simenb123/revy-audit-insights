@@ -21,7 +21,7 @@ const RoleAccessAdmin = () => {
 
   if (!canAccess) {
     return (
-      <ConstrainedWidth width="medium">
+      <ConstrainedWidth width="full">
         <Card>
           <CardContent className="pt-6 text-center">
             <Shield className="h-12 w-12 mx-auto text-muted-foreground mb-4" />

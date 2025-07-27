@@ -36,7 +36,7 @@ const TeamManagement = () => {
   }
 
   return (
-    <ConstrainedWidth width="wide">
+    <ConstrainedWidth width="full">
       <StandardPageLayout
         header={
           <TeamManagementHeader

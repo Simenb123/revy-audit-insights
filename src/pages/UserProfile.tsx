@@ -126,7 +126,7 @@ const UserProfile = () => {
 
   if (isLoading) {
     return (
-      <ConstrainedWidth width="wide">
+      <ConstrainedWidth width="full">
         <StandardPageLayout>
           <div className="flex items-center justify-center min-h-[400px]">
             <div className="text-center">
@@ -140,7 +140,7 @@ const UserProfile = () => {
   }
 
   return (
-    <ConstrainedWidth width="wide">
+    <ConstrainedWidth width="full">
       <StandardPageLayout
         header={
           <div className="flex items-center justify-between mb-6">
