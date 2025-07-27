@@ -78,6 +78,55 @@ const GeneralLedgerUploader = ({ clientId, onUploadComplete }: GeneralLedgerUplo
     }
   };
 
+  const findOrCreateAccounts = async (accountNumbers: string[]) => {
+    const uniqueAccountNumbers = [...new Set(accountNumbers)];
+    const accountMapping = new Map<string, string>();
+
+    // Get existing accounts
+    const { data: existingAccounts } = await supabase
+      .from('client_chart_of_accounts')
+      .select('id, account_number')
+      .eq('client_id', clientId)
+      .in('account_number', uniqueAccountNumbers);
+
+    // Map existing accounts
+    existingAccounts?.forEach(account => {
+      accountMapping.set(account.account_number, account.id);
+    });
+
+    // Find missing accounts
+    const missingAccountNumbers = uniqueAccountNumbers.filter(
+      num => !accountMapping.has(num)
+    );
+
+    // Create missing accounts
+    if (missingAccountNumbers.length > 0) {
+      const accountsToCreate = missingAccountNumbers.map(accountNumber => ({
+        client_id: clientId,
+        account_number: accountNumber,
+        account_name: `Konto ${accountNumber}`, // Default name
+        account_type: 'resultat' as const, // Default type from enum
+        is_active: true
+      }));
+
+      const { data: newAccounts, error } = await supabase
+        .from('client_chart_of_accounts')
+        .insert(accountsToCreate)
+        .select('id, account_number');
+
+      if (error) throw error;
+
+      // Map new accounts
+      newAccounts?.forEach(account => {
+        accountMapping.set(account.account_number, account.id);
+      });
+
+      toast.info(`${missingAccountNumbers.length} nye kontoer ble opprettet automatisk`);
+    }
+
+    return accountMapping;
+  };
+
   const uploadGeneralLedger = async (transactions: any[], file: File) => {
     if (!clientId) return;
 
@@ -101,6 +150,15 @@ const GeneralLedgerUploader = ({ clientId, onUploadComplete }: GeneralLedgerUplo
         .single();
 
       if (batchError) throw batchError;
+      setUploadProgress(20);
+
+      // Get all unique account numbers from transactions
+      const accountNumbers = transactions
+        .map(t => t.account_number?.toString())
+        .filter(Boolean) as string[];
+
+      // Find or create accounts and get UUID mapping
+      const accountMapping = await findOrCreateAccounts(accountNumbers);
       setUploadProgress(30);
 
       // Insert transactions into general_ledger_transactions table
@@ -111,23 +169,33 @@ const GeneralLedgerUploader = ({ clientId, onUploadComplete }: GeneralLedgerUplo
         const batchTransactions = transactions.slice(i, Math.min(i + batchSize, transactions.length));
         
         // Prepare transactions for insertion
-        const transactionsToInsert = batchTransactions.map(transaction => {
-          const transactionDate = new Date(transaction.date);
-          return {
-            client_id: clientId,
-            client_account_id: transaction.account_number?.toString() || 'unknown',
-            upload_batch_id: batch.id,
-            transaction_date: transactionDate.toISOString().split('T')[0],
-            period_year: transactionDate.getFullYear(),
-            period_month: transactionDate.getMonth() + 1,
-            voucher_number: transaction.reference || null,
-            description: transaction.description || '',
-            debit_amount: transaction.debit_amount || null,
-            credit_amount: transaction.credit_amount || null,
-            balance_amount: (transaction.debit_amount || 0) - (transaction.credit_amount || 0),
-            reference_number: transaction.reference || null,
-          };
-        });
+        const transactionsToInsert = batchTransactions
+          .map(transaction => {
+            const accountNumber = transaction.account_number?.toString();
+            const accountId = accountMapping.get(accountNumber);
+            
+            if (!accountId) {
+              console.warn(`No account ID found for account number: ${accountNumber}`);
+              return null;
+            }
+
+            const transactionDate = new Date(transaction.date);
+            return {
+              client_id: clientId,
+              client_account_id: accountId, // Use UUID instead of string
+              upload_batch_id: batch.id,
+              transaction_date: transactionDate.toISOString().split('T')[0],
+              period_year: transactionDate.getFullYear(),
+              period_month: transactionDate.getMonth() + 1,
+              voucher_number: transaction.reference || null,
+              description: transaction.description || '',
+              debit_amount: transaction.debit_amount || null,
+              credit_amount: transaction.credit_amount || null,
+              balance_amount: (transaction.debit_amount || 0) - (transaction.credit_amount || 0),
+              reference_number: transaction.reference || null,
+            };
+          })
+          .filter(Boolean); // Remove null entries
         
         try {
           const { error: insertError } = await supabase
@@ -136,9 +204,9 @@ const GeneralLedgerUploader = ({ clientId, onUploadComplete }: GeneralLedgerUplo
             
           if (insertError) {
             console.error('Error inserting batch:', insertError);
-            // Continue with other batches
+            toast.error(`Feil ved lagring av transaksjonsbatch: ${insertError.message}`);
           } else {
-            successful += batchTransactions.length;
+            successful += transactionsToInsert.length;
           }
         } catch (error) {
           console.error(`Error processing batch:`, error);
@@ -164,8 +232,9 @@ const GeneralLedgerUploader = ({ clientId, onUploadComplete }: GeneralLedgerUplo
       onUploadComplete?.();
       
     } catch (error: any) {
-      toast.error('Feil ved opplasting');
-      console.error(error);
+      toast.error(`Feil ved opplasting: ${error.message || 'Ukjent feil'}`);
+      console.error('Upload error:', error);
+      setStep('select');
     }
   };
 
