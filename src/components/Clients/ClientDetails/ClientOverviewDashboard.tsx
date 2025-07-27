@@ -27,7 +27,7 @@ const ClientOverviewDashboard = ({ client }: ClientOverviewDashboardProps) => {
 
   // Calculate completion status
   const hasTrialBalance = accountingData?.chartOfAccountsCount > 0;
-  const hasGeneralLedger = accountingData?.accountingDocsCount > 0;
+  const hasGeneralLedger = accountingData?.hasGeneralLedger || false;
   const accountingDataComplete = hasTrialBalance && hasGeneralLedger;
   
   const completedTasks = [hasTrialBalance, hasGeneralLedger].filter(Boolean).length;
@@ -165,7 +165,7 @@ const ClientOverviewDashboard = ({ client }: ClientOverviewDashboardProps) => {
                 </div>
                 <p className="text-xs text-muted-foreground">
                   {hasGeneralLedger 
-                    ? `${accountingData?.accountingDocsCount} fil(er) lastet`
+                    ? `${accountingData?.generalLedgerTransactionsCount} transaksjoner lastet`
                     : 'Ikke lastet opp ennå'
                   }
                 </p>
@@ -254,7 +254,7 @@ const ClientOverviewDashboard = ({ client }: ClientOverviewDashboardProps) => {
           </CardHeader>
           <CardContent>
             <div className="space-y-2 text-sm">
-              {accountingData?.latestAccountingFile && (
+              {accountingData?.latestGeneralLedgerUpload && (
                 <div className="flex items-center gap-2">
                   <TrendingUp className="h-3 w-3 text-muted-foreground" />
                   <span className="text-muted-foreground">

@@ -34,7 +34,7 @@ const RegnskapsDataManager = ({ clientId, clientName }: RegnskapsDataManagerProp
       title: 'Hovedbok',
       description: 'Last opp hovedbok for detaljerte transaksjoner',
       icon: Database,
-      completed: accountingData?.accountingDocsCount > 0,
+      completed: accountingData?.hasGeneralLedger || false,
       required: true
     }
   ];

@@ -13,30 +13,34 @@ export const useAccountingData = (clientId: string) => {
 
       if (chartError) throw chartError;
 
-      // Get uploaded documents count as proxy for accounting data
-      const { data: docsData, error: docsError } = await supabase
-        .from('client_documents_files')
-        .select('id, created_at, file_name')
+      // Get general ledger transactions count
+      const { data: transactionsData, error: transactionsError } = await supabase
+        .from('general_ledger_transactions')
+        .select('id, created_at')
         .eq('client_id', clientId)
         .order('created_at', { ascending: false });
 
-      if (docsError) throw docsError;
+      if (transactionsError) throw transactionsError;
 
-      // Filter for accounting-related files
-      const accountingDocs = docsData?.filter(doc => 
-        doc.file_name.toLowerCase().includes('hovedbok') ||
-        doc.file_name.toLowerCase().includes('saldobalanse') ||
-        doc.file_name.toLowerCase().includes('trial') ||
-        doc.file_name.toLowerCase().includes('general') ||
-        doc.file_name.toLowerCase().includes('ledger')
-      ) || [];
+      // Get latest general ledger upload batch
+      const { data: batchData, error: batchError } = await supabase
+        .from('upload_batches')
+        .select('id, created_at, file_name, status')
+        .eq('client_id', clientId)
+        .eq('batch_type', 'general_ledger')
+        .eq('status', 'completed')
+        .order('created_at', { ascending: false })
+        .limit(1);
 
-      const latestAccountingDoc = accountingDocs[0] || null;
+      if (batchError) throw batchError;
+
+      const latestGeneralLedgerUpload = batchData?.[0] || null;
 
       return {
         chartOfAccountsCount: chartData?.length || 0,
-        latestAccountingFile: latestAccountingDoc,
-        accountingDocsCount: accountingDocs.length,
+        generalLedgerTransactionsCount: transactionsData?.length || 0,
+        latestGeneralLedgerUpload: latestGeneralLedgerUpload,
+        hasGeneralLedger: (transactionsData?.length || 0) > 0,
       };
     },
     enabled: !!clientId,

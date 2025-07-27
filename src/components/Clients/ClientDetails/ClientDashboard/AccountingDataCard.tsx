@@ -66,7 +66,7 @@ const AccountingDataCard = ({ client }: AccountingDataCardProps) => {
               <Calculator className="h-4 w-4 text-muted-foreground" />
               <span className="text-xs font-medium text-muted-foreground">Regnskapsfiler</span>
             </div>
-            <p className="text-lg font-bold">{accountingData?.accountingDocsCount || 0}</p>
+            <p className="text-lg font-bold">{accountingData?.generalLedgerTransactionsCount || 0}</p>
             <p className="text-xs text-muted-foreground">opplastet</p>
           </div>
 
@@ -76,23 +76,23 @@ const AccountingDataCard = ({ client }: AccountingDataCardProps) => {
               <span className="text-xs font-medium text-muted-foreground">Siste opplasting</span>
             </div>
             <p className="text-lg font-bold">
-              {accountingData?.latestAccountingFile ? '✓' : '—'}
+              {accountingData?.latestGeneralLedgerUpload ? '✓' : '—'}
             </p>
             <p className="text-xs text-muted-foreground">
-              {accountingData?.latestAccountingFile ? 'tilgjengelig' : 'ingen'}
+              {accountingData?.latestGeneralLedgerUpload ? 'tilgjengelig' : 'ingen'}
             </p>
           </div>
         </div>
 
         {/* Latest Accounting File */}
-        {accountingData?.latestAccountingFile && (
+        {accountingData?.latestGeneralLedgerUpload && (
           <div className="p-3 border border-border rounded-md">
             <h4 className="text-sm font-medium mb-2">Siste regnskapsfil</h4>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm">{accountingData.latestAccountingFile.file_name}</p>
+                <p className="text-sm">{accountingData.latestGeneralLedgerUpload.file_name}</p>
                 <p className="text-xs text-muted-foreground">
-                  Opplastet: {formatDate(accountingData.latestAccountingFile.created_at)}
+                  Opplastet: {formatDate(accountingData.latestGeneralLedgerUpload.created_at)}
                 </p>
               </div>
               <Badge variant="outline">Tilgjengelig</Badge>
@@ -120,14 +120,14 @@ const AccountingDataCard = ({ client }: AccountingDataCardProps) => {
             </div>
             <div className="flex items-center justify-between">
               <span className="text-xs">Regnskapsfiler</span>
-              <Badge variant={accountingData?.accountingDocsCount ? "default" : "secondary"}>
-                {accountingData?.accountingDocsCount ? "OK" : "Mangler"}
+              <Badge variant={accountingData?.generalLedgerTransactionsCount ? "default" : "secondary"}>
+                {accountingData?.generalLedgerTransactionsCount ? "OK" : "Mangler"}
               </Badge>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-xs">Siste opplasting</span>
-              <Badge variant={accountingData?.latestAccountingFile ? "default" : "secondary"}>
-                {accountingData?.latestAccountingFile ? "OK" : "Mangler"}
+              <Badge variant={accountingData?.latestGeneralLedgerUpload ? "default" : "secondary"}>
+                {accountingData?.latestGeneralLedgerUpload ? "OK" : "Mangler"}
               </Badge>
             </div>
           </div>

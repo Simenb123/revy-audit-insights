@@ -103,20 +103,48 @@ const GeneralLedgerUploader = ({ clientId, onUploadComplete }: GeneralLedgerUplo
       if (batchError) throw batchError;
       setUploadProgress(30);
 
-      // Insert transactions (simulated for now since we don't have a general_ledger table)
+      // Insert transactions into general_ledger_transactions table
       let successful = 0;
-      for (let i = 0; i < transactions.length; i++) {
-        const transaction = transactions[i];
+      const batchSize = 100; // Process in batches for better performance
+      
+      for (let i = 0; i < transactions.length; i += batchSize) {
+        const batchTransactions = transactions.slice(i, Math.min(i + batchSize, transactions.length));
+        
+        // Prepare transactions for insertion
+        const transactionsToInsert = batchTransactions.map(transaction => {
+          const transactionDate = new Date(transaction.date);
+          return {
+            client_id: clientId,
+            client_account_id: transaction.account_number?.toString() || 'unknown',
+            upload_batch_id: batch.id,
+            transaction_date: transactionDate.toISOString().split('T')[0],
+            period_year: transactionDate.getFullYear(),
+            period_month: transactionDate.getMonth() + 1,
+            voucher_number: transaction.reference || null,
+            description: transaction.description || '',
+            debit_amount: transaction.debit_amount || null,
+            credit_amount: transaction.credit_amount || null,
+            balance_amount: (transaction.debit_amount || 0) - (transaction.credit_amount || 0),
+            reference_number: transaction.reference || null,
+          };
+        });
         
         try {
-          // Simulate processing time
-          await new Promise(resolve => setTimeout(resolve, 10));
-          successful++;
+          const { error: insertError } = await supabase
+            .from('general_ledger_transactions')
+            .insert(transactionsToInsert);
+            
+          if (insertError) {
+            console.error('Error inserting batch:', insertError);
+            // Continue with other batches
+          } else {
+            successful += batchTransactions.length;
+          }
         } catch (error) {
-          console.error(`Error processing transaction:`, error);
+          console.error(`Error processing batch:`, error);
         }
         
-        setUploadProgress(30 + ((i + 1) / transactions.length) * 60);
+        setUploadProgress(30 + ((i + batchTransactions.length) / transactions.length) * 60);
       }
 
       // Update batch status
