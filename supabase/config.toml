@@ -12,10 +12,6 @@
     verify_jwt = true
   [functions.revy-ai-chat]
     verify_jwt = false
-  [functions.enhanced-ai-chat]
-    verify_jwt = false
-  [functions.enhanced-ai-image-analysis]
-    verify_jwt = false
   [functions.syncKunngjoring]
     verify_jwt = false
   [functions.text-to-speech]
