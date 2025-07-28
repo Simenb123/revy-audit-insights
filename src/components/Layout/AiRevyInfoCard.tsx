@@ -26,7 +26,7 @@ const AiRevyInfoCard: React.FC<AiRevyInfoCardProps> = ({
 
   return (
     <Card className={cn('h-full flex flex-col', className)}>
-      <CardHeader className="pb-3">
+      <CardHeader className="p-3 pb-0">
         <div className="flex items-center gap-2">
           <RevyAvatar size="sm" />
           <div>
@@ -35,7 +35,7 @@ const AiRevyInfoCard: React.FC<AiRevyInfoCardProps> = ({
           </div>
         </div>
       </CardHeader>
-      <CardContent className="pt-0 flex flex-col flex-1">
+      <CardContent className="p-3 pb-0 flex flex-col flex-1">
         <SmartReviAssistant
           embedded
           context={context}
