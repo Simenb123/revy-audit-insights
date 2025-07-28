@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Search, Download } from 'lucide-react';
-import { TrialBalanceEntryWithMapping, useTrialBalanceWithMappings } from '@/hooks/useTrialBalanceWithMappings';
+import { TrialBalanceEntry, useTrialBalanceData } from '@/hooks/useTrialBalanceData';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface TrialBalanceTableProps {
@@ -13,9 +13,9 @@ interface TrialBalanceTableProps {
 
 const TrialBalanceTable = ({ clientId }: TrialBalanceTableProps) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const { data: trialBalanceData, isLoading, error } = useTrialBalanceWithMappings(clientId);
+  const { data: trialBalanceEntries, isLoading, error } = useTrialBalanceData(clientId);
 
-  const entries = trialBalanceData?.trialBalanceEntries || [];
+  const entries = trialBalanceEntries || [];
   
   const filteredEntries = entries.filter(entry =>
     entry.account_number.toString().includes(searchTerm) ||
@@ -101,11 +101,9 @@ const TrialBalanceTable = ({ clientId }: TrialBalanceTableProps) => {
         <div className="flex justify-between items-center">
           <div>
             <CardTitle>Saldobalanse</CardTitle>
-            {trialBalanceData && (
-              <p className="text-sm text-muted-foreground mt-1">
-                {trialBalanceData.mappingStats.mappedAccounts} av {trialBalanceData.mappingStats.totalAccounts} kontoer mappet til standardkontoer
-              </p>
-            )}
+            <p className="text-sm text-muted-foreground mt-1">
+              Viser {entries.length} kontoer
+            </p>
           </div>
           <Button variant="outline" size="sm" onClick={handleExport}>
             <Download className="h-4 w-4 mr-2" />
