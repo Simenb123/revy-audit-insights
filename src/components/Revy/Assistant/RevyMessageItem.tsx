@@ -33,7 +33,7 @@ const RevyMessageItem: React.FC<RevyMessageItemProps> = ({ message, compact = fa
       
       <div className={cn(
         "flex flex-col",
-        compact ? "max-w-[85%]" : "max-w-[80%]",
+        "max-w-full",
         !isAssistant && "items-end"
       )}>
         <div className={cn(

@@ -26,7 +26,7 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, compact = false }) =
       
       <div className={cn(
         "flex flex-col",
-        compact ? "max-w-[85%]" : "max-w-[80%]",
+        "max-w-full",
         !isAssistant && "items-end"
       )}>
         <div className={cn(

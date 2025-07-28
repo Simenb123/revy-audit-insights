@@ -192,7 +192,7 @@ const ContextAwareRevyChat: React.FC<ContextAwareRevyChatProps> = ({
               }`}
             >
               <div
-                className={`max-w-[80%] p-3 rounded-lg ${
+                className={`max-w-full p-3 rounded-lg ${
                   msg.sender === 'user'
                     ? 'bg-blue-600 text-white'
                     : 'bg-gray-100 text-gray-900'
