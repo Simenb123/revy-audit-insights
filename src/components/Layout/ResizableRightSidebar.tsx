@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Drawer, DrawerTrigger, DrawerContent } from '@/components/ui/drawer';
@@ -10,6 +10,7 @@ import { useClientLookup } from '@/hooks/useClientLookup';
 import { detectPageType, extractClientId } from './pageDetectionHelpers';
 import AiRevyCard, { AiRevyVariant } from '@/components/AiRevyCard';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import ResizableHandle from './ResizableHandle';
 
 import { useRightSidebar } from './RightSidebarContext';
 
@@ -45,10 +46,8 @@ const ResizableRightSidebar = () => {
     (e: MouseEvent) => {
       if (!isDragging) return;
       const rawWidth = window.innerWidth - e.clientX;
-      const clampedWidth = Math.max(320, Math.min(startWidthRef.current, rawWidth));
-      if (clampedWidth < startWidthRef.current) {
-        setWidth(clampedWidth);
-      }
+      const clampedWidth = Math.max(320, Math.min(600, rawWidth));
+      setWidth(clampedWidth);
     },
     [isDragging, setWidth]
   );
@@ -57,13 +56,31 @@ const ResizableRightSidebar = () => {
     setIsDragging(false);
   }, []);
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.shiftKey && e.key === 'R') {
+        e.preventDefault();
+        toggleSidebar();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   React.useEffect(() => {
     if (isDragging) {
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+      
       return () => {
         document.removeEventListener('mousemove', handleMouseMove);
         document.removeEventListener('mouseup', handleMouseUp);
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
       };
     }
   }, [isDragging, handleMouseMove, handleMouseUp]);
@@ -162,28 +179,30 @@ const ResizableRightSidebar = () => {
   }
 
   return (
-    <div
+    <motion.div
       className="sticky top-[var(--header-height)] bg-background border-l flex flex-col z-10"
       style={{
         height: 'calc(100vh - var(--header-height))'
       }}
+      animate={{ width: isCollapsed ? 32 : width }}
+      transition={{ duration: 0.2, ease: 'easeInOut' }}
     >
-      {/* Resize handle */}
+      {/* Enhanced Resize handle */}
       {!isCollapsed && (
-        <div
-          className="absolute left-0 top-0 w-1 h-full bg-border hover:bg-primary/20 cursor-col-resize transition-colors z-20"
-          onMouseDown={handleMouseDown}
-        />
+        <div className="absolute left-0 top-0 z-20">
+          <ResizableHandle onMouseDown={handleMouseDown} />
+        </div>
       )}
 
       {/* Collapsed state - 32px width with expand button */}
       {isCollapsed && (
-        <div className="relative h-full bg-background border-t-2 border-t-border/50 flex flex-col items-center">
+        <div className="relative h-full bg-background border-t-2 border-t-border/50 flex flex-col items-center py-4">
           <Button
             variant="ghost"
             size="icon"
-            className="mt-4 h-8 w-8 bg-background border shadow-sm"
+            className="h-8 w-8 bg-background border shadow-sm hover:bg-muted transition-colors"
             onClick={toggleSidebar}
+            title="Utvid sidebar (Ctrl+Shift+R)"
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
@@ -199,8 +218,9 @@ const ResizableRightSidebar = () => {
             <Button
               variant="ghost"
               size="icon"
-              className="h-6 w-6"
+              className="h-6 w-6 hover:bg-muted transition-colors"
               onClick={toggleSidebar}
+              title="Kollaps sidebar (Ctrl+Shift+R)"
             >
               <ChevronRight className="h-3 w-3" />
             </Button>
@@ -212,7 +232,7 @@ const ResizableRightSidebar = () => {
           </ScrollArea>
         </>
       )}
-    </div>
+    </motion.div>
   );
 };
 
