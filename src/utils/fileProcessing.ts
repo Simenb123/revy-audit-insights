@@ -3,7 +3,8 @@ import { parseXlsxSafely, getWorksheetDataSafely } from '@/utils/secureXlsx';
 
 export interface FilePreview {
   headers: string[];
-  rows: any[][];
+  rows: any[][]; // Preview rows (limited)
+  allRows: any[][]; // Full dataset for processing
   detectedDelimiter?: string;
   hasHeaders: boolean;
   totalRows: number;
@@ -40,11 +41,32 @@ export const TRIAL_BALANCE_FIELDS: FieldDefinition[] = [
     aliases: ['kontonavn', 'account_name', 'navn', 'name', 'beskrivelse', 'description']
   },
   {
-    key: 'balance',
-    label: 'Saldo',
+    key: 'opening_balance',
+    label: 'Inngående saldo',
+    required: false,
+    type: 'number',
+    aliases: ['inngående', 'ingående', 'åpning', 'opening', 'start', 'initial', 'åpningssaldo', 'startsaldo']
+  },
+  {
+    key: 'debit_turnover',
+    label: 'Debet omsetning',
+    required: false,
+    type: 'number',
+    aliases: ['debet', 'debit', 'skal', 'dr', 'debet_omsetning', 'debit_turnover', 'omsetning_debet']
+  },
+  {
+    key: 'credit_turnover',
+    label: 'Kredit omsetning',
+    required: false,
+    type: 'number',
+    aliases: ['kredit', 'credit', 'have', 'haver', 'cr', 'kredit_omsetning', 'credit_turnover', 'omsetning_kredit']
+  },
+  {
+    key: 'closing_balance',
+    label: 'Utgående saldo',
     required: true,
     type: 'number',
-    aliases: ['saldo', 'balance', 'balanse', 'beløp', 'amount', 'sum']
+    aliases: ['utgående', 'avslutning', 'closing', 'slutt', 'final', 'saldo', 'balance', 'sluttsaldo', 'sluttbalanse']
   },
   {
     key: 'account_type',
@@ -193,15 +215,18 @@ export async function processExcelFile(file: File): Promise<FilePreview> {
     }
     
     const headers = (jsonData[0] as any[]).map(h => h?.toString() || '');
-    const rows = jsonData.slice(1).map(row => 
+    const allRows = jsonData.slice(1).map(row => 
       (row as any[]).map(cell => cell?.toString() || '')
     );
     
+    console.log(`Excel file processed: ${allRows.length} total rows`);
+    
     return {
       headers,
-      rows: rows.slice(0, 10), // Preview first 10 rows
+      rows: allRows.slice(0, 10), // Preview first 10 rows
+      allRows: allRows, // Full dataset for processing
       hasHeaders: true,
-      totalRows: jsonData.length - 1
+      totalRows: allRows.length
     };
   } catch (error) {
     throw new Error(`Kunne ikke lese Excel-fil: ${error instanceof Error ? error.message : 'Ukjent feil'}`);
@@ -215,9 +240,12 @@ export async function processCSVFile(file: File): Promise<FilePreview> {
     const delimiter = detectCSVDelimiter(text);
     const { headers, rows } = parseCSV(text, delimiter);
     
+    console.log(`CSV file processed: ${rows.length} total rows`);
+    
     return {
       headers,
       rows: rows.slice(0, 10), // Preview first 10 rows
+      allRows: rows, // Full dataset for processing
       detectedDelimiter: delimiter,
       hasHeaders: true,
       totalRows: rows.length
@@ -615,7 +643,11 @@ export function convertDataWithMapping(
     return acc;
   }, {} as Record<string, number>);
   
-  return preview.rows.map(row => {
+  // Use allRows for full dataset, not just preview rows
+  const dataRows = preview.allRows || preview.rows;
+  console.log(`Converting ${dataRows.length} rows with mapping:`, mappings);
+  
+  return dataRows.map(row => {
     const convertedRow: any = {};
     
     for (const [sourceColumn, targetField] of Object.entries(mappings)) {

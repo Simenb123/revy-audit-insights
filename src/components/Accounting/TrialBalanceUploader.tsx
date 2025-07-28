@@ -81,6 +81,7 @@ const TrialBalanceUploader = ({ clientId, onUploadComplete }: TrialBalanceUpload
 
     try {
       setUploadProgress(10);
+      console.log('Starting trial balance upload for', accounts.length, 'accounts');
 
       // Create upload batch record
       const userId = (await supabase.auth.getUser()).data.user?.id;
@@ -99,35 +100,106 @@ const TrialBalanceUploader = ({ clientId, onUploadComplete }: TrialBalanceUpload
         .single();
 
       if (batchError) throw batchError;
-      setUploadProgress(30);
+      setUploadProgress(20);
 
-      // Insert accounts with progress tracking
-      let successful = 0;
-      for (let i = 0; i < accounts.length; i++) {
-        const account = accounts[i];
-        
-        try {
-          const { error: insertError } = await supabase
+      // First, ensure chart of accounts exists
+      let chartOfAccountsCreated = 0;
+      const accountMapping = new Map<string, string>();
+
+      for (const account of accounts) {
+        const accountNumber = account.account_number?.toString();
+        if (!accountNumber) continue;
+
+        // Check if account exists, create if not
+        const { data: existingAccount } = await supabase
+          .from('client_chart_of_accounts')
+          .select('id')
+          .eq('client_id', clientId)
+          .eq('account_number', accountNumber)
+          .single();
+
+        let accountId = existingAccount?.id;
+
+        if (!existingAccount) {
+          const { data: newAccount, error: createError } = await supabase
             .from('client_chart_of_accounts')
-            .upsert({
+            .insert({
               client_id: clientId,
-              account_number: account.account_number?.toString() || '',
-              account_name: account.account_name?.toString() || '',
+              account_number: accountNumber,
+              account_name: account.account_name?.toString() || `Konto ${accountNumber}`,
               account_type: 'eiendeler' as const,
               is_active: true
-            }, { 
-              onConflict: 'client_id,account_number',
-              ignoreDuplicates: false 
+            })
+            .select('id')
+            .single();
+
+          if (createError) {
+            console.error('Error creating account:', createError);
+            continue;
+          }
+          accountId = newAccount.id;
+          chartOfAccountsCreated++;
+        }
+
+        accountMapping.set(accountNumber, accountId);
+      }
+
+      setUploadProgress(40);
+
+      // Now insert trial balance data
+      let trialBalanceInserted = 0;
+      const currentYear = new Date().getFullYear();
+      const currentMonth = new Date().getMonth() + 1;
+
+      for (let i = 0; i < accounts.length; i++) {
+        const account = accounts[i];
+        const accountNumber = account.account_number?.toString();
+        const accountId = accountMapping.get(accountNumber);
+
+        if (!accountId) continue;
+
+        try {
+          // Parse numeric values safely
+          const parseNumber = (value: any): number => {
+            if (value === null || value === undefined || value === '') return 0;
+            const str = value.toString().replace(/\s/g, '').replace(',', '.');
+            const num = parseFloat(str);
+            return isNaN(num) ? 0 : num;
+          };
+
+          const openingBalance = parseNumber(account.opening_balance);
+          const debitTurnover = parseNumber(account.debit_turnover);
+          const creditTurnover = parseNumber(account.credit_turnover);
+          const closingBalance = parseNumber(account.closing_balance);
+
+          const { error: trialBalanceError } = await supabase
+            .from('trial_balances')
+            .upsert({
+              client_id: clientId,
+              client_account_id: accountId,
+              upload_batch_id: batch.id,
+              period_year: currentYear,
+              period_month: currentMonth,
+              period_end_date: new Date().toISOString().split('T')[0],
+              opening_balance: openingBalance,
+              debit_turnover: debitTurnover,
+              credit_turnover: creditTurnover,
+              closing_balance: closingBalance
+            }, {
+              onConflict: 'client_id,client_account_id,period_year,period_month',
+              ignoreDuplicates: false
             });
 
-          if (!insertError) {
-            successful++;
+          if (!trialBalanceError) {
+            trialBalanceInserted++;
+          } else {
+            console.error('Error inserting trial balance:', trialBalanceError);
           }
         } catch (error) {
-          console.error(`Error inserting account:`, error);
+          console.error(`Error processing account ${accountNumber}:`, error);
         }
         
-        setUploadProgress(30 + ((i + 1) / accounts.length) * 60);
+        setUploadProgress(40 + ((i + 1) / accounts.length) * 50);
       }
 
       // Update batch status
@@ -135,7 +207,7 @@ const TrialBalanceUploader = ({ clientId, onUploadComplete }: TrialBalanceUpload
         .from('upload_batches')
         .update({
           status: 'completed',
-          processed_records: successful,
+          processed_records: trialBalanceInserted,
           completed_at: new Date().toISOString()
         })
         .eq('id', batch.id);
@@ -143,12 +215,12 @@ const TrialBalanceUploader = ({ clientId, onUploadComplete }: TrialBalanceUpload
       setUploadProgress(100);
       setStep('success');
       
-      toast.success(`${successful} av ${accounts.length} kontoer ble importert`);
+      toast.success(`${trialBalanceInserted} saldobalanse-poster og ${chartOfAccountsCreated} nye kontoer ble importert`);
       onUploadComplete?.();
       
     } catch (error: any) {
-      toast.error('Feil ved opplasting');
-      console.error(error);
+      toast.error('Feil ved opplasting: ' + error.message);
+      console.error('Upload error:', error);
     }
   };
 
