@@ -121,7 +121,7 @@ const AccountingExplorer = ({ clientId }: AccountingExplorerProps) => {
           </Tabs>
         </div>
         
-        <div className="w-80 flex-shrink-0 space-y-4">
+        <div className="w-72 flex-shrink-0 space-y-4">
           <ValidationPanel clientId={clientId} />
           <VersionHistory versions={documentVersions} selectedVersion={selectedVersion} />
         </div>

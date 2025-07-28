@@ -1,9 +1,10 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { DocumentVersion } from '@/types/revio';
 import { format } from 'date-fns';
-import { Clock } from 'lucide-react';
+import { Clock, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface VersionHistoryProps {
   versions: DocumentVersion[];
@@ -11,13 +12,26 @@ interface VersionHistoryProps {
 }
 
 const VersionHistory: React.FC<VersionHistoryProps> = ({ versions, selectedVersion }) => {
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="text-base">Versjonshistorikk</CardTitle>
+      <CardHeader className="pb-2">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-base">Versjonshistorikk</CardTitle>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="h-6 w-6 p-0"
+          >
+            {isCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+          </Button>
+        </div>
       </CardHeader>
-      <CardContent className="p-0">
-        <div className="px-6 pb-4">
+      {!isCollapsed && (
+        <CardContent className="p-0">
+          <div className="px-6 pb-4">
           <ul className="space-y-3">
             {versions.map((version) => (
               <li 
@@ -54,6 +68,7 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({ versions, selectedVersi
           </ul>
         </div>
       </CardContent>
+      )}
     </Card>
   );
 };
