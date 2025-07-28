@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useStandardAccounts } from '@/hooks/useChartOfAccounts';
+import { useTrialBalanceWithMappings, getStandardAccountBalance } from '@/hooks/useTrialBalanceWithMappings';
 
 interface FinancialStatementLine {
   id: string;
@@ -22,7 +23,8 @@ interface FinancialStatementGeneratorProps {
 }
 
 const FinancialStatementGenerator = ({ clientId, period }: FinancialStatementGeneratorProps) => {
-  const { data: standardAccounts, isLoading } = useStandardAccounts();
+  const { data: standardAccounts, isLoading: standardAccountsLoading } = useStandardAccounts();
+  const { data: trialBalanceData, isLoading: trialBalanceLoading } = useTrialBalanceWithMappings(clientId);
 
   const buildFinancialStatementStructure = (): FinancialStatementLine[] => {
     if (!standardAccounts) return [];
@@ -62,9 +64,12 @@ const FinancialStatementGenerator = ({ clientId, period }: FinancialStatementGen
   };
 
   const calculateAmount = (line: FinancialStatementLine): number => {
+    if (!trialBalanceData) return 0;
+
     if (line.line_type === 'detail') {
-      // TODO: Get actual amount from trial balance mapping
-      return 0;
+      // Get actual amount from trial balance using standard account number
+      const balance = getStandardAccountBalance(trialBalanceData.standardAccountBalances, line.standard_number);
+      return balance * line.sign_multiplier;
     }
 
     if (line.line_type === 'subtotal' && line.children) {
@@ -73,10 +78,45 @@ const FinancialStatementGenerator = ({ clientId, period }: FinancialStatementGen
     }
 
     if (line.line_type === 'calculation' && line.calculation_formula) {
-      // TODO: Parse and calculate formula (e.g., "19 + 79")
+      // Parse and calculate formula (e.g., "19 + 79" or "19-79")
+      if (typeof line.calculation_formula === 'string') {
+        return parseCalculationFormula(line.calculation_formula);
+      }
       return 0;
     }
 
+    return 0;
+  };
+
+  const parseCalculationFormula = (formula: string): number => {
+    if (!trialBalanceData) return 0;
+    
+    // Simple formula parser for expressions like "19 + 79", "19 - 79", etc.
+    const cleanFormula = formula.replace(/\s/g, '');
+    
+    // Handle addition and subtraction
+    const additionMatch = cleanFormula.match(/^(\d+)\+(\d+)$/);
+    if (additionMatch) {
+      const [, num1, num2] = additionMatch;
+      const amount1 = getStandardAccountBalance(trialBalanceData.standardAccountBalances, num1);
+      const amount2 = getStandardAccountBalance(trialBalanceData.standardAccountBalances, num2);
+      return amount1 + amount2;
+    }
+    
+    const subtractionMatch = cleanFormula.match(/^(\d+)\-(\d+)$/);
+    if (subtractionMatch) {
+      const [, num1, num2] = subtractionMatch;
+      const amount1 = getStandardAccountBalance(trialBalanceData.standardAccountBalances, num1);
+      const amount2 = getStandardAccountBalance(trialBalanceData.standardAccountBalances, num2);
+      return amount1 - amount2;
+    }
+    
+    // If single number, get that standard account balance
+    const singleNumberMatch = cleanFormula.match(/^(\d+)$/);
+    if (singleNumberMatch) {
+      return getStandardAccountBalance(trialBalanceData.standardAccountBalances, singleNumberMatch[1]);
+    }
+    
     return 0;
   };
 
@@ -124,7 +164,7 @@ const FinancialStatementGenerator = ({ clientId, period }: FinancialStatementGen
     );
   };
 
-  if (isLoading) {
+  if (standardAccountsLoading || trialBalanceLoading) {
     return <div>Laster regnskapsoppstilling...</div>;
   }
 
@@ -143,16 +183,30 @@ const FinancialStatementGenerator = ({ clientId, period }: FinancialStatementGen
           {financialStatement.map(line => renderLine(line))}
         </div>
         
-        <div className="mt-6 p-4 bg-muted/30 rounded-lg">
-          <p className="text-sm text-muted-foreground">
-            <strong>Merk:</strong> Beløpene er foreløpig satt til 0. For å få riktige beløp må du:
-          </p>
-          <ul className="text-sm text-muted-foreground mt-2 space-y-1">
-            <li>1. Laste opp saldoliste (trial balance) for klienten</li>
-            <li>2. Mappe klientens kontoer til standardkontoer</li>
-            <li>3. Systemet vil da automatisk beregne alle summer og delsummer</li>
-          </ul>
-        </div>
+{trialBalanceData && (
+          <div className="mt-6 p-4 bg-muted/30 rounded-lg">
+            <p className="text-sm text-muted-foreground">
+              <strong>Mapping-status:</strong>
+            </p>
+            <div className="grid grid-cols-3 gap-4 mt-2 text-sm">
+              <div>
+                <span className="font-medium">Totalt kontoer:</span> {trialBalanceData.mappingStats.totalAccounts}
+              </div>
+              <div>
+                <span className="font-medium">Mappede kontoer:</span> {trialBalanceData.mappingStats.mappedAccounts}
+              </div>
+              <div>
+                <span className="font-medium">Umappede kontoer:</span> {trialBalanceData.mappingStats.unmappedAccounts}
+              </div>
+            </div>
+            {trialBalanceData.mappingStats.unmappedAccounts > 0 && (
+              <p className="text-sm text-orange-600 mt-2">
+                ⚠️ {trialBalanceData.mappingStats.unmappedAccounts} kontoer er ikke mappet til standardkontoer. 
+                Gå til Kontomapping for å fullføre mappingen.
+              </p>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
