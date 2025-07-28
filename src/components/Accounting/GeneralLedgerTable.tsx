@@ -23,13 +23,27 @@ const GeneralLedgerTable = ({ clientId }: GeneralLedgerTableProps) => {
     transaction.voucher_number?.includes(searchTerm)
   ) || [];
 
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = (amount: number | null) => {
+    if (amount === null) return '-';
     return new Intl.NumberFormat('nb-NO', {
       style: 'currency',
       currency: 'NOK',
       minimumFractionDigits: 2,
     }).format(amount);
   };
+
+  // Calculate totals
+  const totalDebit = filteredTransactions.reduce((sum, t) => {
+    if (t.debit_amount !== null) return sum + t.debit_amount;
+    if (t.balance_amount !== null && t.balance_amount > 0) return sum + t.balance_amount;
+    return sum;
+  }, 0);
+
+  const totalCredit = filteredTransactions.reduce((sum, t) => {
+    if (t.credit_amount !== null) return sum + t.credit_amount;
+    if (t.balance_amount !== null && t.balance_amount < 0) return sum + Math.abs(t.balance_amount);
+    return sum;
+  }, 0);
 
   if (isLoading) {
     return (
@@ -104,25 +118,35 @@ const GeneralLedgerTable = ({ clientId }: GeneralLedgerTableProps) => {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredTransactions.map((transaction) => (
-                    <TableRow key={transaction.id}>
-                      <TableCell>
-                        {format(new Date(transaction.transaction_date), 'dd.MM.yyyy')}
-                      </TableCell>
-                      <TableCell>
-                        <div className="font-medium">{transaction.client_account_id}</div>
-                      </TableCell>
-                      <TableCell>{transaction.description}</TableCell>
-                      <TableCell>{transaction.voucher_number}</TableCell>
-                      <TableCell className="text-right">
-                        {transaction.debit_amount > 0 && formatCurrency(transaction.debit_amount)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {transaction.credit_amount > 0 && formatCurrency(transaction.credit_amount)}
-                      </TableCell>
-                      <TableCell>{transaction.reference_number}</TableCell>
+                  <>
+                    {filteredTransactions.map((transaction) => (
+                      <TableRow key={transaction.id}>
+                        <TableCell>
+                          {format(new Date(transaction.transaction_date), 'dd.MM.yyyy')}
+                        </TableCell>
+                        <TableCell>
+                          <div className="font-medium">{transaction.client_account_id}</div>
+                        </TableCell>
+                        <TableCell>{transaction.description}</TableCell>
+                        <TableCell>{transaction.voucher_number}</TableCell>
+                         <TableCell className="text-right">
+                           {transaction.debit_amount !== null ? formatCurrency(transaction.debit_amount) : 
+                            (transaction.balance_amount !== null && transaction.balance_amount > 0 ? formatCurrency(transaction.balance_amount) : '-')}
+                         </TableCell>
+                         <TableCell className="text-right">
+                           {transaction.credit_amount !== null ? formatCurrency(transaction.credit_amount) : 
+                            (transaction.balance_amount !== null && transaction.balance_amount < 0 ? formatCurrency(Math.abs(transaction.balance_amount)) : '-')}
+                         </TableCell>
+                        <TableCell>{transaction.reference_number}</TableCell>
+                      </TableRow>
+                    ))}
+                    <TableRow className="font-bold border-t-2 bg-muted/50">
+                      <TableCell colSpan={4}>Sum</TableCell>
+                      <TableCell className="text-right">{formatCurrency(totalDebit)}</TableCell>
+                      <TableCell className="text-right">{formatCurrency(totalCredit)}</TableCell>
+                      <TableCell>-</TableCell>
                     </TableRow>
-                  ))
+                  </>
                 )}
               </TableBody>
             </Table>

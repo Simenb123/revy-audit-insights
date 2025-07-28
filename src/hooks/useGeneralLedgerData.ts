@@ -6,8 +6,9 @@ export interface GeneralLedgerTransaction {
   transaction_date: string;
   client_account_id: string;
   description: string;
-  debit_amount: number;
-  credit_amount: number;
+  debit_amount: number | null;
+  credit_amount: number | null;
+  balance_amount: number | null;
   reference_number: string;
   voucher_number: string;
   period_year: number;
@@ -27,6 +28,7 @@ export const useGeneralLedgerData = (clientId: string) => {
           description,
           debit_amount,
           credit_amount,
+          balance_amount,
           reference_number,
           voucher_number,
           period_year,

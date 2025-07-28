@@ -30,6 +30,12 @@ const TrialBalanceTable = ({ clientId }: TrialBalanceTableProps) => {
 
   const totalDebit = filteredEntries.reduce((sum, entry) => sum + entry.debit_turnover, 0);
   const totalCredit = filteredEntries.reduce((sum, entry) => sum + entry.credit_turnover, 0);
+  const totalOpeningBalance = filteredEntries.reduce((sum, entry) => sum + entry.opening_balance, 0);
+  const totalClosingBalance = filteredEntries.reduce((sum, entry) => sum + entry.closing_balance, 0);
+  
+  // Check if trial balance is balanced (difference should be close to 0)
+  const balanceDifference = Math.abs(totalDebit - totalCredit);
+  const isBalanced = balanceDifference <= 1; // Allow rounding up to 1 kr
 
   if (isLoading) {
     return (
@@ -124,12 +130,20 @@ const TrialBalanceTable = ({ clientId }: TrialBalanceTableProps) => {
                         </TableCell>
                       </TableRow>
                     ))}
-                    <TableRow className="font-bold border-t-2">
-                      <TableCell colSpan={4}>Sum</TableCell>
-                      <TableCell className="text-right">{formatCurrency(totalDebit)}</TableCell>
-                      <TableCell className="text-right">{formatCurrency(totalCredit)}</TableCell>
-                      <TableCell className="text-right">-</TableCell>
-                    </TableRow>
+                     <TableRow className="font-bold border-t-2 bg-muted/50">
+                       <TableCell colSpan={3}>Sum</TableCell>
+                       <TableCell className="text-right">{formatCurrency(totalOpeningBalance)}</TableCell>
+                       <TableCell className="text-right">{formatCurrency(totalDebit)}</TableCell>
+                       <TableCell className="text-right">{formatCurrency(totalCredit)}</TableCell>
+                       <TableCell className="text-right">{formatCurrency(totalClosingBalance)}</TableCell>
+                     </TableRow>
+                     {!isBalanced && (
+                       <TableRow className="border-t border-destructive bg-destructive/10">
+                         <TableCell colSpan={7} className="text-center text-destructive font-medium">
+                           ⚠️ Advarsel: Saldobalansen er ikke i balanse. Differanse: {formatCurrency(balanceDifference)}
+                         </TableCell>
+                       </TableRow>
+                     )}
                   </>
                 )}
               </TableBody>

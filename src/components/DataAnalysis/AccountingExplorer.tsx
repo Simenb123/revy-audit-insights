@@ -16,6 +16,7 @@ import VersionSelector from './VersionSelector';
 import VersionHistory from './VersionHistory';
 import GeneralLedgerTable from '@/components/Accounting/GeneralLedgerTable';
 import TrialBalanceTable from '@/components/Accounting/TrialBalanceTable';
+import ValidationPanel from '@/components/Accounting/ValidationPanel';
 import { useAccountingData } from '@/hooks/useAccountingData';
 import { format } from 'date-fns';
 
@@ -79,8 +80,8 @@ const AccountingExplorer = ({ clientId }: AccountingExplorerProps) => {
         </Tabs>
       </div>
       
-      <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
-        <div className="xl:col-span-3">
+      <div className="flex gap-6">
+        <div className="flex-1 min-w-0">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsContent value="overview" className="mt-0">
               <Card>
@@ -120,7 +121,8 @@ const AccountingExplorer = ({ clientId }: AccountingExplorerProps) => {
           </Tabs>
         </div>
         
-        <div className="xl:col-span-1">
+        <div className="w-80 flex-shrink-0 space-y-4">
+          <ValidationPanel clientId={clientId} />
           <VersionHistory versions={documentVersions} selectedVersion={selectedVersion} />
         </div>
       </div>
