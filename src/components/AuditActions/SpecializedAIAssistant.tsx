@@ -122,9 +122,9 @@ const SpecializedAIAssistant = ({ actionTemplate, workingPaperData }: Specialize
               <div className="space-y-4">
                 {messages.map((msg, index) => (
                   <div key={index} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[80%] rounded-lg p-3 ${
-                      msg.role === 'user' 
-                        ? 'bg-blue-500 text-white' 
+                    <div className={`max-w-full rounded-lg p-3 ${
+                      msg.role === 'user'
+                        ? 'bg-blue-500 text-white'
                         : 'bg-gray-100 text-gray-900'
                     }`}>
                       <div className="text-sm whitespace-pre-wrap">{msg.content}</div>

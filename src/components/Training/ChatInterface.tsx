@@ -72,9 +72,9 @@ const ChatInterface = ({ character, onMessage, messages, isLoading }: ChatInterf
             ) : (
               messages.map((message, index) => (
                 <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[80%] p-3 rounded-lg ${
-                    message.role === 'user' 
-                      ? 'bg-blue-600 text-white' 
+                  <div className={`max-w-full p-3 rounded-lg ${
+                    message.role === 'user'
+                      ? 'bg-blue-600 text-white'
                       : 'bg-gray-100 text-gray-900'
                   }`}>
                     <div className="text-xs opacity-70 mb-1">
@@ -88,7 +88,7 @@ const ChatInterface = ({ character, onMessage, messages, isLoading }: ChatInterf
             )}
             {isLoading && (
               <div className="flex justify-start">
-                <div className="bg-gray-100 text-gray-900 p-3 rounded-lg max-w-[80%]">
+                <div className="bg-gray-100 text-gray-900 p-3 rounded-lg max-w-full">
                   <div className="flex items-center space-x-2">
                     <div className="animate-pulse flex space-x-1">
                       <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>

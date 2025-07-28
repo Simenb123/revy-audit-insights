@@ -557,9 +557,9 @@ const AICharacterSimulator = () => {
                   <div className="space-y-4 max-h-64 overflow-y-auto">
                     {conversation.map((message, index) => (
                       <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                        <div className={`max-w-[80%] p-3 rounded-lg ${
-                          message.role === 'user' 
-                            ? 'bg-blue-100 text-blue-900' 
+                        <div className={`max-w-full p-3 rounded-lg ${
+                          message.role === 'user'
+                            ? 'bg-blue-100 text-blue-900'
                             : 'bg-gray-100 text-gray-900'
                         }`}>
                           <div className="text-xs text-gray-500 mb-1">
