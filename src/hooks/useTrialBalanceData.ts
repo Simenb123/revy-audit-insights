@@ -68,17 +68,19 @@ export const useTrialBalanceData = (clientId: string) => {
 
       // Calculate trial balance for each account
       const calculatedTrialBalance: TrialBalanceEntry[] = accounts.map(account => {
-        const accountTransactions = transactions.filter(t => t.client_account_id === account.id);
+        const accountTransactions = transactions?.filter(t => t.client_account_id === account.id) || [];
+        
+        console.log(`Account ${account.account_number} (${account.account_name}): ${accountTransactions.length} transactions`);
         
         // Handle both debit/credit amounts and balance amounts
         const debit_turnover = accountTransactions.reduce((sum, t) => {
-          if (t.debit_amount !== null) return sum + t.debit_amount;
+          if (t.debit_amount !== null && t.debit_amount !== undefined) return sum + t.debit_amount;
           if (t.balance_amount !== null && t.balance_amount > 0) return sum + t.balance_amount;
           return sum;
         }, 0);
         
         const credit_turnover = accountTransactions.reduce((sum, t) => {
-          if (t.credit_amount !== null) return sum + t.credit_amount;
+          if (t.credit_amount !== null && t.credit_amount !== undefined) return sum + t.credit_amount;
           if (t.balance_amount !== null && t.balance_amount < 0) return sum + Math.abs(t.balance_amount);
           return sum;
         }, 0);
@@ -97,7 +99,7 @@ export const useTrialBalanceData = (clientId: string) => {
           closing_balance = opening_balance + credit_turnover - debit_turnover;
         }
 
-        return {
+        const entry = {
           id: account.id,
           account_number: account.account_number,
           account_name: account.account_name,
@@ -108,9 +110,22 @@ export const useTrialBalanceData = (clientId: string) => {
           period_end_date: new Date().toISOString().split('T')[0],
           period_year: new Date().getFullYear(),
         };
+        
+        console.log(`Account ${account.account_number}: debit=${debit_turnover}, credit=${credit_turnover}, closing=${closing_balance}`);
+        
+        return entry;
       });
 
-      return calculatedTrialBalance.filter(entry => entry.debit_turnover !== 0 || entry.credit_turnover !== 0 || entry.closing_balance !== 0);
+      console.log(`Calculated trial balance for ${calculatedTrialBalance.length} accounts`);
+      
+      // Filter out accounts with no activity
+      const filteredEntries = calculatedTrialBalance.filter(entry => 
+        entry.debit_turnover !== 0 || entry.credit_turnover !== 0 || entry.closing_balance !== 0
+      );
+      
+      console.log(`Filtered to ${filteredEntries.length} accounts with activity`);
+      
+      return filteredEntries;
     },
     enabled: !!clientId,
   });

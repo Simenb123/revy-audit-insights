@@ -197,7 +197,7 @@ const TrialBalanceUploader = ({ clientId, onUploadComplete }: TrialBalanceUpload
               credit_turnover: creditTurnover,
               closing_balance: closingBalance
             }, {
-              onConflict: 'client_id,client_account_id,period_year',
+              onConflict: 'client_id,client_account_id,period_end_date',
               ignoreDuplicates: false
             });
 
