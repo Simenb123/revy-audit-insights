@@ -3,7 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 
 export interface TrialBalanceEntry {
   id: string;
-  client_account_id: string;
+  account_number: string;
+  account_name: string;
   closing_balance: number;
   credit_turnover: number;
   debit_turnover: number;
@@ -16,14 +17,57 @@ export const useTrialBalanceData = (clientId: string) => {
   return useQuery({
     queryKey: ['trial-balance', clientId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('trial_balances')
+      // Get all chart of accounts for the client
+      const { data: accounts, error: accountsError } = await supabase
+        .from('client_chart_of_accounts')
         .select('*')
-        .eq('client_id', clientId)
-        .order('period_year', { ascending: false });
+        .eq('client_id', clientId);
 
-      if (error) throw error;
-      return data as TrialBalanceEntry[];
+      if (accountsError) throw accountsError;
+
+      // Get all general ledger transactions for the client
+      const { data: transactions, error: transactionsError } = await supabase
+        .from('general_ledger_transactions')
+        .select('*')
+        .eq('client_id', clientId);
+
+      if (transactionsError) throw transactionsError;
+
+      // Calculate trial balance for each account
+      const trialBalanceData: TrialBalanceEntry[] = accounts.map(account => {
+        const accountTransactions = transactions.filter(t => t.client_account_id === account.id);
+        
+        const debit_turnover = accountTransactions.reduce((sum, t) => sum + (t.debit_amount || 0), 0);
+        const credit_turnover = accountTransactions.reduce((sum, t) => sum + (t.credit_amount || 0), 0);
+        
+        // Calculate opening and closing balance based on account type
+        // For assets and expenses: debit increases balance
+        // For liabilities, equity, and income: credit increases balance
+        const isDebitAccount = account.account_number.startsWith('1') || account.account_number.startsWith('2') || account.account_number.startsWith('6') || account.account_number.startsWith('7');
+        
+        let opening_balance = 0; // Assuming no opening balance for now
+        let closing_balance = 0;
+        
+        if (isDebitAccount) {
+          closing_balance = opening_balance + debit_turnover - credit_turnover;
+        } else {
+          closing_balance = opening_balance + credit_turnover - debit_turnover;
+        }
+
+        return {
+          id: account.id,
+          account_number: account.account_number,
+          account_name: account.account_name,
+          closing_balance,
+          credit_turnover,
+          debit_turnover,
+          opening_balance,
+          period_end_date: new Date().toISOString().split('T')[0],
+          period_year: new Date().getFullYear(),
+        };
+      });
+
+      return trialBalanceData.filter(entry => entry.debit_turnover !== 0 || entry.credit_turnover !== 0 || entry.closing_balance !== 0);
     },
     enabled: !!clientId,
   });

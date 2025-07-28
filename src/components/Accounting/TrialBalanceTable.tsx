@@ -16,7 +16,8 @@ const TrialBalanceTable = ({ clientId }: TrialBalanceTableProps) => {
   const { data: entries, isLoading, error } = useTrialBalanceData(clientId);
 
   const filteredEntries = entries?.filter(entry =>
-    entry.client_account_id.includes(searchTerm)
+    entry.account_number.includes(searchTerm) ||
+    entry.account_name.toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
 
   const formatCurrency = (amount: number) => {
@@ -86,7 +87,8 @@ const TrialBalanceTable = ({ clientId }: TrialBalanceTableProps) => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Konto ID</TableHead>
+                  <TableHead>Kontonummer</TableHead>
+                  <TableHead>Kontonavn</TableHead>
                   <TableHead>Periode</TableHead>
                   <TableHead className="text-right">Åpningsbalanse</TableHead>
                   <TableHead className="text-right">Debet omsetning</TableHead>
@@ -97,7 +99,7 @@ const TrialBalanceTable = ({ clientId }: TrialBalanceTableProps) => {
               <TableBody>
                 {filteredEntries.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center text-muted-foreground">
+                    <TableCell colSpan={7} className="text-center text-muted-foreground">
                       Ingen kontoer funnet
                     </TableCell>
                   </TableRow>
@@ -105,7 +107,8 @@ const TrialBalanceTable = ({ clientId }: TrialBalanceTableProps) => {
                   <>
                     {filteredEntries.map((entry) => (
                       <TableRow key={entry.id}>
-                        <TableCell className="font-medium">{entry.client_account_id}</TableCell>
+                        <TableCell className="font-medium">{entry.account_number}</TableCell>
+                        <TableCell>{entry.account_name}</TableCell>
                         <TableCell>{entry.period_year}</TableCell>
                         <TableCell className="text-right">
                           {formatCurrency(entry.opening_balance)}
@@ -122,7 +125,7 @@ const TrialBalanceTable = ({ clientId }: TrialBalanceTableProps) => {
                       </TableRow>
                     ))}
                     <TableRow className="font-bold border-t-2">
-                      <TableCell colSpan={3}>Sum</TableCell>
+                      <TableCell colSpan={4}>Sum</TableCell>
                       <TableCell className="text-right">{formatCurrency(totalDebit)}</TableCell>
                       <TableCell className="text-right">{formatCurrency(totalCredit)}</TableCell>
                       <TableCell className="text-right">-</TableCell>
