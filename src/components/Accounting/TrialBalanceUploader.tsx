@@ -161,7 +161,7 @@ const TrialBalanceUploader = ({ clientId, onUploadComplete }: TrialBalanceUpload
       // Now insert trial balance data
       let trialBalanceInserted = 0;
       const currentYear = new Date().getFullYear();
-      const currentMonth = new Date().getMonth() + 1;
+      const currentDate = new Date().toISOString().split('T')[0];
 
       for (let i = 0; i < accounts.length; i++) {
         const account = accounts[i];
@@ -191,14 +191,13 @@ const TrialBalanceUploader = ({ clientId, onUploadComplete }: TrialBalanceUpload
               client_account_id: accountId,
               upload_batch_id: batch.id,
               period_year: currentYear,
-              period_month: currentMonth,
-              period_end_date: new Date().toISOString().split('T')[0],
+              period_end_date: currentDate,
               opening_balance: openingBalance,
               debit_turnover: debitTurnover,
               credit_turnover: creditTurnover,
               closing_balance: closingBalance
             }, {
-              onConflict: 'client_id,client_account_id,period_year,period_month',
+              onConflict: 'client_id,client_account_id,period_year',
               ignoreDuplicates: false
             });
 
