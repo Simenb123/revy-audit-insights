@@ -25,7 +25,8 @@ export const RightSidebarProvider = ({ children }: { children: React.ReactNode }
   const [width, setWidth] = useState(() => {
     const stored = localStorage.getItem('rightSidebarWidth');
     const parsed = stored ? parseInt(stored, 10) : NaN;
-    const clamped = Math.min(600, Math.max(320, isNaN(parsed) ? 320 : parsed));
+    const fallback = 360;
+    const clamped = Math.min(600, Math.max(fallback, isNaN(parsed) ? fallback : parsed));
     return clamped;
   });
 
