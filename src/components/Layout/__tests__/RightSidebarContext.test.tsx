@@ -22,13 +22,13 @@ describe('RightSidebarProvider width initialization', () => {
     expect(screen.getByTestId('width').textContent).toBe('600');
   });
 
-  it('clamps stored width below minimum to 320', () => {
+  it('clamps stored width below minimum to 360', () => {
     localStorage.setItem('rightSidebarWidth', '100');
     render(
       <RightSidebarProvider>
         <TestComponent />
       </RightSidebarProvider>
     );
-    expect(screen.getByTestId('width').textContent).toBe('320');
+    expect(screen.getByTestId('width').textContent).toBe('360');
   });
 });
