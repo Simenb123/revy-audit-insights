@@ -62,16 +62,28 @@ const TrialBalanceUploader = ({ clientId, onUploadComplete }: TrialBalanceUpload
   const handleMappingComplete = async (mapping: Record<string, string>) => {
     if (!filePreview || !selectedFile) return;
     
+    console.log('=== TRIAL BALANCE MAPPING COMPLETE ===');
+    console.log('File preview data:', {
+      totalRows: filePreview.totalRows,
+      previewRowsLength: filePreview.rows?.length,
+      allRowsLength: filePreview.allRows?.length,
+      hasAllRows: !!filePreview.allRows
+    });
+    console.log('Applied mapping:', mapping);
+    
     setShowMapping(false);
     setStep('upload');
     
     try {
       const convertedData = convertDataWithMapping(filePreview, mapping);
+      console.log('=== CONVERSION RESULT ===');
+      console.log(`Converted ${convertedData.length} rows from original ${filePreview.totalRows} total rows`);
+      
       setConvertedData(convertedData);
       await uploadTrialBalance(convertedData, selectedFile);
     } catch (error) {
+      console.error('=== CONVERSION ERROR ===', error);
       toast.error('Feil ved datakonvertering');
-      console.error(error);
       setStep('select');
     }
   };

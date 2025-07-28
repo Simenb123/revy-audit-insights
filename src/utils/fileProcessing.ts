@@ -638,16 +638,34 @@ export function convertDataWithMapping(
   preview: FilePreview,
   mappings: Record<string, string>
 ): any[] {
+  console.log('=== CONVERTDATAWITHMAPPING DEBUG START ===');
+  console.log('Preview object:', {
+    totalRows: preview.totalRows,
+    headers: preview.headers,
+    rowsLength: preview.rows?.length,
+    allRowsLength: preview.allRows?.length,
+    hasAllRows: !!preview.allRows
+  });
+  
   const headerIndexMap = preview.headers.reduce((acc, header, index) => {
     acc[header] = index;
     return acc;
   }, {} as Record<string, number>);
   
-  // Use allRows for full dataset, not just preview rows
+  // CRITICAL: Always use allRows for full dataset, fallback to rows only if allRows is not available
   const dataRows = preview.allRows || preview.rows;
-  console.log(`Converting ${dataRows.length} rows with mapping:`, mappings);
   
-  return dataRows.map(row => {
+  console.log('=== DATA ROWS SELECTION ===');
+  console.log('Using allRows:', !!preview.allRows);
+  console.log('Selected dataRows length:', dataRows.length);
+  console.log('First 3 data rows:', dataRows.slice(0, 3));
+  console.log('Last 3 data rows:', dataRows.slice(-3));
+  
+  console.log('=== MAPPING CONVERSION ===');
+  console.log('Mappings to apply:', mappings);
+  console.log('Header index map:', headerIndexMap);
+  
+  const convertedData = dataRows.map((row, index) => {
     const convertedRow: any = {};
     
     for (const [sourceColumn, targetField] of Object.entries(mappings)) {
@@ -657,6 +675,19 @@ export function convertDataWithMapping(
       }
     }
     
+    // Log progress for large datasets
+    if (index === 0 || index === dataRows.length - 1 || index % 50 === 0) {
+      console.log(`Converting row ${index + 1}/${dataRows.length}:`, convertedRow);
+    }
+    
     return convertedRow;
   });
+  
+  console.log('=== CONVERSION COMPLETE ===');
+  console.log(`Successfully converted ${convertedData.length} rows`);
+  console.log('First converted row:', convertedData[0]);
+  console.log('Last converted row:', convertedData[convertedData.length - 1]);
+  console.log('=== CONVERTDATAWITHMAPPING DEBUG END ===');
+  
+  return convertedData;
 }

@@ -195,6 +195,17 @@ const EnhancedPreview: React.FC<EnhancedPreviewProps> = ({
               </Badge>
             </div>
           </CardTitle>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-3">
+            <div className="flex items-center gap-2 text-blue-800">
+              <CheckCircle className="w-4 h-4" />
+              <span className="font-medium">
+                Klar til å prosessere {preview.totalRows} rader totalt
+              </span>
+            </div>
+            <div className="text-sm text-blue-600 mt-1">
+              Viser forhåndsvisning av første 5 rader nedenfor
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
@@ -299,11 +310,19 @@ const EnhancedPreview: React.FC<EnhancedPreviewProps> = ({
             </table>
           </div>
           
-          {preview.totalRows > 5 && (
-            <p className="text-sm text-muted-foreground mt-4">
-              Viser 5 av {preview.totalRows} rader
-            </p>
-          )}
+          <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+            <div className="flex items-center gap-2 text-green-800">
+              <CheckCircle className="w-4 h-4" />
+              <span className="font-medium">
+                {preview.totalRows} rader vil bli prosessert ved opplasting
+              </span>
+            </div>
+            {preview.totalRows > 5 && (
+              <p className="text-sm text-green-600 mt-1">
+                Viser kun 5 rader i forhåndsvisning av totalt {preview.totalRows} rader
+              </p>
+            )}
+          </div>
         </CardContent>
       </Card>
 
