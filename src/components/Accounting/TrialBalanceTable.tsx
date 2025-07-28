@@ -41,15 +41,14 @@ const TrialBalanceTable = ({ clientId }: TrialBalanceTableProps) => {
     if (!entries || entries.length === 0) return;
     
     const csvContent = [
-      ['Kontonummer', 'Kontonavn', 'Periode', 'Åpningsbalanse', 'Debet omsetning', 'Kredit omsetning', 'Avslutningsbalanse'].join(','),
+      ['Kontonummer', 'Kontonavn', 'Saldo i år', 'Inngående saldo', 'Debet omsetning', 'Kredit omsetning'].join(','),
       ...entries.map(entry => [
         entry.account_number,
         `"${entry.account_name}"`,
-        entry.period_year,
+        entry.closing_balance,
         entry.opening_balance,
         entry.debit_turnover,
-        entry.credit_turnover,
-        entry.closing_balance
+        entry.credit_turnover
       ].join(','))
     ].join('\n');
     
@@ -118,54 +117,52 @@ const TrialBalanceTable = ({ clientId }: TrialBalanceTableProps) => {
                 <TableRow>
                   <TableHead>Kontonummer</TableHead>
                   <TableHead>Kontonavn</TableHead>
-                  <TableHead>Periode</TableHead>
-                  <TableHead className="text-right">Åpningsbalanse</TableHead>
+                  <TableHead className="text-right font-medium">Saldo i år</TableHead>
+                  <TableHead className="text-right">Inngående saldo</TableHead>
                   <TableHead className="text-right">Debet omsetning</TableHead>
                   <TableHead className="text-right">Kredit omsetning</TableHead>
-                  <TableHead className="text-right">Avslutningsbalanse</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredEntries.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center text-muted-foreground">
-                      Ingen kontoer funnet
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  <>
-                    {filteredEntries.map((entry) => (
-                      <TableRow key={entry.id}>
-                        <TableCell className="font-medium">{entry.account_number}</TableCell>
-                        <TableCell>{entry.account_name}</TableCell>
-                        <TableCell>{entry.period_year}</TableCell>
-                        <TableCell className="text-right">
-                          {formatCurrency(entry.opening_balance)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {formatCurrency(entry.debit_turnover)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {formatCurrency(entry.credit_turnover)}
-                        </TableCell>
-                        <TableCell className="text-right font-medium">
-                          {formatCurrency(entry.closing_balance)}
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center text-muted-foreground">
+                          Ingen kontoer funnet
                         </TableCell>
                       </TableRow>
-                    ))}
-                     <TableRow className="font-bold border-t-2 bg-muted/50">
-                       <TableCell colSpan={3}>Sum</TableCell>
-                       <TableCell className="text-right">{formatCurrency(totalOpeningBalance)}</TableCell>
-                       <TableCell className="text-right">{formatCurrency(totalDebit)}</TableCell>
-                       <TableCell className="text-right">{formatCurrency(totalCredit)}</TableCell>
-                       <TableCell className="text-right">{formatCurrency(totalClosingBalance)}</TableCell>
-                     </TableRow>
-                     {!isBalanced && (
-                       <TableRow className="border-t border-destructive bg-destructive/10">
-                         <TableCell colSpan={7} className="text-center text-destructive font-medium">
-                           ⚠️ Advarsel: Saldobalansen er ikke i balanse. Differanse: {formatCurrency(balanceDifference)}
-                         </TableCell>
+                ) : (
+                  <>
+                      {filteredEntries.map((entry) => (
+                        <TableRow key={entry.id}>
+                          <TableCell className="font-medium">{entry.account_number}</TableCell>
+                          <TableCell>{entry.account_name}</TableCell>
+                          <TableCell className="text-right font-medium text-lg">
+                            {formatCurrency(entry.closing_balance)}
+                          </TableCell>
+                          <TableCell className="text-right text-muted-foreground">
+                            {formatCurrency(entry.opening_balance)}
+                          </TableCell>
+                          <TableCell className="text-right text-muted-foreground">
+                            {formatCurrency(entry.debit_turnover)}
+                          </TableCell>
+                          <TableCell className="text-right text-muted-foreground">
+                            {formatCurrency(entry.credit_turnover)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                       <TableRow className="font-bold border-t-2 bg-muted/50">
+                         <TableCell colSpan={2}>Sum</TableCell>
+                         <TableCell className="text-right text-lg">{formatCurrency(totalClosingBalance)}</TableCell>
+                         <TableCell className="text-right">{formatCurrency(totalOpeningBalance)}</TableCell>
+                         <TableCell className="text-right">{formatCurrency(totalDebit)}</TableCell>
+                         <TableCell className="text-right">{formatCurrency(totalCredit)}</TableCell>
                        </TableRow>
+                     {!isBalanced && (
+                        <TableRow className="border-t border-destructive bg-destructive/10">
+                          <TableCell colSpan={6} className="text-center text-destructive font-medium">
+                            ⚠️ Advarsel: Saldobalansen er ikke i balanse. Differanse: {formatCurrency(balanceDifference)}
+                          </TableCell>
+                        </TableRow>
                      )}
                   </>
                 )}

@@ -211,12 +211,46 @@ const TrialBalanceUploader = ({ clientId, onUploadComplete }: TrialBalanceUpload
         }
 
         try {
-          // Parse numeric values safely
+          // Parse numeric values safely with improved Norwegian format handling
           const parseNumber = (value: any): number => {
             if (value === null || value === undefined || value === '') return 0;
-            const str = value.toString().replace(/\s/g, '').replace(',', '.');
-            const num = parseFloat(str);
-            return isNaN(num) ? 0 : num;
+            
+            const originalValue = value.toString().trim();
+            console.log(`🔢 Parsing number: "${originalValue}"`);
+            
+            // Remove whitespace and non-numeric characters except commas, periods, and minus
+            let cleanValue = originalValue.replace(/\s/g, '').replace(/[^\d,.-]/g, '');
+            
+            // Handle Norwegian number formats
+            if (cleanValue.includes(',') && cleanValue.includes('.')) {
+              // Both comma and period - determine which is decimal separator
+              const lastComma = cleanValue.lastIndexOf(',');
+              const lastPeriod = cleanValue.lastIndexOf('.');
+              
+              if (lastComma > lastPeriod) {
+                // Comma is decimal separator: "1.234,56"
+                cleanValue = cleanValue.replace(/\./g, '').replace(',', '.');
+              } else {
+                // Period is decimal separator: "1,234.56"
+                cleanValue = cleanValue.replace(/,/g, '');
+              }
+            } else if (cleanValue.includes(',')) {
+              // Only comma - check if it's likely a decimal separator
+              const parts = cleanValue.split(',');
+              if (parts.length === 2 && parts[1].length <= 2) {
+                // Likely decimal separator: "1234,56"
+                cleanValue = cleanValue.replace(',', '.');
+              } else {
+                // Likely thousands separator: "1,234"
+                cleanValue = cleanValue.replace(/,/g, '');
+              }
+            }
+            
+            const parsed = parseFloat(cleanValue);
+            const result = isNaN(parsed) ? 0 : parsed;
+            
+            console.log(`🔢 "${originalValue}" -> "${cleanValue}" -> ${result}`);
+            return result;
           };
 
           const openingBalance = parseNumber(account.opening_balance);

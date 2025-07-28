@@ -45,7 +45,11 @@ export const TRIAL_BALANCE_FIELDS: FieldDefinition[] = [
     label: 'Inngående saldo',
     required: false,
     type: 'number',
-    aliases: ['inngående', 'ingående', 'åpning', 'opening', 'start', 'initial', 'åpningssaldo', 'startsaldo']
+    aliases: [
+      'inngående', 'ingående', 'åpning', 'opening', 'start', 'initial', 
+      'åpningssaldo', 'startsaldo', 'inngående_saldo', 'åpningsbalanse', 
+      'startbalanse', 'primo', 'primo_saldo'
+    ]
   },
   {
     key: 'debit_turnover',
@@ -63,10 +67,14 @@ export const TRIAL_BALANCE_FIELDS: FieldDefinition[] = [
   },
   {
     key: 'closing_balance',
-    label: 'Utgående saldo',
+    label: 'Saldo i år',
     required: true,
     type: 'number',
-    aliases: ['utgående', 'avslutning', 'closing', 'slutt', 'final', 'saldo', 'balance', 'sluttsaldo', 'sluttbalanse']
+    aliases: [
+      'saldo i år', 'saldo_i_år', 'årets_saldo', 'årets saldo', 'års_saldo', 'årssaldo',
+      'utgående', 'avslutning', 'closing', 'slutt', 'final', 'saldo', 'balance', 
+      'sluttsaldo', 'sluttbalanse', 'saldo i_år', 'saldoiår', 'saldo_år'
+    ]
   },
   {
     key: 'account_type',
