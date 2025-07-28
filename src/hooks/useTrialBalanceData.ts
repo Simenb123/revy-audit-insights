@@ -21,14 +21,24 @@ export const useTrialBalanceData = (clientId: string) => {
       const { data: directTrialBalance, error: trialBalanceError } = await supabase
         .from('trial_balances')
         .select(`
-          *,
-          client_chart_of_accounts(account_number, account_name)
+          id,
+          client_id,
+          client_account_id,
+          opening_balance,
+          debit_turnover,
+          credit_turnover,
+          closing_balance,
+          period_end_date,
+          period_year,
+          client_chart_of_accounts!inner(account_number, account_name)
         `)
         .eq('client_id', clientId);
 
+      console.log('Trial balance query result:', { directTrialBalance, trialBalanceError });
+
       if (!trialBalanceError && directTrialBalance && directTrialBalance.length > 0) {
         console.log('Found direct trial balance data:', directTrialBalance.length, 'entries');
-        return directTrialBalance.map(tb => ({
+        const mappedData = directTrialBalance.map(tb => ({
           id: tb.id,
           account_number: tb.client_chart_of_accounts?.account_number || 'Ukjent',
           account_name: tb.client_chart_of_accounts?.account_name || 'Ukjent konto',
@@ -39,6 +49,8 @@ export const useTrialBalanceData = (clientId: string) => {
           period_end_date: tb.period_end_date,
           period_year: tb.period_year,
         })) as TrialBalanceEntry[];
+        console.log('Mapped trial balance data:', mappedData);
+        return mappedData;
       }
 
       // Fallback: Calculate from general ledger and chart of accounts

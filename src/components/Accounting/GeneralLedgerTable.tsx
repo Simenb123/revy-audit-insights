@@ -45,6 +45,29 @@ const GeneralLedgerTable = ({ clientId }: GeneralLedgerTableProps) => {
     return sum;
   }, 0);
 
+  const handleExport = () => {
+    if (!transactions || transactions.length === 0) return;
+    
+    const csvContent = [
+      ['Dato', 'Konto', 'Beskrivelse', 'Bilag', 'Debet', 'Kredit', 'Referanse'].join(','),
+      ...transactions.map(transaction => [
+        new Date(transaction.transaction_date).toLocaleDateString('nb-NO'),
+        transaction.client_account_id,
+        `"${transaction.description}"`,
+        transaction.voucher_number || '',
+        transaction.debit_amount || (transaction.balance_amount && transaction.balance_amount > 0 ? transaction.balance_amount : 0),
+        transaction.credit_amount || (transaction.balance_amount && transaction.balance_amount < 0 ? Math.abs(transaction.balance_amount) : 0),
+        transaction.reference_number || ''
+      ].join(','))
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `hovedbok_${new Date().getFullYear()}.csv`;
+    link.click();
+  };
+
   if (isLoading) {
     return (
       <Card>
@@ -79,7 +102,7 @@ const GeneralLedgerTable = ({ clientId }: GeneralLedgerTableProps) => {
       <CardHeader>
         <div className="flex justify-between items-center">
           <CardTitle>Hovedbok</CardTitle>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={handleExport}>
             <Download className="h-4 w-4 mr-2" />
             Eksporter
           </Button>

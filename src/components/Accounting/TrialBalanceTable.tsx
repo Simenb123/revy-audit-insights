@@ -37,6 +37,29 @@ const TrialBalanceTable = ({ clientId }: TrialBalanceTableProps) => {
   const balanceDifference = Math.abs(totalDebit - totalCredit);
   const isBalanced = balanceDifference <= 1; // Allow rounding up to 1 kr
 
+  const handleExport = () => {
+    if (!entries || entries.length === 0) return;
+    
+    const csvContent = [
+      ['Kontonummer', 'Kontonavn', 'Periode', 'Åpningsbalanse', 'Debet omsetning', 'Kredit omsetning', 'Avslutningsbalanse'].join(','),
+      ...entries.map(entry => [
+        entry.account_number,
+        `"${entry.account_name}"`,
+        entry.period_year,
+        entry.opening_balance,
+        entry.debit_turnover,
+        entry.credit_turnover,
+        entry.closing_balance
+      ].join(','))
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `saldobalanse_${new Date().getFullYear()}.csv`;
+    link.click();
+  };
+
   if (isLoading) {
     return (
       <Card>
@@ -71,7 +94,7 @@ const TrialBalanceTable = ({ clientId }: TrialBalanceTableProps) => {
       <CardHeader>
         <div className="flex justify-between items-center">
           <CardTitle>Saldobalanse</CardTitle>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={handleExport}>
             <Download className="h-4 w-4 mr-2" />
             Eksporter
           </Button>
