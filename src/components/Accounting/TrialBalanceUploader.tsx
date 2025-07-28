@@ -117,22 +117,39 @@ const TrialBalanceUploader = ({ clientId, onUploadComplete }: TrialBalanceUpload
       // First, ensure chart of accounts exists
       let chartOfAccountsCreated = 0;
       const accountMapping = new Map<string, string>();
+      const mappingErrors: string[] = [];
+
+      console.log('=== ACCOUNT MAPPING PHASE ===');
+      console.log(`Processing ${accounts.length} accounts for mapping`);
 
       for (const account of accounts) {
         const accountNumber = account.account_number?.toString();
-        if (!accountNumber) continue;
+        console.log('Processing account:', { accountNumber, account_name: account.account_name });
+        
+        if (!accountNumber) {
+          console.warn('Skipping account with no account_number:', account);
+          mappingErrors.push(`Account missing account_number: ${JSON.stringify(account)}`);
+          continue;
+        }
 
         // Check if account exists, create if not
-        const { data: existingAccount } = await supabase
+        const { data: existingAccount, error: searchError } = await supabase
           .from('client_chart_of_accounts')
           .select('id')
           .eq('client_id', clientId)
           .eq('account_number', accountNumber)
-          .single();
+          .maybeSingle();
+
+        if (searchError) {
+          console.error('Error searching for account:', accountNumber, searchError);
+          mappingErrors.push(`Error searching account ${accountNumber}: ${searchError.message}`);
+          continue;
+        }
 
         let accountId = existingAccount?.id;
 
         if (!existingAccount) {
+          console.log(`Creating new account: ${accountNumber} - ${account.account_name}`);
           const { data: newAccount, error: createError } = await supabase
             .from('client_chart_of_accounts')
             .insert({
@@ -146,14 +163,26 @@ const TrialBalanceUploader = ({ clientId, onUploadComplete }: TrialBalanceUpload
             .single();
 
           if (createError) {
-            console.error('Error creating account:', createError);
+            console.error('Error creating account:', accountNumber, createError);
+            mappingErrors.push(`Error creating account ${accountNumber}: ${createError.message}`);
             continue;
           }
           accountId = newAccount.id;
           chartOfAccountsCreated++;
+          console.log(`Successfully created account ${accountNumber} with ID: ${accountId}`);
+        } else {
+          console.log(`Using existing account ${accountNumber} with ID: ${accountId}`);
         }
 
         accountMapping.set(accountNumber, accountId);
+      }
+
+      console.log('=== ACCOUNT MAPPING COMPLETE ===');
+      console.log(`Account mapping size: ${accountMapping.size}`);
+      console.log(`New accounts created: ${chartOfAccountsCreated}`);
+      console.log(`Mapping errors: ${mappingErrors.length}`);
+      if (mappingErrors.length > 0) {
+        console.error('Account mapping errors:', mappingErrors);
       }
 
       setUploadProgress(40);
@@ -162,13 +191,24 @@ const TrialBalanceUploader = ({ clientId, onUploadComplete }: TrialBalanceUpload
       let trialBalanceInserted = 0;
       const currentYear = new Date().getFullYear();
       const currentDate = new Date().toISOString().split('T')[0];
+      const insertionErrors: string[] = [];
+
+      console.log('=== TRIAL BALANCE INSERTION PHASE ===');
+      console.log(`Inserting trial balance data for ${accounts.length} accounts`);
+      console.log(`Current year: ${currentYear}, Current date: ${currentDate}`);
 
       for (let i = 0; i < accounts.length; i++) {
         const account = accounts[i];
         const accountNumber = account.account_number?.toString();
         const accountId = accountMapping.get(accountNumber);
 
-        if (!accountId) continue;
+        console.log(`Processing trial balance for account ${i + 1}/${accounts.length}: ${accountNumber}`);
+
+        if (!accountId) {
+          console.warn(`Skipping account ${accountNumber} - no account ID found in mapping`);
+          insertionErrors.push(`Account ${accountNumber} has no mapped account ID`);
+          continue;
+        }
 
         try {
           // Parse numeric values safely
@@ -184,33 +224,56 @@ const TrialBalanceUploader = ({ clientId, onUploadComplete }: TrialBalanceUpload
           const creditTurnover = parseNumber(account.credit_turnover);
           const closingBalance = parseNumber(account.closing_balance);
 
-          const { error: trialBalanceError } = await supabase
+          console.log(`Account ${accountNumber} values:`, {
+            openingBalance,
+            debitTurnover,
+            creditTurnover,
+            closingBalance,
+            accountId
+          });
+
+          const trialBalanceData = {
+            client_id: clientId,
+            client_account_id: accountId,
+            upload_batch_id: batch.id,
+            period_year: currentYear,
+            period_end_date: currentDate,
+            opening_balance: openingBalance,
+            debit_turnover: debitTurnover,
+            credit_turnover: creditTurnover,
+            closing_balance: closingBalance
+          };
+
+          console.log(`Upserting trial balance data:`, trialBalanceData);
+
+          const { data: insertedData, error: trialBalanceError } = await supabase
             .from('trial_balances')
-            .upsert({
-              client_id: clientId,
-              client_account_id: accountId,
-              upload_batch_id: batch.id,
-              period_year: currentYear,
-              period_end_date: currentDate,
-              opening_balance: openingBalance,
-              debit_turnover: debitTurnover,
-              credit_turnover: creditTurnover,
-              closing_balance: closingBalance
-            }, {
+            .upsert(trialBalanceData, {
               onConflict: 'client_id,client_account_id,period_end_date',
               ignoreDuplicates: false
-            });
+            })
+            .select();
 
           if (!trialBalanceError) {
             trialBalanceInserted++;
+            console.log(`✅ Successfully inserted trial balance for account ${accountNumber}:`, insertedData);
           } else {
-            console.error('Error inserting trial balance:', trialBalanceError);
+            console.error(`❌ Error inserting trial balance for account ${accountNumber}:`, trialBalanceError);
+            insertionErrors.push(`Account ${accountNumber}: ${trialBalanceError.message}`);
           }
         } catch (error) {
-          console.error(`Error processing account ${accountNumber}:`, error);
+          console.error(`❌ Exception processing account ${accountNumber}:`, error);
+          insertionErrors.push(`Account ${accountNumber}: ${error instanceof Error ? error.message : String(error)}`);
         }
         
         setUploadProgress(40 + ((i + 1) / accounts.length) * 50);
+      }
+
+      console.log('=== TRIAL BALANCE INSERTION COMPLETE ===');
+      console.log(`Successfully inserted: ${trialBalanceInserted} records`);
+      console.log(`Insertion errors: ${insertionErrors.length}`);
+      if (insertionErrors.length > 0) {
+        console.error('Trial balance insertion errors:', insertionErrors);
       }
 
       // Update batch status

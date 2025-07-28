@@ -130,14 +130,12 @@ export const useTrialBalanceData = (clientId: string) => {
 
       console.log(`Calculated trial balance for ${calculatedTrialBalance.length} accounts`);
       
-      // Filter out accounts with no activity
-      const filteredEntries = calculatedTrialBalance.filter(entry => 
-        entry.debit_turnover !== 0 || entry.credit_turnover !== 0 || entry.closing_balance !== 0
-      );
+      // Don't filter out accounts - show ALL accounts including those with zero balances
+      // This is important for trial balance completeness
+      console.log(`Returning all ${calculatedTrialBalance.length} accounts`);
+      console.log('Sample entries:', calculatedTrialBalance.slice(0, 5));
       
-      console.log(`Filtered to ${filteredEntries.length} accounts with activity`);
-      
-      return filteredEntries;
+      return calculatedTrialBalance;
     },
     enabled: !!clientId,
   });
