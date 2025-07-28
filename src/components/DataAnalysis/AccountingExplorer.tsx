@@ -7,9 +7,10 @@ import {
   CardHeader, 
   CardTitle, 
 } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { TabsContent } from "@/components/ui/tabs";
 import { DocumentVersion } from '@/types/revio';
 import { Database, FileCheck, LineChart, Layers } from 'lucide-react';
+import ResponsiveTabs from '@/components/ui/responsive-tabs';
 import DrillDownTable from './DrillDownTable';
 import MaterialityBanner from './MaterialityBanner';
 import VersionSelector from './VersionSelector';
@@ -43,6 +44,13 @@ const AccountingExplorer = ({ clientId }: AccountingExplorerProps) => {
   const [selectedVersion, setSelectedVersion] = useState<DocumentVersion>(documentVersions[0]);
   const { data: accountingData, isLoading } = useAccountingData(clientId);
 
+  const tabItems = [
+    { id: 'overview', label: 'Oversikt', icon: Database },
+    { id: 'ledger', label: 'Hovedbok', icon: LineChart },
+    { id: 'balances', label: 'Saldobalanse', icon: Layers },
+    { id: 'journal', label: 'Bilag', icon: FileCheck },
+  ];
+
   const handleVersionChange = (version: DocumentVersion) => {
     setSelectedVersion(version);
   };
@@ -51,61 +59,47 @@ const AccountingExplorer = ({ clientId }: AccountingExplorerProps) => {
     <div className="space-y-6">
       <MaterialityBanner thresholds={materialityThresholds} />
       
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4">
         <VersionSelector 
           versions={documentVersions}
           selectedVersion={selectedVersion}
           onSelectVersion={handleVersionChange}
         />
-        
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-[400px]">
-          <TabsList className="grid grid-cols-4 w-full">
-            <TabsTrigger value="overview" className="flex items-center gap-1">
-              <Database size={14} />
-              <span>Oversikt</span>
-            </TabsTrigger>
-            <TabsTrigger value="ledger" className="flex items-center gap-1">
-              <LineChart size={14} />
-              <span>Hovedbok</span>
-            </TabsTrigger>
-            <TabsTrigger value="balances" className="flex items-center gap-1">
-              <Layers size={14} />
-              <span>Saldobalanse</span>
-            </TabsTrigger>
-            <TabsTrigger value="journal" className="flex items-center gap-1">
-              <FileCheck size={14} />
-              <span>Bilag</span>
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
       </div>
       
-      <div className="flex gap-6">
+      <ResponsiveTabs
+        items={tabItems}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        variant="underline"
+      />
+      
+      <div className="flex flex-col xl:flex-row gap-6">
         <div className="flex-1 min-w-0">
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsContent value="overview" className="mt-0">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Regnskapsoversikt</CardTitle>
-                  <CardDescription>
-                    {selectedVersion.version_name} ({format(new Date(selectedVersion.created_at), 'dd.MM.yyyy')})
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <DrillDownTable />
-                </CardContent>
-              </Card>
-            </TabsContent>
+          <div>
+            {activeTab === 'overview' && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Regnskapsoversikt</CardTitle>
+                    <CardDescription>
+                      {selectedVersion.version_name} ({format(new Date(selectedVersion.created_at), 'dd.MM.yyyy')})
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <DrillDownTable />
+                  </CardContent>
+                </Card>
+            )}
             
-            <TabsContent value="ledger" className="mt-0">
+            {activeTab === 'ledger' && (
               <GeneralLedgerTable clientId={clientId} />
-            </TabsContent>
+            )}
             
-            <TabsContent value="balances" className="mt-0">
+            {activeTab === 'balances' && (
               <TrialBalanceTable clientId={clientId} />
-            </TabsContent>
+            )}
             
-            <TabsContent value="journal" className="mt-0">
+            {activeTab === 'journal' && (
               <Card>
                 <CardHeader>
                   <CardTitle>Bilagsjournal</CardTitle>
@@ -117,11 +111,11 @@ const AccountingExplorer = ({ clientId }: AccountingExplorerProps) => {
                   <p>Innhold for bilagsjournal kommer her...</p>
                 </CardContent>
               </Card>
-            </TabsContent>
-          </Tabs>
+            )}
+          </div>
         </div>
         
-        <div className="w-72 flex-shrink-0 space-y-4">
+        <div className="w-full xl:w-72 xl:flex-shrink-0 space-y-4">
           <ValidationPanel clientId={clientId} />
           <VersionHistory versions={documentVersions} selectedVersion={selectedVersion} />
         </div>

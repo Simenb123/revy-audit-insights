@@ -1,8 +1,9 @@
 import React from 'react';
 import { useParams } from 'react-router-dom';
 import { useClientDetails } from '@/hooks/useClientDetails';
-import GlobalLayoutContainer from '@/components/Layout/GlobalLayoutContainer';
-import ClientBreadcrumb from '@/components/Clients/ClientDetails/ClientBreadcrumb';
+import ResponsiveLayout from '@/components/Layout/ResponsiveLayout';
+import StandardPageLayout from '@/components/Layout/StandardPageLayout';
+import GlobalSubHeader from '@/components/Layout/GlobalSubHeader';
 import AccountingExplorer from '@/components/DataAnalysis/AccountingExplorer';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -12,45 +13,59 @@ const AnalysisPage = () => {
 
   if (isLoading) {
     return (
-      <GlobalLayoutContainer maxWidth="full">
-        <div className="p-6 space-y-6">
-          <Skeleton className="h-8 w-64" />
-          <Skeleton className="h-64 w-full" />
-        </div>
-      </GlobalLayoutContainer>
+      <ResponsiveLayout>
+        <StandardPageLayout>
+          <div className="p-6 space-y-6">
+            <Skeleton className="h-8 w-64" />
+            <Skeleton className="h-64 w-full" />
+          </div>
+        </StandardPageLayout>
+      </ResponsiveLayout>
     );
   }
 
   if (error || !client) {
     return (
-      <GlobalLayoutContainer maxWidth="full">
-        <div className="p-6 text-center py-12">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Klient ikke funnet</h1>
-          <p className="text-gray-600">
-            Kunne ikke finne klient med organisasjonsnummer {orgNumber}
-          </p>
-        </div>
-      </GlobalLayoutContainer>
+      <ResponsiveLayout>
+        <StandardPageLayout>
+          <div className="p-6 text-center py-12">
+            <h1 className="text-2xl font-bold text-foreground mb-4">Klient ikke funnet</h1>
+            <p className="text-muted-foreground">
+              Kunne ikke finne klient med organisasjonsnummer {orgNumber}
+            </p>
+          </div>
+        </StandardPageLayout>
+      </ResponsiveLayout>
     );
   }
 
+  const moduleIndicator = (
+    <div className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
+      Regnskapsanalyse
+    </div>
+  );
+
   return (
-    <GlobalLayoutContainer maxWidth="full">
-      <div className="p-6 space-y-6">
-        <ClientBreadcrumb client={client} />
-        
-        <div className="space-y-4">
+    <ResponsiveLayout>
+      <StandardPageLayout
+        header={
+          <GlobalSubHeader
+            title="Regnskapsanalyse"
+            moduleIndicator={moduleIndicator}
+          />
+        }
+      >
+        <div className="p-6 space-y-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Regnskapsanalyse</h1>
-            <p className="text-gray-600">
+            <p className="text-muted-foreground">
               Utforsk hovedbok, saldobalanse og regnskapstransaksjoner for {client.name}
             </p>
           </div>
           
           <AccountingExplorer clientId={client.id} />
         </div>
-      </div>
-    </GlobalLayoutContainer>
+      </StandardPageLayout>
+    </ResponsiveLayout>
   );
 };
 
