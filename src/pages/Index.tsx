@@ -97,6 +97,38 @@ const Index = () => {
         <FlexibleGrid columns={{ sm: 1, lg: 2 }} gap="lg">
           <Card>
             <CardHeader>
+              <CardTitle>Hurtigtilgang til Regnskapsanalyse</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+                  <h4 className="font-medium mb-2">Saldobalanse</h4>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Se detaljert saldobalanse med kontomapping og eksportfunksjonalitet
+                  </p>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    💡 Gå til en klient og velg "Analyser" fanen, deretter "Saldobalanse"
+                  </p>
+                  <div className="text-sm">
+                    <span className="text-primary font-medium">Tilgjengelig via:</span> Klienter → [Velg klient] → Analyser → Saldobalanse
+                  </div>
+                </div>
+                
+                <div className="p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+                  <h4 className="font-medium mb-2">Regnskapsoppstilling</h4>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Generer resultatregnskap basert på reelle tall fra saldobalanse
+                  </p>
+                  <div className="text-sm">
+                    <span className="text-primary font-medium">Tilgjengelig via:</span> Klienter → [Velg klient] → Regnskap
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
               <CardTitle>Nylig Aktivitet</CardTitle>
             </CardHeader>
             <CardContent>

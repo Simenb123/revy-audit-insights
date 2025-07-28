@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Search, Download } from 'lucide-react';
-import { TrialBalanceEntry, useTrialBalanceData } from '@/hooks/useTrialBalanceData';
+import { TrialBalanceEntryWithMapping, useTrialBalanceWithMappings } from '@/hooks/useTrialBalanceWithMappings';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface TrialBalanceTableProps {
@@ -13,18 +13,19 @@ interface TrialBalanceTableProps {
 
 const TrialBalanceTable = ({ clientId }: TrialBalanceTableProps) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const { data: entries, isLoading, error } = useTrialBalanceData(clientId);
+  const { data: trialBalanceData, isLoading, error } = useTrialBalanceWithMappings(clientId);
 
-  const filteredEntries = entries?.filter(entry =>
+  const entries = trialBalanceData?.trialBalanceEntries || [];
+  
+  const filteredEntries = entries.filter(entry =>
     entry.account_number.includes(searchTerm) ||
     entry.account_name.toLowerCase().includes(searchTerm.toLowerCase())
-  ) || [];
+  );
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('nb-NO', {
-      style: 'currency',
-      currency: 'NOK',
-      minimumFractionDigits: 2,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
     }).format(amount);
   };
 
@@ -38,25 +39,33 @@ const TrialBalanceTable = ({ clientId }: TrialBalanceTableProps) => {
   const isBalanced = balanceDifference <= 1; // Allow rounding up to 1 kr
 
   const handleExport = () => {
-    if (!entries || entries.length === 0) return;
-    
-    const csvContent = [
-      ['Kontonummer', 'Kontonavn', 'Saldo i år', 'Inngående saldo', 'Debet omsetning', 'Kredit omsetning'].join(','),
-      ...entries.map(entry => [
-        entry.account_number,
-        `"${entry.account_name}"`,
-        entry.closing_balance,
-        entry.opening_balance,
-        entry.debit_turnover,
-        entry.credit_turnover
-      ].join(','))
-    ].join('\n');
-    
+    if (!entries.length) return;
+
+    const csvHeaders = ['Kontonummer', 'Kontonavn', 'Åpningsbalanse', 'Debet', 'Kredit', 'Sluttbalanse', 'Mappet til', 'Standard konto'];
+    const csvData = filteredEntries.map(entry => [
+      entry.account_number,
+      entry.account_name,
+      formatCurrency(entry.opening_balance),
+      formatCurrency(entry.debit_turnover),
+      formatCurrency(entry.credit_turnover),
+      formatCurrency(entry.closing_balance),
+      entry.is_mapped ? 'Ja' : 'Nei',
+      entry.standard_name || 'Ikke mappet'
+    ]);
+
+    const csvContent = [csvHeaders, ...csvData]
+      .map(row => row.map(cell => `"${cell}"`).join(','))
+      .join('\n');
+
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `saldobalanse_${new Date().getFullYear()}.csv`;
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `saldobalanse_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
     link.click();
+    document.body.removeChild(link);
   };
 
   if (isLoading) {
@@ -92,7 +101,14 @@ const TrialBalanceTable = ({ clientId }: TrialBalanceTableProps) => {
     <Card>
       <CardHeader>
         <div className="flex justify-between items-center">
-          <CardTitle>Saldobalanse</CardTitle>
+          <div>
+            <CardTitle>Saldobalanse</CardTitle>
+            {trialBalanceData && (
+              <p className="text-sm text-muted-foreground mt-1">
+                {trialBalanceData.mappingStats.mappedAccounts} av {trialBalanceData.mappingStats.totalAccounts} kontoer mappet til standardkontoer
+              </p>
+            )}
+          </div>
           <Button variant="outline" size="sm" onClick={handleExport}>
             <Download className="h-4 w-4 mr-2" />
             Eksporter
@@ -117,61 +133,87 @@ const TrialBalanceTable = ({ clientId }: TrialBalanceTableProps) => {
                 <TableRow>
                   <TableHead>Kontonummer</TableHead>
                   <TableHead>Kontonavn</TableHead>
-                  <TableHead className="text-right font-medium">Saldo i år</TableHead>
-                  <TableHead className="text-right">Inngående saldo</TableHead>
-                  <TableHead className="text-right">Debet omsetning</TableHead>
-                  <TableHead className="text-right">Kredit omsetning</TableHead>
+                  <TableHead className="text-right">Åpningsbalanse</TableHead>
+                  <TableHead className="text-right">Debet</TableHead>
+                  <TableHead className="text-right">Kredit</TableHead>
+                  <TableHead className="text-right">Sluttbalanse</TableHead>
+                  <TableHead>Mapping status</TableHead>
+                  <TableHead>Standard konto</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredEntries.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={6} className="text-center text-muted-foreground">
-                          Ingen kontoer funnet
-                        </TableCell>
-                      </TableRow>
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center text-muted-foreground">
+                      Ingen kontoer funnet
+                    </TableCell>
+                  </TableRow>
                 ) : (
                   <>
-                      {filteredEntries.map((entry) => (
-                        <TableRow key={entry.id}>
-                          <TableCell className="font-medium">{entry.account_number}</TableCell>
-                          <TableCell>{entry.account_name}</TableCell>
-                          <TableCell className="text-right font-medium text-lg">
-                            {formatCurrency(entry.closing_balance)}
-                          </TableCell>
-                          <TableCell className="text-right text-muted-foreground">
-                            {formatCurrency(entry.opening_balance)}
-                          </TableCell>
-                          <TableCell className="text-right text-muted-foreground">
-                            {formatCurrency(entry.debit_turnover)}
-                          </TableCell>
-                          <TableCell className="text-right text-muted-foreground">
-                            {formatCurrency(entry.credit_turnover)}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                       <TableRow className="font-bold border-t-2 bg-muted/50">
-                         <TableCell colSpan={2}>Sum</TableCell>
-                         <TableCell className="text-right text-lg">{formatCurrency(totalClosingBalance)}</TableCell>
-                         <TableCell className="text-right">{formatCurrency(totalOpeningBalance)}</TableCell>
-                         <TableCell className="text-right">{formatCurrency(totalDebit)}</TableCell>
-                         <TableCell className="text-right">{formatCurrency(totalCredit)}</TableCell>
-                       </TableRow>
-                     {!isBalanced && (
-                        <TableRow className="border-t border-destructive bg-destructive/10">
-                          <TableCell colSpan={6} className="text-center text-destructive font-medium">
-                            ⚠️ Advarsel: Saldobalansen er ikke i balanse. Differanse: {formatCurrency(balanceDifference)}
-                          </TableCell>
-                        </TableRow>
-                     )}
+                    {filteredEntries.map((entry) => (
+                      <TableRow key={entry.id}>
+                        <TableCell className="font-medium">{entry.account_number}</TableCell>
+                        <TableCell>{entry.account_name}</TableCell>
+                        <TableCell className="text-right font-mono">{formatCurrency(entry.opening_balance)}</TableCell>
+                        <TableCell className="text-right font-mono">{formatCurrency(entry.debit_turnover)}</TableCell>
+                        <TableCell className="text-right font-mono">{formatCurrency(entry.credit_turnover)}</TableCell>
+                        <TableCell className="text-right font-mono">{formatCurrency(entry.closing_balance)}</TableCell>
+                        <TableCell>
+                          <span className={`px-2 py-1 rounded-full text-xs ${
+                            entry.is_mapped 
+                              ? 'bg-green-100 text-green-800' 
+                              : 'bg-orange-100 text-orange-800'
+                          }`}>
+                            {entry.is_mapped ? 'Mappet' : 'Ikke mappet'}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {entry.standard_name ? (
+                            <div>
+                              <span className="font-medium">{entry.standard_number}</span> - {entry.standard_name}
+                            </div>
+                          ) : (
+                            <span className="text-orange-600">Ikke mappet</span>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    <TableRow className="font-bold border-t-2 bg-muted/50">
+                      <TableCell colSpan={2}>Sum</TableCell>
+                      <TableCell className="text-right">{formatCurrency(totalOpeningBalance)}</TableCell>
+                      <TableCell className="text-right">{formatCurrency(totalDebit)}</TableCell>
+                      <TableCell className="text-right">{formatCurrency(totalCredit)}</TableCell>
+                      <TableCell className="text-right">{formatCurrency(totalClosingBalance)}</TableCell>
+                      <TableCell colSpan={2}></TableCell>
+                    </TableRow>
+                    {!isBalanced && (
+                      <TableRow className="border-t border-destructive bg-destructive/10">
+                        <TableCell colSpan={8} className="text-center text-destructive font-medium">
+                          ⚠️ Advarsel: Saldobalansen er ikke i balanse. Differanse: {formatCurrency(balanceDifference)}
+                        </TableCell>
+                      </TableRow>
+                    )}
                   </>
                 )}
               </TableBody>
             </Table>
           </div>
 
-          <div className="text-sm text-muted-foreground">
-            Viser {filteredEntries.length} av {entries?.length || 0} kontoer
+          <div className="flex justify-between items-center text-sm">
+            <div className="text-sm text-muted-foreground">
+              Viser {filteredEntries.length} av {entries.length} kontoer
+            </div>
+            
+            {trialBalanceData && (
+              <div className="flex items-center gap-4 text-sm">
+                <div className="text-muted-foreground">
+                  <span className="font-medium text-green-700">{trialBalanceData.mappingStats.mappedAccounts}</span> mappet
+                </div>
+                <div className="text-muted-foreground">
+                  <span className="font-medium text-orange-700">{trialBalanceData.mappingStats.unmappedAccounts}</span> umappet
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </CardContent>
