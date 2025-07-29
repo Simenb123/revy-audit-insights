@@ -238,45 +238,85 @@ const TrialBalanceUploader = ({ clientId, onUploadComplete }: TrialBalanceUpload
         }
 
         try {
-          // Parse numeric values safely with improved Norwegian format handling
+          console.log(`🔍 Raw account data for ${accountNumber}:`, {
+            account,
+            opening_balance: account.opening_balance,
+            debit_turnover: account.debit_turnover,
+            credit_turnover: account.credit_turnover,
+            closing_balance: account.closing_balance
+          });
+
+          // Enhanced Norwegian number format parsing
           const parseNumber = (value: any): number => {
             if (value === null || value === undefined || value === '') return 0;
             
             const originalValue = value.toString().trim();
-            console.log(`🔢 Parsing number: "${originalValue}"`);
+            console.log(`🔢 Parsing number: "${originalValue}" (type: ${typeof value})`);
             
-            // Remove whitespace and non-numeric characters except commas, periods, and minus
-            let cleanValue = originalValue.replace(/\s/g, '').replace(/[^\d,.-]/g, '');
+            // If it's already a number, return it
+            if (typeof value === 'number' && !isNaN(value)) {
+              console.log(`🔢 Already a number: ${value}`);
+              return value;
+            }
             
-            // Handle Norwegian number formats
+            // Handle string values
+            let cleanValue = originalValue
+              .replace(/\s+/g, '') // Remove all whitespace
+              .replace(/[^\d,.-]/g, ''); // Keep only digits, comma, period, minus
+            
+            // If empty after cleaning, return 0
+            if (!cleanValue || cleanValue === '-') return 0;
+            
+            // Handle negative values (parentheses or minus sign)
+            let isNegative = false;
+            if (originalValue.includes('(') && originalValue.includes(')')) {
+              isNegative = true;
+              cleanValue = cleanValue.replace(/[()]/g, '');
+            } else if (cleanValue.startsWith('-')) {
+              isNegative = true;
+              cleanValue = cleanValue.substring(1);
+            }
+            
+            // Norwegian format detection and conversion
             if (cleanValue.includes(',') && cleanValue.includes('.')) {
-              // Both comma and period - determine which is decimal separator
+              // Both comma and period present
               const lastComma = cleanValue.lastIndexOf(',');
               const lastPeriod = cleanValue.lastIndexOf('.');
               
               if (lastComma > lastPeriod) {
-                // Comma is decimal separator: "1.234,56"
+                // Comma is decimal: "1.234.567,89" or "1.234,89"
                 cleanValue = cleanValue.replace(/\./g, '').replace(',', '.');
               } else {
-                // Period is decimal separator: "1,234.56"
+                // Period is decimal: "1,234,567.89" or "1,234.89"  
                 cleanValue = cleanValue.replace(/,/g, '');
               }
             } else if (cleanValue.includes(',')) {
-              // Only comma - check if it's likely a decimal separator
+              // Only comma present
               const parts = cleanValue.split(',');
-              if (parts.length === 2 && parts[1].length <= 2) {
-                // Likely decimal separator: "1234,56"
+              if (parts.length === 2 && parts[1].length <= 2 && parts[0].length >= 1) {
+                // Likely decimal: "1234,56" or "5,67"
                 cleanValue = cleanValue.replace(',', '.');
               } else {
-                // Likely thousands separator: "1,234"
+                // Likely thousands separator: "1,234" or "1,234,567"
                 cleanValue = cleanValue.replace(/,/g, '');
               }
             }
+            // If only period and appears to be thousands separator, remove it
+            else if (cleanValue.includes('.') && !cleanValue.match(/\.\d{1,2}$/)) {
+              // Pattern like "1.234" (not "1.23" or "1.2")
+              cleanValue = cleanValue.replace(/\./g, '');
+            }
             
-            const parsed = parseFloat(cleanValue);
+            let parsed = parseFloat(cleanValue);
+            
+            // Apply negative sign
+            if (isNegative) {
+              parsed = -parsed;
+            }
+            
             const result = isNaN(parsed) ? 0 : parsed;
             
-            console.log(`🔢 "${originalValue}" -> "${cleanValue}" -> ${result}`);
+            console.log(`🔢 "${originalValue}" -> "${cleanValue}" -> ${result} (negative: ${isNegative})`);
             return result;
           };
 
