@@ -3,8 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Search, Download, LineChart } from 'lucide-react';
+import { Search, Download, LineChart, ChevronLeft, ChevronRight } from 'lucide-react';
 import { GeneralLedgerTransaction, useGeneralLedgerData } from '@/hooks/useGeneralLedgerData';
+import { useGeneralLedgerCount } from '@/hooks/useGeneralLedgerCount';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 
@@ -14,7 +15,12 @@ interface GeneralLedgerTableProps {
 
 const GeneralLedgerTable = ({ clientId }: GeneralLedgerTableProps) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const { data: transactions, isLoading, error } = useGeneralLedgerData(clientId);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 100;
+  
+  const { data: transactions, isLoading, error } = useGeneralLedgerData(clientId, undefined, { page: currentPage, pageSize });
+  const { data: totalCount, isLoading: isCountLoading } = useGeneralLedgerCount(clientId);
+  const { data: allTransactions, isLoading: isExportLoading } = useGeneralLedgerData(clientId, undefined, undefined);
 
   const filteredTransactions = transactions?.filter(transaction =>
     transaction.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -49,11 +55,11 @@ const GeneralLedgerTable = ({ clientId }: GeneralLedgerTableProps) => {
   }, 0);
 
   const handleExport = () => {
-    if (!transactions || transactions.length === 0) return;
+    if (!allTransactions || allTransactions.length === 0) return;
     
     const csvContent = [
       ['Dato', 'Konto', 'Beskrivelse', 'Bilag', 'Beløp', 'Referanse'].join(','),
-      ...transactions.map(transaction => [
+      ...allTransactions.map(transaction => [
         new Date(transaction.transaction_date).toLocaleDateString('nb-NO'),
         transaction.account_number,
         `"${transaction.description}"`,
@@ -69,6 +75,10 @@ const GeneralLedgerTable = ({ clientId }: GeneralLedgerTableProps) => {
     link.download = `hovedbok_${new Date().getFullYear()}.csv`;
     link.click();
   };
+
+  const totalPages = Math.ceil((totalCount || 0) / pageSize);
+  const hasNextPage = currentPage < totalPages;
+  const hasPrevPage = currentPage > 1;
 
   if (isLoading) {
     return (
@@ -109,15 +119,22 @@ const GeneralLedgerTable = ({ clientId }: GeneralLedgerTableProps) => {
               Hovedbok
             </CardTitle>
             <p className="text-sm text-muted-foreground mt-1">
-              Viser {transactions?.length || 0} transaksjoner
+              {!isCountLoading && (
+                <span>Viser {((currentPage - 1) * pageSize) + 1}-{Math.min(currentPage * pageSize, totalCount || 0)} av {totalCount || 0} transaksjoner</span>
+              )}
               {transactions && transactions.length > 0 && (
-                <span> • Periode: {format(new Date(transactions[transactions.length - 1].transaction_date), 'dd.MM.yyyy')} - {format(new Date(transactions[0].transaction_date), 'dd.MM.yyyy')}</span>
+                <span> • Side {currentPage} av {totalPages}</span>
               )}
             </p>
           </div>
-          <Button variant="outline" size="sm" onClick={handleExport}>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleExport}
+            disabled={isExportLoading}
+          >
             <Download className="h-4 w-4 mr-2" />
-            Eksporter alle
+            {isExportLoading ? 'Laster...' : 'Eksporter alle'}
           </Button>
         </div>
       </CardHeader>
@@ -182,8 +199,36 @@ const GeneralLedgerTable = ({ clientId }: GeneralLedgerTableProps) => {
             </Table>
           </div>
 
-          <div className="text-sm text-muted-foreground">
-            Viser {filteredTransactions.length} av {transactions?.length || 0} transaksjoner
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-muted-foreground">
+              {searchTerm ? `Viser ${filteredTransactions.length} filtrerte av ${transactions?.length || 0} transaksjoner på denne siden` : `Side ${currentPage} av ${totalPages}`}
+            </div>
+            
+            {!searchTerm && (
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={!hasPrevPage || isLoading}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Forrige
+                </Button>
+                <span className="text-sm text-muted-foreground px-2">
+                  Side {currentPage} av {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={!hasNextPage || isLoading}
+                >
+                  Neste
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </CardContent>
