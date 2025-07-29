@@ -22,6 +22,7 @@ export const useGeneralLedgerData = (clientId: string, versionId?: string, pagin
     queryKey: ['general-ledger-v5', clientId, versionId, pagination],
     queryFn: async () => {
       console.log('🔍 Fetching general ledger data for client:', clientId, 'version:', versionId);
+      console.log('🔐 Auth user ID:', (await supabase.auth.getUser()).data.user?.id);
       
       // If pagination is specified, fetch only that page
       if (pagination) {

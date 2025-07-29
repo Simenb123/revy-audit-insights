@@ -33,7 +33,17 @@ const ValidationPanel = ({ clientId }: ValidationPanelProps) => {
     const errorMessage = error?.message || 'Validering kunne ikke utføres';
     const isDataMissing = errorMessage.includes('Mangler data') || 
                          errorMessage.includes('no data') || 
+                         errorMessage.includes('RLS') ||
+                         errorMessage.includes('permission') ||
+                         errorMessage.includes('access') ||
                          !validation;
+    
+    // Add detailed logging for debugging
+    console.error('❌ ValidationPanel error details:', {
+      error: error?.message,
+      hasValidation: !!validation,
+      isDataMissing
+    });
     
     return (
       <Card>
