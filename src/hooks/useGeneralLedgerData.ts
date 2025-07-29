@@ -43,8 +43,7 @@ export const useGeneralLedgerData = (clientId: string) => {
           )
         `)
         .eq('client_id', clientId)
-        .order('transaction_date', { ascending: false })
-        .limit(50000); // Increased limit to handle large datasets
+        .order('transaction_date', { ascending: false }); // Remove limit to get all transactions
 
       if (error) {
         console.error('❌ Error fetching general ledger:', error);

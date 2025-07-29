@@ -18,7 +18,7 @@ export const useAccountingData = (clientId: string) => {
         .from('general_ledger_transactions')
         .select('id, created_at')
         .eq('client_id', clientId)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false }); // Remove any default limits
 
       if (transactionsError) throw transactionsError;
 
