@@ -19,51 +19,76 @@ export interface GeneralLedgerTransaction {
 
 export const useGeneralLedgerData = (clientId: string) => {
   return useQuery({
-    queryKey: ['general-ledger-v2', clientId],
+    queryKey: ['general-ledger-v3', clientId],
     queryFn: async () => {
       console.log('🔍 Fetching general ledger data for client:', clientId);
-      console.log('🔍 Using limit: 1,000,000 transactions');
+      console.log('🔍 Using chunked loading to fetch ALL transactions');
       
-      const { data, error } = await supabase
-        .from('general_ledger_transactions')
-        .select(`
-          id,
-          transaction_date,
-          client_account_id,
-          description,
-          debit_amount,
-          credit_amount,
-          balance_amount,
-          reference_number,
-          voucher_number,
-          period_year,
-          period_month,
-          client_chart_of_accounts!inner(
-            account_number,
-            account_name
-          )
-        `)
-        .eq('client_id', clientId)
-        .order('transaction_date', { ascending: false })
-        .limit(1000000); // Set very high limit to ensure all transactions are fetched
+      let allTransactions: any[] = [];
+      let offset = 0;
+      const chunkSize = 1000;
+      let hasMore = true;
 
-      if (error) {
-        console.error('❌ Error fetching general ledger:', error);
-        throw error;
+      while (hasMore) {
+        console.log(`📦 Fetching chunk ${Math.floor(offset / chunkSize) + 1}, offset: ${offset}`);
+        
+        const { data, error } = await supabase
+          .from('general_ledger_transactions')
+          .select(`
+            id,
+            transaction_date,
+            client_account_id,
+            description,
+            debit_amount,
+            credit_amount,
+            balance_amount,
+            reference_number,
+            voucher_number,
+            period_year,
+            period_month,
+            client_chart_of_accounts!inner(
+              account_number,
+              account_name
+            )
+          `)
+          .eq('client_id', clientId)
+          .order('transaction_date', { ascending: false })
+          .range(offset, offset + chunkSize - 1);
+
+        if (error) {
+          console.error('❌ Error fetching general ledger chunk:', error);
+          throw error;
+        }
+
+        if (!data || data.length === 0) {
+          console.log(`⚠️ No more transactions found at offset ${offset}`);
+          hasMore = false;
+          break;
+        }
+
+        console.log(`✅ Loaded chunk with ${data.length} transactions`);
+        allTransactions = [...allTransactions, ...data];
+        
+        // If we got less than chunkSize, we've reached the end
+        if (data.length < chunkSize) {
+          hasMore = false;
+        } else {
+          offset += chunkSize;
+        }
       }
 
-      if (!data || data.length === 0) {
+      if (allTransactions.length === 0) {
         console.log('⚠️ No general ledger transactions found for client:', clientId);
         return [];
       }
 
-      console.log('✅ RAW DATA LENGTH FROM SUPABASE:', data.length);
-      console.log('✅ FIRST TRANSACTION:', data[0]?.transaction_date);
-      console.log('✅ LAST TRANSACTION:', data[data.length - 1]?.transaction_date);
-      console.log('✅ Found', data.length, 'general ledger transactions');
+      console.log('✅ TOTAL TRANSACTIONS LOADED:', allTransactions.length);
+      console.log('✅ FIRST TRANSACTION:', allTransactions[0]?.transaction_date);
+      console.log('✅ LAST TRANSACTION:', allTransactions[allTransactions.length - 1]?.transaction_date);
+      console.log('✅ Found', allTransactions.length, 'general ledger transactions');
       
       // Transform the data to include account details
-      const transformedData = data.map(transaction => ({
+      const transformedData = allTransactions.map((transaction: any) => ({
         id: transaction.id,
         transaction_date: transaction.transaction_date,
         client_account_id: transaction.client_account_id,
