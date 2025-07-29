@@ -16,21 +16,30 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, compact = false }) =
   
   return (
     <div className={cn(
-      "flex gap-3 animate-fade-in",
+      "relative animate-fade-in overflow-hidden",
       compact ? "mb-2" : "mb-4"
     )}>
       {isAssistant ? (
-        <RevyAvatar size={compact ? "md" : "xl"} className="flex-shrink-0 mt-1" />
+        <RevyAvatar 
+          size={compact ? "md" : "xl"} 
+          className={cn(
+            "float-left mt-1",
+            compact ? "mr-2" : "mr-3"
+          )} 
+        />
       ) : (
         <div className={cn(
-          "rounded-full bg-primary text-primary-foreground flex items-center justify-center font-medium flex-shrink-0 mt-1",
-          compact ? "h-8 w-8 text-xs" : "h-12 w-12 text-sm"
+          "rounded-full bg-primary text-primary-foreground flex items-center justify-center font-medium float-left mt-1",
+          compact ? "h-8 w-8 text-xs mr-2" : "h-12 w-12 text-sm mr-3"
         )}>
           D
         </div>
       )}
       
-      <div className="flex flex-col flex-1 min-w-0">
+      <div className={cn(
+        "overflow-hidden",
+        compact ? "ml-10" : "ml-16"
+      )}>
         <div className={cn(
           "rounded-lg px-4 py-3 break-words",
           compact ? "text-xs px-3 py-2" : "text-sm",
