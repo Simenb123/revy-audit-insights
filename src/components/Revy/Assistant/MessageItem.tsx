@@ -15,13 +15,10 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, compact = false }) =
   const isAssistant = message.sender === 'assistant';
   
   return (
-    <div
-      className={cn(
-        "flex animate-fade-in items-start",
-        compact ? "gap-1 mb-1" : "gap-3 mb-4",
-        !isAssistant && "flex-row-reverse"
-      )}
-    >
+    <div className={cn(
+      "grid animate-fade-in",
+      compact ? "grid-cols-[auto_1fr] gap-1 mb-1" : "grid-cols-[auto_1fr] gap-3 mb-4"
+    )}>
       {isAssistant ? (
         <RevyAvatar 
           size={compact ? "md" : "xl"} 
@@ -36,7 +33,7 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, compact = false }) =
         </div>
       )}
       
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0">
         <div className={cn(
           "rounded-lg px-4 py-3 break-words",
           compact ? "text-xs px-3 py-2" : "text-sm",
