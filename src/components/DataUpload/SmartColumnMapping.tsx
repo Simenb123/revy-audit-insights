@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { 
   validateDataTypes,
   FilePreview 
@@ -197,7 +197,6 @@ export const SmartColumnMapping: React.FC<SmartColumnMappingProps> = ({
                           {header || `Kolonne ${index + 1}`}
                         </code>
                         {suggestion && (
-                          <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Badge 
@@ -211,7 +210,6 @@ export const SmartColumnMapping: React.FC<SmartColumnMappingProps> = ({
                                 <p className="text-sm">{suggestion.reasoning}</p>
                               </TooltipContent>
                             </Tooltip>
-                          </TooltipProvider>
                         )}
                       </div>
                       {/* Sample data */}

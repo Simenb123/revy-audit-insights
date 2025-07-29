@@ -5,7 +5,6 @@ import { Bell } from 'lucide-react';
 import { 
   Tooltip,
   TooltipContent,
-  TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { Client, Announcement } from '@/types/revio';
@@ -47,7 +46,6 @@ const AnnouncementIndicator: React.FC<AnnouncementIndicatorProps> = ({ client })
   if (!hasRecentAnnouncement) return null;
 
   return (
-    <TooltipProvider>
       <Tooltip>
         <TooltipTrigger className="cursor-help">
           <Bell size={16} className="text-red-500" />
@@ -68,7 +66,6 @@ const AnnouncementIndicator: React.FC<AnnouncementIndicatorProps> = ({ client })
           </div>
         </TooltipContent>
       </Tooltip>
-    </TooltipProvider>
   );
 };
 

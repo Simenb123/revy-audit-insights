@@ -30,16 +30,23 @@ const ValidationPanel = ({ clientId }: ValidationPanelProps) => {
   }
 
   if (error || !validation) {
+    const errorMessage = error?.message || 'Validering kunne ikke utføres';
+    const isDataMissing = errorMessage.includes('Mangler data') || 
+                         errorMessage.includes('no data') || 
+                         !validation;
+    
     return (
       <Card>
         <CardHeader>
           <CardTitle>Validering</CardTitle>
         </CardHeader>
         <CardContent>
-          <Alert variant="destructive">
-            <XCircle className="h-4 w-4" />
+          <Alert variant={isDataMissing ? "default" : "destructive"}>
+            {isDataMissing ? <Info className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
             <AlertDescription>
-              Kunne ikke utføre validering: {error?.message || 'Ukjent feil'}
+              {isDataMissing 
+                ? 'Venter på at hovedbok og saldobalanse data lastes inn...' 
+                : `Kunne ikke utføre validering: ${errorMessage}`}
             </AlertDescription>
           </Alert>
         </CardContent>

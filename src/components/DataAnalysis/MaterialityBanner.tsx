@@ -2,7 +2,7 @@
 import React from 'react';
 import { Badge } from "@/components/ui/badge";
 import { InfoIcon } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface MaterialityThresholds {
   materiality: number;
@@ -25,7 +25,6 @@ const MaterialityBanner = ({ thresholds = {
 
   return (
     <div className="flex gap-3 items-center text-sm py-2 px-4 bg-muted/50 rounded-md mb-4">
-      <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
             <div className="flex items-center gap-1.5">
@@ -40,9 +39,7 @@ const MaterialityBanner = ({ thresholds = {
             <p>Vesentlighetsgrense</p>
           </TooltipContent>
         </Tooltip>
-      </TooltipProvider>
       
-      <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
             <div className="flex items-center gap-1.5">
@@ -56,9 +53,7 @@ const MaterialityBanner = ({ thresholds = {
             <p>Arbeidsvesentlighetsgrense</p>
           </TooltipContent>
         </Tooltip>
-      </TooltipProvider>
       
-      <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
             <div className="flex items-center gap-1.5">
@@ -72,7 +67,6 @@ const MaterialityBanner = ({ thresholds = {
             <p>Ubetydelig feil</p>
           </TooltipContent>
         </Tooltip>
-      </TooltipProvider>
     </div>
   );
 };

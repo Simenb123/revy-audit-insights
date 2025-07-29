@@ -19,7 +19,7 @@ export interface GeneralLedgerTransaction {
 
 export const useGeneralLedgerData = (clientId: string) => {
   return useQuery({
-    queryKey: ['general-ledger-v3', clientId],
+    queryKey: ['general-ledger-v4', clientId],
     queryFn: async () => {
       console.log('🔍 Fetching general ledger data for client:', clientId);
       console.log('🔍 Using chunked loading to fetch ALL transactions');

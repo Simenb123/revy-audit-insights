@@ -2,7 +2,7 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Clock, FileText, HelpCircle } from 'lucide-react';
 import { DocumentVersion } from '@/types/revio';
 import { format } from 'date-fns';
@@ -54,7 +54,6 @@ const VersionSelector: React.FC<VersionSelectorProps> = ({
           </SelectContent>
         </Select>
         
-        <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button variant="ghost" size="icon" className="h-6 w-6">
@@ -68,7 +67,6 @@ const VersionSelector: React.FC<VersionSelectorProps> = ({
               </p>
             </TooltipContent>
           </Tooltip>
-        </TooltipProvider>
       </div>
     </div>
   );

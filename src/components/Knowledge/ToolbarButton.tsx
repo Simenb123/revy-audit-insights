@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Toggle, toggleVariants } from '@/components/ui/toggle';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { type ToggleProps } from "@radix-ui/react-toggle"
 import { type VariantProps } from "class-variance-authority"
 
