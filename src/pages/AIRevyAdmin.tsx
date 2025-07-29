@@ -4,7 +4,6 @@ import EnhancedAdminDashboard from '@/components/AIRevyAdmin/EnhancedAdminDashbo
 import ResponsiveLayout from '@/components/Layout/ResponsiveLayout';
 import ConstrainedWidth from '@/components/Layout/ConstrainedWidth';
 import StandardPageLayout from '@/components/Layout/StandardPageLayout';
-import PageHeader from '@/components/Layout/PageHeader';
 
 const AIRevyAdmin = () => {
   return (
