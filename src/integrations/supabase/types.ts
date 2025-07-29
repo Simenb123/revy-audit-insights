@@ -5176,6 +5176,7 @@ export type Database = {
           id: string
           opening_balance: number | null
           period_end_date: string
+          period_start_date: string
           period_year: number
           upload_batch_id: string | null
           version: string | null
@@ -5190,6 +5191,7 @@ export type Database = {
           id?: string
           opening_balance?: number | null
           period_end_date: string
+          period_start_date: string
           period_year: number
           upload_batch_id?: string | null
           version?: string | null
@@ -5204,6 +5206,7 @@ export type Database = {
           id?: string
           opening_balance?: number | null
           period_end_date?: string
+          period_start_date?: string
           period_year?: number
           upload_batch_id?: string | null
           version?: string | null

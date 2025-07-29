@@ -36,8 +36,9 @@ const TrialBalanceUploader = ({ clientId, onUploadComplete }: TrialBalanceUpload
   const [convertedData, setConvertedData] = useState<any[]>([]);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [step, setStep] = useState<'select' | 'upload' | 'success'>('select');
-  const [periodYear, setPeriodYear] = useState<string>(new Date().getFullYear().toString());
-  const [periodEndDate, setPeriodEndDate] = useState<string>(`${new Date().getFullYear()}-12-31`);
+  const [periodYear, setPeriodYear] = useState<string>('2024');
+  const [periodStartDate, setPeriodStartDate] = useState<string>('2024-01-01');
+  const [periodEndDate, setPeriodEndDate] = useState<string>('2024-12-31');
   const [version, setVersion] = useState<string>('v1');
 
   const handleFileSelect = async (file: File) => {
@@ -277,6 +278,7 @@ const TrialBalanceUploader = ({ clientId, onUploadComplete }: TrialBalanceUpload
             client_account_id: accountId,
             upload_batch_id: batch.id,
             period_year: parseInt(periodYear),
+            period_start_date: periodStartDate,
             period_end_date: periodEndDate,
             opening_balance: openingBalance,
             debit_turnover: debitTurnover,
@@ -290,7 +292,7 @@ const TrialBalanceUploader = ({ clientId, onUploadComplete }: TrialBalanceUpload
           const { data: insertedData, error: trialBalanceError } = await supabase
             .from('trial_balances')
             .upsert(trialBalanceData, {
-              onConflict: 'client_id,client_account_id,period_end_date,version',
+              onConflict: 'client_id,client_account_id,period_start_date,period_end_date,version',
               ignoreDuplicates: false
             })
             .select();
@@ -417,7 +419,7 @@ const TrialBalanceUploader = ({ clientId, onUploadComplete }: TrialBalanceUpload
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-muted/30 rounded-lg">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-muted/30 rounded-lg">
               <div className="space-y-2">
                 <Label htmlFor="period-year" className="flex items-center gap-2">
                   <Calendar className="w-4 h-4" />
@@ -438,6 +440,16 @@ const TrialBalanceUploader = ({ clientId, onUploadComplete }: TrialBalanceUpload
                     })}
                   </SelectContent>
                 </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="period-start">Periode startdato</Label>
+                <Input
+                  id="period-start"
+                  type="date"
+                  value={periodStartDate}
+                  onChange={(e) => setPeriodStartDate(e.target.value)}
+                />
               </div>
               
               <div className="space-y-2">

@@ -9,6 +9,7 @@ export interface TrialBalanceEntry {
   credit_turnover: number;
   debit_turnover: number;
   opening_balance: number;
+  period_start_date: string;
   period_end_date: string;
   period_year: number;
   version?: string;
@@ -29,8 +30,10 @@ export const useTrialBalanceData = (clientId: string) => {
           debit_turnover,
           credit_turnover,
           closing_balance,
+          period_start_date,
           period_end_date,
           period_year,
+          version,
           client_chart_of_accounts!inner(account_number, account_name)
         `)
         .eq('client_id', clientId);
@@ -47,6 +50,7 @@ export const useTrialBalanceData = (clientId: string) => {
           credit_turnover: tb.credit_turnover || 0,
           debit_turnover: tb.debit_turnover || 0,
           opening_balance: tb.opening_balance || 0,
+          period_start_date: tb.period_start_date || `${tb.period_year}-01-01`,
           period_end_date: tb.period_end_date,
           period_year: tb.period_year,
         })) as TrialBalanceEntry[];
@@ -120,6 +124,7 @@ export const useTrialBalanceData = (clientId: string) => {
           credit_turnover,
           debit_turnover,
           opening_balance,
+          period_start_date: `${new Date().getFullYear()}-01-01`,
           period_end_date: new Date().toISOString().split('T')[0],
           period_year: new Date().getFullYear(),
         };
