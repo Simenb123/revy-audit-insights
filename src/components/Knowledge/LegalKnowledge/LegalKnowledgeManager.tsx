@@ -18,7 +18,7 @@ import { toast } from 'sonner';
 
 export const LegalKnowledgeManager: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedDocumentType, setSelectedDocumentType] = useState<string>('');
+  const [selectedDocumentType, setSelectedDocumentType] = useState<string>('all');
   const [newDocument, setNewDocument] = useState({
     title: '',
     content: '',
@@ -60,7 +60,7 @@ export const LegalKnowledgeManager: React.FC = () => {
         .order('created_at', { ascending: false })
         .limit(50);
 
-      if (selectedDocumentType) {
+      if (selectedDocumentType && selectedDocumentType !== 'all') {
         query = query.eq('document_type_id', selectedDocumentType);
       }
 
@@ -94,7 +94,7 @@ export const LegalKnowledgeManager: React.FC = () => {
       
       return await LegalKnowledgeService.searchLegalKnowledge({
         query: searchQuery,
-        document_types: selectedDocumentType ? [selectedDocumentType] : undefined
+        document_types: (selectedDocumentType && selectedDocumentType !== 'all') ? [selectedDocumentType] : undefined
       });
     },
     enabled: !!searchQuery.trim()
@@ -337,7 +337,7 @@ export const LegalKnowledgeManager: React.FC = () => {
                 <SelectValue placeholder="Dokumenttype" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Alle typer</SelectItem>
+                <SelectItem value="all">Alle typer</SelectItem>
                 {documentTypes?.map((type) => (
                   <SelectItem key={type.id} value={type.id}>
                     {type.display_name}
