@@ -8,6 +8,20 @@ const AIRevyAdmin = () => {
     <PageLayout width="full">
       <EnhancedAdminDashboard />
     </PageLayout>
+import ResponsiveLayout from '@/components/Layout/ResponsiveLayout';
+import ConstrainedWidth from '@/components/Layout/ConstrainedWidth';
+import StandardPageLayout from '@/components/Layout/StandardPageLayout';
+import PageHeader from '@/components/Layout/PageHeader';
+
+const AIRevyAdmin = () => {
+  return (
+    <ResponsiveLayout>
+      <ConstrainedWidth width="full">
+        <StandardPageLayout header={<PageHeader title="AI Revy Admin" />}>
+          <EnhancedAdminDashboard />
+        </StandardPageLayout>
+      </ConstrainedWidth>
+    </ResponsiveLayout>
   );
 };
 

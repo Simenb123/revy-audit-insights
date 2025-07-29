@@ -9,7 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { BookOpen, FileText, Scale, Search, Plus, Link2, Target } from 'lucide-react';
+import { BookOpen, FileText, Scale, Search, Plus, Link2, Target, Upload, Download, FileSpreadsheet } from 'lucide-react';
+import { LegalExcelService, ExcelImportResult } from '@/services/legal-knowledge/excelService';
 import { supabase } from '@/integrations/supabase/client';
 import { LegalKnowledgeService } from '@/services/legal-knowledge/legalKnowledgeService';
 import type { LegalDocument, LegalProvision, LegalDocumentType } from '@/types/legal-knowledge';
@@ -17,7 +18,7 @@ import { toast } from 'sonner';
 
 export const LegalKnowledgeManager: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedDocumentType, setSelectedDocumentType] = useState<string>('');
+  const [selectedDocumentType, setSelectedDocumentType] = useState<string>('all');
   const [newDocument, setNewDocument] = useState({
     title: '',
     content: '',
@@ -25,6 +26,8 @@ export const LegalKnowledgeManager: React.FC = () => {
     document_number: '',
     issuing_authority: ''
   });
+  const [excelImportResult, setExcelImportResult] = useState<ExcelImportResult | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -57,7 +60,7 @@ export const LegalKnowledgeManager: React.FC = () => {
         .order('created_at', { ascending: false })
         .limit(50);
 
-      if (selectedDocumentType) {
+      if (selectedDocumentType && selectedDocumentType !== 'all') {
         query = query.eq('document_type_id', selectedDocumentType);
       }
 
@@ -91,7 +94,7 @@ export const LegalKnowledgeManager: React.FC = () => {
       
       return await LegalKnowledgeService.searchLegalKnowledge({
         query: searchQuery,
-        document_types: selectedDocumentType ? [selectedDocumentType] : undefined
+        document_types: (selectedDocumentType && selectedDocumentType !== 'all') ? [selectedDocumentType] : undefined
       });
     },
     enabled: !!searchQuery.trim()
@@ -132,6 +135,94 @@ export const LegalKnowledgeManager: React.FC = () => {
 
   const handleImportDocument = () => {
     importDocumentMutation.mutate(newDocument);
+  };
+
+  const handleExcelFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setIsImporting(true);
+      const result = await LegalExcelService.parseExcelFile(file);
+      setExcelImportResult(result);
+      
+      if (result.errors.length > 0) {
+        toast.error(`Import med ${result.errors.length} feil. Se detaljer nedenfor.`);
+      } else {
+        toast.success(`Excel-fil parsert: ${result.documents.length} dokumenter, ${result.provisions.length} bestemmelser`);
+      }
+    } catch (error) {
+      toast.error(`Feil ved parsing av Excel-fil: ${error}`);
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
+  const handleBulkImport = async () => {
+    if (!excelImportResult) return;
+
+    try {
+      setIsImporting(true);
+      
+      // Import document types first
+      for (const docType of excelImportResult.documentTypes) {
+        await supabase
+          .from('legal_document_types')
+          .upsert(docType, { onConflict: 'id' });
+      }
+
+      // Import documents
+      for (const doc of excelImportResult.documents) {
+        const { error } = await supabase
+          .from('legal_documents')
+          .insert(doc);
+        if (error) throw error;
+      }
+
+      // Import provisions
+      for (const provision of excelImportResult.provisions) {
+        const { error } = await supabase
+          .from('legal_provisions')
+          .insert(provision);
+        if (error) throw error;
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['legal-documents'] });
+      queryClient.invalidateQueries({ queryKey: ['legal-provisions'] });
+      queryClient.invalidateQueries({ queryKey: ['legal-document-types'] });
+      
+      toast.success('Bulk import fullført!');
+      setExcelImportResult(null);
+    } catch (error) {
+      toast.error(`Feil ved bulk import: ${error}`);
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
+  const handleExportData = async () => {
+    try {
+      const [docsResult, provisionsResult, typesResult] = await Promise.all([
+        supabase.from('legal_documents').select('*'),
+        supabase.from('legal_provisions').select('*'),
+        supabase.from('legal_document_types').select('*')
+      ]);
+
+      if (docsResult.error) throw docsResult.error;
+      if (provisionsResult.error) throw provisionsResult.error;
+      if (typesResult.error) throw typesResult.error;
+
+      const exportData = {
+        documentTypes: typesResult.data || [],
+        documents: docsResult.data || [],
+        provisions: provisionsResult.data || []
+      };
+
+      LegalExcelService.downloadExport(exportData, 'juridisk-kunnskapsbase-eksport');
+      toast.success('Data eksportert til Excel');
+    } catch (error) {
+      toast.error(`Feil ved eksport: ${error}`);
+    }
   };
 
   const getAuthorityBadgeColor = (weight: number) => {
@@ -246,7 +337,7 @@ export const LegalKnowledgeManager: React.FC = () => {
                 <SelectValue placeholder="Dokumenttype" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Alle typer</SelectItem>
+                <SelectItem value="all">Alle typer</SelectItem>
                 {documentTypes?.map((type) => (
                   <SelectItem key={type.id} value={type.id}>
                     {type.display_name}
@@ -286,11 +377,109 @@ export const LegalKnowledgeManager: React.FC = () => {
         </CardContent>
       </Card>
 
+      {/* Excel Import/Export Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileSpreadsheet className="h-5 w-5" />
+            Excel Import/Export
+          </CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Full kontroll over juridisk data via Excel-filer
+          </p>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-4">
+            <Button 
+              variant="outline" 
+              onClick={() => LegalExcelService.downloadTemplate()}
+              className="flex items-center gap-2"
+            >
+              <Download className="h-4 w-4" />
+              Last ned Excel-template
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              onClick={handleExportData}
+              className="flex items-center gap-2"
+            >
+              <Download className="h-4 w-4" />
+              Eksporter eksisterende data
+            </Button>
+            
+            <div className="flex items-center gap-2">
+              <Input
+                type="file"
+                accept=".xlsx,.xls"
+                onChange={handleExcelFileUpload}
+                className="hidden"
+                id="excel-upload"
+              />
+              <Button 
+                variant="outline" 
+                onClick={() => document.getElementById('excel-upload')?.click()}
+                disabled={isImporting}
+                className="flex items-center gap-2"
+              >
+                <Upload className="h-4 w-4" />
+                {isImporting ? 'Parser...' : 'Last opp Excel-fil'}
+              </Button>
+            </div>
+          </div>
+
+          {excelImportResult && (
+            <div className="mt-6 p-4 border rounded-lg bg-muted/50">
+              <h4 className="font-semibold mb-3">Excel Import Resultat</h4>
+              <div className="grid grid-cols-3 gap-4 mb-4">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-600">
+                    {excelImportResult.documentTypes.length}
+                  </div>
+                  <div className="text-sm text-muted-foreground">Dokumenttyper</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-600">
+                    {excelImportResult.documents.length}
+                  </div>
+                  <div className="text-sm text-muted-foreground">Dokumenter</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-purple-600">
+                    {excelImportResult.provisions.length}
+                  </div>
+                  <div className="text-sm text-muted-foreground">Bestemmelser</div>
+                </div>
+              </div>
+              
+              {excelImportResult.errors.length > 0 && (
+                <div className="mb-4">
+                  <h5 className="font-medium text-red-600 mb-2">Feil ({excelImportResult.errors.length}):</h5>
+                  <ScrollArea className="h-32 p-2 bg-red-50 rounded">
+                    {excelImportResult.errors.map((error, i) => (
+                      <div key={i} className="text-sm text-red-700">{error}</div>
+                    ))}
+                  </ScrollArea>
+                </div>
+              )}
+
+              <Button 
+                onClick={handleBulkImport}
+                disabled={isImporting || excelImportResult.documents.length === 0}
+                className="w-full"
+              >
+                {isImporting ? 'Importerer...' : 'Importer alle data til database'}
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       <Tabs defaultValue="documents" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="documents">Dokumenter</TabsTrigger>
           <TabsTrigger value="provisions">Bestemmelser</TabsTrigger>
-          <TabsTrigger value="import">Importer Nytt</TabsTrigger>
+          <TabsTrigger value="import">Manuell Import</TabsTrigger>
         </TabsList>
 
         <TabsContent value="documents" className="space-y-4">
@@ -344,10 +533,10 @@ export const LegalKnowledgeManager: React.FC = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Plus className="h-5 w-5" />
-                Importer Juridisk Dokument
+                Manuell Import av Juridisk Dokument
               </CardTitle>
               <p className="text-sm text-muted-foreground">
-                Legg til nytt juridisk dokument med automatisk sitatgjenkjenning
+                Legg til enkelt juridisk dokument manuelt med automatisk sitatgjenkjenning
               </p>
             </CardHeader>
             <CardContent className="space-y-4">
