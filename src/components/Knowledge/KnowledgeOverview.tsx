@@ -201,7 +201,7 @@ const KnowledgeOverview = () => {
       </div>
 
       {/* Quick Navigation - Reduced spacing */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-3 mb-6">
         <Link to="/fag/mine">
           <Card className="hover:shadow-md transition-shadow cursor-pointer">
             <CardContent className="p-3 text-center">
@@ -225,6 +225,15 @@ const KnowledgeOverview = () => {
             <CardContent className="p-3 text-center">
               <Upload className="w-6 h-6 mx-auto mb-2 text-primary" />
               <h3 className="font-medium text-sm">Last opp PDF</h3>
+            </CardContent>
+          </Card>
+        </Link>
+        
+        <Link to="/fag/juridisk">
+          <Card className="hover:shadow-md transition-shadow cursor-pointer">
+            <CardContent className="p-3 text-center">
+              <BookOpen className="w-6 h-6 mx-auto mb-2 text-primary" />
+              <h3 className="font-medium text-sm">Juridisk kunnskapsbase</h3>
             </CardContent>
           </Card>
         </Link>

@@ -13,6 +13,7 @@ import PDFUploadManager from '@/components/Knowledge/PDFUploadManager';
 import KnowledgeAdminPanel from '@/components/Knowledge/KnowledgeAdminPanel';
 import SecretTrainingArea from '@/components/Knowledge/SecretTrainingArea';
 import AuditActionGenerator from '@/components/AIRevyAdmin/AuditActionGenerator';
+import { LegalKnowledgeManager } from '@/components/Knowledge/LegalKnowledge/LegalKnowledgeManager';
 
 const KnowledgeBase = () => {
   const showAdvanced = import.meta.env.VITE_KNOWLEDGE_ADMIN_ADVANCED === 'true';
@@ -30,6 +31,7 @@ const KnowledgeBase = () => {
         <Route path="sok" element={<SearchResults />} />
         <Route path="upload" element={<PDFUploadManager />} />
         <Route path="admin" element={<KnowledgeAdminPanel showAdvanced={showAdvanced} />} />
+        <Route path="juridisk" element={<LegalKnowledgeManager />} />
         <Route path="hemmelig-ai-trening" element={<SecretTrainingArea />} />
         <Route path="revisjonshandlinger" element={<AuditActionGenerator />} />
       </Routes>
