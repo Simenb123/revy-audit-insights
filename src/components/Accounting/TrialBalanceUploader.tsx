@@ -2,8 +2,11 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Upload, Database, AlertCircle } from 'lucide-react';
+import { Upload, Database, AlertCircle, Calendar } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import EnhancedPreview from '@/components/DataUpload/EnhancedPreview';
 import { DataManagementPanel } from '@/components/DataUpload/DataManagementPanel';
@@ -33,6 +36,9 @@ const TrialBalanceUploader = ({ clientId, onUploadComplete }: TrialBalanceUpload
   const [convertedData, setConvertedData] = useState<any[]>([]);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [step, setStep] = useState<'select' | 'upload' | 'success'>('select');
+  const [periodYear, setPeriodYear] = useState<string>(new Date().getFullYear().toString());
+  const [periodEndDate, setPeriodEndDate] = useState<string>(`${new Date().getFullYear()}-12-31`);
+  const [version, setVersion] = useState<string>('v1');
 
   const handleFileSelect = async (file: File) => {
     const extension = file.name.toLowerCase().split('.').pop();
@@ -270,12 +276,13 @@ const TrialBalanceUploader = ({ clientId, onUploadComplete }: TrialBalanceUpload
             client_id: clientId,
             client_account_id: accountId,
             upload_batch_id: batch.id,
-            period_year: currentYear,
-            period_end_date: currentDate,
+            period_year: parseInt(periodYear),
+            period_end_date: periodEndDate,
             opening_balance: openingBalance,
             debit_turnover: debitTurnover,
             credit_turnover: creditTurnover,
-            closing_balance: closingBalance
+            closing_balance: closingBalance,
+            version: version
           };
 
           console.log(`Upserting trial balance data:`, trialBalanceData);
@@ -410,6 +417,56 @@ const TrialBalanceUploader = ({ clientId, onUploadComplete }: TrialBalanceUpload
               />
             </div>
 
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-muted/30 rounded-lg">
+              <div className="space-y-2">
+                <Label htmlFor="period-year" className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4" />
+                  Regnskapsår
+                </Label>
+                <Select value={periodYear} onValueChange={setPeriodYear}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Velg år" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: 10 }, (_, i) => {
+                      const year = new Date().getFullYear() - 5 + i;
+                      return (
+                        <SelectItem key={year} value={year.toString()}>
+                          {year}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="period-end">Periode sluttdato</Label>
+                <Input
+                  id="period-end"
+                  type="date"
+                  value={periodEndDate}
+                  onChange={(e) => setPeriodEndDate(e.target.value)}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="version">Versjon</Label>
+                <Select value={version} onValueChange={setVersion}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Velg versjon" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {['v1', 'v2', 'v3', 'v4', 'v5'].map((v) => (
+                      <SelectItem key={v} value={v}>
+                        {v.toUpperCase()}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
             <div className="bg-muted/50 rounded-lg p-4">
               <h4 className="font-medium mb-2 flex items-center gap-2">
                 <AlertCircle className="w-4 h-4" />
@@ -418,7 +475,7 @@ const TrialBalanceUploader = ({ clientId, onUploadComplete }: TrialBalanceUpload
               <div className="text-sm text-muted-foreground space-y-1">
                 <p>Filen må inneholde følgende kolonner:</p>
                 <ul className="list-disc list-inside space-y-1 ml-4">
-                  <li><strong>Kontonummer:</strong> Unikt kontonummer (påkrevd)</li>
+                  <li><strong>Kontonr:</strong> Unikt kontonummer (påkrevd)</li>
                   <li><strong>Kontonavn:</strong> Beskrivende navn for kontoen (påkrevd)</li>
                   <li><strong>Saldo i fjor:</strong> Inngående saldo (valgfri)</li>
                   <li><strong>Saldo i år:</strong> Utgående saldo (påkrevd)</li>
