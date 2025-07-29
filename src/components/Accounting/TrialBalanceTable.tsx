@@ -47,12 +47,13 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
   const handleExport = () => {
     if (!entries.length) return;
 
-    const csvHeaders = ['Kontonr', 'Kontonavn', 'Periode', 'Saldo i fjor', 'Saldo i år'];
+    const csvHeaders = ['Konto-ID', 'Periode', 'Åpningsbalanse', 'Debet', 'Kredit', 'Sluttsaldo'];
     const csvData = filteredEntries.map(entry => [
       entry.account_number,
-      entry.account_name || 'Ukjent konto',
       `${entry.period_year} (${entry.period_end_date})`,
       formatCurrency(entry.opening_balance),
+      formatCurrency(entry.debit_turnover),
+      formatCurrency(entry.credit_turnover),
       formatCurrency(entry.closing_balance)
     ]);
 
@@ -134,17 +135,18 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="text-center">Kontonr</TableHead>
-                  <TableHead className="text-center">Kontonavn</TableHead>
+                  <TableHead className="text-center">Konto-ID</TableHead>
                   <TableHead className="text-center">Periode</TableHead>
-                  <TableHead className="text-right">Saldo i fjor</TableHead>
-                  <TableHead className="text-right">Saldo i år</TableHead>
+                  <TableHead className="text-right">Åpningsbalanse</TableHead>
+                  <TableHead className="text-right">Debet</TableHead>
+                  <TableHead className="text-right">Kredit</TableHead>
+                  <TableHead className="text-right">Sluttsaldo</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredEntries.length === 0 ? (
                     <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground">
+                    <TableCell colSpan={6} className="text-center text-muted-foreground">
                       Ingen kontoer funnet
                     </TableCell>
                   </TableRow>
@@ -152,16 +154,21 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
                   <>
                     {filteredEntries.map((entry) => (
                       <TableRow key={entry.id}>
-                        <TableCell className="font-medium">{entry.account_number}</TableCell>
-                        <TableCell>{entry.account_name || 'Ukjent konto'}</TableCell>
+                        <TableCell className="font-medium">
+                          {entry.account_number} - {entry.account_name || 'Ukjent konto'}
+                        </TableCell>
                         <TableCell>{entry.period_year} ({entry.period_end_date})</TableCell>
                         <TableCell className="text-right font-mono">{formatCurrency(entry.opening_balance)}</TableCell>
+                        <TableCell className="text-right font-mono">{formatCurrency(entry.debit_turnover)}</TableCell>
+                        <TableCell className="text-right font-mono">{formatCurrency(entry.credit_turnover)}</TableCell>
                         <TableCell className="text-right font-mono">{formatCurrency(entry.closing_balance)}</TableCell>
                       </TableRow>
                     ))}
                     <TableRow className="font-bold border-t-2 bg-muted/50">
-                      <TableCell colSpan={3}>Sum</TableCell>
+                      <TableCell colSpan={2}>Sum</TableCell>
                       <TableCell className="text-right font-mono">{formatCurrency(totalOpeningBalance)}</TableCell>
+                      <TableCell className="text-right font-mono">{filteredEntries.reduce((sum, entry) => sum + entry.debit_turnover, 0)}</TableCell>
+                      <TableCell className="text-right font-mono">{filteredEntries.reduce((sum, entry) => sum + entry.credit_turnover, 0)}</TableCell>
                       <TableCell className="text-right font-mono">{formatCurrency(totalClosingBalance)}</TableCell>
                     </TableRow>
                   </>
