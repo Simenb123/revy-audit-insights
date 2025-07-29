@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Search, Download, LineChart, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Download, LineChart, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { GeneralLedgerTransaction, useGeneralLedgerData } from '@/hooks/useGeneralLedgerData';
 import { useGeneralLedgerCount } from '@/hooks/useGeneralLedgerCount';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -11,24 +11,63 @@ import { format } from 'date-fns';
 
 interface GeneralLedgerTableProps {
   clientId: string;
+  versionId?: string;
 }
 
-const GeneralLedgerTable = ({ clientId }: GeneralLedgerTableProps) => {
+const GeneralLedgerTable = ({ clientId, versionId }: GeneralLedgerTableProps) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [sortBy, setSortBy] = useState<string>('transaction_date');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const pageSize = 100;
   
-  const { data: transactions, isLoading, error } = useGeneralLedgerData(clientId, undefined, { page: currentPage, pageSize });
-  const { data: totalCount, isLoading: isCountLoading } = useGeneralLedgerCount(clientId);
-  const { data: allTransactions, isLoading: isExportLoading } = useGeneralLedgerData(clientId, undefined, undefined);
+  const { data: transactions, isLoading, error } = useGeneralLedgerData(clientId, versionId, { page: currentPage, pageSize });
+  const { data: totalCount, isLoading: isCountLoading } = useGeneralLedgerCount(clientId, versionId);
+  const { data: allTransactions, isLoading: isExportLoading } = useGeneralLedgerData(clientId, versionId, undefined);
 
-  const filteredTransactions = transactions?.filter(transaction =>
-    transaction.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    transaction.account_number.includes(searchTerm) ||
-    transaction.account_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    transaction.reference_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    transaction.voucher_number?.includes(searchTerm)
-  ) || [];
+  // Filter and sort transactions
+  const filteredAndSortedTransactions = React.useMemo(() => {
+    if (!transactions) return [];
+    
+    // Filter first
+    const filtered = transactions.filter(transaction =>
+      transaction.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      transaction.account_number.includes(searchTerm) ||
+      transaction.account_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      transaction.reference_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      transaction.voucher_number?.includes(searchTerm)
+    );
+    
+    // Then sort
+    return filtered.sort((a, b) => {
+      let aValue: any = a[sortBy as keyof GeneralLedgerTransaction];
+      let bValue: any = b[sortBy as keyof GeneralLedgerTransaction];
+      
+      // Handle date sorting
+      if (sortBy === 'transaction_date') {
+        aValue = new Date(aValue);
+        bValue = new Date(bValue);
+      }
+      
+      // Handle numeric sorting
+      if (sortBy === 'balance_amount' || sortBy === 'account_number') {
+        aValue = Number(aValue) || 0;
+        bValue = Number(bValue) || 0;
+      }
+      
+      // Handle string sorting
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        aValue = aValue.toLowerCase();
+        bValue = bValue.toLowerCase();
+      }
+      
+      if (sortOrder === 'asc') {
+        return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+      } else {
+        return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+      }
+    });
+  }, [transactions, searchTerm, sortBy, sortOrder]);
 
   const formatCurrency = (amount: number | null) => {
     if (amount === null) return '-';
@@ -40,19 +79,34 @@ const GeneralLedgerTable = ({ clientId }: GeneralLedgerTableProps) => {
   };
 
   // Calculate totals
-  const totalBalance = filteredTransactions.reduce((sum, t) => {
+  const totalBalance = filteredAndSortedTransactions.reduce((sum, t) => {
     return sum + (t.balance_amount || 0);
   }, 0);
 
-  const totalDebit = filteredTransactions.reduce((sum, t) => {
+  const totalDebit = filteredAndSortedTransactions.reduce((sum, t) => {
     if (t.balance_amount !== null && t.balance_amount > 0) return sum + t.balance_amount;
     return sum;
   }, 0);
 
-  const totalCredit = filteredTransactions.reduce((sum, t) => {
+  const totalCredit = filteredAndSortedTransactions.reduce((sum, t) => {
     if (t.balance_amount !== null && t.balance_amount < 0) return sum + Math.abs(t.balance_amount);
     return sum;
   }, 0);
+
+  // Handle sorting
+  const handleSort = (column: string) => {
+    if (sortBy === column) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(column);
+      setSortOrder('asc');
+    }
+  };
+
+  const getSortIcon = (column: string) => {
+    if (sortBy !== column) return <ArrowUpDown className="h-4 w-4" />;
+    return sortOrder === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />;
+  };
 
   const handleExport = () => {
     if (!allTransactions || allTransactions.length === 0) return;
@@ -154,16 +208,56 @@ const GeneralLedgerTable = ({ clientId }: GeneralLedgerTableProps) => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Dato</TableHead>
-                  <TableHead>Konto</TableHead>
-                  <TableHead>Beskrivelse</TableHead>
-                  <TableHead>Bilag</TableHead>
-                  <TableHead className="text-right">Beløp</TableHead>
+                  <TableHead 
+                    className="cursor-pointer hover:bg-muted/50 select-none"
+                    onClick={() => handleSort('transaction_date')}
+                  >
+                    <div className="flex items-center gap-2">
+                      Dato
+                      {getSortIcon('transaction_date')}
+                    </div>
+                  </TableHead>
+                  <TableHead 
+                    className="cursor-pointer hover:bg-muted/50 select-none"
+                    onClick={() => handleSort('account_number')}
+                  >
+                    <div className="flex items-center gap-2">
+                      Konto
+                      {getSortIcon('account_number')}
+                    </div>
+                  </TableHead>
+                  <TableHead 
+                    className="cursor-pointer hover:bg-muted/50 select-none"
+                    onClick={() => handleSort('description')}
+                  >
+                    <div className="flex items-center gap-2">
+                      Beskrivelse
+                      {getSortIcon('description')}
+                    </div>
+                  </TableHead>
+                  <TableHead 
+                    className="cursor-pointer hover:bg-muted/50 select-none"
+                    onClick={() => handleSort('voucher_number')}
+                  >
+                    <div className="flex items-center gap-2">
+                      Bilag
+                      {getSortIcon('voucher_number')}
+                    </div>
+                  </TableHead>
+                  <TableHead 
+                    className="text-right cursor-pointer hover:bg-muted/50 select-none"
+                    onClick={() => handleSort('balance_amount')}
+                  >
+                    <div className="flex items-center justify-end gap-2">
+                      Beløp
+                      {getSortIcon('balance_amount')}
+                    </div>
+                  </TableHead>
                   <TableHead>Referanse</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredTransactions.length === 0 ? (
+                {filteredAndSortedTransactions.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center text-muted-foreground">
                       Ingen transaksjoner funnet
@@ -171,7 +265,7 @@ const GeneralLedgerTable = ({ clientId }: GeneralLedgerTableProps) => {
                   </TableRow>
                 ) : (
                   <>
-                    {filteredTransactions.map((transaction) => (
+                    {filteredAndSortedTransactions.map((transaction) => (
                       <TableRow key={transaction.id}>
                         <TableCell>
                           {format(new Date(transaction.transaction_date), 'dd.MM.yyyy')}
@@ -201,7 +295,7 @@ const GeneralLedgerTable = ({ clientId }: GeneralLedgerTableProps) => {
 
           <div className="flex items-center justify-between">
             <div className="text-sm text-muted-foreground">
-              {searchTerm ? `Viser ${filteredTransactions.length} filtrerte av ${transactions?.length || 0} transaksjoner på denne siden` : `Side ${currentPage} av ${totalPages}`}
+              {searchTerm ? `Viser ${filteredAndSortedTransactions.length} filtrerte av ${transactions?.length || 0} transaksjoner på denne siden` : `Side ${currentPage} av ${totalPages}`}
             </div>
             
             {!searchTerm && (

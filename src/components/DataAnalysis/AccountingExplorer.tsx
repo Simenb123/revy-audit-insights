@@ -19,7 +19,7 @@ import GeneralLedgerTable from '@/components/Accounting/GeneralLedgerTable';
 import TrialBalanceTable from '@/components/Accounting/TrialBalanceTable';
 import ValidationPanel from '@/components/Accounting/ValidationPanel';
 import { useAccountingData } from '@/hooks/useAccountingData';
-import { useAvailableVersions } from '@/hooks/useAvailableVersions';
+import { useAccountingVersions, useActiveVersion } from '@/hooks/useAccountingVersions';
 import { useAccountingYear } from '@/hooks/useAccountingYear';
 import { format } from 'date-fns';
 
@@ -29,20 +29,6 @@ const materialityThresholds = {
   clearlyTrivial: 150000
 };
 
-// Helper function to create version options from available versions
-const createVersionOptions = (versions: string[], accountingYear: number): DocumentVersion[] => {
-  return versions.map((version, index) => ({
-    id: version,
-    version_name: `${version} (${accountingYear})`,
-    created_at: new Date().toISOString(),
-    client_audit_action_id: `action_${index}`,
-    content: '',
-    change_source: 'upload' as const,
-    created_by_user_id: 'user',
-    change_description: null as string | null
-  }));
-};
-
 interface AccountingExplorerProps {
   clientId: string;
 }
@@ -50,12 +36,33 @@ interface AccountingExplorerProps {
 const AccountingExplorer = ({ clientId }: AccountingExplorerProps) => {
   const [activeTab, setActiveTab] = useState('overview');
   const { accountingYear } = useAccountingYear(clientId);
-  const { data: availableVersions = ['v1'] } = useAvailableVersions(clientId);
+  const { data: versions = [] } = useAccountingVersions(clientId);
+  const { data: activeVersion } = useActiveVersion(clientId);
   const { data: accountingData, isLoading } = useAccountingData(clientId);
   
-  // Create version options from available versions
-  const versionOptions = createVersionOptions(availableVersions, accountingYear);
-  const [selectedVersion, setSelectedVersion] = useState<DocumentVersion>(versionOptions[0]);
+  // Convert accounting versions to DocumentVersion format
+  const versionOptions: DocumentVersion[] = versions.map(version => ({
+    id: version.id,
+    version_name: `${version.file_name} (v${version.version_number})`,
+    created_at: version.uploaded_at,
+    client_audit_action_id: version.id,
+    content: JSON.stringify({
+      totalTransactions: version.total_transactions,
+      totalDebitAmount: version.total_debit_amount,
+      totalCreditAmount: version.total_credit_amount,
+      balanceDifference: version.balance_difference
+    }),
+    change_source: 'upload' as const,
+    created_by_user_id: version.uploaded_by || 'system',
+    change_description: `Uploaded ${version.file_name} with ${version.total_transactions} transactions`
+  }));
+
+  // Use active version as default, or first version if available
+  const defaultVersion = activeVersion 
+    ? versionOptions.find(v => v.id === activeVersion.id) || versionOptions[0]
+    : versionOptions[0];
+  
+  const [selectedVersion, setSelectedVersion] = useState<DocumentVersion | undefined>(defaultVersion);
 
   const tabItems = [
     { id: 'overview', label: 'Oversikt', icon: Database },
@@ -67,6 +74,23 @@ const AccountingExplorer = ({ clientId }: AccountingExplorerProps) => {
   const handleVersionChange = (version: DocumentVersion) => {
     setSelectedVersion(version);
   };
+
+  // Don't render if no versions or selected version
+  if (!versions.length || !selectedVersion) {
+    return (
+      <div className="space-y-6">
+        <MaterialityBanner thresholds={materialityThresholds} />
+        <Card>
+          <CardHeader>
+            <CardTitle>Ingen regnskapsdata funnet</CardTitle>
+            <CardDescription>
+              Last opp hovedbok for å se regnskapsanalyse
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
   
   return (
     <div className="space-y-6">
@@ -106,7 +130,7 @@ const AccountingExplorer = ({ clientId }: AccountingExplorerProps) => {
             
             {activeTab === 'ledger' && (
               <div className="space-y-4">
-                <GeneralLedgerTable clientId={clientId} />
+                <GeneralLedgerTable clientId={clientId} versionId={selectedVersion.id} />
               </div>
             )}
             
