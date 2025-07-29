@@ -49,7 +49,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ className = '' }) => {
     : session?.user?.email || 'Bruker';
 
   return (
-    <header className="sticky top-0 z-50 bg-revio-500 border-b border-revio-600 flex items-center justify-between px-6 py-3 text-white h-16 shadow-sm">
+    <header className="sticky top-0 z-50 bg-revio-500 border-b border-revio-600 flex items-center justify-between px-6 py-3 text-white h-[var(--header-height)] shadow-sm">
       <div className="flex items-center gap-4">
         <div className="flex items-center">
           <Link

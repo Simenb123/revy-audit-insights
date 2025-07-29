@@ -27,7 +27,8 @@
   --sidebar-width-icon: 56px;  /* Shadcn sidebar variable */
   --right-sidebar-width: 360px;
   --right-sidebar-width-collapsed: 32px;
-  --header-height: 4rem;
+  /* Slightly reduced header height */
+  --header-height: 3.5rem;
 
   /* CSS Grid Layout Variables */
   --grid-left-sidebar: var(--sidebar-width);
