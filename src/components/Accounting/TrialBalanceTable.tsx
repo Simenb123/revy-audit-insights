@@ -9,15 +9,24 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 interface TrialBalanceTableProps {
   clientId: string;
+  selectedVersion?: string;
+  accountingYear?: number;
 }
 
-const TrialBalanceTable = ({ clientId }: TrialBalanceTableProps) => {
+const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialBalanceTableProps) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const { data: trialBalanceEntries, isLoading, error } = useTrialBalanceData(clientId);
+  const { data: trialBalanceEntries, isLoading, error } = useTrialBalanceData(clientId, selectedVersion, accountingYear);
 
   const entries = trialBalanceEntries || [];
   
-  const filteredEntries = entries.filter(entry =>
+  // Filter entries by version and accounting year if provided
+  const filteredByPeriod = entries.filter(entry => {
+    if (accountingYear && entry.period_year !== accountingYear) return false;
+    if (selectedVersion && entry.version && entry.version !== selectedVersion) return false;
+    return true;
+  });
+  
+  const filteredEntries = filteredByPeriod.filter(entry =>
     entry.account_number.toString().includes(searchTerm) ||
     entry.account_name.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -101,7 +110,9 @@ const TrialBalanceTable = ({ clientId }: TrialBalanceTableProps) => {
           <div>
             <CardTitle>Saldobalanse</CardTitle>
             <p className="text-sm text-muted-foreground mt-1">
-              Viser {entries.length} kontoer
+              Viser {filteredByPeriod.length} kontoer
+              {selectedVersion && ` (versjon: ${selectedVersion})`}
+              {accountingYear && ` (år: ${accountingYear})`}
             </p>
           </div>
           <Button variant="outline" size="sm" onClick={handleExport}>
@@ -171,7 +182,7 @@ const TrialBalanceTable = ({ clientId }: TrialBalanceTableProps) => {
 
           <div className="flex justify-between items-center text-sm">
             <div className="text-sm text-muted-foreground">
-              Viser {filteredEntries.length} av {entries.length} kontoer
+              Viser {filteredEntries.length} av {filteredByPeriod.length} kontoer
             </div>
             
             <div className="text-muted-foreground">

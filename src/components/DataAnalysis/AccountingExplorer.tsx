@@ -19,6 +19,8 @@ import GeneralLedgerTable from '@/components/Accounting/GeneralLedgerTable';
 import TrialBalanceTable from '@/components/Accounting/TrialBalanceTable';
 import ValidationPanel from '@/components/Accounting/ValidationPanel';
 import { useAccountingData } from '@/hooks/useAccountingData';
+import { useAvailableVersions } from '@/hooks/useAvailableVersions';
+import { useAccountingYear } from '@/hooks/useAccountingYear';
 import { format } from 'date-fns';
 
 const materialityThresholds = {
@@ -27,13 +29,19 @@ const materialityThresholds = {
   clearlyTrivial: 150000
 };
 
-// Mock data for document versions
-const documentVersions: DocumentVersion[] = [
-  { id: '1', version_name: 'Årsregnskap 2023 (sist importert)', created_at: '2024-03-15T12:00:00.000Z', client_audit_action_id: 'a1', content: '', change_source: 'user', created_by_user_id: 'u1', change_description: null },
-  { id: '2', version_name: 'Årsregnskap 2023 (innlevert)', created_at: '2024-03-10T12:00:00.000Z', client_audit_action_id: 'a1', content: '', change_source: 'user', created_by_user_id: 'u1', change_description: null },
-  { id: '3', version_name: 'Årsregnskap 2023 (utkast)', created_at: '2024-02-28T12:00:00.000Z', client_audit_action_id: 'a1', content: '', change_source: 'user', created_by_user_id: 'u1', change_description: null },
-  { id: '4', version_name: 'Årsregnskap 2022 (endelig)', created_at: '2023-03-20T12:00:00.000Z', client_audit_action_id: 'a1', content: '', change_source: 'user', created_by_user_id: 'u1', change_description: null },
-];
+// Helper function to create version options from available versions
+const createVersionOptions = (versions: string[], accountingYear: number): DocumentVersion[] => {
+  return versions.map((version, index) => ({
+    id: version,
+    version_name: `${version} (${accountingYear})`,
+    created_at: new Date().toISOString(),
+    client_audit_action_id: `action_${index}`,
+    content: '',
+    change_source: 'upload' as const,
+    created_by_user_id: 'user',
+    change_description: null as string | null
+  }));
+};
 
 interface AccountingExplorerProps {
   clientId: string;
@@ -41,8 +49,13 @@ interface AccountingExplorerProps {
 
 const AccountingExplorer = ({ clientId }: AccountingExplorerProps) => {
   const [activeTab, setActiveTab] = useState('overview');
-  const [selectedVersion, setSelectedVersion] = useState<DocumentVersion>(documentVersions[0]);
+  const { accountingYear } = useAccountingYear(clientId);
+  const { data: availableVersions = ['v1'] } = useAvailableVersions(clientId);
   const { data: accountingData, isLoading } = useAccountingData(clientId);
+  
+  // Create version options from available versions
+  const versionOptions = createVersionOptions(availableVersions, accountingYear);
+  const [selectedVersion, setSelectedVersion] = useState<DocumentVersion>(versionOptions[0]);
 
   const tabItems = [
     { id: 'overview', label: 'Oversikt', icon: Database },
@@ -61,7 +74,7 @@ const AccountingExplorer = ({ clientId }: AccountingExplorerProps) => {
       
       <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4">
         <VersionSelector 
-          versions={documentVersions}
+          versions={versionOptions}
           selectedVersion={selectedVersion}
           onSelectVersion={handleVersionChange}
         />
@@ -96,7 +109,11 @@ const AccountingExplorer = ({ clientId }: AccountingExplorerProps) => {
             )}
             
             {activeTab === 'balances' && (
-              <TrialBalanceTable clientId={clientId} />
+              <TrialBalanceTable 
+                clientId={clientId} 
+                selectedVersion={selectedVersion.id}
+                accountingYear={accountingYear}
+              />
             )}
             
             {activeTab === 'journal' && (
@@ -117,7 +134,7 @@ const AccountingExplorer = ({ clientId }: AccountingExplorerProps) => {
         
         <div className="w-full xl:w-72 xl:flex-shrink-0 space-y-4">
           <ValidationPanel clientId={clientId} />
-          <VersionHistory versions={documentVersions} selectedVersion={selectedVersion} />
+          <VersionHistory versions={versionOptions} selectedVersion={selectedVersion} />
         </div>
       </div>
     </div>

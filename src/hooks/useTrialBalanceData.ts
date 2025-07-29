@@ -15,12 +15,12 @@ export interface TrialBalanceEntry {
   version?: string;
 }
 
-export const useTrialBalanceData = (clientId: string) => {
+export const useTrialBalanceData = (clientId: string, version?: string, year?: number) => {
   return useQuery({
-    queryKey: ['trial-balance', clientId],
+    queryKey: ['trial-balance', clientId, version, year],
     queryFn: async () => {
       // First try to get data from trial_balances table with account details
-      const { data: directTrialBalance, error: trialBalanceError } = await supabase
+      let query = supabase
         .from('trial_balances')
         .select(`
           id,
@@ -37,6 +37,16 @@ export const useTrialBalanceData = (clientId: string) => {
           client_chart_of_accounts!inner(account_number, account_name)
         `)
         .eq('client_id', clientId);
+
+      // Add filters for version and year if provided
+      if (version) {
+        query = query.eq('version', version);
+      }
+      if (year) {
+        query = query.eq('period_year', year);
+      }
+
+      const { data: directTrialBalance, error: trialBalanceError } = await query;
 
       console.log('Trial balance query result:', { directTrialBalance, trialBalanceError });
 
