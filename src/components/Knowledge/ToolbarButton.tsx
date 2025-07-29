@@ -13,18 +13,16 @@ type ToolbarButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> &
 
 const ToolbarButton = ({ tooltip, children, ...props }: ToolbarButtonProps) => {
   return (
-    <TooltipProvider delayDuration={100}>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Toggle size="sm" {...props} aria-label={tooltip}>
-            {children}
-          </Toggle>
-        </TooltipTrigger>
-        <TooltipContent>
-          <p>{tooltip}</p>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Toggle size="sm" {...props} aria-label={tooltip}>
+          {children}
+        </Toggle>
+      </TooltipTrigger>
+      <TooltipContent>
+        <p>{tooltip}</p>
+      </TooltipContent>
+    </Tooltip>
   );
 };
 
