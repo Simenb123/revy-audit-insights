@@ -3,10 +3,13 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
-import { Upload, Database, AlertCircle } from 'lucide-react';
+import { Upload, Database, AlertCircle, AlertTriangle, CheckCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import EnhancedPreview from '@/components/DataUpload/EnhancedPreview';
 import { DataManagementPanel } from '@/components/DataUpload/DataManagementPanel';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { useCreateVersion } from '@/hooks/useAccountingVersions';
 import { 
   processExcelFile, 
   processCSVFile, 
@@ -34,7 +37,11 @@ const GeneralLedgerUploader = ({ clientId, onUploadComplete }: GeneralLedgerUplo
   const [showMapping, setShowMapping] = useState(false);
   const [convertedData, setConvertedData] = useState<any[]>([]);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [step, setStep] = useState<'select' | 'upload' | 'success'>('select');
+  const [step, setStep] = useState<'select' | 'preview' | 'upload' | 'success'>('select');
+  const [balanceCheck, setBalanceCheck] = useState<{ isBalanced: boolean; totalDebit: number; totalCredit: number; difference: number } | null>(null);
+  const [versionId, setVersionId] = useState<string | null>(null);
+  
+  const createVersion = useCreateVersion();
 
   const handleFileSelect = async (file: File) => {
     const extension = file.name.toLowerCase().split('.').pop();
@@ -65,17 +72,36 @@ const GeneralLedgerUploader = ({ clientId, onUploadComplete }: GeneralLedgerUplo
     if (!filePreview || !selectedFile) return;
     
     setShowMapping(false);
-    setStep('upload');
     
     try {
       const convertedData = convertDataWithMapping(filePreview, mapping);
       setConvertedData(convertedData);
-      await uploadGeneralLedger(convertedData, selectedFile);
+      
+      // Calculate balance check
+      const totalDebit = convertedData.reduce((sum, t) => sum + (t.debit_amount || 0), 0);
+      const totalCredit = convertedData.reduce((sum, t) => sum + (t.credit_amount || 0), 0);
+      const difference = Math.abs(totalDebit - totalCredit);
+      const isBalanced = difference < 0.01; // Allow for small rounding errors
+      
+      setBalanceCheck({
+        isBalanced,
+        totalDebit,
+        totalCredit,
+        difference
+      });
+      
+      setStep('preview');
     } catch (error) {
       toast.error('Feil ved datakonvertering');
       console.error(error);
       setStep('select');
     }
+  };
+
+  const handleConfirmUpload = async () => {
+    if (!selectedFile || !convertedData.length) return;
+    setStep('upload');
+    await uploadGeneralLedger(convertedData, selectedFile);
   };
 
   const findOrCreateAccounts = async (accountNumbers: string[]) => {
@@ -128,7 +154,7 @@ const GeneralLedgerUploader = ({ clientId, onUploadComplete }: GeneralLedgerUplo
   };
 
   const uploadGeneralLedger = async (transactions: any[], file: File) => {
-    if (!clientId) return;
+    if (!clientId || !balanceCheck) return;
 
     try {
       setUploadProgress(10);
@@ -152,6 +178,24 @@ const GeneralLedgerUploader = ({ clientId, onUploadComplete }: GeneralLedgerUplo
       if (batchError) throw batchError;
       setUploadProgress(20);
 
+      // Create new version
+      const version = await createVersion.mutateAsync({
+        clientId,
+        fileName: file.name,
+        uploadBatchId: batch.id,
+        totalTransactions: transactions.length,
+        totalDebitAmount: balanceCheck.totalDebit,
+        totalCreditAmount: balanceCheck.totalCredit,
+        balanceDifference: balanceCheck.difference,
+        metadata: {
+          isBalanced: balanceCheck.isBalanced,
+          uploadDate: new Date().toISOString()
+        }
+      });
+
+      setVersionId(version.id);
+      setUploadProgress(30);
+
       // Get all unique account numbers from transactions
       const accountNumbers = transactions
         .map(t => t.account_number?.toString())
@@ -159,7 +203,7 @@ const GeneralLedgerUploader = ({ clientId, onUploadComplete }: GeneralLedgerUplo
 
       // Find or create accounts and get UUID mapping
       const accountMapping = await findOrCreateAccounts(accountNumbers);
-      setUploadProgress(30);
+      setUploadProgress(40);
 
       // Insert transactions into general_ledger_transactions table
       let successful = 0;
@@ -182,8 +226,9 @@ const GeneralLedgerUploader = ({ clientId, onUploadComplete }: GeneralLedgerUplo
             const transactionDate = new Date(transaction.date);
             return {
               client_id: clientId,
-              client_account_id: accountId, // Use UUID instead of string
+              client_account_id: accountId,
               upload_batch_id: batch.id,
+              version_id: version.id, // Link to version
               transaction_date: transactionDate.toISOString().split('T')[0],
               period_year: transactionDate.getFullYear(),
               period_month: transactionDate.getMonth() + 1,
@@ -195,7 +240,7 @@ const GeneralLedgerUploader = ({ clientId, onUploadComplete }: GeneralLedgerUplo
               reference_number: transaction.reference || null,
             };
           })
-          .filter(Boolean); // Remove null entries
+          .filter(Boolean);
         
         try {
           const { error: insertError } = await supabase
@@ -204,15 +249,16 @@ const GeneralLedgerUploader = ({ clientId, onUploadComplete }: GeneralLedgerUplo
             
           if (insertError) {
             console.error('Error inserting batch:', insertError);
-            toast.error(`Feil ved lagring av transaksjonsbatch: ${insertError.message}`);
+            throw insertError;
           } else {
             successful += transactionsToInsert.length;
           }
         } catch (error) {
           console.error(`Error processing batch:`, error);
+          throw error;
         }
         
-        setUploadProgress(30 + ((i + batchTransactions.length) / transactions.length) * 60);
+        setUploadProgress(40 + ((i + batchTransactions.length) / transactions.length) * 50);
       }
 
       // Update batch status
@@ -228,7 +274,7 @@ const GeneralLedgerUploader = ({ clientId, onUploadComplete }: GeneralLedgerUplo
       setUploadProgress(100);
       setStep('success');
       
-      toast.success(`${successful} av ${transactions.length} transaksjoner ble importert`);
+      toast.success(`Ny versjon av hovedbok opprettet med ${successful} transaksjoner`);
       onUploadComplete?.();
       
     } catch (error: any) {
@@ -291,6 +337,115 @@ const GeneralLedgerUploader = ({ clientId, onUploadComplete }: GeneralLedgerUplo
               dataType: "Hovedbok"
             }}
           />
+        </div>
+      )}
+
+      {step === 'preview' && balanceCheck && (
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CheckCircle className="w-5 h-5" />
+                Bekreft hovedbok-opplasting
+              </CardTitle>
+              <CardDescription>
+                Sjekk balansen før opplasting av {selectedFile?.name}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Balance Check Results */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <p className="text-sm text-blue-600 font-medium">Total Debet</p>
+                  <p className="text-2xl font-bold text-blue-800">
+                    {balanceCheck.totalDebit.toLocaleString('nb-NO', { 
+                      style: 'currency', 
+                      currency: 'NOK',
+                      minimumFractionDigits: 2
+                    })}
+                  </p>
+                </div>
+                <div className="bg-green-50 p-4 rounded-lg">
+                  <p className="text-sm text-green-600 font-medium">Total Kredit</p>
+                  <p className="text-2xl font-bold text-green-800">
+                    {balanceCheck.totalCredit.toLocaleString('nb-NO', { 
+                      style: 'currency', 
+                      currency: 'NOK',
+                      minimumFractionDigits: 2
+                    })}
+                  </p>
+                </div>
+                <div className={`p-4 rounded-lg ${balanceCheck.isBalanced ? 'bg-green-50' : 'bg-red-50'}`}>
+                  <p className={`text-sm font-medium ${balanceCheck.isBalanced ? 'text-green-600' : 'text-red-600'}`}>
+                    Differanse
+                  </p>
+                  <p className={`text-2xl font-bold ${balanceCheck.isBalanced ? 'text-green-800' : 'text-red-800'}`}>
+                    {balanceCheck.difference.toLocaleString('nb-NO', { 
+                      style: 'currency', 
+                      currency: 'NOK',
+                      minimumFractionDigits: 2
+                    })}
+                  </p>
+                </div>
+              </div>
+
+              {/* Balance Status Alert */}
+              <Alert className={balanceCheck.isBalanced ? 'border-green-200 bg-green-50' : 'border-yellow-200 bg-yellow-50'}>
+                <div className="flex items-center gap-2">
+                  {balanceCheck.isBalanced ? (
+                    <CheckCircle className="w-4 h-4 text-green-600" />
+                  ) : (
+                    <AlertTriangle className="w-4 h-4 text-yellow-600" />
+                  )}
+                  <AlertDescription className={balanceCheck.isBalanced ? 'text-green-800' : 'text-yellow-800'}>
+                    {balanceCheck.isBalanced 
+                      ? "✅ Hovedboken er balansert - debet og kredit stemmer overens!"
+                      : `⚠️ Hovedboken er ikke balansert. Differanse på ${balanceCheck.difference.toFixed(2)} kr. Dette kan indikere feil i dataene.`
+                    }
+                  </AlertDescription>
+                </div>
+              </Alert>
+
+              {/* Transaction Summary */}
+              <div className="bg-muted/50 p-4 rounded-lg">
+                <h4 className="font-medium mb-2">Opplastingssammendrag</h4>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">Antall transaksjoner:</span>
+                    <span className="ml-2 font-medium">{convertedData.length}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Filnavn:</span>
+                    <span className="ml-2 font-medium">{selectedFile?.name}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex justify-between">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setStep('select')}
+                >
+                  Avbryt
+                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setShowMapping(true)}
+                  >
+                    Tilbake til mapping
+                  </Button>
+                  <Button 
+                    onClick={handleConfirmUpload}
+                    className={balanceCheck.isBalanced ? '' : 'bg-yellow-600 hover:bg-yellow-700'}
+                  >
+                    {balanceCheck.isBalanced ? 'Bekreft opplasting' : 'Fortsett likevel'}
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       )}
 

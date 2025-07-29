@@ -17,22 +17,20 @@ export interface GeneralLedgerTransaction {
   period_month: number;
 }
 
-export const useGeneralLedgerData = (clientId: string) => {
+export const useGeneralLedgerData = (clientId: string, versionId?: string, pagination?: { page: number; pageSize: number }) => {
   return useQuery({
-    queryKey: ['general-ledger-v4', clientId],
+    queryKey: ['general-ledger-v5', clientId, versionId, pagination],
     queryFn: async () => {
-      console.log('🔍 Fetching general ledger data for client:', clientId);
-      console.log('🔍 Using chunked loading to fetch ALL transactions');
+      console.log('🔍 Fetching general ledger data for client:', clientId, 'version:', versionId);
       
-      let allTransactions: any[] = [];
-      let offset = 0;
-      const chunkSize = 1000;
-      let hasMore = true;
-
-      while (hasMore) {
-        console.log(`📦 Fetching chunk ${Math.floor(offset / chunkSize) + 1}, offset: ${offset}`);
+      // If pagination is specified, fetch only that page
+      if (pagination) {
+        const { page, pageSize } = pagination;
+        const offset = (page - 1) * pageSize;
         
-        const { data, error } = await supabase
+        console.log(`📦 Fetching page ${page}, ${pageSize} records, offset: ${offset}`);
+        
+        let query = supabase
           .from('general_ledger_transactions')
           .select(`
             id,
@@ -46,12 +44,110 @@ export const useGeneralLedgerData = (clientId: string) => {
             voucher_number,
             period_year,
             period_month,
+            version_id,
             client_chart_of_accounts!inner(
               account_number,
               account_name
             )
           `)
-          .eq('client_id', clientId)
+          .eq('client_id', clientId);
+
+        // Filter by version if specified
+        if (versionId) {
+          query = query.eq('version_id', versionId);
+        } else {
+          // If no version specified, get active version data
+          const { data: activeVersion } = await supabase
+            .from('accounting_data_versions')
+            .select('id')
+            .eq('client_id', clientId)
+            .eq('is_active', true)
+            .single();
+          
+          if (activeVersion) {
+            query = query.eq('version_id', activeVersion.id);
+          }
+        }
+
+        const { data, error } = await query
+          .order('transaction_date', { ascending: false })
+          .range(offset, offset + pageSize - 1);
+
+        if (error) throw error;
+
+        // Transform data
+        const transformedData = (data || []).map((transaction: any) => ({
+          id: transaction.id,
+          transaction_date: transaction.transaction_date,
+          client_account_id: transaction.client_account_id,
+          account_number: transaction.client_chart_of_accounts?.account_number || 'Ukjent',
+          account_name: transaction.client_chart_of_accounts?.account_name || 'Ukjent konto',
+          description: transaction.description,
+          debit_amount: transaction.debit_amount,
+          credit_amount: transaction.credit_amount,
+          balance_amount: transaction.balance_amount,
+          reference_number: transaction.reference_number || '',
+          voucher_number: transaction.voucher_number || '',
+          period_year: transaction.period_year,
+          period_month: transaction.period_month,
+        })) as GeneralLedgerTransaction[];
+
+        return transformedData;
+      }
+
+      // Otherwise, use chunked loading for full data (export, validation)
+      console.log('🔍 Using chunked loading to fetch ALL transactions');
+      
+      let allTransactions: any[] = [];
+      let offset = 0;
+      const chunkSize = 1000;
+      let hasMore = true;
+
+      while (hasMore) {
+        console.log(`📦 Fetching chunk ${Math.floor(offset / chunkSize) + 1}, offset: ${offset}`);
+        
+        let query = supabase
+          .from('general_ledger_transactions')
+          .select(`
+            id,
+            transaction_date,
+            client_account_id,
+            description,
+            debit_amount,
+            credit_amount,
+            balance_amount,
+            reference_number,
+            voucher_number,
+            period_year,
+            period_month,
+            version_id,
+            client_chart_of_accounts!inner(
+              account_number,
+              account_name
+            )
+          `)
+          .eq('client_id', clientId);
+
+        // Filter by version if specified
+        if (versionId) {
+          query = query.eq('version_id', versionId);
+        } else {
+          // If no version specified, get active version data
+          if (offset === 0) { // Only check once
+            const { data: activeVersion } = await supabase
+              .from('accounting_data_versions')
+              .select('id')
+              .eq('client_id', clientId)
+              .eq('is_active', true)
+              .single();
+            
+            if (activeVersion) {
+              query = query.eq('version_id', activeVersion.id);
+            }
+          }
+        }
+
+        const { data, error } = await query
           .order('transaction_date', { ascending: false })
           .range(offset, offset + chunkSize - 1);
 
