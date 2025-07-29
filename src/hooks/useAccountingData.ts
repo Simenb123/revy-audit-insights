@@ -3,72 +3,62 @@ import { supabase } from '@/integrations/supabase/client';
 
 export const useAccountingData = (clientId: string) => {
   return useQuery({
-    queryKey: ['accounting-data-v3', clientId],
+    queryKey: ['accounting-data-v4', clientId],
     queryFn: async () => {
-      // Get chart of accounts count
-      const { data: chartData, error: chartError } = await supabase
-        .from('client_chart_of_accounts')
-        .select('id')
-        .eq('client_id', clientId);
+      try {
+        // Run all queries in parallel for better performance
+        const [chartResult, transactionsResult, batchResult] = await Promise.all([
+          // Get chart of accounts count
+          supabase
+            .from('client_chart_of_accounts')
+            .select('id', { count: 'exact', head: true })
+            .eq('client_id', clientId),
+          
+          // Get general ledger transactions count efficiently using COUNT
+          supabase
+            .from('general_ledger_transactions')
+            .select('id', { count: 'exact', head: true })
+            .eq('client_id', clientId),
+          
+          // Get latest general ledger upload batch
+          supabase
+            .from('upload_batches')
+            .select('id, created_at, file_name, status')
+            .eq('client_id', clientId)
+            .eq('batch_type', 'general_ledger')
+            .eq('status', 'completed')
+            .order('created_at', { ascending: false })
+            .limit(1)
+        ]);
 
-      if (chartError) throw chartError;
+        // Handle errors from parallel queries
+        if (chartResult.error) throw chartResult.error;
+        if (transactionsResult.error) throw transactionsResult.error;
+        if (batchResult.error) throw batchResult.error;
 
-      // Get general ledger transactions count using chunked approach
-      console.log('🔢 Counting ALL general ledger transactions for client:', clientId);
-      
-      let totalTransactionCount = 0;
-      let offset = 0;
-      const chunkSize = 1000;
-      let hasMore = true;
+        const chartOfAccountsCount = chartResult.count || 0;
+        const generalLedgerTransactionsCount = transactionsResult.count || 0;
+        const latestGeneralLedgerUpload = batchResult.data?.[0] || null;
 
-      while (hasMore) {
-        const { data: chunkData, error: transactionsError } = await supabase
-          .from('general_ledger_transactions')
-          .select('id')
-          .eq('client_id', clientId)
-          .range(offset, offset + chunkSize - 1);
+        console.log('📊 ACCOUNTING DATA - Optimized counts:', {
+          chartOfAccountsCount,
+          generalLedgerTransactionsCount,
+          latestUpload: latestGeneralLedgerUpload?.file_name
+        });
 
-        if (transactionsError) throw transactionsError;
-
-        if (!chunkData || chunkData.length === 0) {
-          hasMore = false;
-          break;
-        }
-
-        totalTransactionCount += chunkData.length;
-        
-        if (chunkData.length < chunkSize) {
-          hasMore = false;
-        } else {
-          offset += chunkSize;
-        }
+        return {
+          chartOfAccountsCount,
+          generalLedgerTransactionsCount,
+          latestGeneralLedgerUpload,
+          hasGeneralLedger: generalLedgerTransactionsCount > 0,
+        };
+      } catch (error) {
+        console.error('Error in useAccountingData:', error);
+        throw error;
       }
-
-      console.log('📊 ACCOUNTING DATA - Total transactions found:', totalTransactionCount);
-
-      // Get latest general ledger upload batch
-      const { data: batchData, error: batchError } = await supabase
-        .from('upload_batches')
-        .select('id, created_at, file_name, status')
-        .eq('client_id', clientId)
-        .eq('batch_type', 'general_ledger')
-        .eq('status', 'completed')
-        .order('created_at', { ascending: false })
-        .limit(1);
-
-      if (batchError) throw batchError;
-
-      const latestGeneralLedgerUpload = batchData?.[0] || null;
-
-      return {
-        chartOfAccountsCount: chartData?.length || 0,
-        generalLedgerTransactionsCount: totalTransactionCount,
-        latestGeneralLedgerUpload: latestGeneralLedgerUpload,
-        hasGeneralLedger: totalTransactionCount > 0,
-      };
     },
     enabled: !!clientId,
-    staleTime: 0, // Force fresh data
-    gcTime: 0, // No caching for debugging
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
   });
 };
