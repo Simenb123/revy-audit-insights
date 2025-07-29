@@ -8,7 +8,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { Client } from "@/types/revio";
-import AccountingYearSelector from "@/components/AccountingYearSelector";
+import AccountingYearHeader from "@/components/AccountingYearHeader";
 
 interface ClientBreadcrumbProps {
   client: Client;
@@ -16,24 +16,26 @@ interface ClientBreadcrumbProps {
 
 const ClientBreadcrumb = ({ client }: ClientBreadcrumbProps) => {
   return (
-    <div className="flex items-center justify-between">
-      <Breadcrumb>
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink href="/klienter">Klienter</BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbPage>{client.company_name}</BreadcrumbPage>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
-      
-      <AccountingYearSelector 
-        clientId={client.id} 
-        variant="minimal"
-        showLabel={false}
-      />
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/klienter">Klienter</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>{client.company_name}</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+        
+        <AccountingYearHeader 
+          clientId={client.id} 
+          variant="compact"
+          showSelector={true}
+        />
+      </div>
     </div>
   );
 };

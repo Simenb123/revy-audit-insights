@@ -2,16 +2,14 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Upload, Database, AlertCircle, Calendar, Plus } from 'lucide-react';
+import { Upload, Database, AlertCircle, Calendar } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import EnhancedPreview from '@/components/DataUpload/EnhancedPreview';
 import { DataManagementPanel } from '@/components/DataUpload/DataManagementPanel';
 import { useAccountingYear } from '@/hooks/useAccountingYear';
-import { useAvailableVersions } from '@/hooks/useAvailableVersions';
+import AccountingYearHeader from '@/components/AccountingYearHeader';
+// Removed useAvailableVersions since versions are now auto-generated
 import { 
   processExcelFile, 
   processCSVFile, 
@@ -32,9 +30,8 @@ interface TrialBalanceUploaderProps {
 }
 
 const TrialBalanceUploader = ({ clientId, onUploadComplete }: TrialBalanceUploaderProps) => {
-  // Get accounting year and available versions
+  // Get accounting year for auto-generating version and period dates
   const { accountingYear, isLoading: yearLoading } = useAccountingYear(clientId || '');
-  const { data: availableVersions = ['v1'], isLoading: versionsLoading } = useAvailableVersions(clientId || '');
   
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<FilePreview | null>(null);
@@ -42,21 +39,9 @@ const TrialBalanceUploader = ({ clientId, onUploadComplete }: TrialBalanceUpload
   const [convertedData, setConvertedData] = useState<any[]>([]);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [step, setStep] = useState<'select' | 'upload' | 'success'>('select');
-  const [periodYear, setPeriodYear] = useState<string>('2024');
-  const [periodStartDate, setPeriodStartDate] = useState<string>('2024-01-01');
-  const [periodEndDate, setPeriodEndDate] = useState<string>('2024-12-31');
-  const [version, setVersion] = useState<string>('v1');
-  const [customVersion, setCustomVersion] = useState<string>('');
-  const [showCustomVersion, setShowCustomVersion] = useState(false);
+  // Manual version and period inputs removed - now auto-generated
 
-  // Update default values when accounting year changes
-  React.useEffect(() => {
-    if (accountingYear) {
-      setPeriodYear(accountingYear.toString());
-      setPeriodStartDate(`${accountingYear}-01-01`);
-      setPeriodEndDate(`${accountingYear}-12-31`);
-    }
-  }, [accountingYear]);
+  // Period dates automatically derived from accounting year
 
   const handleFileSelect = async (file: File) => {
     const extension = file.name.toLowerCase().split('.').pop();
@@ -115,8 +100,28 @@ const TrialBalanceUploader = ({ clientId, onUploadComplete }: TrialBalanceUpload
   const uploadTrialBalance = async (accounts: any[], file: File) => {
     if (!clientId) return;
 
-    // Use custom version if provided, otherwise use selected version
-    const finalVersion = showCustomVersion && customVersion ? customVersion : version;
+    // Auto-generate version based on existing uploads for this year
+    let finalVersion = 'v1';
+    try {
+      const { data: existingVersions } = await supabase
+        .from('trial_balances')
+        .select('version')
+        .eq('client_id', clientId)
+        .gte('period_start_date', `${accountingYear}-01-01`)
+        .lt('period_start_date', `${accountingYear + 1}-01-01`)
+        .order('version', { ascending: false })
+        .limit(1);
+
+      if (existingVersions && existingVersions.length > 0) {
+        const latestVersion = existingVersions[0].version;
+        const versionNumber = parseInt(latestVersion.replace('v', '')) + 1;
+        finalVersion = `v${versionNumber}`;
+      }
+    } catch (error) {
+      console.warn('Could not determine version, using v1:', error);
+    }
+
+    console.log(`📄 Auto-generated version: ${finalVersion} for year ${accountingYear}`);
 
     try {
       setUploadProgress(10);
@@ -320,31 +325,34 @@ const TrialBalanceUploader = ({ clientId, onUploadComplete }: TrialBalanceUpload
             return result;
           };
 
-          const openingBalance = parseNumber(account.opening_balance);
-          const debitTurnover = parseNumber(account.debit_turnover);
-          const creditTurnover = parseNumber(account.credit_turnover);
-          const closingBalance = parseNumber(account.closing_balance);
-
-          console.log(`Account ${accountNumber} values:`, {
-            openingBalance,
-            debitTurnover,
-            creditTurnover,
-            closingBalance,
-            accountId
+          // Parse saldo values - prioritize closing_balance, fall back to balance_current_year
+          const openingBalance = parseNumber(account.opening_balance || account.balance_last_year);
+          const closingBalance = parseNumber(account.closing_balance || account.balance_current_year || account.saldo);
+          
+          console.log(`💰 Parsed balances for ${accountNumber}:`, {
+            opening_balance: openingBalance,
+            closing_balance: closingBalance,
+            raw_data: {
+              opening_balance: account.opening_balance,
+              closing_balance: account.closing_balance,
+              balance_current_year: account.balance_current_year,
+              balance_last_year: account.balance_last_year,
+              saldo: account.saldo
+            }
           });
 
           const trialBalanceData = {
             client_id: clientId,
             client_account_id: accountId,
-            upload_batch_id: batch.id,
-            period_year: parseInt(periodYear),
-            period_start_date: periodStartDate,
-            period_end_date: periodEndDate,
             opening_balance: openingBalance,
-            debit_turnover: debitTurnover,
-            credit_turnover: creditTurnover,
             closing_balance: closingBalance,
-            version: finalVersion
+            debit_turnover: 0, // Not used for trial balance
+            credit_turnover: 0, // Not used for trial balance
+            period_start_date: `${accountingYear}-01-01`,
+            period_end_date: `${accountingYear}-12-31`,
+            period_year: accountingYear,
+            version: finalVersion,
+            upload_batch_id: batch.id
           };
 
           console.log(`Upserting trial balance data:`, trialBalanceData);
@@ -392,7 +400,7 @@ const TrialBalanceUploader = ({ clientId, onUploadComplete }: TrialBalanceUpload
       setUploadProgress(100);
       setStep('success');
       
-      toast.success(`${trialBalanceInserted} saldobalanse-poster og ${chartOfAccountsCreated} nye kontoer ble importert`);
+      toast.success(`${trialBalanceInserted} saldobalanse-poster (${finalVersion}) og ${chartOfAccountsCreated} nye kontoer ble importert for ${accountingYear}`);
       onUploadComplete?.();
       
     } catch (error: any) {
@@ -455,7 +463,7 @@ const TrialBalanceUploader = ({ clientId, onUploadComplete }: TrialBalanceUpload
               Last opp saldobalanse
             </CardTitle>
             <CardDescription>
-              Last opp Excel eller CSV-fil med saldobalanse for {clientId}
+              Last opp Excel eller CSV-fil med saldobalanse for regnskapsåret {accountingYear}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -479,97 +487,15 @@ const TrialBalanceUploader = ({ clientId, onUploadComplete }: TrialBalanceUpload
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-muted/30 rounded-lg">
-              <div className="space-y-2">
-                <Label htmlFor="period-year" className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4" />
-                  Regnskapsår
-                </Label>
-                <Select value={periodYear} onValueChange={setPeriodYear}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Velg år" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Array.from({ length: 10 }, (_, i) => {
-                      const year = new Date().getFullYear() - 5 + i;
-                      return (
-                        <SelectItem key={year} value={year.toString()}>
-                          {year}
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="period-start">Periode startdato</Label>
-                <Input
-                  id="period-start"
-                  type="date"
-                  value={periodStartDate}
-                  onChange={(e) => setPeriodStartDate(e.target.value)}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="period-end">Periode sluttdato</Label>
-                <Input
-                  id="period-end"
-                  type="date"
-                  value={periodEndDate}
-                  onChange={(e) => setPeriodEndDate(e.target.value)}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="version">Versjon</Label>
-                {!showCustomVersion ? (
-                  <div className="flex gap-2">
-                    <Select value={version} onValueChange={setVersion}>
-                      <SelectTrigger className="flex-1">
-                        <SelectValue placeholder="Velg versjon" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {(availableVersions || ['v1']).map((v) => (
-                          <SelectItem key={v} value={v}>
-                            {v.toUpperCase()}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setShowCustomVersion(true)}
-                      className="px-3"
-                    >
-                      <Plus className="w-4 h-4" />
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="f.eks. v6, interim1, etc."
-                      value={customVersion}
-                      onChange={(e) => setCustomVersion(e.target.value)}
-                      className="flex-1"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setShowCustomVersion(false);
-                        setCustomVersion('');
-                      }}
-                    >
-                      ✕
-                    </Button>
-                  </div>
-                )}
-              </div>
+            <AccountingYearHeader 
+              clientId={clientId || ''} 
+              variant="full"
+              showSelector={false}
+            />
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-4">
+              <p className="text-sm text-blue-600">
+                📄 Versjon genereres automatisk basert på antall opplastninger for dette året
+              </p>
             </div>
 
             <div className="bg-muted/50 rounded-lg p-4">
