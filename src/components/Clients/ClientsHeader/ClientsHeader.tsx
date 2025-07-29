@@ -80,7 +80,7 @@ const ClientsHeader: React.FC<ClientsHeaderProps> = ({
             ) : (
               <RefreshCw size={16} className={isRefreshing ? "animate-spin" : ""} />
             )}
-            {hasApiError ? "API-feil" : isRefreshing ? "Oppdaterer..." : "Oppdater fra Brønnøysund"}
+            {hasApiError ? "API-feil" : isRefreshing ? "Oppdaterer..." : "Oppdater fra BRREG"}
           </Button>
         </div>
       </div>
