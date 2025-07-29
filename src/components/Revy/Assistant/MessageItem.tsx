@@ -16,7 +16,7 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, compact = false }) =
   
   return (
     <div className={cn(
-      "relative animate-fade-in overflow-hidden",
+      "relative animate-fade-in overflow-hidden clear-both",
       compact ? "mb-2" : "mb-4"
     )}>
       {isAssistant ? (
@@ -36,10 +36,7 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, compact = false }) =
         </div>
       )}
       
-      <div className={cn(
-        "overflow-hidden",
-        compact ? "ml-10" : "ml-16"
-      )}>
+      <div className="overflow-hidden">
         <div className={cn(
           "rounded-lg px-4 py-3 break-words",
           compact ? "text-xs px-3 py-2" : "text-sm",
