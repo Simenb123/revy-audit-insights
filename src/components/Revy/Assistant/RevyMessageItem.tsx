@@ -23,52 +23,66 @@ const RevyMessageItem: React.FC<RevyMessageItemProps> = ({ message, compact = fa
   
   return (
     <div className={cn(
-      "flex gap-2",
+      "flex gap-3",
       compact ? "mb-2" : "mb-4",
       !isAssistant && "flex-row-reverse"
     )}>
       {isAssistant && (
-        <div className="flex flex-col items-center">
-          <RevyAvatar size={compact ? "md" : "lg"} />
-          <span className="text-[10px] mt-1">AI-Revy</span>
+        <div className="flex-shrink-0">
+          <RevyAvatar size={compact ? "lg" : "xl"} />
         </div>
       )}
       
       <div className={cn(
-        "flex flex-col",
-        "max-w-full",
+        "flex flex-col min-w-0 flex-1",
         !isAssistant && "items-end"
       )}>
+        {isAssistant && (
+          <div className="flex items-center justify-between w-full mb-1">
+            <span className="text-xs font-medium text-foreground">AI-Revy</span>
+            {!compact && (
+              <span className="text-xs text-muted-foreground">
+                {message.timestamp.toLocaleTimeString('nb-NO', { 
+                  hour: '2-digit', 
+                  minute: '2-digit' 
+                })}
+              </span>
+            )}
+          </div>
+        )}
+        
         <div className={cn(
-          'rounded-lg px-3 py-2 text-sm break-words',
+          'rounded-lg px-3 py-2 text-sm break-words w-full',
           compact ? 'text-xs' : 'text-sm',
           isAssistant ? 'bg-muted text-foreground' : 'bg-primary text-primary-foreground'
         )}>
           {message.content}
         </div>
-        {isAssistant && !compact && (
-          <button
-            type="button"
-            onClick={handleSpeak}
-            className="mt-1 text-muted-foreground hover:text-foreground self-start"
-          >
-            <Volume2 className="h-4 w-4" />
-          </button>
-        )}
         
-        {!compact && (
-          <span className="text-xs text-muted-foreground mt-1">
-            {message.timestamp.toLocaleTimeString('nb-NO', { 
-              hour: '2-digit', 
-              minute: '2-digit' 
-            })}
-          </span>
-        )}
+        <div className="flex items-center justify-between w-full mt-1">
+          {isAssistant && !compact && (
+            <button
+              type="button"
+              onClick={handleSpeak}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <Volume2 className="h-4 w-4" />
+            </button>
+          )}
+          {!isAssistant && !compact && (
+            <span className="text-xs text-muted-foreground">
+              {message.timestamp.toLocaleTimeString('nb-NO', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+              })}
+            </span>
+          )}
+        </div>
       </div>
       
       {!isAssistant && (
         <div className={cn(
-          "rounded-full bg-primary text-primary-foreground flex items-center justify-center font-medium",
+          "rounded-full bg-primary text-primary-foreground flex items-center justify-center font-medium flex-shrink-0",
           compact ? "h-6 w-6 text-xs" : "h-8 w-8 text-sm"
         )}>
           D

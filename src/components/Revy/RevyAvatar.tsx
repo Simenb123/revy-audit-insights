@@ -4,7 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 
 interface RevyAvatarProps {
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg' | 'xl';
   className?: string;
 }
 
@@ -12,7 +12,8 @@ const RevyAvatar: React.FC<RevyAvatarProps> = ({ size = 'md', className }) => {
   const sizeClasses = {
     sm: 'h-6 w-6',
     md: 'h-9 w-9',
-    lg: 'h-12 w-12'
+    lg: 'h-12 w-12',
+    xl: 'h-16 w-16'
   };
 
   return (
