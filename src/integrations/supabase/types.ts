@@ -5178,6 +5178,7 @@ export type Database = {
           period_end_date: string
           period_year: number
           upload_batch_id: string | null
+          version: string | null
         }
         Insert: {
           client_account_id: string
@@ -5191,6 +5192,7 @@ export type Database = {
           period_end_date: string
           period_year: number
           upload_batch_id?: string | null
+          version?: string | null
         }
         Update: {
           client_account_id?: string
@@ -5204,6 +5206,7 @@ export type Database = {
           period_end_date?: string
           period_year?: number
           upload_batch_id?: string | null
+          version?: string | null
         }
         Relationships: [
           {

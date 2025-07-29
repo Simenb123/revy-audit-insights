@@ -11,6 +11,7 @@ export interface TrialBalanceEntry {
   opening_balance: number;
   period_end_date: string;
   period_year: number;
+  version?: string;
 }
 
 export const useTrialBalanceData = (clientId: string) => {

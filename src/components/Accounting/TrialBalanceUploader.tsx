@@ -290,7 +290,7 @@ const TrialBalanceUploader = ({ clientId, onUploadComplete }: TrialBalanceUpload
           const { data: insertedData, error: trialBalanceError } = await supabase
             .from('trial_balances')
             .upsert(trialBalanceData, {
-              onConflict: 'client_id,client_account_id,period_end_date',
+              onConflict: 'client_id,client_account_id,period_end_date,version',
               ignoreDuplicates: false
             })
             .select();
