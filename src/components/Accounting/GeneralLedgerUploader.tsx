@@ -38,7 +38,7 @@ const GeneralLedgerUploader = ({ clientId, onUploadComplete }: GeneralLedgerUplo
   const [convertedData, setConvertedData] = useState<any[]>([]);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [step, setStep] = useState<'select' | 'preview' | 'upload' | 'success'>('select');
-  const [balanceCheck, setBalanceCheck] = useState<{ isBalanced: boolean; totalDebit: number; totalCredit: number; difference: number } | null>(null);
+  const [previewData, setPreviewData] = useState<{ data: any[]; totalBalance: number; balanceDifference: number; isBalanced: boolean; fileName: string } | null>(null);
   const [versionId, setVersionId] = useState<string | null>(null);
   
   const createVersion = useCreateVersion();
@@ -78,16 +78,17 @@ const GeneralLedgerUploader = ({ clientId, onUploadComplete }: GeneralLedgerUplo
       setConvertedData(convertedData);
       
       // Calculate balance check
-      const totalDebit = convertedData.reduce((sum, t) => sum + (t.debit_amount || 0), 0);
-      const totalCredit = convertedData.reduce((sum, t) => sum + (t.credit_amount || 0), 0);
-      const difference = Math.abs(totalDebit - totalCredit);
-      const isBalanced = difference < 0.01; // Allow for small rounding errors
+      const totalBalance = convertedData.reduce((sum, t) => sum + (t.balance_amount || 0), 0);
+      const tolerance = 0.01; // Allow small rounding differences
+      const balanceDifference = Math.abs(totalBalance);
+      const isBalanced = balanceDifference <= tolerance;
       
-      setBalanceCheck({
-        isBalanced,
-        totalDebit,
-        totalCredit,
-        difference
+      setPreviewData({
+        data: convertedData,
+        totalBalance,
+        balanceDifference,
+        isBalanced: balanceDifference <= tolerance,
+        fileName: selectedFile.name
       });
       
       setStep('preview');
@@ -99,7 +100,7 @@ const GeneralLedgerUploader = ({ clientId, onUploadComplete }: GeneralLedgerUplo
   };
 
   const handleConfirmUpload = async () => {
-    if (!selectedFile || !convertedData.length) return;
+    if (!selectedFile || !convertedData.length || !previewData) return;
     setStep('upload');
     await uploadGeneralLedger(convertedData, selectedFile);
   };
@@ -154,7 +155,7 @@ const GeneralLedgerUploader = ({ clientId, onUploadComplete }: GeneralLedgerUplo
   };
 
   const uploadGeneralLedger = async (transactions: any[], file: File) => {
-    if (!clientId || !balanceCheck) return;
+    if (!clientId || !previewData) return;
 
     try {
       setUploadProgress(10);
@@ -184,11 +185,12 @@ const GeneralLedgerUploader = ({ clientId, onUploadComplete }: GeneralLedgerUplo
         fileName: file.name,
         uploadBatchId: batch.id,
         totalTransactions: transactions.length,
-        totalDebitAmount: balanceCheck.totalDebit,
-        totalCreditAmount: balanceCheck.totalCredit,
-        balanceDifference: balanceCheck.difference,
+        totalDebitAmount: 0, // Not used for general ledger
+        totalCreditAmount: 0, // Not used for general ledger
+        balanceDifference: previewData.balanceDifference,
         metadata: {
-          isBalanced: balanceCheck.isBalanced,
+          isBalanced: previewData.isBalanced,
+          totalBalance: previewData.totalBalance,
           uploadDate: new Date().toISOString()
         }
       });
@@ -234,9 +236,9 @@ const GeneralLedgerUploader = ({ clientId, onUploadComplete }: GeneralLedgerUplo
               period_month: transactionDate.getMonth() + 1,
               voucher_number: transaction.reference || null,
               description: transaction.description || '',
-              debit_amount: transaction.debit_amount || null,
-              credit_amount: transaction.credit_amount || null,
-              balance_amount: (transaction.debit_amount || 0) - (transaction.credit_amount || 0),
+              debit_amount: null as any, // Not used for general ledger
+              credit_amount: null as any, // Not used for general ledger
+              balance_amount: transaction.balance_amount || 0,
               reference_number: transaction.reference || null,
             };
           })
@@ -340,7 +342,7 @@ const GeneralLedgerUploader = ({ clientId, onUploadComplete }: GeneralLedgerUplo
         </div>
       )}
 
-      {step === 'preview' && balanceCheck && (
+      {step === 'preview' && previewData && (
         <div className="space-y-6">
           <Card>
             <CardHeader>
@@ -354,33 +356,23 @@ const GeneralLedgerUploader = ({ clientId, onUploadComplete }: GeneralLedgerUplo
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Balance Check Results */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="bg-blue-50 p-4 rounded-lg">
-                  <p className="text-sm text-blue-600 font-medium">Total Debet</p>
+                  <p className="text-sm text-blue-600 font-medium">Total Balanse</p>
                   <p className="text-2xl font-bold text-blue-800">
-                    {balanceCheck.totalDebit.toLocaleString('nb-NO', { 
+                    {previewData.totalBalance.toLocaleString('nb-NO', { 
                       style: 'currency', 
                       currency: 'NOK',
                       minimumFractionDigits: 2
                     })}
                   </p>
                 </div>
-                <div className="bg-green-50 p-4 rounded-lg">
-                  <p className="text-sm text-green-600 font-medium">Total Kredit</p>
-                  <p className="text-2xl font-bold text-green-800">
-                    {balanceCheck.totalCredit.toLocaleString('nb-NO', { 
-                      style: 'currency', 
-                      currency: 'NOK',
-                      minimumFractionDigits: 2
-                    })}
+                <div className={`p-4 rounded-lg ${previewData.isBalanced ? 'bg-green-50' : 'bg-red-50'}`}>
+                  <p className={`text-sm font-medium ${previewData.isBalanced ? 'text-green-600' : 'text-red-600'}`}>
+                    Balanse Differanse
                   </p>
-                </div>
-                <div className={`p-4 rounded-lg ${balanceCheck.isBalanced ? 'bg-green-50' : 'bg-red-50'}`}>
-                  <p className={`text-sm font-medium ${balanceCheck.isBalanced ? 'text-green-600' : 'text-red-600'}`}>
-                    Differanse
-                  </p>
-                  <p className={`text-2xl font-bold ${balanceCheck.isBalanced ? 'text-green-800' : 'text-red-800'}`}>
-                    {balanceCheck.difference.toLocaleString('nb-NO', { 
+                  <p className={`text-2xl font-bold ${previewData.isBalanced ? 'text-green-800' : 'text-red-800'}`}>
+                    {previewData.balanceDifference.toLocaleString('nb-NO', { 
                       style: 'currency', 
                       currency: 'NOK',
                       minimumFractionDigits: 2
@@ -390,17 +382,17 @@ const GeneralLedgerUploader = ({ clientId, onUploadComplete }: GeneralLedgerUplo
               </div>
 
               {/* Balance Status Alert */}
-              <Alert className={balanceCheck.isBalanced ? 'border-green-200 bg-green-50' : 'border-yellow-200 bg-yellow-50'}>
+              <Alert className={previewData.isBalanced ? 'border-green-200 bg-green-50' : 'border-yellow-200 bg-yellow-50'}>
                 <div className="flex items-center gap-2">
-                  {balanceCheck.isBalanced ? (
+                  {previewData.isBalanced ? (
                     <CheckCircle className="w-4 h-4 text-green-600" />
                   ) : (
                     <AlertTriangle className="w-4 h-4 text-yellow-600" />
                   )}
-                  <AlertDescription className={balanceCheck.isBalanced ? 'text-green-800' : 'text-yellow-800'}>
-                    {balanceCheck.isBalanced 
-                      ? "✅ Hovedboken er balansert - debet og kredit stemmer overens!"
-                      : `⚠️ Hovedboken er ikke balansert. Differanse på ${balanceCheck.difference.toFixed(2)} kr. Dette kan indikere feil i dataene.`
+                  <AlertDescription className={previewData.isBalanced ? 'text-green-800' : 'text-yellow-800'}>
+                    {previewData.isBalanced 
+                      ? "✅ Hovedboken har en god balanse!"
+                      : `⚠️ Hovedbokens balanse avviker med ${previewData.balanceDifference.toFixed(2)} kr fra null. Dette kan være normalt for hovedbok-data.`
                     }
                   </AlertDescription>
                 </div>
@@ -438,9 +430,9 @@ const GeneralLedgerUploader = ({ clientId, onUploadComplete }: GeneralLedgerUplo
                   </Button>
                   <Button 
                     onClick={handleConfirmUpload}
-                    className={balanceCheck.isBalanced ? '' : 'bg-yellow-600 hover:bg-yellow-700'}
+                    className={previewData.isBalanced ? '' : 'bg-yellow-600 hover:bg-yellow-700'}
                   >
-                    {balanceCheck.isBalanced ? 'Bekreft opplasting' : 'Fortsett likevel'}
+                    {previewData.isBalanced ? 'Bekreft opplasting' : 'Fortsett likevel'}
                   </Button>
                 </div>
               </div>

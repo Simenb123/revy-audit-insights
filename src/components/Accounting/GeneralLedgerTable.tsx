@@ -34,14 +34,16 @@ const GeneralLedgerTable = ({ clientId }: GeneralLedgerTableProps) => {
   };
 
   // Calculate totals
+  const totalBalance = filteredTransactions.reduce((sum, t) => {
+    return sum + (t.balance_amount || 0);
+  }, 0);
+
   const totalDebit = filteredTransactions.reduce((sum, t) => {
-    if (t.debit_amount !== null) return sum + t.debit_amount;
     if (t.balance_amount !== null && t.balance_amount > 0) return sum + t.balance_amount;
     return sum;
   }, 0);
 
   const totalCredit = filteredTransactions.reduce((sum, t) => {
-    if (t.credit_amount !== null) return sum + t.credit_amount;
     if (t.balance_amount !== null && t.balance_amount < 0) return sum + Math.abs(t.balance_amount);
     return sum;
   }, 0);
@@ -50,14 +52,13 @@ const GeneralLedgerTable = ({ clientId }: GeneralLedgerTableProps) => {
     if (!transactions || transactions.length === 0) return;
     
     const csvContent = [
-      ['Dato', 'Konto', 'Beskrivelse', 'Bilag', 'Debet', 'Kredit', 'Referanse'].join(','),
+      ['Dato', 'Konto', 'Beskrivelse', 'Bilag', 'Beløp', 'Referanse'].join(','),
       ...transactions.map(transaction => [
         new Date(transaction.transaction_date).toLocaleDateString('nb-NO'),
         transaction.account_number,
         `"${transaction.description}"`,
         transaction.voucher_number || '',
-        transaction.debit_amount || (transaction.balance_amount && transaction.balance_amount > 0 ? transaction.balance_amount : 0),
-        transaction.credit_amount || (transaction.balance_amount && transaction.balance_amount < 0 ? Math.abs(transaction.balance_amount) : 0),
+        transaction.balance_amount || 0,
         transaction.reference_number || ''
       ].join(','))
     ].join('\n');
@@ -140,15 +141,14 @@ const GeneralLedgerTable = ({ clientId }: GeneralLedgerTableProps) => {
                   <TableHead>Konto</TableHead>
                   <TableHead>Beskrivelse</TableHead>
                   <TableHead>Bilag</TableHead>
-                  <TableHead className="text-right">Debet</TableHead>
-                  <TableHead className="text-right">Kredit</TableHead>
+                  <TableHead className="text-right">Beløp</TableHead>
                   <TableHead>Referanse</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredTransactions.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center text-muted-foreground">
+                    <TableCell colSpan={6} className="text-center text-muted-foreground">
                       Ingen transaksjoner funnet
                     </TableCell>
                   </TableRow>
@@ -165,21 +165,15 @@ const GeneralLedgerTable = ({ clientId }: GeneralLedgerTableProps) => {
                         </TableCell>
                         <TableCell>{transaction.description}</TableCell>
                         <TableCell>{transaction.voucher_number}</TableCell>
-                         <TableCell className="text-right">
-                           {transaction.debit_amount !== null ? formatCurrency(transaction.debit_amount) : 
-                            (transaction.balance_amount !== null && transaction.balance_amount > 0 ? formatCurrency(transaction.balance_amount) : '-')}
-                         </TableCell>
-                         <TableCell className="text-right">
-                           {transaction.credit_amount !== null ? formatCurrency(transaction.credit_amount) : 
-                            (transaction.balance_amount !== null && transaction.balance_amount < 0 ? formatCurrency(Math.abs(transaction.balance_amount)) : '-')}
-                         </TableCell>
+                        <TableCell className="text-right">
+                          {transaction.balance_amount !== null ? formatCurrency(transaction.balance_amount) : '-'}
+                        </TableCell>
                         <TableCell>{transaction.reference_number}</TableCell>
                       </TableRow>
                     ))}
                     <TableRow className="font-bold border-t-2 bg-muted/50">
                       <TableCell colSpan={4}>Sum</TableCell>
-                      <TableCell className="text-right">{formatCurrency(totalDebit)}</TableCell>
-                      <TableCell className="text-right">{formatCurrency(totalCredit)}</TableCell>
+                      <TableCell className="text-right">{formatCurrency(totalBalance)}</TableCell>
                       <TableCell>-</TableCell>
                     </TableRow>
                   </>
