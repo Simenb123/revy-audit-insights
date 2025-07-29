@@ -322,6 +322,75 @@ export type Database = {
           },
         ]
       }
+      accounting_data_versions: {
+        Row: {
+          balance_difference: number | null
+          client_id: string
+          created_at: string
+          file_name: string
+          id: string
+          is_active: boolean
+          metadata: Json | null
+          total_credit_amount: number | null
+          total_debit_amount: number | null
+          total_transactions: number
+          updated_at: string
+          upload_batch_id: string | null
+          uploaded_at: string
+          uploaded_by: string | null
+          version_number: number
+        }
+        Insert: {
+          balance_difference?: number | null
+          client_id: string
+          created_at?: string
+          file_name: string
+          id?: string
+          is_active?: boolean
+          metadata?: Json | null
+          total_credit_amount?: number | null
+          total_debit_amount?: number | null
+          total_transactions?: number
+          updated_at?: string
+          upload_batch_id?: string | null
+          uploaded_at?: string
+          uploaded_by?: string | null
+          version_number: number
+        }
+        Update: {
+          balance_difference?: number | null
+          client_id?: string
+          created_at?: string
+          file_name?: string
+          id?: string
+          is_active?: boolean
+          metadata?: Json | null
+          total_credit_amount?: number | null
+          total_debit_amount?: number | null
+          total_transactions?: number
+          updated_at?: string
+          upload_batch_id?: string | null
+          uploaded_at?: string
+          uploaded_by?: string | null
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accounting_data_versions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accounting_data_versions_upload_batch_id_fkey"
+            columns: ["upload_batch_id"]
+            isOneToOne: false
+            referencedRelation: "upload_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       action_ai_metadata: {
         Row: {
           action_template_id: string | null
@@ -3245,6 +3314,7 @@ export type Database = {
           reference_number: string | null
           transaction_date: string
           upload_batch_id: string | null
+          version_id: string | null
           voucher_number: string | null
         }
         Insert: {
@@ -3261,6 +3331,7 @@ export type Database = {
           reference_number?: string | null
           transaction_date: string
           upload_batch_id?: string | null
+          version_id?: string | null
           voucher_number?: string | null
         }
         Update: {
@@ -3277,6 +3348,7 @@ export type Database = {
           reference_number?: string | null
           transaction_date?: string
           upload_batch_id?: string | null
+          version_id?: string | null
           voucher_number?: string | null
         }
         Relationships: [
@@ -3292,6 +3364,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "general_ledger_transactions_version_id_fkey"
+            columns: ["version_id"]
+            isOneToOne: false
+            referencedRelation: "accounting_data_versions"
             referencedColumns: ["id"]
           },
         ]
@@ -5603,6 +5682,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_next_version_number: {
+        Args: { p_client_id: string }
+        Returns: number
+      }
       get_potential_clients_summary: {
         Args: { p_auditor_org_number: string }
         Returns: {
@@ -5673,6 +5756,10 @@ export type Database = {
           title: string
           content: string
         }[]
+      }
+      set_active_version: {
+        Args: { p_version_id: string }
+        Returns: undefined
       }
       user_owns_client: {
         Args: { client_uuid: string }
