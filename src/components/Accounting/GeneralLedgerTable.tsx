@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Search, Download } from 'lucide-react';
+import { Search, Download, LineChart } from 'lucide-react';
 import { GeneralLedgerTransaction, useGeneralLedgerData } from '@/hooks/useGeneralLedgerData';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
@@ -102,10 +102,21 @@ const GeneralLedgerTable = ({ clientId }: GeneralLedgerTableProps) => {
     <Card>
       <CardHeader>
         <div className="flex justify-between items-center">
-          <CardTitle>Hovedbok</CardTitle>
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <LineChart className="h-5 w-5" />
+              Hovedbok
+            </CardTitle>
+            <p className="text-sm text-muted-foreground mt-1">
+              Viser {transactions?.length || 0} transaksjoner
+              {transactions && transactions.length > 0 && (
+                <span> • Periode: {format(new Date(transactions[transactions.length - 1].transaction_date), 'dd.MM.yyyy')} - {format(new Date(transactions[0].transaction_date), 'dd.MM.yyyy')}</span>
+              )}
+            </p>
+          </div>
           <Button variant="outline" size="sm" onClick={handleExport}>
             <Download className="h-4 w-4 mr-2" />
-            Eksporter
+            Eksporter alle
           </Button>
         </div>
       </CardHeader>

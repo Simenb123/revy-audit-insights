@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Search, Download } from 'lucide-react';
+import { Search, Download, Layers } from 'lucide-react';
 import { TrialBalanceEntry, useTrialBalanceData } from '@/hooks/useTrialBalanceData';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -106,16 +106,20 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
       <CardHeader>
         <div className="flex justify-between items-center">
           <div>
-            <CardTitle>Saldobalanse</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Layers className="h-5 w-5" />
+              Saldobalanse
+            </CardTitle>
             <p className="text-sm text-muted-foreground mt-1">
               Viser {filteredByPeriod.length} kontoer
-              {selectedVersion && ` (versjon: ${selectedVersion})`}
-              {accountingYear && ` (år: ${accountingYear})`}
+              {selectedVersion && ` • Versjon: ${selectedVersion}`}
+              {accountingYear && ` • År: ${accountingYear}`}
+              {entries.length > 0 && ` • Periode slutt: ${entries[0].period_end_date}`}
             </p>
           </div>
           <Button variant="outline" size="sm" onClick={handleExport}>
             <Download className="h-4 w-4 mr-2" />
-            Eksporter
+            Eksporter alle
           </Button>
         </div>
       </CardHeader>

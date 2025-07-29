@@ -19,7 +19,7 @@ export const useAccountingData = (clientId: string) => {
         .select('id, created_at')
         .eq('client_id', clientId)
         .order('created_at', { ascending: false })
-        .limit(100000); // Set explicit high limit to count all transactions
+        .limit(1000000); // Set very high limit to count all transactions
 
       if (transactionsError) throw transactionsError;
 
