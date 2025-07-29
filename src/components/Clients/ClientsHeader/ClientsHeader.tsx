@@ -2,7 +2,7 @@
 import React from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, RefreshCw, AlertTriangle, UserPlus, Database } from 'lucide-react';
+import { Search, RefreshCw, AlertTriangle, UserPlus } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -12,7 +12,6 @@ import {
 } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
 import TestDataFilter from './TestDataFilter';
-import { BulkDiscoveryDialog } from '../BulkDiscoveryDialog';
 
 interface ClientsHeaderProps {
   title: string;
@@ -62,14 +61,7 @@ const ClientsHeader: React.FC<ClientsHeaderProps> = ({
               onToggle={onTestDataToggle} 
             />
           )}
-          
-          <BulkDiscoveryDialog>
-            <Button variant="outline" className="flex items-center gap-2">
-              <Database size={16} />
-              Bulk discovery
-            </Button>
-          </BulkDiscoveryDialog>
-          
+
           {onAddClient && (
             <Button onClick={onAddClient} className="flex items-center gap-2">
               <UserPlus size={16} />
