@@ -156,7 +156,7 @@ const TrialBalanceUploader = ({ clientId, onUploadComplete }: TrialBalanceUpload
 
       for (const account of accounts) {
         const accountNumber = account.account_number?.toString();
-        console.log('Processing account:', { accountNumber, account_name: account.account_name });
+        console.log('Processing account:', accountNumber, account.account_name);
         
         if (!accountNumber) {
           console.warn('Skipping account with no account_number:', account);

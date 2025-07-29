@@ -38,14 +38,11 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
     }).format(amount);
   };
 
-  const totalDebit = filteredEntries.reduce((sum, entry) => sum + entry.debit_turnover, 0);
-  const totalCredit = filteredEntries.reduce((sum, entry) => sum + entry.credit_turnover, 0);
   const totalOpeningBalance = filteredEntries.reduce((sum, entry) => sum + entry.opening_balance, 0);
   const totalClosingBalance = filteredEntries.reduce((sum, entry) => sum + entry.closing_balance, 0);
   
-  // Check if trial balance is balanced (difference should be close to 0)
-  const balanceDifference = Math.abs(totalDebit - totalCredit);
-  const isBalanced = balanceDifference <= 1; // Allow rounding up to 1 kr
+  // For trial balance (saldoliste), we don't need to check debit/credit balance
+  // We just need to show opening and closing balances
 
   const handleExport = () => {
     if (!entries.length) return;
@@ -167,13 +164,6 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
                       <TableCell className="text-right font-mono">{formatCurrency(totalOpeningBalance)}</TableCell>
                       <TableCell className="text-right font-mono">{formatCurrency(totalClosingBalance)}</TableCell>
                     </TableRow>
-                    {!isBalanced && (
-                      <TableRow className="border-t border-destructive bg-destructive/10">
-                        <TableCell colSpan={5} className="text-center text-destructive font-medium">
-                          ⚠️ Advarsel: Saldobalansen er ikke i balanse. Differanse: {formatCurrency(balanceDifference)}
-                        </TableCell>
-                      </TableRow>
-                    )}
                   </>
                 )}
               </TableBody>

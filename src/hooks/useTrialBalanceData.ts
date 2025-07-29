@@ -48,10 +48,8 @@ export const useTrialBalanceData = (clientId: string, version?: string, year?: n
 
       const { data: directTrialBalance, error: trialBalanceError } = await query;
 
-      console.log('Trial balance query result:', { directTrialBalance, trialBalanceError });
-
       if (!trialBalanceError && directTrialBalance && directTrialBalance.length > 0) {
-        console.log('Found direct trial balance data:', directTrialBalance.length, 'entries');
+        console.log('✅ Found trial balance data:', directTrialBalance.length, 'accounts');
         const mappedData = directTrialBalance.map(tb => ({
           id: tb.id,
           account_number: tb.client_chart_of_accounts?.account_number || 'Ukjent',
@@ -63,8 +61,9 @@ export const useTrialBalanceData = (clientId: string, version?: string, year?: n
           period_start_date: tb.period_start_date || `${tb.period_year}-01-01`,
           period_end_date: tb.period_end_date,
           period_year: tb.period_year,
+          version: tb.version,
         })) as TrialBalanceEntry[];
-        console.log('Mapped trial balance data:', mappedData);
+        console.log('📊 Trial Balance Summary: Opening=', mappedData.reduce((sum, item) => sum + item.opening_balance, 0), 'Closing=', mappedData.reduce((sum, item) => sum + item.closing_balance, 0));
         return mappedData;
       }
 
