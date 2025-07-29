@@ -3,7 +3,7 @@ import React, { useCallback } from 'react';
 import { Editor } from '@tiptap/react';
 import { Highlighter, Link as LinkIcon } from 'lucide-react';
 import ToolbarButton from '../ToolbarButton';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 type Props = {
   editor: Editor;
@@ -27,7 +27,7 @@ const HighlightLinkGroup = ({ editor }: Props) => {
   }, [editor]);
 
   return (
-    <TooltipProvider delayDuration={100}>
+    <>
        <ToolbarButton
         tooltip="Uthev (Ctrl+Shift+H)"
         pressed={editor.isActive('highlight')}
@@ -72,7 +72,7 @@ const HighlightLinkGroup = ({ editor }: Props) => {
           <p>Uthevingsfarge</p>
         </TooltipContent>
       </Tooltip>
-    </TooltipProvider>
+    </>
   );
 };
 

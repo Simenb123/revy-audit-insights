@@ -2,7 +2,7 @@
 import React from 'react';
 import { Editor } from '@tiptap/react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 type Props = {
   editor: Editor;
@@ -24,26 +24,24 @@ const LetterSpacingGroup = ({ editor }: Props) => {
   const currentLetterSpacing = editor.getAttributes('textStyle').letterSpacing || 'unset';
 
   return (
-    <TooltipProvider delayDuration={100}>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Select value={currentLetterSpacing} onValueChange={handleLetterSpacingChange}>
-            <SelectTrigger className="w-32 h-9">
-              <SelectValue placeholder="Bokstavavstand" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="unset">Standard</SelectItem>
-              {letterSpacings.map(spacing => (
-                <SelectItem key={spacing} value={spacing}>{spacing}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </TooltipTrigger>
-        <TooltipContent>
-          <p>Bokstavavstand</p>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Select value={currentLetterSpacing} onValueChange={handleLetterSpacingChange}>
+          <SelectTrigger className="w-32 h-9">
+            <SelectValue placeholder="Bokstavavstand" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="unset">Standard</SelectItem>
+            {letterSpacings.map(spacing => (
+              <SelectItem key={spacing} value={spacing}>{spacing}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </TooltipTrigger>
+      <TooltipContent>
+        <p>Bokstavavstand</p>
+      </TooltipContent>
+    </Tooltip>
   );
 };
 

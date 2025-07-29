@@ -17,7 +17,7 @@ import {
   Brain,
   Database
 } from 'lucide-react';
-import { TooltipProvider, Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface SidebarNavProps {
   collapsed?: boolean;
@@ -106,27 +106,25 @@ const SidebarNav = ({ collapsed = false }: SidebarNavProps) => {
     
     if (collapsed) {
       return (
-        <TooltipProvider delayDuration={0} key={item.to}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Link
-                to={item.to}
-                className={cn(
-                  "flex items-center justify-center w-8 h-8 rounded-md transition-colors",
-                  active 
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground" 
-                    : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                )}
-              >
-                <Icon className="h-4 w-4" />
-                <span className="sr-only">{item.label}</span>
-              </Link>
-            </TooltipTrigger>
-            <TooltipContent side="right" className="capitalize">
-              {item.label}
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        <Tooltip key={item.to}>
+          <TooltipTrigger asChild>
+            <Link
+              to={item.to}
+              className={cn(
+                "flex items-center justify-center w-8 h-8 rounded-md transition-colors",
+                active 
+                  ? "bg-sidebar-accent text-sidebar-accent-foreground" 
+                  : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+              )}
+            >
+              <Icon className="h-4 w-4" />
+              <span className="sr-only">{item.label}</span>
+            </Link>
+          </TooltipTrigger>
+          <TooltipContent side="right" className="capitalize">
+            {item.label}
+          </TooltipContent>
+        </Tooltip>
       );
     }
 
