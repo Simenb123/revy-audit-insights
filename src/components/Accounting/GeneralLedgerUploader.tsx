@@ -75,19 +75,83 @@ const GeneralLedgerUploader = ({ clientId, onUploadComplete }: GeneralLedgerUplo
     
     try {
       const convertedData = convertDataWithMapping(filePreview, mapping);
+      console.log('=== POST-MAPPING BALANCE CALCULATION ===');
+      console.log('Converted data length:', convertedData.length);
+      console.log('Sample converted rows:', convertedData.slice(0, 3));
+      
       setConvertedData(convertedData);
       
-      // Calculate balance check
-      const totalBalance = convertedData.reduce((sum, t) => sum + (t.balance_amount || 0), 0);
-      const tolerance = 0.01; // Allow small rounding differences
-      const balanceDifference = Math.abs(totalBalance);
-      const isBalanced = balanceDifference <= tolerance;
+      // Enhanced balance calculation - handle both debit/credit and balance_amount
+      let totalBalance = 0;
+      let debitTotal = 0;
+      let creditTotal = 0;
+      let hasDebCred = false;
+      let hasBalance = false;
+      
+      convertedData.forEach((t, index) => {
+        // Convert Norwegian decimal format (comma) to dot
+        const parseAmount = (value: any): number => {
+          if (!value) return 0;
+          const numStr = value.toString().replace(/\s/g, '').replace(',', '.');
+          const num = parseFloat(numStr);
+          return isNaN(num) ? 0 : num;
+        };
+        
+        const debit = parseAmount(t.debit_amount);
+        const credit = parseAmount(t.credit_amount);
+        const balance = parseAmount(t.balance_amount);
+        
+        if (debit !== 0 || credit !== 0) hasDebCred = true;
+        if (balance !== 0) hasBalance = true;
+        
+        debitTotal += debit;
+        creditTotal += credit;
+        totalBalance += balance;
+        
+        // Log first few transactions for debugging
+        if (index < 5) {
+          console.log(`Transaction ${index + 1}:`, {
+            debit: debit,
+            credit: credit,
+            balance: balance,
+            original: { debit_amount: t.debit_amount, credit_amount: t.credit_amount, balance_amount: t.balance_amount }
+          });
+        }
+      });
+      
+      console.log('Balance calculation results:', {
+        hasDebCred,
+        hasBalance,
+        debitTotal,
+        creditTotal,
+        totalBalance,
+        debitCreditDiff: Math.abs(debitTotal - creditTotal)
+      });
+      
+      // Determine final balance and if it's balanced
+      let finalBalance;
+      let isBalanced;
+      const tolerance = 0.01;
+      
+      if (hasDebCred) {
+        // Use debit/credit difference
+        finalBalance = Math.abs(debitTotal - creditTotal);
+        isBalanced = finalBalance <= tolerance;
+      } else {
+        // Use balance_amount sum
+        finalBalance = Math.abs(totalBalance);
+        isBalanced = finalBalance <= tolerance;
+      }
+      
+      console.log('Final balance assessment:', { finalBalance, isBalanced });
+      
+      const balanceDifference = finalBalance;
       
       setPreviewData({
         data: convertedData,
-        totalBalance,
+        totalBalance: finalBalance,
         balanceDifference,
-        isBalanced: balanceDifference <= tolerance,
+        isBalanced,
         fileName: selectedFile.name
       });
       

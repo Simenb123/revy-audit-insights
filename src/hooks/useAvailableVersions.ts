@@ -6,31 +6,30 @@ export const useAvailableVersions = (clientId: string) => {
     queryKey: ['available-versions', clientId],
     queryFn: async () => {
       if (!clientId) {
-        return ['v1'];
+        return [];
       }
       
       const { data, error } = await supabase
-        .from('trial_balances')
-        .select('version')
+        .from('accounting_data_versions')
+        .select('version_number, file_name, is_active')
         .eq('client_id', clientId)
-        .order('version');
+        .order('version_number');
 
       if (error) throw error;
 
-      // Get unique versions and ensure we always have at least v1
-      const uniqueVersions = [...new Set(data.map(d => d.version).filter(Boolean))];
-      
-      // If no versions exist, return default options
-      if (uniqueVersions.length === 0) {
-        return ['v1'];
+      // If no versions exist, return default empty array
+      if (!data || data.length === 0) {
+        return [];
       }
 
-      // Sort versions naturally (v1, v2, v10, etc.)
-      return uniqueVersions.sort((a, b) => {
-        const numA = parseInt(a.replace('v', ''));
-        const numB = parseInt(b.replace('v', ''));
-        return numA - numB;
-      });
+      // Return version objects with additional info
+      return data.map(version => ({
+        value: `v${version.version_number}`,
+        label: `Versjon ${version.version_number} - ${version.file_name}`,
+        version_number: version.version_number,
+        file_name: version.file_name,
+        is_active: version.is_active
+      }));
     },
     enabled: !!clientId,
   });

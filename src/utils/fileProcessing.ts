@@ -153,6 +153,13 @@ export const GENERAL_LEDGER_FIELDS: FieldDefinition[] = [
     aliases: ['kredit', 'credit', 'credit_amount', 'haver']
   },
   {
+    key: 'balance_amount',
+    label: 'Beløp',
+    required: false,
+    type: 'number',
+    aliases: ['beløp', 'amount', 'balance', 'balance_amount', 'saldo', 'belop', 'belopkr', 'beløpkr', 'kr', 'sum']
+  },
+  {
     key: 'reference',
     label: 'Referanse',
     required: false,
@@ -214,9 +221,15 @@ export function parseCSV(text: string, delimiter?: string): { headers: string[];
 // Process Excel file with preview
 export async function processExcelFile(file: File): Promise<FilePreview> {
   try {
+    console.log('=== PROCESSING EXCEL FILE ===');
+    console.log('File name:', file.name);
+    console.log('File size:', file.size);
+    
     const workbook = await parseXlsxSafely(file);
     const worksheet = workbook.Sheets[workbook.SheetNames[0]];
     const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+    
+    console.log('Excel parsed successfully, rows:', jsonData.length);
     
     if (jsonData.length === 0) {
       throw new Error('Filen inneholder ingen data');
@@ -679,7 +692,28 @@ export function convertDataWithMapping(
     for (const [sourceColumn, targetField] of Object.entries(mappings)) {
       const columnIndex = headerIndexMap[sourceColumn];
       if (columnIndex !== undefined && row[columnIndex] !== undefined) {
-        convertedRow[targetField] = row[columnIndex];
+        let value = row[columnIndex];
+        
+        // Enhanced data conversion for different field types
+        if (targetField.includes('amount') || targetField === 'balance_amount') {
+          // Handle Norwegian number format and convert to number
+          if (value !== null && value !== undefined && value !== '') {
+            const cleanValue = value.toString()
+              .replace(/\s/g, '') // Remove spaces
+              .replace(',', '.'); // Replace comma with dot for decimal
+            const numValue = parseFloat(cleanValue);
+            value = isNaN(numValue) ? 0 : numValue;
+          } else {
+            value = 0;
+          }
+        } else if (targetField === 'date') {
+          // Handle date conversion
+          if (value && !isNaN(Date.parse(value))) {
+            value = new Date(value).toISOString().split('T')[0];
+          }
+        }
+        
+        convertedRow[targetField] = value;
       }
     }
     
