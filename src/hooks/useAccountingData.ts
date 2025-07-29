@@ -18,7 +18,8 @@ export const useAccountingData = (clientId: string) => {
         .from('general_ledger_transactions')
         .select('id, created_at')
         .eq('client_id', clientId)
-        .order('created_at', { ascending: false }); // Remove any default limits
+        .order('created_at', { ascending: false })
+        .limit(100000); // Set explicit high limit to count all transactions
 
       if (transactionsError) throw transactionsError;
 
