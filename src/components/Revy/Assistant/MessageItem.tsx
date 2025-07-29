@@ -16,22 +16,24 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, compact = false }) =
   
   return (
     <div className={cn(
-      "flex gap-2 animate-fade-in",
-      compact ? "mb-2" : "mb-4",
-      !isAssistant && "flex-row-reverse"
+      "flex gap-3 animate-fade-in",
+      compact ? "mb-2" : "mb-4"
     )}>
-      {isAssistant && (
-        <RevyAvatar size={compact ? "sm" : "md"} />
+      {isAssistant ? (
+        <RevyAvatar size={compact ? "md" : "xl"} className="flex-shrink-0 mt-1" />
+      ) : (
+        <div className={cn(
+          "rounded-full bg-primary text-primary-foreground flex items-center justify-center font-medium flex-shrink-0 mt-1",
+          compact ? "h-8 w-8 text-xs" : "h-12 w-12 text-sm"
+        )}>
+          D
+        </div>
       )}
       
-      <div className={cn(
-        "flex flex-col",
-        "max-w-full",
-        !isAssistant && "items-end"
-      )}>
+      <div className="flex flex-col flex-1 min-w-0">
         <div className={cn(
-          "rounded-lg px-3 py-2 text-sm break-words",
-          compact ? "text-xs" : "text-sm",
+          "rounded-lg px-4 py-3 break-words",
+          compact ? "text-xs px-3 py-2" : "text-sm",
           isAssistant 
             ? "bg-muted text-foreground shadow-sm" 
             : "bg-primary text-primary-foreground"
@@ -43,14 +45,14 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, compact = false }) =
               sources={message.sources || []}
             />
           ) : (
-            <ReactMarkdown className="prose prose-sm max-w-none">
+            <ReactMarkdown className="prose prose-sm max-w-none dark:prose-invert">
               {typeof message.content === 'string' ? message.content : ''}
             </ReactMarkdown>
           )}
         </div>
         
         {!compact && (
-          <span className="text-xs text-muted-foreground mt-1">
+          <span className="text-xs text-muted-foreground mt-1 ml-1">
             {message.timestamp.toLocaleTimeString('nb-NO', { 
               hour: '2-digit', 
               minute: '2-digit' 
@@ -58,15 +60,6 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, compact = false }) =
           </span>
         )}
       </div>
-      
-      {!isAssistant && (
-        <div className={cn(
-          "rounded-full bg-primary text-primary-foreground flex items-center justify-center font-medium",
-          compact ? "h-6 w-6 text-xs" : "h-8 w-8 text-sm"
-        )}>
-          D
-        </div>
-      )}
     </div>
   );
 };
