@@ -10,6 +10,9 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Client } from "@/types/revio";
 import { useNavigate } from "react-router-dom";
+import { useState, useMemo } from "react";
+import { ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 import EquityBadge from "./EquityBadge";
 import TestDataBadge from "./TestDataBadge";
 
@@ -19,8 +22,13 @@ interface ClientsTableProps {
   selectedClientId?: string | null;
 }
 
+type SortField = 'name' | 'phase' | 'progress';
+type SortDirection = 'asc' | 'desc';
+
 const ClientsTable = ({ clients, onRowSelect, selectedClientId }: ClientsTableProps) => {
   const navigate = useNavigate();
+  const [sortField, setSortField] = useState<SortField | null>(null);
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   
   const statusMap = {
     engagement: { label: "Oppdrag", variant: "outline" },
@@ -48,14 +56,96 @@ const ClientsTable = ({ clients, onRowSelect, selectedClientId }: ClientsTablePr
     return statusMap[phase] || { label: phase, variant: "outline" };
   };
 
+  const phaseOrder = {
+    engagement: 1,
+    planning: 2,
+    execution: 3,
+    completion: 4,
+    risk_assessment: 5,
+    reporting: 6,
+    overview: 7
+  } as const;
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const sortedClients = useMemo(() => {
+    if (!sortField) return clients;
+
+    return [...clients].sort((a, b) => {
+      let aValue: any;
+      let bValue: any;
+
+      switch (sortField) {
+        case 'name':
+          aValue = a.name?.trim() || '';
+          bValue = b.name?.trim() || '';
+          break;
+        case 'phase':
+          aValue = phaseOrder[a.phase] || 999;
+          bValue = phaseOrder[b.phase] || 999;
+          break;
+        case 'progress':
+          aValue = a.progress ?? 0;
+          bValue = b.progress ?? 0;
+          break;
+        default:
+          return 0;
+      }
+
+      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [clients, sortField, sortDirection]);
+
+  const getSortIcon = (field: SortField) => {
+    if (sortField !== field) {
+      return <ChevronsUpDown className="ml-2 h-4 w-4" />;
+    }
+    return sortDirection === 'asc' 
+      ? <ChevronUp className="ml-2 h-4 w-4" />
+      : <ChevronDown className="ml-2 h-4 w-4" />;
+  };
+
   return (
     <div className="rounded-md border overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Klient</TableHead>
-            <TableHead>Fase</TableHead>
-            <TableHead>Progresjon</TableHead>
+            <TableHead 
+              className={cn("cursor-pointer hover:bg-muted/50 select-none", sortField === 'name' && "bg-muted/50")}
+              onClick={() => handleSort('name')}
+            >
+              <div className="flex items-center">
+                Klient
+                {getSortIcon('name')}
+              </div>
+            </TableHead>
+            <TableHead 
+              className={cn("cursor-pointer hover:bg-muted/50 select-none", sortField === 'phase' && "bg-muted/50")}
+              onClick={() => handleSort('phase')}
+            >
+              <div className="flex items-center">
+                Fase
+                {getSortIcon('phase')}
+              </div>
+            </TableHead>
+            <TableHead 
+              className={cn("cursor-pointer hover:bg-muted/50 select-none", sortField === 'progress' && "bg-muted/50")}
+              onClick={() => handleSort('progress')}
+            >
+              <div className="flex items-center">
+                Progresjon
+                {getSortIcon('progress')}
+              </div>
+            </TableHead>
             <TableHead>Org.nummer</TableHead>
             <TableHead>Kommune</TableHead>
             <TableHead>Kapital</TableHead>
@@ -63,14 +153,14 @@ const ClientsTable = ({ clients, onRowSelect, selectedClientId }: ClientsTablePr
           </TableRow>
         </TableHeader>
         <TableBody>
-          {clients.length === 0 ? (
+          {sortedClients.length === 0 ? (
             <TableRow>
               <TableCell colSpan={7} className="text-center text-muted-foreground h-32">
                 Ingen klienter funnet
               </TableCell>
             </TableRow>
           ) : (
-            clients.map((client) => {
+            sortedClients.map((client) => {
               const statusInfo = getStatusInfo(client.phase);
               return (
                 <TableRow
