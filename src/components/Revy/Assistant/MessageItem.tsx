@@ -17,7 +17,7 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, compact = false }) =
   return (
     <div className={cn(
       "grid animate-fade-in",
-      compact ? "grid-cols-[auto_1fr] gap-2 mb-2" : "grid-cols-[auto_1fr] gap-3 mb-4"
+      compact ? "grid-cols-[auto_1fr] gap-1 mb-1" : "grid-cols-[auto_1fr] gap-3 mb-4"
     )}>
       {isAssistant ? (
         <RevyAvatar 
@@ -55,7 +55,7 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, compact = false }) =
         </div>
         
         {!compact && (
-          <span className="text-xs text-muted-foreground mt-1 ml-1">
+          <span className="text-xs text-muted-foreground mt-1">
             {message.timestamp.toLocaleTimeString('nb-NO', { 
               hour: '2-digit', 
               minute: '2-digit' 
