@@ -2162,6 +2162,7 @@ export type Database = {
           company_name: string
           contact_person: string | null
           created_at: string
+          current_accounting_year: number | null
           current_auditor_name: string | null
           current_auditor_org_number: string | null
           department: string | null
@@ -2211,6 +2212,7 @@ export type Database = {
           company_name: string
           contact_person?: string | null
           created_at?: string
+          current_accounting_year?: number | null
           current_auditor_name?: string | null
           current_auditor_org_number?: string | null
           department?: string | null
@@ -2260,6 +2262,7 @@ export type Database = {
           company_name?: string
           contact_person?: string | null
           created_at?: string
+          current_accounting_year?: number | null
           current_auditor_name?: string | null
           current_auditor_org_number?: string | null
           department?: string | null

@@ -6,10 +6,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Upload, Database, AlertCircle, Calendar } from 'lucide-react';
+import { Upload, Database, AlertCircle, Calendar, Plus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import EnhancedPreview from '@/components/DataUpload/EnhancedPreview';
 import { DataManagementPanel } from '@/components/DataUpload/DataManagementPanel';
+import { useAccountingYear } from '@/hooks/useAccountingYear';
+import { useAvailableVersions } from '@/hooks/useAvailableVersions';
 import { 
   processExcelFile, 
   processCSVFile, 
@@ -30,6 +32,9 @@ interface TrialBalanceUploaderProps {
 }
 
 const TrialBalanceUploader = ({ clientId, onUploadComplete }: TrialBalanceUploaderProps) => {
+  const { accountingYear } = useAccountingYear(clientId);
+  const { data: availableVersions, isLoading: versionsLoading } = useAvailableVersions(clientId);
+  
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<FilePreview | null>(null);
   const [showMapping, setShowMapping] = useState(false);
@@ -40,6 +45,17 @@ const TrialBalanceUploader = ({ clientId, onUploadComplete }: TrialBalanceUpload
   const [periodStartDate, setPeriodStartDate] = useState<string>('2024-01-01');
   const [periodEndDate, setPeriodEndDate] = useState<string>('2024-12-31');
   const [version, setVersion] = useState<string>('v1');
+  const [customVersion, setCustomVersion] = useState<string>('');
+  const [showCustomVersion, setShowCustomVersion] = useState(false);
+
+  // Update default values when accounting year changes
+  React.useEffect(() => {
+    if (accountingYear) {
+      setPeriodYear(accountingYear.toString());
+      setPeriodStartDate(`${accountingYear}-01-01`);
+      setPeriodEndDate(`${accountingYear}-12-31`);
+    }
+  }, [accountingYear]);
 
   const handleFileSelect = async (file: File) => {
     const extension = file.name.toLowerCase().split('.').pop();
@@ -97,6 +113,9 @@ const TrialBalanceUploader = ({ clientId, onUploadComplete }: TrialBalanceUpload
 
   const uploadTrialBalance = async (accounts: any[], file: File) => {
     if (!clientId) return;
+
+    // Use custom version if provided, otherwise use selected version
+    const finalVersion = showCustomVersion && customVersion ? customVersion : version;
 
     try {
       setUploadProgress(10);
@@ -284,7 +303,7 @@ const TrialBalanceUploader = ({ clientId, onUploadComplete }: TrialBalanceUpload
             debit_turnover: debitTurnover,
             credit_turnover: creditTurnover,
             closing_balance: closingBalance,
-            version: version
+            version: finalVersion
           };
 
           console.log(`Upserting trial balance data:`, trialBalanceData);
@@ -464,18 +483,51 @@ const TrialBalanceUploader = ({ clientId, onUploadComplete }: TrialBalanceUpload
               
               <div className="space-y-2">
                 <Label htmlFor="version">Versjon</Label>
-                <Select value={version} onValueChange={setVersion}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Velg versjon" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {['v1', 'v2', 'v3', 'v4', 'v5'].map((v) => (
-                      <SelectItem key={v} value={v}>
-                        {v.toUpperCase()}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {!showCustomVersion ? (
+                  <div className="flex gap-2">
+                    <Select value={version} onValueChange={setVersion}>
+                      <SelectTrigger className="flex-1">
+                        <SelectValue placeholder="Velg versjon" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(availableVersions || ['v1']).map((v) => (
+                          <SelectItem key={v} value={v}>
+                            {v.toUpperCase()}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowCustomVersion(true)}
+                      className="px-3"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="f.eks. v6, interim1, etc."
+                      value={customVersion}
+                      onChange={(e) => setCustomVersion(e.target.value)}
+                      className="flex-1"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setShowCustomVersion(false);
+                        setCustomVersion('');
+                      }}
+                    >
+                      ✕
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
 
