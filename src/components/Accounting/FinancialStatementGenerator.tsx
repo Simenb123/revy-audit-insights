@@ -103,7 +103,7 @@ const FinancialStatementGenerator = ({ clientId, period }: FinancialStatementGen
       return amount1 + amount2;
     }
     
-    const subtractionMatch = cleanFormula.match(/^(\d+)\-(\d+)$/);
+    const subtractionMatch = cleanFormula.match(/^(\d+)-(\d+)$/);
     if (subtractionMatch) {
       const [, num1, num2] = subtractionMatch;
       const amount1 = getStandardAccountBalance(trialBalanceData.standardAccountBalances, num1);

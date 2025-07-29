@@ -28,7 +28,10 @@ const RevyMessageItem: React.FC<RevyMessageItemProps> = ({ message, compact = fa
       !isAssistant && "flex-row-reverse"
     )}>
       {isAssistant && (
-        <RevyAvatar size={compact ? "sm" : "md"} />
+        <div className="flex flex-col items-center">
+          <RevyAvatar size={compact ? "md" : "lg"} />
+          <span className="text-[10px] mt-1">AI-Revy</span>
+        </div>
       )}
       
       <div className={cn(
