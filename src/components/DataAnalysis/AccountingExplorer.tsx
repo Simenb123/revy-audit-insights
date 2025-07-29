@@ -105,7 +105,9 @@ const AccountingExplorer = ({ clientId }: AccountingExplorerProps) => {
             )}
             
             {activeTab === 'ledger' && (
-              <GeneralLedgerTable clientId={clientId} />
+              <div className="space-y-4">
+                <GeneralLedgerTable clientId={clientId} />
+              </div>
             )}
             
             {activeTab === 'balances' && (

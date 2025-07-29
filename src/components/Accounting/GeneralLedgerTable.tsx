@@ -18,7 +18,8 @@ const GeneralLedgerTable = ({ clientId }: GeneralLedgerTableProps) => {
 
   const filteredTransactions = transactions?.filter(transaction =>
     transaction.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    transaction.client_account_id.includes(searchTerm) ||
+    transaction.account_number.includes(searchTerm) ||
+    transaction.account_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     transaction.reference_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     transaction.voucher_number?.includes(searchTerm)
   ) || [];
@@ -52,7 +53,7 @@ const GeneralLedgerTable = ({ clientId }: GeneralLedgerTableProps) => {
       ['Dato', 'Konto', 'Beskrivelse', 'Bilag', 'Debet', 'Kredit', 'Referanse'].join(','),
       ...transactions.map(transaction => [
         new Date(transaction.transaction_date).toLocaleDateString('nb-NO'),
-        transaction.client_account_id,
+        transaction.account_number,
         `"${transaction.description}"`,
         transaction.voucher_number || '',
         transaction.debit_amount || (transaction.balance_amount && transaction.balance_amount > 0 ? transaction.balance_amount : 0),
@@ -148,7 +149,8 @@ const GeneralLedgerTable = ({ clientId }: GeneralLedgerTableProps) => {
                           {format(new Date(transaction.transaction_date), 'dd.MM.yyyy')}
                         </TableCell>
                         <TableCell>
-                          <div className="font-medium">{transaction.client_account_id}</div>
+                          <div className="font-medium">{transaction.account_number}</div>
+                          <div className="text-sm text-muted-foreground">{transaction.account_name}</div>
                         </TableCell>
                         <TableCell>{transaction.description}</TableCell>
                         <TableCell>{transaction.voucher_number}</TableCell>
