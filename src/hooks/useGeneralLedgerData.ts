@@ -19,9 +19,10 @@ export interface GeneralLedgerTransaction {
 
 export const useGeneralLedgerData = (clientId: string) => {
   return useQuery({
-    queryKey: ['general-ledger', clientId],
+    queryKey: ['general-ledger-v2', clientId],
     queryFn: async () => {
       console.log('🔍 Fetching general ledger data for client:', clientId);
+      console.log('🔍 Using limit: 1,000,000 transactions');
       
       const { data, error } = await supabase
         .from('general_ledger_transactions')
@@ -56,6 +57,9 @@ export const useGeneralLedgerData = (clientId: string) => {
         return [];
       }
 
+      console.log('✅ RAW DATA LENGTH FROM SUPABASE:', data.length);
+      console.log('✅ FIRST TRANSACTION:', data[0]?.transaction_date);
+      console.log('✅ LAST TRANSACTION:', data[data.length - 1]?.transaction_date);
       console.log('✅ Found', data.length, 'general ledger transactions');
       
       // Transform the data to include account details
@@ -83,8 +87,12 @@ export const useGeneralLedgerData = (clientId: string) => {
         } : null
       });
 
+      console.log('🔄 FINAL TRANSFORMED DATA LENGTH:', transformedData.length);
+      
       return transformedData;
     },
     enabled: !!clientId,
+    staleTime: 0, // Force fresh data
+    gcTime: 0, // No caching for debugging
   });
 };

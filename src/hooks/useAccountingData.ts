@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 export const useAccountingData = (clientId: string) => {
   return useQuery({
-    queryKey: ['accounting-data', clientId],
+    queryKey: ['accounting-data-v2', clientId],
     queryFn: async () => {
       // Get chart of accounts count
       const { data: chartData, error: chartError } = await supabase
@@ -22,6 +22,8 @@ export const useAccountingData = (clientId: string) => {
         .limit(1000000); // Set very high limit to count all transactions
 
       if (transactionsError) throw transactionsError;
+
+      console.log('📊 ACCOUNTING DATA - Total transactions found:', transactionsData?.length);
 
       // Get latest general ledger upload batch
       const { data: batchData, error: batchError } = await supabase
@@ -45,5 +47,7 @@ export const useAccountingData = (clientId: string) => {
       };
     },
     enabled: !!clientId,
+    staleTime: 0, // Force fresh data
+    gcTime: 0, // No caching for debugging
   });
 };
