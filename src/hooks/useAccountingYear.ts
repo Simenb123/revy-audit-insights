@@ -7,7 +7,10 @@ export const useAccountingYear = (clientId: string) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (!clientId) return;
+    if (!clientId) {
+      setIsLoading(false);
+      return;
+    }
 
     const fetchAccountingYear = async () => {
       try {

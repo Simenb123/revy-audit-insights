@@ -5,6 +5,10 @@ export const useAvailableVersions = (clientId: string) => {
   return useQuery({
     queryKey: ['available-versions', clientId],
     queryFn: async () => {
+      if (!clientId) {
+        return ['v1'];
+      }
+      
       const { data, error } = await supabase
         .from('trial_balances')
         .select('version')

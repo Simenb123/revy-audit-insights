@@ -32,8 +32,9 @@ interface TrialBalanceUploaderProps {
 }
 
 const TrialBalanceUploader = ({ clientId, onUploadComplete }: TrialBalanceUploaderProps) => {
-  const { accountingYear } = useAccountingYear(clientId);
-  const { data: availableVersions, isLoading: versionsLoading } = useAvailableVersions(clientId);
+  // Get accounting year and available versions
+  const { accountingYear, isLoading: yearLoading } = useAccountingYear(clientId || '');
+  const { data: availableVersions = ['v1'], isLoading: versionsLoading } = useAvailableVersions(clientId || '');
   
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<FilePreview | null>(null);
