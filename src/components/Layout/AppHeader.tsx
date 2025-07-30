@@ -50,20 +50,18 @@ const AppHeader: React.FC<AppHeaderProps> = ({ className = '' }) => {
 
   return (
     <header className="sticky top-0 z-50 bg-revio-500 border-b border-revio-600 flex items-center justify-between px-6 py-3 text-white h-[var(--header-height)] shadow-sm">
-      <div className="flex items-center gap-4">
-        <div className="flex items-center">
-          <Link
-            to="/"
-            className="text-2xl font-extrabold tracking-wide text-white hover:opacity-90"
-          >
-            Revio
-          </Link>
-        </div>
-        
-        {/* Global Search */}
-        <div className="hidden md:block">
-          <GlobalSearch />
-        </div>
+      <div className="flex items-center">
+        <Link
+          to="/"
+          className="text-2xl font-extrabold tracking-wide text-white hover:opacity-90"
+        >
+          Revio
+        </Link>
+      </div>
+
+      {/* Global Search */}
+      <div className="hidden md:flex flex-1 justify-center">
+        <GlobalSearch />
       </div>
 
       <div className="flex items-center gap-3">
