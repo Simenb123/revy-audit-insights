@@ -942,7 +942,7 @@ export function convertDataWithMapping(
 }
 
 // New function to calculate amount statistics for general ledger data
-export function calculateAmountStatistics(data: any[]): {
+export function calculateAmountStatistics(data: any[], hasDebCred = false, hasBalance = false): {
   positiveCount: number;
   negativeCount: number;
   zeroCount: number;
@@ -961,40 +961,57 @@ export function calculateAmountStatistics(data: any[]): {
   let conversionErrors = 0;
   
   data.forEach(row => {
-    // Check for amount in common amount fields with enhanced field matching
-    const amountFields = ['beløp', 'amount', 'debet', 'kredit', 'saldo', 'beløp_valuta', 'debit_amount', 'credit_amount', 'balance_amount'];
     let hasValidAmount = false;
+    let rowAmount = 0;
     
-    for (const field of amountFields) {
-      const value = row[field];
-      if (value !== undefined && value !== null && value !== '') {
-        let converted: number | null = null;
-        
-        if (typeof value === 'string') {
-          converted = convertNorwegianNumber(value);
-        } else if (typeof value === 'number') {
-          converted = isNaN(value) ? null : value;
-        }
-        
-        if (converted !== null && !isNaN(converted)) {
-          hasValidAmount = true;
-          if (converted > 0) {
-            positiveCount++;
-            positiveSum += converted;
-          } else if (converted < 0) {
-            negativeCount++;
-            negativeSum += converted;
+    // Determine which system we're using based on the flags
+    if (hasDebCred) {
+      // For debit/credit systems, calculate net amount (debit - credit)
+      const debit = parseAmount(row.debit_amount) || 0;
+      const credit = parseAmount(row.credit_amount) || 0;
+      
+      if (debit !== 0 || credit !== 0) {
+        hasValidAmount = true;
+        rowAmount = debit - credit; // Net amount
+      }
+    } else if (hasBalance) {
+      // For balance_amount systems, use the balance directly
+      const balance = parseAmount(row.balance_amount);
+      if (balance !== null && !isNaN(balance)) {
+        hasValidAmount = true;
+        rowAmount = balance;
+      } else if (row.balance_amount !== undefined && row.balance_amount !== null && row.balance_amount !== '') {
+        conversionErrors++;
+      }
+    } else {
+      // Fallback: try to find any amount field
+      const amountFields = ['balance_amount', 'debit_amount', 'credit_amount', 'beløp', 'amount', 'saldo'];
+      for (const field of amountFields) {
+        const value = row[field];
+        if (value !== undefined && value !== null && value !== '') {
+          const converted = parseAmount(value);
+          if (converted !== null && !isNaN(converted)) {
+            rowAmount = converted;
+            hasValidAmount = true;
+            break;
           } else {
-            zeroCount++;
+            conversionErrors++;
           }
-          break; // Only count the first valid amount field
-        } else if (value !== '') {
-          conversionErrors++;
         }
       }
     }
     
-    if (!hasValidAmount) {
+    if (hasValidAmount) {
+      if (rowAmount > 0) {
+        positiveCount++;
+        positiveSum += rowAmount;
+      } else if (rowAmount < 0) {
+        negativeCount++;
+        negativeSum += rowAmount;
+      } else {
+        zeroCount++;
+      }
+    } else {
       noAmountCount++;
     }
   });
@@ -1009,4 +1026,15 @@ export function calculateAmountStatistics(data: any[]): {
     noAmountCount,
     conversionErrors
   };
+}
+
+// Helper function to parse amounts consistently
+function parseAmount(value: any): number | null {
+  if (typeof value === 'number') {
+    return isNaN(value) ? null : value;
+  }
+  if (typeof value === 'string') {
+    return convertNorwegianNumber(value);
+  }
+  return null;
 }

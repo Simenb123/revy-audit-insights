@@ -125,18 +125,6 @@ const GeneralLedgerUploader = ({ clientId, onUploadComplete }: GeneralLedgerUplo
       
       setConvertedData(convertedData);
       
-      // Calculate comprehensive amount statistics
-      const stats = calculateAmountStatistics(convertedData);
-      setAmountStats(stats);
-      
-      console.log('=== AMOUNT STATISTICS ===');
-      console.log(`Positive amounts: ${stats.positiveCount} (${formatNorwegianNumber(stats.positiveSum)} kr)`);
-      console.log(`Negative amounts: ${stats.negativeCount} (${formatNorwegianNumber(stats.negativeSum)} kr)`);
-      console.log(`Zero amounts: ${stats.zeroCount}`);
-      console.log(`Missing amounts: ${stats.noAmountCount}`);
-      console.log(`Conversion errors: ${stats.conversionErrors}`);
-      console.log(`Total sum: ${formatNorwegianNumber(stats.totalSum)} kr`);
-      
       // Enhanced balance calculation - handle both debit/credit and balance_amount
       let totalBalance = 0;
       let debitTotal = 0;
@@ -183,29 +171,62 @@ const GeneralLedgerUploader = ({ clientId, onUploadComplete }: GeneralLedgerUplo
         debitCreditDiff: Math.abs(debitTotal - creditTotal)
       });
       
+      // Calculate comprehensive amount statistics - now that we know the system type
+      const stats = calculateAmountStatistics(convertedData, hasDebCred, hasBalance);
+      setAmountStats(stats);
+      
+      console.log('=== AMOUNT STATISTICS ===');
+      console.log(`Positive amounts: ${stats.positiveCount} (${formatNorwegianNumber(stats.positiveSum)} kr)`);
+      console.log(`Negative amounts: ${stats.negativeCount} (${formatNorwegianNumber(stats.negativeSum)} kr)`);
+      console.log(`Zero amounts: ${stats.zeroCount}`);
+      console.log(`Missing amounts: ${stats.noAmountCount}`);
+      console.log(`Conversion errors: ${stats.conversionErrors}`);
+      console.log(`Total sum: ${formatNorwegianNumber(stats.totalSum)} kr`);
+      
       // Determine final balance and if it's balanced
       let finalBalance;
       let isBalanced;
-      const tolerance = 0.01;
+      const tolerance = 1.0; // Allow up to 1 kr difference
       
       if (hasDebCred) {
-        // Use debit/credit difference
-        finalBalance = Math.abs(debitTotal - creditTotal);
-        isBalanced = finalBalance <= tolerance;
+        // For debit/credit: sum should be zero (debit = credit)
+        finalBalance = debitTotal - creditTotal;
+        isBalanced = Math.abs(finalBalance) <= tolerance;
+        console.log('Debit/Credit mode:', { debitTotal, creditTotal, difference: finalBalance });
       } else {
-        // Use balance_amount sum
-        finalBalance = Math.abs(totalBalance);
-        isBalanced = finalBalance <= tolerance;
+        // For balance_amount: sum should be zero (positive = negative)
+        finalBalance = totalBalance;
+        isBalanced = Math.abs(finalBalance) <= tolerance;
+        console.log('Balance amount mode:', { totalBalance, isBalanced });
       }
       
-      console.log('Final balance assessment:', { finalBalance, isBalanced });
+      console.log('Final balance assessment:', { 
+        finalBalance, 
+        isBalanced, 
+        mode: hasDebCred ? 'debit_credit' : 'balance_amount',
+        amountStats: stats
+      });
       
-      const balanceDifference = finalBalance;
+      // Validate that we have a proper general ledger
+      const hasValidTransactions = convertedData.length > 0;
+      const hasValidAccounts = convertedData.some(t => t.account_number);
+      
+      if (!hasValidTransactions) {
+        toast.error('Ingen gyldige transaksjoner funnet i filen');
+        setStep('select');
+        return;
+      }
+      
+      if (!hasValidAccounts) {
+        toast.error('Ingen gyldige kontonumre funnet. Kontroller kolonne-mapping.');
+        setStep('select');
+        return;
+      }
       
       setPreviewData({
         data: convertedData,
         totalBalance: finalBalance,
-        balanceDifference,
+        balanceDifference: Math.abs(finalBalance),
         isBalanced,
         fileName: selectedFile.name
       });
