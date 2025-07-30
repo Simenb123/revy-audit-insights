@@ -21,6 +21,10 @@ export const useAccountingValidation = (clientId: string, selectedGLVersion?: st
   const { data: generalLedgerData } = useGeneralLedgerData(clientId, selectedGLVersion);
   const { data: trialBalanceData } = useTrialBalanceData(clientId, selectedTBVersion);
 
+  console.log('[Validation Hook] GL Data:', generalLedgerData?.length || 0, 'entries');
+  console.log('[Validation Hook] TB Data:', trialBalanceData?.length || 0, 'entries');
+  console.log('[Validation Hook] Parameters:', { clientId, selectedGLVersion, selectedTBVersion });
+
   return useQuery({
     queryKey: ['accounting-validation', clientId, selectedGLVersion, selectedTBVersion],
     queryFn: async () => {

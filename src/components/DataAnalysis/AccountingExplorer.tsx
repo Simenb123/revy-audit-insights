@@ -1,28 +1,22 @@
-
-import React, { useState } from 'react';
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle, 
-} from "@/components/ui/card";
-import { TabsContent } from "@/components/ui/tabs";
-import { DocumentVersion } from '@/types/revio';
-import { Database, FileCheck, LineChart, Layers, BookOpen } from 'lucide-react';
-import ResponsiveTabs from '@/components/ui/responsive-tabs';
+import React, { useState, useMemo } from 'react';
+import { useGLVersionOptions } from '@/hooks/useAccountingVersions';
+import { useTBVersionOptions } from '@/hooks/useTrialBalanceVersions';
+import { useAccountingData } from '@/hooks/useAccountingData';
+import { useAccountingYear } from '@/hooks/useAccountingYear';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { TrendingUp, Activity, BarChart2, FileText, Layers, LineChart } from 'lucide-react';
 import DrillDownTable from './DrillDownTable';
-import MaterialityBanner from './MaterialityBanner';
-import VersionSelector from './VersionSelector';
-import VersionHistory from './VersionHistory';
 import GeneralLedgerTable from '@/components/Accounting/GeneralLedgerTable';
 import TrialBalanceTable from '@/components/Accounting/TrialBalanceTable';
+import MaterialityBanner from './MaterialityBanner';
+import GLVersionSelector from './GLVersionSelector';
+import TBVersionSelector from './TBVersionSelector';
+import VersionHistory from './VersionHistory';
 import ValidationPanel from '@/components/Accounting/ValidationPanel';
-import { useAccountingData } from '@/hooks/useAccountingData';
-import { useAccountingVersions, useActiveVersion } from '@/hooks/useAccountingVersions';
-import { useTrialBalanceVersions, useActiveTrialBalanceVersion } from '@/hooks/useTrialBalanceVersions';
-import { useAccountingYear } from '@/hooks/useAccountingYear';
-import { format } from 'date-fns';
+import { GLVersionOption, TBVersionOption } from '@/types/accounting';
+import ResponsiveTabs from '@/components/ui/responsive-tabs';
 
 const materialityThresholds = {
   materiality: 2000000,
@@ -34,91 +28,84 @@ interface AccountingExplorerProps {
   clientId: string;
 }
 
-const AccountingExplorer = ({ clientId }: AccountingExplorerProps) => {
+const AccountingExplorer: React.FC<AccountingExplorerProps> = ({ clientId }) => {
   const [activeTab, setActiveTab] = useState('overview');
+  
+  // Fetch data using new specialized hooks
+  const { data: glVersionOptions = [], isLoading: isLoadingGL } = useGLVersionOptions(clientId);
+  const { data: tbVersionOptions = [], isLoading: isLoadingTB } = useTBVersionOptions(clientId);
+  const { data: accountingData, isLoading: isLoadingAccounting } = useAccountingData(clientId);
   const { accountingYear } = useAccountingYear(clientId);
-  
-  // General Ledger data
-  const { data: glVersions = [] } = useAccountingVersions(clientId);
-  const { data: activeGLVersion } = useActiveVersion(clientId);
-  const { data: accountingData, isLoading } = useAccountingData(clientId);
-  
-  // Trial Balance data
-  const { data: tbVersions = [] } = useTrialBalanceVersions(clientId);
-  const { data: activeTBVersion } = useActiveTrialBalanceVersion(clientId);
-  
-  // Convert GL versions to DocumentVersion format
-  const glVersionOptions: DocumentVersion[] = glVersions.map(version => ({
-    id: version.id,
-    version_name: `${version.file_name} (v${version.version_number})`,
-    created_at: version.uploaded_at,
-    client_audit_action_id: version.id,
-    content: JSON.stringify({
-      totalTransactions: version.total_transactions,
-      totalDebitAmount: version.total_debit_amount,
-      totalCreditAmount: version.total_credit_amount,
-      balanceDifference: version.balance_difference
-    }),
-    change_source: 'upload' as const,
-    created_by_user_id: version.uploaded_by || 'system',
-    change_description: `Uploaded ${version.file_name} with ${version.total_transactions} transactions`
-  }));
 
-  // Convert TB versions to DocumentVersion format
-  const tbVersionOptions: DocumentVersion[] = tbVersions.map(version => ({
-    id: version.id,
-    version_name: `${version.version} (${version.period_year})`,
-    created_at: version.created_at,
-    client_audit_action_id: version.id,
-    content: JSON.stringify({
-      accountCount: version.account_count,
-      periodYear: version.period_year,
-      periodStart: version.period_start_date,
-      periodEnd: version.period_end_date
-    }),
-    change_source: 'upload' as const,
-    created_by_user_id: 'system',
-    change_description: `Saldobalanse ${version.version} for ${version.period_year} med ${version.account_count} kontoer`
-  }));
+  console.log('[AccountingExplorer] GL Version Options:', glVersionOptions);
+  console.log('[AccountingExplorer] TB Version Options:', tbVersionOptions);
 
-  // Use active versions as defaults
-  const defaultGLVersion = activeGLVersion 
-    ? glVersionOptions.find(v => v.id === activeGLVersion.id) || glVersionOptions[0]
-    : glVersionOptions[0];
-    
-  const defaultTBVersion = activeTBVersion 
-    ? tbVersionOptions.find(v => v.version_name.includes(activeTBVersion.version)) || tbVersionOptions[0]
-    : tbVersionOptions[0];
-  
-  const [selectedGLVersion, setSelectedGLVersion] = useState<DocumentVersion | undefined>(defaultGLVersion);
-  const [selectedTBVersion, setSelectedTBVersion] = useState<DocumentVersion | undefined>(defaultTBVersion);
+  // Get default selected versions with proper fallbacks
+  const defaultGLVersion = useMemo(() => {
+    const activeVersion = glVersionOptions.find(v => v.is_active);
+    const result = activeVersion || glVersionOptions[0] || null;
+    console.log('[AccountingExplorer] Default GL Version:', result);
+    return result;
+  }, [glVersionOptions]);
+
+  const defaultTBVersion = useMemo(() => {
+    const result = tbVersionOptions[0] || null;
+    console.log('[AccountingExplorer] Default TB Version:', result);
+    return result;
+  }, [tbVersionOptions]);
+
+  // State for selected versions with safe initialization
+  const [selectedGLVersion, setSelectedGLVersion] = useState<GLVersionOption | null>(null);
+  const [selectedTBVersion, setSelectedTBVersion] = useState<TBVersionOption | null>(null);
+
+  // Update state when defaults change
+  React.useEffect(() => {
+    if (defaultGLVersion && !selectedGLVersion) {
+      console.log('[AccountingExplorer] Setting default GL version:', defaultGLVersion);
+      setSelectedGLVersion(defaultGLVersion);
+    }
+  }, [defaultGLVersion, selectedGLVersion]);
+
+  React.useEffect(() => {
+    if (defaultTBVersion && !selectedTBVersion) {
+      console.log('[AccountingExplorer] Setting default TB version:', defaultTBVersion);
+      setSelectedTBVersion(defaultTBVersion);
+    }
+  }, [defaultTBVersion, selectedTBVersion]);
+
+  console.log('[AccountingExplorer] Current Selected GL:', selectedGLVersion);
+  console.log('[AccountingExplorer] Current Selected TB:', selectedTBVersion);
+
+  // Check if data exists
+  const hasGLData = glVersionOptions.length > 0;
+  const hasTBData = tbVersionOptions.length > 0;
 
   const tabItems = [
-    { id: 'overview', label: 'Oversikt', icon: Database },
+    { id: 'overview', label: 'Oversikt', icon: Activity },
     { id: 'ledger', label: 'Hovedbok', icon: LineChart },
     { id: 'balances', label: 'Saldobalanse', icon: Layers },
-    { id: 'journal', label: 'Bilag', icon: FileCheck },
+    { id: 'journal', label: 'Bilag', icon: FileText },
   ];
-
-  const handleGLVersionChange = (version: DocumentVersion) => {
-    setSelectedGLVersion(version);
-  };
-
-  const handleTBVersionChange = (version: DocumentVersion) => {
-    setSelectedTBVersion(version);
-  };
 
   // Determine which version selector to show based on active tab
   const showGLVersions = activeTab === 'ledger' || activeTab === 'journal';
   const showTBVersions = activeTab === 'balances';
   const showBothVersions = activeTab === 'overview';
 
-  // Check what data is available
-  const hasGLData = glVersions.length > 0;
-  const hasTBData = tbVersions.length > 0;
-  const hasAnyData = hasGLData || hasTBData;
+  if (isLoadingGL || isLoadingTB || isLoadingAccounting) {
+    return (
+      <div className="space-y-6">
+        <MaterialityBanner thresholds={materialityThresholds} />
+        <Card>
+          <CardHeader>
+            <CardTitle>Laster regnskapsdata...</CardTitle>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
 
-  if (!hasAnyData) {
+  if (!hasGLData && !hasTBData) {
     return (
       <div className="space-y-6">
         <MaterialityBanner thresholds={materialityThresholds} />
@@ -133,7 +120,7 @@ const AccountingExplorer = ({ clientId }: AccountingExplorerProps) => {
       </div>
     );
   }
-  
+
   return (
     <div className="space-y-6">
       <MaterialityBanner thresholds={materialityThresholds} />
@@ -145,12 +132,12 @@ const AccountingExplorer = ({ clientId }: AccountingExplorerProps) => {
               <div className="flex-1">
                 <label className="text-sm font-medium text-muted-foreground mb-2 block flex items-center gap-2">
                   <LineChart className="h-4 w-4" />
-                  Hovedbok versjon
+                  General Ledger Versjon
                 </label>
-                <VersionSelector 
+                <GLVersionSelector 
                   versions={glVersionOptions}
                   selectedVersion={selectedGLVersion}
-                  onSelectVersion={handleGLVersionChange}
+                  onSelectVersion={setSelectedGLVersion}
                 />
               </div>
             )}
@@ -158,12 +145,12 @@ const AccountingExplorer = ({ clientId }: AccountingExplorerProps) => {
               <div className="flex-1">
                 <label className="text-sm font-medium text-muted-foreground mb-2 block flex items-center gap-2">
                   <Layers className="h-4 w-4" />
-                  Saldobalanse versjon
+                  Trial Balance Versjon
                 </label>
-                <VersionSelector 
+                <TBVersionSelector 
                   versions={tbVersionOptions}
                   selectedVersion={selectedTBVersion}
-                  onSelectVersion={handleTBVersionChange}
+                  onSelectVersion={setSelectedTBVersion}
                 />
               </div>
             )}
@@ -171,18 +158,18 @@ const AccountingExplorer = ({ clientId }: AccountingExplorerProps) => {
         )}
         
         {showGLVersions && hasGLData && selectedGLVersion && (
-          <VersionSelector 
+          <GLVersionSelector 
             versions={glVersionOptions}
             selectedVersion={selectedGLVersion}
-            onSelectVersion={handleGLVersionChange}
+            onSelectVersion={setSelectedGLVersion}
           />
         )}
         
         {showTBVersions && hasTBData && selectedTBVersion && (
-          <VersionSelector 
+          <TBVersionSelector 
             versions={tbVersionOptions}
             selectedVersion={selectedTBVersion}
-            onSelectVersion={handleTBVersionChange}
+            onSelectVersion={setSelectedTBVersion}
           />
         )}
       </div>
@@ -196,135 +183,116 @@ const AccountingExplorer = ({ clientId }: AccountingExplorerProps) => {
       
       <div className="flex flex-col xl:flex-row gap-6">
         <div className="flex-1 min-w-0">
-          <div>
-            {activeTab === 'overview' && (
-                <div className="space-y-6">
-                  {hasGLData && selectedGLVersion && (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                          <LineChart className="h-5 w-5" />
-                          Hovedbok oversikt
-                        </CardTitle>
-                        <CardDescription>
-                          {selectedGLVersion.version_name} ({format(new Date(selectedGLVersion.created_at), 'dd.MM.yyyy')})
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <DrillDownTable />
-                      </CardContent>
-                    </Card>
-                  )}
-                  
-                  {hasTBData && selectedTBVersion && (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                          <Layers className="h-5 w-5" />
-                          Saldobalanse oversikt
-                        </CardTitle>
-                        <CardDescription>
-                          {selectedTBVersion.version_name} ({format(new Date(selectedTBVersion.created_at), 'dd.MM.yyyy')})
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-muted-foreground">Saldobalanse sammendrag kommer her...</p>
-                      </CardContent>
-                    </Card>
-                  )}
-                  
-                  {!hasGLData && !hasTBData && (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Ingen data tilgjengelig</CardTitle>
-                        <CardDescription>
-                          Last opp hovedbok eller saldobalanse for å se oversikt
-                        </CardDescription>
-                      </CardHeader>
-                    </Card>
-                  )}
-                </div>
-            )}
+          <TabsContent value="overview" className="mt-0">
+            <div className="space-y-6">
+              {hasGLData && selectedGLVersion && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <LineChart className="h-5 w-5" />
+                      Hovedbok oversikt
+                    </CardTitle>
+                    <CardDescription>
+                      {selectedGLVersion.label} • {selectedGLVersion.total_transactions} transaksjoner
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <DrillDownTable />
+                  </CardContent>
+                </Card>
+              )}
+              
+              {hasTBData && selectedTBVersion && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Layers className="h-5 w-5" />
+                      Saldobalanse oversikt
+                    </CardTitle>
+                    <CardDescription>
+                      {selectedTBVersion.label} • {selectedTBVersion.account_count} kontoer
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground">Saldobalanse sammendrag kommer her...</p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="ledger" className="mt-0">
+            <div className="space-y-4">
+              {hasGLData && selectedGLVersion ? (
+                <GeneralLedgerTable clientId={clientId} versionId={selectedGLVersion.id} />
+              ) : (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Ingen hovedbok data</CardTitle>
+                    <CardDescription>
+                      Last opp hovedbok for å se transaksjoner
+                    </CardDescription>
+                  </CardHeader>
+                </Card>
+              )}
+            </div>
+          </TabsContent>
             
-            {activeTab === 'ledger' && (
-              <div className="space-y-4">
-                {hasGLData && selectedGLVersion ? (
-                  <GeneralLedgerTable clientId={clientId} versionId={selectedGLVersion.id} />
-                ) : (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Ingen hovedbok data</CardTitle>
-                      <CardDescription>
-                        Last opp hovedbok for å se transaksjoner
-                      </CardDescription>
-                    </CardHeader>
-                  </Card>
-                )}
-              </div>
-            )}
-            
-            {activeTab === 'balances' && (
-              <div className="space-y-4">
-                {hasTBData && selectedTBVersion ? (
-                  <TrialBalanceTable 
-                    clientId={clientId} 
-                    selectedVersion={selectedTBVersion.version_name?.split(' ')[0]}
-                    accountingYear={accountingYear}
-                  />
-                ) : (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Ingen saldobalanse data</CardTitle>
-                      <CardDescription>
-                        Last opp saldobalanse for å se kontosaldoer
-                      </CardDescription>
-                    </CardHeader>
-                  </Card>
-                )}
-              </div>
-            )}
-            
-            {activeTab === 'journal' && (
-              <div className="space-y-4">
-                {hasGLData && selectedGLVersion ? (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Bilagsjournal</CardTitle>
-                      <CardDescription>
-                        {selectedGLVersion.version_name} ({format(new Date(selectedGLVersion.created_at), 'dd.MM.yyyy')})
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <p>Innhold for bilagsjournal kommer her...</p>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Ingen bilagsdata</CardTitle>
-                      <CardDescription>
-                        Last opp hovedbok for å se bilag
-                      </CardDescription>
-                    </CardHeader>
-                  </Card>
-                )}
-              </div>
-            )}
-          </div>
+          <TabsContent value="balances" className="mt-0">
+            <div className="space-y-4">
+              {hasTBData && selectedTBVersion ? (
+                <TrialBalanceTable 
+                  clientId={clientId} 
+                  selectedVersion={selectedTBVersion.version}
+                  accountingYear={accountingYear}
+                />
+              ) : (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Ingen saldobalanse data</CardTitle>
+                    <CardDescription>
+                      Last opp saldobalanse for å se kontosaldoer
+                    </CardDescription>
+                  </CardHeader>
+                </Card>
+              )}
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="journal" className="mt-0">
+            <div className="space-y-4">
+              {hasGLData && selectedGLVersion ? (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Bilagsjournal</CardTitle>
+                    <CardDescription>
+                      {selectedGLVersion.label}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <p>Innhold for bilagsjournal kommer her...</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Ingen bilagsdata</CardTitle>
+                    <CardDescription>
+                      Last opp hovedbok for å se bilag
+                    </CardDescription>
+                  </CardHeader>
+                </Card>
+              )}
+            </div>
+          </TabsContent>
         </div>
         
         <div className="w-full xl:w-72 xl:flex-shrink-0 space-y-4">
           <ValidationPanel 
             clientId={clientId} 
             selectedGLVersion={selectedGLVersion?.id}
-            selectedTBVersion={selectedTBVersion?.version_name?.split(' ')[0]}
+            selectedTBVersion={selectedTBVersion?.version}
           />
-          {activeTab === 'ledger' && hasGLData && selectedGLVersion && (
-            <VersionHistory versions={glVersionOptions} selectedVersion={selectedGLVersion} />
-          )}
-          {activeTab === 'balances' && hasTBData && selectedTBVersion && (
-            <VersionHistory versions={tbVersionOptions} selectedVersion={selectedTBVersion} />
-          )}
         </div>
       </div>
     </div>

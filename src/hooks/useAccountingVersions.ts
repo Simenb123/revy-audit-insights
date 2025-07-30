@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { GLVersionOption } from '@/types/accounting';
 
 export interface AccountingDataVersion {
   id: string;
@@ -23,14 +24,61 @@ export const useAccountingVersions = (clientId: string) => {
   return useQuery({
     queryKey: ['accounting-versions', clientId],
     queryFn: async () => {
+      console.log('[GL Versions] Fetching for client:', clientId);
+      
       const { data, error } = await supabase
         .from('accounting_data_versions')
         .select('*')
         .eq('client_id', clientId)
         .order('version_number', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('[GL Versions] Error:', error);
+        throw error;
+      }
+      
+      console.log('[GL Versions] Raw data:', data);
       return data as AccountingDataVersion[];
+    },
+    enabled: !!clientId,
+  });
+};
+
+// New hook for version options formatted for selectors
+export const useGLVersionOptions = (clientId: string) => {
+  return useQuery({
+    queryKey: ['gl-version-options', clientId],
+    queryFn: async () => {
+      console.log('[GL Version Options] Fetching for client:', clientId);
+      
+      const { data, error } = await supabase
+        .from('accounting_data_versions')
+        .select('id, version_number, file_name, is_active, created_at, total_transactions')
+        .eq('client_id', clientId)
+        .order('version_number', { ascending: false });
+
+      if (error) {
+        console.error('[GL Version Options] Error:', error);
+        throw error;
+      }
+
+      if (!data || data.length === 0) {
+        console.log('[GL Version Options] No data found');
+        return [];
+      }
+
+      const options: GLVersionOption[] = data.map(version => ({
+        id: version.id,
+        label: `Versjon ${version.version_number} - ${version.file_name}`,
+        version_number: version.version_number,
+        file_name: version.file_name,
+        is_active: version.is_active,
+        created_at: version.created_at,
+        total_transactions: version.total_transactions
+      }));
+
+      console.log('[GL Version Options] Processed options:', options);
+      return options;
     },
     enabled: !!clientId,
   });
