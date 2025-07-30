@@ -202,11 +202,15 @@ const AICharacterSimulator = () => {
 
       const aiResponse = data.response;
       
-      // Add to conversation
+      // Add to conversation - only add user message for chat mode or initial prompt
+      // For audio mode, user message is already added in processRecording
       const newMessages = [...conversation];
-      if (userInput !== `Du er ${character.name}, ${character.role}.`) { // Don't add initial prompt
+      const isInitialPrompt = userInput.includes(`Du er ${character.name}, ${character.role}.`);
+      
+      if (mode === 'chat' && !isInitialPrompt) {
         newMessages.push({ role: 'user', content: userInput, timestamp: new Date() });
       }
+      
       newMessages.push({ role: 'ai', content: aiResponse, timestamp: new Date() });
       setConversation(newMessages);
       
@@ -316,6 +320,9 @@ const AICharacterSimulator = () => {
       const transcription = data.text;
       
       if (transcription && selectedCharacter) {
+        // Add user's transcribed speech to conversation immediately
+        setConversation(prev => [...prev, { role: 'user', content: transcription, timestamp: new Date() }]);
+        
         await generateAIResponse(transcription, selectedCharacter, 'audio');
         updateProgress();
       }
