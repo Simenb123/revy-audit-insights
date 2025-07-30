@@ -83,7 +83,16 @@ export const useSpecializedAIChat = (actionTemplate: EnhancedAuditActionTemplate
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        logger.error('Supabase function error:', error);
+        throw error;
+      }
+
+      // Check if we received a valid response
+      if (!data || !data.response) {
+        logger.error('Invalid response from revy-ai-chat:', data);
+        throw new Error('Invalid response from AI service');
+      }
 
       const assistantMsg: ChatMessage = {
         role: 'assistant',
@@ -94,9 +103,27 @@ export const useSpecializedAIChat = (actionTemplate: EnhancedAuditActionTemplate
       setMessages(prev => [...prev, assistantMsg]);
     } catch (error) {
       logger.error('Error sending message to specialized AI:', error);
+      
+      // Provide fallback response when AI service is unavailable
+      const fallbackMsg: ChatMessage = {
+        role: 'assistant',
+        content: 'Beklager, AI-assistenten er ikke tilgjengelig for øyeblikket. Vennligst prøv igjen senere eller kontakt support hvis problemet vedvarer.',
+        timestamp: new Date()
+      };
+      
+      setMessages(prev => [...prev, fallbackMsg]);
+      
+      // Show user-friendly error message
+      const isNetworkError = error.message?.includes('FunctionsFetchError') || 
+                            error.message?.includes('failed to fetch') ||
+                            error.message?.includes('406') ||
+                            error.message?.includes('404');
+      
       toast({
-        title: "Feil ved kommunikasjon med AI",
-        description: "Kunne ikke sende melding til den spesialiserte assistenten.",
+        title: isNetworkError ? "AI-tjeneste utilgjengelig" : "Feil ved kommunikasjon med AI",
+        description: isNetworkError 
+          ? "AI-assistenten er ikke tilgjengelig for øyeblikket. Prøv igjen senere."
+          : "Kunne ikke sende melding til den spesialiserte assistenten.",
         variant: "destructive",
       });
     } finally {
