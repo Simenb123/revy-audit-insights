@@ -1,6 +1,5 @@
 
 import { logger } from '@/utils/logger';
-import revioLogo from '@/assets/revio-header-logo.png';
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
@@ -54,13 +53,9 @@ const AppHeader: React.FC<AppHeaderProps> = ({ className = '' }) => {
       <div className="flex items-center">
         <Link
           to="/"
-          className="flex items-center hover:opacity-90"
+          className="text-2xl font-extrabold tracking-wide text-white hover:opacity-90"
         >
-          <img
-            src={revioLogo}
-            alt="Revio"
-            className="h-10 w-10"
-          />
+          Revio
         </Link>
       </div>
 
