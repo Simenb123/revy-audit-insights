@@ -781,6 +781,81 @@ function convertNorwegianNumber(value: string): number | null {
   return finalResult;
 }
 
+// Export the convertNorwegianNumber function for use in other components
+export { convertNorwegianNumber };
+
+// Format a number in Norwegian format (comma as decimal separator)
+export const formatNorwegianNumber = (value: number | null): string => {
+  if (value === null || value === undefined || isNaN(value)) return '';
+  
+  return value.toLocaleString('nb-NO', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2
+  });
+};
+
+// Identify if a column contains amount/number data
+export const isAmountColumn = (headerName: string, sampleData: string[]): boolean => {
+  const normalizedHeader = normalizeNorwegianText(headerName);
+  
+  // Check if header name suggests it's an amount column
+  const amountKeywords = [
+    'beløp', 'amount', 'balance', 'saldo', 'belop', 'kr', 'sum', 'total',
+    'valuta', 'currency', 'netto', 'brutto', 'periode'
+  ];
+  
+  const isAmountHeader = amountKeywords.some(keyword => 
+    normalizedHeader.includes(keyword) || normalizedHeader.includes(keyword.replace('ø', 'o'))
+  );
+  
+  if (isAmountHeader) return true;
+  
+  // Check if the sample data looks like numbers
+  const numericValues = sampleData
+    .filter(value => value && value.trim())
+    .slice(0, 10) // Check first 10 non-empty values
+    .map(value => convertNorwegianNumber(value))
+    .filter(num => num !== null);
+  
+  // If more than 70% of sample data converts to valid numbers, consider it an amount column
+  return numericValues.length > 0 && (numericValues.length / Math.min(10, sampleData.filter(v => v && v.trim()).length)) > 0.7;
+};
+
+// Convert preview data for display
+export const convertPreviewDataForDisplay = (
+  preview: FilePreview,
+  mappings: Record<string, string> = {}
+): { convertedRows: string[][]; amountColumns: number[]; conversionStats: Record<number, { total: number; converted: number }> } => {
+  const amountColumns: number[] = [];
+  const conversionStats: Record<number, { total: number; converted: number }> = {};
+  
+  // Identify amount columns
+  preview.headers.forEach((header, index) => {
+    const sampleData = preview.rows.slice(0, 20).map(row => row[index] || '');
+    if (isAmountColumn(header, sampleData)) {
+      amountColumns.push(index);
+      conversionStats[index] = { total: 0, converted: 0 };
+    }
+  });
+  
+  // Convert rows for display
+  const convertedRows = preview.rows.map(row => {
+    return row.map((cell, colIndex) => {
+      if (amountColumns.includes(colIndex) && cell && cell.trim()) {
+        conversionStats[colIndex].total++;
+        const converted = convertNorwegianNumber(cell);
+        if (converted !== null) {
+          conversionStats[colIndex].converted++;
+          return formatNorwegianNumber(converted);
+        }
+      }
+      return cell;
+    });
+  });
+  
+  return { convertedRows, amountColumns, conversionStats };
+};
+
 // Convert data based on mapping
 export function convertDataWithMapping(
   preview: FilePreview,

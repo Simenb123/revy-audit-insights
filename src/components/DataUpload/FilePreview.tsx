@@ -3,8 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { FilePreview as FilePreviewType, FieldDefinition, ColumnMapping, suggestColumnMappings } from '@/utils/fileProcessing';
-import { FileText, Database, AlertCircle, Brain, CheckCircle, Zap } from 'lucide-react';
+import { FilePreview as FilePreviewType, FieldDefinition, ColumnMapping, suggestColumnMappings, convertPreviewDataForDisplay } from '@/utils/fileProcessing';
+import { FileText, Database, AlertCircle, Brain, CheckCircle, Zap, TrendingUp } from 'lucide-react';
 
 interface FilePreviewProps {
   preview: FilePreviewType;
@@ -23,6 +23,10 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
 }) => {
   const [mapping, setMapping] = useState<Record<string, string>>({});
   const [suggestedMappings, setSuggestedMappings] = useState<ColumnMapping[]>([]);
+  const [showConvertedData, setShowConvertedData] = useState(false);
+
+  // Convert preview data for display
+  const { convertedRows, amountColumns, conversionStats } = convertPreviewDataForDisplay(preview, mapping);
 
   // Auto-suggest mappings when field definitions are provided
   useEffect(() => {
@@ -113,9 +117,26 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
                   {requiredStatus.mapped}/{requiredStatus.total} påkrevde felt
                 </Badge>
               )}
+              {amountColumns.length > 0 && (
+                <Badge variant="outline" className="flex items-center gap-1">
+                  <TrendingUp className="w-3 h-3" />
+                  {amountColumns.length} beløpskolonne{amountColumns.length > 1 ? 'r' : ''}
+                </Badge>
+              )}
             </div>
-            {showMapping && suggestedMappings.length > 0 && (
-              <div className="flex gap-2">
+            <div className="flex gap-2">
+              {amountColumns.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowConvertedData(!showConvertedData)}
+                  className="flex items-center gap-2"
+                >
+                  <TrendingUp className="w-4 h-4" />
+                  {showConvertedData ? 'Vis originaldata' : 'Vis konverterte tall'}
+                </Button>
+              )}
+              {showMapping && suggestedMappings.length > 0 && (
                 <Button
                   variant="outline"
                   size="sm"
@@ -125,19 +146,19 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
                   <Zap className="w-4 h-4" />
                   Bruk alle forslag
                 </Button>
-                {onMappingComplete && (
-                  <Button
-                    size="sm"
-                    onClick={() => onMappingComplete(mapping)}
-                    disabled={!requiredStatus.complete}
-                    className="flex items-center gap-2"
-                  >
-                    <CheckCircle className="w-4 h-4" />
-                    Fortsett
-                  </Button>
-                )}
-              </div>
-            )}
+              )}
+              {showMapping && onMappingComplete && (
+                <Button
+                  size="sm"
+                  onClick={() => onMappingComplete(mapping)}
+                  disabled={!requiredStatus.complete}
+                  className="flex items-center gap-2"
+                >
+                  <CheckCircle className="w-4 h-4" />
+                  Fortsett
+                </Button>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -205,24 +226,53 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
                   <th className="border border-border px-2 py-1 text-left text-xs font-medium">
                     #
                   </th>
-                  {preview.headers.map((header, index) => (
-                    <th key={index} className="border border-border px-2 py-1 text-left text-xs font-medium whitespace-nowrap min-w-[100px]">
-                      {header || `Kolonne ${index + 1}`}
-                    </th>
-                  ))}
+                  {preview.headers.map((header, index) => {
+                    const isAmountCol = amountColumns.includes(index);
+                    const stats = conversionStats[index];
+                    
+                    return (
+                      <th key={index} className="border border-border px-2 py-1 text-left text-xs font-medium whitespace-nowrap min-w-[100px]">
+                        <div className="flex flex-col gap-1">
+                          <span>{header || `Kolonne ${index + 1}`}</span>
+                          {isAmountCol && stats && (
+                            <Badge variant="secondary" className="text-xs">
+                              <TrendingUp className="w-2 h-2 mr-1" />
+                              {stats.converted}/{stats.total} konvertert
+                            </Badge>
+                          )}
+                        </div>
+                      </th>
+                    );
+                  })}
                 </tr>
               </thead>
               <tbody>
-                {preview.rows.map((row, rowIndex) => (
+                {(showConvertedData ? convertedRows : preview.rows).map((row, rowIndex) => (
                   <tr key={rowIndex} className="hover:bg-muted/25">
                     <td className="border border-border px-2 py-1 text-xs text-muted-foreground">
                       {rowIndex + 1}
                     </td>
-                    {preview.headers.map((_, colIndex) => (
-                      <td key={colIndex} className="border border-border px-2 py-1 text-xs whitespace-nowrap min-w-[100px]">
-                        {row[colIndex] || ''}
-                      </td>
-                    ))}
+                    {preview.headers.map((_, colIndex) => {
+                      const isAmountCol = amountColumns.includes(colIndex);
+                      const cellValue = row[colIndex] || '';
+                      const isConverted = showConvertedData && isAmountCol && cellValue !== (preview.rows[rowIndex]?.[colIndex] || '');
+                      
+                      return (
+                        <td 
+                          key={colIndex} 
+                          className={`border border-border px-2 py-1 text-xs whitespace-nowrap min-w-[100px] ${
+                            isConverted ? 'bg-emerald-50 text-emerald-900' : ''
+                          }`}
+                        >
+                          {cellValue}
+                          {isConverted && (
+                            <span className="ml-1 text-emerald-600" title="Konvertert til norsk format">
+                              ✓
+                            </span>
+                          )}
+                        </td>
+                      );
+                    })}
                   </tr>
                 ))}
               </tbody>
