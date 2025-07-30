@@ -47,7 +47,7 @@ const EmbeddedRevyAssistant: React.FC<EmbeddedRevyAssistantProps> = ({
       {/* Messages area - scrollable */}
       <div className="flex-1 overflow-hidden min-h-0">
         <ScrollArea className="h-full">
-          <div className="space-y-2 px-2 pb-2">
+          <div className="space-y-1 px-1 pb-2">
             {messages.length === 0 ? (
               <div className="text-xs text-muted-foreground p-2 text-center">
                 Spør meg om hjelp med revisjonen

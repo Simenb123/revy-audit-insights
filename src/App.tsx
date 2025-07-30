@@ -68,11 +68,14 @@ function App() {
                   <Route path="klienter" element={<ProtectedRoute><ClientsOverview /></ProtectedRoute>} />
                   <Route path="clients/:id" element={<ProtectedRoute><ClientDetail /></ProtectedRoute>} />
                   <Route path="klienter/:orgNumber" element={<ProtectedRoute><ClientDetail /></ProtectedRoute>} />
+                  <Route path="klienter/:orgNumber/oversikt" element={<ProtectedRoute><ClientDetail /></ProtectedRoute>} />
+                  <Route path="klienter/:orgNumber/analyse" element={<AnalysisPage />} />
+                  <Route path="klienter/:orgNumber/opplasting" element={<GeneralLedgerUpload />} />
+                  <Route path="klienter/:orgNumber/hovedbok" element={<GeneralLedgerUpload />} />
+                  <Route path="klienter/:orgNumber/saldobalanse" element={<TrialBalanceUpload />} />
                   <Route path="klienter/:orgNumber/regnskap" element={<AccountingData />} />
                   <Route path="klienter/:orgNumber/analyser" element={<AnalysisPage />} />
                   <Route path="klienter/:orgNumber/regnskapsdata" element={<DataImport />} />
-                  <Route path="klienter/:orgNumber/hovedbok" element={<GeneralLedgerUpload />} />
-                  <Route path="klienter/:orgNumber/saldobalanse" element={<TrialBalanceUpload />} />
                   <Route path="klienter/:orgNumber/grunnlagsdata" element={<DataImport />} />
                   <Route path="klienter/:orgNumber/spesialdata" element={<DataImport />} />
                   <Route path="klienter/:orgNumber/transaksjoner" element={<DataImport />} />

@@ -6,6 +6,8 @@ import { useClientDetails } from '@/hooks/useClientDetails';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
+import ResponsiveLayout from '@/components/Layout/ResponsiveLayout';
+import StandardPageLayout from '@/components/Layout/StandardPageLayout';
 import ClientBreadcrumb from '@/components/Clients/ClientDetails/ClientBreadcrumb';
 import ClientNavigation from '@/components/Clients/ClientDetails/ClientNavigation';
 import RevisionWorkflow from '@/components/Clients/ClientDetails/RevisionWorkflow';
@@ -54,40 +56,52 @@ const ClientDetail = () => {
   if (isLoading) {
     logger.log('⏳ [CLIENT_DETAIL] Loading client data...');
     return (
-      <div className="space-y-6 p-6">
-        <Skeleton className="h-8 w-64" />
-        <Skeleton className="h-10 w-96" />
-        <Skeleton className="h-64 w-full" />
-      </div>
+      <ResponsiveLayout>
+        <StandardPageLayout>
+          <div className="space-y-6">
+            <Skeleton className="h-8 w-64" />
+            <Skeleton className="h-10 w-96" />
+            <Skeleton className="h-64 w-full" />
+          </div>
+        </StandardPageLayout>
+      </ResponsiveLayout>
     );
   }
 
   if (error) {
     logger.error('❌ [CLIENT_DETAIL] Error loading client:', error);
     return (
-      <div className="text-center py-12">
-        <Alert variant="destructive" className="max-w-md mx-auto">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            Feil ved lasting av klientdata: {error.message}
-          </AlertDescription>
-        </Alert>
-      </div>
+      <ResponsiveLayout>
+        <StandardPageLayout>
+          <div className="text-center py-12">
+            <Alert variant="destructive" className="max-w-md mx-auto">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Feil ved lasting av klientdata: {error.message}
+              </AlertDescription>
+            </Alert>
+          </div>
+        </StandardPageLayout>
+      </ResponsiveLayout>
     );
   }
 
   if (!client) {
     logger.error('❌ [CLIENT_DETAIL] No client found for orgNumber:', orgNumber);
     return (
-      <div className="text-center py-12">
-        <Alert variant="destructive" className="max-w-md mx-auto">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            Kunne ikke finne klient med organisasjonsnummer {orgNumber}. 
-            Kontroller at nummeret er korrekt eller at du har tilgang til denne klienten.
-          </AlertDescription>
-        </Alert>
-      </div>
+      <ResponsiveLayout>
+        <StandardPageLayout>
+          <div className="text-center py-12">
+            <Alert variant="destructive" className="max-w-md mx-auto">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Kunne ikke finne klient med organisasjonsnummer {orgNumber}. 
+                Kontroller at nummeret er korrekt eller at du har tilgang til denne klienten.
+              </AlertDescription>
+            </Alert>
+          </div>
+        </StandardPageLayout>
+      </ResponsiveLayout>
     );
   }
 
@@ -98,14 +112,18 @@ const ClientDetail = () => {
       orgNumber
     });
     return (
-      <div className="text-center py-12">
-        <Alert variant="destructive" className="max-w-md mx-auto">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            Klient-data er ufullstendig (mangler ID). Prøv å oppdatere siden.
-          </AlertDescription>
-        </Alert>
-      </div>
+      <ResponsiveLayout>
+        <StandardPageLayout>
+          <div className="text-center py-12">
+            <Alert variant="destructive" className="max-w-md mx-auto">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Klient-data er ufullstendig (mangler ID). Prøv å oppdatere siden.
+              </AlertDescription>
+            </Alert>
+          </div>
+        </StandardPageLayout>
+      </ResponsiveLayout>
     );
   }
 
@@ -123,26 +141,33 @@ const ClientDetail = () => {
   };
 
   return (
-    <div className="space-y-4 p-6">
-      <ClientBreadcrumb client={client} />
-      
-      <Routes>
-        <Route 
-          path="/" 
-          element={
-            <div className="space-y-4">
-              <RevisionWorkflow 
-                currentPhase={client.phase || 'overview'} 
-                progress={client.progress || 0}
-                onPhaseClick={handlePhaseClick}
-                clientId={client.id}
-              />
-              <PhaseContent phase={selectedPhase} client={client} />
-            </div>
-          } 
-        />
-      </Routes>
-    </div>
+    <ResponsiveLayout>
+      <StandardPageLayout 
+        header={
+          <div className="space-y-4">
+            <ClientBreadcrumb client={client} />
+            <ClientNavigation />
+          </div>
+        }
+      >
+        <Routes>
+          <Route 
+            path="/" 
+            element={
+              <div className="space-y-4">
+                <RevisionWorkflow 
+                  currentPhase={client.phase || 'overview'} 
+                  progress={client.progress || 0}
+                  onPhaseClick={handlePhaseClick}
+                  clientId={client.id}
+                />
+                <PhaseContent phase={selectedPhase} client={client} />
+              </div>
+            } 
+          />
+        </Routes>
+      </StandardPageLayout>
+    </ResponsiveLayout>
   );
 };
 

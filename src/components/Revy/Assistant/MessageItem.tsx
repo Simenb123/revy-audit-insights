@@ -18,15 +18,24 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, compact = false }) =
     <div
       className={cn(
         "flex animate-fade-in items-start",
-        compact ? "gap-1 mb-1" : "gap-3 mb-4",
+        compact ? "gap-2 mb-2" : "gap-3 mb-4",
         !isAssistant && "flex-row-reverse"
       )}
     >
+      {/* Avatar for assistant messages */}
+      {isAssistant && (
+        <RevyAvatar
+          size={compact ? "md" : "lg"}
+          className="flex-shrink-0 mt-0.5"
+        />
+      )}
+      
+      {/* Avatar for user messages */}
       {!isAssistant && (
         <div
           className={cn(
-            "rounded-full bg-primary text-primary-foreground flex items-center justify-center font-medium mt-1",
-            compact ? "h-8 w-8 text-xs" : "h-12 w-12 text-sm"
+            "rounded-full bg-primary text-primary-foreground flex items-center justify-center font-medium mt-0.5 flex-shrink-0",
+            compact ? "h-6 w-6 text-xs" : "h-8 w-8 text-sm"
           )}
         >
           D
@@ -36,22 +45,13 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, compact = false }) =
       <div className="min-w-0 flex-1">
         <div
           className={cn(
-            "revy-message-bubble rounded-lg px-4 py-3 break-words",
-            compact ? "text-xs px-3 py-2" : "text-sm",
+            "rounded-lg break-words",
+            compact ? "text-xs px-2 py-1.5" : "text-sm px-3 py-2",
             isAssistant
               ? "bg-muted text-foreground shadow-sm"
               : "bg-primary text-primary-foreground"
           )}
         >
-          {isAssistant && (
-            <RevyAvatar
-              size={compact ? "md" : "xl"}
-              className={cn(
-                "revy-message-avatar",
-                compact ? "-top-2 -left-2" : "-top-4 -left-4"
-              )}
-            />
-          )}
           {isAssistant ? (
             <ActionableMessage
               content={typeof message.content === 'string' ? message.content : ''}
@@ -66,7 +66,7 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, compact = false }) =
         </div>
 
         {!compact && (
-          <span className="text-xs text-muted-foreground mt-1">
+          <span className="text-xs text-muted-foreground mt-1 block">
             {message.timestamp.toLocaleTimeString('nb-NO', {
               hour: '2-digit',
               minute: '2-digit'

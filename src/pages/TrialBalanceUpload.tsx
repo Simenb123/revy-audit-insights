@@ -1,8 +1,10 @@
 import React from 'react';
 import { useParams } from 'react-router-dom';
 import { useClientDetails } from '@/hooks/useClientDetails';
-import GlobalLayoutContainer from '@/components/Layout/GlobalLayoutContainer';
+import ResponsiveLayout from '@/components/Layout/ResponsiveLayout';
+import StandardPageLayout from '@/components/Layout/StandardPageLayout';
 import ClientBreadcrumb from '@/components/Clients/ClientDetails/ClientBreadcrumb';
+import ClientNavigation from '@/components/Clients/ClientDetails/ClientNavigation';
 import TrialBalanceUploader from '@/components/Accounting/TrialBalanceUploader';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -12,41 +14,52 @@ const TrialBalanceUpload = () => {
 
   if (isLoading) {
     return (
-      <GlobalLayoutContainer maxWidth="full">
-        <div className="p-6 space-y-6">
-          <Skeleton className="h-8 w-64" />
-          <Skeleton className="h-64 w-full" />
-        </div>
-      </GlobalLayoutContainer>
+      <ResponsiveLayout>
+        <StandardPageLayout>
+          <div className="space-y-6">
+            <Skeleton className="h-8 w-64" />
+            <Skeleton className="h-64 w-full" />
+          </div>
+        </StandardPageLayout>
+      </ResponsiveLayout>
     );
   }
 
   if (error || !client) {
     return (
-      <GlobalLayoutContainer maxWidth="full">
-        <div className="p-6 text-center py-12">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Klient ikke funnet</h1>
-          <p className="text-gray-600">
-            Kunne ikke finne klient med organisasjonsnummer {orgNumber}
-          </p>
-        </div>
-      </GlobalLayoutContainer>
+      <ResponsiveLayout>
+        <StandardPageLayout>
+          <div className="text-center py-12">
+            <h1 className="text-2xl font-bold mb-4">Klient ikke funnet</h1>
+            <p className="text-muted-foreground">
+              Kunne ikke finne klient med organisasjonsnummer {orgNumber}
+            </p>
+          </div>
+        </StandardPageLayout>
+      </ResponsiveLayout>
     );
   }
 
   return (
-    <GlobalLayoutContainer maxWidth="full">
-      <div className="p-6 space-y-6">
-        <ClientBreadcrumb client={client} />
-        
-        <TrialBalanceUploader 
-          clientId={client.id}
-          onUploadComplete={() => {
-            // Could navigate back or show success message
-          }}
-        />
-      </div>
-    </GlobalLayoutContainer>
+    <ResponsiveLayout>
+      <StandardPageLayout 
+        header={
+          <div className="space-y-4">
+            <ClientBreadcrumb client={client} />
+            <ClientNavigation />
+          </div>
+        }
+      >
+        <div className="space-y-6">
+          <TrialBalanceUploader 
+            clientId={client.id}
+            onUploadComplete={() => {
+              // Could navigate back or show success message
+            }}
+          />
+        </div>
+      </StandardPageLayout>
+    </ResponsiveLayout>
   );
 };
 

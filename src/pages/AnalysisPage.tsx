@@ -3,7 +3,8 @@ import { useParams } from 'react-router-dom';
 import { useClientDetails } from '@/hooks/useClientDetails';
 import ResponsiveLayout from '@/components/Layout/ResponsiveLayout';
 import StandardPageLayout from '@/components/Layout/StandardPageLayout';
-import GlobalSubHeader from '@/components/Layout/GlobalSubHeader';
+import ClientBreadcrumb from '@/components/Clients/ClientDetails/ClientBreadcrumb';
+import ClientNavigation from '@/components/Clients/ClientDetails/ClientNavigation';
 import AccountingExplorer from '@/components/DataAnalysis/AccountingExplorer';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -15,7 +16,7 @@ const AnalysisPage = () => {
     return (
       <ResponsiveLayout>
         <StandardPageLayout>
-          <div className="p-6 space-y-6">
+          <div className="space-y-6">
             <Skeleton className="h-8 w-64" />
             <Skeleton className="h-64 w-full" />
           </div>
@@ -28,8 +29,8 @@ const AnalysisPage = () => {
     return (
       <ResponsiveLayout>
         <StandardPageLayout>
-          <div className="p-6 text-center py-12">
-            <h1 className="text-2xl font-bold text-foreground mb-4">Klient ikke funnet</h1>
+          <div className="text-center py-12">
+            <h1 className="text-2xl font-bold mb-4">Klient ikke funnet</h1>
             <p className="text-muted-foreground">
               Kunne ikke finne klient med organisasjonsnummer {orgNumber}
             </p>
@@ -39,23 +40,17 @@ const AnalysisPage = () => {
     );
   }
 
-  const moduleIndicator = (
-    <div className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
-      Regnskapsanalyse
-    </div>
-  );
-
   return (
     <ResponsiveLayout>
       <StandardPageLayout
         header={
-          <GlobalSubHeader
-            title="Regnskapsanalyse"
-            moduleIndicator={moduleIndicator}
-          />
+          <div className="space-y-4">
+            <ClientBreadcrumb client={client} />
+            <ClientNavigation />
+          </div>
         }
       >
-        <div className="p-6 space-y-6">
+        <div className="space-y-6">
           <div>
             <p className="text-muted-foreground">
               Utforsk hovedbok, saldobalanse og regnskapstransaksjoner for {client.name}

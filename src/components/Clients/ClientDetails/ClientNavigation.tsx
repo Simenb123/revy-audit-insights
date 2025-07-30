@@ -1,6 +1,7 @@
 
 import React from 'react';
-import { Button } from "@/components/ui/button";
+import { Link, useParams, useLocation } from 'react-router-dom';
+import { cn } from '@/lib/utils';
 import { 
   FileText, 
   TrendingUp, 
@@ -9,45 +10,52 @@ import {
   Calendar,
   CheckSquare,
   BarChart3,
-  Settings
+  Settings,
+  Upload
 } from "lucide-react";
 
 interface ClientNavigationProps {
-  activeTab: string;
-  onTabChange: (tab: string) => void;
+  activeTab?: string;
+  onTabChange?: (tab: string) => void;
 }
 
 const ClientNavigation = ({ activeTab, onTabChange }: ClientNavigationProps) => {
+  const { orgNumber } = useParams<{ orgNumber: string }>();
+  const location = useLocation();
+  
   const tabs = [
-    { id: 'overview', label: 'Oversikt', icon: TrendingUp },
-    { id: 'audit-actions', label: 'Revisjonshandlinger', icon: CheckSquare },
-    { id: 'workflow', label: 'Arbeidsflyt', icon: FileText },
-    { id: 'team', label: 'Team', icon: Users },
-    { id: 'communication', label: 'Kommunikasjon', icon: MessageSquare },
-    { id: 'analysis', label: 'Analyse', icon: BarChart3 },
-    { id: 'schedule', label: 'Tidsplan', icon: Calendar },
-    { id: 'settings', label: 'Innstillinger', icon: Settings },
+    { id: 'oversikt', label: 'Oversikt', icon: TrendingUp, path: `/klienter/${orgNumber}/oversikt` },
+    { id: 'hovedbok', label: 'Hovedbok', icon: FileText, path: `/klienter/${orgNumber}/hovedbok` },
+    { id: 'saldobalanse', label: 'Saldobalanse', icon: BarChart3, path: `/klienter/${orgNumber}/saldobalanse` },
+    { id: 'opplasting', label: 'Opplasting', icon: Upload, path: `/klienter/${orgNumber}/opplasting` },
+    { id: 'analyse', label: 'Analyse', icon: BarChart3, path: `/klienter/${orgNumber}/analyse` },
   ];
+  
+  const currentPath = location.pathname;
 
   return (
-    <div className="border-b border-gray-200 bg-white">
-      <div className="flex space-x-8 overflow-x-auto px-6">
+    <div className="border-b border-border bg-background">
+      <div className="flex space-x-1 overflow-x-auto px-6">
         {tabs.map((tab) => {
           const Icon = tab.icon;
+          const isActive = currentPath === tab.path || 
+                          (tab.id === 'oversikt' && currentPath === `/klienter/${orgNumber}`);
+          
           return (
-            <Button
+            <Link
               key={tab.id}
-              variant={activeTab === tab.id ? "default" : "ghost"}
-              className={`flex items-center space-x-2 whitespace-nowrap py-4 ${
-                activeTab === tab.id 
-                  ? "border-b-2 border-revio-500 bg-revio-50 text-revio-700" 
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
-              onClick={() => onTabChange(tab.id)}
+              to={tab.path}
+              className={cn(
+                "flex items-center space-x-2 whitespace-nowrap py-4 px-3 rounded-t-lg border-b-2 text-sm font-medium transition-colors",
+                isActive 
+                  ? "border-primary bg-primary/5 text-primary" 
+                  : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50"
+              )}
+              onClick={() => onTabChange?.(tab.id)}
             >
               <Icon size={16} />
               <span>{tab.label}</span>
-            </Button>
+            </Link>
           );
         })}
       </div>
