@@ -25,72 +25,94 @@ Deno.serve(async (req) => {
     const elevenLabsApiKey = Deno.env.get('ELEVENLABS_API_KEY') || 'sk_b3e5ab505b9457d6db97a4093873157f3e6b9c96cb5b4f42'
     
     if (elevenLabsApiKey && voiceId) {
-      // Try ElevenLabs first for better quality
-      const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
-        method: 'POST',
-        headers: {
-          'Accept': 'audio/mpeg',
-          'Content-Type': 'application/json',
-          'xi-api-key': elevenLabsApiKey,
-        },
-        body: JSON.stringify({
-          text: text,
-          model_id: 'eleven_multilingual_v2',
-          voice_settings: {
-            stability: 0.5,
-            similarity_boost: 0.5,
-            style: 0.0,
-            use_speaker_boost: true
-          }
-        }),
-      })
-
-      if (response.ok) {
-        const audioBuffer = await response.arrayBuffer()
-        const base64Audio = btoa(String.fromCharCode(...new Uint8Array(audioBuffer)))
-        log('ElevenLabs speech generated successfully')
-        
-        return new Response(JSON.stringify({ audioContent: base64Audio }), {
+      try {
+        // Try ElevenLabs first for better quality
+        const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+          method: 'POST',
           headers: {
-            ...corsHeaders,
+            'Accept': 'audio/mpeg',
             'Content-Type': 'application/json',
+            'xi-api-key': elevenLabsApiKey,
           },
+          body: JSON.stringify({
+            text: text,
+            model_id: 'eleven_multilingual_v2',
+            voice_settings: {
+              stability: 0.5,
+              similarity_boost: 0.5,
+              style: 0.0,
+              use_speaker_boost: true
+            }
+          }),
         })
-      } else {
-        log('ElevenLabs failed, falling back to OpenAI')
+
+        if (response.ok) {
+          const audioBuffer = await response.arrayBuffer()
+          log('ElevenLabs speech generated successfully')
+          
+          return new Response(audioBuffer, {
+            headers: {
+              ...corsHeaders,
+              'Content-Type': 'audio/mpeg',
+            },
+          })
+        } else {
+          log('ElevenLabs failed, falling back to OpenAI')
+        }
+      } catch (error) {
+        log('ElevenLabs error, falling back to OpenAI:', error.message)
       }
+    } else if (voiceId && !elevenLabsApiKey) {
+      return new Response(JSON.stringify({ error: 'ElevenLabs API key not configured' }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    } else if (!voiceId && elevenLabsApiKey) {
+      return new Response(JSON.stringify({ error: 'Invalid voice ID' }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
     }
 
     // Fallback to OpenAI TTS
-    const openAIResponse = await fetch('https://api.openai.com/v1/audio/speech', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'tts-1',
-        input: text,
-        voice: 'alloy',
-        response_format: 'mp3',
-      }),
-    })
+    try {
+      const openAIResponse = await fetch('https://api.openai.com/v1/audio/speech', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'tts-1',
+          input: text,
+          voice: 'alloy',
+          response_format: 'mp3',
+        }),
+      })
 
-    if (!openAIResponse.ok) {
-      const error = await openAIResponse.json()
-      throw new Error(error.error?.message || 'Failed to generate speech')
+      if (!openAIResponse.ok) {
+        const error = await openAIResponse.json()
+        return new Response(JSON.stringify({ error: error.error?.message || 'Failed to generate speech' }), {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+
+      const audioBuffer = await openAIResponse.arrayBuffer()
+      log('OpenAI speech generated successfully')
+
+      return new Response(audioBuffer, {
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'audio/mpeg',
+        },
+      })
+    } catch (error) {
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
     }
-
-    const audioBuffer = await openAIResponse.arrayBuffer()
-    const base64Audio = btoa(String.fromCharCode(...new Uint8Array(audioBuffer)))
-    log('OpenAI speech generated successfully')
-
-    return new Response(JSON.stringify({ audioContent: base64Audio }), {
-      headers: {
-        ...corsHeaders,
-        'Content-Type': 'application/json',
-      },
-    })
 
   } catch (error) {
     console.error('Error in text-to-speech function:', error)

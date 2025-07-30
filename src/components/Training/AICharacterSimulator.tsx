@@ -259,49 +259,40 @@ const AICharacterSimulator = () => {
         return;
       }
 
-      let audioBuffer: ArrayBuffer;
-      
       if (data instanceof ArrayBuffer) {
-        // Direct ArrayBuffer response
-        audioBuffer = data;
-      } else if (typeof data === 'string') {
-        // Base64 string response - decode it
-        logger.log('Received base64 string response, decoding...');
-        try {
-          const bytes = Uint8Array.from(atob(data), (c) => c.charCodeAt(0));
-          audioBuffer = bytes.buffer;
-        } catch (decodeError) {
-          logger.error('Failed to decode base64 string:', decodeError);
-          toast({
-            title: "Lydfeil",
-            description: "Kunne ikke dekode lyddata",
-            variant: "destructive"
-          });
-          await speakText(text);
-          return;
-        }
-      } else if (data && (data as any).audioContent) {
-        // JSON response with audioContent property
-        const bytes = Uint8Array.from(atob((data as any).audioContent), (c) => c.charCodeAt(0));
-        audioBuffer = bytes.buffer;
+        // Direct ArrayBuffer response - wrap in blob and play
+        const blob = new Blob([data], { type: 'audio/mpeg' });
+        const url = URL.createObjectURL(blob);
+        const audio = new Audio(url);
+        await audio.play();
+        return;
+      } else if (data && typeof data === 'object' && (data as any).error) {
+        // Error response from edge function
+        logger.error('TTS service error:', (data as any).error);
+        toast({
+          title: "Lydfeil",
+          description: "Kunne ikke generere tale, faller tilbake til tekst",
+          variant: "destructive"
+        });
+        
+        // Fallback to useVoiceCommands speakText (OpenAI TTS)
+        logger.log('Falling back to OpenAI TTS due to service error');
+        await speakText(text);
+        return;
       } else {
-        logger.error('Invalid audio data format received:', typeof data, data);
+        logger.error('Unexpected response format from TTS service:', typeof data, data);
         toast({
           title: "Lydfeil", 
-          description: "Ukjent lydformat mottatt",
+          description: "Kunne ikke generere tale, faller tilbake til tekst",
           variant: "destructive"
         });
         
         // Fallback to useVoiceCommands speakText
-        logger.log('Falling back to OpenAI TTS due to invalid data format');
         await speakText(text);
         return;
       }
 
-      const blob = new Blob([audioBuffer], { type: 'audio/mpeg' });
-      const url = URL.createObjectURL(blob);
-      const audio = new Audio(url);
-      await audio.play();
+      // This code is no longer reachable due to early returns above
       
       logger.log('ElevenLabs speech playback successful');
       
