@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
-import { Upload, Database, AlertCircle, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Upload, Database, AlertCircle, AlertTriangle, CheckCircle, Filter } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import EnhancedPreview from '@/components/DataUpload/EnhancedPreview';
 import { DataManagementPanel } from '@/components/DataUpload/DataManagementPanel';
@@ -19,6 +19,8 @@ import {
   calculateAmountStatistics,
   formatNorwegianNumber
 } from '@/utils/fileProcessing';
+import GeneralLedgerFilters from './GeneralLedgerFilters';
+import FilteredDataPreview from './FilteredDataPreview';
 
 interface TransactionRow {
   date: string;
@@ -44,6 +46,8 @@ const GeneralLedgerUploader = ({ clientId, onUploadComplete }: GeneralLedgerUplo
   const [previewData, setPreviewData] = useState<{ data: any[]; totalBalance: number; balanceDifference: number; isBalanced: boolean; fileName: string } | null>(null);
   const [versionId, setVersionId] = useState<string | null>(null);
   const [amountStats, setAmountStats] = useState<any>(null);
+  const [filteredData, setFilteredData] = useState<any[]>([]);
+  const [filterStats, setFilterStats] = useState<any>(null);
   
   const createVersion = useCreateVersion();
 
@@ -243,10 +247,18 @@ const GeneralLedgerUploader = ({ clientId, onUploadComplete }: GeneralLedgerUplo
     }
   };
 
+  const handleFilteredDataChange = (newFilteredData: any[], stats: any) => {
+    setFilteredData(newFilteredData);
+    setFilterStats(stats);
+  };
+
   const handleConfirmUpload = async () => {
-    if (!selectedFile || !convertedData.length || !previewData) return;
+    // Use filtered data if filters are active, otherwise use original converted data
+    const dataToUpload = filteredData.length > 0 && filterStats ? filteredData : convertedData;
+    
+    if (!selectedFile || !dataToUpload.length || !previewData) return;
     setStep('upload');
-    await uploadGeneralLedger(convertedData, selectedFile);
+    await uploadGeneralLedger(dataToUpload, selectedFile);
   };
 
   const findOrCreateAccounts = async (accountNumbers: string[]) => {
@@ -612,157 +624,98 @@ const GeneralLedgerUploader = ({ clientId, onUploadComplete }: GeneralLedgerUplo
 
       {step === 'preview' && previewData && (
         <div className="space-y-6">
-          <ValidationResults data={previewData.data} />
+          {/* Filtering System */}
+          <GeneralLedgerFilters 
+            data={convertedData}
+            onFilteredDataChange={handleFilteredDataChange}
+          />
           
-          {/* Amount Statistics */}
-          {amountStats && (
-            <Card className="mb-6">
+          {/* Original Data Preview */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Database className="w-5 h-5" />
+                <span>Opprinnelige data - {previewData.fileName}</span>
+              </CardTitle>
+              <CardDescription>
+                Originale data før filtrering
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <ValidationResults data={convertedData} />
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <div className="text-sm text-blue-600 font-medium">Totalt transaksjoner</div>
+                  <div className="text-2xl font-bold text-blue-900">{convertedData.length.toLocaleString('nb-NO')}</div>
+                </div>
+                
+                <div className={`p-4 rounded-lg ${previewData.isBalanced ? 'bg-green-50' : 'bg-yellow-50'}`}>
+                  <div className={`text-sm font-medium ${previewData.isBalanced ? 'text-green-600' : 'text-yellow-600'}`}>
+                    Total balanse
+                  </div>
+                  <div className={`text-2xl font-bold ${previewData.isBalanced ? 'text-green-900' : 'text-yellow-900'}`}>
+                    {formatNorwegianNumber(previewData.totalBalance)} kr
+                  </div>
+                  <div className="text-xs text-gray-600 mt-1">
+                    {previewData.isBalanced ? '✅ I balanse' : `⚠️ Ubalanse: ${formatNorwegianNumber(previewData.balanceDifference)} kr`}
+                  </div>
+                </div>
+                
+                {amountStats && (
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <div className="text-sm text-gray-600 font-medium">Beløpsfordeling</div>
+                    <div className="text-sm text-gray-800 mt-1">
+                      <div>Positive: {amountStats.positiveCount.toLocaleString('nb-NO')} ({formatNorwegianNumber(amountStats.positiveSum)} kr)</div>
+                      <div>Negative: {amountStats.negativeCount.toLocaleString('nb-NO')} ({formatNorwegianNumber(amountStats.negativeSum)} kr)</div>
+                      <div>Null: {amountStats.zeroCount.toLocaleString('nb-NO')}</div>
+                      {amountStats.conversionErrors > 0 && (
+                        <div className="text-orange-600">Feil: {amountStats.conversionErrors}</div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Filtered Data Preview */}
+          {filteredData.length > 0 && filterStats && (
+            <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Database className="w-5 h-5" />
-                  Beløp-statistikk
+                <CardTitle className="flex items-center space-x-2">
+                  <Filter className="w-5 h-5" />
+                  <span>Filtrerte data for opplasting</span>
                 </CardTitle>
                 <CardDescription>
-                  Detaljert oversikt over beløp i hovedboksfilen
+                  Data som vil bli lastet opp etter filtrering
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                  <div className="space-y-3">
-                    <p className="font-medium text-slate-700">Transaksjoner</p>
-                    <div className="space-y-1">
-                      <p>Positive beløp: <span className="font-mono">{amountStats.positiveCount}</span></p>
-                      <p>Negative beløp: <span className="font-mono">{amountStats.negativeCount}</span></p>
-                      <p>Null-beløp: <span className="font-mono">{amountStats.zeroCount}</span></p>
-                      <p className={amountStats.noAmountCount > 0 ? "text-amber-600" : ""}>
-                        Manglende beløp: <span className="font-mono">{amountStats.noAmountCount}</span>
-                      </p>
-                    </div>
-                  </div>
-                  <div className="space-y-3">
-                    <p className="font-medium text-slate-700">Summer</p>
-                    <div className="space-y-1">
-                      <p>Sum positive: <span className="font-mono text-green-600">{formatNorwegianNumber(amountStats.positiveSum)} kr</span></p>
-                      <p>Sum negative: <span className="font-mono text-red-600">{formatNorwegianNumber(amountStats.negativeSum)} kr</span></p>
-                      <p className="font-bold">Total sum: <span className="font-mono">{formatNorwegianNumber(amountStats.totalSum)} kr</span></p>
-                    </div>
-                  </div>
-                  <div className="space-y-3">
-                    <p className="font-medium text-slate-700">Kvalitet</p>
-                    <div className="space-y-1">
-                      <p className={amountStats.conversionErrors > 0 ? "text-red-600" : "text-green-600"}>
-                        Konverteringsfeil: <span className="font-mono">{amountStats.conversionErrors}</span>
-                      </p>
-                      {amountStats.conversionErrors > 0 && (
-                        <p className="text-red-600 text-xs">⚠️ Noen beløp kunne ikke konverteres</p>
-                      )}
-                      {amountStats.positiveSum === 0 && amountStats.negativeSum === 0 && amountStats.totalSum === 0 && (
-                        <p className="text-red-600 text-xs font-bold">🚨 Ingen gyldige beløp funnet!</p>
-                      )}
-                      {amountStats.positiveSum > 0 || amountStats.negativeSum < 0 ? (
-                        <p className="text-green-600 text-xs">✅ Beløp konvertert OK</p>
-                      ) : null}
-                    </div>
-                  </div>
-                </div>
+                <FilteredDataPreview 
+                  originalData={convertedData}
+                  filteredData={filteredData}
+                  stats={filterStats}
+                />
               </CardContent>
             </Card>
           )}
           
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CheckCircle className="w-5 h-5" />
-                Bekreft hovedbok-opplasting
-              </CardTitle>
-              <CardDescription>
-                Sjekk balansen før opplasting av {selectedFile?.name}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Balance Check Results */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <p className="text-sm text-blue-600 font-medium">Total Balanse</p>
-                  <p className="text-2xl font-bold text-blue-800">
-                    {previewData.totalBalance.toLocaleString('nb-NO', { 
-                      style: 'currency', 
-                      currency: 'NOK',
-                      minimumFractionDigits: 2
-                    })}
-                  </p>
+          <div className="flex justify-between">
+            <Button variant="outline" onClick={() => setStep('select')}>
+              Tilbake
+            </Button>
+            <div className="flex items-center space-x-2">
+              {filteredData.length > 0 && filterStats && (
+                <div className="text-sm text-muted-foreground">
+                  Laster opp {filteredData.length.toLocaleString('nb-NO')} filtrerte transaksjoner
                 </div>
-                <div className={`p-4 rounded-lg ${previewData.isBalanced ? 'bg-green-50' : 'bg-red-50'}`}>
-                  <p className={`text-sm font-medium ${previewData.isBalanced ? 'text-green-600' : 'text-red-600'}`}>
-                    Balanse Differanse
-                  </p>
-                  <p className={`text-2xl font-bold ${previewData.isBalanced ? 'text-green-800' : 'text-red-800'}`}>
-                    {previewData.balanceDifference.toLocaleString('nb-NO', { 
-                      style: 'currency', 
-                      currency: 'NOK',
-                      minimumFractionDigits: 2
-                    })}
-                  </p>
-                </div>
-              </div>
-
-              {/* Balance Status Alert */}
-              <Alert className={previewData.isBalanced ? 'border-green-200 bg-green-50' : 'border-yellow-200 bg-yellow-50'}>
-                <div className="flex items-center gap-2">
-                  {previewData.isBalanced ? (
-                    <CheckCircle className="w-4 h-4 text-green-600" />
-                  ) : (
-                    <AlertTriangle className="w-4 h-4 text-yellow-600" />
-                  )}
-                  <AlertDescription className={previewData.isBalanced ? 'text-green-800' : 'text-yellow-800'}>
-                    {previewData.isBalanced 
-                      ? "✅ Hovedboken har en god balanse!"
-                      : `⚠️ Hovedbokens balanse avviker med ${previewData.balanceDifference.toFixed(2)} kr fra null. Dette kan være normalt for hovedbok-data.`
-                    }
-                  </AlertDescription>
-                </div>
-              </Alert>
-
-              {/* Transaction Summary */}
-              <div className="bg-muted/50 p-4 rounded-lg">
-                <h4 className="font-medium mb-2">Opplastingssammendrag</h4>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="text-muted-foreground">Antall transaksjoner:</span>
-                    <span className="ml-2 font-medium">{convertedData.length}</span>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Filnavn:</span>
-                    <span className="ml-2 font-medium">{selectedFile?.name}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex justify-between">
-                <Button 
-                  variant="outline" 
-                  onClick={() => setStep('select')}
-                >
-                  Avbryt
-                </Button>
-                <div className="flex gap-2">
-                  <Button 
-                    variant="outline" 
-                    onClick={() => setShowMapping(true)}
-                  >
-                    Tilbake til mapping
-                  </Button>
-                  <Button 
-                    onClick={handleConfirmUpload}
-                    className={previewData.isBalanced ? '' : 'bg-yellow-600 hover:bg-yellow-700'}
-                  >
-                    {previewData.isBalanced ? 'Bekreft opplasting' : 'Fortsett likevel'}
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              )}
+              <Button onClick={handleConfirmUpload} className="bg-green-600 hover:bg-green-700">
+                Bekreft opplasting
+              </Button>
+            </div>
+          </div>
         </div>
       )}
 
