@@ -10,6 +10,7 @@ import { DataManagementPanel } from '@/components/DataUpload/DataManagementPanel
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { useCreateVersion } from '@/hooks/useAccountingVersions';
+import { useGeneralLedgerValidation } from '@/hooks/useGeneralLedgerValidation';
 import { 
   processExcelFile, 
   processCSVFile, 
@@ -42,6 +43,46 @@ const GeneralLedgerUploader = ({ clientId, onUploadComplete }: GeneralLedgerUplo
   const [versionId, setVersionId] = useState<string | null>(null);
   
   const createVersion = useCreateVersion();
+
+  // Validation component to check voucher balance
+  const ValidationResults = ({ data }: { data: any[] }) => {
+    const validation = useGeneralLedgerValidation(data);
+    
+    if (validation.totalValidationErrors === 0) {
+      return (
+        <Alert className="border-green-200 bg-green-50">
+          <CheckCircle className="w-4 h-4 text-green-600" />
+          <AlertDescription className="text-green-800">
+            ✅ Alle bilag er i balanse (debet = kredit per bilag)
+          </AlertDescription>
+        </Alert>
+      );
+    }
+    
+    return (
+      <Alert className="border-yellow-200 bg-yellow-50">
+        <AlertTriangle className="w-4 h-4 text-yellow-600" />
+        <AlertDescription className="text-yellow-800">
+          ⚠️ {validation.totalValidationErrors} bilag har ubalanse. Dette kan være normalt for hovedbok-data.
+          {validation.vouchersWithImbalance.length > 0 && (
+            <details className="mt-2">
+              <summary className="cursor-pointer">Vis detaljer</summary>
+              <div className="mt-2 text-xs">
+                {validation.vouchersWithImbalance.slice(0, 5).map((voucher, idx) => (
+                  <div key={idx}>
+                    Bilag {voucher.voucherNumber}: {voucher.balance.toFixed(2)} kr ({voucher.transactionCount} transaksjoner)
+                  </div>
+                ))}
+                {validation.vouchersWithImbalance.length > 5 && 
+                  <div>...og {validation.vouchersWithImbalance.length - 5} flere</div>
+                }
+              </div>
+            </details>
+          )}
+        </AlertDescription>
+      </Alert>
+    );
+  };
 
   const handleFileSelect = async (file: File) => {
     const extension = file.name.toLowerCase().split('.').pop();
@@ -154,6 +195,10 @@ const GeneralLedgerUploader = ({ clientId, onUploadComplete }: GeneralLedgerUplo
         isBalanced,
         fileName: selectedFile.name
       });
+      
+      console.log('=== CONVERTED DATA SAMPLE FOR VALIDATION ===');
+      console.log('First 5 converted transactions:', convertedData.slice(0, 5));
+      console.log('=== END SAMPLE ===');
       
       setStep('preview');
     } catch (error) {
@@ -291,42 +336,76 @@ const GeneralLedgerUploader = ({ clientId, onUploadComplete }: GeneralLedgerUplo
 
             const transactionDate = new Date(transaction.date);
             
-            // Parse and properly handle amounts
+            // Enhanced Norwegian number parsing
             const parseAmount = (value: any): number => {
               if (value === undefined || value === null || value === '') return 0;
-              const numStr = value.toString().replace(/\s/g, '').replace(',', '.');
-              const num = parseFloat(numStr);
-              return isNaN(num) ? 0 : num;
+              
+              let cleanValue = value.toString().trim();
+              console.log(`Parsing amount "${cleanValue}"`);
+              
+              // Handle Norwegian number format: 123.456,78 or 123 456,78
+              cleanValue = cleanValue.replace(/\s+/g, ''); // Remove spaces
+              
+              // If it contains both . and , the last comma is decimal separator
+              if (cleanValue.includes(',') && cleanValue.includes('.')) {
+                const lastCommaIndex = cleanValue.lastIndexOf(',');
+                const beforeComma = cleanValue.substring(0, lastCommaIndex).replace(/\./g, '');
+                const afterComma = cleanValue.substring(lastCommaIndex + 1);
+                cleanValue = beforeComma + '.' + afterComma;
+              } else if (cleanValue.includes(',') && !cleanValue.includes('.')) {
+                // Format like 1234567,89 -> 1234567.89
+                cleanValue = cleanValue.replace(',', '.');
+              } else if (cleanValue.includes('.')) {
+                // Check if it's thousands separator or decimal
+                const dotIndex = cleanValue.lastIndexOf('.');
+                const afterDot = cleanValue.substring(dotIndex + 1);
+                
+                // If more than 2 digits after dot, it's likely thousands separator
+                if (afterDot.length > 2) {
+                  cleanValue = cleanValue.replace(/\./g, '');
+                }
+              }
+              
+              const num = parseFloat(cleanValue);
+              const result = isNaN(num) ? 0 : num;
+              console.log(`Parsed "${value}" -> ${result}`);
+              return result;
             };
             
+            // Extract and process all amount fields from the transaction
             let debitAmount = null;
             let creditAmount = null;
             let balanceAmount = 0;
             
-            // Handle different amount scenarios
-            if (transaction.debit_amount !== undefined && transaction.debit_amount !== null && transaction.debit_amount !== '') {
-              debitAmount = parseAmount(transaction.debit_amount);
-            }
-            if (transaction.credit_amount !== undefined && transaction.credit_amount !== null && transaction.credit_amount !== '') {
-              creditAmount = parseAmount(transaction.credit_amount);
-            }
+            console.log('Transaction amount fields:', {
+              debit_amount: transaction.debit_amount,
+              credit_amount: transaction.credit_amount,
+              balance_amount: transaction.balance_amount
+            });
+            
+            // Handle different amount scenarios - prioritize balance_amount as the main field
             if (transaction.balance_amount !== undefined && transaction.balance_amount !== null && transaction.balance_amount !== '') {
               balanceAmount = parseAmount(transaction.balance_amount);
-            }
-            
-            // If balance_amount is the primary field (most common case), set debit/credit accordingly
-            if (balanceAmount !== 0 && !debitAmount && !creditAmount) {
+              console.log(`Set balance_amount: ${balanceAmount}`);
+              
+              // Set debit/credit based on balance_amount sign
               if (balanceAmount > 0) {
                 debitAmount = balanceAmount;
                 creditAmount = null;
-              } else {
+              } else if (balanceAmount < 0) {
                 debitAmount = null;
                 creditAmount = Math.abs(balanceAmount);
               }
-            }
-            
-            // If we have debit/credit but no balance, calculate balance
-            if ((debitAmount || creditAmount) && balanceAmount === 0) {
+            } else {
+              // Fallback to separate debit/credit fields
+              if (transaction.debit_amount !== undefined && transaction.debit_amount !== null && transaction.debit_amount !== '') {
+                debitAmount = parseAmount(transaction.debit_amount);
+              }
+              if (transaction.credit_amount !== undefined && transaction.credit_amount !== null && transaction.credit_amount !== '') {
+                creditAmount = parseAmount(transaction.credit_amount);
+              }
+              
+              // Calculate balance from debit/credit
               balanceAmount = (debitAmount || 0) - (creditAmount || 0);
             }
             
@@ -455,6 +534,7 @@ const GeneralLedgerUploader = ({ clientId, onUploadComplete }: GeneralLedgerUplo
 
       {step === 'preview' && previewData && (
         <div className="space-y-6">
+          <ValidationResults data={previewData.data} />
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">

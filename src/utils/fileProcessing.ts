@@ -157,14 +157,23 @@ export const GENERAL_LEDGER_FIELDS: FieldDefinition[] = [
     label: 'Beløp',
     required: false,
     type: 'number',
-    aliases: ['beløp', 'amount', 'balance', 'balance_amount', 'saldo', 'belop', 'belopkr', 'beløpkr', 'kr', 'sum']
+    aliases: [
+      'beløp', 'amount', 'balance', 'balance_amount', 'saldo', 'belop', 'belopkr', 'beløpkr', 'kr', 'sum',
+      'beløp nok', 'beløp kr', 'beløp_kr', 'beløp_nok', 'lokalt_beløp', 'local_amount',
+      'transbeløp', 'transaksjon_beløp', 'transaction_amount', 'totalbeløp', 'total_amount',
+      'periode_beløp', 'nettobeløp', 'netto_beløp', 'brutto_beløp', 'bruttobeløp'
+    ]
   },
   {
     key: 'voucher_number',
     label: 'Bilagsnummer',
     required: false,
     type: 'text',
-    aliases: ['bilagsnummer', 'voucher_number', 'voucher', 'bilag', 'bilagsnr', 'dokument', 'document']
+    aliases: [
+      'bilagsnummer', 'voucher_number', 'voucher', 'bilag', 'bilagsnr', 'dokument', 'document',
+      'bilag_nummer', 'bilagsnummer_id', 'voucher_id', 'dok_nummer', 'dokument_nummer',
+      'bilagnr', 'bilagsnr.', 'bilagsnummer.', 'voucher_nr', 'vouchernr'
+    ]
   },
   {
     key: 'reference',
