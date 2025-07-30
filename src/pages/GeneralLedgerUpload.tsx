@@ -4,6 +4,7 @@ import { useClientDetails } from '@/hooks/useClientDetails';
 import GlobalLayoutContainer from '@/components/Layout/GlobalLayoutContainer';
 import ClientBreadcrumb from '@/components/Clients/ClientDetails/ClientBreadcrumb';
 import GeneralLedgerUploader from '@/components/Accounting/GeneralLedgerUploader';
+import DataReimportUtil from '@/components/Accounting/DataReimportUtil';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const GeneralLedgerUpload = () => {
@@ -38,6 +39,11 @@ const GeneralLedgerUpload = () => {
     <GlobalLayoutContainer maxWidth="full">
       <div className="p-6 space-y-6">
         <ClientBreadcrumb client={client} />
+        
+        <DataReimportUtil 
+          clientId={client.id}
+          clientName={client.company_name || 'Ukjent klient'}
+        />
         
         <GeneralLedgerUploader 
           clientId={client.id}

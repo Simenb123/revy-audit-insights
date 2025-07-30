@@ -654,6 +654,48 @@ export function validateDataTypes(
   };
 }
 
+// Enhanced Norwegian number conversion
+function convertNorwegianNumber(value: string): number | null {
+  if (!value || typeof value !== 'string') return null;
+  
+  // Remove any whitespace
+  let cleanValue = value.trim();
+  
+  // Handle Norwegian number format: 123.456,78 or 123 456,78
+  // Replace space thousands separators and dot thousands separators
+  cleanValue = cleanValue.replace(/\s+/g, ''); // Remove spaces
+  
+  // If it contains both . and , the last comma is decimal separator
+  if (cleanValue.includes(',') && cleanValue.includes('.')) {
+    // Format like 1.234.567,89 -> 1234567.89
+    const lastCommaIndex = cleanValue.lastIndexOf(',');
+    const beforeComma = cleanValue.substring(0, lastCommaIndex).replace(/\./g, '');
+    const afterComma = cleanValue.substring(lastCommaIndex + 1);
+    cleanValue = beforeComma + '.' + afterComma;
+  } else if (cleanValue.includes(',') && !cleanValue.includes('.')) {
+    // Format like 1234567,89 or 1 234 567,89 -> 1234567.89
+    cleanValue = cleanValue.replace(',', '.');
+  } else if (cleanValue.includes('.')) {
+    // Check if it's thousands separator or decimal
+    const dotIndex = cleanValue.lastIndexOf('.');
+    const afterDot = cleanValue.substring(dotIndex + 1);
+    
+    // If more than 2 digits after dot, it's likely thousands separator
+    if (afterDot.length > 2) {
+      cleanValue = cleanValue.replace(/\./g, '');
+    }
+    // If exactly 2 digits and there are multiple dots, last one is decimal
+    else if (cleanValue.split('.').length > 2) {
+      const parts = cleanValue.split('.');
+      const decimal = parts.pop();
+      cleanValue = parts.join('') + '.' + decimal;
+    }
+  }
+  
+  const parsed = parseFloat(cleanValue);
+  return isNaN(parsed) ? null : parsed;
+}
+
 // Convert data based on mapping
 export function convertDataWithMapping(
   preview: FilePreview,
@@ -698,11 +740,11 @@ export function convertDataWithMapping(
         if (targetField.includes('amount') || targetField === 'balance_amount') {
           // Handle Norwegian number format and convert to number
           if (value !== null && value !== undefined && value !== '') {
-            const cleanValue = value.toString()
-              .replace(/\s/g, '') // Remove spaces
-              .replace(',', '.'); // Replace comma with dot for decimal
-            const numValue = parseFloat(cleanValue);
-            value = isNaN(numValue) ? 0 : numValue;
+            value = convertNorwegianNumber(value.toString());
+            if (value === null) {
+              console.warn(`Failed to convert amount value: "${row[columnIndex]}" in column ${sourceColumn}`);
+              value = 0;
+            }
           } else {
             value = 0;
           }
