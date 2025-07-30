@@ -556,12 +556,12 @@ const AICharacterSimulator = () => {
                     {selectedMode === 'audio' ? <Mic className="h-5 w-5" /> : <MessageSquare className="h-5 w-5" />}
                     Møte med {selectedCharacter.name}
                   </CardTitle>
-                  <p className="text-sm text-gray-600">
+                  <div className="text-sm text-gray-600">
                     {selectedCharacter.role} • {selectedCharacter.scenario} • 
                     <Badge variant="outline" className="ml-2">
                       {selectedMode === 'audio' ? 'Audio-modus' : 'Chat-modus'}
                     </Badge>
-                  </p>
+                  </div>
                 </div>
               </div>
               <Button variant="outline" onClick={endSimulation}>
@@ -632,7 +632,13 @@ const AICharacterSimulator = () => {
                         <span className="text-sm">Tar opp...</span>
                       </div>
                     )}
-                    {!isRecording && !isAISpeaking && (
+                    {lastAudio && !isAISpeaking && !isRecording && (
+                      <div className="flex items-center gap-2 text-green-600">
+                        <Play className="h-4 w-4" />
+                        <span className="text-sm">Audio klar for avspilling</span>
+                      </div>
+                    )}
+                    {!isRecording && !isAISpeaking && !lastAudio && (
                       <span className="text-sm text-gray-600">Trykk for å snakke</span>
                     )}
                   </div>
