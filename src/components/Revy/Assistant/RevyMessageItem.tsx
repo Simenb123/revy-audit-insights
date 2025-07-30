@@ -22,16 +22,13 @@ const RevyMessageItem: React.FC<RevyMessageItemProps> = ({ message, compact = fa
   }
   
   return (
-    <div className={cn(
-      "flex gap-3",
-      compact ? "mb-2" : "mb-4",
-      !isAssistant && "flex-row-reverse"
-    )}>
-      {isAssistant && (
-        <div className="flex-shrink-0">
-          <RevyAvatar size={compact ? "lg" : "xl"} />
-        </div>
+    <div
+      className={cn(
+        "flex gap-3",
+        compact ? "mb-2" : "mb-4",
+        !isAssistant && "flex-row-reverse"
       )}
+    >
       
       <div className={cn(
         "flex flex-col min-w-0 flex-1",
@@ -51,11 +48,19 @@ const RevyMessageItem: React.FC<RevyMessageItemProps> = ({ message, compact = fa
           </div>
         )}
         
-        <div className={cn(
-          'rounded-lg px-3 py-2 text-sm break-words w-full',
-          compact ? 'text-xs' : 'text-sm',
-          isAssistant ? 'bg-muted text-foreground' : 'bg-primary text-primary-foreground'
-        )}>
+        <div
+          className={cn(
+            'revy-message-bubble rounded-lg px-3 py-2 text-sm break-words w-full',
+            compact ? 'text-xs' : 'text-sm',
+            isAssistant ? 'bg-muted text-foreground' : 'bg-primary text-primary-foreground'
+          )}
+        >
+          {isAssistant && (
+            <RevyAvatar
+              size={compact ? 'lg' : 'xl'}
+              className={cn('revy-message-avatar', compact ? '-top-2 -left-2' : '-top-4 -left-4')}
+            />
+          )}
           {message.content}
         </div>
         
