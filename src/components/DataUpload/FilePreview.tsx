@@ -25,8 +25,12 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
   const [suggestedMappings, setSuggestedMappings] = useState<ColumnMapping[]>([]);
   const [showConvertedData, setShowConvertedData] = useState(false);
 
-  // Convert preview data for display
-  const { convertedRows, amountColumns, conversionStats } = convertPreviewDataForDisplay(preview, mapping);
+  // Convert data for display if mappings are applied
+  const displayData = React.useMemo(() => {
+    return convertPreviewDataForDisplay(preview, mapping);
+  }, [preview, mapping]);
+
+  const { convertedRows, amountColumns, conversionStats } = displayData;
 
   // Auto-suggest mappings when field definitions are provided
   useEffect(() => {

@@ -41,6 +41,7 @@ const GeneralLedgerUploader = ({ clientId, onUploadComplete }: GeneralLedgerUplo
   const [step, setStep] = useState<'select' | 'preview' | 'upload' | 'success'>('select');
   const [previewData, setPreviewData] = useState<{ data: any[]; totalBalance: number; balanceDifference: number; isBalanced: boolean; fileName: string } | null>(null);
   const [versionId, setVersionId] = useState<string | null>(null);
+  const [amountStats, setAmountStats] = useState<any>(null);
   
   const createVersion = useCreateVersion();
 

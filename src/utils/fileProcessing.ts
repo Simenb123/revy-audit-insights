@@ -935,3 +935,66 @@ export function convertDataWithMapping(
   
   return convertedData;
 }
+
+// New function to calculate amount statistics for general ledger data
+export function calculateAmountStatistics(data: any[]): {
+  positiveCount: number;
+  negativeCount: number;
+  zeroCount: number;
+  positiveSum: number;
+  negativeSum: number;
+  totalSum: number;
+  noAmountCount: number;
+  conversionErrors: number;
+} {
+  let positiveCount = 0;
+  let negativeCount = 0;
+  let zeroCount = 0;
+  let positiveSum = 0;
+  let negativeSum = 0;
+  let noAmountCount = 0;
+  let conversionErrors = 0;
+  
+  data.forEach(row => {
+    // Check for amount in common amount fields
+    const amountFields = ['beløp', 'amount', 'debet', 'kredit', 'saldo', 'beløp_valuta'];
+    let hasValidAmount = false;
+    
+    for (const field of amountFields) {
+      const value = row[field];
+      if (value !== undefined && value !== null && value !== '') {
+        const converted = typeof value === 'string' ? convertNorwegianNumber(value) : value;
+        if (converted !== null && !isNaN(converted)) {
+          hasValidAmount = true;
+          if (converted > 0) {
+            positiveCount++;
+            positiveSum += converted;
+          } else if (converted < 0) {
+            negativeCount++;
+            negativeSum += converted;
+          } else {
+            zeroCount++;
+          }
+          break; // Only count the first valid amount field
+        } else if (value !== '') {
+          conversionErrors++;
+        }
+      }
+    }
+    
+    if (!hasValidAmount) {
+      noAmountCount++;
+    }
+  });
+  
+  return {
+    positiveCount,
+    negativeCount,
+    zeroCount,
+    positiveSum,
+    negativeSum,
+    totalSum: positiveSum + negativeSum,
+    noAmountCount,
+    conversionErrors
+  };
+}
