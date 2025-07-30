@@ -15,7 +15,9 @@ import {
   processExcelFile, 
   processCSVFile, 
   FilePreview, 
-  convertDataWithMapping
+  convertDataWithMapping,
+  calculateAmountStatistics,
+  formatNorwegianNumber
 } from '@/utils/fileProcessing';
 
 interface TransactionRow {
@@ -122,6 +124,18 @@ const GeneralLedgerUploader = ({ clientId, onUploadComplete }: GeneralLedgerUplo
       console.log('Sample converted rows:', convertedData.slice(0, 3));
       
       setConvertedData(convertedData);
+      
+      // Calculate comprehensive amount statistics
+      const stats = calculateAmountStatistics(convertedData);
+      setAmountStats(stats);
+      
+      console.log('=== AMOUNT STATISTICS ===');
+      console.log(`Positive amounts: ${stats.positiveCount} (${formatNorwegianNumber(stats.positiveSum)} kr)`);
+      console.log(`Negative amounts: ${stats.negativeCount} (${formatNorwegianNumber(stats.negativeSum)} kr)`);
+      console.log(`Zero amounts: ${stats.zeroCount}`);
+      console.log(`Missing amounts: ${stats.noAmountCount}`);
+      console.log(`Conversion errors: ${stats.conversionErrors}`);
+      console.log(`Total sum: ${formatNorwegianNumber(stats.totalSum)} kr`);
       
       // Enhanced balance calculation - handle both debit/credit and balance_amount
       let totalBalance = 0;
@@ -578,6 +592,62 @@ const GeneralLedgerUploader = ({ clientId, onUploadComplete }: GeneralLedgerUplo
       {step === 'preview' && previewData && (
         <div className="space-y-6">
           <ValidationResults data={previewData.data} />
+          
+          {/* Amount Statistics */}
+          {amountStats && (
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Database className="w-5 h-5" />
+                  Beløp-statistikk
+                </CardTitle>
+                <CardDescription>
+                  Detaljert oversikt over beløp i hovedboksfilen
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                  <div className="space-y-3">
+                    <p className="font-medium text-slate-700">Transaksjoner</p>
+                    <div className="space-y-1">
+                      <p>Positive beløp: <span className="font-mono">{amountStats.positiveCount}</span></p>
+                      <p>Negative beløp: <span className="font-mono">{amountStats.negativeCount}</span></p>
+                      <p>Null-beløp: <span className="font-mono">{amountStats.zeroCount}</span></p>
+                      <p className={amountStats.noAmountCount > 0 ? "text-amber-600" : ""}>
+                        Manglende beløp: <span className="font-mono">{amountStats.noAmountCount}</span>
+                      </p>
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    <p className="font-medium text-slate-700">Summer</p>
+                    <div className="space-y-1">
+                      <p>Sum positive: <span className="font-mono text-green-600">{formatNorwegianNumber(amountStats.positiveSum)} kr</span></p>
+                      <p>Sum negative: <span className="font-mono text-red-600">{formatNorwegianNumber(amountStats.negativeSum)} kr</span></p>
+                      <p className="font-bold">Total sum: <span className="font-mono">{formatNorwegianNumber(amountStats.totalSum)} kr</span></p>
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    <p className="font-medium text-slate-700">Kvalitet</p>
+                    <div className="space-y-1">
+                      <p className={amountStats.conversionErrors > 0 ? "text-red-600" : "text-green-600"}>
+                        Konverteringsfeil: <span className="font-mono">{amountStats.conversionErrors}</span>
+                      </p>
+                      {amountStats.conversionErrors > 0 && (
+                        <p className="text-red-600 text-xs">⚠️ Noen beløp kunne ikke konverteres</p>
+                      )}
+                      {amountStats.positiveSum === 0 && amountStats.negativeSum === 0 && amountStats.totalSum === 0 && (
+                        <p className="text-red-600 text-xs font-bold">🚨 Ingen gyldige beløp funnet!</p>
+                      )}
+                      {amountStats.positiveSum > 0 || amountStats.negativeSum < 0 ? (
+                        <p className="text-green-600 text-xs">✅ Beløp konvertert OK</p>
+                      ) : null}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+          
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">

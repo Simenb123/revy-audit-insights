@@ -897,13 +897,18 @@ export function convertDataWithMapping(
         let value = row[columnIndex];
         
         // Enhanced data conversion for different field types
-        if (targetField.includes('amount') || targetField === 'balance_amount') {
+        if (targetField.includes('amount') || targetField === 'balance_amount' || 
+            targetField === 'debet' || targetField === 'kredit' || targetField === 'saldo' ||
+            targetField === 'beløp' || targetField === 'beløp_valuta') {
           // Handle Norwegian number format and convert to number
           if (value !== null && value !== undefined && value !== '') {
+            const originalValue = value;
             value = convertNorwegianNumber(value.toString());
             if (value === null) {
-              console.warn(`Failed to convert amount value: "${row[columnIndex]}" in column ${sourceColumn}`);
+              console.warn(`Failed to convert amount value: "${originalValue}" in column ${sourceColumn} (target: ${targetField})`);
               value = 0;
+            } else {
+              console.log(`Successfully converted: "${originalValue}" -> ${value} (${targetField})`);
             }
           } else {
             value = 0;
@@ -956,14 +961,21 @@ export function calculateAmountStatistics(data: any[]): {
   let conversionErrors = 0;
   
   data.forEach(row => {
-    // Check for amount in common amount fields
-    const amountFields = ['beløp', 'amount', 'debet', 'kredit', 'saldo', 'beløp_valuta'];
+    // Check for amount in common amount fields with enhanced field matching
+    const amountFields = ['beløp', 'amount', 'debet', 'kredit', 'saldo', 'beløp_valuta', 'debit_amount', 'credit_amount', 'balance_amount'];
     let hasValidAmount = false;
     
     for (const field of amountFields) {
       const value = row[field];
       if (value !== undefined && value !== null && value !== '') {
-        const converted = typeof value === 'string' ? convertNorwegianNumber(value) : value;
+        let converted: number | null = null;
+        
+        if (typeof value === 'string') {
+          converted = convertNorwegianNumber(value);
+        } else if (typeof value === 'number') {
+          converted = isNaN(value) ? null : value;
+        }
+        
         if (converted !== null && !isNaN(converted)) {
           hasValidAmount = true;
           if (converted > 0) {
