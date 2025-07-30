@@ -4,7 +4,6 @@ import { useTBVersionOptions } from '@/hooks/useTrialBalanceVersions';
 import { useAccountingData } from '@/hooks/useAccountingData';
 import { useAccountingYear } from '@/hooks/useAccountingYear';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, Activity, BarChart2, FileText, Layers, LineChart } from 'lucide-react';
 import DrillDownTable from './DrillDownTable';
@@ -183,7 +182,7 @@ const AccountingExplorer: React.FC<AccountingExplorerProps> = ({ clientId }) => 
       
       <div className="flex flex-col xl:flex-row gap-6">
         <div className="flex-1 min-w-0">
-          <TabsContent value="overview" className="mt-0">
+          {activeTab === 'overview' && (
             <div className="space-y-6">
               {hasGLData && selectedGLVersion && (
                 <Card>
@@ -219,9 +218,9 @@ const AccountingExplorer: React.FC<AccountingExplorerProps> = ({ clientId }) => 
                 </Card>
               )}
             </div>
-          </TabsContent>
+          )}
           
-          <TabsContent value="ledger" className="mt-0">
+          {activeTab === 'ledger' && (
             <div className="space-y-4">
               {hasGLData && selectedGLVersion ? (
                 <GeneralLedgerTable clientId={clientId} versionId={selectedGLVersion.id} />
@@ -236,9 +235,9 @@ const AccountingExplorer: React.FC<AccountingExplorerProps> = ({ clientId }) => 
                 </Card>
               )}
             </div>
-          </TabsContent>
+          )}
             
-          <TabsContent value="balances" className="mt-0">
+          {activeTab === 'balances' && (
             <div className="space-y-4">
               {hasTBData && selectedTBVersion ? (
                 <TrialBalanceTable 
@@ -257,9 +256,9 @@ const AccountingExplorer: React.FC<AccountingExplorerProps> = ({ clientId }) => 
                 </Card>
               )}
             </div>
-          </TabsContent>
+          )}
           
-          <TabsContent value="journal" className="mt-0">
+          {activeTab === 'journal' && (
             <div className="space-y-4">
               {hasGLData && selectedGLVersion ? (
                 <Card>
@@ -284,7 +283,7 @@ const AccountingExplorer: React.FC<AccountingExplorerProps> = ({ clientId }) => 
                 </Card>
               )}
             </div>
-          </TabsContent>
+          )}
         </div>
         
         <div className="w-full xl:w-72 xl:flex-shrink-0 space-y-4">
