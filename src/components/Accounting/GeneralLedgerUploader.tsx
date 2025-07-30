@@ -130,12 +130,11 @@ const GeneralLedgerUploader = ({ clientId, onUploadComplete }: GeneralLedgerUplo
       let hasBalance = false;
       
       convertedData.forEach((t, index) => {
-        // Convert Norwegian decimal format (comma) to dot
+        // Use numbers directly from fileProcessing.ts conversion - no additional parsing needed
         const parseAmount = (value: any): number => {
-          if (!value) return 0;
-          const numStr = value.toString().replace(/\s/g, '').replace(',', '.');
-          const num = parseFloat(numStr);
-          return isNaN(num) ? 0 : num;
+          if (value === null || value === undefined) return 0;
+          if (typeof value === 'number') return isNaN(value) ? 0 : value;
+          return 0; // Should not happen as fileProcessing.ts converts to numbers
         };
         
         const debit = parseAmount(t.debit_amount);
@@ -336,25 +335,42 @@ const GeneralLedgerUploader = ({ clientId, onUploadComplete }: GeneralLedgerUplo
 
             const transactionDate = new Date(transaction.date);
             
-            // Simplified amount parsing - numbers should come from fileProcessing.ts conversion
+            // Use amounts directly from fileProcessing.ts - no additional parsing needed
             const parseAmount = (value: any): number => {
-              if (value === undefined || value === null || value === '') return 0;
+              if (value === undefined || value === null) return 0;
               if (typeof value === 'number') return isNaN(value) ? 0 : value;
-              if (typeof value === 'string') {
-                const num = parseFloat(value);
-                return isNaN(num) ? 0 : num;
-              }
+              // Should not reach here as fileProcessing.ts converts to numbers
+              console.warn(`Unexpected non-number value in parseAmount: ${typeof value} = ${value}`);
               return 0;
             };
             
-            // Extract amounts - should already be converted to numbers
+            // Extract amounts - should already be converted to numbers by fileProcessing.ts
             let debitAmount = null;
             let creditAmount = null;
             let balanceAmount = 0;
             
-            // Primary: Use balance_amount if available
-            if (transaction.balance_amount !== undefined && transaction.balance_amount !== null && transaction.balance_amount !== '' && transaction.balance_amount !== 0) {
-              balanceAmount = parseAmount(transaction.balance_amount);
+            // Debug logging for amount extraction
+            console.log(`Transaction amounts for account ${transaction.account_number}:`, {
+              balance_amount: transaction.balance_amount,
+              debit_amount: transaction.debit_amount,
+              credit_amount: transaction.credit_amount,
+              types: {
+                balance: typeof transaction.balance_amount,
+                debit: typeof transaction.debit_amount,
+                credit: typeof transaction.credit_amount
+              }
+            });
+            
+            // Primary: Use balance_amount if it's a meaningful non-zero number
+            const hasBalanceAmount = transaction.balance_amount !== undefined && 
+                                   transaction.balance_amount !== null && 
+                                   typeof transaction.balance_amount === 'number' && 
+                                   !isNaN(transaction.balance_amount) && 
+                                   transaction.balance_amount !== 0;
+            
+            if (hasBalanceAmount) {
+              balanceAmount = transaction.balance_amount;
+              console.log(`Using balance_amount: ${balanceAmount}`);
               
               // Set debit/credit based on sign
               if (balanceAmount > 0) {
@@ -366,15 +382,37 @@ const GeneralLedgerUploader = ({ clientId, onUploadComplete }: GeneralLedgerUplo
               }
             } else {
               // Fallback: Use separate debit/credit fields
-              if (transaction.debit_amount !== undefined && transaction.debit_amount !== null && transaction.debit_amount !== '' && transaction.debit_amount !== 0) {
-                debitAmount = parseAmount(transaction.debit_amount);
+              console.log(`Falling back to debit/credit fields`);
+              
+              const hasDebitAmount = transaction.debit_amount !== undefined && 
+                                   transaction.debit_amount !== null && 
+                                   typeof transaction.debit_amount === 'number' && 
+                                   !isNaN(transaction.debit_amount) && 
+                                   transaction.debit_amount !== 0;
+              
+              const hasCreditAmount = transaction.credit_amount !== undefined && 
+                                    transaction.credit_amount !== null && 
+                                    typeof transaction.credit_amount === 'number' && 
+                                    !isNaN(transaction.credit_amount) && 
+                                    transaction.credit_amount !== 0;
+              
+              if (hasDebitAmount) {
+                debitAmount = transaction.debit_amount;
+                console.log(`Using debit_amount: ${debitAmount}`);
               }
-              if (transaction.credit_amount !== undefined && transaction.credit_amount !== null && transaction.credit_amount !== '' && transaction.credit_amount !== 0) {
-                creditAmount = parseAmount(transaction.credit_amount);
+              if (hasCreditAmount) {
+                creditAmount = transaction.credit_amount;
+                console.log(`Using credit_amount: ${creditAmount}`);
               }
               
               // Calculate balance from debit/credit
               balanceAmount = (debitAmount || 0) - (creditAmount || 0);
+            }
+            
+            // Final validation - ensure we have some amount
+            if (debitAmount === null && creditAmount === null) {
+              console.error(`No valid amounts found for transaction:`, transaction);
+              return null; // Skip this transaction
             }
             
             // Extract voucher number from various possible fields
