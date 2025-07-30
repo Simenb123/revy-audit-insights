@@ -42,9 +42,13 @@ const ValidationPanel = ({ clientId, selectedGLVersion, selectedTBVersion }: Val
     
     // Add detailed logging for debugging
     console.error('❌ ValidationPanel error details:', {
-      error: error?.message,
+      error: error?.message || 'Unknown error',
+      errorObject: error,
       hasValidation: !!validation,
-      isDataMissing
+      isDataMissing,
+      clientId,
+      selectedGLVersion,
+      selectedTBVersion
     });
     
     return (

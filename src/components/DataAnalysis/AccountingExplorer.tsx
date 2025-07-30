@@ -57,20 +57,20 @@ const AccountingExplorer: React.FC<AccountingExplorerProps> = ({ clientId }) => 
   const [selectedGLVersion, setSelectedGLVersion] = useState<GLVersionOption | null>(null);
   const [selectedTBVersion, setSelectedTBVersion] = useState<TBVersionOption | null>(null);
 
-  // Update state when defaults change
+  // Update state when defaults change - always set to latest active/default version
   React.useEffect(() => {
-    if (defaultGLVersion && !selectedGLVersion) {
-      console.log('[AccountingExplorer] Setting default GL version:', defaultGLVersion);
+    if (defaultGLVersion) {
+      console.log('[AccountingExplorer] Setting GL version to:', defaultGLVersion);
       setSelectedGLVersion(defaultGLVersion);
     }
-  }, [defaultGLVersion, selectedGLVersion]);
+  }, [defaultGLVersion]);
 
   React.useEffect(() => {
-    if (defaultTBVersion && !selectedTBVersion) {
-      console.log('[AccountingExplorer] Setting default TB version:', defaultTBVersion);
+    if (defaultTBVersion) {
+      console.log('[AccountingExplorer] Setting TB version to:', defaultTBVersion);
       setSelectedTBVersion(defaultTBVersion);
     }
-  }, [defaultTBVersion, selectedTBVersion]);
+  }, [defaultTBVersion]);
 
   console.log('[AccountingExplorer] Current Selected GL:', selectedGLVersion);
   console.log('[AccountingExplorer] Current Selected TB:', selectedTBVersion);

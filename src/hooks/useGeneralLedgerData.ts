@@ -99,6 +99,19 @@ export const useGeneralLedgerData = (clientId: string, versionId?: string, pagin
       // Otherwise, use chunked loading for full data (export, validation)
       console.log('🔍 Using chunked loading to fetch ALL transactions');
       
+      // Determine the version ID to use for all chunks
+      let targetVersionId = versionId;
+      if (!targetVersionId) {
+        const { data: activeVersion } = await supabase
+          .from('accounting_data_versions')
+          .select('id')
+          .eq('client_id', clientId)
+          .eq('is_active', true)
+          .single();
+        targetVersionId = activeVersion?.id;
+        console.log('🔍 Using active version ID:', targetVersionId);
+      }
+      
       let allTransactions: any[] = [];
       let offset = 0;
       const chunkSize = 1000;
@@ -129,23 +142,9 @@ export const useGeneralLedgerData = (clientId: string, versionId?: string, pagin
           `)
           .eq('client_id', clientId);
 
-        // Filter by version if specified
-        if (versionId) {
-          query = query.eq('version_id', versionId);
-        } else {
-          // If no version specified, get active version data
-          if (offset === 0) { // Only check once
-            const { data: activeVersion } = await supabase
-              .from('accounting_data_versions')
-              .select('id')
-              .eq('client_id', clientId)
-              .eq('is_active', true)
-              .single();
-            
-            if (activeVersion) {
-              query = query.eq('version_id', activeVersion.id);
-            }
-          }
+        // Filter by version if we have one
+        if (targetVersionId) {
+          query = query.eq('version_id', targetVersionId);
         }
 
         const { data, error } = await query
