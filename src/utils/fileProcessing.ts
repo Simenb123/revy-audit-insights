@@ -160,11 +160,18 @@ export const GENERAL_LEDGER_FIELDS: FieldDefinition[] = [
     aliases: ['beløp', 'amount', 'balance', 'balance_amount', 'saldo', 'belop', 'belopkr', 'beløpkr', 'kr', 'sum']
   },
   {
+    key: 'voucher_number',
+    label: 'Bilagsnummer',
+    required: false,
+    type: 'text',
+    aliases: ['bilagsnummer', 'voucher_number', 'voucher', 'bilag', 'bilagsnr', 'dokument', 'document']
+  },
+  {
     key: 'reference',
     label: 'Referanse',
     required: false,
     type: 'text',
-    aliases: ['referanse', 'reference', 'bilagsnummer', 'voucher', 'ref']
+    aliases: ['referanse', 'reference', 'ref', 'external_reference']
   }
 ];
 

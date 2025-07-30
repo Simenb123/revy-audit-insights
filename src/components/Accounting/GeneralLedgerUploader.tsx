@@ -290,19 +290,43 @@ const GeneralLedgerUploader = ({ clientId, onUploadComplete }: GeneralLedgerUplo
             }
 
             const transactionDate = new Date(transaction.date);
+            
+            // Properly handle debit/credit amounts and voucher numbers
+            let debitAmount = null;
+            let creditAmount = null;
+            let balanceAmount = 0;
+            
+            // Parse amounts properly
+            if (transaction.debit_amount !== undefined && transaction.debit_amount !== null && transaction.debit_amount !== '') {
+              debitAmount = parseFloat(transaction.debit_amount.toString()) || 0;
+            }
+            if (transaction.credit_amount !== undefined && transaction.credit_amount !== null && transaction.credit_amount !== '') {
+              creditAmount = parseFloat(transaction.credit_amount.toString()) || 0;
+            }
+            if (transaction.balance_amount !== undefined && transaction.balance_amount !== null && transaction.balance_amount !== '') {
+              balanceAmount = parseFloat(transaction.balance_amount.toString()) || 0;
+            }
+            
+            // Extract voucher number from various possible fields
+            const voucherNumber = transaction.voucher_number || 
+                                 transaction.bilagsnummer || 
+                                 transaction.voucher || 
+                                 transaction.reference || 
+                                 null;
+            
             return {
               client_id: clientId,
               client_account_id: accountId,
               upload_batch_id: batch.id,
-              version_id: version.id, // Link to version
+              version_id: version.id,
               transaction_date: transactionDate.toISOString().split('T')[0],
               period_year: transactionDate.getFullYear(),
               period_month: transactionDate.getMonth() + 1,
-              voucher_number: transaction.reference || null,
+              voucher_number: voucherNumber,
               description: transaction.description || '',
-              debit_amount: null as any, // Not used for general ledger
-              credit_amount: null as any, // Not used for general ledger
-              balance_amount: transaction.balance_amount || 0,
+              debit_amount: debitAmount,
+              credit_amount: creditAmount,
+              balance_amount: balanceAmount,
               reference_number: transaction.reference || null,
             };
           })
