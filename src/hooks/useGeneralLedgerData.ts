@@ -58,15 +58,46 @@ export const useGeneralLedgerData = (clientId: string, versionId?: string, pagin
           query = query.eq('version_id', versionId);
         } else {
           // If no version specified, get active version data
-          const { data: activeVersion } = await supabase
+          console.log('🔍 No version specified, finding active version...');
+          const { data: activeVersion, error: versionError } = await supabase
             .from('accounting_data_versions')
             .select('id')
             .eq('client_id', clientId)
             .eq('is_active', true)
-            .single();
+            .maybeSingle();
           
-          if (activeVersion) {
+          if (versionError) {
+            console.error('❌ Error finding active version:', versionError);
+            // Try to get the latest version instead
+            const { data: latestVersion } = await supabase
+              .from('accounting_data_versions')
+              .select('id')
+              .eq('client_id', clientId)
+              .order('version_number', { ascending: false })
+              .limit(1)
+              .maybeSingle();
+            
+            if (latestVersion) {
+              console.log('🔄 Using latest version instead:', latestVersion.id);
+              query = query.eq('version_id', latestVersion.id);
+            }
+          } else if (activeVersion) {
+            console.log('✅ Found active version:', activeVersion.id);
             query = query.eq('version_id', activeVersion.id);
+          } else {
+            console.log('⚠️ No active version found, trying latest version...');
+            const { data: latestVersion } = await supabase
+              .from('accounting_data_versions')
+              .select('id')
+              .eq('client_id', clientId)
+              .order('version_number', { ascending: false })
+              .limit(1)
+              .maybeSingle();
+            
+            if (latestVersion) {
+              console.log('🔄 Using latest version:', latestVersion.id);
+              query = query.eq('version_id', latestVersion.id);
+            }
           }
         }
 
@@ -102,14 +133,31 @@ export const useGeneralLedgerData = (clientId: string, versionId?: string, pagin
       // Determine the version ID to use for all chunks
       let targetVersionId = versionId;
       if (!targetVersionId) {
-        const { data: activeVersion } = await supabase
+        console.log('🔍 No version specified, finding active version for chunked loading...');
+        const { data: activeVersion, error: versionError } = await supabase
           .from('accounting_data_versions')
           .select('id')
           .eq('client_id', clientId)
           .eq('is_active', true)
-          .single();
-        targetVersionId = activeVersion?.id;
-        console.log('🔍 Using active version ID:', targetVersionId);
+          .maybeSingle();
+        
+        if (versionError) {
+          console.error('❌ Error finding active version:', versionError);
+          // Try to get the latest version instead
+          const { data: latestVersion } = await supabase
+            .from('accounting_data_versions')
+            .select('id')
+            .eq('client_id', clientId)
+            .order('version_number', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          
+          targetVersionId = latestVersion?.id;
+          console.log('🔄 Using latest version for chunked loading:', targetVersionId);
+        } else {
+          targetVersionId = activeVersion?.id;
+          console.log('✅ Using active version ID for chunked loading:', targetVersionId);
+        }
       }
       
       let allTransactions: any[] = [];

@@ -75,6 +75,16 @@ const AccountingExplorer: React.FC<AccountingExplorerProps> = ({ clientId }) => 
   console.log('[AccountingExplorer] Current Selected GL:', selectedGLVersion);
   console.log('[AccountingExplorer] Current Selected TB:', selectedTBVersion);
 
+  // Additional debugging for version states
+  console.log('[AccountingExplorer] Version states:', {
+    hasGLOptions: glVersionOptions.length > 0,
+    hasTBOptions: tbVersionOptions.length > 0,
+    selectedGLVersionId: selectedGLVersion?.id,
+    selectedTBVersionId: selectedTBVersion?.version,
+    isLoadingGL,
+    isLoadingTB
+  });
+
   // Check if data exists
   const hasGLData = glVersionOptions.length > 0;
   const hasTBData = tbVersionOptions.length > 0;
@@ -287,11 +297,29 @@ const AccountingExplorer: React.FC<AccountingExplorerProps> = ({ clientId }) => 
         </div>
         
         <div className="w-full xl:w-72 xl:flex-shrink-0 space-y-4">
-          <ValidationPanel 
-            clientId={clientId} 
-            selectedGLVersion={selectedGLVersion?.id}
-            selectedTBVersion={selectedTBVersion?.version}
-          />
+          {/* Only render ValidationPanel when we have proper version data */}
+          {selectedGLVersion?.id && selectedTBVersion?.version ? (
+            <ValidationPanel 
+              clientId={clientId} 
+              selectedGLVersion={selectedGLVersion.id}
+              selectedTBVersion={selectedTBVersion.version}
+            />
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle>Validering</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground text-sm">
+                  Venter på at versjon data lastes inn...
+                </p>
+                <div className="text-xs text-muted-foreground mt-2">
+                  GL versjon: {selectedGLVersion?.id ? '✓' : '⏳'}<br/>
+                  TB versjon: {selectedTBVersion?.version ? '✓' : '⏳'}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>

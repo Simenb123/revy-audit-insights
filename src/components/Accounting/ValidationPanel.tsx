@@ -13,6 +13,15 @@ interface ValidationPanelProps {
 }
 
 const ValidationPanel = ({ clientId, selectedGLVersion, selectedTBVersion }: ValidationPanelProps) => {
+  // Enhanced logging for debugging version issues
+  console.log('🔍 ValidationPanel props:', {
+    clientId,
+    selectedGLVersion,
+    selectedTBVersion,
+    hasGLVersion: !!selectedGLVersion,
+    hasTBVersion: !!selectedTBVersion
+  });
+
   const { data: validation, isLoading, error } = useAccountingValidation(clientId, selectedGLVersion, selectedTBVersion);
 
   if (isLoading) {
