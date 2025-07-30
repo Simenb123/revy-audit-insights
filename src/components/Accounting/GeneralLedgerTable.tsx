@@ -246,37 +246,19 @@ const GeneralLedgerTable = ({ clientId, versionId }: GeneralLedgerTableProps) =>
                   </TableHead>
                   <TableHead 
                     className="text-right cursor-pointer hover:bg-muted/50 select-none"
-                    onClick={() => handleSort('debit_amount')}
-                  >
-                    <div className="flex items-center justify-end gap-2">
-                      Debet
-                      {getSortIcon('debit_amount')}
-                    </div>
-                  </TableHead>
-                  <TableHead 
-                    className="text-right cursor-pointer hover:bg-muted/50 select-none"
-                    onClick={() => handleSort('credit_amount')}
-                  >
-                    <div className="flex items-center justify-end gap-2">
-                      Kredit
-                      {getSortIcon('credit_amount')}
-                    </div>
-                  </TableHead>
-                  <TableHead 
-                    className="text-right cursor-pointer hover:bg-muted/50 select-none"
                     onClick={() => handleSort('balance_amount')}
                   >
                     <div className="flex items-center justify-end gap-2">
-                      Saldo
+                      Beløp
                       {getSortIcon('balance_amount')}
                     </div>
                   </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredAndSortedTransactions.length === 0 ? (
+                 {filteredAndSortedTransactions.length === 0 ? (
                    <TableRow>
-                     <TableCell colSpan={7} className="text-center text-muted-foreground">
+                     <TableCell colSpan={5} className="text-center text-muted-foreground">
                        Ingen transaksjoner funnet
                      </TableCell>
                    </TableRow>
@@ -291,25 +273,23 @@ const GeneralLedgerTable = ({ clientId, versionId }: GeneralLedgerTableProps) =>
                           <div className="font-medium">{transaction.account_number}</div>
                           <div className="text-sm text-muted-foreground">{transaction.account_name}</div>
                         </TableCell>
-                        <TableCell>{transaction.description}</TableCell>
-                         <TableCell>{transaction.voucher_number || '-'}</TableCell>
-                         <TableCell className="text-right">
-                           {transaction.debit_amount !== null && transaction.debit_amount !== 0 ? formatCurrency(transaction.debit_amount) : '-'}
-                         </TableCell>
-                         <TableCell className="text-right">
-                           {transaction.credit_amount !== null && transaction.credit_amount !== 0 ? formatCurrency(transaction.credit_amount) : '-'}
-                         </TableCell>
-                         <TableCell className="text-right">
-                           {transaction.balance_amount !== null ? formatCurrency(transaction.balance_amount) : '-'}
-                         </TableCell>
+                         <TableCell>{transaction.description}</TableCell>
+                          <TableCell>{transaction.voucher_number || '-'}</TableCell>
+                          <TableCell className="text-right">
+                            <span className={transaction.balance_amount && transaction.balance_amount < 0 ? 'text-red-600' : ''}>
+                              {transaction.balance_amount !== null ? formatCurrency(transaction.balance_amount) : '-'}
+                            </span>
+                          </TableCell>
                       </TableRow>
                     ))}
-                     <TableRow className="font-bold border-t-2 bg-muted/50">
-                       <TableCell colSpan={4}>Sum</TableCell>
-                       <TableCell className="text-right">{formatCurrency(filteredAndSortedTransactions.reduce((sum, t) => sum + (t.debit_amount || 0), 0))}</TableCell>
-                       <TableCell className="text-right">{formatCurrency(filteredAndSortedTransactions.reduce((sum, t) => sum + (t.credit_amount || 0), 0))}</TableCell>
-                       <TableCell className="text-right">{formatCurrency(totalBalance)}</TableCell>
-                     </TableRow>
+                      <TableRow className="font-bold border-t-2 bg-muted/50">
+                        <TableCell colSpan={4}>Sum</TableCell>
+                        <TableCell className="text-right">
+                          <span className={Math.abs(totalBalance) < 0.01 ? 'text-green-600' : 'text-red-600'}>
+                            {formatCurrency(totalBalance)}
+                          </span>
+                        </TableCell>
+                      </TableRow>
                   </>
                 )}
               </TableBody>

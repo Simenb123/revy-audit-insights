@@ -291,20 +291,43 @@ const GeneralLedgerUploader = ({ clientId, onUploadComplete }: GeneralLedgerUplo
 
             const transactionDate = new Date(transaction.date);
             
-            // Properly handle debit/credit amounts and voucher numbers
+            // Parse and properly handle amounts
+            const parseAmount = (value: any): number => {
+              if (value === undefined || value === null || value === '') return 0;
+              const numStr = value.toString().replace(/\s/g, '').replace(',', '.');
+              const num = parseFloat(numStr);
+              return isNaN(num) ? 0 : num;
+            };
+            
             let debitAmount = null;
             let creditAmount = null;
             let balanceAmount = 0;
             
-            // Parse amounts properly
+            // Handle different amount scenarios
             if (transaction.debit_amount !== undefined && transaction.debit_amount !== null && transaction.debit_amount !== '') {
-              debitAmount = parseFloat(transaction.debit_amount.toString()) || 0;
+              debitAmount = parseAmount(transaction.debit_amount);
             }
             if (transaction.credit_amount !== undefined && transaction.credit_amount !== null && transaction.credit_amount !== '') {
-              creditAmount = parseFloat(transaction.credit_amount.toString()) || 0;
+              creditAmount = parseAmount(transaction.credit_amount);
             }
             if (transaction.balance_amount !== undefined && transaction.balance_amount !== null && transaction.balance_amount !== '') {
-              balanceAmount = parseFloat(transaction.balance_amount.toString()) || 0;
+              balanceAmount = parseAmount(transaction.balance_amount);
+            }
+            
+            // If balance_amount is the primary field (most common case), set debit/credit accordingly
+            if (balanceAmount !== 0 && !debitAmount && !creditAmount) {
+              if (balanceAmount > 0) {
+                debitAmount = balanceAmount;
+                creditAmount = null;
+              } else {
+                debitAmount = null;
+                creditAmount = Math.abs(balanceAmount);
+              }
+            }
+            
+            // If we have debit/credit but no balance, calculate balance
+            if ((debitAmount || creditAmount) && balanceAmount === 0) {
+              balanceAmount = (debitAmount || 0) - (creditAmount || 0);
             }
             
             // Extract voucher number from various possible fields
