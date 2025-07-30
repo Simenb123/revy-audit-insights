@@ -760,6 +760,104 @@ export type Database = {
           },
         ]
       }
+      analysis_results_v2: {
+        Row: {
+          analysis_type: string
+          confidence_score: number | null
+          created_at: string
+          id: string
+          metadata: Json | null
+          result_data: Json
+          session_id: string
+        }
+        Insert: {
+          analysis_type: string
+          confidence_score?: number | null
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          result_data?: Json
+          session_id: string
+        }
+        Update: {
+          analysis_type?: string
+          confidence_score?: number | null
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          result_data?: Json
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analysis_results_v2_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "analysis_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      analysis_sessions: {
+        Row: {
+          analysis_config: Json
+          client_id: string
+          completed_at: string | null
+          created_by: string | null
+          data_version_id: string | null
+          error_message: string | null
+          id: string
+          progress_percentage: number | null
+          session_type: string
+          started_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          analysis_config?: Json
+          client_id: string
+          completed_at?: string | null
+          created_by?: string | null
+          data_version_id?: string | null
+          error_message?: string | null
+          id?: string
+          progress_percentage?: number | null
+          session_type?: string
+          started_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          analysis_config?: Json
+          client_id?: string
+          completed_at?: string | null
+          created_by?: string | null
+          data_version_id?: string | null
+          error_message?: string | null
+          id?: string
+          progress_percentage?: number | null
+          session_type?: string
+          started_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analysis_sessions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "analysis_sessions_data_version_id_fkey"
+            columns: ["data_version_id"]
+            isOneToOne: false
+            referencedRelation: "accounting_data_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       analysis_templates: {
         Row: {
           config_json: Json
@@ -3142,6 +3240,54 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      filtered_data_cache: {
+        Row: {
+          cache_created_at: string
+          client_id: string
+          data_version_id: string
+          expires_at: string
+          filter_criteria: Json
+          filter_hash: string
+          filtered_data_summary: Json
+          id: string
+        }
+        Insert: {
+          cache_created_at?: string
+          client_id: string
+          data_version_id: string
+          expires_at?: string
+          filter_criteria: Json
+          filter_hash: string
+          filtered_data_summary: Json
+          id?: string
+        }
+        Update: {
+          cache_created_at?: string
+          client_id?: string
+          data_version_id?: string
+          expires_at?: string
+          filter_criteria?: Json
+          filter_hash?: string
+          filtered_data_summary?: Json
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "filtered_data_cache_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "filtered_data_cache_data_version_id_fkey"
+            columns: ["data_version_id"]
+            isOneToOne: false
+            referencedRelation: "accounting_data_versions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       formula_definitions: {
         Row: {
@@ -5676,6 +5822,10 @@ export type Database = {
           prompt_tokens: number
           completion_tokens: number
         }
+        Returns: number
+      }
+      cleanup_expired_cache: {
+        Args: Record<PropertyKey, never>
         Returns: number
       }
       generate_certificate_number: {

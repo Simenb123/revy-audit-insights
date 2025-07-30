@@ -21,6 +21,7 @@ import {
 } from '@/utils/fileProcessing';
 import GeneralLedgerFilters from './GeneralLedgerFilters';
 import FilteredDataPreview from './FilteredDataPreview';
+import AnalysisPanel from './AnalysisPanel';
 
 interface TransactionRow {
   date: string;
@@ -699,6 +700,17 @@ const GeneralLedgerUploader = ({ clientId, onUploadComplete }: GeneralLedgerUplo
                 />
               </CardContent>
             </Card>
+          )}
+          
+          {/* Analysis Panel - shown when data is ready */}
+          {(filteredData.length > 0 || convertedData.length > 0) && (
+            <AnalysisPanel
+              clientId={clientId}
+              dataVersionId={versionId || undefined}
+              filteredData={filteredData.length > 0 ? filteredData : undefined}
+              filterStats={filterStats}
+              className="mt-6"
+            />
           )}
           
           <div className="flex justify-between">
