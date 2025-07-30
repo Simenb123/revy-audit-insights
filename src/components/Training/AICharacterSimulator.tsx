@@ -235,7 +235,8 @@ const AICharacterSimulator = () => {
       });
     } finally {
       setIsLoading(false);
-      if (selectedMode === 'audio') setIsAISpeaking(false);
+      // Always set isAISpeaking to false after response generation
+      setIsAISpeaking(false);
     }
   };
 
@@ -336,6 +337,7 @@ const AICharacterSimulator = () => {
         setAudioReady(true);
         
         logger.log('Audio ready for manual playback');
+        logger.log('Debug state - audioReady:', true, 'isAISpeaking:', false, 'lastAudio:', !!audio);
       } else {
         setLastAudio(null);
         setAudioReady(false);
@@ -683,6 +685,9 @@ const AICharacterSimulator = () => {
                         <span className="text-sm">Audio klar for avspilling</span>
                       </div>
                     )}
+                    <div className="text-xs text-gray-500 mt-1">
+                      Debug: audioReady={audioReady.toString()}, isAISpeaking={isAISpeaking.toString()}, isRecording={isRecording.toString()}
+                    </div>
                     {!isRecording && !isAISpeaking && !audioReady && (
                       <span className="text-sm text-gray-600">Trykk for å snakke</span>
                     )}
