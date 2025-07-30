@@ -17,18 +17,18 @@ export interface AccountValidation extends ValidationResult {
   difference: number;
 }
 
-export const useAccountingValidation = (clientId: string) => {
-  const { data: generalLedgerData } = useGeneralLedgerData(clientId);
-  const { data: trialBalanceData } = useTrialBalanceData(clientId);
+export const useAccountingValidation = (clientId: string, selectedGLVersion?: string, selectedTBVersion?: string) => {
+  const { data: generalLedgerData } = useGeneralLedgerData(clientId, selectedGLVersion);
+  const { data: trialBalanceData } = useTrialBalanceData(clientId, selectedTBVersion);
 
   return useQuery({
-    queryKey: ['accounting-validation', clientId, generalLedgerData, trialBalanceData],
+    queryKey: ['accounting-validation', clientId, selectedGLVersion, selectedTBVersion],
     queryFn: async () => {
       if (!generalLedgerData || !trialBalanceData) {
         return {
           overallValidation: {
             isValid: false,
-            message: 'Mangler data for validering',
+            message: 'Mangler data for validering - både hovedbok og saldobalanse må være lastet inn',
             severity: 'warning' as const
           },
           accountValidations: [] as AccountValidation[]
@@ -89,12 +89,12 @@ export const useAccountingValidation = (clientId: string) => {
           isValid: !hasErrors,
           message: hasErrors 
             ? `${accountValidations.filter(v => !v.isValid).length} kontoer har avvik (total: ${totalDifference.toFixed(2)} kr)`
-            : 'Alle kontoer stemmer overens',
+            : `Alle ${accountValidations.length} kontoer stemmer overens mellom hovedbok og saldobalanse`,
           severity: hasErrors ? (totalDifference > 1000 ? 'error' : 'warning') : 'info'
         } as ValidationResult,
         accountValidations
       };
     },
-    enabled: !!generalLedgerData && !!trialBalanceData,
+    enabled: !!clientId && !!generalLedgerData && !!trialBalanceData && generalLedgerData.length > 0 && trialBalanceData.length > 0,
   });
 };

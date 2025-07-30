@@ -8,10 +8,12 @@ import { formatCurrency } from '@/lib/formatters';
 
 interface ValidationPanelProps {
   clientId: string;
+  selectedGLVersion?: string;
+  selectedTBVersion?: string;
 }
 
-const ValidationPanel = ({ clientId }: ValidationPanelProps) => {
-  const { data: validation, isLoading, error } = useAccountingValidation(clientId);
+const ValidationPanel = ({ clientId, selectedGLVersion, selectedTBVersion }: ValidationPanelProps) => {
+  const { data: validation, isLoading, error } = useAccountingValidation(clientId, selectedGLVersion, selectedTBVersion);
 
   if (isLoading) {
     return (
