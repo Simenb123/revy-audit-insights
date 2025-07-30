@@ -61,6 +61,7 @@ const AICharacterSimulator = () => {
   const [isAISpeaking, setIsAISpeaking] = useState(false);
   const [audioLevel, setAudioLevel] = useState(0);
   const [lastAudio, setLastAudio] = useState<HTMLAudioElement | null>(null);
+  const [audioReady, setAudioReady] = useState(false);
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -244,6 +245,7 @@ const AICharacterSimulator = () => {
       
       // Clear previous audio when generating new response
       setLastAudio(null);
+      setAudioReady(false);
       
       const { data, error } = await supabase.functions.invoke('text-to-speech', {
         body: { text, voiceId }
@@ -251,64 +253,121 @@ const AICharacterSimulator = () => {
       
       if (error) {
         logger.error('Supabase function error:', error);
-        throw error;
+        setLastAudio(null);
+        setAudioReady(false);
+        toast({
+          title: "Lydfeil",
+          description: "Kunne ikke generere tale, faller tilbake til tekst",
+          variant: "destructive"
+        });
+        await speakText(text);
+        return;
       }
 
       // Check if the response contains an error (when ElevenLabs fails)
       if (data && typeof data === 'object' && 'error' in data) {
         logger.error('ElevenLabs API error:', data.error);
-        
+        setLastAudio(null);
+        setAudioReady(false);
         toast({
           title: "Lydfeil",
           description: "Kunne ikke generere tale, faller tilbake til tekst",
           variant: "destructive"
         });
-        
-        // Fallback to useVoiceCommands speakText with OpenAI TTS
-        logger.log('Falling back to OpenAI TTS');
         await speakText(text);
         return;
       }
 
+      let audioBlob: Blob | null = null;
+
+      // Handle different response formats
       if (data instanceof ArrayBuffer) {
-        // Direct ArrayBuffer response - wrap in blob and store audio object
-        const blob = new Blob([data], { type: 'audio/mpeg' });
-        const url = URL.createObjectURL(blob);
+        // Direct ArrayBuffer response
+        audioBlob = new Blob([data], { type: 'audio/mpeg' });
+        logger.log('Processed ArrayBuffer audio response');
+      } else if (typeof data === 'string') {
+        // Base64 string response
+        try {
+          const binaryString = atob(data);
+          const bytes = new Uint8Array(binaryString.length);
+          for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+          }
+          audioBlob = new Blob([bytes], { type: 'audio/mpeg' });
+          logger.log('Processed base64 string audio response');
+        } catch (decodeError) {
+          logger.error('Failed to decode base64 audio:', decodeError);
+          setLastAudio(null);
+          setAudioReady(false);
+          toast({
+            title: "Lydfeil",
+            description: "Kunne ikke dekode lyd, faller tilbake til tekst",
+            variant: "destructive"
+          });
+          await speakText(text);
+          return;
+        }
+      } else if (data && typeof data === 'object' && 'audioContent' in data) {
+        // Object with audioContent property (base64)
+        try {
+          const audioContent = (data as any).audioContent;
+          const binaryString = atob(audioContent);
+          const bytes = new Uint8Array(binaryString.length);
+          for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+          }
+          audioBlob = new Blob([bytes], { type: 'audio/mpeg' });
+          logger.log('Processed audioContent object response');
+        } catch (decodeError) {
+          logger.error('Failed to decode audioContent:', decodeError);
+          setLastAudio(null);
+          setAudioReady(false);
+          toast({
+            title: "Lydfeil",
+            description: "Kunne ikke dekode lyd, faller tilbake til tekst",
+            variant: "destructive"
+          });
+          await speakText(text);
+          return;
+        }
+      } else {
+        logger.error('Unexpected response format from TTS service:', typeof data, data);
+        setLastAudio(null);
+        setAudioReady(false);
+        toast({
+          title: "Lydfeil", 
+          description: "Ukjent lydformat, faller tilbake til tekst",
+          variant: "destructive"
+        });
+        await speakText(text);
+        return;
+      }
+
+      // Create Audio object if we have valid audio data
+      if (audioBlob) {
+        const url = URL.createObjectURL(audioBlob);
         const audio = new Audio(url);
         
         // Store the audio object for manual playback
         setLastAudio(audio);
+        setAudioReady(true);
         
-        logger.log('ElevenLabs speech ready for playback');
-        return;
-      } else if (data && typeof data === 'object' && (data as any).error) {
-        // Error response from edge function
-        logger.error('TTS service error:', (data as any).error);
+        logger.log('Audio ready for manual playback');
+      } else {
+        setLastAudio(null);
+        setAudioReady(false);
         toast({
           title: "Lydfeil",
-          description: "Kunne ikke generere tale, faller tilbake til tekst",
+          description: "Kunne ikke opprette lyd, faller tilbake til tekst",
           variant: "destructive"
         });
-        
-        // Fallback to useVoiceCommands speakText (OpenAI TTS)
-        logger.log('Falling back to OpenAI TTS due to service error');
         await speakText(text);
-        return;
-      } else {
-        logger.error('Unexpected response format from TTS service:', typeof data, data);
-        toast({
-          title: "Lydfeil", 
-          description: "Kunne ikke generere tale, faller tilbake til tekst",
-          variant: "destructive"
-        });
-        
-        // Fallback to useVoiceCommands speakText
-        await speakText(text);
-        return;
       }
       
     } catch (error) {
       logger.error('Error generating speech:', error);
+      setLastAudio(null);
+      setAudioReady(false);
       
       // Fallback to useVoiceCommands speakText for any other errors
       try {
@@ -330,6 +389,7 @@ const AICharacterSimulator = () => {
       try {
         await lastAudio.play();
         setLastAudio(null); // Hide button once played
+        setAudioReady(false);
       } catch (error) {
         logger.error('Error playing audio:', error);
         toast({
@@ -435,6 +495,8 @@ const AICharacterSimulator = () => {
     setConversation([]);
     setIsRecording(false);
     setIsAISpeaking(false);
+    setLastAudio(null);
+    setAudioReady(false);
     
     toast({
       title: "Simulering avsluttet",
