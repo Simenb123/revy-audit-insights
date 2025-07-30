@@ -22,30 +22,38 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, compact = false }) =
         !isAssistant && "flex-row-reverse"
       )}
     >
-      {isAssistant ? (
-        <RevyAvatar 
-          size={compact ? "md" : "xl"} 
-          className="mt-1" 
-        />
-      ) : (
-        <div className={cn(
-          "rounded-full bg-primary text-primary-foreground flex items-center justify-center font-medium mt-1",
-          compact ? "h-8 w-8 text-xs" : "h-12 w-12 text-sm"
-        )}>
+      {!isAssistant && (
+        <div
+          className={cn(
+            "rounded-full bg-primary text-primary-foreground flex items-center justify-center font-medium mt-1",
+            compact ? "h-8 w-8 text-xs" : "h-12 w-12 text-sm"
+          )}
+        >
           D
         </div>
       )}
-      
+
       <div className="min-w-0 flex-1">
-        <div className={cn(
-          "rounded-lg px-4 py-3 break-words",
-          compact ? "text-xs px-3 py-2" : "text-sm",
-          isAssistant 
-            ? "bg-muted text-foreground shadow-sm" 
-            : "bg-primary text-primary-foreground"
-        )}>
+        <div
+          className={cn(
+            "revy-message-bubble rounded-lg px-4 py-3 break-words",
+            compact ? "text-xs px-3 py-2" : "text-sm",
+            isAssistant
+              ? "bg-muted text-foreground shadow-sm"
+              : "bg-primary text-primary-foreground"
+          )}
+        >
+          {isAssistant && (
+            <RevyAvatar
+              size={compact ? "md" : "xl"}
+              className={cn(
+                "revy-message-avatar",
+                compact ? "-top-2 -left-2" : "-top-4 -left-4"
+              )}
+            />
+          )}
           {isAssistant ? (
-            <ActionableMessage 
+            <ActionableMessage
               content={typeof message.content === 'string' ? message.content : ''}
               links={message.links || []}
               sources={message.sources || []}
@@ -56,12 +64,12 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, compact = false }) =
             </ReactMarkdown>
           )}
         </div>
-        
+
         {!compact && (
           <span className="text-xs text-muted-foreground mt-1">
-            {message.timestamp.toLocaleTimeString('nb-NO', { 
-              hour: '2-digit', 
-              minute: '2-digit' 
+            {message.timestamp.toLocaleTimeString('nb-NO', {
+              hour: '2-digit',
+              minute: '2-digit'
             })}
           </span>
         )}
