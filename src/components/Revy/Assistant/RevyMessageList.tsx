@@ -4,7 +4,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Trash2 } from 'lucide-react';
 import { RevyMessage } from '@/types/revio';
-import MessageItem from './MessageItem';
+import RevyMessageItem from './RevyMessageItem';
 
 interface RevyMessageListProps {
   messages: RevyMessage[];
@@ -72,7 +72,7 @@ export const RevyMessageList: React.FC<RevyMessageListProps> = ({
       <ScrollArea className="flex-1">
         <div className="p-2 space-y-1">
           {messages.map((message) => (
-            <MessageItem
+            <RevyMessageItem
               key={message.id}
               message={message}
               compact={compact}

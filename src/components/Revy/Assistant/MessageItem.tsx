@@ -5,8 +5,6 @@ import { RevyMessage } from '@/types/revio';
 import RevyAvatar from '../RevyAvatar';
 import ActionableMessage from '../ActionableMessage';
 import ReactMarkdown from 'react-markdown';
-import { Volume2 } from 'lucide-react';
-import { useVoiceCommands } from '@/hooks/useVoiceCommands';
 
 interface MessageItemProps {
   message: RevyMessage;
@@ -15,26 +13,20 @@ interface MessageItemProps {
 
 const MessageItem: React.FC<MessageItemProps> = ({ message, compact = false }) => {
   const isAssistant = message.sender === 'assistant';
-  const { speakText } = useVoiceCommands();
-
-  const handleSpeak = () => {
-    if (typeof message.content === 'string') {
-      speakText(message.content);
-    }
-  };
   
   return (
     <div
       className={cn(
         "flex animate-fade-in items-start",
-        compact ? "gap-2 mb-1" : "gap-3 mb-2"
+        compact ? "gap-2 mb-2" : "gap-3 mb-4",
+        !isAssistant && "flex-row-reverse"
       )}
     >
       {/* Avatar for assistant messages */}
       {isAssistant && (
         <RevyAvatar
-          size="lg"
-          className="flex-shrink-0"
+          size={compact ? "md" : "lg"}
+          className="flex-shrink-0 mt-0.5"
         />
       )}
       
@@ -42,7 +34,7 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, compact = false }) =
       {!isAssistant && (
         <div
           className={cn(
-            "rounded-full bg-primary text-primary-foreground flex items-center justify-center font-medium flex-shrink-0",
+            "rounded-full bg-primary text-primary-foreground flex items-center justify-center font-medium mt-0.5 flex-shrink-0",
             compact ? "h-6 w-6 text-xs" : "h-8 w-8 text-sm"
           )}
         >
@@ -56,23 +48,10 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, compact = false }) =
             "rounded-lg break-words",
             compact ? "text-xs px-2 py-1.5" : "text-sm px-3 py-2",
             isAssistant
-              ? "bg-muted text-foreground"
+              ? "bg-muted text-foreground shadow-sm"
               : "bg-primary text-primary-foreground"
           )}
         >
-          {/* Header for assistant messages */}
-          {isAssistant && !compact && (
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-xs font-medium opacity-70">AI-Revy</span>
-              <span className="text-xs opacity-60">
-                {message.timestamp.toLocaleTimeString('nb-NO', { 
-                  hour: '2-digit', 
-                  minute: '2-digit' 
-                })}
-              </span>
-            </div>
-          )}
-
           {isAssistant ? (
             <ActionableMessage
               content={typeof message.content === 'string' ? message.content : ''}
@@ -86,27 +65,14 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, compact = false }) =
           )}
         </div>
 
-        {/* Footer actions */}
-        <div className="flex items-center justify-between mt-1">
-          {isAssistant && !compact && (
-            <button
-              type="button"
-              onClick={handleSpeak}
-              className="text-muted-foreground hover:text-foreground p-1"
-            >
-              <Volume2 className="h-3 w-3" />
-            </button>
-          )}
-          
-          {!isAssistant && !compact && (
-            <span className="text-xs text-muted-foreground ml-auto">
-              {message.timestamp.toLocaleTimeString('nb-NO', { 
-                hour: '2-digit', 
-                minute: '2-digit' 
-              })}
-            </span>
-          )}
-        </div>
+        {!compact && (
+          <span className="text-xs text-muted-foreground mt-1 block">
+            {message.timestamp.toLocaleTimeString('nb-NO', {
+              hour: '2-digit',
+              minute: '2-digit'
+            })}
+          </span>
+        )}
       </div>
     </div>
   );
