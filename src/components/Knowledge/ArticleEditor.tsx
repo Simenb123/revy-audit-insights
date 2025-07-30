@@ -139,17 +139,38 @@ const ArticleEditor = () => {
         contentTypeId = article.content_type_id;
       }
 
-      form.reset({
-        title: article.title || "",
-        slug: article.slug || "",
-        summary: article.summary || "",
-        content: article.content || "<p>Skriv artikkelinnholdet her...</p>",
-        categoryId: article.category_id || "",
-        contentTypeId: contentTypeId,
-        subjectAreaIds: article.subject_area_ids || [],
-        tags: article.article_tags?.map(tag => tag.display_name).join(", ") || "",
-        status: article.status || "draft",
-        reference_code: article.reference_code || "",
+      // Get tags from the unified tag system
+      const getArticleTags = async () => {
+        try {
+          const { data: articleTags } = await supabase
+            .from('knowledge_article_tags')
+            .select(`
+              tag_id,
+              tags!inner(display_name)
+            `)
+            .eq('article_id', article.id);
+          
+          const tagNames = articleTags?.map(at => at.tags.display_name).join(", ") || "";
+          return tagNames;
+        } catch (error) {
+          logger.error("Error fetching article tags:", error);
+          return "";
+        }
+      };
+
+      getArticleTags().then(tagNames => {
+        form.reset({
+          title: article.title || "",
+          slug: article.slug || "",
+          summary: article.summary || "",
+          content: article.content || "<p>Skriv artikkelinnholdet her...</p>",
+          categoryId: article.category_id || "",
+          contentTypeId: contentTypeId,
+          subjectAreaIds: article.subject_area_ids || [],
+          tags: tagNames,
+          status: article.status || "draft",
+          reference_code: article.reference_code || "",
+        });
       });
     }
   }, [article, isLoadingArticle, form, contentTypes]);
@@ -217,6 +238,8 @@ const ArticleEditor = () => {
   };
 
   const createTagsInUnifiedSystem = async (tagNames: string[]) => {
+    const createdTagIds: string[] = [];
+    
     for (const tagName of tagNames) {
       if (!tagName.trim()) continue;
       
@@ -224,11 +247,13 @@ const ArticleEditor = () => {
         const { data: existingTag } = await supabase
           .from('tags')
           .select('id')
-          .eq('name', tagName.trim().toLowerCase().replace(/\s+/g, '_'))
+          .eq('display_name', tagName.trim())
           .single();
 
-        if (!existingTag) {
-          const { error: tagError } = await supabase
+        if (existingTag) {
+          createdTagIds.push(existingTag.id);
+        } else {
+          const { data: newTag, error: tagError } = await supabase
             .from('tags')
             .insert({
               name: tagName.trim().toLowerCase().replace(/\s+/g, '_'),
@@ -237,18 +262,23 @@ const ArticleEditor = () => {
               category: 'article',
               sort_order: 999,
               is_active: true
-            });
+            })
+            .select()
+            .single();
 
           if (tagError) {
             logger.error('Error creating tag in unified system:', tagError);
           } else {
             logger.log(`Created new tag in unified system: ${tagName.trim()}`);
+            if (newTag) createdTagIds.push(newTag.id);
           }
         }
       } catch (error) {
         logger.error('Error checking/creating tag:', error);
       }
     }
+    
+    return createdTagIds;
   };
 
   const saveMutation = useMutation({
@@ -281,8 +311,9 @@ const ArticleEditor = () => {
             .filter(Boolean)
         : [];
 
+      let tagIds: string[] = [];
       if (tagNames.length > 0) {
-        await createTagsInUnifiedSystem(tagNames);
+        tagIds = await createTagsInUnifiedSystem(tagNames);
       }
       
       const articleData = {
@@ -320,6 +351,7 @@ const ArticleEditor = () => {
         }
         savedArticle = result as KnowledgeArticle;
 
+        // Update subject areas
         if (data.subjectAreaIds && data.subjectAreaIds.length > 0) {
           await supabase
             .from("article_subject_areas")
@@ -339,6 +371,27 @@ const ArticleEditor = () => {
             logger.error("Subject area mapping error:", mappingError);
           }
         }
+
+        // Update tags in unified system
+        if (tagIds.length > 0) {
+          await supabase
+            .from("knowledge_article_tags")
+            .delete()
+            .eq("article_id", articleId);
+
+          const tagMappings = tagIds.map(tagId => ({
+            article_id: articleId,
+            tag_id: tagId
+          }));
+
+          const { error: tagMappingError } = await supabase
+            .from("knowledge_article_tags")
+            .insert(tagMappings);
+
+          if (tagMappingError) {
+            logger.error("Tag mapping error:", tagMappingError);
+          }
+        }
       } else {
         const { data: result, error } = await supabase
           .from("knowledge_articles")
@@ -356,6 +409,7 @@ const ArticleEditor = () => {
         }
         savedArticle = result as KnowledgeArticle;
 
+        // Insert subject areas
         if (data.subjectAreaIds && data.subjectAreaIds.length > 0) {
           const subjectAreaMappings = data.subjectAreaIds.map(subjectAreaId => ({
             article_id: savedArticle.id,
@@ -368,6 +422,22 @@ const ArticleEditor = () => {
 
           if (mappingError) {
             logger.error("Subject area mapping error:", mappingError);
+          }
+        }
+
+        // Insert tags in unified system
+        if (tagIds.length > 0) {
+          const tagMappings = tagIds.map(tagId => ({
+            article_id: savedArticle.id,
+            tag_id: tagId
+          }));
+
+          const { error: tagMappingError } = await supabase
+            .from("knowledge_article_tags")
+            .insert(tagMappings);
+
+          if (tagMappingError) {
+            logger.error("Tag mapping error:", tagMappingError);
           }
         }
       }

@@ -482,26 +482,29 @@ async function enhancedKeywordSearch(supabase: any, query: string): Promise<Sear
 
   const originalWords = sanitizeWords(query);
   const expandedTerms = expandSearchTerms(query);
-  const allSearchTerms = [...new Set([...originalWords, ...expandedTerms])];
+  // Limit search terms to prevent URL length issues
+  const limitedTerms = [...new Set([...originalWords, ...expandedTerms])].slice(0, 20);
   
-  console.log('📝 Original search words:', originalWords);
-  console.log('🔍 Expanded search terms:', expandedTerms.slice(0, 20)); // Show first 20 for logging
+  console.log('📝 Original search words:', originalWords.slice(0, 10));
+  console.log('🔍 Expanded search terms:', limitedTerms.slice(0, 10));
   
-  if (allSearchTerms.length === 0) {
+  if (limitedTerms.length === 0) {
     console.log('⚠️ No valid search terms found');
     return [];
   }
   
   try {
-    // Build more sophisticated search conditions
-    const titleConditions = allSearchTerms.map(word => `title.ilike.%${word}%`).join(',');
-    const summaryConditions = allSearchTerms.map(word => `summary.ilike.%${word}%`).join(',');
-    const contentConditions = allSearchTerms.map(word => `content.ilike.%${word}%`).join(',');
-    const refConditions = allSearchTerms.map(word => `reference_code.ilike.%${word}%`).join(',');
-    
-    const searchConditions = [titleConditions, summaryConditions, contentConditions, refConditions].join(',');
-    
+    // Use simpler approach to avoid URL length issues
     console.log('📊 Executing enhanced database query...');
+    
+    // Build search with fewer terms to avoid URL length issues
+    const priorityTerms = originalWords.slice(0, 8); // Focus on original words
+    const titleConditions = priorityTerms.map(word => `title.ilike.%${encodeURIComponent(word)}%`).join(',');
+    const summaryConditions = priorityTerms.map(word => `summary.ilike.%${encodeURIComponent(word)}%`).join(',');
+    const refConditions = priorityTerms.map(word => `reference_code.ilike.%${encodeURIComponent(word)}%`).join(',');
+    
+    const searchConditions = [titleConditions, summaryConditions, refConditions].join(',');
+    
     const { data, error } = await supabase
       .from('knowledge_articles')
       .select(`
@@ -520,7 +523,7 @@ async function enhancedKeywordSearch(supabase: any, query: string): Promise<Sear
       .eq('status', 'published')
       .or(searchConditions)
       .order('view_count', { ascending: false })
-      .limit(30); // Increased limit for better results
+      .limit(20); // Reasonable limit
 
     if (error) {
       console.error('❌ Enhanced keyword search database error:', error);
@@ -657,18 +660,20 @@ export default async function handler(req: Request): Promise<Response> {
         console.log('🔍 Calling match_knowledge_articles RPC...');
         const { data, error } = await supabase.rpc('match_knowledge_articles', {
           p_query_embedding: queryEmbedding,
-          p_match_threshold: 0.65, // Slightly lower threshold for better recall
-          p_match_count: 15,
+          p_match_threshold: 0.60, // Lower threshold for better recall
+          p_match_count: 10,
         });
 
         if (error) {
           console.error('❌ Semantic search RPC error:', error);
+          console.log('⚠️ Falling back to keyword search only');
         } else {
           semanticResults = data || [];
           console.log(`✅ Enhanced semantic search found ${semanticResults.length} articles`);
         }
       } catch (e) {
         console.error("❌ Error during enhanced semantic search:", e.message);
+        console.log('⚠️ Continuing with keyword search only');
       }
     } else {
       console.log('⚠️ No OpenAI API key, skipping semantic search');
