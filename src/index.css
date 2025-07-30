@@ -173,12 +173,6 @@
   .revy-message-bubble {
     position: relative;
   }
-
-  .revy-message-avatar {
-    position: absolute;
-    top: -1rem;
-    left: -1rem;
-  }
 }
 
 @layer base {
