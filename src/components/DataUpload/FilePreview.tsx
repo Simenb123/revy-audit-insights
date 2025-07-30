@@ -141,8 +141,8 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
           </div>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse border border-border">
+          <div className="overflow-x-auto max-h-96">
+            <table className="w-full border-collapse border border-border min-w-max">
               <thead>
                 {showMapping && fieldDefinitions.length > 0 && (
                   <tr className="bg-primary/10">
@@ -206,7 +206,7 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
                     #
                   </th>
                   {preview.headers.map((header, index) => (
-                    <th key={index} className="border border-border px-2 py-1 text-left text-xs font-medium">
+                    <th key={index} className="border border-border px-2 py-1 text-left text-xs font-medium whitespace-nowrap min-w-[100px]">
                       {header || `Kolonne ${index + 1}`}
                     </th>
                   ))}
@@ -219,7 +219,7 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
                       {rowIndex + 1}
                     </td>
                     {preview.headers.map((_, colIndex) => (
-                      <td key={colIndex} className="border border-border px-2 py-1 text-xs">
+                      <td key={colIndex} className="border border-border px-2 py-1 text-xs whitespace-nowrap min-w-[100px]">
                         {row[colIndex] || ''}
                       </td>
                     ))}

@@ -161,7 +161,9 @@ export const GENERAL_LEDGER_FIELDS: FieldDefinition[] = [
       'beløp', 'amount', 'balance', 'balance_amount', 'saldo', 'belop', 'belopkr', 'beløpkr', 'kr', 'sum',
       'beløp nok', 'beløp kr', 'beløp_kr', 'beløp_nok', 'lokalt_beløp', 'local_amount',
       'transbeløp', 'transaksjon_beløp', 'transaction_amount', 'totalbeløp', 'total_amount',
-      'periode_beløp', 'nettobeløp', 'netto_beløp', 'brutto_beløp', 'bruttobeløp'
+      'periode_beløp', 'nettobeløp', 'netto_beløp', 'brutto_beløp', 'bruttobeløp',
+      'beløp valuta', 'beløp_valuta', 'belop_valuta', 'belopvaluta', 'beløpvaluta',
+      'valuta_beløp', 'valutabeløp', 'currency_amount', 'foreign_amount', 'valuta'
     ]
   },
   {
