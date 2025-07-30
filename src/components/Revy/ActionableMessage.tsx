@@ -66,7 +66,7 @@ const ActionableMessage = ({ content, links = [], sources = [] }: ActionableMess
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-2">
       <div className="prose prose-sm max-w-none prose-headings:text-foreground prose-p:text-foreground prose-strong:text-foreground prose-ul:text-foreground prose-li:text-foreground">
         <ReactMarkdown 
           components={{
@@ -98,24 +98,24 @@ const ActionableMessage = ({ content, links = [], sources = [] }: ActionableMess
             },
             // Style headings
             h1: ({ children, ...props }) => (
-              <h1 className="text-lg font-semibold mb-2" {...props}>{children}</h1>
+              <h1 className="text-lg font-semibold mb-1" {...props}>{children}</h1>
             ),
             h2: ({ children, ...props }) => (
-              <h2 className="text-base font-semibold mb-2" {...props}>{children}</h2>
+              <h2 className="text-base font-semibold mb-1" {...props}>{children}</h2>
             ),
             h3: ({ children, ...props }) => (
-              <h3 className="text-sm font-semibold mb-1" {...props}>{children}</h3>
+              <h3 className="text-sm font-semibold mb-0.5" {...props}>{children}</h3>
             ),
-            // Style lists
+            // Style lists with reduced margins
             ul: ({ children, ...props }) => (
-              <ul className="list-disc pl-4 space-y-1" {...props}>{children}</ul>
+              <ul className="list-disc pl-4 space-y-0.5 my-1" {...props}>{children}</ul>
             ),
             ol: ({ children, ...props }) => (
-              <ol className="list-decimal pl-4 space-y-1" {...props}>{children}</ol>
+              <ol className="list-decimal pl-4 space-y-0.5 my-1" {...props}>{children}</ol>
             ),
-            // Style paragraphs
+            // Style paragraphs with reduced margins
             p: ({ children, ...props }) => (
-              <p className="mb-2 last:mb-0" {...props}>{children}</p>
+              <p className="mb-1 last:mb-0" {...props}>{children}</p>
             ),
             // Style strong text
             strong: ({ children, ...props }) => (

@@ -27,7 +27,7 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, compact = false }) =
     <div
       className={cn(
         "flex animate-fade-in items-start",
-        compact ? "gap-2 mb-1" : "gap-3 mb-2"
+        compact ? "gap-2 mb-1" : "gap-2 mb-1.5"
       )}
     >
       {/* Avatar for assistant messages */}
@@ -54,7 +54,7 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, compact = false }) =
         <div
           className={cn(
             "rounded-lg break-words",
-            compact ? "text-xs px-2 py-1.5" : "text-sm px-3 py-2",
+            compact ? "text-xs px-2 py-1" : "text-sm px-3 py-1.5",
             isAssistant
               ? "bg-muted text-foreground"
               : "bg-primary text-primary-foreground"
