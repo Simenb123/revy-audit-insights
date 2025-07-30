@@ -330,14 +330,64 @@ const AICharacterSimulator = () => {
       if (audioBuffer) {
         const audioBlob = new Blob([audioBuffer], { type: 'audio/mpeg' });
         const url = URL.createObjectURL(audioBlob);
-        const audio = new Audio(url);
         
-        // Store the audio object for manual playback
-        setLastAudio(audio);
-        setAudioReady(true);
+        logger.log('Created audio blob, size:', audioBlob.size, 'bytes, type:', audioBlob.type);
+        logger.log('Created audio URL:', url);
         
-        logger.log('Audio ready for manual playback');
-        logger.log('Debug state - audioReady:', true, 'isAISpeaking:', false, 'lastAudio:', !!audio);
+        // Create and validate audio element before setting as ready
+        const audio = new Audio();
+        
+        // Add promise-based loading validation
+        const validateAudio = new Promise<void>((resolve, reject) => {
+          const timeout = setTimeout(() => {
+            reject(new Error('Audio loading timeout'));
+          }, 5000);
+          
+          audio.addEventListener('canplaythrough', () => {
+            clearTimeout(timeout);
+            logger.log('Audio validated - can play through');
+            resolve();
+          }, { once: true });
+          
+          audio.addEventListener('error', (e) => {
+            clearTimeout(timeout);
+            logger.error('Audio validation failed:', e);
+            logger.error('Audio error details:', audio.error);
+            reject(new Error(`Audio error: ${audio.error?.message || 'Unknown'}`));
+          }, { once: true });
+          
+          audio.addEventListener('loadstart', () => {
+            logger.log('Audio loading started');
+          }, { once: true });
+          
+          audio.addEventListener('loadeddata', () => {
+            logger.log('Audio data loaded');
+          }, { once: true });
+        });
+        
+        // Set source and validate
+        audio.src = url;
+        audio.load();
+        
+        try {
+          await validateAudio;
+          // Only set as ready if validation succeeds
+          setLastAudio(audio);
+          setAudioReady(true);
+          logger.log('Audio ready for manual playback');
+          logger.log('Debug state - audioReady:', true, 'isAISpeaking:', false, 'lastAudio:', !!audio);
+        } catch (validationError) {
+          logger.error('Audio validation failed:', validationError);
+          URL.revokeObjectURL(url);
+          setLastAudio(null);
+          setAudioReady(false);
+          toast({
+            title: "Lydfeil",
+            description: "Lydfilen kunne ikke lastes. Faller tilbake til tekst.",
+            variant: "destructive"
+          });
+          await speakText(text);
+        }
       } else {
         setLastAudio(null);
         setAudioReady(false);
