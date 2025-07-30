@@ -677,13 +677,13 @@ const AICharacterSimulator = () => {
                         <span className="text-sm">Tar opp...</span>
                       </div>
                     )}
-                    {lastAudio && !isAISpeaking && !isRecording && (
+                    {audioReady && !isAISpeaking && !isRecording && (
                       <div className="flex items-center gap-2 text-green-600">
                         <Play className="h-4 w-4" />
                         <span className="text-sm">Audio klar for avspilling</span>
                       </div>
                     )}
-                    {!isRecording && !isAISpeaking && !lastAudio && (
+                    {!isRecording && !isAISpeaking && !audioReady && (
                       <span className="text-sm text-gray-600">Trykk for å snakke</span>
                     )}
                   </div>
@@ -692,7 +692,7 @@ const AICharacterSimulator = () => {
             </Card>
 
             {/* Play AI Response Button */}
-            {lastAudio && !isAISpeaking && (
+            {audioReady && !isAISpeaking && (
               <Card>
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-center">
