@@ -278,45 +278,23 @@ const AICharacterSimulator = () => {
         return;
       }
 
-      let audioBlob: Blob | null = null;
+      let audioBuffer: ArrayBuffer | null = null;
 
       // Handle different response formats
-      if (data instanceof ArrayBuffer) {
-        // Direct ArrayBuffer response
-        audioBlob = new Blob([data], { type: 'audio/mpeg' });
-        logger.log('Processed ArrayBuffer audio response');
-      } else if (typeof data === 'string') {
-        // Base64 string response
-        try {
-          const binaryString = atob(data);
-          const bytes = new Uint8Array(binaryString.length);
-          for (let i = 0; i < binaryString.length; i++) {
-            bytes[i] = binaryString.charCodeAt(i);
-          }
-          audioBlob = new Blob([bytes], { type: 'audio/mpeg' });
-          logger.log('Processed base64 string audio response');
-        } catch (decodeError) {
-          logger.error('Failed to decode base64 audio:', decodeError);
-          setLastAudio(null);
-          setAudioReady(false);
-          toast({
-            title: "Lydfeil",
-            description: "Kunne ikke dekode lyd, faller tilbake til tekst",
-            variant: "destructive"
-          });
-          await speakText(text);
-          return;
+      if (typeof data === 'string') {
+        // Convert a raw binary string to Uint8Array
+        const byteArray = new Uint8Array(data.length);
+        for (let i = 0; i < data.length; i++) {
+          byteArray[i] = data.charCodeAt(i) & 0xff;
         }
+        audioBuffer = byteArray.buffer;
+        logger.log('Processed raw binary string audio response');
       } else if (data && typeof data === 'object' && 'audioContent' in data) {
         // Object with audioContent property (base64)
         try {
           const audioContent = (data as any).audioContent;
-          const binaryString = atob(audioContent);
-          const bytes = new Uint8Array(binaryString.length);
-          for (let i = 0; i < binaryString.length; i++) {
-            bytes[i] = binaryString.charCodeAt(i);
-          }
-          audioBlob = new Blob([bytes], { type: 'audio/mpeg' });
+          const bytes = Uint8Array.from(atob(audioContent), c => c.charCodeAt(0));
+          audioBuffer = bytes.buffer;
           logger.log('Processed audioContent object response');
         } catch (decodeError) {
           logger.error('Failed to decode audioContent:', decodeError);
@@ -330,13 +308,17 @@ const AICharacterSimulator = () => {
           await speakText(text);
           return;
         }
+      } else if (data instanceof ArrayBuffer) {
+        // Direct ArrayBuffer response
+        audioBuffer = data;
+        logger.log('Processed ArrayBuffer audio response');
       } else {
         logger.error('Unexpected response format from TTS service:', typeof data, data);
         setLastAudio(null);
         setAudioReady(false);
         toast({
           title: "Lydfeil", 
-          description: "Ukjent lydformat, faller tilbake til tekst",
+          description: "Uventet format fra TTS-tjenesten",
           variant: "destructive"
         });
         await speakText(text);
@@ -344,7 +326,8 @@ const AICharacterSimulator = () => {
       }
 
       // Create Audio object if we have valid audio data
-      if (audioBlob) {
+      if (audioBuffer) {
+        const audioBlob = new Blob([audioBuffer], { type: 'audio/mpeg' });
         const url = URL.createObjectURL(audioBlob);
         const audio = new Audio(url);
         
