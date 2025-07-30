@@ -236,10 +236,19 @@ const AICharacterSimulator = () => {
       
       if (error) throw error;
 
-      // Play the audio
-      const audioBlob = new Blob([Uint8Array.from(atob(data.audioContent), c => c.charCodeAt(0))], { type: 'audio/mpeg' });
-      const audioUrl = URL.createObjectURL(audioBlob);
-      const audio = new Audio(audioUrl);
+      let audioBuffer: ArrayBuffer;
+      if (data instanceof ArrayBuffer) {
+        audioBuffer = data;
+      } else if (data && (data as any).audioContent) {
+        const bytes = Uint8Array.from(atob((data as any).audioContent), (c) => c.charCodeAt(0));
+        audioBuffer = bytes.buffer;
+      } else {
+        throw new Error('Invalid audio data received');
+      }
+
+      const blob = new Blob([audioBuffer], { type: 'audio/mpeg' });
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
       await audio.play();
       
     } catch (error) {

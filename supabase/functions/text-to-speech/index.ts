@@ -22,7 +22,7 @@ Deno.serve(async (req) => {
     log('Using voice ID:', voiceId)
 
     // Use ElevenLabs for realistic Norwegian voices
-    const elevenLabsApiKey = Deno.env.get('ELEVENLABS_API_KEY')
+    const elevenLabsApiKey = Deno.env.get('ELEVENLABS_API_KEY') || 'sk_b3e5ab505b9457d6db97a4093873157f3e6b9c96cb5b4f42'
     
     if (elevenLabsApiKey && voiceId) {
       // Try ElevenLabs first for better quality
