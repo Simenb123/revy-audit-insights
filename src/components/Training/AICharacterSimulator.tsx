@@ -279,65 +279,10 @@ const AICharacterSimulator = () => {
         return;
       }
 
-      let audioBuffer: ArrayBuffer | null = null;
-
-      // Handle different response formats
-      if (typeof data === 'string') {
-        // Convert a raw binary string to Uint8Array
-        const byteArray = new Uint8Array(data.length);
-        for (let i = 0; i < data.length; i++) {
-          byteArray[i] = data.charCodeAt(i) & 0xff;
-        }
-        audioBuffer = byteArray.buffer;
-        logger.log('Processed raw binary string audio response');
-      } else if (data && typeof data === 'object' && 'audioContent' in data) {
-        // Object with audioContent property (base64)
-        try {
-          const audioContent = (data as any).audioContent;
-          const bytes = Uint8Array.from(atob(audioContent), c => c.charCodeAt(0));
-          audioBuffer = bytes.buffer;
-          logger.log('Processed audioContent object response');
-        } catch (decodeError) {
-          logger.error('Failed to decode audioContent:', decodeError);
-          setLastAudio(null);
-          setAudioReady(false);
-          toast({
-            title: "Lydfeil",
-            description: "Kunne ikke dekode lyd, faller tilbake til tekst",
-            variant: "destructive"
-          });
-          await speakText(text);
-          return;
-        }
-      } else if (data instanceof ArrayBuffer) {
-        // Direct ArrayBuffer response
-        audioBuffer = data;
-        logger.log('Processed ArrayBuffer audio response');
-      } else {
-        logger.error('Unexpected response format from TTS service:', typeof data, data);
-        setLastAudio(null);
-        setAudioReady(false);
-        toast({
-          title: "Lydfeil", 
-          description: "Uventet format fra TTS-tjenesten",
-          variant: "destructive"
-        });
-        await speakText(text);
-        return;
-      }
-
-      // Create Audio object if we have valid audio data
-      if (audioBuffer) {
-        const audioBlob = new Blob([audioBuffer], { type: 'audio/mpeg' });
-        const url = URL.createObjectURL(audioBlob);
-        
-        logger.log('Created audio blob, size:', audioBlob.size, 'bytes, type:', audioBlob.type);
-        logger.log('Created audio URL:', url);
-        
-        // Create and validate audio element before setting as ready
+      // Helper function to create and validate audio
+      const createAndValidateAudio = async (url: string) => {
         const audio = new Audio();
         
-        // Add promise-based loading validation
         const validateAudio = new Promise<void>((resolve, reject) => {
           const timeout = setTimeout(() => {
             reject(new Error('Audio loading timeout'));
@@ -355,45 +300,56 @@ const AICharacterSimulator = () => {
             logger.error('Audio error details:', audio.error);
             reject(new Error(`Audio error: ${audio.error?.message || 'Unknown'}`));
           }, { once: true });
-          
-          audio.addEventListener('loadstart', () => {
-            logger.log('Audio loading started');
-          }, { once: true });
-          
-          audio.addEventListener('loadeddata', () => {
-            logger.log('Audio data loaded');
-          }, { once: true });
         });
         
-        // Set source and validate
         audio.src = url;
         audio.load();
         
         try {
           await validateAudio;
-          // Only set as ready if validation succeeds
           setLastAudio(audio);
           setAudioReady(true);
           logger.log('Audio ready for manual playback');
-          logger.log('Debug state - audioReady:', true, 'isAISpeaking:', false, 'lastAudio:', !!audio);
         } catch (validationError) {
           logger.error('Audio validation failed:', validationError);
           URL.revokeObjectURL(url);
-          setLastAudio(null);
-          setAudioReady(false);
-          toast({
-            title: "Lydfeil",
-            description: "Lydfilen kunne ikke lastes. Faller tilbake til tekst.",
-            variant: "destructive"
-          });
-          await speakText(text);
+          throw validationError;
         }
-      } else {
+      };
+
+      // Handle different response formats using data URI for base64
+      try {
+        if (data instanceof ArrayBuffer) {
+          logger.log('Received ArrayBuffer audio response');
+          const audioBlob = new Blob([data], { type: 'audio/mpeg' });
+          const url = URL.createObjectURL(audioBlob);
+          await createAndValidateAudio(url);
+        } else if (typeof data === 'string') {
+          logger.log('Processing base64 string audio response via data URI');
+          // Use data URI to let browser handle base64 decoding
+          const response = await fetch(`data:audio/mpeg;base64,${data}`);
+          if (!response.ok) throw new Error('Failed to decode Base64 audio');
+          const blob = await response.blob();
+          const url = URL.createObjectURL(blob);
+          await createAndValidateAudio(url);
+        } else if (data && typeof data === 'object' && 'audioContent' in data) {
+          logger.log('Processing audioContent base64 via data URI');
+          const audioContent = (data as any).audioContent;
+          const response = await fetch(`data:audio/mpeg;base64,${audioContent}`);
+          if (!response.ok) throw new Error('Failed to decode Base64 audio');
+          const blob = await response.blob();
+          const url = URL.createObjectURL(blob);
+          await createAndValidateAudio(url);
+        } else {
+          throw new Error(`Unexpected response format: ${typeof data}`);
+        }
+      } catch (error) {
+        logger.error('Audio processing failed:', error);
         setLastAudio(null);
         setAudioReady(false);
         toast({
           title: "Lydfeil",
-          description: "Kunne ikke opprette lyd, faller tilbake til tekst",
+          description: "Lydfilen kunne ikke behandles. Faller tilbake til tekst.",
           variant: "destructive"
         });
         await speakText(text);
