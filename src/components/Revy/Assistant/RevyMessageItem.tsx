@@ -22,22 +22,17 @@ const RevyMessageItem: React.FC<RevyMessageItemProps> = ({ message, compact = fa
   }
   
   return (
-    <div
-      className={cn(
-        "flex items-start gap-2",
-        compact ? "mb-1" : "mb-2"
-      )}
-    >
-      {/* Avatar for assistant messages */}
-      {isAssistant && (
+    <div className={cn(
+      "flex items-start gap-3",
+      compact ? "mb-1" : "mb-2"
+    )}>
+      {/* Avatar */}
+      {isAssistant ? (
         <RevyAvatar
           size="lg"
           className="flex-shrink-0"
         />
-      )}
-      
-      {/* User avatar for user messages */}
-      {!isAssistant && (
+      ) : (
         <div className={cn(
           "rounded-full bg-primary text-primary-foreground flex items-center justify-center font-medium flex-shrink-0",
           compact ? "h-6 w-6 text-xs" : "h-8 w-8 text-sm"
@@ -46,9 +41,8 @@ const RevyMessageItem: React.FC<RevyMessageItemProps> = ({ message, compact = fa
         </div>
       )}
       
-      {/* Message content with integrated layout */}
-      <div className="min-w-0 flex-1">
-        {/* Message bubble with header */}
+      {/* Message content */}
+      <div className="flex-1 min-w-0">
         <div
           className={cn(
             'rounded-lg break-words',
@@ -69,13 +63,13 @@ const RevyMessageItem: React.FC<RevyMessageItemProps> = ({ message, compact = fa
             </div>
           )}
           
-          {/* Message content */}
+          {/* Message text */}
           <div>{message.content}</div>
         </div>
         
-        {/* Footer with actions for assistant */}
-        {isAssistant && !compact && (
-          <div className="flex items-center mt-1">
+        {/* Footer actions */}
+        <div className="flex items-center justify-between mt-1">
+          {isAssistant && !compact && (
             <button
               type="button"
               onClick={handleSpeak}
@@ -83,20 +77,17 @@ const RevyMessageItem: React.FC<RevyMessageItemProps> = ({ message, compact = fa
             >
               <Volume2 className="h-3 w-3" />
             </button>
-          </div>
-        )}
-        
-        {/* Timestamp for user messages */}
-        {!isAssistant && !compact && (
-          <div className="flex justify-end mt-1">
-            <span className="text-xs text-muted-foreground">
+          )}
+          
+          {!isAssistant && !compact && (
+            <span className="text-xs text-muted-foreground ml-auto">
               {message.timestamp.toLocaleTimeString('nb-NO', { 
                 hour: '2-digit', 
                 minute: '2-digit' 
               })}
             </span>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );

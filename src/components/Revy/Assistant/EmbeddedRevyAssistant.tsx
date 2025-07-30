@@ -37,7 +37,7 @@ const EmbeddedRevyAssistant: React.FC<EmbeddedRevyAssistantProps> = ({
   return (
     <div className="flex flex-col h-full">
       {/* Context indicator */}
-      <div className="mb-2 px-2 pt-2">
+      <div className="mb-1 px-1 pt-1">
         <Badge variant="outline" className="text-xs">
           {contextDisplayName}
           {selectedVariant && ` • ${selectedVariant.display_name}`}
@@ -73,7 +73,7 @@ const EmbeddedRevyAssistant: React.FC<EmbeddedRevyAssistantProps> = ({
       </div>
 
       {/* Input area - sticky at bottom */}
-      <div className="sticky bottom-0 bg-background border-t p-1.5 flex gap-1.5">
+      <div className="sticky bottom-0 bg-background border-t p-1 flex gap-1">
         <Input
           value={input}
           onChange={onInputChange}

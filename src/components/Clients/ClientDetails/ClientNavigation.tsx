@@ -27,7 +27,6 @@ const ClientNavigation = ({ activeTab, onTabChange }: ClientNavigationProps) => 
     { id: 'oversikt', label: 'Oversikt', icon: TrendingUp, path: `/klienter/${orgNumber}/oversikt` },
     { id: 'hovedbok', label: 'Hovedbok', icon: FileText, path: `/klienter/${orgNumber}/hovedbok` },
     { id: 'saldobalanse', label: 'Saldobalanse', icon: BarChart3, path: `/klienter/${orgNumber}/saldobalanse` },
-    { id: 'opplasting', label: 'Opplasting', icon: Upload, path: `/klienter/${orgNumber}/opplasting` },
     { id: 'analyse', label: 'Analyse', icon: BarChart3, path: `/klienter/${orgNumber}/analyse` },
   ];
   
