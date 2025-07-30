@@ -11,7 +11,8 @@ import {
   CheckCircle, 
   MessageSquare,
   Volume2,
-  ArrowLeft
+  ArrowLeft,
+  Play
 } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -59,6 +60,7 @@ const AICharacterSimulator = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [isAISpeaking, setIsAISpeaking] = useState(false);
   const [audioLevel, setAudioLevel] = useState(0);
+  const [lastAudio, setLastAudio] = useState<HTMLAudioElement | null>(null);
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -240,6 +242,9 @@ const AICharacterSimulator = () => {
     try {
       logger.log('Generating speech with voiceId:', voiceId);
       
+      // Clear previous audio when generating new response
+      setLastAudio(null);
+      
       const { data, error } = await supabase.functions.invoke('text-to-speech', {
         body: { text, voiceId }
       });
@@ -253,6 +258,12 @@ const AICharacterSimulator = () => {
       if (data && typeof data === 'object' && 'error' in data) {
         logger.error('ElevenLabs API error:', data.error);
         
+        toast({
+          title: "Lydfeil",
+          description: "Kunne ikke generere tale, faller tilbake til tekst",
+          variant: "destructive"
+        });
+        
         // Fallback to useVoiceCommands speakText with OpenAI TTS
         logger.log('Falling back to OpenAI TTS');
         await speakText(text);
@@ -260,11 +271,15 @@ const AICharacterSimulator = () => {
       }
 
       if (data instanceof ArrayBuffer) {
-        // Direct ArrayBuffer response - wrap in blob and play
+        // Direct ArrayBuffer response - wrap in blob and store audio object
         const blob = new Blob([data], { type: 'audio/mpeg' });
         const url = URL.createObjectURL(blob);
         const audio = new Audio(url);
-        await audio.play();
+        
+        // Store the audio object for manual playback
+        setLastAudio(audio);
+        
+        logger.log('ElevenLabs speech ready for playback');
         return;
       } else if (data && typeof data === 'object' && (data as any).error) {
         // Error response from edge function
@@ -291,10 +306,6 @@ const AICharacterSimulator = () => {
         await speakText(text);
         return;
       }
-
-      // This code is no longer reachable due to early returns above
-      
-      logger.log('ElevenLabs speech playback successful');
       
     } catch (error) {
       logger.error('Error generating speech:', error);
@@ -308,6 +319,22 @@ const AICharacterSimulator = () => {
         toast({
           title: "Tale-syntese feilet",
           description: "Kunne ikke spille av AI-svar",
+          variant: "destructive"
+        });
+      }
+    }
+  };
+
+  const playLastAudio = async () => {
+    if (lastAudio) {
+      try {
+        await lastAudio.play();
+        setLastAudio(null); // Hide button once played
+      } catch (error) {
+        logger.error('Error playing audio:', error);
+        toast({
+          title: "Avspillingsfeil",
+          description: "Kunne ikke spille av lydfil",
           variant: "destructive"
         });
       }
@@ -612,6 +639,25 @@ const AICharacterSimulator = () => {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Play AI Response Button */}
+            {lastAudio && !isAISpeaking && (
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-center">
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      onClick={playLastAudio}
+                      className="flex items-center gap-2"
+                    >
+                      <Play className="h-5 w-5" />
+                      Spill av AI-svar
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Conversation Log for Audio Mode */}
             {conversation.length > 0 && (
