@@ -670,60 +670,50 @@ export function validateDataTypes(
   };
 }
 
-// Enhanced Norwegian number conversion with detailed logging
+// Simplified and robust Norwegian number conversion
 function convertNorwegianNumber(value: string): number | null {
   if (!value || typeof value !== 'string') {
-    console.log(`convertNorwegianNumber: Invalid input: ${value} (type: ${typeof value})`);
     return null;
   }
   
   const originalValue = value;
-  console.log(`convertNorwegianNumber: Converting "${originalValue}"`);
   
-  // Remove any whitespace
+  // Remove whitespace
   let cleanValue = value.trim();
   
-  // Handle Norwegian number format: 123.456,78 or 123 456,78
-  // Replace space thousands separators and dot thousands separators
-  cleanValue = cleanValue.replace(/\s+/g, ''); // Remove spaces
-  console.log(`After removing spaces: "${cleanValue}"`);
+  // Handle negative numbers
+  const isNegative = cleanValue.startsWith('-');
+  if (isNegative) {
+    cleanValue = cleanValue.substring(1);
+  }
   
-  // If it contains both . and , the last comma is decimal separator
-  if (cleanValue.includes(',') && cleanValue.includes('.')) {
-    // Format like 1.234.567,89 -> 1234567.89
-    const lastCommaIndex = cleanValue.lastIndexOf(',');
-    const beforeComma = cleanValue.substring(0, lastCommaIndex).replace(/\./g, '');
-    const afterComma = cleanValue.substring(lastCommaIndex + 1);
-    cleanValue = beforeComma + '.' + afterComma;
-    console.log(`Converted dot+comma format: "${cleanValue}"`);
-  } else if (cleanValue.includes(',') && !cleanValue.includes('.')) {
-    // Format like 1234567,89 or 1 234 567,89 -> 1234567.89
-    cleanValue = cleanValue.replace(',', '.');
-    console.log(`Converted comma format: "${cleanValue}"`);
-  } else if (cleanValue.includes('.')) {
-    // Check if it's thousands separator or decimal
-    const dotIndex = cleanValue.lastIndexOf('.');
-    const afterDot = cleanValue.substring(dotIndex + 1);
-    
-    // If more than 2 digits after dot, it's likely thousands separator
-    if (afterDot.length > 2) {
+  // Handle Norwegian format: 1.234.567,89 or 1 234 567,89
+  if (cleanValue.includes(',')) {
+    // Split by comma - everything before comma is integer part
+    const parts = cleanValue.split(',');
+    if (parts.length === 2) {
+      // Remove all dots and spaces from integer part (thousands separators)
+      const integerPart = parts[0].replace(/[\s.]/g, '');
+      const decimalPart = parts[1];
+      cleanValue = integerPart + '.' + decimalPart;
+    }
+  } else {
+    // No comma, handle dots
+    const dotCount = (cleanValue.match(/\./g) || []).length;
+    if (dotCount > 1) {
+      // Multiple dots = thousands separators, remove all
       cleanValue = cleanValue.replace(/\./g, '');
-      console.log(`Treated dots as thousands separators: "${cleanValue}"`);
     }
-    // If exactly 2 digits and there are multiple dots, last one is decimal
-    else if (cleanValue.split('.').length > 2) {
-      const parts = cleanValue.split('.');
-      const decimal = parts.pop();
-      cleanValue = parts.join('') + '.' + decimal;
-      console.log(`Multiple dots format: "${cleanValue}"`);
-    } else {
-      console.log(`Single dot format preserved: "${cleanValue}"`);
-    }
+    // Single dot is preserved as decimal point
   }
   
   const parsed = parseFloat(cleanValue);
-  const result = isNaN(parsed) ? null : parsed;
-  console.log(`convertNorwegianNumber: "${originalValue}" -> "${cleanValue}" -> ${result}`);
+  const result = isNaN(parsed) ? null : (isNegative ? -parsed : parsed);
+  
+  if (originalValue !== cleanValue || result === null) {
+    console.log(`Number conversion: "${originalValue}" -> ${result}`);
+  }
+  
   return result;
 }
 
