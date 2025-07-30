@@ -260,13 +260,37 @@ const AICharacterSimulator = () => {
       }
 
       let audioBuffer: ArrayBuffer;
+      
       if (data instanceof ArrayBuffer) {
+        // Direct ArrayBuffer response
         audioBuffer = data;
+      } else if (typeof data === 'string') {
+        // Base64 string response - decode it
+        logger.log('Received base64 string response, decoding...');
+        try {
+          const bytes = Uint8Array.from(atob(data), (c) => c.charCodeAt(0));
+          audioBuffer = bytes.buffer;
+        } catch (decodeError) {
+          logger.error('Failed to decode base64 string:', decodeError);
+          toast({
+            title: "Lydfeil",
+            description: "Kunne ikke dekode lyddata",
+            variant: "destructive"
+          });
+          await speakText(text);
+          return;
+        }
       } else if (data && (data as any).audioContent) {
+        // JSON response with audioContent property
         const bytes = Uint8Array.from(atob((data as any).audioContent), (c) => c.charCodeAt(0));
         audioBuffer = bytes.buffer;
       } else {
-        logger.error('Invalid audio data format received:', typeof data);
+        logger.error('Invalid audio data format received:', typeof data, data);
+        toast({
+          title: "Lydfeil", 
+          description: "Ukjent lydformat mottatt",
+          variant: "destructive"
+        });
         
         // Fallback to useVoiceCommands speakText
         logger.log('Falling back to OpenAI TTS due to invalid data format');

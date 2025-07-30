@@ -47,12 +47,13 @@ Deno.serve(async (req) => {
 
       if (response.ok) {
         const audioBuffer = await response.arrayBuffer()
+        const base64Audio = btoa(String.fromCharCode(...new Uint8Array(audioBuffer)))
         log('ElevenLabs speech generated successfully')
         
-        return new Response(audioBuffer, {
+        return new Response(JSON.stringify({ audioContent: base64Audio }), {
           headers: {
             ...corsHeaders,
-            'Content-Type': 'audio/mpeg',
+            'Content-Type': 'application/json',
           },
         })
       } else {
@@ -81,12 +82,13 @@ Deno.serve(async (req) => {
     }
 
     const audioBuffer = await openAIResponse.arrayBuffer()
+    const base64Audio = btoa(String.fromCharCode(...new Uint8Array(audioBuffer)))
     log('OpenAI speech generated successfully')
 
-    return new Response(audioBuffer, {
+    return new Response(JSON.stringify({ audioContent: base64Audio }), {
       headers: {
         ...corsHeaders,
-        'Content-Type': 'audio/mpeg',
+        'Content-Type': 'application/json',
       },
     })
 
