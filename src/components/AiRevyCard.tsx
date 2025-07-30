@@ -42,16 +42,16 @@ const AiRevyCard: React.FC<AiRevyCardProps> = ({
 
   return (
     <Card className={cn('h-full w-full flex flex-col shadow-none border-none rounded-none', className)}>
-      <CardHeader className="p-2 pb-0">
+      <CardHeader className="p-1.5 pb-0">
         <div className="flex items-center gap-2">
           <RevyAvatar size="sm" />
           <div>
-            <CardTitle className="text-base">AI-Revy</CardTitle>
+            <CardTitle className="text-sm">AI-Revy</CardTitle>
             <CardDescription className="text-xs">{systemPrompt}</CardDescription>
           </div>
         </div>
       </CardHeader>
-      <CardContent className="p-2 pb-0 flex flex-col flex-1">
+      <CardContent className="p-1.5 pb-0 flex flex-col flex-1">
         <SmartReviAssistant
           embedded
           context={context}

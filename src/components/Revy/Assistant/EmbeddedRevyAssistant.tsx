@@ -47,7 +47,7 @@ const EmbeddedRevyAssistant: React.FC<EmbeddedRevyAssistantProps> = ({
       {/* Messages area - scrollable */}
       <div className="flex-1 overflow-hidden min-h-0">
         <ScrollArea className="h-full">
-          <div className="space-y-1 px-1 pb-2">
+          <div className="space-y-0.5 px-1 pb-1">
             {messages.length === 0 ? (
               <div className="text-xs text-muted-foreground p-2 text-center">
                 Spør meg om hjelp med revisjonen
@@ -73,7 +73,7 @@ const EmbeddedRevyAssistant: React.FC<EmbeddedRevyAssistantProps> = ({
       </div>
 
       {/* Input area - sticky at bottom */}
-      <div className="sticky bottom-0 bg-background border-t p-2 flex gap-2">
+      <div className="sticky bottom-0 bg-background border-t p-1.5 flex gap-1.5">
         <Input
           value={input}
           onChange={onInputChange}
