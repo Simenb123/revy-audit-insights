@@ -33,7 +33,7 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, compact = false }) =
       {/* Avatar for assistant messages */}
       {isAssistant && (
         <RevyAvatar
-          size="lg"
+          size="md"
           className="flex-shrink-0"
         />
       )}
