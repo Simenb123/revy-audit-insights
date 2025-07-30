@@ -9,7 +9,7 @@ import { format } from 'date-fns';
 
 export interface VersionSelectorProps {
   versions: DocumentVersion[];
-  selectedVersion: DocumentVersion;
+  selectedVersion?: DocumentVersion;
   onSelectVersion?: (version: DocumentVersion) => void;
   onVersionChange?: (version: DocumentVersion) => void;
 }
@@ -31,6 +31,11 @@ const VersionSelector: React.FC<VersionSelectorProps> = ({
       }
     }
   };
+
+  // Don't render if no versions or no selected version
+  if (!versions.length || !selectedVersion) {
+    return null;
+  }
   
   return (
     <div className="flex justify-between items-center border-b pb-4 mb-4">

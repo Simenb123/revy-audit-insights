@@ -141,7 +141,7 @@ const AccountingExplorer = ({ clientId }: AccountingExplorerProps) => {
       <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4">
         {showBothVersions && (
           <div className="flex flex-col sm:flex-row gap-4">
-            {hasGLData && (
+            {hasGLData && selectedGLVersion && (
               <div className="flex-1">
                 <label className="text-sm font-medium text-muted-foreground mb-2 block flex items-center gap-2">
                   <LineChart className="h-4 w-4" />
@@ -154,7 +154,7 @@ const AccountingExplorer = ({ clientId }: AccountingExplorerProps) => {
                 />
               </div>
             )}
-            {hasTBData && (
+            {hasTBData && selectedTBVersion && (
               <div className="flex-1">
                 <label className="text-sm font-medium text-muted-foreground mb-2 block flex items-center gap-2">
                   <Layers className="h-4 w-4" />
@@ -170,7 +170,7 @@ const AccountingExplorer = ({ clientId }: AccountingExplorerProps) => {
           </div>
         )}
         
-        {showGLVersions && hasGLData && (
+        {showGLVersions && hasGLData && selectedGLVersion && (
           <VersionSelector 
             versions={glVersionOptions}
             selectedVersion={selectedGLVersion}
@@ -178,7 +178,7 @@ const AccountingExplorer = ({ clientId }: AccountingExplorerProps) => {
           />
         )}
         
-        {showTBVersions && hasTBData && (
+        {showTBVersions && hasTBData && selectedTBVersion && (
           <VersionSelector 
             versions={tbVersionOptions}
             selectedVersion={selectedTBVersion}
@@ -265,10 +265,10 @@ const AccountingExplorer = ({ clientId }: AccountingExplorerProps) => {
             
             {activeTab === 'balances' && (
               <div className="space-y-4">
-                {hasTBData ? (
+                {hasTBData && selectedTBVersion ? (
                   <TrialBalanceTable 
                     clientId={clientId} 
-                    selectedVersion={selectedTBVersion?.version_name.split(' ')[0]}
+                    selectedVersion={selectedTBVersion.version_name?.split(' ')[0]}
                     accountingYear={accountingYear}
                   />
                 ) : (
@@ -317,12 +317,12 @@ const AccountingExplorer = ({ clientId }: AccountingExplorerProps) => {
           <ValidationPanel 
             clientId={clientId} 
             selectedGLVersion={selectedGLVersion?.id}
-            selectedTBVersion={selectedTBVersion?.version_name.split(' ')[0]}
+            selectedTBVersion={selectedTBVersion?.version_name?.split(' ')[0]}
           />
-          {activeTab === 'ledger' && hasGLData && (
+          {activeTab === 'ledger' && hasGLData && selectedGLVersion && (
             <VersionHistory versions={glVersionOptions} selectedVersion={selectedGLVersion} />
           )}
-          {activeTab === 'balances' && hasTBData && (
+          {activeTab === 'balances' && hasTBData && selectedTBVersion && (
             <VersionHistory versions={tbVersionOptions} selectedVersion={selectedTBVersion} />
           )}
         </div>
