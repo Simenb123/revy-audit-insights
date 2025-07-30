@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useVoiceCommands } from '@/hooks/useVoiceCommands';
 import ModeSelector from './ModeSelector';
 import ChatInterface from './ChatInterface';
 
@@ -62,6 +63,9 @@ const AICharacterSimulator = () => {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  
+  // Use voice commands hook for fallback TTS
+  const { speakText } = useVoiceCommands();
 
   // Pre-defined AI characters for different scenarios
   const characters: AICharacter[] = [
@@ -234,11 +238,26 @@ const AICharacterSimulator = () => {
 
   const generateSpeech = async (text: string, voiceId: string) => {
     try {
+      logger.log('Generating speech with voiceId:', voiceId);
+      
       const { data, error } = await supabase.functions.invoke('text-to-speech', {
         body: { text, voiceId }
       });
       
-      if (error) throw error;
+      if (error) {
+        logger.error('Supabase function error:', error);
+        throw error;
+      }
+
+      // Check if the response contains an error (when ElevenLabs fails)
+      if (data && typeof data === 'object' && 'error' in data) {
+        logger.error('ElevenLabs API error:', data.error);
+        
+        // Fallback to useVoiceCommands speakText with OpenAI TTS
+        logger.log('Falling back to OpenAI TTS');
+        await speakText(text);
+        return;
+      }
 
       let audioBuffer: ArrayBuffer;
       if (data instanceof ArrayBuffer) {
@@ -247,7 +266,12 @@ const AICharacterSimulator = () => {
         const bytes = Uint8Array.from(atob((data as any).audioContent), (c) => c.charCodeAt(0));
         audioBuffer = bytes.buffer;
       } else {
-        throw new Error('Invalid audio data received');
+        logger.error('Invalid audio data format received:', typeof data);
+        
+        // Fallback to useVoiceCommands speakText
+        logger.log('Falling back to OpenAI TTS due to invalid data format');
+        await speakText(text);
+        return;
       }
 
       const blob = new Blob([audioBuffer], { type: 'audio/mpeg' });
@@ -255,9 +279,23 @@ const AICharacterSimulator = () => {
       const audio = new Audio(url);
       await audio.play();
       
+      logger.log('ElevenLabs speech playback successful');
+      
     } catch (error) {
       logger.error('Error generating speech:', error);
-      // Continue without audio in case of speech generation failure
+      
+      // Fallback to useVoiceCommands speakText for any other errors
+      try {
+        logger.log('Attempting fallback to OpenAI TTS');
+        await speakText(text);
+      } catch (fallbackError) {
+        logger.error('Fallback TTS also failed:', fallbackError);
+        toast({
+          title: "Tale-syntese feilet",
+          description: "Kunne ikke spille av AI-svar",
+          variant: "destructive"
+        });
+      }
     }
   };
 
