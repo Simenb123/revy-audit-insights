@@ -326,20 +326,14 @@ const AICharacterSimulator = () => {
           await createAndValidateAudio(url);
         } else if (typeof data === 'string') {
           logger.log('Processing base64 string audio response via data URI');
-          // Use data URI to let browser handle base64 decoding
-          const response = await fetch(`data:audio/mpeg;base64,${data}`);
-          if (!response.ok) throw new Error('Failed to decode Base64 audio');
-          const blob = await response.blob();
-          const url = URL.createObjectURL(blob);
-          await createAndValidateAudio(url);
+          // Use data URI directly on Audio element to avoid fetch size limits
+          const dataUri = `data:audio/mpeg;base64,${data}`;
+          await createAndValidateAudio(dataUri);
         } else if (data && typeof data === 'object' && 'audioContent' in data) {
           logger.log('Processing audioContent base64 via data URI');
           const audioContent = (data as any).audioContent;
-          const response = await fetch(`data:audio/mpeg;base64,${audioContent}`);
-          if (!response.ok) throw new Error('Failed to decode Base64 audio');
-          const blob = await response.blob();
-          const url = URL.createObjectURL(blob);
-          await createAndValidateAudio(url);
+          const dataUri = `data:audio/mpeg;base64,${audioContent}`;
+          await createAndValidateAudio(dataUri);
         } else {
           throw new Error(`Unexpected response format: ${typeof data}`);
         }
