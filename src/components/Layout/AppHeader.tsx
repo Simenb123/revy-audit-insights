@@ -53,9 +53,13 @@ const AppHeader: React.FC<AppHeaderProps> = ({ className = '' }) => {
       <div className="flex items-center">
         <Link
           to="/"
-          className="text-2xl font-extrabold tracking-wide text-white hover:opacity-90"
+          className="flex items-center hover:opacity-90"
         >
-          Revio
+          <img
+            src="/lovable-uploads/bf61f088-b999-499e-be26-e5e3e2e92d0f.png"
+            alt="Revio"
+            className="h-8 w-8"
+          />
         </Link>
       </div>
 
