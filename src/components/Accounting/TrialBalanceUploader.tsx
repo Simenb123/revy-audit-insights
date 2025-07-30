@@ -68,7 +68,7 @@ const TrialBalanceUploader = ({ clientId, onUploadComplete }: TrialBalanceUpload
     }
   };
 
-  const handleMappingComplete = async (mapping: Record<string, string>) => {
+  const handleMappingComplete = async (mapping: Record<string, string>, headerRowIndex?: number, headers?: string[]) => {
     if (!filePreview || !selectedFile) return;
     
     console.log('=== TRIAL BALANCE MAPPING COMPLETE ===');
@@ -84,9 +84,10 @@ const TrialBalanceUploader = ({ clientId, onUploadComplete }: TrialBalanceUpload
     setStep('upload');
     
     try {
-      const convertedData = convertDataWithMapping(filePreview, mapping);
+      const convertedData = convertDataWithMapping(filePreview, mapping, headerRowIndex);
       console.log('=== CONVERSION RESULT ===');
       console.log(`Converted ${convertedData.length} rows from original ${filePreview.totalRows} total rows`);
+      console.log(`Header row index: ${headerRowIndex}, Headers: ${headers?.join(', ')}`);
       
       setConvertedData(convertedData);
       await uploadTrialBalance(convertedData, selectedFile);

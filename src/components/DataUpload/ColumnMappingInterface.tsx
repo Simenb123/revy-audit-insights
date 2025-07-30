@@ -38,7 +38,7 @@ export interface StandardField {
 interface ColumnMappingInterfaceProps {
   fileColumns: string[];
   sampleData: Record<string, string>[];
-  onMappingComplete: (mapping: ColumnMapping) => void;
+  onMappingComplete: (mapping: ColumnMapping, headerRowIndex?: number, headers?: string[]) => void;
   onCancel: () => void;
   initialMapping?: ColumnMapping;
   fields?: StandardField[];

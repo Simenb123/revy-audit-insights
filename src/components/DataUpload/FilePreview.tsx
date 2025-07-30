@@ -10,7 +10,7 @@ interface FilePreviewProps {
   preview: FilePreviewType;
   fileName: string;
   fieldDefinitions?: FieldDefinition[];
-  onMappingComplete?: (mapping: Record<string, string>) => void;
+  onMappingComplete?: (mapping: Record<string, string>, headerRowIndex?: number, headers?: string[]) => void;
   showMapping?: boolean;
 }
 
@@ -154,7 +154,7 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
               {showMapping && onMappingComplete && (
                 <Button
                   size="sm"
-                  onClick={() => onMappingComplete(mapping)}
+                  onClick={() => onMappingComplete(mapping, preview.headerRowIndex, preview.headers)}
                   disabled={!requiredStatus.complete}
                   className="flex items-center gap-2"
                 >

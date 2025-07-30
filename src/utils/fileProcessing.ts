@@ -8,6 +8,9 @@ export interface FilePreview {
   detectedDelimiter?: string;
   hasHeaders: boolean;
   totalRows: number;
+  headerRowIndex: number; // Index of the detected header row
+  skippedRows: { rowIndex: number; content: string[] }[]; // Rows before headers
+  originalRowNumbers: number[]; // Original row numbers for data rows
 }
 
 export interface ColumnMapping {
@@ -236,6 +239,61 @@ export function parseCSV(text: string, delimiter?: string): { headers: string[];
   return { headers, rows };
 }
 
+// Detect header row in Excel data
+function detectHeaderRow(jsonData: unknown[]): number {
+  console.log('=== DETECTING HEADER ROW ===');
+  
+  // Norwegian accounting terms that commonly appear in headers
+  const accountingTerms = [
+    'konto', 'account', 'nummer', 'number', 'navn', 'name', 'beskrivelse', 'description',
+    'saldo', 'balance', 'beløp', 'amount', 'sum', 'debet', 'debit', 'kredit', 'credit',
+    'inngående', 'åpning', 'opening', 'utgående', 'closing', 'periode', 'period',
+    'dato', 'date', 'bilag', 'voucher', 'tekst', 'text', 'bevegelse', 'movement'
+  ];
+
+  // Look through first 10 rows to find header row
+  for (let i = 0; i < Math.min(10, jsonData.length); i++) {
+    const row = jsonData[i] as any[];
+    if (!row || !Array.isArray(row)) continue;
+
+    // Count non-empty cells
+    const nonEmptyCells = row.filter(cell => 
+      cell !== null && cell !== undefined && cell.toString().trim() !== ''
+    );
+
+    // Need at least 2-3 non-empty cells for a valid header
+    if (nonEmptyCells.length < 2) continue;
+
+    // Count text cells (not just numbers)
+    const textCells = nonEmptyCells.filter(cell => {
+      const str = cell.toString().trim();
+      return str && isNaN(Number(str));
+    });
+
+    // Header should have mostly text, not just numbers
+    if (textCells.length < Math.max(1, Math.floor(nonEmptyCells.length * 0.5))) continue;
+
+    // Check for accounting terms
+    const hasAccountingTerms = textCells.some(cell => {
+      const cellText = cell.toString().toLowerCase();
+      return accountingTerms.some(term => cellText.includes(term));
+    });
+
+    console.log(`Row ${i + 1}: ${nonEmptyCells.length} non-empty, ${textCells.length} text cells, accounting terms: ${hasAccountingTerms}`);
+    console.log(`Row ${i + 1} content:`, row.slice(0, 5));
+
+    // If we have good text content or accounting terms, this is likely the header
+    if (hasAccountingTerms || (textCells.length >= 2 && nonEmptyCells.length >= 3)) {
+      console.log(`Detected header row at index ${i} (row ${i + 1})`);
+      return i;
+    }
+  }
+
+  // Default to first row if no clear header found
+  console.log('No clear header detected, defaulting to row 1');
+  return 0;
+}
+
 // Process Excel file with preview
 export async function processExcelFile(file: File): Promise<FilePreview> {
   try {
@@ -252,20 +310,43 @@ export async function processExcelFile(file: File): Promise<FilePreview> {
     if (jsonData.length === 0) {
       throw new Error('Filen inneholder ingen data');
     }
+
+    // Detect the header row
+    const headerRowIndex = detectHeaderRow(jsonData);
     
-    const headers = (jsonData[0] as any[]).map(h => h?.toString() || '');
-    const allRows = jsonData.slice(1).map(row => 
+    // Extract headers from detected row
+    const headers = (jsonData[headerRowIndex] as any[]).map(h => h?.toString() || '');
+    
+    // Extract skipped rows (rows before header)
+    const skippedRows = jsonData.slice(0, headerRowIndex).map((row, index) => ({
+      rowIndex: index,
+      content: (row as any[]).map(cell => cell?.toString() || '')
+    }));
+    
+    // Extract data rows (rows after header)
+    const dataRows = jsonData.slice(headerRowIndex + 1);
+    const allRows = dataRows.map(row => 
       (row as any[]).map(cell => cell?.toString() || '')
     );
     
-    console.log(`Excel file processed: ${allRows.length} total rows`);
+    // Create original row numbers for data rows
+    const originalRowNumbers = dataRows.map((_, index) => headerRowIndex + 1 + index);
+    
+    console.log(`Excel file processed:`);
+    console.log(`- Header row: ${headerRowIndex + 1}`);
+    console.log(`- Skipped rows: ${skippedRows.length}`);
+    console.log(`- Data rows: ${allRows.length}`);
+    console.log(`- Headers:`, headers);
     
     return {
       headers,
-      rows: allRows.slice(0, 10), // Preview first 10 rows
+      rows: allRows.slice(0, 10), // Preview first 10 data rows
       allRows: allRows, // Full dataset for processing
       hasHeaders: true,
-      totalRows: allRows.length
+      totalRows: allRows.length,
+      headerRowIndex,
+      skippedRows,
+      originalRowNumbers
     };
   } catch (error) {
     throw new Error(`Kunne ikke lese Excel-fil: ${error instanceof Error ? error.message : 'Ukjent feil'}`);
@@ -281,13 +362,22 @@ export async function processCSVFile(file: File): Promise<FilePreview> {
     
     console.log(`CSV file processed: ${rows.length} total rows`);
     
+    // For CSV, we assume header is on first row for now
+    // TODO: Implement header detection for CSV similar to Excel
+    const headerRowIndex = 0;
+    const skippedRows: { rowIndex: number; content: string[] }[] = [];
+    const originalRowNumbers = rows.map((_, index) => index + 1);
+    
     return {
       headers,
       rows: rows.slice(0, 10), // Preview first 10 rows
       allRows: rows, // Full dataset for processing
       detectedDelimiter: delimiter,
       hasHeaders: true,
-      totalRows: rows.length
+      totalRows: rows.length,
+      headerRowIndex,
+      skippedRows,
+      originalRowNumbers
     };
   } catch (error) {
     throw new Error(`Kunne ikke lese CSV-fil: ${error instanceof Error ? error.message : 'Ukjent feil'}`);
@@ -859,7 +949,8 @@ export const convertPreviewDataForDisplay = (
 // Convert data based on mapping
 export function convertDataWithMapping(
   preview: FilePreview,
-  mappings: Record<string, string>
+  mappings: Record<string, string>,
+  headerRowIndex?: number
 ): any[] {
   console.log('=== CONVERTDATAWITHMAPPING DEBUG START ===');
   console.log('Preview object:', {
@@ -875,8 +966,13 @@ export function convertDataWithMapping(
     return acc;
   }, {} as Record<string, number>);
   
+  // Use provided headerRowIndex or fall back to preview's headerRowIndex
+  const actualHeaderRowIndex = headerRowIndex ?? preview.headerRowIndex ?? 0;
+  
   // CRITICAL: Always use allRows for full dataset, fallback to rows only if allRows is not available
   const dataRows = preview.allRows || preview.rows;
+  
+  console.log('Using header row index:', actualHeaderRowIndex);
   
   console.log('=== DATA ROWS SELECTION ===');
   console.log('Using allRows:', !!preview.allRows);

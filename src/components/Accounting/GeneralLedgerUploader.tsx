@@ -117,13 +117,13 @@ const GeneralLedgerUploader = ({ clientId, onUploadComplete }: GeneralLedgerUplo
     }
   };
 
-  const handleMappingComplete = async (mapping: Record<string, string>) => {
+  const handleMappingComplete = async (mapping: Record<string, string>, headerRowIndex?: number, headers?: string[]) => {
     if (!filePreview || !selectedFile) return;
     
     setShowMapping(false);
     
     try {
-      const convertedData = convertDataWithMapping(filePreview, mapping);
+      const convertedData = convertDataWithMapping(filePreview, mapping, headerRowIndex);
       console.log('=== POST-MAPPING BALANCE CALCULATION ===');
       console.log('Converted data length:', convertedData.length);
       console.log('Sample converted rows:', convertedData.slice(0, 3));

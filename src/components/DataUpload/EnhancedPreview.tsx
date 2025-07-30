@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { ChevronDown, CheckCircle, AlertCircle, Brain, Zap } from 'lucide-react';
+import { ChevronDown, CheckCircle, AlertCircle, Brain, Zap, RotateCcw } from 'lucide-react';
 import { FilePreview, suggestColumnMappings, ColumnMapping, FieldDefinition } from '@/utils/fileProcessing';
 import { getFieldDefinitions, saveColumnMappingHistory, getHistoricalMappings } from '@/utils/fieldDefinitions';
 
@@ -12,7 +12,7 @@ interface EnhancedPreviewProps {
   fileName: string;
   clientId: string;
   fileType: 'trial_balance' | 'general_ledger' | 'chart_of_accounts';
-  onMappingComplete: (mappings: Record<string, string>) => void;
+  onMappingComplete: (mappings: Record<string, string>, headerRowIndex?: number, headers?: string[]) => void;
   onCancel: () => void;
 }
 
@@ -29,6 +29,9 @@ const EnhancedPreview: React.FC<EnhancedPreviewProps> = ({
   const [suggestedMappings, setSuggestedMappings] = useState<ColumnMapping[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [currentHeaderRowIndex, setCurrentHeaderRowIndex] = useState<number>(preview.headerRowIndex);
+  const [currentHeaders, setCurrentHeaders] = useState<string[]>(preview.headers);
+  const [showAllRows, setShowAllRows] = useState(false);
 
   useEffect(() => {
     const initializeMapping = async () => {
@@ -52,7 +55,7 @@ const EnhancedPreview: React.FC<EnhancedPreviewProps> = ({
 
       // Generate AI suggestions with enhanced algorithm
       const suggestions = suggestColumnMappings(
-        preview.headers,
+        currentHeaders,
         convertedFields,
         preview.rows.slice(0, 10), // Sample data for content validation
         historicalMappings
@@ -71,10 +74,10 @@ const EnhancedPreview: React.FC<EnhancedPreviewProps> = ({
       setIsLoading(false);
     };
 
-    if (clientId && preview.headers.length > 0) {
+    if (clientId && currentHeaders.length > 0) {
       initializeMapping();
     }
-  }, [preview, clientId, fileType]);
+  }, [preview, clientId, fileType, currentHeaders]);
 
   const handleMappingChange = (sourceColumn: string, targetField: string) => {
     const newMapping = { ...mapping };
@@ -129,7 +132,47 @@ const EnhancedPreview: React.FC<EnhancedPreviewProps> = ({
     };
   };
 
+  // Handle header row change
+  const handleHeaderRowChange = (newRowIndex: string) => {
+    const rowIndex = parseInt(newRowIndex);
+    
+    // Create new preview data with updated header row
+    const allRawData = [
+      ...preview.skippedRows.map(row => row.content),
+      preview.headers,
+      ...preview.allRows
+    ];
+    
+    if (rowIndex < allRawData.length) {
+      const newHeaders = allRawData[rowIndex].map(h => h?.toString() || '');
+      setCurrentHeaders(newHeaders);
+      setCurrentHeaderRowIndex(rowIndex);
+      setMapping({}); // Reset mapping when header changes
+    }
+  };
+
   const requiredStatus = getRequiredFieldsStatus();
+
+  // Generate displayable row data with row numbers
+  const generateDisplayRows = () => {
+    const allRawData = [
+      ...preview.skippedRows.map(row => row.content),
+      preview.headers,
+      ...preview.allRows
+    ];
+    
+    const displayRows = allRawData.slice(0, showAllRows ? 10 : 6).map((row, index) => ({
+      index,
+      content: row,
+      isHeader: index === currentHeaderRowIndex,
+      isSkipped: index < currentHeaderRowIndex,
+      isData: index > currentHeaderRowIndex
+    }));
+    
+    return displayRows;
+  };
+
+  const displayRows = generateDisplayRows();
 
   if (isLoading) {
     return (
@@ -142,7 +185,7 @@ const EnhancedPreview: React.FC<EnhancedPreviewProps> = ({
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {preview.headers.map((_, index) => (
+            {currentHeaders.map((_, index) => (
               <div key={index} className="animate-pulse">
                 <div className="h-4 bg-muted rounded w-1/3 mb-2"></div>
                 <div className="h-10 bg-muted rounded"></div>
@@ -195,6 +238,46 @@ const EnhancedPreview: React.FC<EnhancedPreviewProps> = ({
               </Badge>
             </div>
           </CardTitle>
+          {/* Header Row Selection */}
+          {preview.skippedRows.length > 0 && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mt-3">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2 text-amber-800">
+                  <AlertCircle className="w-4 h-4" />
+                  <span className="font-medium">Header rad detektert på rad {currentHeaderRowIndex + 1}</span>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowAllRows(!showAllRows)}
+                  className="text-xs"
+                >
+                  {showAllRows ? 'Skjul' : 'Vis alle'} rader
+                </Button>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-amber-700">Velg header rad:</span>
+                <Select value={currentHeaderRowIndex.toString()} onValueChange={handleHeaderRowChange}>
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {displayRows.map((row, index) => (
+                      <SelectItem key={index} value={index.toString()}>
+                        Rad {index + 1}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {preview.skippedRows.length > 0 && (
+                  <span className="text-xs text-amber-600">
+                    {preview.skippedRows.length} rad(er) hoppes over
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-3">
             <div className="flex items-center gap-2 text-blue-800">
               <CheckCircle className="w-4 h-4" />
@@ -203,7 +286,7 @@ const EnhancedPreview: React.FC<EnhancedPreviewProps> = ({
               </span>
             </div>
             <div className="text-sm text-blue-600 mt-1">
-              Viser forhåndsvisning av første 5 rader nedenfor
+              Viser forhåndsvisning av første rader nedenfor
             </div>
           </div>
         </CardHeader>
@@ -211,9 +294,40 @@ const EnhancedPreview: React.FC<EnhancedPreviewProps> = ({
           <div className="overflow-x-auto">
             <table className="w-full border-collapse border border-border">
               <thead>
+                {/* Row with all data including skipped rows, headers, and data */}
+                {displayRows.map((displayRow, rowIndex) => (
+                  <tr 
+                    key={rowIndex} 
+                    className={`${
+                      displayRow.isHeader 
+                        ? 'bg-primary/10 border-2 border-primary' 
+                        : displayRow.isSkipped 
+                        ? 'bg-amber-50' 
+                        : 'bg-background'
+                    }`}
+                  >
+                    <td className="border border-border p-2 text-xs font-medium bg-muted/30">
+                      Rad {displayRow.index + 1}
+                      {displayRow.isHeader && <Badge className="ml-1 text-xs">Header</Badge>}
+                      {displayRow.isSkipped && <Badge variant="outline" className="ml-1 text-xs">Hoppes over</Badge>}
+                    </td>
+                    {displayRow.content.slice(0, Math.max(currentHeaders.length, 5)).map((cell, cellIndex) => (
+                      <td key={cellIndex} className="border border-border p-2 text-sm">
+                        {cell || '-'}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+                
+                {/* Spacer row */}
+                <tr><td colSpan={currentHeaders.length + 1} className="border-0 p-2"></td></tr>
+                
                 {/* Standard field names row */}
                 <tr className="bg-muted/50">
-                  {preview.headers.map((header, index) => {
+                  <th className="border border-border p-2 text-left text-xs font-normal text-muted-foreground">
+                    Standard felt
+                  </th>
+                  {currentHeaders.map((header, index) => {
                     const mappedField = mapping[header];
                     const fieldDef = fieldDefinitions.find(f => f.field_key === mappedField);
                     const suggestion = getSuggestionForColumn(header);
@@ -255,9 +369,12 @@ const EnhancedPreview: React.FC<EnhancedPreviewProps> = ({
                   })}
                 </tr>
                 
-                {/* Original headers row */}
+                {/* Column mapping row */}
                 <tr className="bg-background">
-                  {preview.headers.map((header, index) => (
+                  <th className="border border-border p-2 text-left text-xs font-normal text-muted-foreground">
+                    Kolonner
+                  </th>
+                  {currentHeaders.map((header, index) => (
                     <th key={index} className="border border-border p-3 text-left font-medium">
                       <div className="space-y-2">
                         <div className="font-semibold">{header}</div>
@@ -297,9 +414,13 @@ const EnhancedPreview: React.FC<EnhancedPreviewProps> = ({
                 </tr>
               </thead>
               <tbody>
-                {preview.rows.slice(0, 5).map((row, rowIndex) => (
+                <tr><td colSpan={currentHeaders.length + 1} className="border-0 p-1"></td></tr>
+                {preview.rows.slice(0, 3).map((row, rowIndex) => (
                   <tr key={rowIndex} className={rowIndex % 2 === 0 ? 'bg-background' : 'bg-muted/30'}>
-                    {row.map((cell, cellIndex) => (
+                    <td className="border border-border p-2 text-xs bg-muted/30">
+                      Data {rowIndex + 1}
+                    </td>
+                    {row.slice(0, currentHeaders.length).map((cell, cellIndex) => (
                       <td key={cellIndex} className="border border-border p-2 text-sm">
                         {cell || '-'}
                       </td>
@@ -317,9 +438,14 @@ const EnhancedPreview: React.FC<EnhancedPreviewProps> = ({
                 {preview.totalRows} rader vil bli prosessert ved opplasting
               </span>
             </div>
-            {preview.totalRows > 5 && (
+            {preview.totalRows > 3 && (
               <p className="text-sm text-green-600 mt-1">
-                Viser kun 5 rader i forhåndsvisning av totalt {preview.totalRows} rader
+                Viser kun 3 datarader i forhåndsvisning av totalt {preview.totalRows} rader
+              </p>
+            )}
+            {preview.skippedRows.length > 0 && (
+              <p className="text-sm text-amber-600 mt-1">
+                {preview.skippedRows.length} rad(er) før header vil bli hoppet over ved opplasting
               </p>
             )}
           </div>
@@ -341,7 +467,7 @@ const EnhancedPreview: React.FC<EnhancedPreviewProps> = ({
           )}
           
           <Button 
-            onClick={() => onMappingComplete(mapping)}
+            onClick={() => onMappingComplete(mapping, currentHeaderRowIndex, currentHeaders)}
             disabled={!requiredStatus.complete}
             className="flex items-center gap-2"
           >
