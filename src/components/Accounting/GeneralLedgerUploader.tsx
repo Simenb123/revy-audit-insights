@@ -336,40 +336,22 @@ const GeneralLedgerUploader = ({ clientId, onUploadComplete }: GeneralLedgerUplo
 
             const transactionDate = new Date(transaction.date);
             
-            // Enhanced Norwegian number parsing
+            // Simple amount parsing - data should already be converted from fileProcessing.ts
             const parseAmount = (value: any): number => {
               if (value === undefined || value === null || value === '') return 0;
               
-              let cleanValue = value.toString().trim();
-              console.log(`Parsing amount "${cleanValue}"`);
-              
-              // Handle Norwegian number format: 123.456,78 or 123 456,78
-              cleanValue = cleanValue.replace(/\s+/g, ''); // Remove spaces
-              
-              // If it contains both . and , the last comma is decimal separator
-              if (cleanValue.includes(',') && cleanValue.includes('.')) {
-                const lastCommaIndex = cleanValue.lastIndexOf(',');
-                const beforeComma = cleanValue.substring(0, lastCommaIndex).replace(/\./g, '');
-                const afterComma = cleanValue.substring(lastCommaIndex + 1);
-                cleanValue = beforeComma + '.' + afterComma;
-              } else if (cleanValue.includes(',') && !cleanValue.includes('.')) {
-                // Format like 1234567,89 -> 1234567.89
-                cleanValue = cleanValue.replace(',', '.');
-              } else if (cleanValue.includes('.')) {
-                // Check if it's thousands separator or decimal
-                const dotIndex = cleanValue.lastIndexOf('.');
-                const afterDot = cleanValue.substring(dotIndex + 1);
-                
-                // If more than 2 digits after dot, it's likely thousands separator
-                if (afterDot.length > 2) {
-                  cleanValue = cleanValue.replace(/\./g, '');
-                }
+              // Convert to number if it's a string
+              if (typeof value === 'string') {
+                const num = parseFloat(value);
+                return isNaN(num) ? 0 : num;
               }
               
-              const num = parseFloat(cleanValue);
-              const result = isNaN(num) ? 0 : num;
-              console.log(`Parsed "${value}" -> ${result}`);
-              return result;
+              // If it's already a number, use it directly
+              if (typeof value === 'number') {
+                return isNaN(value) ? 0 : value;
+              }
+              
+              return 0;
             };
             
             // Extract and process all amount fields from the transaction
@@ -377,16 +359,18 @@ const GeneralLedgerUploader = ({ clientId, onUploadComplete }: GeneralLedgerUplo
             let creditAmount = null;
             let balanceAmount = 0;
             
-            console.log('Transaction amount fields:', {
-              debit_amount: transaction.debit_amount,
+            // Log transaction data for debugging
+            console.log('Raw transaction data:', {
+              balance_amount: transaction.balance_amount,
+              debit_amount: transaction.debit_amount, 
               credit_amount: transaction.credit_amount,
-              balance_amount: transaction.balance_amount
+              account_number: transaction.account_number
             });
             
-            // Handle different amount scenarios - prioritize balance_amount as the main field
-            if (transaction.balance_amount !== undefined && transaction.balance_amount !== null && transaction.balance_amount !== '') {
+            // Prioritize balance_amount as the primary field
+            if (transaction.balance_amount !== undefined && transaction.balance_amount !== null && transaction.balance_amount !== '' && transaction.balance_amount !== 0) {
               balanceAmount = parseAmount(transaction.balance_amount);
-              console.log(`Set balance_amount: ${balanceAmount}`);
+              console.log(`Using balance_amount: ${balanceAmount} from raw value: ${transaction.balance_amount}`);
               
               // Set debit/credit based on balance_amount sign
               if (balanceAmount > 0) {
@@ -398,15 +382,19 @@ const GeneralLedgerUploader = ({ clientId, onUploadComplete }: GeneralLedgerUplo
               }
             } else {
               // Fallback to separate debit/credit fields
-              if (transaction.debit_amount !== undefined && transaction.debit_amount !== null && transaction.debit_amount !== '') {
+              console.log('Falling back to debit/credit fields');
+              if (transaction.debit_amount !== undefined && transaction.debit_amount !== null && transaction.debit_amount !== '' && transaction.debit_amount !== 0) {
                 debitAmount = parseAmount(transaction.debit_amount);
+                console.log(`Using debit_amount: ${debitAmount}`);
               }
-              if (transaction.credit_amount !== undefined && transaction.credit_amount !== null && transaction.credit_amount !== '') {
+              if (transaction.credit_amount !== undefined && transaction.credit_amount !== null && transaction.credit_amount !== '' && transaction.credit_amount !== 0) {
                 creditAmount = parseAmount(transaction.credit_amount);
+                console.log(`Using credit_amount: ${creditAmount}`);
               }
               
               // Calculate balance from debit/credit
               balanceAmount = (debitAmount || 0) - (creditAmount || 0);
+              console.log(`Calculated balance_amount: ${balanceAmount}`);
             }
             
             // Extract voucher number from various possible fields
@@ -434,6 +422,15 @@ const GeneralLedgerUploader = ({ clientId, onUploadComplete }: GeneralLedgerUplo
           })
           .filter(Boolean);
         
+        // Debug: Log what we're about to insert
+        console.log(`=== BATCH ${Math.floor(i/batchSize) + 1} DEBUG ===`);
+        console.log('Transactions to insert (first 2):', transactionsToInsert.slice(0, 2));
+        console.log('Amount values check:', transactionsToInsert.slice(0, 3).map(t => ({
+          balance_amount: t.balance_amount,
+          debit_amount: t.debit_amount,
+          credit_amount: t.credit_amount
+        })));
+        
         try {
           const { error: insertError } = await supabase
             .from('general_ledger_transactions')
@@ -444,6 +441,7 @@ const GeneralLedgerUploader = ({ clientId, onUploadComplete }: GeneralLedgerUplo
             throw insertError;
           } else {
             successful += transactionsToInsert.length;
+            console.log(`Successfully inserted batch of ${transactionsToInsert.length} transactions`);
           }
         } catch (error) {
           console.error(`Error processing batch:`, error);
