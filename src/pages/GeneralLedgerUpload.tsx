@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useClientDetails } from '@/hooks/useClientDetails';
+import { useFiscalYear } from '@/contexts/FiscalYearContext';
 import StickyClientLayout from '@/components/Layout/StickyClientLayout';
 import ClientNavigation from '@/components/Clients/ClientDetails/ClientNavigation';
 import GeneralLedgerUploader from '@/components/Accounting/GeneralLedgerUploader';
@@ -10,6 +11,14 @@ import { Skeleton } from '@/components/ui/skeleton';
 const GeneralLedgerUpload = () => {
   const { clientId } = useParams<{ clientId: string }>();
   const { data: client, isLoading, error } = useClientDetails(clientId || '');
+  const { setSelectedClientId } = useFiscalYear();
+
+  // Set the selected client ID when client data is loaded
+  useEffect(() => {
+    if (client?.id) {
+      setSelectedClientId(client.id);
+    }
+  }, [client?.id, setSelectedClientId]);
 
   if (isLoading) {
     return (
@@ -39,6 +48,7 @@ const GeneralLedgerUpload = () => {
     <StickyClientLayout
       clientName={client.company_name}
       orgNumber={client.org_number}
+      pageTitle="Hovedbok opplasting"
     >
       <ClientNavigation />
       

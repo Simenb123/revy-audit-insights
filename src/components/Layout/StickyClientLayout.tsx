@@ -1,33 +1,31 @@
 import React from 'react';
-import ClientPageHeader from './ClientPageHeader';
-import ResponsiveLayout from './ResponsiveLayout';
+import ClientContextHeader from './ClientContextHeader';
 
 interface StickyClientLayoutProps {
   clientName: string;
   orgNumber?: string;
+  pageTitle: string;
   showBackButton?: boolean;
   children: React.ReactNode;
-  maxWidth?: 'narrow' | 'medium' | 'wide' | 'full';
 }
 
 const StickyClientLayout: React.FC<StickyClientLayoutProps> = ({
   clientName,
   orgNumber,
+  pageTitle,
   showBackButton = true,
-  children,
-  maxWidth = 'full'
+  children
 }) => {
   return (
-    <div className="flex flex-col h-screen">
-      <ClientPageHeader 
+    <div className="flex flex-col min-h-screen">
+      <ClientContextHeader 
         clientName={clientName}
         orgNumber={orgNumber}
+        pageTitle={pageTitle}
         showBackButton={showBackButton}
       />
       <div className="flex-1 overflow-auto">
-        <ResponsiveLayout maxWidth={maxWidth}>
-          {children}
-        </ResponsiveLayout>
+        {children}
       </div>
     </div>
   );

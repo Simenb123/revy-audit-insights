@@ -47,12 +47,11 @@ const TrialBalanceUpload = () => {
     <StickyClientLayout
       clientName={client.company_name}
       orgNumber={client.org_number}
+      pageTitle="Saldobalanse opplasting"
     >
       <ClientNavigation />
       
       <div className="space-y-6 p-6">
-        <h1 className="text-2xl font-bold">Saldobalanse opplasting</h1>
-        
         <TrialBalanceUploader 
           clientId={client.id}
           onUploadComplete={() => {

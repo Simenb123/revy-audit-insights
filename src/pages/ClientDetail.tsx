@@ -1,8 +1,9 @@
 import { logger } from '@/utils/logger';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Routes, Route, useParams } from 'react-router-dom';
 import { useClientDetails } from '@/hooks/useClientDetails';
+import { useFiscalYear } from '@/contexts/FiscalYearContext';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
@@ -16,6 +17,7 @@ import { AuditPhase } from '@/types/revio';
 const ClientDetail = () => {
   const { clientId } = useParams<{ clientId: string }>();
   const [selectedPhase, setSelectedPhase] = useState<AuditPhase>('overview');
+  const { setSelectedClientId } = useFiscalYear();
 
   logger.log('🏢 [CLIENT_DETAIL] Component rendered:', {
     clientId,
@@ -25,6 +27,13 @@ const ClientDetail = () => {
 
   // Ensure clientId exists before making the query
   const { data: client, isLoading, error } = useClientDetails(clientId || '');
+
+  // Set the selected client ID when client data is loaded
+  useEffect(() => {
+    if (client?.id) {
+      setSelectedClientId(client.id);
+    }
+  }, [client?.id, setSelectedClientId]);
 
   logger.log('🏢 [CLIENT_DETAIL] Client query result:', {
     clientId,
@@ -135,6 +144,7 @@ const ClientDetail = () => {
     <StickyClientLayout
       clientName={client.company_name}
       orgNumber={client.org_number}
+      pageTitle="Oversikt"
     >
       <ClientNavigation />
       

@@ -6,7 +6,7 @@ import { Outlet, Navigate } from 'react-router-dom';
 import { useAuth } from '@/components/Auth/AuthProvider';
 import { useUserProfile } from '@/hooks/useUserProfile';
 
-import AppHeader from './AppHeader';
+import GlobalHeader from './GlobalHeader';
 import ResizableRightSidebar from './ResizableRightSidebar';
 import ResizableLeftSidebar from './ResizableLeftSidebar';
 import ResponsiveLayout from './ResponsiveLayout';
@@ -42,7 +42,7 @@ const AppLayout = () => {
   if (connectionStatus === 'disconnected') {
     return (
       <div className="min-h-screen bg-background flex flex-col">
-        <AppHeader />
+        <GlobalHeader />
         <SidebarProvider>
         <GridLayoutContainer>
           <ResizableLeftSidebar />
@@ -77,7 +77,7 @@ const AppLayout = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <AppHeader />
+      <GlobalHeader />
       <SidebarProvider>
         <GridLayoutContainer>
           <ResizableLeftSidebar />
