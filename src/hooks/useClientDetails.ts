@@ -5,22 +5,22 @@ import { supabase } from '@/integrations/supabase/client';
 import { Client, AuditPhase } from '@/types/revio';
 import { toast } from '@/components/ui/use-toast';
 
-export function useClientDetails(orgNumber: string) {
+export function useClientDetails(clientId: string) {
   return useQuery({
-    queryKey: ['client', orgNumber],
+    queryKey: ['client', clientId],
     queryFn: async (): Promise<Client | null> => {
-      logger.log('🔍 [USE_CLIENT_DETAILS] Fetching client for orgNumber:', orgNumber);
+      logger.log('🔍 [USE_CLIENT_DETAILS] Fetching client for clientId:', clientId);
       
-      if (!orgNumber || orgNumber.trim() === '') {
-        logger.error('❌ [USE_CLIENT_DETAILS] Empty orgNumber provided');
-        throw new Error('Organisasjonsnummer er påkrevd');
+      if (!clientId || clientId.trim() === '') {
+        logger.error('❌ [USE_CLIENT_DETAILS] Empty clientId provided');
+        throw new Error('Klient-ID er påkrevd');
       }
 
       // Fetch client data
       const { data: clientData, error: clientError } = await supabase
         .from('clients')
         .select('*')
-        .eq('org_number', orgNumber)
+        .eq('id', clientId)
         .single();
 
       if (clientError) {
@@ -139,7 +139,7 @@ export function useClientDetails(orgNumber: string) {
 
       return client;
     },
-    enabled: !!orgNumber && orgNumber.trim() !== '',
+    enabled: !!clientId && clientId.trim() !== '',
     staleTime: 1000 * 60 * 5, // 5 minutes
     retry: (failureCount, error) => {
       logger.log('🔄 [USE_CLIENT_DETAILS] Query retry:', { failureCount, error: error.message });
