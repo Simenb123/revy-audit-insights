@@ -32,6 +32,7 @@
     --global-header-height: 48px;
     --sub-header-height: 40px;
     --client-header-height: 60px;
+    --client-sub-header-height: 48px;
 
     /* Sidebar farger - lys variant */
     --sidebar-background: var(--revio-500);
