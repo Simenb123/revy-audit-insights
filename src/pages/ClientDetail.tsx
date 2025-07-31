@@ -6,10 +6,8 @@ import { useClientDetails } from '@/hooks/useClientDetails';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
-import ResponsiveLayout from '@/components/Layout/ResponsiveLayout';
-import StandardPageLayout from '@/components/Layout/StandardPageLayout';
+import StickyClientLayout from '@/components/Layout/StickyClientLayout';
 import ClientNavigation from '@/components/Clients/ClientDetails/ClientNavigation';
-import ClientPageHeader from '@/components/Layout/ClientPageHeader';
 import ClientRedirect from '@/components/Layout/ClientRedirect';
 import RevisionWorkflow from '@/components/Clients/ClientDetails/RevisionWorkflow';
 import PhaseContent from '@/components/Clients/ClientDetails/PhaseContent';
@@ -43,68 +41,60 @@ const ClientDetail = () => {
   if (!clientId) {
     logger.error('❌ [CLIENT_DETAIL] No clientId in URL params');
     return (
-      <ResponsiveLayout>
-        <StandardPageLayout>
-          <div className="text-center py-12">
-            <h1 className="text-2xl font-bold mb-4">Ugyldig klient-ID</h1>
-            <p className="text-muted-foreground">
-              Klient-ID mangler i URL-en
-            </p>
-          </div>
-        </StandardPageLayout>
-      </ResponsiveLayout>
+      <div className="p-6">
+        <div className="text-center py-12">
+          <h1 className="text-2xl font-bold mb-4">Ugyldig klient-ID</h1>
+          <p className="text-muted-foreground">
+            Klient-ID mangler i URL-en
+          </p>
+        </div>
+      </div>
     );
   }
 
   if (isLoading) {
     logger.log('⏳ [CLIENT_DETAIL] Loading client data...');
     return (
-      <ResponsiveLayout>
-        <StandardPageLayout>
-          <div className="space-y-6">
-            <Skeleton className="h-8 w-64" />
-            <Skeleton className="h-10 w-96" />
-            <Skeleton className="h-64 w-full" />
-          </div>
-        </StandardPageLayout>
-      </ResponsiveLayout>
+      <div className="p-6">
+        <div className="space-y-6">
+          <Skeleton className="h-8 w-64" />
+          <Skeleton className="h-10 w-96" />
+          <Skeleton className="h-64 w-full" />
+        </div>
+      </div>
     );
   }
 
   if (error) {
     logger.error('❌ [CLIENT_DETAIL] Error loading client:', error);
     return (
-      <ResponsiveLayout>
-        <StandardPageLayout>
-          <div className="text-center py-12">
-            <Alert variant="destructive" className="max-w-md mx-auto">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                Feil ved lasting av klientdata: {error.message}
-              </AlertDescription>
-            </Alert>
-          </div>
-        </StandardPageLayout>
-      </ResponsiveLayout>
+      <div className="p-6">
+        <div className="text-center py-12">
+          <Alert variant="destructive" className="max-w-md mx-auto">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Feil ved lasting av klientdata: {error.message}
+            </AlertDescription>
+          </Alert>
+        </div>
+      </div>
     );
   }
 
   if (!client) {
     logger.error('❌ [CLIENT_DETAIL] No client found for clientId:', clientId);
     return (
-      <ResponsiveLayout>
-        <StandardPageLayout>
-          <div className="text-center py-12">
-            <Alert variant="destructive" className="max-w-md mx-auto">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                Kunne ikke finne klient med ID {clientId}. 
-                Kontroller at ID-en er korrekt eller at du har tilgang til denne klienten.
-              </AlertDescription>
-            </Alert>
-          </div>
-        </StandardPageLayout>
-      </ResponsiveLayout>
+      <div className="p-6">
+        <div className="text-center py-12">
+          <Alert variant="destructive" className="max-w-md mx-auto">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Kunne ikke finne klient med ID {clientId}. 
+              Kontroller at ID-en er korrekt eller at du har tilgang til denne klienten.
+            </AlertDescription>
+          </Alert>
+        </div>
+      </div>
     );
   }
 
@@ -115,18 +105,16 @@ const ClientDetail = () => {
       clientId
     });
     return (
-      <ResponsiveLayout>
-        <StandardPageLayout>
-          <div className="text-center py-12">
-            <Alert variant="destructive" className="max-w-md mx-auto">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                Klient-data er ufullstendig (mangler ID). Prøv å oppdatere siden.
-              </AlertDescription>
-            </Alert>
-          </div>
-        </StandardPageLayout>
-      </ResponsiveLayout>
+      <div className="p-6">
+        <div className="text-center py-12">
+          <Alert variant="destructive" className="max-w-md mx-auto">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Klient-data er ufullstendig (mangler ID). Prøv å oppdatere siden.
+            </AlertDescription>
+          </Alert>
+        </div>
+      </div>
     );
   }
 
@@ -144,42 +132,35 @@ const ClientDetail = () => {
   };
 
   return (
-    <ResponsiveLayout>
-      <StandardPageLayout 
-        header={
-          <div className="space-y-0">
-            <ClientPageHeader 
-              clientName={client.company_name} 
-              orgNumber={client.org_number}
+    <StickyClientLayout
+      clientName={client.company_name}
+      orgNumber={client.org_number}
+    >
+      <ClientNavigation />
+      
+      <div className="space-y-6 p-6">
+        {/* Overview Content */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Revision Workflow */}
+          <div className="lg:col-span-2">
+            <RevisionWorkflow 
+              currentPhase={client.phase}
+              progress={client.progress || 0}
+              onPhaseClick={setSelectedPhase}
+              clientId={client.id}
             />
-            <ClientNavigation />
           </div>
-        }
-      >
-        <div className="space-y-6">
-          {/* Overview Content */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Revision Workflow */}
-            <div className="lg:col-span-2">
-              <RevisionWorkflow 
-                currentPhase={client.phase}
-                progress={client.progress || 0}
-                onPhaseClick={setSelectedPhase}
-                clientId={client.id}
-              />
-            </div>
-            
-            {/* Phase-specific content */}
-            <div className="lg:col-span-1">
-              <PhaseContent 
-                phase={selectedPhase} 
-                client={client}
-              />
-            </div>
+          
+          {/* Phase-specific content */}
+          <div className="lg:col-span-1">
+            <PhaseContent 
+              phase={selectedPhase} 
+              client={client}
+            />
           </div>
         </div>
-      </StandardPageLayout>
-    </ResponsiveLayout>
+      </div>
+    </StickyClientLayout>
   );
 };
 

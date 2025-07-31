@@ -16,7 +16,7 @@ const ClientPageHeader: React.FC<ClientPageHeaderProps> = ({
   showBackButton = true 
 }) => {
   return (
-    <div className="bg-background border-b border-border">
+    <div className="sticky top-0 z-50 bg-background border-b border-border">
       <div className="px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
