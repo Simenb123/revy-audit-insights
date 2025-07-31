@@ -144,7 +144,7 @@ const ResizableLeftSidebar = () => {
   return (
       <ShadcnSidebar
         collapsible="icon"
-        className="sticky top-[var(--global-header-height)] h-[calc(100vh-var(--global-header-height))] overflow-y-auto border-r border-sidebar-border bg-sidebar"
+        className="border-r border-sidebar-border bg-sidebar"
         style={{
           width: isCollapsed
             ? 'var(--sidebar-width-icon)'
