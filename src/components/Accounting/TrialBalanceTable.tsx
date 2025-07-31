@@ -15,6 +15,11 @@ interface TrialBalanceTableProps {
 const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialBalanceTableProps) => {
   const { data: trialBalanceEntries, isLoading, error } = useTrialBalanceData(clientId, selectedVersion, accountingYear);
   
+  // Debug logging
+  console.log('TrialBalanceTable - trialBalanceEntries:', trialBalanceEntries);
+  console.log('TrialBalanceTable - isLoading:', isLoading);
+  console.log('TrialBalanceTable - error:', error);
+  
   // Get field definitions for trial balance
   const { data: fieldDefinitions } = useQuery({
     queryKey: ['field-definitions', 'trial_balance', accountingYear],
@@ -24,11 +29,15 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
   // Filter entries by version and accounting year if provided
   const filteredByPeriod = useMemo(() => {
     const entries = trialBalanceEntries || [];
-    return entries.filter(entry => {
+    console.log('TrialBalanceTable - entries before filter:', entries.length);
+    const filtered = entries.filter(entry => {
       if (accountingYear && entry.period_year !== accountingYear) return false;
       if (selectedVersion && entry.version && entry.version !== selectedVersion) return false;
       return true;
     });
+    console.log('TrialBalanceTable - entries after filter:', filtered.length);
+    console.log('TrialBalanceTable - first few entries:', filtered.slice(0, 3));
+    return filtered;
   }, [trialBalanceEntries, accountingYear, selectedVersion]);
 
   const formatCurrency = (amount: number) => {
@@ -41,13 +50,16 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
 
   // Define columns based on field definitions
   const columns: DataTableColumn<TrialBalanceEntry>[] = useMemo(() => {
-    if (!fieldDefinitions) {
-      // Fallback columns if field definitions are not loaded
-      return [
+    console.log('TrialBalanceTable - fieldDefinitions:', fieldDefinitions);
+    // Always use fallback columns for debugging
+    const fallbackColumns = [
         {
           key: 'account_info',
           header: 'Konto-ID',
-          accessor: (entry: TrialBalanceEntry) => `${entry.account_number} - ${entry.account_name || 'Ukjent konto'}`,
+          accessor: (entry: TrialBalanceEntry) => {
+            console.log('TrialBalanceTable - processing entry:', entry);
+            return `${entry.account_number} - ${entry.account_name || 'Ukjent konto'}`;
+          },
           sortable: true,
           searchable: true,
           className: 'font-medium',
@@ -61,43 +73,45 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
         {
           key: 'opening_balance',
           header: 'Åpningsbalanse',
-          accessor: 'opening_balance',
+          accessor: (entry: TrialBalanceEntry) => entry.opening_balance,
           sortable: true,
-          align: 'right',
+          align: 'right' as const,
           format: (value: number) => formatCurrency(value),
           className: 'font-mono',
         },
         {
           key: 'debit_turnover',
           header: 'Debet',
-          accessor: 'debit_turnover',
+          accessor: (entry: TrialBalanceEntry) => entry.debit_turnover,
           sortable: true,
-          align: 'right',
+          align: 'right' as const,
           format: (value: number) => formatCurrency(value),
           className: 'font-mono',
         },
         {
           key: 'credit_turnover',
           header: 'Kredit',
-          accessor: 'credit_turnover',
+          accessor: (entry: TrialBalanceEntry) => entry.credit_turnover,
           sortable: true,
-          align: 'right',
+          align: 'right' as const,
           format: (value: number) => formatCurrency(value),
           className: 'font-mono',
         },
         {
           key: 'closing_balance',
           header: 'Sluttsaldo',
-          accessor: 'closing_balance',
+          accessor: (entry: TrialBalanceEntry) => entry.closing_balance,
           sortable: true,
-          align: 'right',
+          align: 'right' as const,
           format: (value: number) => formatCurrency(value),
           className: 'font-mono',
         },
       ];
-    }
+    
+    console.log('TrialBalanceTable - using fallback columns:', fallbackColumns);
+    return fallbackColumns;
 
-    // Map field definitions to columns
+    /*// Map field definitions to columns
     const baseColumns: DataTableColumn<TrialBalanceEntry>[] = [
       {
         key: 'account_info',
@@ -169,7 +183,7 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
       });
     }
 
-    return baseColumns;
+    return baseColumns;*/
   }, [fieldDefinitions]);
 
   // Calculate totals

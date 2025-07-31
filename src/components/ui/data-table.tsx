@@ -64,6 +64,8 @@ const DataTable = <T extends Record<string, any>>({
 
   // Filter and sort data
   const filteredAndSortedData = useMemo(() => {
+    console.log('DataTable - input data:', data);
+    console.log('DataTable - columns:', columns);
     if (!data) return [];
     
     // Filter first
