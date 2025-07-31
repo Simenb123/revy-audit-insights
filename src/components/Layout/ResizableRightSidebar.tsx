@@ -180,9 +180,9 @@ const ResizableRightSidebar = () => {
 
   return (
     <motion.div
-      className="sticky top-[calc(var(--global-header-height)+var(--sub-header-height))] bg-background border-l flex flex-col z-10"
+      className="sticky top-[calc(var(--global-header-height)+var(--client-sub-header-height))] bg-background border-l flex flex-col z-10"
       style={{
-        height: 'calc(100vh - var(--global-header-height) - var(--sub-header-height))'
+        height: 'calc(100vh - var(--global-header-height) - var(--client-sub-header-height))'
       }}
       animate={{ width: isCollapsed ? 32 : width }}
       transition={{ duration: 0.2, ease: 'easeInOut' }}
@@ -194,22 +194,46 @@ const ResizableRightSidebar = () => {
         </div>
       )}
 
-      {/* Collapsed state - 32px width with expand button */}
-      {isCollapsed && (
-        <div className="relative h-full bg-background border-t-2 border-t-border/50 flex flex-col items-center py-4">
+      {/* Sticky Header */}
+      <div className="sticky top-[calc(var(--global-header-height)+var(--client-sub-header-height))] z-50 bg-background border-b flex items-center justify-between px-3 py-2">
+        {isCollapsed ? (
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 bg-background border shadow-sm hover:bg-muted transition-colors"
+            className="h-8 w-8 hover:bg-muted transition-colors"
             onClick={toggleSidebar}
-            title="Utvid sidebar (Ctrl+Shift+R)"
+            aria-label="Utvid sidebar"
           >
-            <ChevronLeft className="h-4 w-4" />
+            <ChevronRight className="h-4 w-4" />
           </Button>
-        </div>
-      )}
+        ) : (
+          <>
+            <h3 className="text-sm font-semibold">{getPageTitle()}</h3>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 hover:bg-muted transition-colors"
+                onClick={toggleSidebar}
+                aria-label="Kollaps sidebar"
+              >
+                <ChevronLeft className="h-3 w-3" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 hover:bg-muted transition-colors"
+                onClick={closeSidebar}
+                aria-label="Lukk sidebar"
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            </div>
+          </>
+        )}
+      </div>
 
-      {/* Expanded content */}
+      {/* Content area */}
       {!isCollapsed && (
         <div className="flex-1 flex flex-col min-h-0">
           {renderContent()}
