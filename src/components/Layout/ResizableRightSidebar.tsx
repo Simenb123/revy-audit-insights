@@ -235,8 +235,10 @@ const ResizableRightSidebar = () => {
 
       {/* Content area */}
       {!isCollapsed && (
-        <div className="flex-1 flex flex-col min-h-0">
-          {renderContent()}
+        <div className="flex flex-col h-full">
+          <div className="flex-grow overflow-y-auto">
+            {renderContent()}
+          </div>
         </div>
       )}
     </motion.div>
