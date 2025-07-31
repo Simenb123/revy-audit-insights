@@ -1,13 +1,12 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Search, Download, LineChart, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import React, { useMemo } from 'react';
+import { LineChart } from 'lucide-react';
 import { GeneralLedgerTransaction, useGeneralLedgerData } from '@/hooks/useGeneralLedgerData';
 import { useGeneralLedgerCount } from '@/hooks/useGeneralLedgerCount';
-import { Skeleton } from '@/components/ui/skeleton';
+import { getFieldDefinitions } from '@/utils/fieldDefinitions';
+import DataTable, { DataTableColumn } from '@/components/ui/data-table';
+import { TableRow, TableCell } from '@/components/ui/table';
 import { format } from 'date-fns';
+import { useQuery } from '@tanstack/react-query';
 
 interface GeneralLedgerTableProps {
   clientId: string;
@@ -15,59 +14,18 @@ interface GeneralLedgerTableProps {
 }
 
 const GeneralLedgerTable = ({ clientId, versionId }: GeneralLedgerTableProps) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [sortBy, setSortBy] = useState<string>('transaction_date');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [currentPage, setCurrentPage] = React.useState(1);
   const pageSize = 100;
   
   const { data: transactions, isLoading, error } = useGeneralLedgerData(clientId, versionId, { page: currentPage, pageSize });
   const { data: totalCount, isLoading: isCountLoading } = useGeneralLedgerCount(clientId, versionId);
   const { data: allTransactions, isLoading: isExportLoading } = useGeneralLedgerData(clientId, versionId, undefined);
-
-  // Filter and sort transactions
-  const filteredAndSortedTransactions = React.useMemo(() => {
-    if (!transactions) return [];
-    
-    // Filter first
-    const filtered = transactions.filter(transaction =>
-      transaction.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      transaction.account_number.includes(searchTerm) ||
-      transaction.account_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      transaction.reference_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      transaction.voucher_number?.includes(searchTerm)
-    );
-    
-    // Then sort
-    return filtered.sort((a, b) => {
-      let aValue: any = a[sortBy as keyof GeneralLedgerTransaction];
-      let bValue: any = b[sortBy as keyof GeneralLedgerTransaction];
-      
-      // Handle date sorting
-      if (sortBy === 'transaction_date') {
-        aValue = new Date(aValue);
-        bValue = new Date(bValue);
-      }
-      
-   // Handle numeric sorting
-   if (sortBy === 'balance_amount' || sortBy === 'debit_amount' || sortBy === 'credit_amount' || sortBy === 'account_number') {
-     aValue = Number(aValue) || 0;
-     bValue = Number(bValue) || 0;
-   }
-      
-      // Handle string sorting
-      if (typeof aValue === 'string' && typeof bValue === 'string') {
-        aValue = aValue.toLowerCase();
-        bValue = bValue.toLowerCase();
-      }
-      
-      if (sortOrder === 'asc') {
-        return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
-      } else {
-        return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
-      }
-    });
-  }, [transactions, searchTerm, sortBy, sortOrder]);
+  
+  // Get field definitions for general ledger
+  const { data: fieldDefinitions } = useQuery({
+    queryKey: ['field-definitions', 'general_ledger'],
+    queryFn: () => getFieldDefinitions('general_ledger'),
+  });
 
   const formatCurrency = (amount: number | null) => {
     if (amount === null) return '-';
@@ -78,258 +36,192 @@ const GeneralLedgerTable = ({ clientId, versionId }: GeneralLedgerTableProps) =>
     }).format(amount);
   };
 
-  // Calculate totals
-  const totalBalance = filteredAndSortedTransactions.reduce((sum, t) => {
-    return sum + (t.balance_amount || 0);
-  }, 0);
-
-  const totalDebit = filteredAndSortedTransactions.reduce((sum, t) => {
-    if (t.balance_amount !== null && t.balance_amount > 0) return sum + t.balance_amount;
-    return sum;
-  }, 0);
-
-  const totalCredit = filteredAndSortedTransactions.reduce((sum, t) => {
-    if (t.balance_amount !== null && t.balance_amount < 0) return sum + Math.abs(t.balance_amount);
-    return sum;
-  }, 0);
-
-  // Handle sorting
-  const handleSort = (column: string) => {
-    if (sortBy === column) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortBy(column);
-      setSortOrder('asc');
+  // Define columns based on field definitions
+  const columns: DataTableColumn<GeneralLedgerTransaction>[] = useMemo(() => {
+    if (!fieldDefinitions) {
+      // Fallback columns if field definitions are not loaded
+      return [
+        {
+          key: 'transaction_date',
+          header: 'Dato',
+          accessor: 'transaction_date',
+          sortable: true,
+          format: (value: string) => format(new Date(value), 'dd.MM.yyyy'),
+        },
+        {
+          key: 'account_info',
+          header: 'Konto',
+          accessor: (transaction: GeneralLedgerTransaction) => (
+            <div>
+              <div className="font-medium">{transaction.account_number}</div>
+              <div className="text-sm text-muted-foreground">{transaction.account_name}</div>
+            </div>
+          ),
+          sortable: true,
+          searchable: true,
+        },
+        {
+          key: 'description',
+          header: 'Beskrivelse',
+          accessor: 'description',
+          sortable: true,
+          searchable: true,
+        },
+        {
+          key: 'voucher_number',
+          header: 'Bilag',
+          accessor: 'voucher_number',
+          sortable: true,
+          searchable: true,
+          format: (value: string | null) => value || '-',
+        },
+        {
+          key: 'balance_amount',
+          header: 'Beløp',
+          accessor: 'balance_amount',
+          sortable: true,
+          align: 'right',
+          format: (value: number | null) => (
+            <span className={value && value < 0 ? 'text-red-600' : ''}>
+              {formatCurrency(value)}
+            </span>
+          ),
+        },
+      ];
     }
-  };
 
-  const getSortIcon = (column: string) => {
-    if (sortBy !== column) return <ArrowUpDown className="h-4 w-4" />;
-    return sortOrder === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />;
-  };
+    // Map field definitions to columns
+    const baseColumns: DataTableColumn<GeneralLedgerTransaction>[] = [];
 
-  const handleExport = () => {
-    if (!allTransactions || allTransactions.length === 0) return;
+    // Add columns based on field definitions
+    const dateField = fieldDefinitions.find(f => f.field_key === 'transaction_date');
+    const accountField = fieldDefinitions.find(f => f.field_key === 'account_number');
+    const descriptionField = fieldDefinitions.find(f => f.field_key === 'description');
+    const voucherField = fieldDefinitions.find(f => f.field_key === 'voucher_number');
+    const amountField = fieldDefinitions.find(f => f.field_key === 'balance_amount') || 
+                       fieldDefinitions.find(f => f.field_key === 'debit_amount');
+
+    if (dateField) {
+      baseColumns.push({
+        key: 'transaction_date',
+        header: dateField.field_label,
+        accessor: 'transaction_date',
+        sortable: true,
+        format: (value: string) => format(new Date(value), 'dd.MM.yyyy'),
+      });
+    }
+
+    if (accountField) {
+      baseColumns.push({
+        key: 'account_info',
+        header: accountField.field_label,
+        accessor: (transaction: GeneralLedgerTransaction) => (
+          <div>
+            <div className="font-medium">{transaction.account_number}</div>
+            <div className="text-sm text-muted-foreground">{transaction.account_name}</div>
+          </div>
+        ),
+        sortable: true,
+        searchable: true,
+      });
+    }
+
+    if (descriptionField) {
+      baseColumns.push({
+        key: 'description',
+        header: descriptionField.field_label,
+        accessor: 'description',
+        sortable: true,
+        searchable: true,
+      });
+    }
+
+    if (voucherField) {
+      baseColumns.push({
+        key: 'voucher_number',
+        header: voucherField.field_label,
+        accessor: 'voucher_number',
+        sortable: true,
+        searchable: true,
+        format: (value: string | null) => value || '-',
+      });
+    }
+
+    if (amountField) {
+      baseColumns.push({
+        key: 'balance_amount',
+        header: amountField.field_label,
+        accessor: 'balance_amount',
+        sortable: true,
+        align: 'right',
+        format: (value: number | null) => (
+          <span className={value && value < 0 ? 'text-red-600' : ''}>
+            {formatCurrency(value)}
+          </span>
+        ),
+      });
+    }
+
+    return baseColumns;
+  }, [fieldDefinitions]);
+
+  // Calculate totals
+  const totals = useMemo(() => {
+    if (!transactions) return null;
     
-    const csvContent = [
-      ['Dato', 'Konto', 'Beskrivelse', 'Bilag', 'Beløp', 'Referanse'].join(','),
-      ...allTransactions.map(transaction => [
-        new Date(transaction.transaction_date).toLocaleDateString('nb-NO'),
-        transaction.account_number,
-        `"${transaction.description}"`,
-        transaction.voucher_number || '',
-        transaction.balance_amount || 0,
-        transaction.reference_number || ''
-      ].join(','))
-    ].join('\n');
-    
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `hovedbok_${new Date().getFullYear()}.csv`;
-    link.click();
-  };
+    return {
+      balance: transactions.reduce((sum, t) => sum + (t.balance_amount || 0), 0),
+      debit: transactions.reduce((sum, t) => {
+        if (t.balance_amount !== null && t.balance_amount > 0) return sum + t.balance_amount;
+        return sum;
+      }, 0),
+      credit: transactions.reduce((sum, t) => {
+        if (t.balance_amount !== null && t.balance_amount < 0) return sum + Math.abs(t.balance_amount);
+        return sum;
+      }, 0),
+    };
+  }, [transactions]);
+
+  // Create total row
+  const totalRow = totals ? (
+    <TableRow className="font-bold border-t-2 bg-muted/50">
+      <TableCell colSpan={4}>Sum</TableCell>
+      <TableCell className="text-right">
+        <span className={Math.abs(totals.balance) < 0.01 ? 'text-green-600' : 'text-red-600'}>
+          {formatCurrency(totals.balance)}
+        </span>
+      </TableCell>
+    </TableRow>
+  ) : null;
 
   const totalPages = Math.ceil((totalCount || 0) / pageSize);
-  const hasNextPage = currentPage < totalPages;
-  const hasPrevPage = currentPage > 1;
-
-  if (isLoading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Hovedbok</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-64 w-full" />
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (error) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Hovedbok</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-destructive">Feil ved lasting av hovedbok: {error.message}</p>
-        </CardContent>
-      </Card>
-    );
-  }
+  
+  // Create description text
+  const description = !isCountLoading ? 
+    `Viser ${((currentPage - 1) * pageSize) + 1}-${Math.min(currentPage * pageSize, totalCount || 0)} av ${totalCount || 0} transaksjoner${transactions && transactions.length > 0 ? ` • Side ${currentPage} av ${totalPages}` : ''}` :
+    undefined;
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex justify-between items-center">
-          <div>
-            <CardTitle className="flex items-center gap-2">
-              <LineChart className="h-5 w-5" />
-              Hovedbok
-            </CardTitle>
-            <p className="text-sm text-muted-foreground mt-1">
-              {!isCountLoading && (
-                <span>Viser {((currentPage - 1) * pageSize) + 1}-{Math.min(currentPage * pageSize, totalCount || 0)} av {totalCount || 0} transaksjoner</span>
-              )}
-              {transactions && transactions.length > 0 && (
-                <span> • Side {currentPage} av {totalPages}</span>
-              )}
-            </p>
-          </div>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handleExport}
-            disabled={isExportLoading}
-          >
-            <Download className="h-4 w-4 mr-2" />
-            {isExportLoading ? 'Laster...' : 'Eksporter alle'}
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          <div className="flex items-center space-x-2">
-            <Search className="h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Søk i transaksjoner..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="max-w-sm"
-            />
-          </div>
-
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead 
-                    className="cursor-pointer hover:bg-muted/50 select-none"
-                    onClick={() => handleSort('transaction_date')}
-                  >
-                    <div className="flex items-center gap-2">
-                      Dato
-                      {getSortIcon('transaction_date')}
-                    </div>
-                  </TableHead>
-                  <TableHead 
-                    className="cursor-pointer hover:bg-muted/50 select-none"
-                    onClick={() => handleSort('account_number')}
-                  >
-                    <div className="flex items-center gap-2">
-                      Konto
-                      {getSortIcon('account_number')}
-                    </div>
-                  </TableHead>
-                  <TableHead 
-                    className="cursor-pointer hover:bg-muted/50 select-none"
-                    onClick={() => handleSort('description')}
-                  >
-                    <div className="flex items-center gap-2">
-                      Beskrivelse
-                      {getSortIcon('description')}
-                    </div>
-                  </TableHead>
-                  <TableHead 
-                    className="cursor-pointer hover:bg-muted/50 select-none"
-                    onClick={() => handleSort('voucher_number')}
-                  >
-                    <div className="flex items-center gap-2">
-                      Bilag
-                      {getSortIcon('voucher_number')}
-                    </div>
-                  </TableHead>
-                  <TableHead 
-                    className="text-right cursor-pointer hover:bg-muted/50 select-none"
-                    onClick={() => handleSort('balance_amount')}
-                  >
-                    <div className="flex items-center justify-end gap-2">
-                      Beløp
-                      {getSortIcon('balance_amount')}
-                    </div>
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                 {filteredAndSortedTransactions.length === 0 ? (
-                   <TableRow>
-                     <TableCell colSpan={5} className="text-center text-muted-foreground">
-                       Ingen transaksjoner funnet
-                     </TableCell>
-                   </TableRow>
-                ) : (
-                  <>
-                    {filteredAndSortedTransactions.map((transaction) => (
-                      <TableRow key={transaction.id}>
-                        <TableCell>
-                          {format(new Date(transaction.transaction_date), 'dd.MM.yyyy')}
-                        </TableCell>
-                        <TableCell>
-                          <div className="font-medium">{transaction.account_number}</div>
-                          <div className="text-sm text-muted-foreground">{transaction.account_name}</div>
-                        </TableCell>
-                         <TableCell>{transaction.description}</TableCell>
-                          <TableCell>{transaction.voucher_number || '-'}</TableCell>
-                          <TableCell className="text-right">
-                            <span className={transaction.balance_amount && transaction.balance_amount < 0 ? 'text-red-600' : ''}>
-                              {transaction.balance_amount !== null ? formatCurrency(transaction.balance_amount) : '-'}
-                            </span>
-                          </TableCell>
-                      </TableRow>
-                    ))}
-                      <TableRow className="font-bold border-t-2 bg-muted/50">
-                        <TableCell colSpan={4}>Sum</TableCell>
-                        <TableCell className="text-right">
-                          <span className={Math.abs(totalBalance) < 0.01 ? 'text-green-600' : 'text-red-600'}>
-                            {formatCurrency(totalBalance)}
-                          </span>
-                        </TableCell>
-                      </TableRow>
-                  </>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="text-sm text-muted-foreground">
-              {searchTerm ? `Viser ${filteredAndSortedTransactions.length} filtrerte av ${transactions?.length || 0} transaksjoner på denne siden` : `Side ${currentPage} av ${totalPages}`}
-            </div>
-            
-            {!searchTerm && (
-              <div className="flex items-center space-x-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                  disabled={!hasPrevPage || isLoading}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                  Forrige
-                </Button>
-                <span className="text-sm text-muted-foreground px-2">
-                  Side {currentPage} av {totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                  disabled={!hasNextPage || isLoading}
-                >
-                  Neste
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            )}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+    <DataTable
+      title="Hovedbok"
+      description={description}
+      icon={<LineChart className="h-5 w-5" />}
+      data={transactions || []}
+      columns={columns}
+      isLoading={isLoading}
+      error={error}
+      searchPlaceholder="Søk i transaksjoner..."
+      enableExport={true}
+      exportFileName={`hovedbok_${new Date().getFullYear()}`}
+      enablePagination={true}
+      pageSize={pageSize}
+      totalCount={totalCount || 0}
+      currentPage={currentPage}
+      onPageChange={setCurrentPage}
+      showTotals={true}
+      totalRow={totalRow}
+      emptyMessage="Ingen transaksjoner funnet"
+    />
   );
 };
 
