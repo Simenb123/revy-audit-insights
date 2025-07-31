@@ -5,34 +5,43 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
   FileText, 
-  Calendar, 
-  Users, 
-  AlertTriangle,
-  TrendingUp,
-  Clock
+  Upload,
+  CheckCircle,
+  AlertCircle,
+  ExternalLink
 } from 'lucide-react';
-import ActionsContainer from '../Actions/ActionsContainer';
+import { useAccountingData } from '@/hooks/useAccountingData';
 
 interface OverviewPhaseProps {
   client: Client;
 }
 
 const OverviewPhase = ({ client }: OverviewPhaseProps) => {
+  const { data: accountingData } = useAccountingData(client.id);
+
+  const hasTrialBalance = accountingData?.chartOfAccountsCount > 0;
+  const hasGeneralLedger = accountingData?.hasGeneralLedger;
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
-            Klientoversikt
+            Klientinformasjon
           </CardTitle>
-          <CardDescription>
-            Generell informasjon og oversikt over revisjonsoppdraget
-          </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-3">
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
+            <div>
+              <p className="text-sm text-muted-foreground">Firmanavn</p>
+              <p className="font-medium">{client.company_name}</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Organisasjonsnummer</p>
+              <p className="font-medium">{client.org_number}</p>
+            </div>
+            <div>
               <p className="text-sm text-muted-foreground">Gjeldende fase</p>
               <Badge variant="default" className="text-sm">
                 {client.phase === 'overview' ? 'Oversikt' :
@@ -44,29 +53,10 @@ const OverviewPhase = ({ client }: OverviewPhaseProps) => {
                  'Rapportering'}
               </Badge>
             </div>
-            <div className="space-y-2">
+            <div>
               <p className="text-sm text-muted-foreground">Opprettet</p>
               <p className="text-sm">{new Date(client.created_at || '').toLocaleDateString('nb-NO')}</p>
             </div>
-          </div>
-
-          <div className="flex flex-wrap gap-2 pt-4">
-            <Button variant="outline" size="sm" className="flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              Tidsplan
-            </Button>
-            <Button variant="outline" size="sm" className="flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              Team
-            </Button>
-            <Button variant="outline" size="sm" className="flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4" />
-              Risikoer
-            </Button>
-            <Button variant="outline" size="sm" className="flex items-center gap-2">
-              <TrendingUp className="h-4 w-4" />
-              Progresjon
-            </Button>
           </div>
         </CardContent>
       </Card>
@@ -74,44 +64,50 @@ const OverviewPhase = ({ client }: OverviewPhaseProps) => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5" />
-            Neste steg
+            <Upload className="h-5 w-5" />
+            Regnskapsdata
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground mb-4">
-            Basert på gjeldende fase, her er de neste anbefalte stegene:
-          </p>
-          <div className="space-y-2">
-            {client.phase === 'overview' && (
-              <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                <p className="text-sm font-medium text-blue-900">Start med oppdragsvurdering</p>
-                <p className="text-xs text-blue-700">Vurder klientaksept og etabler oppdragsvilkår</p>
+        <CardContent className="space-y-3">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex items-center justify-between p-3 border rounded-lg">
+              <div>
+                <p className="font-medium">Saldobalanse</p>
+                <p className="text-sm text-muted-foreground">Planleggingsfase</p>
               </div>
-            )}
-            {client.phase === 'engagement' && (
-              <div className="p-3 bg-purple-50 rounded-lg border border-purple-200">
-                <p className="text-sm font-medium text-purple-900">Gå videre til planlegging</p>
-                <p className="text-xs text-purple-700">Last opp saldobalanse og planlegg revisjonsstrategi</p>
+              <div className="flex items-center gap-2">
+                {hasTrialBalance ? (
+                  <CheckCircle className="h-5 w-5 text-green-500" />
+                ) : (
+                  <AlertCircle className="h-5 w-5 text-orange-500" />
+                )}
+                <Button size="sm" variant="outline" className="flex items-center gap-1">
+                  <ExternalLink className="h-3 w-3" />
+                  {hasTrialBalance ? 'Vis' : 'Last opp'}
+                </Button>
               </div>
-            )}
-            {client.phase === 'planning' && (
-              <div className="p-3 bg-orange-50 rounded-lg border border-orange-200">
-                <p className="text-sm font-medium text-orange-900">Utfør risikovurdering</p>
-                <p className="text-xs text-orange-700">Vurder iboende og kontrollrisiko</p>
+            </div>
+            
+            <div className="flex items-center justify-between p-3 border rounded-lg">
+              <div>
+                <p className="font-medium">Hovedbok</p>
+                <p className="text-sm text-muted-foreground">Utførelsesfase</p>
               </div>
-            )}
-            {client.phase === 'risk_assessment' && (
-              <div className="p-3 bg-green-50 rounded-lg border border-green-200">
-                <p className="text-sm font-medium text-green-900">Start utførelsesfasen</p>
-                <p className="text-xs text-green-700">Last opp hovedbok og utfør tester</p>
+              <div className="flex items-center gap-2">
+                {hasGeneralLedger ? (
+                  <CheckCircle className="h-5 w-5 text-green-500" />
+                ) : (
+                  <AlertCircle className="h-5 w-5 text-orange-500" />
+                )}
+                <Button size="sm" variant="outline" className="flex items-center gap-1">
+                  <ExternalLink className="h-3 w-3" />
+                  {hasGeneralLedger ? 'Vis' : 'Last opp'}
+                </Button>
               </div>
-            )}
+            </div>
           </div>
         </CardContent>
       </Card>
-      
-      <ActionsContainer clientId={client.id} phase="overview" />
     </div>
   );
 };

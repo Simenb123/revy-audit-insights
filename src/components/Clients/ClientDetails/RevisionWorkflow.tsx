@@ -95,7 +95,7 @@ const RevisionWorkflow = ({ currentPhase, progress, onPhaseClick, clientId }: Re
             <div key={phase.key} className="relative">
               <div
                 className={`
-                  relative p-4 rounded-xl border-2 transition-all duration-300 group cursor-pointer hover:scale-105 hover:shadow-xl min-h-[160px] flex flex-col justify-between
+                  relative p-3 rounded-xl border-2 transition-all duration-300 group cursor-pointer hover:scale-105 hover:shadow-xl min-h-[120px] flex flex-col justify-between
                   ${status === 'current' 
                     ? 'border-blue-500 bg-blue-50 shadow-xl transform scale-105' 
                     : status === 'completed'
