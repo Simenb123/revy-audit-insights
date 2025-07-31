@@ -46,6 +46,7 @@ import GeneralLedgerUpload from "./pages/GeneralLedgerUpload";
 import TrialBalanceUpload from "./pages/TrialBalanceUpload";
 import AnalysisPage from "./pages/AnalysisPage";
 import NotFound from "./pages/NotFound";
+import LegacyClientRedirect from "./components/Layout/LegacyClientRedirect";
 
 const queryClient = new QueryClient();
 
@@ -74,6 +75,7 @@ function App() {
                   
                   {/* Legacy routes for backward compatibility */}
                   <Route path="klienter" element={<ProtectedRoute><ClientsOverview /></ProtectedRoute>} />
+                  <Route path="klienter/:orgNumber" element={<LegacyClientRedirect />} />
                   <Route path="client-admin" element={<ClientAdmin />} />
                   <Route path="user-admin" element={<UserAdmin />} />
                   <Route path="profile" element={<UserProfile />} />

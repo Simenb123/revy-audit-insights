@@ -49,7 +49,7 @@ const ClientsTable = ({ clients, onRowSelect, selectedClientId }: ClientsTablePr
 
   const handleRowClick = (client: Client) => {
     onRowSelect?.(client);
-    navigate(`/klienter/${client.org_number}`);
+    navigate(`/clients/${client.id}`);
   };
 
   const getStatusInfo = (phase: Client['phase']) => {

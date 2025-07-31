@@ -28,7 +28,7 @@ const GlobalNav = () => {
       label: "Dashboard"
     },
     {
-      to: "/klienter",
+      to: "/clients",
       icon: Users,
       label: "Klienter"
     },
@@ -64,7 +64,7 @@ const GlobalNav = () => {
     if (path === "/fag") {
       return location.pathname.startsWith("/fag") || location.pathname.startsWith("/knowledge");
     }
-    if (path === "/klienter") {
+    if (path === "/clients") {
       return location.pathname.startsWith("/klienter") || location.pathname.startsWith("/clients");
     }
     return location.pathname.startsWith(path) && !location.pathname.includes('/klienter/');
