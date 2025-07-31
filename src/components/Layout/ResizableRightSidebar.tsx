@@ -195,7 +195,7 @@ const ResizableRightSidebar = () => {
       )}
 
       {/* Sticky Header */}
-      <div className="sticky top-[calc(var(--global-header-height)+var(--client-sub-header-height))] z-50 bg-background border-b flex items-center justify-between px-3 py-2">
+      <div className="sticky top-[calc(var(--global-header-height)+var(--sub-header-height))] z-50 bg-background border-b flex items-center justify-between px-3 py-2">
         {isCollapsed ? (
           <Button
             variant="ghost"
