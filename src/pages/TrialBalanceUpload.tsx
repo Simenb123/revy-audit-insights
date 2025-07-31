@@ -4,15 +4,14 @@ import { useClientDetails } from '@/hooks/useClientDetails';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
 import ResponsiveLayout from '@/components/Layout/ResponsiveLayout';
 import StandardPageLayout from '@/components/Layout/StandardPageLayout';
-import ClientBreadcrumb from '@/components/Clients/ClientDetails/ClientBreadcrumb';
 import ClientNavigation from '@/components/Clients/ClientDetails/ClientNavigation';
-import FiscalYearSelector from '@/components/Layout/FiscalYearSelector';
+import ClientPageHeader from '@/components/Layout/ClientPageHeader';
 import TrialBalanceUploader from '@/components/Accounting/TrialBalanceUploader';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const TrialBalanceUpload = () => {
-  const { orgNumber } = useParams<{ orgNumber: string }>();
-  const { data: client, isLoading, error } = useClientDetails(orgNumber || '');
+  const { clientId } = useParams<{ clientId: string }>();
+  const { data: client, isLoading, error } = useClientDetails(clientId || '');
   const { setSelectedClientId } = useFiscalYear();
 
   // Set the selected client ID when client data is loaded
@@ -42,7 +41,7 @@ const TrialBalanceUpload = () => {
           <div className="text-center py-12">
             <h1 className="text-2xl font-bold mb-4">Klient ikke funnet</h1>
             <p className="text-muted-foreground">
-              Kunne ikke finne klient med organisasjonsnummer {orgNumber}
+              Kunne ikke finne klient med ID {clientId}
             </p>
           </div>
         </StandardPageLayout>
@@ -54,17 +53,17 @@ const TrialBalanceUpload = () => {
     <ResponsiveLayout>
       <StandardPageLayout 
         header={
-          <div className="space-y-4">
-            <ClientBreadcrumb client={client} />
+          <div className="space-y-0">
+            <ClientPageHeader 
+              clientName={client.company_name} 
+              orgNumber={client.org_number}
+            />
             <ClientNavigation />
           </div>
         }
       >
         <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold">Saldobalanse opplasting</h1>
-            <FiscalYearSelector clientName={client.company_name} />
-          </div>
+          <h1 className="text-2xl font-bold">Saldobalanse opplasting</h1>
           
           <TrialBalanceUploader 
             clientId={client.id}

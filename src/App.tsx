@@ -67,20 +67,13 @@ function App() {
                   <Route index element={<ProtectedRoute><Index /></ProtectedRoute>} />
                   <Route path="dashboard" element={<ProtectedRoute><NavigationDashboard /></ProtectedRoute>} />
                   <Route path="clients" element={<ProtectedRoute><ClientsOverview /></ProtectedRoute>} />
+                  <Route path="clients/:clientId" element={<ProtectedRoute><ClientDetail /></ProtectedRoute>} />
+                  <Route path="clients/:clientId/dashboard" element={<ProtectedRoute><ClientDetail /></ProtectedRoute>} />
+                  <Route path="clients/:clientId/trial-balance" element={<ProtectedRoute><TrialBalanceUpload /></ProtectedRoute>} />
+                  <Route path="clients/:clientId/general-ledger" element={<ProtectedRoute><GeneralLedgerUpload /></ProtectedRoute>} />
+                  
+                  {/* Legacy routes for backward compatibility */}
                   <Route path="klienter" element={<ProtectedRoute><ClientsOverview /></ProtectedRoute>} />
-                  <Route path="clients/:id" element={<ProtectedRoute><ClientDetail /></ProtectedRoute>} />
-                   <Route path="klienter/:orgNumber" element={<ProtectedRoute><ClientDetail /></ProtectedRoute>} />
-                   <Route path="klienter/:orgNumber/oversikt" element={<ProtectedRoute><ClientDetail /></ProtectedRoute>} />
-                   <Route path="klienter/:orgNumber/analyse" element={<ProtectedRoute><AnalysisPage /></ProtectedRoute>} />
-                   <Route path="klienter/:orgNumber/hovedbok" element={<ProtectedRoute><GeneralLedgerUpload /></ProtectedRoute>} />
-                   <Route path="klienter/:orgNumber/saldobalanse" element={<ProtectedRoute><TrialBalanceUpload /></ProtectedRoute>} />
-                  <Route path="klienter/:orgNumber/regnskap" element={<AccountingData />} />
-                  <Route path="klienter/:orgNumber/analyser" element={<AnalysisPage />} />
-                  <Route path="klienter/:orgNumber/regnskapsdata" element={<DataImport />} />
-                  <Route path="klienter/:orgNumber/grunnlagsdata" element={<DataImport />} />
-                  <Route path="klienter/:orgNumber/spesialdata" element={<DataImport />} />
-                  <Route path="klienter/:orgNumber/transaksjoner" element={<DataImport />} />
-                  <Route path="klienter/:orgNumber/import" element={<DataImport />} />
                   <Route path="client-admin" element={<ClientAdmin />} />
                   <Route path="user-admin" element={<UserAdmin />} />
                   <Route path="profile" element={<UserProfile />} />

@@ -3,15 +3,15 @@ import { useParams } from 'react-router-dom';
 import { useClientDetails } from '@/hooks/useClientDetails';
 import ResponsiveLayout from '@/components/Layout/ResponsiveLayout';
 import StandardPageLayout from '@/components/Layout/StandardPageLayout';
-import ClientBreadcrumb from '@/components/Clients/ClientDetails/ClientBreadcrumb';
 import ClientNavigation from '@/components/Clients/ClientDetails/ClientNavigation';
+import ClientPageHeader from '@/components/Layout/ClientPageHeader';
 import GeneralLedgerUploader from '@/components/Accounting/GeneralLedgerUploader';
 import DataReimportUtil from '@/components/Accounting/DataReimportUtil';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const GeneralLedgerUpload = () => {
-  const { orgNumber } = useParams<{ orgNumber: string }>();
-  const { data: client, isLoading, error } = useClientDetails(orgNumber || '');
+  const { clientId } = useParams<{ clientId: string }>();
+  const { data: client, isLoading, error } = useClientDetails(clientId || '');
 
   if (isLoading) {
     return (
@@ -33,7 +33,7 @@ const GeneralLedgerUpload = () => {
           <div className="text-center py-12">
             <h1 className="text-2xl font-bold mb-4">Klient ikke funnet</h1>
             <p className="text-muted-foreground">
-              Kunne ikke finne klient med organisasjonsnummer {orgNumber}
+              Kunne ikke finne klient med ID {clientId}
             </p>
           </div>
         </StandardPageLayout>
@@ -45,8 +45,11 @@ const GeneralLedgerUpload = () => {
     <ResponsiveLayout>
       <StandardPageLayout 
         header={
-          <div className="space-y-4">
-            <ClientBreadcrumb client={client} />
+          <div className="space-y-0">
+            <ClientPageHeader 
+              clientName={client.company_name} 
+              orgNumber={client.org_number}
+            />
             <ClientNavigation />
           </div>
         }

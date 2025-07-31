@@ -20,14 +20,13 @@ interface ClientNavigationProps {
 }
 
 const ClientNavigation = ({ activeTab, onTabChange }: ClientNavigationProps) => {
-  const { orgNumber } = useParams<{ orgNumber: string }>();
+  const { clientId } = useParams<{ clientId: string }>();
   const location = useLocation();
   
   const tabs = [
-    { id: 'oversikt', label: 'Oversikt', icon: TrendingUp, path: `/klienter/${orgNumber}/oversikt` },
-    { id: 'hovedbok', label: 'Hovedbok', icon: FileText, path: `/klienter/${orgNumber}/hovedbok` },
-    { id: 'saldobalanse', label: 'Saldobalanse', icon: BarChart3, path: `/klienter/${orgNumber}/saldobalanse` },
-    { id: 'analyse', label: 'Analyse', icon: BarChart3, path: `/klienter/${orgNumber}/analyse` },
+    { id: 'dashboard', label: 'Oversikt', icon: TrendingUp, path: `/clients/${clientId}/dashboard` },
+    { id: 'trial-balance', label: 'Saldobalanse', icon: BarChart3, path: `/clients/${clientId}/trial-balance` },
+    { id: 'general-ledger', label: 'Hovedbok', icon: FileText, path: `/clients/${clientId}/general-ledger` },
   ];
   
   const currentPath = location.pathname;
@@ -38,7 +37,7 @@ const ClientNavigation = ({ activeTab, onTabChange }: ClientNavigationProps) => 
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = currentPath === tab.path || 
-                          (tab.id === 'oversikt' && currentPath === `/klienter/${orgNumber}`);
+                          (tab.id === 'dashboard' && currentPath === `/clients/${clientId}`);
           
           return (
             <Link

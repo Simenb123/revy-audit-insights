@@ -8,27 +8,28 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import ResponsiveLayout from '@/components/Layout/ResponsiveLayout';
 import StandardPageLayout from '@/components/Layout/StandardPageLayout';
-import ClientBreadcrumb from '@/components/Clients/ClientDetails/ClientBreadcrumb';
 import ClientNavigation from '@/components/Clients/ClientDetails/ClientNavigation';
+import ClientPageHeader from '@/components/Layout/ClientPageHeader';
+import ClientRedirect from '@/components/Layout/ClientRedirect';
 import RevisionWorkflow from '@/components/Clients/ClientDetails/RevisionWorkflow';
 import PhaseContent from '@/components/Clients/ClientDetails/PhaseContent';
 import { AuditPhase } from '@/types/revio';
 
 const ClientDetail = () => {
-  const { orgNumber } = useParams<{ orgNumber: string }>();
+  const { clientId } = useParams<{ clientId: string }>();
   const [selectedPhase, setSelectedPhase] = useState<AuditPhase>('overview');
 
   logger.log('🏢 [CLIENT_DETAIL] Component rendered:', {
-    orgNumber,
+    clientId,
     selectedPhase,
     currentPath: window.location.pathname
   });
 
-  // Ensure orgNumber exists before making the query
-  const { data: client, isLoading, error } = useClientDetails(orgNumber || '');
+  // Ensure clientId exists before making the query
+  const { data: client, isLoading, error } = useClientDetails(clientId || '');
 
   logger.log('🏢 [CLIENT_DETAIL] Client query result:', {
-    orgNumber,
+    clientId,
     client: client ? {
       id: client.id,
       name: client.name,
@@ -39,17 +40,19 @@ const ClientDetail = () => {
     error: error?.message
   });
 
-  if (!orgNumber) {
-    logger.error('❌ [CLIENT_DETAIL] No orgNumber in URL params');
+  if (!clientId) {
+    logger.error('❌ [CLIENT_DETAIL] No clientId in URL params');
     return (
-      <div className="text-center py-12">
-        <Alert variant="destructive" className="max-w-md mx-auto">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            Ugyldig organisasjonsnummer i URL. Gå tilbake til klientoversikten.
-          </AlertDescription>
-        </Alert>
-      </div>
+      <ResponsiveLayout>
+        <StandardPageLayout>
+          <div className="text-center py-12">
+            <h1 className="text-2xl font-bold mb-4">Ugyldig klient-ID</h1>
+            <p className="text-muted-foreground">
+              Klient-ID mangler i URL-en
+            </p>
+          </div>
+        </StandardPageLayout>
+      </ResponsiveLayout>
     );
   }
 
@@ -87,7 +90,7 @@ const ClientDetail = () => {
   }
 
   if (!client) {
-    logger.error('❌ [CLIENT_DETAIL] No client found for orgNumber:', orgNumber);
+    logger.error('❌ [CLIENT_DETAIL] No client found for clientId:', clientId);
     return (
       <ResponsiveLayout>
         <StandardPageLayout>
@@ -95,8 +98,8 @@ const ClientDetail = () => {
             <Alert variant="destructive" className="max-w-md mx-auto">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                Kunne ikke finne klient med organisasjonsnummer {orgNumber}. 
-                Kontroller at nummeret er korrekt eller at du har tilgang til denne klienten.
+                Kunne ikke finne klient med ID {clientId}. 
+                Kontroller at ID-en er korrekt eller at du har tilgang til denne klienten.
               </AlertDescription>
             </Alert>
           </div>
@@ -109,7 +112,7 @@ const ClientDetail = () => {
   if (!client.id || client.id.trim() === '') {
     logger.error('❌ [CLIENT_DETAIL] Client loaded but ID is missing:', {
       client,
-      orgNumber
+      clientId
     });
     return (
       <ResponsiveLayout>
@@ -144,28 +147,37 @@ const ClientDetail = () => {
     <ResponsiveLayout>
       <StandardPageLayout 
         header={
-          <div className="space-y-4">
-            <ClientBreadcrumb client={client} />
+          <div className="space-y-0">
+            <ClientPageHeader 
+              clientName={client.company_name} 
+              orgNumber={client.org_number}
+            />
             <ClientNavigation />
           </div>
         }
       >
-        <Routes>
-          <Route 
-            path="/" 
-            element={
-              <div className="space-y-4">
-                <RevisionWorkflow 
-                  currentPhase={client.phase || 'overview'} 
-                  progress={client.progress || 0}
-                  onPhaseClick={handlePhaseClick}
-                  clientId={client.id}
-                />
-                <PhaseContent phase={selectedPhase} client={client} />
-              </div>
-            } 
-          />
-        </Routes>
+        <div className="space-y-6">
+          {/* Overview Content */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Revision Workflow */}
+            <div className="lg:col-span-2">
+              <RevisionWorkflow 
+                currentPhase={client.phase}
+                progress={client.progress || 0}
+                onPhaseClick={setSelectedPhase}
+                clientId={client.id}
+              />
+            </div>
+            
+            {/* Phase-specific content */}
+            <div className="lg:col-span-1">
+              <PhaseContent 
+                phase={selectedPhase} 
+                client={client}
+              />
+            </div>
+          </div>
+        </div>
       </StandardPageLayout>
     </ResponsiveLayout>
   );
