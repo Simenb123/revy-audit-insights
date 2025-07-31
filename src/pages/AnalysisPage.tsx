@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useClientDetails } from '@/hooks/useClientDetails';
+import { useClientLookup } from '@/hooks/useClientLookup';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
 import StickyClientLayout from '@/components/Layout/StickyClientLayout';
 import ClientNavigation from '@/components/Clients/ClientDetails/ClientNavigation';
@@ -8,9 +9,13 @@ import AccountingExplorer from '@/components/DataAnalysis/AccountingExplorer';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const AnalysisPage = () => {
-  const { orgNumber } = useParams<{ orgNumber: string }>();
-  const { data: client, isLoading, error } = useClientDetails(orgNumber || '');
+  const { clientId } = useParams<{ clientId: string }>();
+  const { data: lookupResult, isLoading: lookupLoading } = useClientLookup(clientId);
+  const actualClientId = lookupResult?.id || clientId;
+  const { data: client, isLoading: clientLoading, error } = useClientDetails(actualClientId || '');
   const { setSelectedClientId } = useFiscalYear();
+  
+  const isLoading = lookupLoading || clientLoading;
 
   // Set the selected client ID when client data is loaded
   useEffect(() => {
@@ -36,7 +41,7 @@ const AnalysisPage = () => {
         <div className="text-center py-12">
           <h1 className="text-2xl font-bold mb-4">Klient ikke funnet</h1>
           <p className="text-muted-foreground">
-            Kunne ikke finne klient med organisasjonsnummer {orgNumber}
+            Kunne ikke finne klient med ID {clientId}
           </p>
         </div>
       </div>
