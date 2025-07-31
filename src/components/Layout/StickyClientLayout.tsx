@@ -17,14 +17,14 @@ const StickyClientLayout: React.FC<StickyClientLayoutProps> = ({
   children
 }) => {
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col h-full">
       <ClientContextHeader 
         clientName={clientName}
         orgNumber={orgNumber}
         pageTitle={pageTitle}
         showBackButton={showBackButton}
       />
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 min-h-0">
         {children}
       </div>
     </div>

@@ -49,16 +49,20 @@ const AnalysisPage = () => {
       orgNumber={client.org_number}
       pageTitle="Dataanalyse"
     >
-      <ClientNavigation />
-      
-      <div className="space-y-6 p-6">
-        <div>
-          <p className="text-muted-foreground">
-            Utforsk hovedbok, saldobalanse og regnskapstransaksjoner for {client.name}
-          </p>
-        </div>
+      <div className="flex flex-col h-full">
+        <ClientNavigation />
         
-        <AccountingExplorer clientId={client.id} />
+        <div className="flex-1 overflow-auto">
+          <div className="space-y-6 p-6">
+            <div>
+              <p className="text-muted-foreground">
+                Utforsk hovedbok, saldobalanse og regnskapstransaksjoner for {client.name}
+              </p>
+            </div>
+            
+            <AccountingExplorer clientId={client.id} />
+          </div>
+        </div>
       </div>
     </StickyClientLayout>
   );

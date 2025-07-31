@@ -50,20 +50,24 @@ const GeneralLedgerUpload = () => {
       orgNumber={client.org_number}
       pageTitle="Hovedbok opplasting"
     >
-      <ClientNavigation />
-      
-      <div className="space-y-6 p-6">
-        <DataReimportUtil 
-          clientId={client.id}
-          clientName={client.company_name || 'Ukjent klient'}
-        />
+      <div className="flex flex-col h-full">
+        <ClientNavigation />
         
-        <GeneralLedgerUploader 
-          clientId={client.id}
-          onUploadComplete={() => {
-            // Could navigate back or show success message
-          }}
-        />
+        <div className="flex-1 overflow-auto">
+          <div className="space-y-6 p-6">
+            <DataReimportUtil 
+              clientId={client.id}
+              clientName={client.company_name || 'Ukjent klient'}
+            />
+            
+            <GeneralLedgerUploader 
+              clientId={client.id}
+              onUploadComplete={() => {
+                // Could navigate back or show success message
+              }}
+            />
+          </div>
+        </div>
       </div>
     </StickyClientLayout>
   );

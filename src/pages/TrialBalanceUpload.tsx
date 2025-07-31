@@ -49,15 +49,19 @@ const TrialBalanceUpload = () => {
       orgNumber={client.org_number}
       pageTitle="Saldobalanse opplasting"
     >
-      <ClientNavigation />
-      
-      <div className="space-y-6 p-6">
-        <TrialBalanceUploader 
-          clientId={client.id}
-          onUploadComplete={() => {
-            // Could navigate back or show success message
-          }}
-        />
+      <div className="flex flex-col h-full">
+        <ClientNavigation />
+        
+        <div className="flex-1 overflow-auto">
+          <div className="space-y-6 p-6">
+            <TrialBalanceUploader 
+              clientId={client.id}
+              onUploadComplete={() => {
+                // Could navigate back or show success message
+              }}
+            />
+          </div>
+        </div>
       </div>
     </StickyClientLayout>
   );

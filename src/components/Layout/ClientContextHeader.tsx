@@ -21,7 +21,7 @@ const ClientContextHeader: React.FC<ClientContextHeaderProps> = ({
   const { selectedFiscalYear } = useFiscalYear();
 
   return (
-    <div className="sticky top-[var(--header-height)] z-40 bg-background border-b border-border">
+    <div className="sticky top-0 z-40 bg-background border-b border-border">
       <div className="px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">

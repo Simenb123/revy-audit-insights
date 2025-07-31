@@ -71,13 +71,17 @@ const AccountingData = () => {
       orgNumber={client.org_number}
       pageTitle="Regnskapsdata"
     >
-      <ClientNavigation />
-      
-      <div className="space-y-6 p-6">
-        <RegnskapsDataManager
-          clientId={client.id}
-          clientName={client.name}
-        />
+      <div className="flex flex-col h-full">
+        <ClientNavigation />
+        
+        <div className="flex-1 overflow-auto">
+          <div className="space-y-6 p-6">
+            <RegnskapsDataManager 
+              clientId={client.id}
+              clientName={client.name}
+            />
+          </div>
+        </div>
       </div>
     </StickyClientLayout>
   );
