@@ -130,9 +130,6 @@ const ResizableLeftSidebar = () => {
     >
       <SidebarHeader className="p-1">
         <div className="flex items-center justify-center">
-          {!isCollapsed && (
-            <h3 className="text-xs font-medium text-sidebar-foreground px-1">Navigation</h3>
-          )}
           <SidebarTrigger className="h-8 w-8 ml-auto" />
         </div>
       </SidebarHeader>

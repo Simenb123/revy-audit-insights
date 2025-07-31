@@ -32,7 +32,7 @@ const ClientNavigation = ({ activeTab, onTabChange }: ClientNavigationProps) => 
   const currentPath = location.pathname;
 
   return (
-    <div className="sticky top-[var(--client-header-height)] z-40 bg-background border-b">
+    <div className="sticky top-[calc(var(--global-header-height)+var(--sub-header-height))] z-40 bg-background border-b">
       <div className="flex space-x-1 overflow-x-auto px-6">
         {tabs.map((tab) => {
           const Icon = tab.icon;

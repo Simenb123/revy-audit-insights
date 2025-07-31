@@ -180,9 +180,9 @@ const ResizableRightSidebar = () => {
 
   return (
     <motion.div
-      className="sticky top-[var(--header-height)] bg-background border-l flex flex-col z-10"
+      className="sticky top-[calc(var(--global-header-height)+var(--sub-header-height))] bg-background border-l flex flex-col z-10"
       style={{
-        height: 'calc(100vh - var(--header-height))'
+        height: 'calc(100vh - var(--global-header-height) - var(--sub-header-height))'
       }}
       animate={{ width: isCollapsed ? 32 : width }}
       transition={{ duration: 0.2, ease: 'easeInOut' }}
@@ -211,28 +211,9 @@ const ResizableRightSidebar = () => {
 
       {/* Expanded content */}
       {!isCollapsed && (
-        <>
-          {/* Sticky Header */}
-          <div className="sticky top-0 bg-background border-b z-50">
-            <div className="flex items-center justify-between p-3 bg-muted/30 border-t-2 border-t-border/50">
-              <h3 className="text-sm font-medium truncate">{getPageTitle()}</h3>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6 hover:bg-muted transition-colors"
-                onClick={toggleSidebar}
-                title="Kollaps sidebar (Ctrl+Shift+R)"
-              >
-                <ChevronRight className="h-3 w-3" />
-              </Button>
-            </div>
-          </div>
-
-          {/* Content */}
-          <ScrollArea className="flex-1">
-            {renderContent()}
-          </ScrollArea>
-        </>
+        <div className="flex-1 flex flex-col min-h-0">
+          {renderContent()}
+        </div>
       )}
     </motion.div>
   );

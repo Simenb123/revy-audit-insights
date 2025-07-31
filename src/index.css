@@ -29,6 +29,8 @@
     --radius: 0.5rem;
 
     /* Layout heights */
+    --global-header-height: 48px;
+    --sub-header-height: 40px;
     --client-header-height: 60px;
 
     /* Sidebar farger - lys variant */
@@ -74,7 +76,7 @@
   /* CSS Grid Layout System */
   .app-grid {
     display: grid;
-    min-height: calc(100vh - var(--header-height));
+    min-height: calc(100vh - var(--global-header-height));
     /* grid-template-columns will be set dynamically by GridLayoutContainer */
   }
 
@@ -82,7 +84,7 @@
   @media (max-width: 767px) {
     .app-grid {
       display: block !important;
-      min-height: calc(100vh - var(--header-height));
+      min-height: calc(100vh - var(--global-header-height));
     }
     
     .app-grid > *:first-child,
@@ -93,7 +95,7 @@
     .app-grid > *:nth-child(2) {
       display: block !important;
       width: 100% !important;
-      min-height: calc(100vh - var(--header-height));
+      min-height: calc(100vh - var(--global-header-height));
       overflow: auto;
     }
   }
