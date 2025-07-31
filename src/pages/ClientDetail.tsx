@@ -146,23 +146,30 @@ const ClientDetail = () => {
       orgNumber={client.org_number}
       pageTitle="Oversikt"
     >
-      <ClientNavigation />
-      
       <div className="space-y-6 p-6">
-        {/* Overview Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Revision Workflow */}
-          <div className="lg:col-span-2">
+        {/* Vertical Layout with Navigation and Content */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Phase Navigation */}
+          <div className="lg:col-span-1">
+            <ClientNavigation 
+              currentPhase={client.phase}
+              selectedPhase={selectedPhase}
+              onPhaseSelect={setSelectedPhase}
+              clientId={client.id}
+            />
+          </div>
+          
+          {/* Main Content Area */}
+          <div className="lg:col-span-3 space-y-6">
+            {/* Revision Workflow Progress */}
             <RevisionWorkflow 
               currentPhase={client.phase}
               progress={client.progress || 0}
               onPhaseClick={setSelectedPhase}
               clientId={client.id}
             />
-          </div>
-          
-          {/* Phase-specific content */}
-          <div className="lg:col-span-1">
+            
+            {/* Phase-specific content */}
             <PhaseContent 
               phase={selectedPhase} 
               client={client}

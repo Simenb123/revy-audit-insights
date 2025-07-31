@@ -72,7 +72,7 @@ const AccountingData = () => {
       pageTitle="Regnskapsdata"
     >
       <div className="flex flex-col h-full">
-        <ClientNavigation />
+        {/* Navigation handled by layout */}
         
         <div className="flex-1 overflow-auto">
           <div className="space-y-6 p-6">

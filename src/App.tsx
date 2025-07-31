@@ -70,6 +70,7 @@ function App() {
                   <Route path="clients" element={<ProtectedRoute><ClientsOverview /></ProtectedRoute>} />
                   <Route path="clients/:clientId" element={<ProtectedRoute><ClientDetail /></ProtectedRoute>} />
                   <Route path="clients/:clientId/dashboard" element={<ProtectedRoute><ClientDetail /></ProtectedRoute>} />
+                  <Route path="clients/:clientId/:phase" element={<ProtectedRoute><ClientDetail /></ProtectedRoute>} />
                   <Route path="clients/:clientId/trial-balance" element={<ProtectedRoute><TrialBalanceUpload /></ProtectedRoute>} />
                   <Route path="clients/:clientId/general-ledger" element={<ProtectedRoute><GeneralLedgerUpload /></ProtectedRoute>} />
                   

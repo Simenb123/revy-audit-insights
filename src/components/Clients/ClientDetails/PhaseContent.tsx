@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { AuditPhase, Client } from '@/types/revio';
-import ClientOverviewDashboard from './ClientOverviewDashboard';
+import OverviewPhase from './Phases/OverviewPhase';
 import EngagementPhase from './Phases/EngagementPhase';
 import PlanningPhase from './Phases/PlanningPhase';
 import RiskAssessmentPhase from './Phases/RiskAssessmentPhase';
@@ -17,7 +17,7 @@ interface PhaseContentProps {
 const PhaseContent = ({ phase, client }: PhaseContentProps) => {
   switch (phase) {
     case 'overview':
-      return <ClientOverviewDashboard client={client} />;
+      return <OverviewPhase client={client} />;
     case 'engagement':
       return <EngagementPhase client={client} />;
     case 'planning':
@@ -31,7 +31,7 @@ const PhaseContent = ({ phase, client }: PhaseContentProps) => {
     case 'reporting':
       return <ReportingPhase client={client} />;
     default:
-      return <ClientOverviewDashboard client={client} />;
+      return <OverviewPhase client={client} />;
   }
 };
 
