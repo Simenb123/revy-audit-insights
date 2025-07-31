@@ -41,25 +41,25 @@ const AiRevyCard: React.FC<AiRevyCardProps> = ({
   const systemPrompt = getSystemPrompt(variant)
 
   return (
-    <Card className={cn('h-full w-full flex flex-col shadow-none border-none rounded-none', className)}>
-      <CardHeader className="p-1 pb-0">
+    <div className={cn('h-full w-full flex flex-col', className)}>
+      <div className="p-2 border-b flex-shrink-0">
         <div className="flex items-center gap-2">
           <RevyAvatar size="sm" />
           <div>
-            <CardTitle className="text-sm">AI-Revy</CardTitle>
-            <CardDescription className="text-xs">{systemPrompt}</CardDescription>
+            <div className="text-sm font-medium">AI-Revy</div>
+            <div className="text-xs text-muted-foreground">{systemPrompt}</div>
           </div>
         </div>
-      </CardHeader>
-      <CardContent className="p-1 pb-0 flex flex-col flex-1">
+      </div>
+      <div className="flex flex-col flex-1 min-h-0">
         <SmartReviAssistant
           embedded
           context={context}
           clientData={clientData}
           userRole={userRole}
         />
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }
 

@@ -21,9 +21,9 @@ const ClientContextHeader: React.FC<ClientContextHeaderProps> = ({
   const { selectedFiscalYear } = useFiscalYear();
 
   return (
-    <div className="sticky top-0 z-40 bg-background border-b border-border">
-      <div className="px-6 py-4">
-        <div className="flex items-center justify-between">
+    <div className="sticky top-0 z-40 bg-background border-b border-border" style={{ height: 'var(--client-header-height)' }}>
+      <div className="px-6 py-4 h-full flex items-center">
+        <div className="flex items-center justify-between w-full">
           <div className="flex items-center gap-4">
             {showBackButton && (
               <Button asChild variant="ghost" size="sm">

@@ -60,33 +60,35 @@ const StandaloneRevyAssistant = ({
         
         <KnowledgeStatusIndicator />
       </CardHeader>
-      <CardContent className="p-0 h-full flex-grow flex flex-col">
-        <div className="flex-1 min-h-0">
+      <CardContent className="p-0 flex flex-col h-full">
+        <div className="flex-grow overflow-y-auto">
           <RevyMessageList
             messages={messages}
             isTyping={isLoading}
           />
         </div>
-        <div className="p-4 border-t flex-shrink-0">
-          <div className="flex items-center space-x-2">
-            <Input
-              type="text"
-              placeholder={`Spør ${selectedVariant?.display_name || 'AI-Revy'} om ${contextDisplayName.toLowerCase()}...`}
-              value={input}
-              onChange={onInputChange}
-              onKeyDown={onKeyDown}
-              disabled={isLoading}
-              className="flex-grow"
-            />
-            <Button 
-              type="submit" 
-              onClick={onSendMessage} 
-              disabled={isLoading || !input.trim()}
-              className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
-            >
-              {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
-              {isLoading ? 'Laster...' : 'Send'}
-            </Button>
+        <div className="flex-shrink-0 sticky bottom-0 bg-background border-t">
+          <div className="p-4">
+            <div className="flex items-center space-x-2">
+              <Input
+                type="text"
+                placeholder={`Spør ${selectedVariant?.display_name || 'AI-Revy'} om ${contextDisplayName.toLowerCase()}...`}
+                value={input}
+                onChange={onInputChange}
+                onKeyDown={onKeyDown}
+                disabled={isLoading}
+                className="flex-grow"
+              />
+              <Button 
+                type="submit" 
+                onClick={onSendMessage} 
+                disabled={isLoading || !input.trim()}
+                className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+              >
+                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                {isLoading ? 'Laster...' : 'Send'}
+              </Button>
+            </div>
           </div>
         </div>
       </CardContent>

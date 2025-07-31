@@ -28,6 +28,9 @@
     --ring: 175 80% 35%;
     --radius: 0.5rem;
 
+    /* Layout heights */
+    --client-header-height: 60px;
+
     /* Sidebar farger - lys variant */
     --sidebar-background: var(--revio-500);
     --sidebar-foreground: 0 0% 100%;

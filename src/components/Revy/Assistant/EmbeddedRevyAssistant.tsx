@@ -44,36 +44,34 @@ const EmbeddedRevyAssistant: React.FC<EmbeddedRevyAssistantProps> = ({
         </Badge>
       </div>
 
-      {/* Messages area - scrollable */}
-      <div className="flex-1 overflow-hidden min-h-0">
-        <ScrollArea className="h-full">
-          <div className="space-y-0.5 px-1 pb-1">
-            {messages.length === 0 ? (
-              <div className="text-xs text-muted-foreground p-2 text-center">
-                Spør meg om hjelp med revisjonen
-              </div>
-            ) : (
-              messages.map((message) => (
-                <MessageItem 
-                  key={message.id} 
-                  message={message} 
-                  compact={true}
-                />
-              ))
-            )}
-            {isLoading && (
-              <div className="flex items-center gap-2 text-xs text-muted-foreground p-2">
-                <Loader2 className="h-3 w-3 animate-spin" />
-                AI-Revy tenker...
-              </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
-        </ScrollArea>
+      {/* Messages area - flex-grow with overflow */}
+      <div className="flex-grow overflow-y-auto">
+        <div className="space-y-0.5 px-1 pb-1 min-h-full">
+          {messages.length === 0 ? (
+            <div className="text-xs text-muted-foreground p-2 text-center">
+              Spør meg om hjelp med revisjonen
+            </div>
+          ) : (
+            messages.map((message) => (
+              <MessageItem 
+                key={message.id} 
+                message={message} 
+                compact={true}
+              />
+            ))
+          )}
+          {isLoading && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground p-2">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              AI-Revy tenker...
+            </div>
+          )}
+          <div ref={messagesEndRef} />
+        </div>
       </div>
 
-      {/* Input area - sticky at bottom */}
-      <div className="sticky bottom-0 bg-background border-t p-1 flex gap-1">
+      {/* Input area - flex-shrink-0 and sticky bottom */}
+      <div className="flex-shrink-0 sticky bottom-0 bg-background border-t p-1 flex gap-1">
         <Input
           value={input}
           onChange={onInputChange}

@@ -212,18 +212,20 @@ const ResizableRightSidebar = () => {
       {/* Expanded content */}
       {!isCollapsed && (
         <>
-          {/* Header with top border line */}
-          <div className="flex items-center justify-between p-3 border-b bg-muted/30 border-t-2 border-t-border/50">
-            <h3 className="text-sm font-medium truncate">{getPageTitle()}</h3>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6 hover:bg-muted transition-colors"
-              onClick={toggleSidebar}
-              title="Kollaps sidebar (Ctrl+Shift+R)"
-            >
-              <ChevronRight className="h-3 w-3" />
-            </Button>
+          {/* Sticky Header */}
+          <div className="sticky top-0 bg-background border-b z-50">
+            <div className="flex items-center justify-between p-3 bg-muted/30 border-t-2 border-t-border/50">
+              <h3 className="text-sm font-medium truncate">{getPageTitle()}</h3>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 hover:bg-muted transition-colors"
+                onClick={toggleSidebar}
+                title="Kollaps sidebar (Ctrl+Shift+R)"
+              >
+                <ChevronRight className="h-3 w-3" />
+              </Button>
+            </div>
           </div>
 
           {/* Content */}

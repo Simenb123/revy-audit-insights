@@ -14,6 +14,7 @@ interface ResponsiveTabsProps {
   onTabChange: (tabId: string) => void;
   className?: string;
   variant?: 'default' | 'underline';
+  sticky?: boolean;
 }
 
 const ResponsiveTabs = ({ 
@@ -21,11 +22,13 @@ const ResponsiveTabs = ({
   activeTab, 
   onTabChange, 
   className,
-  variant = 'default'
+  variant = 'default',
+  sticky = false
 }: ResponsiveTabsProps) => {
   return (
     <div className={cn(
       "border-b bg-background",
+      sticky && "sticky top-[var(--client-header-height)] z-40",
       className
     )}>
       <div className="flex space-x-2 overflow-x-auto px-4 py-2 scrollbar-hide">
