@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Client } from '@/types/revio';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -81,9 +82,11 @@ const OverviewPhase = ({ client }: OverviewPhaseProps) => {
                 ) : (
                   <AlertCircle className="h-5 w-5 text-orange-500" />
                 )}
-                <Button size="sm" variant="outline" className="flex items-center gap-1">
-                  <ExternalLink className="h-3 w-3" />
-                  {hasTrialBalance ? 'Vis' : 'Last opp'}
+                <Button size="sm" variant="outline" className="flex items-center gap-1" asChild>
+                  <Link to={hasTrialBalance ? `/clients/${client.id}/analysis` : `/clients/${client.id}/trial-balance`}>
+                    <ExternalLink className="h-3 w-3" />
+                    {hasTrialBalance ? 'Vis' : 'Last opp'}
+                  </Link>
                 </Button>
               </div>
             </div>
@@ -99,9 +102,11 @@ const OverviewPhase = ({ client }: OverviewPhaseProps) => {
                 ) : (
                   <AlertCircle className="h-5 w-5 text-orange-500" />
                 )}
-                <Button size="sm" variant="outline" className="flex items-center gap-1">
-                  <ExternalLink className="h-3 w-3" />
-                  {hasGeneralLedger ? 'Vis' : 'Last opp'}
+                <Button size="sm" variant="outline" className="flex items-center gap-1" asChild>
+                  <Link to={hasGeneralLedger ? `/clients/${client.id}/analysis` : `/clients/${client.id}/general-ledger`}>
+                    <ExternalLink className="h-3 w-3" />
+                    {hasGeneralLedger ? 'Vis' : 'Last opp'}
+                  </Link>
                 </Button>
               </div>
             </div>

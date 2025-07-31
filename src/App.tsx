@@ -73,6 +73,7 @@ function App() {
                   <Route path="clients/:clientId/:phase" element={<ProtectedRoute><ClientDetail /></ProtectedRoute>} />
                   <Route path="clients/:clientId/trial-balance" element={<ProtectedRoute><TrialBalanceUpload /></ProtectedRoute>} />
                   <Route path="clients/:clientId/general-ledger" element={<ProtectedRoute><GeneralLedgerUpload /></ProtectedRoute>} />
+                  <Route path="clients/:clientId/analysis" element={<ProtectedRoute><AnalysisPage /></ProtectedRoute>} />
                   
                   {/* Legacy routes for backward compatibility */}
                   <Route path="klienter" element={<ProtectedRoute><ClientsOverview /></ProtectedRoute>} />

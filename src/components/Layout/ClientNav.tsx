@@ -15,21 +15,21 @@ import { cn } from "@/lib/utils";
 
 const ClientNav = () => {
   const location = useLocation();
-  const { orgNumber } = useParams<{ orgNumber: string }>();
+  const { clientId } = useParams<{ clientId: string }>();
   
   const clientNavItems = [
     {
-      to: `/klienter/${orgNumber}`,
+      to: `/clients/${clientId}`,
       icon: Home,
       label: "Oversikt"
     },
     {
-      to: `/klienter/${orgNumber}/regnskap`,
+      to: `/clients/${clientId}/analysis`,
       icon: FileText,
       label: "Regnskap"
     },
     {
-      to: `/klienter/${orgNumber}/analyser`,
+      to: `/clients/${clientId}/analysis`,
       icon: BarChart3,
       label: "Analyser"
     }
@@ -37,28 +37,16 @@ const ClientNav = () => {
 
   const dataItems = [
     {
-      to: `/klienter/${orgNumber}/regnskapsdata`,
+      to: `/clients/${clientId}/trial-balance`,
       icon: Database,
-      label: "Regnskapsdata",
-      description: "Kontoplan, Saldobalanse, Hovedbok"
+      label: "Saldobalanse",
+      description: "Last opp saldobalanse"
     },
     {
-      to: `/klienter/${orgNumber}/spesialdata`,
+      to: `/clients/${clientId}/general-ledger`,
       icon: Package,
-      label: "Spesialdata",
-      description: "Varelager, Kunde/Leverandørreskontro"
-    },
-    {
-      to: `/klienter/${orgNumber}/transaksjoner`,
-      icon: Receipt,
-      label: "Transaksjoner",
-      description: "Salgsordre, Fakturaer"
-    },
-    {
-      to: `/klienter/${orgNumber}/import`,
-      icon: Upload,
-      label: "SAF-T Import",
-      description: "Komplett import"
+      label: "Hovedbok",
+      description: "Last opp hovedbok"
     }
   ];
 
@@ -71,7 +59,7 @@ const ClientNav = () => {
       {/* Back to clients */}
       <div className="space-y-2">
         <Link
-          to="/klienter"
+          to="/clients"
           className="flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
         >
           <ArrowLeft className="h-4 w-4" />
