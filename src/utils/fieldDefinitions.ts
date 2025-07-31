@@ -116,7 +116,7 @@ export async function suggestEnhancedColumnMappings(
     getHistoricalMappings(clientId, fileType)
   ]);
 
-  const suggestions = [];
+  const rawSuggestions = [];
 
   for (const header of headers) {
     let bestMatch: FieldDefinition | null = null;
@@ -127,7 +127,7 @@ export async function suggestEnhancedColumnMappings(
     if (historicalMappings[header]) {
       const historicalField = fieldDefinitions.find(f => f.field_key === historicalMappings[header]);
       if (historicalField) {
-        suggestions.push({
+        rawSuggestions.push({
           sourceColumn: header,
           targetField: historicalField.field_key,
           confidence: 0.95,
@@ -154,7 +154,7 @@ export async function suggestEnhancedColumnMappings(
     }
 
     if (bestMatch && bestConfidence > 0.3) {
-      suggestions.push({
+      rawSuggestions.push({
         sourceColumn: header,
         targetField: bestMatch.field_key,
         confidence: bestConfidence,
@@ -163,7 +163,19 @@ export async function suggestEnhancedColumnMappings(
     }
   }
 
-  return suggestions.sort((a, b) => b.confidence - a.confidence);
+  // Ensure unique field assignments: sort by confidence and keep only highest confidence match per field
+  const sortedSuggestions = rawSuggestions.sort((a, b) => b.confidence - a.confidence);
+  const usedFields = new Set<string>();
+  const uniqueSuggestions = [];
+
+  for (const suggestion of sortedSuggestions) {
+    if (!usedFields.has(suggestion.targetField)) {
+      usedFields.add(suggestion.targetField);
+      uniqueSuggestions.push(suggestion);
+    }
+  }
+
+  return uniqueSuggestions.sort((a, b) => b.confidence - a.confidence);
 }
 
 // Enhanced confidence calculation with detailed reasoning
@@ -215,12 +227,31 @@ function calculateEnhancedFieldConfidence(
     reasons.push(norwegianBoost.reason);
   }
 
-  // Content validation
+  // Content validation including account_name specific validation
   if (sampleData && headers && confidence > 0.4) {
     const columnIndex = headers.indexOf(header);
     if (columnIndex !== -1) {
       const columnData = sampleData.map(row => row[columnIndex] || '').filter(val => val.trim() !== '');
       const contentScore = validateContentTypeEnhanced(columnData, field.data_type);
+      
+      // Special validation for account_name to distinguish from account_number
+      if (field.field_key === 'account_name') {
+        const alphabeticValues = columnData.filter(val => {
+          const cleaned = val.trim();
+          if (!cleaned) return false;
+          const alphaCount = (cleaned.match(/[a-zA-ZæøåÆØÅ]/g) || []).length;
+          return alphaCount / cleaned.length > 0.3;
+        }).length;
+        const alphabeticRatio = alphabeticValues / Math.max(columnData.length, 1);
+        
+        if (alphabeticRatio > 0.7) {
+          confidence = Math.min(confidence * 1.3, 0.99);
+          reasons.push(`Inneholdet er hovedsakelig tekst (${Math.round(alphabeticRatio * 100)}% alfabetiske tegn)`);
+        } else if (alphabeticRatio < 0.3) {
+          confidence *= 0.5;
+          reasons.push(`Innholdet er hovedsakelig tall, ikke tekst (${Math.round(alphabeticRatio * 100)}% alfabetiske tegn)`);
+        }
+      }
       
       if (contentScore.score > 0.8) {
         confidence = Math.min(confidence * 1.2, 0.99);

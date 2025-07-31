@@ -391,7 +391,7 @@ export function suggestColumnMappings(
   sampleData?: string[][],
   historicalMappings?: Record<string, string>
 ): ColumnMapping[] {
-  const suggestions: ColumnMapping[] = [];
+  const rawSuggestions: ColumnMapping[] = [];
 
   for (const header of headers) {
     let bestMatch: FieldDefinition | null = null;
@@ -401,7 +401,7 @@ export function suggestColumnMappings(
     if (historicalMappings && historicalMappings[header]) {
       const historicalField = fieldDefinitions.find(f => f.key === historicalMappings[header]);
       if (historicalField) {
-        suggestions.push({
+        rawSuggestions.push({
           sourceColumn: header,
           targetField: historicalField.key,
           confidence: 0.98 // Very high confidence for exact historical matches
@@ -446,7 +446,7 @@ export function suggestColumnMappings(
 
     // Lower threshold for better suggestions
     if (bestMatch && bestConfidence > 0.25) {
-      suggestions.push({
+      rawSuggestions.push({
         sourceColumn: header,
         targetField: bestMatch.key,
         confidence: Math.min(bestConfidence, 0.99) // Cap at 99% to reserve 100% for perfect matches
@@ -454,7 +454,19 @@ export function suggestColumnMappings(
     }
   }
 
-  return suggestions.sort((a, b) => b.confidence - a.confidence);
+  // Ensure unique field assignments: sort by confidence and keep only highest confidence match per field
+  const sortedSuggestions = rawSuggestions.sort((a, b) => b.confidence - a.confidence);
+  const usedFields = new Set<string>();
+  const uniqueSuggestions: ColumnMapping[] = [];
+
+  for (const suggestion of sortedSuggestions) {
+    if (!usedFields.has(suggestion.targetField)) {
+      usedFields.add(suggestion.targetField);
+      uniqueSuggestions.push(suggestion);
+    }
+  }
+
+  return uniqueSuggestions.sort((a, b) => b.confidence - a.confidence);
 }
 
 // Normalize Norwegian text for better matching
@@ -627,7 +639,18 @@ function applyContextualMatching(
       contextBoosts: [
         { pattern: 'konto', boost: 0.2 },
         { pattern: 'account', boost: 0.15 }
-      ]
+      ],
+      contentValidators: (data) => {
+        // Account names should contain mostly alphabetic characters, not just numbers
+        const alphabeticValues = data.filter(val => {
+          const cleaned = val.trim();
+          if (!cleaned) return false;
+          // Count alphabetic characters
+          const alphaCount = (cleaned.match(/[a-zA-ZæøåÆØÅ]/g) || []).length;
+          return alphaCount / cleaned.length > 0.3; // At least 30% alphabetic
+        }).length;
+        return alphabeticValues / Math.max(data.length, 1);
+      }
     },
     'opening_balance': {
       patterns: ['inngående', 'ingående', 'åpning', 'opening', 'start', 'initial'],

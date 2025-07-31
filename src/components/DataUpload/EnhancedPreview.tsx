@@ -4,8 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { ChevronDown, CheckCircle, AlertCircle, Brain, Zap, RotateCcw } from 'lucide-react';
-import { FilePreview, suggestColumnMappings, ColumnMapping, FieldDefinition } from '@/utils/fileProcessing';
-import { getFieldDefinitions, saveColumnMappingHistory, getHistoricalMappings } from '@/utils/fieldDefinitions';
+import { FilePreview, ColumnMapping, FieldDefinition } from '@/utils/fileProcessing';
+import { getFieldDefinitions, saveColumnMappingHistory, getHistoricalMappings, suggestEnhancedColumnMappings } from '@/utils/fieldDefinitions';
 
 interface EnhancedPreviewProps {
   preview: FilePreview;
@@ -54,11 +54,12 @@ const EnhancedPreview: React.FC<EnhancedPreviewProps> = ({
       }));
 
       // Generate AI suggestions with enhanced algorithm
-      const suggestions = suggestColumnMappings(
+      const suggestions = await suggestEnhancedColumnMappings(
+        clientId,
+        fileType,
         currentHeaders,
-        convertedFields,
         preview.rows.slice(0, 10), // Sample data for content validation
-        historicalMappings
+        fileName
       );
 
       setSuggestedMappings(suggestions);

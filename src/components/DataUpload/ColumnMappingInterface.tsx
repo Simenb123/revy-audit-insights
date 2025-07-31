@@ -307,35 +307,53 @@ const ColumnMappingInterface = ({
                 {fileColumns.map((column) => (
                   <div
                     key={column}
-                    className="flex items-center justify-between p-2 border rounded"
+                    className="flex flex-col space-y-2 p-3 border rounded"
                   >
-                    <span className="font-mono text-sm">{column}</span>
-                    <Select
-                      value={mapping[column] || ""}
-                      onValueChange={(value) => {
-                        if (value === "none") {
-                          const newMapping = { ...mapping };
-                          delete newMapping[column];
-                          setMapping(newMapping);
-                        } else {
-                          // Remove existing mapping for this standard field
-                          removeMappingForStandardField(value);
-                          handleMappingChange(column, value);
-                        }
-                      }}
-                    >
-                      <SelectTrigger className="w-48">
-                        <SelectValue placeholder="Velg felt" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">Ikke bruk</SelectItem>
-                        {standardFields.map((field) => (
-                          <SelectItem key={field.key} value={field.key}>
-                            {field.label} {field.required && "*"}
-                          </SelectItem>
+                    <div className="flex items-center justify-between">
+                      <span className="font-mono text-sm font-medium">{column}</span>
+                      <Select
+                        value={mapping[column] || ""}
+                        onValueChange={(value) => {
+                          if (value === "none") {
+                            const newMapping = { ...mapping };
+                            delete newMapping[column];
+                            setMapping(newMapping);
+                          } else {
+                            // Remove existing mapping for this standard field
+                            removeMappingForStandardField(value);
+                            handleMappingChange(column, value);
+                          }
+                        }}
+                      >
+                        <SelectTrigger className="w-48">
+                          <SelectValue placeholder="Velg felt" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">Ikke bruk</SelectItem>
+                          {standardFields.map((field) => (
+                            <SelectItem key={field.key} value={field.key}>
+                              {field.label} {field.required && "*"}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {/* Show sample data for this column */}
+                    <div className="bg-muted/30 p-2 rounded text-xs">
+                      <div className="text-muted-foreground mb-1">Eksempeldata:</div>
+                      <div className="space-y-1">
+                        {sampleData.slice(0, 3).map((row, idx) => (
+                          <div key={idx} className="truncate font-mono">
+                            {row[column] || '-'}
+                          </div>
                         ))}
-                      </SelectContent>
-                    </Select>
+                        {sampleData.length > 3 && (
+                          <div className="text-muted-foreground">
+                            ... og {sampleData.length - 3} flere rader
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>
