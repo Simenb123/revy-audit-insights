@@ -2481,6 +2481,7 @@ export type Database = {
           created_at: string
           file_name: string | null
           file_type: string
+          fiscal_year: number | null
           id: string
           is_manual_override: boolean | null
           source_column: string
@@ -2494,6 +2495,7 @@ export type Database = {
           created_at?: string
           file_name?: string | null
           file_type: string
+          fiscal_year?: number | null
           id?: string
           is_manual_override?: boolean | null
           source_column: string
@@ -2507,6 +2509,7 @@ export type Database = {
           created_at?: string
           file_name?: string | null
           file_type?: string
+          fiscal_year?: number | null
           id?: string
           is_manual_override?: boolean | null
           source_column?: string

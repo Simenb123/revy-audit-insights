@@ -1,16 +1,26 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useClientDetails } from '@/hooks/useClientDetails';
+import { useFiscalYear } from '@/contexts/FiscalYearContext';
 import ResponsiveLayout from '@/components/Layout/ResponsiveLayout';
 import StandardPageLayout from '@/components/Layout/StandardPageLayout';
 import ClientBreadcrumb from '@/components/Clients/ClientDetails/ClientBreadcrumb';
 import ClientNavigation from '@/components/Clients/ClientDetails/ClientNavigation';
+import FiscalYearSelector from '@/components/Layout/FiscalYearSelector';
 import TrialBalanceUploader from '@/components/Accounting/TrialBalanceUploader';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const TrialBalanceUpload = () => {
   const { orgNumber } = useParams<{ orgNumber: string }>();
   const { data: client, isLoading, error } = useClientDetails(orgNumber || '');
+  const { setSelectedClientId } = useFiscalYear();
+
+  // Set the selected client ID when client data is loaded
+  useEffect(() => {
+    if (client?.id) {
+      setSelectedClientId(client.id);
+    }
+  }, [client?.id, setSelectedClientId]);
 
   if (isLoading) {
     return (
@@ -51,6 +61,11 @@ const TrialBalanceUpload = () => {
         }
       >
         <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold">Saldobalanse opplasting</h1>
+            <FiscalYearSelector clientName={client.company_name} />
+          </div>
+          
           <TrialBalanceUploader 
             clientId={client.id}
             onUploadComplete={() => {

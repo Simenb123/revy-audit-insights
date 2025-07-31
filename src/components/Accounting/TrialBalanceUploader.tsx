@@ -5,6 +5,7 @@ import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 import { Upload, Database, AlertCircle, Calendar } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useFiscalYear } from '@/contexts/FiscalYearContext';
 import EnhancedPreview from '@/components/DataUpload/EnhancedPreview';
 import { DataManagementPanel } from '@/components/DataUpload/DataManagementPanel';
 import { useAccountingYear } from '@/hooks/useAccountingYear';
@@ -32,6 +33,7 @@ interface TrialBalanceUploaderProps {
 const TrialBalanceUploader = ({ clientId, onUploadComplete }: TrialBalanceUploaderProps) => {
   // Get accounting year for auto-generating version and period dates
   const { accountingYear, isLoading: yearLoading } = useAccountingYear(clientId || '');
+  const { selectedFiscalYear } = useFiscalYear();
   
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<FilePreview | null>(null);

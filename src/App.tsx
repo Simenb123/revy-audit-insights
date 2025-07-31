@@ -8,6 +8,7 @@ import { AuthProvider } from "@/components/Auth/AuthProvider";
 import { RevyContextProvider } from "@/components/RevyContext/RevyContextProvider";
 import { AIGlobalProvider } from "@/components/AI/AIGlobalProvider";
 import { DataCacheProvider } from "@/components/Optimization/DataCache";
+import { FiscalYearProvider } from "@/contexts/FiscalYearContext";
 import AppLayout from "@/components/Layout/AppLayout";
 import { RightSidebarProvider } from "@/components/Layout/RightSidebarContext";
 import ProtectedRoute from "@/components/Auth/ProtectedRoute";
@@ -55,10 +56,11 @@ function App() {
         <DataCacheProvider>
           <AIGlobalProvider>
             <AuthProvider>
-              <BrowserRouter>
-                <ScrollToTop />
-                <RevyContextProvider>
-              <Routes>
+              <FiscalYearProvider>
+                <BrowserRouter>
+                  <ScrollToTop />
+                  <RevyContextProvider>
+                <Routes>
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/setup" element={<OrganizationSetup />} />
                 <Route path="/" element={<RightSidebarProvider><AppLayout /></RightSidebarProvider>}>
@@ -109,11 +111,12 @@ function App() {
                 <Toaster />
               </RevyContextProvider>
             </BrowserRouter>
-          </AuthProvider>
-        </AIGlobalProvider>
-      </DataCacheProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
+          </FiscalYearProvider>
+        </AuthProvider>
+      </AIGlobalProvider>
+    </DataCacheProvider>
+  </TooltipProvider>
+</QueryClientProvider>
 );
 }
 

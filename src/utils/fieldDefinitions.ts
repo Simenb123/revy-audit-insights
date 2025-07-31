@@ -99,10 +99,11 @@ export async function getHistoricalMappings(
 ): Promise<Record<string, string>> {
   let query = supabase
     .from('column_mapping_history')
-    .select('source_column, target_field, confidence_score, file_name, fiscal_year')
+    .select('source_column, target_field, confidence_score, file_name')
     .eq('client_id', clientId)
     .eq('file_type', fileType);
     
+  // Add fiscal year filter if provided
   if (fiscalYear) {
     query = query.eq('fiscal_year', fiscalYear);
   }
