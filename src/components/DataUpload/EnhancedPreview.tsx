@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { CheckCircle, AlertCircle, Brain, Zap } from 'lucide-react';
 import { FilePreview, ColumnMapping, FieldDefinition } from '@/utils/fileProcessing';
 import { getFieldDefinitions, saveColumnMappingHistory, getHistoricalMappings, suggestEnhancedColumnMappings } from '@/utils/fieldDefinitions';
+import { useFiscalYear } from '@/contexts/FiscalYearContext';
 import HeaderRowSelector from './HeaderRowSelector';
 import ColumnMappingTable from './ColumnMappingTable';
 import MappingSummary from './MappingSummary';
@@ -25,6 +26,7 @@ const EnhancedPreview: React.FC<EnhancedPreviewProps> = ({
   onMappingComplete,
   onCancel
 }) => {
+  const { selectedFiscalYear } = useFiscalYear();
   const [fieldDefinitions, setFieldDefinitions] = useState<any[]>([]);
   const [mapping, setMapping] = useState<Record<string, string>>({});
   const [suggestedMappings, setSuggestedMappings] = useState<ColumnMapping[]>([]);
@@ -39,11 +41,11 @@ const EnhancedPreview: React.FC<EnhancedPreviewProps> = ({
       setIsLoading(true);
       
       // Load field definitions from database
-      const fields = await getFieldDefinitions(fileType);
+      const fields = await getFieldDefinitions(fileType, selectedFiscalYear);
       setFieldDefinitions(fields);
 
       // Get historical mappings for this client and file type
-      const historicalMappings = await getHistoricalMappings(clientId, fileType);
+      const historicalMappings = await getHistoricalMappings(clientId, fileType, selectedFiscalYear);
 
       // Convert database fields to FieldDefinition format for AI suggestions
       const convertedFields: FieldDefinition[] = fields.map(f => ({
@@ -60,7 +62,8 @@ const EnhancedPreview: React.FC<EnhancedPreviewProps> = ({
         fileType,
         currentHeaders,
         preview.rows.slice(0, 10), // Sample data for content validation
-        fileName
+        fileName,
+        selectedFiscalYear
       );
 
       setSuggestedMappings(suggestions);
@@ -79,7 +82,7 @@ const EnhancedPreview: React.FC<EnhancedPreviewProps> = ({
     if (clientId && currentHeaders.length > 0) {
       initializeMapping();
     }
-  }, [preview, clientId, fileType, currentHeaders]);
+  }, [preview, clientId, fileType, currentHeaders, selectedFiscalYear]);
 
   const handleMappingChange = (sourceColumn: string, targetField: string) => {
     const newMapping = { ...mapping };
@@ -99,7 +102,8 @@ const EnhancedPreview: React.FC<EnhancedPreviewProps> = ({
         targetField,
         1.0,
         true, // Manual override
-        fileName
+        fileName,
+        selectedFiscalYear
       );
     }
   };

@@ -26,7 +26,7 @@ export interface EnhancedFieldDefinition extends FieldDefinition {
   };
 }
 
-export async function getFieldDefinitions(fileType: string): Promise<FieldDefinition[]> {
+export async function getFieldDefinitions(fileType: string, fiscalYear?: number): Promise<FieldDefinition[]> {
   const { data, error } = await supabase
     .from('field_definitions')
     .select('*')
@@ -39,10 +39,28 @@ export async function getFieldDefinitions(fileType: string): Promise<FieldDefini
     return [];
   }
 
-  return (data || []).map(item => ({
-    ...item,
-    data_type: item.data_type as 'text' | 'number' | 'date'
-  }));
+  return (data || []).map(item => {
+    let field_label = item.field_label;
+    let aliases = [...(item.aliases || [])];
+    
+    // Dynamic fiscal year labels for trial balance
+    if (fileType === 'trial_balance' && fiscalYear) {
+      if (item.field_key === 'opening_balance') {
+        field_label = `Saldo ${fiscalYear - 1}`;
+        aliases = [...aliases, `saldo ${fiscalYear - 1}`, `åpning ${fiscalYear - 1}`, `inngående ${fiscalYear - 1}`];
+      } else if (item.field_key === 'closing_balance') {
+        field_label = `Saldo ${fiscalYear}`;
+        aliases = [...aliases, `saldo ${fiscalYear}`, `slutt ${fiscalYear}`, `utgående ${fiscalYear}`];
+      }
+    }
+    
+    return {
+      ...item,
+      field_label,
+      aliases,
+      data_type: item.data_type as 'text' | 'number' | 'date'
+    };
+  });
 }
 
 export async function saveColumnMappingHistory(
@@ -52,7 +70,8 @@ export async function saveColumnMappingHistory(
   targetField: string,
   confidenceScore: number,
   isManualOverride: boolean,
-  fileName?: string
+  fileName?: string,
+  fiscalYear?: number
 ) {
   const { error } = await supabase
     .from('column_mapping_history')
@@ -65,6 +84,7 @@ export async function saveColumnMappingHistory(
       confidence_score: confidenceScore,
       is_manual_override: isManualOverride,
       file_name: fileName,
+      fiscal_year: fiscalYear,
     });
 
   if (error) {
@@ -74,14 +94,20 @@ export async function saveColumnMappingHistory(
 
 export async function getHistoricalMappings(
   clientId: string,
-  fileType: string
+  fileType: string,
+  fiscalYear?: number
 ): Promise<Record<string, string>> {
-  const { data, error } = await supabase
+  let query = supabase
     .from('column_mapping_history')
-    .select('source_column, target_field, confidence_score, file_name')
+    .select('source_column, target_field, confidence_score, file_name, fiscal_year')
     .eq('client_id', clientId)
-    .eq('file_type', fileType)
-    .order('created_at', { ascending: false });
+    .eq('file_type', fileType);
+    
+  if (fiscalYear) {
+    query = query.eq('fiscal_year', fiscalYear);
+  }
+  
+  const { data, error } = await query.order('created_at', { ascending: false });
 
   if (error) {
     console.error('Error fetching historical mappings:', error);
@@ -109,11 +135,12 @@ export async function suggestEnhancedColumnMappings(
   fileType: string,
   headers: string[],
   sampleData?: string[][],
-  fileName?: string
+  fileName?: string,
+  fiscalYear?: number
 ): Promise<{ sourceColumn: string; targetField: string; confidence: number; reasoning: string }[]> {
   const [fieldDefinitions, historicalMappings] = await Promise.all([
-    getFieldDefinitions(fileType),
-    getHistoricalMappings(clientId, fileType)
+    getFieldDefinitions(fileType, fiscalYear),
+    getHistoricalMappings(clientId, fileType, fiscalYear)
   ]);
 
   const rawSuggestions = [];

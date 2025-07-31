@@ -55,11 +55,11 @@ const ColumnMappingTable: React.FC<ColumnMappingTableProps> = ({
       <CardContent>
         <div className="overflow-x-auto">
           <table className="w-full border-collapse border border-border">
-            {/* Header row - actual file headers */}
             <thead>
+              {/* File headers row */}
               <tr className="bg-primary/10">
                 <th className="border border-border p-3 text-left font-medium text-xs text-muted-foreground min-w-[80px]">
-                  Kolonner
+                  Rad
                 </th>
                 {headers.map((header, index) => (
                   <th key={index} className="border border-border p-3 text-left font-medium min-w-[150px]">
@@ -71,7 +71,7 @@ const ColumnMappingTable: React.FC<ColumnMappingTableProps> = ({
               {/* Mapping row */}
               <tr className="bg-muted/30">
                 <td className="border border-border p-3 text-xs font-medium text-muted-foreground">
-                  Standard felt
+                  Mapping
                 </td>
                 {headers.map((header, index) => {
                   const suggestion = getSuggestionForColumn(header);
@@ -80,14 +80,16 @@ const ColumnMappingTable: React.FC<ColumnMappingTableProps> = ({
                   
                   return (
                     <td key={index} className="border border-border p-2">
-                      <div className="space-y-2">
+                      <div className="space-y-1">
                         {/* AI Suggestion badge */}
                         {suggestion && (
-                          <Badge 
-                            className={`text-xs ${getConfidenceColor(suggestion.confidence)}`}
-                          >
-                            AI: {Math.round(suggestion.confidence * 100)}%
-                          </Badge>
+                          <div className="flex justify-center">
+                            <Badge 
+                              className={`text-xs ${getConfidenceColor(suggestion.confidence)}`}
+                            >
+                              AI: {Math.round(suggestion.confidence * 100)}%
+                            </Badge>
+                          </div>
                         )}
                         
                         {/* Mapping selector */}
@@ -113,17 +115,6 @@ const ColumnMappingTable: React.FC<ColumnMappingTableProps> = ({
                           </SelectContent>
                         </Select>
                         
-                        {/* Current mapping display */}
-                        {mappedField && (
-                          <Badge 
-                            variant="outline" 
-                            className={`text-xs ${fieldDef?.is_required ? 'border-primary' : ''}`}
-                          >
-                            {fieldDef?.field_label || mappedField}
-                            {fieldDef?.is_required && <span className="text-red-500 ml-1">*</span>}
-                          </Badge>
-                        )}
-                        
                         {validationErrors[header] && (
                           <div className="text-red-500 text-xs flex items-center gap-1">
                             <AlertCircle className="w-3 h-3" />
@@ -139,11 +130,10 @@ const ColumnMappingTable: React.FC<ColumnMappingTableProps> = ({
             
             {/* Sample data rows */}
             <tbody>
-              <tr><td colSpan={headers.length + 1} className="border-0 p-1"></td></tr>
-              {sampleRows.map((row, rowIndex) => (
+              {sampleRows.slice(0, 5).map((row, rowIndex) => (
                 <tr key={rowIndex} className={rowIndex % 2 === 0 ? 'bg-background' : 'bg-muted/30'}>
                   <td className="border border-border p-2 text-xs bg-muted/30 font-medium">
-                    Rad {rowIndex + 1}
+                    {rowIndex + 1}
                   </td>
                   {row.slice(0, headers.length).map((cell, cellIndex) => (
                     <td key={cellIndex} className="border border-border p-2 text-sm">
