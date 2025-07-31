@@ -1,7 +1,13 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { ArrowRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useStandardAccounts } from '@/hooks/useChartOfAccounts';
 import { useTrialBalanceWithMappings, getStandardAccountBalance } from '@/hooks/useTrialBalanceWithMappings';
+import { convertAccountType } from '@/utils/accountTypeMapping';
+import MappingStatusWidget from './MappingStatusWidget';
+import FinancialStatementValidation from './FinancialStatementValidation';
 
 interface FinancialStatementLine {
   id: string;
@@ -23,6 +29,7 @@ interface FinancialStatementGeneratorProps {
 }
 
 const FinancialStatementGenerator = ({ clientId, period }: FinancialStatementGeneratorProps) => {
+  const navigate = useNavigate();
   const { data: standardAccounts, isLoading: standardAccountsLoading } = useStandardAccounts();
   const { data: trialBalanceData, isLoading: trialBalanceLoading } = useTrialBalanceWithMappings(clientId);
 
@@ -170,45 +177,79 @@ const FinancialStatementGenerator = ({ clientId, period }: FinancialStatementGen
 
   const financialStatement = buildFinancialStatementStructure();
 
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Resultatregnskap</CardTitle>
-        <p className="text-sm text-muted-foreground">
-          Periode: {period}
-        </p>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-1">
-          {financialStatement.map(line => renderLine(line))}
-        </div>
+  // Calculate totals for validation
+  const calculateTotals = () => {
+    if (!trialBalanceData) return { assets: 0, liabilities: 0, equity: 0, revenue: 0, expenses: 0 };
+    
+    let assets = 0, liabilities = 0, equity = 0, revenue = 0, expenses = 0;
+    
+    trialBalanceData.standardAccountBalances.forEach(balance => {
+      const standardAccount = standardAccounts?.find(acc => acc.standard_number === balance.standard_number);
+      if (standardAccount) {
+        const amount = balance.total_balance;
+        const normalizedType = convertAccountType(standardAccount.account_type);
         
-{trialBalanceData && (
-          <div className="mt-6 p-4 bg-muted/30 rounded-lg">
-            <p className="text-sm text-muted-foreground">
-              <strong>Mapping-status:</strong>
-            </p>
-            <div className="grid grid-cols-3 gap-4 mt-2 text-sm">
-              <div>
-                <span className="font-medium">Totalt kontoer:</span> {trialBalanceData.mappingStats.totalAccounts}
-              </div>
-              <div>
-                <span className="font-medium">Mappede kontoer:</span> {trialBalanceData.mappingStats.mappedAccounts}
-              </div>
-              <div>
-                <span className="font-medium">Umappede kontoer:</span> {trialBalanceData.mappingStats.unmappedAccounts}
-              </div>
-            </div>
-            {trialBalanceData.mappingStats.unmappedAccounts > 0 && (
-              <p className="text-sm text-orange-600 mt-2">
-                ⚠️ {trialBalanceData.mappingStats.unmappedAccounts} kontoer er ikke mappet til standardkontoer. 
-                Gå til Kontomapping for å fullføre mappingen.
-              </p>
-            )}
+        switch (normalizedType) {
+          case 'eiendeler':
+            assets += amount;
+            break;
+          case 'gjeld':
+            liabilities += amount;
+            break;
+          case 'egenkapital':
+            equity += amount;
+            break;
+          case 'resultat':
+            if (amount > 0) revenue += amount;
+            else expenses += Math.abs(amount);
+            break;
+        }
+      }
+    });
+    
+    return { assets, liabilities, equity, revenue, expenses };
+  };
+
+  const totals = calculateTotals();
+
+  const handleNavigateToMapping = () => {
+    navigate(`/clients/${clientId}/accounting?tab=mapping`);
+  };
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Resultatregnskap</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Periode: {period}
+          </p>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-1">
+            {financialStatement.map(line => renderLine(line))}
           </div>
-        )}
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+
+      {trialBalanceData && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <MappingStatusWidget 
+            clientId={clientId}
+            mappingStats={trialBalanceData.mappingStats}
+          />
+          
+          <FinancialStatementValidation
+            totalAssets={totals.assets}
+            totalLiabilities={totals.liabilities}
+            totalEquity={totals.equity}
+            totalRevenue={totals.revenue}
+            totalExpenses={totals.expenses}
+            mappingStats={trialBalanceData.mappingStats}
+          />
+        </div>
+      )}
+    </div>
   );
 };
 

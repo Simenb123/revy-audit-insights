@@ -31,6 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import AutoMappingRulesGenerator from '@/components/Accounting/AutoMappingRulesGenerator';
 
 interface RuleFormData {
   rule_name: string;
@@ -237,6 +238,8 @@ const AccountMappingRulesManager = () => {
 
   return (
     <div className="space-y-6">
+      <AutoMappingRulesGenerator onRulesGenerated={() => window.location.reload()} />
+      
       <Card>
         <CardHeader>
           <CardTitle>Mappingregler</CardTitle>
