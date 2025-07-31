@@ -33,11 +33,6 @@ import { useUserProfile } from '@/hooks/useUserProfile'
 // Static non-client specific items
 const generalWorkItems = [
   {
-    title: 'Analyse',
-    url: '/analysis',
-    icon: BarChart3,
-  },
-  {
     title: 'Regnskap',
     url: '/accounting',
     icon: Database,
@@ -107,6 +102,11 @@ const ResizableLeftSidebar = () => {
       title: 'Oversikt',
       url: `/clients/${clientId}/dashboard`,
       icon: LayoutDashboard,
+    },
+    {
+      title: 'Analyse',
+      url: `/clients/${clientId}/analysis`,
+      icon: BarChart3,
     },
     {
       title: 'Saldobalanse',
