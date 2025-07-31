@@ -13,7 +13,7 @@ import {
   SidebarMenuButton,
 } from '@/components/ui/sidebar'
 import { useSidebar } from '@/components/ui/sidebar/SidebarContext'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useParams } from 'react-router-dom'
 import { 
   LayoutDashboard, 
   Users, 
@@ -30,27 +30,12 @@ import {
 } from 'lucide-react'
 import { useUserProfile } from '@/hooks/useUserProfile'
 
-// Klientspesifikke områder - tilgjengelig for alle
-const clientWorkItems = [
-  {
-    title: 'Dashboard',
-    url: '/',
-    icon: LayoutDashboard,
-  },
-  {
-    title: 'Klienter',
-    url: '/clients',
-    icon: Users,
-  },
+// Static non-client specific items
+const generalWorkItems = [
   {
     title: 'Analyse',
     url: '/analysis',
     icon: BarChart3,
-  },
-  {
-    title: 'Dokumenter',
-    url: '/documents',
-    icon: FileText,
   },
   {
     title: 'Regnskap',
@@ -61,6 +46,11 @@ const clientWorkItems = [
 
 // Administrative områder - rollebasert tilgang
 const adminItems = [
+  {
+    title: 'Dokumenter',
+    url: '/documents',
+    icon: FileText,
+  },
   {
     title: 'AI Revy Admin',
     url: '/ai-revy-admin',
@@ -77,6 +67,16 @@ const adminItems = [
 
 // Ressurser - tilgjengelig for alle
 const resourceItems = [
+  {
+    title: 'Dashboard',
+    url: '/',
+    icon: LayoutDashboard,
+  },
+  {
+    title: 'Klienter',
+    url: '/clients',
+    icon: Users,
+  },
   {
     title: 'Kunnskapsbase',
     url: '/fag',
@@ -98,7 +98,31 @@ const ResizableLeftSidebar = () => {
   const { state } = useSidebar()
   const location = useLocation()
   const { data: userProfile } = useUserProfile()
+  const { clientId } = useParams<{ clientId: string }>()
   const isCollapsed = state === 'collapsed'
+
+  // Dynamic client-specific items
+  const clientWorkItems = clientId ? [
+    {
+      title: 'Oversikt',
+      url: `/clients/${clientId}/dashboard`,
+      icon: LayoutDashboard,
+    },
+    {
+      title: 'Saldobalanse',
+      url: `/clients/${clientId}/trial-balance`,
+      icon: BarChart3,
+    },
+    {
+      title: 'Hovedbok',
+      url: `/clients/${clientId}/general-ledger`,
+      icon: FileText,
+    },
+    ...generalWorkItems.filter(item => item.title === 'Regnskap').map(item => ({
+      ...item,
+      url: `/clients/${clientId}/accounting`
+    }))
+  ] : generalWorkItems
 
   const isActive = (url: string) => {
     if (url === '/') {
@@ -113,7 +137,9 @@ const ResizableLeftSidebar = () => {
     return roles.includes(userProfile.userRole)
   }
 
-  const filteredAdminItems = adminItems.filter(item => canAccessAdminItem(item.roles))
+  const filteredAdminItems = adminItems.filter(item => 
+    !item.roles || canAccessAdminItem(item.roles)
+  )
 
   return (
       <ShadcnSidebar
