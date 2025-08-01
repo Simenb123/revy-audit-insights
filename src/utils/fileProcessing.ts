@@ -1018,7 +1018,7 @@ export function convertDataWithMapping(
         // Enhanced data conversion for different field types
         if (targetField.includes('amount') || targetField === 'balance_amount' || 
             targetField === 'debet' || targetField === 'kredit' || targetField === 'saldo' ||
-            targetField === 'beløp' || targetField === 'beløp_valuta') {
+            targetField === 'beløp' || targetField === 'beløp_valuta' || targetField === 'amount') {
           // Handle Norwegian number format and convert to number
           if (value !== null && value !== undefined && value !== '') {
             const originalValue = value;
@@ -1041,6 +1041,20 @@ export function convertDataWithMapping(
         
         convertedRow[targetField] = value;
       }
+    }
+    
+    // Handle primary amount field mapping - if user mapped to 'amount', use it as the primary source
+    if (convertedRow.amount !== undefined) {
+      // If there's a primary amount field, derive debit/credit from it
+      const amountValue = convertedRow.amount || 0;
+      if (amountValue >= 0) {
+        convertedRow.debit_amount = amountValue;
+        convertedRow.credit_amount = 0;
+      } else {
+        convertedRow.debit_amount = 0;
+        convertedRow.credit_amount = Math.abs(amountValue);
+      }
+      convertedRow.balance_amount = amountValue;
     }
     
     // Log progress for large datasets

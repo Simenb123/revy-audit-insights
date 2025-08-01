@@ -9,7 +9,7 @@ import EnhancedPreview from '@/components/DataUpload/EnhancedPreview';
 import { DataManagementPanel } from '@/components/DataUpload/DataManagementPanel';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { useCreateVersion } from '@/hooks/useAccountingVersions';
+import { useCreateVersion, useSetActiveVersion } from '@/hooks/useAccountingVersions';
 import { useGeneralLedgerValidation } from '@/hooks/useGeneralLedgerValidation';
 import { 
   processExcelFile, 
@@ -51,6 +51,7 @@ const GeneralLedgerUploader = ({ clientId, onUploadComplete }: GeneralLedgerUplo
   const [filterStats, setFilterStats] = useState<any>(null);
   
   const createVersion = useCreateVersion();
+  const setActiveVersionMutation = useSetActiveVersion();
 
   // Validation component to check voucher balance
   const ValidationResults = ({ data }: { data: any[] }) => {
@@ -354,6 +355,10 @@ const GeneralLedgerUploader = ({ clientId, onUploadComplete }: GeneralLedgerUplo
 
       setVersionId(version.id);
       setUploadProgress(30);
+      
+      // Automatically set the new version as active
+      console.log('Setting new version as active:', version.id);
+      await setActiveVersionMutation.mutateAsync(version.id);
 
       // Get all unique account numbers from transactions
       const accountNumbers = transactions

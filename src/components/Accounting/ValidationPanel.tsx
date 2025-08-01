@@ -40,21 +40,40 @@ const ValidationPanel = ({ clientId, selectedGLVersion, selectedTBVersion }: Val
     );
   }
 
+  // Check if we're missing required versions
+  const isDataMissing = !selectedGLVersion || !selectedTBVersion;
+  
+  if (isDataMissing) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Validering</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Alert variant="default">
+            <Info className="h-4 w-4" />
+            <AlertDescription>
+              {!selectedGLVersion && !selectedTBVersion 
+                ? 'Både hovedbok og saldobalanse må være valgt for validering'
+                : !selectedGLVersion 
+                  ? 'Hovedbok må være valgt for validering'
+                  : 'Saldobalanse må være valgt for validering'
+              }
+            </AlertDescription>
+          </Alert>
+        </CardContent>
+      </Card>
+    );
+  }
+
   if (error || !validation) {
     const errorMessage = error?.message || 'Validering kunne ikke utføres';
-    const isDataMissing = errorMessage.includes('Mangler data') || 
-                         errorMessage.includes('no data') || 
-                         errorMessage.includes('RLS') ||
-                         errorMessage.includes('permission') ||
-                         errorMessage.includes('access') ||
-                         !validation;
     
     // Add detailed logging for debugging
     console.error('❌ ValidationPanel error details:', {
       error: error?.message || 'Unknown error',
       errorObject: error,
       hasValidation: !!validation,
-      isDataMissing,
       clientId,
       selectedGLVersion,
       selectedTBVersion
@@ -66,12 +85,12 @@ const ValidationPanel = ({ clientId, selectedGLVersion, selectedTBVersion }: Val
           <CardTitle>Validering</CardTitle>
         </CardHeader>
         <CardContent>
-          <Alert variant={isDataMissing ? "default" : "destructive"}>
-            {isDataMissing ? <Info className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
+          <Alert variant="default">
+            <Info className="h-4 w-4" />
             <AlertDescription>
-              {isDataMissing 
-                ? 'Venter på at hovedbok og saldobalanse data lastes inn...' 
-                : `Kunne ikke utføre validering: ${errorMessage}`}
+              {errorMessage.includes('Mangler data') 
+                ? 'Venter på at data lastes inn. Dette kan ta litt tid...' 
+                : 'Kunne ikke utføre validering. Sjekk at både hovedbok og saldobalanse er lastet inn.'}
             </AlertDescription>
           </Alert>
         </CardContent>
