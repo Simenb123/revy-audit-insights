@@ -399,11 +399,16 @@ export async function processExcelFile(file: File): Promise<FilePreview> {
       content: (row as any[]).map(cell => cell?.toString() || '')
     }));
     
-    // Extract data rows (rows after header)
+    // Extract data rows (rows after header) - preserve original types for better preview
     const dataRows = jsonData.slice(headerRowIndex + 1);
-    const allRows = dataRows.map(row => 
-      (row as any[]).map(cell => cell?.toString() || '')
-    );
+    const allRows = dataRows.map(row => {
+      if (!Array.isArray(row)) return [];
+      // Keep original values (don't convert to string yet) for accurate preview
+      return row.map(cell => {
+        if (cell === null || cell === undefined) return '';
+        return cell; // Keep original type
+      });
+    });
     
     // Create original row numbers for data rows
     const originalRowNumbers = dataRows.map((_, index) => headerRowIndex + 1 + index);

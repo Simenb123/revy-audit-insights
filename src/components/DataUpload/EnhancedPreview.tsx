@@ -138,19 +138,27 @@ const EnhancedPreview: React.FC<EnhancedPreviewProps> = ({
     };
   };
 
-  // Handle header row change
+  // Handle header row change - we need to reconstruct from original Excel data
   const handleHeaderRowChange = (newRowIndex: string) => {
     const rowIndex = parseInt(newRowIndex);
+    console.log('=== HEADER ROW CHANGE ===');
+    console.log('New row index:', rowIndex);
     
-    // Create new preview data with updated header row
+    // For now, just update the header index and let the display logic handle the reconstruction
+    // The issue is that we don't have access to the original Excel data here
+    // We need to work with what we have in the preview object
     const allRawData = [
       ...preview.skippedRows.map(row => row.content),
       preview.headers,
       ...preview.allRows
     ];
     
+    console.log('All raw data length:', allRawData.length);
+    console.log('Selected row:', allRawData[rowIndex]);
+    
     if (rowIndex < allRawData.length) {
       const newHeaders = allRawData[rowIndex].map(h => h?.toString() || '');
+      console.log('New headers:', newHeaders);
       setCurrentHeaders(newHeaders);
       setCurrentHeaderRowIndex(rowIndex);
       setMapping({}); // Reset mapping when header changes
@@ -194,25 +202,41 @@ const EnhancedPreview: React.FC<EnhancedPreviewProps> = ({
   const generateSampleRows = () => {
     console.log('=== GENERATING SAMPLE ROWS ===');
     console.log('currentHeaderRowIndex:', currentHeaderRowIndex);
-    console.log('preview.allRows length:', preview.allRows.length);
-    console.log('preview.skippedRows:', preview.skippedRows);
+    console.log('preview structure:', {
+      headerRowIndex: preview.headerRowIndex,
+      currentHeaderRowIndex,
+      skippedRowsCount: preview.skippedRows.length,
+      allRowsCount: preview.allRows.length
+    });
     
-    // Use the ORIGINAL allRows data without reconstruction to avoid data loss
-    const dataStartIndex = 0; // preview.allRows already contains only data rows
-    const sampleRows = preview.allRows.slice(dataStartIndex, dataStartIndex + 5);
+    // Reconstruct the complete raw data structure
+    const allRawData = [
+      ...preview.skippedRows.map(row => row.content),
+      preview.headers,
+      ...preview.allRows
+    ];
     
-    console.log('Raw sample rows from preview.allRows:', sampleRows);
+    console.log('Complete raw data length:', allRawData.length);
+    console.log('First few raw rows:', allRawData.slice(0, 5));
     
-    // Keep original data format - NO transformation to ensure exact preview
-    return sampleRows.map(row => {
+    // Calculate data start position based on current header selection
+    const dataStartIndex = currentHeaderRowIndex + 1;
+    console.log('Data starts at index:', dataStartIndex);
+    
+    // Get sample data rows AFTER the selected header row
+    const sampleDataRows = allRawData.slice(dataStartIndex, dataStartIndex + 5);
+    console.log('Raw sample data rows:', sampleDataRows);
+    
+    // Format the sample rows for display
+    return sampleDataRows.map((row, index) => {
       if (!Array.isArray(row)) {
-        console.warn('Non-array row found:', row);
+        console.warn('Non-array row found at index', dataStartIndex + index, ':', row);
         return [];
       }
       
       // Keep original values, only convert to string for display
       const displayRow = row.slice(0, currentHeaders.length).map(cell => {
-        if (cell === null || cell === undefined) return '';
+        if (cell === null || cell === undefined || cell === '') return '';
         return cell.toString();
       });
       
@@ -221,7 +245,7 @@ const EnhancedPreview: React.FC<EnhancedPreviewProps> = ({
         displayRow.push('');
       }
       
-      console.log('Display row:', displayRow);
+      console.log(`Sample row ${index + 1}:`, displayRow);
       return displayRow;
     });
   };
