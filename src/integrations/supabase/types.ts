@@ -5396,6 +5396,41 @@ export type Database = {
           },
         ]
       }
+      trial_balance_mappings: {
+        Row: {
+          account_number: string
+          client_id: string
+          created_at: string
+          id: string
+          statement_line_number: string
+          updated_at: string
+        }
+        Insert: {
+          account_number: string
+          client_id: string
+          created_at?: string
+          id?: string
+          statement_line_number: string
+          updated_at?: string
+        }
+        Update: {
+          account_number?: string
+          client_id?: string
+          created_at?: string
+          id?: string
+          statement_line_number?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trial_balance_mappings_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trial_balances: {
         Row: {
           client_account_id: string

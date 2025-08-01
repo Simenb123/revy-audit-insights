@@ -5,6 +5,8 @@ import { ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useStandardAccounts } from '@/hooks/useChartOfAccounts';
 import { useTrialBalanceWithMappings, getStandardAccountBalance } from '@/hooks/useTrialBalanceWithMappings';
+import { useTrialBalanceMappings } from '@/hooks/useTrialBalanceMappings';
+import { useTrialBalanceData } from '@/hooks/useTrialBalanceData';
 import { convertAccountType } from '@/utils/accountTypeMapping';
 import MappingStatusWidget from './MappingStatusWidget';
 import FinancialStatementValidation from './FinancialStatementValidation';
@@ -31,7 +33,10 @@ interface FinancialStatementGeneratorProps {
 const FinancialStatementGenerator = ({ clientId, period }: FinancialStatementGeneratorProps) => {
   const navigate = useNavigate();
   const { data: standardAccounts, isLoading: standardAccountsLoading } = useStandardAccounts();
-  const { data: trialBalanceData, isLoading: trialBalanceLoading } = useTrialBalanceWithMappings(clientId);
+  const { data: trialBalanceData } = useTrialBalanceData(clientId);
+  const { data: mappings = [] } = useTrialBalanceMappings(clientId);
+  
+  const isLoading = standardAccountsLoading;
 
   const buildFinancialStatementStructure = (): FinancialStatementLine[] => {
     if (!standardAccounts) return [];
@@ -71,12 +76,21 @@ const FinancialStatementGenerator = ({ clientId, period }: FinancialStatementGen
   };
 
   const calculateAmount = (line: FinancialStatementLine): number => {
-    if (!trialBalanceData) return 0;
+    if (!trialBalanceData || !mappings) return 0;
 
     if (line.line_type === 'detail') {
-      // Get actual amount from trial balance using standard account number
-      const balance = getStandardAccountBalance(trialBalanceData.standardAccountBalances, line.standard_number);
-      return balance * line.sign_multiplier;
+      // Sum all trial balance accounts mapped to this statement line
+      const mappedAccounts = mappings.filter(m => m.statement_line_number === line.standard_number);
+      let total = 0;
+      
+      mappedAccounts.forEach(mapping => {
+        const account = trialBalanceData.find(acc => acc.account_number === mapping.account_number);
+        if (account) {
+          total += account.closing_balance;
+        }
+      });
+      
+      return total * line.sign_multiplier;
     }
 
     if (line.line_type === 'subtotal' && line.children) {
@@ -96,32 +110,50 @@ const FinancialStatementGenerator = ({ clientId, period }: FinancialStatementGen
   };
 
   const parseCalculationFormula = (formula: string): number => {
-    if (!trialBalanceData) return 0;
+    if (!standardAccounts) return 0;
     
     // Simple formula parser for expressions like "19 + 79", "19 - 79", etc.
     const cleanFormula = formula.replace(/\s/g, '');
+    
+    // Helper function to get amount for a standard account number
+    const getAmountForStandardAccount = (standardNumber: string): number => {
+      const standardAccount = standardAccounts.find(acc => acc.standard_number === standardNumber);
+      if (!standardAccount) return 0;
+      
+      // Find the line in our financial statement and calculate its amount
+      const financialStatement = buildFinancialStatementStructure();
+      const findLineRecursively = (lines: FinancialStatementLine[]): FinancialStatementLine | undefined => {
+        for (const line of lines) {
+          if (line.standard_number === standardNumber) return line;
+          if (line.children) {
+            const found = findLineRecursively(line.children);
+            if (found) return found;
+          }
+        }
+        return undefined;
+      };
+      
+      const line = findLineRecursively(financialStatement);
+      return line ? calculateAmount(line) : 0;
+    };
     
     // Handle addition and subtraction
     const additionMatch = cleanFormula.match(/^(\d+)\+(\d+)$/);
     if (additionMatch) {
       const [, num1, num2] = additionMatch;
-      const amount1 = getStandardAccountBalance(trialBalanceData.standardAccountBalances, num1);
-      const amount2 = getStandardAccountBalance(trialBalanceData.standardAccountBalances, num2);
-      return amount1 + amount2;
+      return getAmountForStandardAccount(num1) + getAmountForStandardAccount(num2);
     }
     
     const subtractionMatch = cleanFormula.match(/^(\d+)-(\d+)$/);
     if (subtractionMatch) {
       const [, num1, num2] = subtractionMatch;
-      const amount1 = getStandardAccountBalance(trialBalanceData.standardAccountBalances, num1);
-      const amount2 = getStandardAccountBalance(trialBalanceData.standardAccountBalances, num2);
-      return amount1 - amount2;
+      return getAmountForStandardAccount(num1) - getAmountForStandardAccount(num2);
     }
     
     // If single number, get that standard account balance
     const singleNumberMatch = cleanFormula.match(/^(\d+)$/);
     if (singleNumberMatch) {
-      return getStandardAccountBalance(trialBalanceData.standardAccountBalances, singleNumberMatch[1]);
+      return getAmountForStandardAccount(singleNumberMatch[1]);
     }
     
     return 0;
@@ -171,7 +203,7 @@ const FinancialStatementGenerator = ({ clientId, period }: FinancialStatementGen
     );
   };
 
-  if (standardAccountsLoading || trialBalanceLoading) {
+  if (isLoading) {
     return <div>Laster regnskapsoppstilling...</div>;
   }
 
@@ -179,30 +211,34 @@ const FinancialStatementGenerator = ({ clientId, period }: FinancialStatementGen
 
   // Calculate totals for validation
   const calculateTotals = () => {
-    if (!trialBalanceData) return { assets: 0, liabilities: 0, equity: 0, revenue: 0, expenses: 0 };
+    if (!trialBalanceData || !standardAccounts) return { assets: 0, liabilities: 0, equity: 0, revenue: 0, expenses: 0 };
     
     let assets = 0, liabilities = 0, equity = 0, revenue = 0, expenses = 0;
     
-    trialBalanceData.standardAccountBalances.forEach(balance => {
-      const standardAccount = standardAccounts?.find(acc => acc.standard_number === balance.standard_number);
-      if (standardAccount) {
-        const amount = balance.total_balance;
-        const normalizedType = convertAccountType(standardAccount.account_type);
-        
-        switch (normalizedType) {
-          case 'eiendeler':
-            assets += amount;
-            break;
-          case 'gjeld':
-            liabilities += amount;
-            break;
-          case 'egenkapital':
-            equity += amount;
-            break;
-          case 'resultat':
-            if (amount > 0) revenue += amount;
-            else expenses += Math.abs(amount);
-            break;
+    trialBalanceData.forEach(account => {
+      // Find which standard account this is mapped to
+      const mapping = mappings.find(m => m.account_number === account.account_number);
+      if (mapping) {
+        const standardAccount = standardAccounts.find(acc => acc.standard_number === mapping.statement_line_number);
+        if (standardAccount) {
+          const amount = account.closing_balance;
+          const normalizedType = convertAccountType(standardAccount.account_type);
+          
+          switch (normalizedType) {
+            case 'eiendeler':
+              assets += amount;
+              break;
+            case 'gjeld':
+              liabilities += amount;
+              break;
+            case 'egenkapital':
+              equity += amount;
+              break;
+            case 'resultat':
+              if (amount > 0) revenue += amount;
+              else expenses += Math.abs(amount);
+              break;
+          }
         }
       }
     });
@@ -234,10 +270,38 @@ const FinancialStatementGenerator = ({ clientId, period }: FinancialStatementGen
 
       {trialBalanceData && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <MappingStatusWidget 
-            clientId={clientId}
-            mappingStats={trialBalanceData.mappingStats}
-          />
+          <Card>
+            <CardHeader>
+              <CardTitle>Mapping Status</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span>Totalt kontoer:</span>
+                  <span>{trialBalanceData.length}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Mapped kontoer:</span>
+                  <span>{mappings.length}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Umapped kontoer:</span>
+                  <span>{trialBalanceData.length - mappings.length}</span>
+                </div>
+                {trialBalanceData.length - mappings.length > 0 && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleNavigateToMapping}
+                    className="w-full mt-2"
+                  >
+                    <ArrowRight className="w-4 h-4 mr-2" />
+                    Fullfør mapping
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
           
           <FinancialStatementValidation
             totalAssets={totals.assets}
@@ -245,7 +309,11 @@ const FinancialStatementGenerator = ({ clientId, period }: FinancialStatementGen
             totalEquity={totals.equity}
             totalRevenue={totals.revenue}
             totalExpenses={totals.expenses}
-            mappingStats={trialBalanceData.mappingStats}
+            mappingStats={{
+              totalAccounts: trialBalanceData.length,
+              mappedAccounts: mappings.length,
+              unmappedAccounts: trialBalanceData.length - mappings.length
+            }}
           />
         </div>
       )}

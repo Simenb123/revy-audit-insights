@@ -10,6 +10,7 @@ import EnhancedPreview from '@/components/DataUpload/EnhancedPreview';
 import { DataManagementPanel } from '@/components/DataUpload/DataManagementPanel';
 import { useAccountingYear } from '@/hooks/useAccountingYear';
 import AccountingYearHeader from '@/components/AccountingYearHeader';
+import TrialBalanceMappingTable from './TrialBalanceMappingTable';
 // Removed useAvailableVersions since versions are now auto-generated
 import { 
   processExcelFile, 
@@ -40,7 +41,7 @@ const TrialBalanceUploader = ({ clientId, onUploadComplete }: TrialBalanceUpload
   const [showMapping, setShowMapping] = useState(false);
   const [convertedData, setConvertedData] = useState<any[]>([]);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [step, setStep] = useState<'select' | 'upload' | 'success'>('select');
+  const [step, setStep] = useState<'select' | 'upload' | 'mapping' | 'success'>('select');
   // Manual version and period inputs removed - now auto-generated
 
   // Period dates automatically derived from accounting year
@@ -401,10 +402,10 @@ const TrialBalanceUploader = ({ clientId, onUploadComplete }: TrialBalanceUpload
         .eq('id', batch.id);
 
       setUploadProgress(100);
-      setStep('success');
+      setStep('mapping');
       
       toast.success(`${trialBalanceInserted} saldobalanse-poster (${finalVersion}) og ${chartOfAccountsCreated} nye kontoer ble importert for ${accountingYear}`);
-      onUploadComplete?.();
+      // Don't call onUploadComplete here - wait for mapping to complete
       
     } catch (error: any) {
       toast.error('Feil ved opplasting: ' + error.message);
@@ -422,6 +423,16 @@ const TrialBalanceUploader = ({ clientId, onUploadComplete }: TrialBalanceUpload
           fileType="trial_balance"
           onMappingComplete={handleMappingComplete}
           onCancel={() => setShowMapping(false)}
+        />
+      )}
+
+      {step === 'mapping' && (
+        <TrialBalanceMappingTable
+          clientId={clientId}
+          onComplete={() => {
+            setStep('success');
+            onUploadComplete?.();
+          }}
         />
       )}
 
