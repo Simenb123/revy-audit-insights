@@ -19,7 +19,7 @@ export interface GeneralLedgerTransaction {
 
 export const useGeneralLedgerData = (clientId: string, versionId?: string, pagination?: { page: number; pageSize: number }) => {
   return useQuery({
-    queryKey: ['general-ledger-v5', clientId, versionId, pagination],
+    queryKey: ['general-ledger-v6', clientId, versionId, pagination],
     queryFn: async () => {
       console.log('🔍 Fetching general ledger data for client:', clientId, 'version:', versionId);
       console.log('🔐 Auth user ID:', (await supabase.auth.getUser()).data.user?.id);
@@ -261,7 +261,9 @@ export const useGeneralLedgerData = (clientId: string, versionId?: string, pagin
       return transformedData;
     },
     enabled: !!clientId,
-    staleTime: 0, // Force fresh data
-    gcTime: 0, // No caching for debugging
+    staleTime: 0, // Force fresh data to show latest transactions
+    gcTime: 0, // No caching to ensure we see new data immediately
+    refetchOnMount: true, // Always refetch when component mounts
+    refetchOnWindowFocus: true, // Refetch when user returns to tab
   });
 };

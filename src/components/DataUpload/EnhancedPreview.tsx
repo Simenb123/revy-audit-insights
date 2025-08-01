@@ -159,45 +159,70 @@ const EnhancedPreview: React.FC<EnhancedPreviewProps> = ({
 
   const requiredStatus = getRequiredFieldsStatus();
 
-  // Generate displayable row data with row numbers
+  // Generate displayable row data with row numbers - SHOW EXACT RAW DATA
   const generateDisplayRows = () => {
+    console.log('=== GENERATING DISPLAY ROWS ===');
+    console.log('preview structure:', {
+      skippedRowsCount: preview.skippedRows.length,
+      headers: preview.headers,
+      allRowsCount: preview.allRows.length,
+      headerRowIndex: preview.headerRowIndex
+    });
+    
     const allRawData = [
       ...preview.skippedRows.map(row => row.content),
       preview.headers,
       ...preview.allRows
     ];
     
+    console.log('allRawData length:', allRawData.length);
+    console.log('First few raw data rows:', allRawData.slice(0, 5));
+    
     const displayRows = allRawData.slice(0, showAllRows ? 10 : 6).map((row, index) => ({
       index,
-      content: row,
+      content: Array.isArray(row) ? row : [],
       isHeader: index === currentHeaderRowIndex,
       isSkipped: index < currentHeaderRowIndex,
       isData: index > currentHeaderRowIndex
     }));
     
+    console.log('Generated display rows:', displayRows);
     return displayRows;
   };
 
-  // Generate sample rows based on selected header row
+  // Generate sample rows based on selected header row - SHOW EXACT RAW DATA
   const generateSampleRows = () => {
-    const allRawData = [
-      ...preview.skippedRows.map(row => row.content),
-      preview.headers,
-      ...preview.allRows
-    ];
+    console.log('=== GENERATING SAMPLE ROWS ===');
+    console.log('currentHeaderRowIndex:', currentHeaderRowIndex);
+    console.log('preview.allRows length:', preview.allRows.length);
+    console.log('preview.skippedRows:', preview.skippedRows);
     
-    // Get data rows starting from the row after the selected header row
-    const dataStartIndex = currentHeaderRowIndex + 1;
-    const sampleRows = allRawData.slice(dataStartIndex, dataStartIndex + 5);
+    // Use the ORIGINAL allRows data without reconstruction to avoid data loss
+    const dataStartIndex = 0; // preview.allRows already contains only data rows
+    const sampleRows = preview.allRows.slice(dataStartIndex, dataStartIndex + 5);
     
-    // Ensure each row has the same number of columns as headers
+    console.log('Raw sample rows from preview.allRows:', sampleRows);
+    
+    // Keep original data format - NO transformation to ensure exact preview
     return sampleRows.map(row => {
-      const normalizedRow = Array.isArray(row) ? row : [];
-      // Pad or trim to match header count
-      while (normalizedRow.length < currentHeaders.length) {
-        normalizedRow.push('');
+      if (!Array.isArray(row)) {
+        console.warn('Non-array row found:', row);
+        return [];
       }
-      return normalizedRow.slice(0, currentHeaders.length).map(cell => cell?.toString() || '');
+      
+      // Keep original values, only convert to string for display
+      const displayRow = row.slice(0, currentHeaders.length).map(cell => {
+        if (cell === null || cell === undefined) return '';
+        return cell.toString();
+      });
+      
+      // Pad with empty strings if needed
+      while (displayRow.length < currentHeaders.length) {
+        displayRow.push('');
+      }
+      
+      console.log('Display row:', displayRow);
+      return displayRow;
     });
   };
 
