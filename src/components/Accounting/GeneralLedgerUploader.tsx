@@ -410,12 +410,11 @@ const GeneralLedgerUploader = ({ clientId, onUploadComplete }: GeneralLedgerUplo
               }
             });
             
-            // Primary: Use balance_amount if it's a meaningful non-zero number
+            // Primary: Use balance_amount if it's a valid number (including zero)
             const hasBalanceAmount = transaction.balance_amount !== undefined && 
                                    transaction.balance_amount !== null && 
                                    typeof transaction.balance_amount === 'number' && 
-                                   !isNaN(transaction.balance_amount) && 
-                                   transaction.balance_amount !== 0;
+                                   !isNaN(transaction.balance_amount);
             
             if (hasBalanceAmount) {
               balanceAmount = transaction.balance_amount;
@@ -436,14 +435,12 @@ const GeneralLedgerUploader = ({ clientId, onUploadComplete }: GeneralLedgerUplo
               const hasDebitAmount = transaction.debit_amount !== undefined && 
                                    transaction.debit_amount !== null && 
                                    typeof transaction.debit_amount === 'number' && 
-                                   !isNaN(transaction.debit_amount) && 
-                                   transaction.debit_amount !== 0;
+                                   !isNaN(transaction.debit_amount);
               
               const hasCreditAmount = transaction.credit_amount !== undefined && 
                                     transaction.credit_amount !== null && 
                                     typeof transaction.credit_amount === 'number' && 
-                                    !isNaN(transaction.credit_amount) && 
-                                    transaction.credit_amount !== 0;
+                                    !isNaN(transaction.credit_amount);
               
               if (hasDebitAmount) {
                 debitAmount = transaction.debit_amount;
@@ -458,8 +455,8 @@ const GeneralLedgerUploader = ({ clientId, onUploadComplete }: GeneralLedgerUplo
               balanceAmount = (debitAmount || 0) - (creditAmount || 0);
             }
             
-            // Final validation - ensure we have some amount
-            if (debitAmount === null && creditAmount === null) {
+            // Final validation - ensure we have some amount data (allow zero values)
+            if (debitAmount === null && creditAmount === null && balanceAmount === null) {
               console.error(`No valid amounts found for transaction:`, transaction);
               return null; // Skip this transaction
             }
@@ -489,7 +486,12 @@ const GeneralLedgerUploader = ({ clientId, onUploadComplete }: GeneralLedgerUplo
           })
           .filter(Boolean);
         
-        // Validation before insert
+        // Validation before insert with detailed logging
+        const skippedCount = batchTransactions.length - transactionsToInsert.length;
+        if (skippedCount > 0) {
+          console.warn(`Batch ${Math.floor(i/batchSize) + 1}: Skipped ${skippedCount} transactions with missing amounts`);
+        }
+        
         if (transactionsToInsert.length === 0) {
           console.warn(`Batch ${Math.floor(i/batchSize) + 1}: No valid transactions to insert`);
           continue;
@@ -591,9 +593,22 @@ const GeneralLedgerUploader = ({ clientId, onUploadComplete }: GeneralLedgerUplo
                 <h3 className="text-lg font-semibold text-green-800 mb-2">
                   Hovedbok lastet opp!
                 </h3>
-                <p className="text-green-700 mb-4">
-                  {convertedData.length} transaksjoner ble importert fra {selectedFile?.name}
-                </p>
+                <div className="text-green-700 mb-4 space-y-2">
+                  <p>
+                    <strong>{convertedData.length}</strong> transaksjoner ble importert fra {selectedFile?.name}
+                  </p>
+                  {filePreview && filePreview.allRows && (
+                    <div className="text-sm">
+                      <p>Totalt rader i fil: {filePreview.allRows.length}</p>
+                      <p>Prosesserte transaksjoner: {convertedData.length}</p>
+                      {filePreview.allRows.length > convertedData.length && (
+                        <p className="text-amber-700">
+                          ⚠️ {filePreview.allRows.length - convertedData.length} rader ble hoppet over (manglende data eller ugyldig format)
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
                 <button
                   onClick={() => {
                     setStep('select');
