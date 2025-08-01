@@ -243,16 +243,37 @@ export function parseCSV(text: string, delimiter?: string): { headers: string[];
 function detectHeaderRow(jsonData: unknown[]): number {
   console.log('=== DETECTING HEADER ROW ===');
   
-  // Norwegian accounting terms that commonly appear in headers
+  // Enhanced Norwegian accounting terms that commonly appear in headers
   const accountingTerms = [
-    'konto', 'account', 'nummer', 'number', 'navn', 'name', 'beskrivelse', 'description',
-    'saldo', 'balance', 'beløp', 'amount', 'sum', 'debet', 'debit', 'kredit', 'credit',
-    'inngående', 'åpning', 'opening', 'utgående', 'closing', 'periode', 'period',
-    'dato', 'date', 'bilag', 'voucher', 'tekst', 'text', 'bevegelse', 'movement'
+    // Account related
+    'konto', 'account', 'kontonummer', 'account number', 'kontonr', 'acct',
+    'kontonavn', 'account name', 'kontobeskrivelse', 'description',
+    
+    // Amounts and balances
+    'saldo', 'balance', 'beløp', 'amount', 'sum', 'totalsum', 'total',
+    'debet', 'debit', 'kredit', 'credit', 'db', 'cr',
+    'inngående', 'inngående saldo', 'åpningssaldo', 'opening balance', 'opening',
+    'utgående', 'utgående saldo', 'sluttbalanse', 'closing balance', 'closing',
+    'bevegelse', 'movement', 'endring', 'change',
+    
+    // Dates and periods
+    'dato', 'date', 'periode', 'period', 'måned', 'month', 'år', 'year',
+    'fra dato', 'til dato', 'from date', 'to date', 'transaksjdato', 'transaction date',
+    
+    // Document references
+    'bilag', 'voucher', 'bilagsnr', 'voucher number', 'referanse', 'reference',
+    'tekst', 'text', 'beskrivelse', 'description', 'kommentar', 'comment',
+    
+    // Additional Norwegian terms
+    'dimensjon', 'dimension', 'koststed', 'cost center', 'prosjekt', 'project',
+    'forfallsdato', 'due date', 'kunde', 'customer', 'leverandør', 'supplier'
   ];
 
-  // Look through first 10 rows to find header row
-  for (let i = 0; i < Math.min(10, jsonData.length); i++) {
+  let bestHeaderIndex = 0;
+  let bestScore = 0;
+
+  // Look through first 15 rows to find header row
+  for (let i = 0; i < Math.min(15, jsonData.length); i++) {
     const row = jsonData[i] as any[];
     if (!row || !Array.isArray(row)) continue;
 
@@ -261,32 +282,87 @@ function detectHeaderRow(jsonData: unknown[]): number {
       cell !== null && cell !== undefined && cell.toString().trim() !== ''
     );
 
-    // Need at least 2-3 non-empty cells for a valid header
+    // Need at least 2 non-empty cells for a valid header
     if (nonEmptyCells.length < 2) continue;
 
     // Count text cells (not just numbers)
     const textCells = nonEmptyCells.filter(cell => {
       const str = cell.toString().trim();
-      return str && isNaN(Number(str));
+      // More sophisticated number detection - exclude pure numbers but allow text with numbers
+      if (!str) return false;
+      
+      // If it's purely numeric (including Norwegian number formats), it's not header text
+      const normalizedStr = str.replace(/[\s.,-]/g, '');
+      if (/^\d+$/.test(normalizedStr)) return false;
+      
+      // Allow mixed alphanumeric (like "Konto 1000")
+      return true;
     });
 
-    // Header should have mostly text, not just numbers
-    if (textCells.length < Math.max(1, Math.floor(nonEmptyCells.length * 0.5))) continue;
+    // Calculate score based on multiple factors
+    let score = 0;
 
-    // Check for accounting terms
-    const hasAccountingTerms = textCells.some(cell => {
-      const cellText = cell.toString().toLowerCase();
-      return accountingTerms.some(term => cellText.includes(term));
+    // Factor 1: Presence of accounting terms (highest weight)
+    const accountingTermMatches = textCells.filter(cell => {
+      const cellText = cell.toString().toLowerCase().trim();
+      return accountingTerms.some(term => {
+        const termLower = term.toLowerCase();
+        // Exact match or contained in cell text
+        return cellText === termLower || cellText.includes(termLower) || termLower.includes(cellText);
+      });
     });
-
-    console.log(`Row ${i + 1}: ${nonEmptyCells.length} non-empty, ${textCells.length} text cells, accounting terms: ${hasAccountingTerms}`);
-    console.log(`Row ${i + 1} content:`, row.slice(0, 5));
-
-    // If we have good text content or accounting terms, this is likely the header
-    if (hasAccountingTerms || (textCells.length >= 2 && nonEmptyCells.length >= 3)) {
-      console.log(`Detected header row at index ${i} (row ${i + 1})`);
-      return i;
+    
+    if (accountingTermMatches.length > 0) {
+      score += accountingTermMatches.length * 10; // High weight for accounting terms
     }
+
+    // Factor 2: Ratio of text to total cells
+    const textRatio = textCells.length / nonEmptyCells.length;
+    if (textRatio >= 0.7) score += 5; // Prefer mostly text headers
+    else if (textRatio >= 0.5) score += 3;
+
+    // Factor 3: Sufficient number of columns
+    if (nonEmptyCells.length >= 5) score += 3;
+    else if (nonEmptyCells.length >= 3) score += 2;
+
+    // Factor 4: Penalty for being too far down (headers usually near top)
+    if (i <= 2) score += 2;
+    else if (i <= 5) score += 1;
+
+    // Factor 5: Check if next rows look like data (numbers)
+    if (i + 1 < jsonData.length) {
+      const nextRow = jsonData[i + 1] as any[];
+      if (nextRow && Array.isArray(nextRow)) {
+        const nextRowNumbers = nextRow.filter(cell => {
+          if (!cell) return false;
+          const str = cell.toString().trim();
+          if (!str) return false;
+          // Check if it's a number (including Norwegian formats)
+          const normalizedStr = str.replace(/[\s.]/g, '').replace(',', '.');
+          return !isNaN(Number(normalizedStr)) && normalizedStr !== '';
+        });
+        
+        if (nextRowNumbers.length >= Math.floor(nextRow.length * 0.3)) {
+          score += 2; // Bonus if next row has many numbers (data row)
+        }
+      }
+    }
+
+    console.log(`Row ${i + 1}: Score=${score}, ${nonEmptyCells.length} non-empty, ${textCells.length} text cells, ${accountingTermMatches.length} accounting terms`);
+    console.log(`Row ${i + 1} content:`, row.slice(0, 8));
+    
+    if (score > bestScore) {
+      bestScore = score;
+      bestHeaderIndex = i;
+    }
+  }
+
+  console.log(`Best header row: ${bestHeaderIndex + 1} with score ${bestScore}`);
+  
+  // If we have a decent score, use the best found header
+  if (bestScore >= 5) {
+    console.log(`Detected header row at index ${bestHeaderIndex} (row ${bestHeaderIndex + 1})`);
+    return bestHeaderIndex;
   }
 
   // Default to first row if no clear header found

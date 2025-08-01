@@ -34,11 +34,11 @@ const HeaderRowSelector: React.FC<HeaderRowSelectorProps> = ({
         <CardTitle>Filinnhold og header-rad</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
           <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2 text-amber-800">
+            <div className="flex items-center gap-2 text-blue-800">
               <AlertCircle className="w-4 h-4" />
-              <span className="font-medium">Header rad detektert på rad {currentHeaderRowIndex + 1}</span>
+              <span className="font-medium">Header rad valgt: rad {currentHeaderRowIndex + 1}</span>
             </div>
             <Button
               variant="outline"
@@ -51,22 +51,31 @@ const HeaderRowSelector: React.FC<HeaderRowSelectorProps> = ({
             </Button>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-sm text-amber-700">Velg header rad:</span>
+            <span className="text-sm text-blue-700 font-medium">Velg header rad:</span>
             <Select value={currentHeaderRowIndex.toString()} onValueChange={onHeaderRowChange}>
-              <SelectTrigger className="w-32">
+              <SelectTrigger className="w-40 border-blue-300 focus:border-blue-500">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 {displayRows.map((row, index) => (
                   <SelectItem key={index} value={index.toString()}>
-                    Rad {index + 1}
+                    <div className="flex items-center gap-2">
+                      <span>Rad {index + 1}</span>
+                      {row.content.slice(0, 3).some(cell => 
+                        cell && ['konto', 'beløp', 'saldo', 'dato', 'navn'].some(term => 
+                          cell.toLowerCase().includes(term)
+                        )
+                      ) && (
+                        <Badge variant="secondary" className="text-xs">Sannsynlig header</Badge>
+                      )}
+                    </div>
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            {skippedRowsCount > 0 && (
-              <span className="text-xs text-amber-600">
-                {skippedRowsCount} rad(er) hoppes over
+            {currentHeaderRowIndex > 0 && (
+              <span className="text-xs text-blue-600">
+                {currentHeaderRowIndex} rad(er) hoppes over før header
               </span>
             )}
           </div>
@@ -81,9 +90,9 @@ const HeaderRowSelector: React.FC<HeaderRowSelectorProps> = ({
                   key={rowIndex} 
                   className={`${
                     displayRow.isHeader 
-                      ? 'bg-primary/10 border-2 border-primary' 
+                      ? 'bg-blue-100 border-2 border-blue-500 font-medium' 
                       : displayRow.isSkipped 
-                      ? 'bg-amber-50' 
+                      ? 'bg-gray-50 text-gray-600' 
                       : 'bg-background'
                   }`}
                 >
