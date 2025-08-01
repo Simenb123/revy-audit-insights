@@ -34,6 +34,7 @@ For instructions on managing audit actions, see [docs/manage-audit-actions.md](d
 For a map of which hooks and services call Supabase edge functions, see [docs/frontend-supabase-flow.md](docs/frontend-supabase-flow.md).
 For client and team features see [docs/client-management.md](docs/client-management.md) and [docs/team-collaboration.md](docs/team-collaboration.md).
 For accounting imports see [docs/accounting-upload-workflow.md](docs/accounting-upload-workflow.md).
+For general ledger upload details see [docs/general-ledger-upload.md](docs/general-ledger-upload.md).
 For voice features see [docs/voice-functions.md](docs/voice-functions.md).
 For the knowledge base and article workflow, see [docs/knowledge-base.md](docs/knowledge-base.md).
 For BRREG integration details, see [docs/brreg.md](docs/brreg.md).
