@@ -564,8 +564,15 @@ const GeneralLedgerUploader = ({ clientId, onUploadComplete }: GeneralLedgerUplo
       setUploadProgress(100);
       setStep('success');
       
-      toast.success(`✅ Hovedbok opplastet! ${successful} transaksjoner i versjon ${version.version_number}`);
+      toast.success(`✅ Hovedbok opplastet! ${successful} transaksjoner i versjon ${version.version_number} er nå aktiv`);
+      
+      // Trigger refresh of the parent component
       onUploadComplete?.();
+      
+      // Add small delay to ensure database operations complete
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
       
     } catch (error: any) {
       toast.error(`Feil ved opplasting: ${error.message || 'Ukjent feil'}`);

@@ -81,6 +81,7 @@ export const useGLVersionOptions = (clientId: string) => {
       return options;
     },
     enabled: !!clientId,
+    staleTime: 0, // Always refetch to get latest versions
   });
 };
 
@@ -172,9 +173,15 @@ export const useCreateVersion = () => {
 
       return data as AccountingDataVersion;
     },
-    onSuccess: () => {
+    onSuccess: (newVersion) => {
+      // Invalidate all relevant queries to refresh UI
       queryClient.invalidateQueries({ queryKey: ['accounting-versions'] });
       queryClient.invalidateQueries({ queryKey: ['active-version'] });
+      queryClient.invalidateQueries({ queryKey: ['gl-version-options'] });
+      queryClient.invalidateQueries({ queryKey: ['general-ledger-data'] });
+      queryClient.invalidateQueries({ queryKey: ['general-ledger-count'] });
+      
+      console.log('[useCreateVersion] New active version created:', newVersion);
     },
   });
 };

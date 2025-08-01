@@ -59,11 +59,11 @@ const AccountingExplorer: React.FC<AccountingExplorerProps> = ({ clientId }) => 
 
   // Update state when defaults change - always set to latest active/default version
   React.useEffect(() => {
-    if (defaultGLVersion) {
+    if (defaultGLVersion && (!selectedGLVersion || defaultGLVersion.id !== selectedGLVersion.id)) {
       console.log('[AccountingExplorer] Setting GL version to:', defaultGLVersion);
       setSelectedGLVersion(defaultGLVersion);
     }
-  }, [defaultGLVersion]);
+  }, [defaultGLVersion, selectedGLVersion]);
 
   React.useEffect(() => {
     if (defaultTBVersion) {
