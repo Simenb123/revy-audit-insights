@@ -1,9 +1,7 @@
 import React from 'react';
 import ClientContextHeader from './ClientContextHeader';
 import ClientSubHeader from './ClientSubHeader';
-import { Calendar } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { useFiscalYear } from '@/contexts/FiscalYearContext';
+import FiscalYearSelector from './FiscalYearSelector';
 
 interface StickyClientLayoutProps {
   clientName: string;
@@ -20,8 +18,6 @@ const StickyClientLayout: React.FC<StickyClientLayoutProps> = ({
   showBackButton = true,
   children
 }) => {
-  const { selectedFiscalYear } = useFiscalYear();
-
   return (
     <div className="flex flex-col h-full">
       <ClientSubHeader
@@ -43,13 +39,10 @@ const StickyClientLayout: React.FC<StickyClientLayoutProps> = ({
           </div>
         }
         rightContent={
-          <div className="flex items-center gap-3">
-            <span className="text-xs font-medium text-muted-foreground">AI Assistent</span>
-            <Badge variant="outline" className="flex items-center gap-1">
-              <Calendar className="w-3 h-3" />
-              {selectedFiscalYear}
-            </Badge>
-          </div>
+          <FiscalYearSelector 
+            clientName={clientName}
+            showClientName={false}
+          />
         }
       />
       <div className="flex-1 min-h-0">

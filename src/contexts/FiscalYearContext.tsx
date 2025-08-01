@@ -19,7 +19,9 @@ export const useFiscalYear = () => {
 };
 
 export const FiscalYearProvider = ({ children }: { children: React.ReactNode }) => {
-  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(() => {
+    return localStorage.getItem('selectedClientId') || null;
+  });
   const [selectedFiscalYear, setSelectedFiscalYear] = useState(() => {
     const stored = localStorage.getItem('selectedFiscalYear');
     return stored ? parseInt(stored, 10) : new Date().getFullYear();

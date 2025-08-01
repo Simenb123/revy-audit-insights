@@ -56,31 +56,20 @@ const ColumnMappingTable: React.FC<ColumnMappingTableProps> = ({
         <div className="overflow-x-auto">
           <table className="w-full border-collapse border border-border">
             <thead>
-              {/* File headers row */}
               <tr className="bg-primary/10">
-                <th className="border border-border p-3 text-left font-medium text-xs text-muted-foreground min-w-[80px]">
-                  Rad
-                </th>
                 {headers.map((header, index) => (
                   <th key={index} className="border border-border p-3 text-left font-medium min-w-[150px]">
                     {header}
                   </th>
                 ))}
               </tr>
-              
-              {/* Mapping row */}
               <tr className="bg-muted/30">
-                <td className="border border-border p-3 text-xs font-medium text-muted-foreground">
-                  Mapping
-                </td>
                 {headers.map((header, index) => {
                   const suggestion = getSuggestionForColumn(header);
-                  const mappedField = mapping[header];
-                  const fieldDef = fieldDefinitions.find(f => f.field_key === mappedField);
                   
                   return (
                     <td key={index} className="border border-border p-2">
-                      <div className="space-y-1">
+                      <div className="space-y-2">
                         {/* AI Suggestion badge */}
                         {suggestion && (
                           <div className="flex justify-center">
@@ -128,13 +117,9 @@ const ColumnMappingTable: React.FC<ColumnMappingTableProps> = ({
               </tr>
             </thead>
             
-            {/* Sample data rows */}
             <tbody>
               {sampleRows.slice(0, 5).map((row, rowIndex) => (
                 <tr key={rowIndex} className={rowIndex % 2 === 0 ? 'bg-background' : 'bg-muted/30'}>
-                  <td className="border border-border p-2 text-xs bg-muted/30 font-medium">
-                    {rowIndex + 1}
-                  </td>
                   {row.slice(0, headers.length).map((cell, cellIndex) => (
                     <td key={cellIndex} className="border border-border p-2 text-sm">
                       {cell || '-'}
