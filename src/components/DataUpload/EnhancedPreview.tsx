@@ -178,7 +178,31 @@ const EnhancedPreview: React.FC<EnhancedPreviewProps> = ({
     return displayRows;
   };
 
+  // Generate sample rows based on selected header row
+  const generateSampleRows = () => {
+    const allRawData = [
+      ...preview.skippedRows.map(row => row.content),
+      preview.headers,
+      ...preview.allRows
+    ];
+    
+    // Get data rows starting from the row after the selected header row
+    const dataStartIndex = currentHeaderRowIndex + 1;
+    const sampleRows = allRawData.slice(dataStartIndex, dataStartIndex + 5);
+    
+    // Ensure each row has the same number of columns as headers
+    return sampleRows.map(row => {
+      const normalizedRow = Array.isArray(row) ? row : [];
+      // Pad or trim to match header count
+      while (normalizedRow.length < currentHeaders.length) {
+        normalizedRow.push('');
+      }
+      return normalizedRow.slice(0, currentHeaders.length).map(cell => cell?.toString() || '');
+    });
+  };
+
   const displayRows = generateDisplayRows();
+  const sampleRows = generateSampleRows();
 
   if (isLoading) {
     return (
@@ -235,7 +259,7 @@ const EnhancedPreview: React.FC<EnhancedPreviewProps> = ({
       <ColumnMappingTable
         fileName={fileName}
         headers={currentHeaders}
-        sampleRows={preview.rows.slice(0, 5)}
+        sampleRows={sampleRows}
         mapping={mapping}
         fieldDefinitions={fieldDefinitions}
         suggestedMappings={suggestedMappings}
