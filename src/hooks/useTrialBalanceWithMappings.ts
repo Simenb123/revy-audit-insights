@@ -67,13 +67,20 @@ export const useTrialBalanceWithMappings = (clientId: string, fiscalYear?: numbe
 
       if (tbError) {
         console.error('Error fetching trial balance with mappings:', tbError);
-        // Fallback to calculated trial balance if direct data not available
-        return calculateTrialBalanceWithMappings(clientId);
+        throw tbError;
       }
 
       if (!trialBalanceWithMappings || trialBalanceWithMappings.length === 0) {
-        console.log('No direct trial balance data, calculating from general ledger...');
-        return calculateTrialBalanceWithMappings(clientId);
+        // Return empty result if no trial balance data exists for the selected version/year
+        return {
+          trialBalanceEntries: [],
+          standardAccountBalances: [],
+          mappingStats: {
+            totalAccounts: 0,
+            mappedAccounts: 0,
+            unmappedAccounts: 0,
+          }
+        };
       }
 
       // Transform the data
