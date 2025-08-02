@@ -3,6 +3,7 @@ import { useStandardAccounts } from './useChartOfAccounts';
 import { useTrialBalanceData } from './useTrialBalanceData';
 import { useTrialBalanceMappings } from './useTrialBalanceMappings';
 import { useBulkSaveTrialBalanceMappings } from './useTrialBalanceMappings';
+import { useAccountMappingRules } from './useAccountMappingRules';
 import { toast } from './use-toast';
 
 export interface AutoMappingSuggestion {
@@ -13,62 +14,31 @@ export interface AutoMappingSuggestion {
   reason: string;
 }
 
-// Norwegian account mapping rules based on standard chart of accounts
-const norwegianMappingRules = [
-  // Assets (1000-1999)
-  { pattern: /^19[0-9][0-9]/, standardNumber: '1900', name: 'Bank', confidence: 0.9 },
-  { pattern: /^150[0-9]/, standardNumber: '1500', name: 'Kundefordringer', confidence: 0.9 },
-  { pattern: /^140[0-9]/, standardNumber: '1400', name: 'Varelager', confidence: 0.9 },
-  { pattern: /^12[0-9][0-9]/, standardNumber: '1200', name: 'Driftsmidler', confidence: 0.8 },
-  { pattern: /^180[0-9]/, standardNumber: '1800', name: 'Forskuddsbetalt', confidence: 0.8 },
-  
-  // Liabilities (2000-2999)
-  { pattern: /^24[0-9][0-9]/, standardNumber: '2400', name: 'Leverandørgjeld', confidence: 0.9 },
-  { pattern: /^27[0-9][0-9]/, standardNumber: '2700', name: 'Skyldig offentlige avgifter', confidence: 0.9 },
-  { pattern: /^29[0-9][0-9]/, standardNumber: '2900', name: 'Annen kortsiktig gjeld', confidence: 0.8 },
-  { pattern: /^20[0-9][0-9]/, standardNumber: '2000', name: 'Langsiktig gjeld', confidence: 0.8 },
-  
-  // Equity (3000-3999)
-  { pattern: /^30[0-9][0-9]/, standardNumber: '3000', name: 'Egenkapital', confidence: 0.9 },
-  
-  // Revenue (4000-4999)
-  { pattern: /^30[0-9][0-9]/, standardNumber: '3000', name: 'Salgsinntekt', confidence: 0.9 },
-  { pattern: /^38[0-9][0-9]/, standardNumber: '3800', name: 'Andre inntekter', confidence: 0.8 },
-  
-  // Expenses (5000-8999)
-  { pattern: /^40[0-9][0-9]/, standardNumber: '4000', name: 'Varekostnad', confidence: 0.9 },
-  { pattern: /^50[0-9][0-9]/, standardNumber: '5000', name: 'Lønnskostnad', confidence: 0.9 },
-  { pattern: /^51[0-9][0-9]/, standardNumber: '5100', name: 'Sosiale kostnader', confidence: 0.9 },
-  { pattern: /^60[0-9][0-9]/, standardNumber: '6000', name: 'Andre driftskostnader', confidence: 0.8 },
-  { pattern: /^61[0-9][0-9]/, standardNumber: '6100', name: 'Avskrivninger', confidence: 0.8 },
-  { pattern: /^7[0-9][0-9][0-9]/, standardNumber: '7000', name: 'Finanskostnader', confidence: 0.8 },
-  { pattern: /^8[0-9][0-9][0-9]/, standardNumber: '8000', name: 'Finansinntekter', confidence: 0.8 },
-];
-
-// Name-based mapping rules
+// Name-based fallback mapping rules
 const nameMappingRules = [
-  { keywords: ['bank', 'kasse'], standardNumber: '1900', confidence: 0.8 },
-  { keywords: ['kunde', 'fordring'], standardNumber: '1500', confidence: 0.8 },
-  { keywords: ['lager', 'vare'], standardNumber: '1400', confidence: 0.8 },
-  { keywords: ['leverandør', 'kreditor'], standardNumber: '2400', confidence: 0.8 },
-  { keywords: ['mva', 'merverdiavgift'], standardNumber: '2700', confidence: 0.8 },
-  { keywords: ['lønn', 'salary'], standardNumber: '5000', confidence: 0.8 },
-  { keywords: ['salg', 'omsetning', 'inntekt'], standardNumber: '3000', confidence: 0.7 },
-  { keywords: ['kostnad', 'expense'], standardNumber: '6000', confidence: 0.6 },
+  { keywords: ['bank', 'kasse'], confidence: 0.8 },
+  { keywords: ['kunde', 'fordring'], confidence: 0.8 },
+  { keywords: ['lager', 'vare'], confidence: 0.8 },
+  { keywords: ['leverandør', 'kreditor'], confidence: 0.8 },
+  { keywords: ['mva', 'merverdiavgift'], confidence: 0.8 },
+  { keywords: ['lønn', 'salary'], confidence: 0.8 },
+  { keywords: ['salg', 'omsetning', 'inntekt'], confidence: 0.7 },
+  { keywords: ['kostnad', 'expense'], confidence: 0.6 },
 ];
 
 export const useAutoMapping = (clientId: string) => {
   const { data: standardAccounts } = useStandardAccounts();
   const { data: trialBalanceData } = useTrialBalanceData(clientId);
   const { data: existingMappings = [] } = useTrialBalanceMappings(clientId);
+  const { data: mappingRules = [] } = useAccountMappingRules();
   const bulkSaveMapping = useBulkSaveTrialBalanceMappings();
   const queryClient = useQueryClient();
 
   const generateAutoMappingSuggestions = (): AutoMappingSuggestion[] => {
-    if (!trialBalanceData || !standardAccounts) return [];
+    if (!trialBalanceData || !standardAccounts || !mappingRules) return [];
 
     const existingMappingSet = new Set(existingMappings.map(m => m.account_number));
-    const standardAccountNumbers = new Set(standardAccounts.map(acc => acc.standard_number));
+    const standardAccountsMap = new Map(standardAccounts.map(acc => [acc.id, acc.standard_number]));
     
     const suggestions: AutoMappingSuggestion[] = [];
 
@@ -77,38 +47,48 @@ export const useAutoMapping = (clientId: string) => {
       if (existingMappingSet.has(account.account_number)) return;
 
       let bestSuggestion: { standardNumber: string; confidence: number; reason: string } | null = null;
+      const accountNumber = parseInt(account.account_number);
 
-      // Try number-based rules first (higher confidence)
-      for (const rule of norwegianMappingRules) {
-        if (rule.pattern.test(account.account_number)) {
-          if (standardAccountNumbers.has(rule.standardNumber)) {
-            if (!bestSuggestion || rule.confidence > bestSuggestion.confidence) {
-              bestSuggestion = {
-                standardNumber: rule.standardNumber,
-                confidence: rule.confidence,
-                reason: `Kontonummer-mønster: ${rule.name}`
-              };
-            }
+      // Try mapping rules based on account number ranges (primary method)
+      for (const rule of mappingRules) {
+        if (accountNumber >= rule.account_range_start && accountNumber <= rule.account_range_end) {
+          const standardNumber = standardAccountsMap.get(rule.standard_account_id);
+          if (standardNumber) {
+            bestSuggestion = {
+              standardNumber: standardNumber,
+              confidence: rule.confidence_score,
+              reason: `Kontointervall: ${rule.rule_name} (${rule.account_range_start}-${rule.account_range_end})`
+            };
+            break; // Use first matching rule (rules are ordered by range start)
           }
         }
       }
 
-      // Try name-based rules if no number match found
-      if (!bestSuggestion || bestSuggestion.confidence < 0.8) {
+      // Try name-based rules as fallback if no range match found
+      if (!bestSuggestion) {
         const accountNameLower = account.account_name.toLowerCase();
         
-        for (const rule of nameMappingRules) {
-          const matches = rule.keywords.some(keyword => 
+        for (const nameRule of nameMappingRules) {
+          const matches = nameRule.keywords.some(keyword => 
             accountNameLower.includes(keyword.toLowerCase())
           );
           
-          if (matches && standardAccountNumbers.has(rule.standardNumber)) {
-            if (!bestSuggestion || rule.confidence > bestSuggestion.confidence) {
+          if (matches) {
+            // For name-based matching, we need to find a reasonable standard account
+            // This is a fallback, so we'll use lower confidence
+            const fallbackStandardAccount = standardAccounts.find(acc => 
+              nameRule.keywords.some(keyword => 
+                acc.standard_name?.toLowerCase().includes(keyword.toLowerCase())
+              )
+            );
+            
+            if (fallbackStandardAccount) {
               bestSuggestion = {
-                standardNumber: rule.standardNumber,
-                confidence: rule.confidence,
-                reason: `Kontonavn matcher: ${rule.keywords.join(', ')}`
+                standardNumber: fallbackStandardAccount.standard_number,
+                confidence: nameRule.confidence * 0.7, // Lower confidence for name matching
+                reason: `Kontonavn matcher: ${nameRule.keywords.join(', ')}`
               };
+              break;
             }
           }
         }
