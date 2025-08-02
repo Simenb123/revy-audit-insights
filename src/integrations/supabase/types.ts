@@ -3292,6 +3292,150 @@ export type Database = {
           },
         ]
       }
+      firm_account_mapping_rules: {
+        Row: {
+          account_range_end: number
+          account_range_start: number
+          audit_firm_id: string
+          base_rule_id: string | null
+          confidence_score: number | null
+          created_at: string
+          created_by: string | null
+          firm_standard_account_id: string | null
+          id: string
+          is_active: boolean | null
+          is_custom: boolean | null
+          rule_name: string
+          updated_at: string
+        }
+        Insert: {
+          account_range_end: number
+          account_range_start: number
+          audit_firm_id: string
+          base_rule_id?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          created_by?: string | null
+          firm_standard_account_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_custom?: boolean | null
+          rule_name: string
+          updated_at?: string
+        }
+        Update: {
+          account_range_end?: number
+          account_range_start?: number
+          audit_firm_id?: string
+          base_rule_id?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          created_by?: string | null
+          firm_standard_account_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_custom?: boolean | null
+          rule_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "firm_account_mapping_rules_base_rule_id_fkey"
+            columns: ["base_rule_id"]
+            isOneToOne: false
+            referencedRelation: "account_mapping_rules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "firm_account_mapping_rules_firm_standard_account_id_fkey"
+            columns: ["firm_standard_account_id"]
+            isOneToOne: false
+            referencedRelation: "firm_standard_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      firm_standard_accounts: {
+        Row: {
+          account_type: Database["public"]["Enums"]["account_type_enum"]
+          analysis_group: string | null
+          audit_firm_id: string
+          base_standard_account_id: string | null
+          calculation_formula: Json | null
+          category: string | null
+          created_at: string
+          created_by: string | null
+          display_order: number | null
+          id: string
+          is_active: boolean | null
+          is_custom: boolean | null
+          is_total_line: boolean | null
+          line_type: string
+          parent_line_id: string | null
+          sign_multiplier: number | null
+          standard_name: string
+          standard_number: string
+          updated_at: string
+        }
+        Insert: {
+          account_type: Database["public"]["Enums"]["account_type_enum"]
+          analysis_group?: string | null
+          audit_firm_id: string
+          base_standard_account_id?: string | null
+          calculation_formula?: Json | null
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_custom?: boolean | null
+          is_total_line?: boolean | null
+          line_type?: string
+          parent_line_id?: string | null
+          sign_multiplier?: number | null
+          standard_name: string
+          standard_number: string
+          updated_at?: string
+        }
+        Update: {
+          account_type?: Database["public"]["Enums"]["account_type_enum"]
+          analysis_group?: string | null
+          audit_firm_id?: string
+          base_standard_account_id?: string | null
+          calculation_formula?: Json | null
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_custom?: boolean | null
+          is_total_line?: boolean | null
+          line_type?: string
+          parent_line_id?: string | null
+          sign_multiplier?: number | null
+          standard_name?: string
+          standard_number?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "firm_standard_accounts_base_standard_account_id_fkey"
+            columns: ["base_standard_account_id"]
+            isOneToOne: false
+            referencedRelation: "standard_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "firm_standard_accounts_parent_line_id_fkey"
+            columns: ["parent_line_id"]
+            isOneToOne: false
+            referencedRelation: "firm_standard_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       formula_definitions: {
         Row: {
           category: string | null
@@ -5867,6 +6011,14 @@ export type Database = {
       }
       cleanup_expired_cache: {
         Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      copy_global_mapping_rules_to_firm: {
+        Args: { p_audit_firm_id: string }
+        Returns: number
+      }
+      copy_global_standards_to_firm: {
+        Args: { p_audit_firm_id: string }
         Returns: number
       }
       generate_certificate_number: {
