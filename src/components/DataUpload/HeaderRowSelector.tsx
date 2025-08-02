@@ -61,11 +61,12 @@ const HeaderRowSelector: React.FC<HeaderRowSelectorProps> = ({
                   <SelectItem key={index} value={index.toString()}>
                     <div className="flex items-center gap-2">
                       <span>Rad {index + 1}</span>
-                      {row.content.slice(0, 3).some(cell => 
-                        cell && ['konto', 'beløp', 'saldo', 'dato', 'navn'].some(term => 
-                          cell.toLowerCase().includes(term)
-                        )
-                      ) && (
+                      {row.content.slice(0, 3).some(cell => {
+                        const strCell = typeof cell === 'string' ? cell : cell != null ? String(cell) : '';
+                        return strCell && ['konto', 'beløp', 'saldo', 'dato', 'navn'].some(term => 
+                          strCell.toLowerCase().includes(term)
+                        );
+                      }) && (
                         <Badge variant="secondary" className="text-xs">Sannsynlig header</Badge>
                       )}
                     </div>
