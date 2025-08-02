@@ -73,28 +73,22 @@ export const useTrialBalanceVersions = (clientId: string) => {
 };
 
 // New hook for TB version options formatted for selectors
-export const useTBVersionOptions = (clientId: string, fiscalYear?: number) => {
+export const useTBVersionOptions = (clientId: string) => {
   return useQuery({
-    queryKey: ['tb-version-options', clientId, fiscalYear],
+    queryKey: ['tb-version-options', clientId],
     queryFn: async () => {
       if (!clientId) {
         console.log('[TB Version Options] No clientId provided');
         return [];
       }
       
-      console.log('[TB Version Options] Fetching for client:', clientId, 'fiscal year:', fiscalYear);
+      console.log('[TB Version Options] Fetching for client:', clientId);
       
-      let query = supabase
+      const { data, error } = await supabase
         .from('trial_balances')
         .select('version, period_year, created_at')
-        .eq('client_id', clientId);
-      
-      // Filter by fiscal year if provided
-      if (fiscalYear) {
-        query = query.eq('period_year', fiscalYear);
-      }
-      
-      const { data, error } = await query.order('created_at', { ascending: false });
+        .eq('client_id', clientId)
+        .order('created_at', { ascending: false });
 
       if (error) {
         console.error('[TB Version Options] Error:', error);

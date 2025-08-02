@@ -26,18 +26,9 @@ const TBVersionSelector: React.FC<TBVersionSelectorProps> = ({
     }
   };
 
-  // Show message if no versions available
-  if (!versions || versions.length === 0) {
-    return (
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Clock size={16} />
-        <span>Ingen saldobalanse data tilgjengelig for valgt år</span>
-      </div>
-    );
-  }
-
-  // Don't render if no selected version
-  if (!selectedVersion) {
+  // Don't render if no versions or no selected version
+  if (!versions.length || !selectedVersion) {
+    console.log('[TB Version Selector] Not rendering - versions:', versions.length, 'selected:', !!selectedVersion);
     return null;
   }
   
