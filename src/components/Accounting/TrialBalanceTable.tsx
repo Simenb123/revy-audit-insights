@@ -1,10 +1,10 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import { Layers } from 'lucide-react';
-import { TrialBalanceEntry, useTrialBalanceData } from '@/hooks/useTrialBalanceData';
-import { getFieldDefinitions } from '@/utils/fieldDefinitions';
+import { useTrialBalanceWithMappings, TrialBalanceEntryWithMapping } from '@/hooks/useTrialBalanceWithMappings';
 import DataTable, { DataTableColumn } from '@/components/ui/data-table';
 import { TableRow, TableCell } from '@/components/ui/table';
-import { useQuery } from '@tanstack/react-query';
+import ColumnSelector, { ColumnConfig } from './ColumnSelector';
+import { useFiscalYear } from '@/contexts/FiscalYearContext';
 
 interface TrialBalanceTableProps {
   clientId: string;
@@ -13,32 +13,39 @@ interface TrialBalanceTableProps {
 }
 
 const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialBalanceTableProps) => {
-  const { data: trialBalanceEntries, isLoading, error } = useTrialBalanceData(clientId, selectedVersion, accountingYear);
+  const { selectedFiscalYear } = useFiscalYear();
+  const actualAccountingYear = accountingYear || selectedFiscalYear;
   
-  // Debug logging
-  console.log('TrialBalanceTable - trialBalanceEntries:', trialBalanceEntries);
-  console.log('TrialBalanceTable - isLoading:', isLoading);
-  console.log('TrialBalanceTable - error:', error);
+  const { data: trialBalanceData, isLoading, error } = useTrialBalanceWithMappings(clientId);
   
-  // Get field definitions for trial balance
-  const { data: fieldDefinitions } = useQuery({
-    queryKey: ['field-definitions', 'trial_balance', accountingYear],
-    queryFn: () => getFieldDefinitions('trial_balance', accountingYear),
-  });
+  // Column configuration state
+  const [columnConfig, setColumnConfig] = useState<ColumnConfig[]>(() => [
+    { key: 'account_number', label: 'Kontonr', visible: true, required: true },
+    { key: 'account_name', label: 'Kontonavn', visible: true, required: true },
+    { key: 'saldo_2023', label: 'Saldo 2023', visible: true },
+    { key: 'opening_balance', label: 'Inngående balanse 2024', visible: true },
+    { key: 'closing_balance', label: 'Saldo 2024', visible: true },
+    { key: 'debit_turnover', label: 'Debet', visible: false },
+    { key: 'credit_turnover', label: 'Kredit', visible: false },
+    { key: 'standard_number', label: 'Regnskapsnr', visible: true },
+    { key: 'standard_name', label: 'Regnskapslinje', visible: true },
+  ]);
 
-  // Filter entries by version and accounting year if provided
-  const filteredByPeriod = useMemo(() => {
-    const entries = trialBalanceEntries || [];
-    console.log('TrialBalanceTable - entries before filter:', entries.length);
-    const filtered = entries.filter(entry => {
-      if (accountingYear && entry.period_year !== accountingYear) return false;
-      if (selectedVersion && entry.version && entry.version !== selectedVersion) return false;
+  const handleColumnChange = useCallback((key: string, visible: boolean) => {
+    setColumnConfig(prev => prev.map(col => 
+      col.key === key ? { ...col, visible } : col
+    ));
+  }, []);
+
+  // Filter entries by accounting year
+  const filteredEntries = useMemo(() => {
+    if (!trialBalanceData?.trialBalanceEntries) return [];
+    
+    return trialBalanceData.trialBalanceEntries.filter(entry => {
+      if (actualAccountingYear && entry.period_year !== actualAccountingYear) return false;
       return true;
     });
-    console.log('TrialBalanceTable - entries after filter:', filtered.length);
-    console.log('TrialBalanceTable - first few entries:', filtered.slice(0, 3));
-    return filtered;
-  }, [trialBalanceEntries, accountingYear, selectedVersion]);
+  }, [trialBalanceData, actualAccountingYear]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('nb-NO', {
@@ -48,186 +55,168 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
     }).format(amount);
   };
 
-  // Define columns based on field definitions
-  const columns: DataTableColumn<TrialBalanceEntry>[] = useMemo(() => {
-    console.log('TrialBalanceTable - fieldDefinitions:', fieldDefinitions);
-    // Always use fallback columns for debugging
-    const fallbackColumns = [
-        {
-          key: 'account_info',
-          header: 'Konto-ID',
-          accessor: (entry: TrialBalanceEntry) => {
-            console.log('TrialBalanceTable - processing entry:', entry);
-            return `${entry.account_number} - ${entry.account_name || 'Ukjent konto'}`;
-          },
-          sortable: true,
-          searchable: true,
-          className: 'font-medium',
-        },
-        {
-          key: 'period',
-          header: 'Periode',
-          accessor: (entry: TrialBalanceEntry) => `${entry.period_year} (${entry.period_end_date})`,
-          sortable: true,
-        },
-        {
-          key: 'opening_balance',
-          header: 'Åpningsbalanse',
-          accessor: (entry: TrialBalanceEntry) => entry.opening_balance,
-          sortable: true,
-          align: 'right' as const,
-          format: (value: number) => formatCurrency(value),
-          className: 'font-mono',
-        },
-        {
-          key: 'debit_turnover',
-          header: 'Debet',
-          accessor: (entry: TrialBalanceEntry) => entry.debit_turnover,
-          sortable: true,
-          align: 'right' as const,
-          format: (value: number) => formatCurrency(value),
-          className: 'font-mono',
-        },
-        {
-          key: 'credit_turnover',
-          header: 'Kredit',
-          accessor: (entry: TrialBalanceEntry) => entry.credit_turnover,
-          sortable: true,
-          align: 'right' as const,
-          format: (value: number) => formatCurrency(value),
-          className: 'font-mono',
-        },
-        {
-          key: 'closing_balance',
-          header: 'Sluttsaldo',
-          accessor: (entry: TrialBalanceEntry) => entry.closing_balance,
-          sortable: true,
-          align: 'right' as const,
-          format: (value: number) => formatCurrency(value),
-          className: 'font-mono',
-        },
-      ];
-    
-    console.log('TrialBalanceTable - using fallback columns:', fallbackColumns);
-    return fallbackColumns;
-
-    /*// Map field definitions to columns
-    const baseColumns: DataTableColumn<TrialBalanceEntry>[] = [
+  // Define columns based on configuration
+  const columns: DataTableColumn<TrialBalanceEntryWithMapping>[] = useMemo(() => {
+    const allColumns: DataTableColumn<TrialBalanceEntryWithMapping>[] = [
       {
-        key: 'account_info',
-        header: fieldDefinitions.find(f => f.field_key === 'account_number')?.field_label || 'Konto-ID',
-        accessor: (entry: TrialBalanceEntry) => `${entry.account_number} - ${entry.account_name || 'Ukjent konto'}`,
+        key: 'account_number',
+        header: 'Kontonr',
+        accessor: (entry: TrialBalanceEntryWithMapping) => entry.account_number,
         sortable: true,
         searchable: true,
         className: 'font-medium',
       },
       {
-        key: 'period',
-        header: 'Periode',
-        accessor: (entry: TrialBalanceEntry) => `${entry.period_year} (${entry.period_end_date})`,
+        key: 'account_name',
+        header: 'Kontonavn',
+        accessor: (entry: TrialBalanceEntryWithMapping) => entry.account_name,
         sortable: true,
+        searchable: true,
+        className: 'font-medium',
+      },
+      {
+        key: 'saldo_2023',
+        header: 'Saldo 2023',
+        accessor: (entry: TrialBalanceEntryWithMapping) => 0, // Placeholder for now
+        sortable: true,
+        align: 'right' as const,
+        format: (value: number) => formatCurrency(value),
+        className: 'font-mono',
+      },
+      {
+        key: 'opening_balance',
+        header: 'Inngående balanse 2024',
+        accessor: (entry: TrialBalanceEntryWithMapping) => entry.opening_balance,
+        sortable: true,
+        align: 'right' as const,
+        format: (value: number) => formatCurrency(value),
+        className: 'font-mono',
+      },
+      {
+        key: 'closing_balance',
+        header: 'Saldo 2024',
+        accessor: (entry: TrialBalanceEntryWithMapping) => entry.closing_balance,
+        sortable: true,
+        align: 'right' as const,
+        format: (value: number) => formatCurrency(value),
+        className: 'font-mono',
+      },
+      {
+        key: 'debit_turnover',
+        header: 'Debet',
+        accessor: (entry: TrialBalanceEntryWithMapping) => entry.debit_turnover,
+        sortable: true,
+        align: 'right' as const,
+        format: (value: number) => formatCurrency(value),
+        className: 'font-mono',
+      },
+      {
+        key: 'credit_turnover',
+        header: 'Kredit',
+        accessor: (entry: TrialBalanceEntryWithMapping) => entry.credit_turnover,
+        sortable: true,
+        align: 'right' as const,
+        format: (value: number) => formatCurrency(value),
+        className: 'font-mono',
+      },
+      {
+        key: 'standard_number',
+        header: 'Regnskapsnr',
+        accessor: (entry: TrialBalanceEntryWithMapping) => entry.standard_number || '-',
+        sortable: true,
+        searchable: true,
+        className: 'font-medium',
+      },
+      {
+        key: 'standard_name',
+        header: 'Regnskapslinje',
+        accessor: (entry: TrialBalanceEntryWithMapping) => entry.standard_name || 'Ikke mappet',
+        sortable: true,
+        searchable: true,
+        format: (value: string, entry?: TrialBalanceEntryWithMapping) => (
+          <span className={!entry?.standard_name ? 'text-muted-foreground italic' : ''}>
+            {value}
+          </span>
+        ),
       },
     ];
 
-    // Add balance columns based on field definitions
-    const openingField = fieldDefinitions.find(f => f.field_key === 'opening_balance');
-    const debitField = fieldDefinitions.find(f => f.field_key === 'debit_turnover');
-    const creditField = fieldDefinitions.find(f => f.field_key === 'credit_turnover');
-    const closingField = fieldDefinitions.find(f => f.field_key === 'closing_balance');
-
-    if (openingField) {
-      baseColumns.push({
-        key: 'opening_balance',
-        header: openingField.field_label,
-        accessor: 'opening_balance',
-        sortable: true,
-        align: 'right',
-        format: (value: number) => formatCurrency(value),
-        className: 'font-mono',
-      });
-    }
-
-    if (debitField) {
-      baseColumns.push({
-        key: 'debit_turnover',
-        header: debitField.field_label,
-        accessor: 'debit_turnover',
-        sortable: true,
-        align: 'right',
-        format: (value: number) => formatCurrency(value),
-        className: 'font-mono',
-      });
-    }
-
-    if (creditField) {
-      baseColumns.push({
-        key: 'credit_turnover',
-        header: creditField.field_label,
-        accessor: 'credit_turnover',
-        sortable: true,
-        align: 'right',
-        format: (value: number) => formatCurrency(value),
-        className: 'font-mono',
-      });
-    }
-
-    if (closingField) {
-      baseColumns.push({
-        key: 'closing_balance',
-        header: closingField.field_label,
-        accessor: 'closing_balance',
-        sortable: true,
-        align: 'right',
-        format: (value: number) => formatCurrency(value),
-        className: 'font-mono',
-      });
-    }
-
-    return baseColumns;*/
-  }, [fieldDefinitions]);
+    // Filter columns based on visibility settings
+    return allColumns.filter(col => {
+      const config = columnConfig.find(c => c.key === col.key);
+      return config?.visible === true;
+    });
+  }, [columnConfig, formatCurrency]);
 
   // Calculate totals
   const totals = useMemo(() => {
-    if (!filteredByPeriod) return null;
+    if (!filteredEntries) return null;
     
     return {
-      opening_balance: filteredByPeriod.reduce((sum, entry) => sum + entry.opening_balance, 0),
-      debit_turnover: filteredByPeriod.reduce((sum, entry) => sum + entry.debit_turnover, 0),
-      credit_turnover: filteredByPeriod.reduce((sum, entry) => sum + entry.credit_turnover, 0),
-      closing_balance: filteredByPeriod.reduce((sum, entry) => sum + entry.closing_balance, 0),
+      opening_balance: filteredEntries.reduce((sum, entry) => sum + entry.opening_balance, 0),
+      debit_turnover: filteredEntries.reduce((sum, entry) => sum + entry.debit_turnover, 0),
+      credit_turnover: filteredEntries.reduce((sum, entry) => sum + entry.credit_turnover, 0),
+      closing_balance: filteredEntries.reduce((sum, entry) => sum + entry.closing_balance, 0),
     };
-  }, [filteredByPeriod]);
+  }, [filteredEntries]);
 
-  // Create total row
+  // Create total row dynamically based on visible columns
   const totalRow = totals ? (
     <TableRow className="font-bold border-t-2 bg-muted/50">
-      <TableCell colSpan={2}>Sum</TableCell>
-      <TableCell className="text-right font-mono">{formatCurrency(totals.opening_balance)}</TableCell>
-      <TableCell className="text-right font-mono">{formatCurrency(totals.debit_turnover)}</TableCell>
-      <TableCell className="text-right font-mono">{formatCurrency(totals.credit_turnover)}</TableCell>
-      <TableCell className="text-right font-mono">{formatCurrency(totals.closing_balance)}</TableCell>
+      <TableCell colSpan={Math.max(1, columnConfig.filter(c => c.visible && !c.key.includes('balance') && !c.key.includes('turnover')).length)}>
+        Sum
+      </TableCell>
+      {columnConfig.find(c => c.key === 'saldo_2023' && c.visible) && (
+        <TableCell className="text-right font-mono">{formatCurrency(0)}</TableCell>
+      )}
+      {columnConfig.find(c => c.key === 'opening_balance' && c.visible) && (
+        <TableCell className="text-right font-mono">{formatCurrency(totals.opening_balance)}</TableCell>
+      )}
+      {columnConfig.find(c => c.key === 'closing_balance' && c.visible) && (
+        <TableCell className="text-right font-mono">{formatCurrency(totals.closing_balance)}</TableCell>
+      )}
+      {columnConfig.find(c => c.key === 'debit_turnover' && c.visible) && (
+        <TableCell className="text-right font-mono">{formatCurrency(totals.debit_turnover)}</TableCell>
+      )}
+      {columnConfig.find(c => c.key === 'credit_turnover' && c.visible) && (
+        <TableCell className="text-right font-mono">{formatCurrency(totals.credit_turnover)}</TableCell>
+      )}
+      {columnConfig.find(c => (c.key === 'standard_number' || c.key === 'standard_name') && c.visible) && (
+        <TableCell colSpan={columnConfig.filter(c => (c.key === 'standard_number' || c.key === 'standard_name') && c.visible).length}>
+          -
+        </TableCell>
+      )}
     </TableRow>
   ) : null;
 
   // Create description text
-  const description = `Viser ${filteredByPeriod.length} kontoer${selectedVersion ? ` • Versjon: ${selectedVersion}` : ''}${accountingYear ? ` • År: ${accountingYear}` : ''}${trialBalanceEntries && trialBalanceEntries.length > 0 ? ` • Periode slutt: ${trialBalanceEntries[0].period_end_date}` : ''}`;
+  const mappingStats = trialBalanceData?.mappingStats;
+  const description = `Viser ${filteredEntries.length} kontoer • År: ${actualAccountingYear}${mappingStats ? ` • Mappet: ${mappingStats.mappedAccounts}/${mappingStats.totalAccounts}` : ''}`;
 
   return (
-    <DataTable
-      title="Saldobalanse"
-      description={description}
-      icon={<Layers className="h-5 w-5" />}
-      data={filteredByPeriod}
-      columns={columns}
-      isLoading={isLoading}
-      error={error}
-      searchPlaceholder="Søk i kontoer..."
-      enableExport={true}
-      exportFileName={`saldobalanse_${accountingYear || new Date().getFullYear()}`}
-      showTotals={true}
-      totalRow={totalRow}
-      emptyMessage="Ingen kontoer funnet"
-    />
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <ColumnSelector 
+          columns={columnConfig}
+          onColumnChange={handleColumnChange}
+        />
+      </div>
+      <DataTable
+        title="Saldobalanse"
+        description={description}
+        icon={<Layers className="h-5 w-5" />}
+        data={filteredEntries}
+        columns={columns}
+        isLoading={isLoading}
+        error={error}
+        searchPlaceholder="Søk i kontoer..."
+        enableExport={true}
+        exportFileName={`saldobalanse_${actualAccountingYear}`}
+        showTotals={true}
+        totalRow={totalRow}
+        emptyMessage="Ingen kontoer funnet"
+      />
+    </div>
   );
 };
 

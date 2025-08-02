@@ -147,33 +147,43 @@ const DataTable = <T extends Record<string, any>>({
     return sortOrder === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />;
   };
 
-  const handleExport = () => {
+  const handleExport = async () => {
     if (!data || data.length === 0) return;
     
     const exportColumns = columns.filter(col => col.key !== 'actions');
-    const csvContent = [
-      exportColumns.map(col => col.header).join(','),
-      ...data.map(item => 
-        exportColumns.map(column => {
-          const value = typeof column.accessor === 'function' 
-            ? column.accessor(item)
-            : item[column.accessor as keyof T];
-          
-          // Clean value for CSV
-          let cleanValue = String(value || '');
-          if (cleanValue.includes(',') || cleanValue.includes('"')) {
-            cleanValue = `"${cleanValue.replace(/"/g, '""')}"`;
-          }
-          return cleanValue;
-        }).join(',')
-      )
-    ].join('\n');
     
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `${exportFileName}_${new Date().getFullYear()}.csv`;
-    link.click();
+    // Dynamically import xlsx to avoid bundle size issues
+    const XLSX = await import('xlsx');
+    
+    // Prepare data for Excel export
+    const excelData = data.map(item => {
+      const row: Record<string, any> = {};
+      exportColumns.forEach(column => {
+        const value = typeof column.accessor === 'function' 
+          ? column.accessor(item)
+          : item[column.accessor as keyof T];
+        
+        // Format value for Excel
+        let cleanValue = value;
+        if (typeof value === 'string' && value.includes('kr ')) {
+          // Convert currency strings to numbers for Excel
+          cleanValue = parseFloat(value.replace(/[^\d,-]/g, '').replace(',', '.'));
+        }
+        
+        row[column.header] = cleanValue;
+      });
+      return row;
+    });
+    
+    // Create workbook and worksheet
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.json_to_sheet(excelData);
+    
+    // Add worksheet to workbook
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Data');
+    
+    // Generate Excel file and download
+    XLSX.writeFile(workbook, `${exportFileName}_${new Date().getFullYear()}.xlsx`);
   };
 
   const totalPages = enablePagination ? Math.ceil(totalCount / pageSize) : 1;
