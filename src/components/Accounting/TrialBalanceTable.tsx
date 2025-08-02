@@ -166,8 +166,8 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
     };
   }, [filteredEntries]);
 
-  // Create total row dynamically based on visible columns
-  const totalRow = totals ? (
+  // Create total row dynamically based on visible columns - show even when no data
+  const totalRow = (
     <TableRow className="font-bold border-t-2 bg-muted/50">
       <TableCell colSpan={Math.max(1, columnConfig.filter(c => c.visible && !c.key.includes('balance') && !c.key.includes('turnover')).length)}>
         Sum
@@ -176,16 +176,16 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
         <TableCell className="text-right font-mono">{formatCurrency(0)}</TableCell>
       )}
       {columnConfig.find(c => c.key === 'opening_balance' && c.visible) && (
-        <TableCell className="text-right font-mono">{formatCurrency(totals.opening_balance)}</TableCell>
+        <TableCell className="text-right font-mono">{formatCurrency(totals?.opening_balance || 0)}</TableCell>
       )}
       {columnConfig.find(c => c.key === 'closing_balance' && c.visible) && (
-        <TableCell className="text-right font-mono">{formatCurrency(totals.closing_balance)}</TableCell>
+        <TableCell className="text-right font-mono">{formatCurrency(totals?.closing_balance || 0)}</TableCell>
       )}
       {columnConfig.find(c => c.key === 'debit_turnover' && c.visible) && (
-        <TableCell className="text-right font-mono">{formatCurrency(totals.debit_turnover)}</TableCell>
+        <TableCell className="text-right font-mono">{formatCurrency(totals?.debit_turnover || 0)}</TableCell>
       )}
       {columnConfig.find(c => c.key === 'credit_turnover' && c.visible) && (
-        <TableCell className="text-right font-mono">{formatCurrency(totals.credit_turnover)}</TableCell>
+        <TableCell className="text-right font-mono">{formatCurrency(totals?.credit_turnover || 0)}</TableCell>
       )}
       {columnConfig.find(c => (c.key === 'standard_number' || c.key === 'standard_name') && c.visible) && (
         <TableCell colSpan={columnConfig.filter(c => (c.key === 'standard_number' || c.key === 'standard_name') && c.visible).length}>
@@ -193,7 +193,7 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
         </TableCell>
       )}
     </TableRow>
-  ) : null;
+  );
 
   // Create description text
   const mappingStats = trialBalanceData?.mappingStats;
@@ -220,7 +220,7 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
         exportFileName={`saldobalanse_${actualAccountingYear}`}
         showTotals={true}
         totalRow={totalRow}
-        emptyMessage="Ingen kontoer funnet"
+        emptyMessage={`Ingen saldobalanse data for ${actualAccountingYear}`}
       />
     </div>
   );

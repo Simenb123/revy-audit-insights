@@ -289,11 +289,14 @@ const DataTable = <T extends Record<string, any>>({
               </TableHeader>
               <TableBody>
                 {filteredAndSortedData.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={columns.length} className="text-center text-muted-foreground">
-                      {emptyMessage}
-                    </TableCell>
-                  </TableRow>
+                  <>
+                    <TableRow>
+                      <TableCell colSpan={columns.length} className="text-center text-muted-foreground">
+                        {emptyMessage}
+                      </TableCell>
+                    </TableRow>
+                    {showTotals && totalRow && totalRow}
+                  </>
                 ) : (
                   <>
                     {filteredAndSortedData.map((item, index) => (
