@@ -3,10 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Upload } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Upload, Zap, Check, X } from 'lucide-react';
 import { useStandardAccounts } from '@/hooks/useChartOfAccounts';
 import { useTrialBalanceMappings, useSaveTrialBalanceMapping, useBulkSaveTrialBalanceMappings } from '@/hooks/useTrialBalanceMappings';
 import { useTrialBalanceData } from '@/hooks/useTrialBalanceData';
+import { useAutoMapping, AutoMappingSuggestion } from '@/hooks/useAutoMapping';
 import { toast } from '@/hooks/use-toast';
 import { processExcelFile, processCSVFile } from '@/utils/fileProcessing';
 
@@ -26,7 +28,11 @@ const TrialBalanceMappingTable = ({ clientId, onComplete }: TrialBalanceMappingT
   const { data: trialBalanceData } = useTrialBalanceData(clientId);
   const saveMapping = useSaveTrialBalanceMapping();
   const bulkSaveMapping = useBulkSaveTrialBalanceMappings();
+  const { generateAutoMappingSuggestions, applyAutoMapping, isApplying } = useAutoMapping(clientId);
   const [bulkImportFile, setBulkImportFile] = useState<File | null>(null);
+  const [showAutoMappingDialog, setShowAutoMappingDialog] = useState(false);
+  const [autoMappingSuggestions, setAutoMappingSuggestions] = useState<AutoMappingSuggestion[]>([]);
+  const [selectedSuggestions, setSelectedSuggestions] = useState<Set<string>>(new Set());
 
   // Create a map of existing mappings for quick lookup
   const mappingMap = new Map(
@@ -128,6 +134,61 @@ const TrialBalanceMappingTable = ({ clientId, onComplete }: TrialBalanceMappingT
     }
   };
 
+  const handleAutoMapping = () => {
+    const suggestions = generateAutoMappingSuggestions();
+    if (suggestions.length === 0) {
+      toast({
+        title: "Ingen forslag",
+        description: "Ingen automatiske mapping-forslag kunne genereres for umappede kontoer",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setAutoMappingSuggestions(suggestions);
+    setSelectedSuggestions(new Set(suggestions.map(s => s.accountNumber)));
+    setShowAutoMappingDialog(true);
+  };
+
+  const handleApplySelectedSuggestions = () => {
+    const selectedSuggestionsArray = autoMappingSuggestions.filter(s => 
+      selectedSuggestions.has(s.accountNumber)
+    );
+    
+    if (selectedSuggestionsArray.length === 0) {
+      toast({
+        title: "Ingen forslag valgt",
+        description: "Velg minst ett forslag for å fortsette",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    applyAutoMapping.mutate(selectedSuggestionsArray, {
+      onSuccess: () => {
+        setShowAutoMappingDialog(false);
+        setAutoMappingSuggestions([]);
+        setSelectedSuggestions(new Set());
+      }
+    });
+  };
+
+  const toggleSuggestionSelection = (accountNumber: string) => {
+    const newSelected = new Set(selectedSuggestions);
+    if (newSelected.has(accountNumber)) {
+      newSelected.delete(accountNumber);
+    } else {
+      newSelected.add(accountNumber);
+    }
+    setSelectedSuggestions(newSelected);
+  };
+
+  const getConfidenceColor = (confidence: number): string => {
+    if (confidence >= 0.8) return 'bg-green-100 text-green-800 border-green-200';
+    if (confidence >= 0.6) return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+    return 'bg-red-100 text-red-800 border-red-200';
+  };
+
   const formatAmount = (amount: number) => {
     return new Intl.NumberFormat('nb-NO', {
       minimumFractionDigits: 0,
@@ -158,6 +219,15 @@ const TrialBalanceMappingTable = ({ clientId, onComplete }: TrialBalanceMappingT
               <Badge variant="outline">
                 {mappedCount}/{totalCount} mapped
               </Badge>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleAutoMapping}
+                disabled={isApplying || unmappedCount === 0}
+              >
+                <Zap className="w-4 h-4 mr-2" />
+                Automatisk mapping
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
@@ -268,6 +338,115 @@ const TrialBalanceMappingTable = ({ clientId, onComplete }: TrialBalanceMappingT
           </div>
         </CardContent>
       </Card>
+
+      {/* Auto Mapping Suggestions Dialog */}
+      <Dialog open={showAutoMappingDialog} onOpenChange={setShowAutoMappingDialog}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle>Automatiske Mapping-forslag</DialogTitle>
+            <DialogDescription>
+              Gjennomgå og velg hvilke automatiske mappinger du vil anvende. 
+              Høyere confidence score indikerer mer pålitelige forslag.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <div className="text-sm text-muted-foreground">
+                {selectedSuggestions.size} av {autoMappingSuggestions.length} forslag valgt
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSelectedSuggestions(new Set(autoMappingSuggestions.map(s => s.accountNumber)))}
+                >
+                  Velg alle
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSelectedSuggestions(new Set())}
+                >
+                  Fjern alle
+                </Button>
+              </div>
+            </div>
+
+            <div className="border rounded-lg overflow-hidden">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-muted/50 border-b">
+                    <th className="text-left p-3 w-12"></th>
+                    <th className="text-left p-3">Konto</th>
+                    <th className="text-left p-3">Foreslått mapping</th>
+                    <th className="text-left p-3">Confidence</th>
+                    <th className="text-left p-3">Grunn</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {autoMappingSuggestions.map((suggestion) => {
+                    const isSelected = selectedSuggestions.has(suggestion.accountNumber);
+                    const standardAccount = standardAccounts?.find(acc => acc.standard_number === suggestion.suggestedMapping);
+                    
+                    return (
+                      <tr key={suggestion.accountNumber} className="border-b hover:bg-muted/30">
+                        <td className="p-3">
+                          <Button
+                            variant={isSelected ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => toggleSuggestionSelection(suggestion.accountNumber)}
+                            className="w-8 h-8 p-0"
+                          >
+                            {isSelected ? <Check className="w-4 h-4" /> : <X className="w-4 h-4" />}
+                          </Button>
+                        </td>
+                        <td className="p-3">
+                          <div>
+                            <div className="font-mono text-sm">{suggestion.accountNumber}</div>
+                            <div className="text-sm text-muted-foreground">{suggestion.accountName}</div>
+                          </div>
+                        </td>
+                        <td className="p-3">
+                          <div>
+                            <div className="font-mono text-sm">{suggestion.suggestedMapping}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {standardAccount?.standard_name}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="p-3">
+                          <Badge className={getConfidenceColor(suggestion.confidence)}>
+                            {Math.round(suggestion.confidence * 100)}%
+                          </Badge>
+                        </td>
+                        <td className="p-3 text-sm text-muted-foreground">
+                          {suggestion.reason}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowAutoMappingDialog(false)}
+              >
+                Avbryt
+              </Button>
+              <Button
+                onClick={handleApplySelectedSuggestions}
+                disabled={isApplying || selectedSuggestions.size === 0}
+              >
+                {isApplying ? "Lagrer..." : `Anvend ${selectedSuggestions.size} mappinger`}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
