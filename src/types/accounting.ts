@@ -17,6 +17,7 @@ export interface TBVersionOption {
   period_year: number;
   created_at: string;
   account_count: number;
+  is_locked?: boolean;
 }
 
 // Common interface for version selection components

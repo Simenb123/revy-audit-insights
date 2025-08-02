@@ -5440,6 +5440,7 @@ export type Database = {
           credit_turnover: number | null
           debit_turnover: number | null
           id: string
+          is_locked: boolean
           opening_balance: number | null
           period_end_date: string
           period_start_date: string
@@ -5455,6 +5456,7 @@ export type Database = {
           credit_turnover?: number | null
           debit_turnover?: number | null
           id?: string
+          is_locked?: boolean
           opening_balance?: number | null
           period_end_date: string
           period_start_date: string
@@ -5470,6 +5472,7 @@ export type Database = {
           credit_turnover?: number | null
           debit_turnover?: number | null
           id?: string
+          is_locked?: boolean
           opening_balance?: number | null
           period_end_date?: string
           period_start_date?: string
@@ -5948,6 +5951,14 @@ export type Database = {
       set_active_version: {
         Args: { p_version_id: string }
         Returns: undefined
+      }
+      toggle_trial_balance_lock: {
+        Args: {
+          p_client_id: string
+          p_period_year: number
+          p_is_locked: boolean
+        }
+        Returns: boolean
       }
       user_owns_client: {
         Args: { client_uuid: string }

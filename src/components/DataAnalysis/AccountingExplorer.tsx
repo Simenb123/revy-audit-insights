@@ -170,6 +170,7 @@ const AccountingExplorer: React.FC<AccountingExplorerProps> = ({ clientId }) => 
                   versions={tbVersionOptions}
                   selectedVersion={selectedTBVersion}
                   onSelectVersion={setSelectedTBVersion}
+                  clientId={clientId}
                 />
               </div>
             )}
@@ -189,6 +190,7 @@ const AccountingExplorer: React.FC<AccountingExplorerProps> = ({ clientId }) => 
             versions={tbVersionOptions}
             selectedVersion={selectedTBVersion}
             onSelectVersion={setSelectedTBVersion}
+            clientId={clientId}
           />
         )}
       </div>

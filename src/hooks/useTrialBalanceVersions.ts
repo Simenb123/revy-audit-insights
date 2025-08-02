@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { TBVersionOption } from '@/types/accounting';
 
@@ -11,6 +11,7 @@ export interface TrialBalanceVersion {
   client_id: string;
   created_at: string;
   account_count: number;
+  is_locked?: boolean;
 }
 
 export const useTrialBalanceVersions = (clientId: string) => {
@@ -86,7 +87,7 @@ export const useTBVersionOptions = (clientId: string, fiscalYear?: number) => {
       
       let query = supabase
         .from('trial_balances')
-        .select('version, period_year, created_at')
+        .select('version, period_year, created_at, is_locked')
         .eq('client_id', clientId);
       
       // Filter by fiscal year if provided
@@ -112,14 +113,17 @@ export const useTBVersionOptions = (clientId: string, fiscalYear?: number) => {
         if (!versionMap.has(item.version)) {
           versionMap.set(item.version, {
             id: item.version,
-            label: `${item.version} (${item.period_year})`,
+            label: `${item.version} (1 konti)`,
             version: item.version,
             period_year: item.period_year,
             created_at: item.created_at,
-            account_count: 1
+            account_count: 1,
+            is_locked: item.is_locked || false
           });
         } else {
-          versionMap.get(item.version).account_count++;
+          const existing = versionMap.get(item.version);
+          existing.account_count++;
+          existing.label = `${existing.version} (${existing.account_count} konti)`;
         }
       });
 
@@ -131,6 +135,65 @@ export const useTBVersionOptions = (clientId: string, fiscalYear?: number) => {
       return options;
     },
     enabled: !!clientId,
+  });
+};
+
+// Hook for toggling trial balance lock status
+export const useToggleTrialBalanceLock = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ 
+      clientId, 
+      periodYear, 
+      isLocked 
+    }: { 
+      clientId: string; 
+      periodYear: number; 
+      isLocked: boolean; 
+    }) => {
+      const { data, error } = await supabase.rpc('toggle_trial_balance_lock', {
+        p_client_id: clientId,
+        p_period_year: periodYear,
+        p_is_locked: isLocked
+      });
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_, variables) => {
+      // Invalidate related queries
+      queryClient.invalidateQueries({ 
+        queryKey: ['tb-version-options', variables.clientId] 
+      });
+      queryClient.invalidateQueries({ 
+        queryKey: ['trial-balance-with-mappings', variables.clientId] 
+      });
+    },
+  });
+};
+
+// Hook for fetching previous year's trial balance for reference
+export const usePreviousYearTBData = (clientId: string, currentYear: number) => {
+  const previousYear = currentYear - 1;
+  
+  return useQuery({
+    queryKey: ['previous-year-tb', clientId, previousYear],
+    queryFn: async () => {
+      if (!clientId || !previousYear) return null;
+
+      const { data, error } = await supabase
+        .from('trial_balances')
+        .select('*')
+        .eq('client_id', clientId)
+        .eq('period_year', previousYear)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (error) throw error;
+      return data?.[0] || null;
+    },
+    enabled: !!clientId && !!previousYear,
   });
 };
 
