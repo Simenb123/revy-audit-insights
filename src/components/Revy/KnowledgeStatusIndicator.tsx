@@ -4,7 +4,7 @@ import { Brain, Database, Zap, AlertTriangle, CheckCircle, RefreshCw } from 'luc
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
-import { generateEmbeddingsForExistingArticles } from '@/services/revy/generateEmbeddingsService';
+import { generateEmbeddingsForExistingArticles, generateMissingEmbeddings } from '@/services/revy/generateEmbeddingsService';
 import { toast } from 'sonner';
 
 const KnowledgeStatusIndicator = () => {
@@ -115,6 +115,27 @@ const KnowledgeStatusIndicator = () => {
     }
   };
 
+  const handleGenerateMissingEmbeddings = async () => {
+    setIsGenerating(true);
+    try {
+      toast.info('Starter generering av manglende embeddings...');
+      
+      const result = await generateMissingEmbeddings();
+      
+      if (result.success) {
+        toast.success(`Embeddings generert for ${result.processed} artikler!`);
+        await checkEmbeddingStatus();
+      } else {
+        toast.error(`Feil ved generering: ${result.message}`);
+      }
+    } catch (error) {
+      logger.error('Error generating missing embeddings:', error);
+      toast.error('Kunne ikke generere manglende embeddings');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   const handleRetry = async () => {
     setIsRetesting(true);
     try {
@@ -175,7 +196,7 @@ const KnowledgeStatusIndicator = () => {
           </span>
         </div>
         <div className="flex gap-2">
-          {(embeddingStatus === 'missing' || embeddingStatus === 'partial') && (
+          {embeddingStatus === 'missing' && (
             <Button
               size="sm"
               onClick={handleGenerateEmbeddings}
@@ -189,6 +210,24 @@ const KnowledgeStatusIndicator = () => {
                 </>
               ) : (
                 'Aktiver kunnskapsbase'
+              )}
+            </Button>
+          )}
+          {embeddingStatus === 'partial' && (
+            <Button
+              size="sm"
+              onClick={handleGenerateMissingEmbeddings}
+              disabled={isGenerating}
+              className="text-xs"
+              variant="outline"
+            >
+              {isGenerating ? (
+                <>
+                  <RefreshCw className="w-3 h-3 mr-1 animate-spin" />
+                  Genererer...
+                </>
+              ) : (
+                'Generer manglende'
               )}
             </Button>
           )}
