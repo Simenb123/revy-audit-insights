@@ -169,6 +169,10 @@ const TrialBalanceMappingTable = ({ clientId, onComplete }: TrialBalanceMappingT
         setShowAutoMappingDialog(false);
         setAutoMappingSuggestions([]);
         setSelectedSuggestions(new Set());
+        toast({
+          title: "Mappinger lagret!",
+          description: `${selectedSuggestionsArray.length} automatiske mappinger ble lagret. Mappingene er nå aktive.`,
+        });
       }
     });
   };
@@ -345,8 +349,17 @@ const TrialBalanceMappingTable = ({ clientId, onComplete }: TrialBalanceMappingT
           <DialogHeader>
             <DialogTitle>Automatiske Mapping-forslag</DialogTitle>
             <DialogDescription>
-              Gjennomgå og velg hvilke automatiske mappinger du vil anvende. 
-              Høyere confidence score indikerer mer pålitelige forslag.
+              <div className="space-y-2">
+                <p>Gjennomgå og velg hvilke automatiske mappinger du vil anvende.</p>
+                <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <p className="text-sm text-blue-800 dark:text-blue-200 font-medium">
+                    ⚠️ Viktig: Forslagene er ikke lagret ennå! Du må klikke "Anvend mappinger" for å lagre dem.
+                  </p>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Høyere confidence score indikerer mer pålitelige forslag.
+                </p>
+              </div>
             </DialogDescription>
           </DialogHeader>
           
@@ -440,8 +453,9 @@ const TrialBalanceMappingTable = ({ clientId, onComplete }: TrialBalanceMappingT
               <Button
                 onClick={handleApplySelectedSuggestions}
                 disabled={isApplying || selectedSuggestions.size === 0}
+                className="bg-green-600 hover:bg-green-700 text-white"
               >
-                {isApplying ? "Lagrer..." : `Anvend ${selectedSuggestions.size} mappinger`}
+                {isApplying ? "Lagrer mappinger..." : `💾 Lagre ${selectedSuggestions.size} mappinger`}
               </Button>
             </div>
           </div>
