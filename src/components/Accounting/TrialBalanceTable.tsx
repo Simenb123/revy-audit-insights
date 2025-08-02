@@ -1,8 +1,15 @@
 import React, { useMemo, useState, useCallback, useEffect } from 'react';
-import { Layers } from 'lucide-react';
+import { Layers, Bot, Edit, Check, X } from 'lucide-react';
 import { useTrialBalanceWithMappings, TrialBalanceEntryWithMapping } from '@/hooks/useTrialBalanceWithMappings';
+import { useStandardAccounts } from '@/hooks/useChartOfAccounts';
+import { useSaveTrialBalanceMapping } from '@/hooks/useTrialBalanceMappings';
+import { useAutoMapping } from '@/hooks/useAutoMapping';
 import DataTable, { DataTableColumn } from '@/components/ui/data-table';
 import { TableRow, TableCell } from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import ColumnSelector, { ColumnConfig } from './ColumnSelector';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
 
@@ -17,9 +24,14 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
   const actualAccountingYear = accountingYear || selectedFiscalYear;
   
   const { data: trialBalanceData, isLoading, error } = useTrialBalanceWithMappings(clientId, actualAccountingYear, selectedVersion);
+  const { data: standardAccounts = [] } = useStandardAccounts();
+  const saveMapping = useSaveTrialBalanceMapping();
+  const { generateAutoMappingSuggestions, applyAutoMapping, isApplying } = useAutoMapping(clientId);
   
   // Column configuration state with dynamic labels
   const [columnConfig, setColumnConfig] = useState<ColumnConfig[]>([]);
+  const [editingMapping, setEditingMapping] = useState<string | null>(null);
+  const [autoSuggestions, setAutoSuggestions] = useState<any[]>([]);
 
   // Update column config when fiscal year changes
   useEffect(() => {
@@ -32,8 +44,8 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
       { key: 'closing_balance', label: `Saldo ${actualAccountingYear}`, visible: true },
       { key: 'debit_turnover', label: 'Debet', visible: false },
       { key: 'credit_turnover', label: 'Kredit', visible: false },
-      { key: 'standard_number', label: 'Regnskapsnr', visible: true },
-      { key: 'standard_name', label: 'Regnskapslinje', visible: true },
+      { key: 'standard_number', label: 'Regnskapsnr', visible: false },
+      { key: 'mapping', label: 'Regnskapslinje', visible: true },
     ]);
   }, [actualAccountingYear]);
 
@@ -42,6 +54,49 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
       col.key === key ? { ...col, visible } : col
     ));
   }, []);
+
+  // Auto-generate mapping suggestions when data loads
+  useEffect(() => {
+    if (trialBalanceData?.trialBalanceEntries) {
+      const suggestions = generateAutoMappingSuggestions();
+      setAutoSuggestions(suggestions);
+    }
+  }, [trialBalanceData, generateAutoMappingSuggestions]);
+
+  const handleMappingChange = useCallback(async (accountNumber: string, standardNumber: string) => {
+    try {
+      await saveMapping.mutateAsync({
+        clientId,
+        accountNumber,
+        statementLineNumber: standardNumber
+      });
+      setEditingMapping(null);
+    } catch (error) {
+      console.error('Error saving mapping:', error);
+    }
+  }, [clientId, saveMapping]);
+
+  const handleAutoMapping = useCallback(async () => {
+    const suggestions = generateAutoMappingSuggestions();
+    if (suggestions.length > 0) {
+      try {
+        await applyAutoMapping.mutateAsync(suggestions);
+        setAutoSuggestions([]);
+      } catch (error) {
+        console.error('Error applying auto mapping:', error);
+      }
+    }
+  }, [generateAutoMappingSuggestions, applyAutoMapping]);
+
+  const getAutoSuggestion = useCallback((accountNumber: string) => {
+    return autoSuggestions.find(s => s.accountNumber === accountNumber);
+  }, [autoSuggestions]);
+
+  const getMappingProgress = useCallback(() => {
+    if (!trialBalanceData?.mappingStats) return 0;
+    const { mappedAccounts, totalAccounts } = trialBalanceData.mappingStats;
+    return totalAccounts > 0 ? (mappedAccounts / totalAccounts) * 100 : 0;
+  }, [trialBalanceData]);
 
   // Filter entries by accounting year
   const filteredEntries = useMemo(() => {
@@ -134,16 +189,106 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
         className: 'font-medium',
       },
       {
-        key: 'standard_name',
+        key: 'mapping',
         header: 'Regnskapslinje',
         accessor: (entry: TrialBalanceEntryWithMapping) => entry.standard_name || 'Ikke mappet',
-        sortable: true,
-        searchable: true,
-        format: (value: string, entry?: TrialBalanceEntryWithMapping) => (
-          <span className={!entry?.standard_name ? 'text-muted-foreground italic' : ''}>
-            {value}
-          </span>
-        ),
+        sortable: false,
+        searchable: false,
+        format: (value: string, entry?: TrialBalanceEntryWithMapping) => {
+          if (!entry) return value;
+          
+          const suggestion = getAutoSuggestion(entry.account_number);
+          const isEditing = editingMapping === entry.account_number;
+          const hasMappingGap = !entry.standard_name;
+
+          if (isEditing) {
+            return (
+              <div className="flex items-center gap-2 min-w-[200px]">
+                <Select
+                  defaultValue={entry.standard_number || suggestion?.suggestedMapping || ''}
+                  onValueChange={(value) => {
+                    if (value) {
+                      handleMappingChange(entry.account_number, value);
+                    }
+                  }}
+                >
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="Velg regnskapslinje" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-60">
+                    {standardAccounts.map(account => (
+                      <SelectItem key={account.id} value={account.standard_number}>
+                        {account.standard_number} - {account.standard_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setEditingMapping(null)}
+                  className="h-6 w-6 p-0"
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              </div>
+            );
+          }
+
+          if (hasMappingGap) {
+            return (
+              <div className="flex items-center gap-2">
+                {suggestion ? (
+                  <div className="flex items-center gap-2">
+                    <Badge 
+                      variant="outline" 
+                      className="text-xs bg-blue-50 border-blue-200 text-blue-700"
+                    >
+                      <Bot className="h-3 w-3 mr-1" />
+                      {suggestion.suggestedMapping}
+                    </Badge>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleMappingChange(entry.account_number, suggestion.suggestedMapping)}
+                      className="h-6 px-2 text-xs"
+                      disabled={saveMapping.isPending}
+                    >
+                      <Check className="h-3 w-3 mr-1" />
+                      Bruk
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setEditingMapping(entry.account_number)}
+                    className="h-6 px-2 text-xs text-muted-foreground"
+                  >
+                    <Edit className="h-3 w-3 mr-1" />
+                    Mapp
+                  </Button>
+                )}
+              </div>
+            );
+          }
+
+          return (
+            <div className="flex items-center gap-2">
+              <span className="text-sm">
+                {entry.standard_number} - {entry.standard_name}
+              </span>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setEditingMapping(entry.account_number)}
+                className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <Edit className="h-3 w-3" />
+              </Button>
+            </div>
+          );
+        },
       },
     ];
 
@@ -187,8 +332,8 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
       {columnConfig.find(c => c.key === 'credit_turnover' && c.visible) && (
         <TableCell className="text-right font-mono">{formatCurrency(totals?.credit_turnover || 0)}</TableCell>
       )}
-      {columnConfig.find(c => (c.key === 'standard_number' || c.key === 'standard_name') && c.visible) && (
-        <TableCell colSpan={columnConfig.filter(c => (c.key === 'standard_number' || c.key === 'standard_name') && c.visible).length}>
+      {columnConfig.find(c => (c.key === 'standard_number' || c.key === 'mapping') && c.visible) && (
+        <TableCell colSpan={columnConfig.filter(c => (c.key === 'standard_number' || c.key === 'mapping') && c.visible).length}>
           -
         </TableCell>
       )}
@@ -197,10 +342,35 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
 
   // Create description text
   const mappingStats = trialBalanceData?.mappingStats;
+  const mappingProgress = getMappingProgress();
   const description = `Viser ${filteredEntries.length} kontoer • År: ${actualAccountingYear}${mappingStats ? ` • Mappet: ${mappingStats.mappedAccounts}/${mappingStats.totalAccounts}` : ''}`;
 
   return (
     <div className="space-y-4">
+      {/* Mapping progress and auto-mapping controls */}
+      {mappingStats && mappingStats.totalAccounts > 0 && (
+        <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <div className="text-sm font-medium">
+                Mapping progresjon ({mappingStats.mappedAccounts}/{mappingStats.totalAccounts})
+              </div>
+              <Progress value={mappingProgress} className="w-48 h-2" />
+            </div>
+            {autoSuggestions.length > 0 && (
+              <Button
+                onClick={handleAutoMapping}
+                disabled={isApplying}
+                className="gap-2"
+              >
+                <Bot className="h-4 w-4" />
+                Automatisk mapping ({autoSuggestions.length})
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
+      
       <div className="flex justify-end">
         <ColumnSelector 
           columns={columnConfig}

@@ -106,7 +106,6 @@ const AccountingExplorer: React.FC<AccountingExplorerProps> = ({ clientId }) => 
     { id: 'ledger', label: 'Hovedbok', icon: LineChart },
     { id: 'balances', label: 'Saldobalanse', icon: Layers },
     { id: 'statement', label: 'Regnskapsoppstilling', icon: BarChart2 },
-    { id: 'mapping', label: 'Mapping', icon: GitBranch },
     { id: 'journal', label: 'Bilag', icon: FileText },
   ];
 
@@ -290,7 +289,7 @@ const AccountingExplorer: React.FC<AccountingExplorerProps> = ({ clientId }) => 
                 <ClientFinancialStatementGenerator 
                   clientId={clientId} 
                   selectedVersion={selectedTBVersion.version}
-                  onNavigateToMapping={() => setActiveTab('mapping')}
+                  onNavigateToMapping={() => setActiveTab('balances')}
                 />
               ) : (
                 <Card>
@@ -298,26 +297,6 @@ const AccountingExplorer: React.FC<AccountingExplorerProps> = ({ clientId }) => 
                     <CardTitle>Ingen saldobalanse data</CardTitle>
                     <CardDescription>
                       Last opp saldobalanse for å generere regnskapsoppstilling
-                    </CardDescription>
-                  </CardHeader>
-                </Card>
-              )}
-            </div>
-          )}
-          
-          {activeTab === 'mapping' && (
-            <div className="space-y-4">
-              {hasTBData ? (
-                <TrialBalanceMappingTable 
-                  clientId={clientId}
-                  onComplete={() => setActiveTab('statement')}
-                />
-              ) : (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Ingen saldobalanse data</CardTitle>
-                    <CardDescription>
-                      Last opp saldobalanse for å kunne mappe kontoer
                     </CardDescription>
                   </CardHeader>
                 </Card>
