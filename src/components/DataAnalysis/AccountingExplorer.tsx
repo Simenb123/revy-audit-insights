@@ -14,6 +14,7 @@ import GLVersionSelector from './GLVersionSelector';
 import TBVersionSelector from './TBVersionSelector';
 import VersionHistory from './VersionHistory';
 import ValidationPanel from '@/components/Accounting/ValidationPanel';
+import ClientFinancialStatementGenerator from './ClientFinancialStatementGenerator';
 import { GLVersionOption, TBVersionOption } from '@/types/accounting';
 import ResponsiveTabs from '@/components/ui/responsive-tabs';
 
@@ -103,12 +104,13 @@ const AccountingExplorer: React.FC<AccountingExplorerProps> = ({ clientId }) => 
     { id: 'overview', label: 'Oversikt', icon: Activity },
     { id: 'ledger', label: 'Hovedbok', icon: LineChart },
     { id: 'balances', label: 'Saldobalanse', icon: Layers },
+    { id: 'statement', label: 'Regnskapsoppstilling', icon: BarChart2 },
     { id: 'journal', label: 'Bilag', icon: FileText },
   ];
 
   // Determine which version selector to show based on active tab
   const showGLVersions = activeTab === 'ledger' || activeTab === 'journal';
-  const showTBVersions = activeTab === 'balances';
+  const showTBVersions = activeTab === 'balances' || activeTab === 'statement';
   const showBothVersions = activeTab === 'overview';
 
   if (isLoadingGL || isLoadingTB || isLoadingAccounting) {
@@ -273,6 +275,26 @@ const AccountingExplorer: React.FC<AccountingExplorerProps> = ({ clientId }) => 
                     <CardTitle>Ingen saldobalanse data</CardTitle>
                     <CardDescription>
                       Last opp saldobalanse for å se kontosaldoer
+                    </CardDescription>
+                  </CardHeader>
+                </Card>
+              )}
+            </div>
+          )}
+          
+          {activeTab === 'statement' && (
+            <div className="space-y-4">
+              {hasTBData && selectedTBVersion ? (
+                <ClientFinancialStatementGenerator 
+                  clientId={clientId} 
+                  selectedVersion={selectedTBVersion.version}
+                />
+              ) : (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Ingen saldobalanse data</CardTitle>
+                    <CardDescription>
+                      Last opp saldobalanse for å generere regnskapsoppstilling
                     </CardDescription>
                   </CardHeader>
                 </Card>
