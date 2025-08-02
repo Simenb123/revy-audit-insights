@@ -5,7 +5,7 @@ import { useAccountingData } from '@/hooks/useAccountingData';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, Activity, BarChart2, FileText, Layers, LineChart } from 'lucide-react';
+import { TrendingUp, Activity, BarChart2, FileText, Layers, LineChart, GitBranch } from 'lucide-react';
 import DrillDownTable from './DrillDownTable';
 import GeneralLedgerTable from '@/components/Accounting/GeneralLedgerTable';
 import TrialBalanceTable from '@/components/Accounting/TrialBalanceTable';
@@ -15,6 +15,7 @@ import TBVersionSelector from './TBVersionSelector';
 import VersionHistory from './VersionHistory';
 import ValidationPanel from '@/components/Accounting/ValidationPanel';
 import ClientFinancialStatementGenerator from './ClientFinancialStatementGenerator';
+import TrialBalanceMappingTable from '../Accounting/TrialBalanceMappingTable';
 import { GLVersionOption, TBVersionOption } from '@/types/accounting';
 import ResponsiveTabs from '@/components/ui/responsive-tabs';
 
@@ -105,6 +106,7 @@ const AccountingExplorer: React.FC<AccountingExplorerProps> = ({ clientId }) => 
     { id: 'ledger', label: 'Hovedbok', icon: LineChart },
     { id: 'balances', label: 'Saldobalanse', icon: Layers },
     { id: 'statement', label: 'Regnskapsoppstilling', icon: BarChart2 },
+    { id: 'mapping', label: 'Mapping', icon: GitBranch },
     { id: 'journal', label: 'Bilag', icon: FileText },
   ];
 
@@ -288,6 +290,7 @@ const AccountingExplorer: React.FC<AccountingExplorerProps> = ({ clientId }) => 
                 <ClientFinancialStatementGenerator 
                   clientId={clientId} 
                   selectedVersion={selectedTBVersion.version}
+                  onNavigateToMapping={() => setActiveTab('mapping')}
                 />
               ) : (
                 <Card>
@@ -295,6 +298,26 @@ const AccountingExplorer: React.FC<AccountingExplorerProps> = ({ clientId }) => 
                     <CardTitle>Ingen saldobalanse data</CardTitle>
                     <CardDescription>
                       Last opp saldobalanse for å generere regnskapsoppstilling
+                    </CardDescription>
+                  </CardHeader>
+                </Card>
+              )}
+            </div>
+          )}
+          
+          {activeTab === 'mapping' && (
+            <div className="space-y-4">
+              {hasTBData ? (
+                <TrialBalanceMappingTable 
+                  clientId={clientId}
+                  onComplete={() => setActiveTab('statement')}
+                />
+              ) : (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Ingen saldobalanse data</CardTitle>
+                    <CardDescription>
+                      Last opp saldobalanse for å kunne mappe kontoer
                     </CardDescription>
                   </CardHeader>
                 </Card>

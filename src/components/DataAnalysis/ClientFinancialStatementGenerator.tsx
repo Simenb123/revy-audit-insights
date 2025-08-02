@@ -10,11 +10,13 @@ import { cn } from '@/lib/utils';
 interface ClientFinancialStatementGeneratorProps {
   clientId: string;
   selectedVersion?: string;
+  onNavigateToMapping?: () => void;
 }
 
 const ClientFinancialStatementGenerator: React.FC<ClientFinancialStatementGeneratorProps> = ({
   clientId,
-  selectedVersion
+  selectedVersion,
+  onNavigateToMapping
 }) => {
   const { financialStatement, mappingStats, isLoading } = useFirmFinancialStatements(clientId, selectedVersion);
 
@@ -112,7 +114,7 @@ const ClientFinancialStatementGenerator: React.FC<ClientFinancialStatementGenera
                 Mangler nødvendige data eller mapping mellom kontoer og standardkontoer
               </p>
             </div>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={onNavigateToMapping}>
               <Settings className="h-4 w-4 mr-2" />
               Gå til Mapping
             </Button>
@@ -155,7 +157,7 @@ const ClientFinancialStatementGenerator: React.FC<ClientFinancialStatementGenera
           </div>
           {mappingStats.unmappedAccounts > 0 && (
             <div className="pt-2">
-              <Button variant="outline" size="sm" className="w-full">
+              <Button variant="outline" size="sm" className="w-full" onClick={onNavigateToMapping}>
                 <Settings className="h-4 w-4 mr-2" />
                 Forbedre Mapping
               </Button>
