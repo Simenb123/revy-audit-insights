@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useCallback } from 'react';
+import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import { Layers } from 'lucide-react';
 import { useTrialBalanceWithMappings, TrialBalanceEntryWithMapping } from '@/hooks/useTrialBalanceWithMappings';
 import DataTable, { DataTableColumn } from '@/components/ui/data-table';
@@ -16,20 +16,26 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
   const { selectedFiscalYear } = useFiscalYear();
   const actualAccountingYear = accountingYear || selectedFiscalYear;
   
-  const { data: trialBalanceData, isLoading, error } = useTrialBalanceWithMappings(clientId);
+  const { data: trialBalanceData, isLoading, error } = useTrialBalanceWithMappings(clientId, actualAccountingYear);
   
-  // Column configuration state
-  const [columnConfig, setColumnConfig] = useState<ColumnConfig[]>(() => [
-    { key: 'account_number', label: 'Kontonr', visible: true, required: true },
-    { key: 'account_name', label: 'Kontonavn', visible: true, required: true },
-    { key: 'saldo_2023', label: 'Saldo 2023', visible: true },
-    { key: 'opening_balance', label: 'Inngående balanse 2024', visible: true },
-    { key: 'closing_balance', label: 'Saldo 2024', visible: true },
-    { key: 'debit_turnover', label: 'Debet', visible: false },
-    { key: 'credit_turnover', label: 'Kredit', visible: false },
-    { key: 'standard_number', label: 'Regnskapsnr', visible: true },
-    { key: 'standard_name', label: 'Regnskapslinje', visible: true },
-  ]);
+  // Column configuration state with dynamic labels
+  const [columnConfig, setColumnConfig] = useState<ColumnConfig[]>([]);
+
+  // Update column config when fiscal year changes
+  useEffect(() => {
+    const previousYear = actualAccountingYear - 1;
+    setColumnConfig([
+      { key: 'account_number', label: 'Kontonr', visible: true, required: true },
+      { key: 'account_name', label: 'Kontonavn', visible: true, required: true },
+      { key: 'previous_year_balance', label: `Saldo ${previousYear}`, visible: true },
+      { key: 'opening_balance', label: `Inngående balanse ${actualAccountingYear}`, visible: true },
+      { key: 'closing_balance', label: `Saldo ${actualAccountingYear}`, visible: true },
+      { key: 'debit_turnover', label: 'Debet', visible: false },
+      { key: 'credit_turnover', label: 'Kredit', visible: false },
+      { key: 'standard_number', label: 'Regnskapsnr', visible: true },
+      { key: 'standard_name', label: 'Regnskapslinje', visible: true },
+    ]);
+  }, [actualAccountingYear]);
 
   const handleColumnChange = useCallback((key: string, visible: boolean) => {
     setColumnConfig(prev => prev.map(col => 
@@ -75,8 +81,8 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
         className: 'font-medium',
       },
       {
-        key: 'saldo_2023',
-        header: 'Saldo 2023',
+        key: 'previous_year_balance',
+        header: `Saldo ${actualAccountingYear - 1}`,
         accessor: (entry: TrialBalanceEntryWithMapping) => 0, // Placeholder for now
         sortable: true,
         align: 'right' as const,
@@ -85,7 +91,7 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
       },
       {
         key: 'opening_balance',
-        header: 'Inngående balanse 2024',
+        header: `Inngående balanse ${actualAccountingYear}`,
         accessor: (entry: TrialBalanceEntryWithMapping) => entry.opening_balance,
         sortable: true,
         align: 'right' as const,
@@ -94,7 +100,7 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
       },
       {
         key: 'closing_balance',
-        header: 'Saldo 2024',
+        header: `Saldo ${actualAccountingYear}`,
         accessor: (entry: TrialBalanceEntryWithMapping) => entry.closing_balance,
         sortable: true,
         align: 'right' as const,
@@ -166,7 +172,7 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
       <TableCell colSpan={Math.max(1, columnConfig.filter(c => c.visible && !c.key.includes('balance') && !c.key.includes('turnover')).length)}>
         Sum
       </TableCell>
-      {columnConfig.find(c => c.key === 'saldo_2023' && c.visible) && (
+      {columnConfig.find(c => c.key === 'previous_year_balance' && c.visible) && (
         <TableCell className="text-right font-mono">{formatCurrency(0)}</TableCell>
       )}
       {columnConfig.find(c => c.key === 'opening_balance' && c.visible) && (
