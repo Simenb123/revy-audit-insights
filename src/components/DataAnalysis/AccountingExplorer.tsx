@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useGLVersionOptions } from '@/hooks/useAccountingVersions';
 import { useTBVersionOptions } from '@/hooks/useTrialBalanceVersions';
 import { useAccountingData } from '@/hooks/useAccountingData';
-import { useAccountingYear } from '@/hooks/useAccountingYear';
+import { useFiscalYear } from '@/contexts/FiscalYearContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, Activity, BarChart2, FileText, Layers, LineChart } from 'lucide-react';
@@ -34,7 +34,7 @@ const AccountingExplorer: React.FC<AccountingExplorerProps> = ({ clientId }) => 
   const { data: glVersionOptions = [], isLoading: isLoadingGL } = useGLVersionOptions(clientId);
   const { data: tbVersionOptions = [], isLoading: isLoadingTB } = useTBVersionOptions(clientId);
   const { data: accountingData, isLoading: isLoadingAccounting } = useAccountingData(clientId);
-  const { accountingYear } = useAccountingYear(clientId);
+  const { selectedFiscalYear } = useFiscalYear();
 
   console.log('[AccountingExplorer] GL Version Options:', glVersionOptions);
   console.log('[AccountingExplorer] TB Version Options:', tbVersionOptions);
@@ -253,7 +253,7 @@ const AccountingExplorer: React.FC<AccountingExplorerProps> = ({ clientId }) => 
                 <TrialBalanceTable 
                   clientId={clientId} 
                   selectedVersion={selectedTBVersion.version}
-                  accountingYear={accountingYear}
+                  accountingYear={selectedFiscalYear}
                 />
               ) : (
                 <Card>
