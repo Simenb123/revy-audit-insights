@@ -24,6 +24,13 @@ export function getUserFromRequest(req: Request): JwtPayload | null {
 
 export function hasPermittedRole(user: JwtPayload | null, permittedRoles: string[]): boolean {
   if (!user) return false;
-  const role = (user.user_role || user.role) as string | undefined;
+  
+  // Check for role in multiple possible locations within the JWT payload
+  const role = (
+    user.user_role || 
+    user.role || 
+    user.user_metadata?.user_role
+  ) as string | undefined;
+  
   return !!role && permittedRoles.includes(role);
 }
