@@ -25,12 +25,12 @@ export interface StandardAccountBalance {
   mapped_accounts: TrialBalanceEntryWithMapping[];
 }
 
-export const useTrialBalanceWithMappings = (clientId: string, fiscalYear?: number) => {
+export const useTrialBalanceWithMappings = (clientId: string, fiscalYear?: number, selectedVersion?: string) => {
   return useQuery({
-    queryKey: ['trial-balance-with-mappings', clientId, fiscalYear],
+    queryKey: ['trial-balance-with-mappings', clientId, fiscalYear, selectedVersion],
     queryFn: async () => {
       // Get trial balance data with account mappings
-      const { data: trialBalanceWithMappings, error: tbError } = await supabase
+      let query = supabase
         .from('trial_balances')
         .select(`
           id,
@@ -42,6 +42,7 @@ export const useTrialBalanceWithMappings = (clientId: string, fiscalYear?: numbe
           closing_balance,
           period_end_date,
           period_year,
+          version,
           client_chart_of_accounts!inner(
             account_number, 
             account_name,
@@ -56,6 +57,13 @@ export const useTrialBalanceWithMappings = (clientId: string, fiscalYear?: numbe
         `)
         .eq('client_id', clientId)
         .eq('period_year', fiscalYear || new Date().getFullYear());
+
+      // Filter by selected version if provided
+      if (selectedVersion) {
+        query = query.eq('version', selectedVersion);
+      }
+
+      const { data: trialBalanceWithMappings, error: tbError } = await query;
 
       if (tbError) {
         console.error('Error fetching trial balance with mappings:', tbError);

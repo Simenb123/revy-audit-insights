@@ -16,7 +16,7 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
   const { selectedFiscalYear } = useFiscalYear();
   const actualAccountingYear = accountingYear || selectedFiscalYear;
   
-  const { data: trialBalanceData, isLoading, error } = useTrialBalanceWithMappings(clientId, actualAccountingYear);
+  const { data: trialBalanceData, isLoading, error } = useTrialBalanceWithMappings(clientId, actualAccountingYear, selectedVersion);
   
   // Column configuration state with dynamic labels
   const [columnConfig, setColumnConfig] = useState<ColumnConfig[]>([]);
