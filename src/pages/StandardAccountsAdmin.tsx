@@ -35,7 +35,9 @@ const StandardAccountsAdmin = () => {
         </TabsContent>
         
         <TabsContent value="preview">
-          <FinancialStatementGenerator clientId="demo" period="2024" />
+          <div className="p-4 text-center text-muted-foreground">
+            <p>Velg en spesifikk klient for å se finansiell rapportforhåndsvisning</p>
+          </div>
         </TabsContent>
       </Tabs>
     </div>

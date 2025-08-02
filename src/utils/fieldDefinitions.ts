@@ -257,15 +257,19 @@ function calculateEnhancedFieldConfidence(
 
   // Content validation including account_name specific validation
   if (sampleData && headers && confidence > 0.4) {
-    const columnIndex = headers.indexOf(header);
-    if (columnIndex !== -1) {
-      const columnData = sampleData.map(row => row[columnIndex] || '').filter(val => val.trim() !== '');
-      const contentScore = validateContentTypeEnhanced(columnData, field.data_type);
+      const columnIndex = headers.indexOf(header);
+      if (columnIndex !== -1) {
+        const columnData = sampleData
+          .map(row => row[columnIndex] || '')
+          .map(val => typeof val === 'string' ? val : val != null ? String(val) : '')
+          .filter(val => val.trim() !== '');
+        const contentScore = validateContentTypeEnhanced(columnData, field.data_type);
       
       // Special validation for account_name to distinguish from account_number
       if (field.field_key === 'account_name') {
         const alphabeticValues = columnData.filter(val => {
-          const cleaned = val.trim();
+          const strVal = typeof val === 'string' ? val : val != null ? String(val) : '';
+          const cleaned = strVal.trim();
           if (!cleaned) return false;
           const alphaCount = (cleaned.match(/[a-zA-ZæøåÆØÅ]/g) || []).length;
           return alphaCount / cleaned.length > 0.3;
@@ -332,14 +336,20 @@ function validateContentTypeEnhanced(
   sampleData: string[], 
   expectedType: 'text' | 'number' | 'date'
 ): { score: number; reason: string } {
-  const validSamples = sampleData.filter(val => val && val.trim()).slice(0, 10);
+  // Ensure all values are strings and filter out empty values
+  const validSamples = sampleData
+    .map(val => typeof val === 'string' ? val : val != null ? String(val) : '')
+    .filter(val => val.trim())
+    .slice(0, 10);
+  
   if (validSamples.length === 0) return { score: 0.5, reason: 'Ingen data å validere' };
 
   let validCount = 0;
   const issues: string[] = [];
 
   for (const value of validSamples) {
-    const trimmedValue = value.trim();
+    const strVal = typeof value === 'string' ? value : value != null ? String(value) : '';
+    const trimmedValue = strVal.trim();
     
     switch (expectedType) {
       case 'number':

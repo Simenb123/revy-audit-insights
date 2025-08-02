@@ -21,25 +21,42 @@ const TrialBalanceUpload = () => {
 
   if (isLoading) {
     return (
-      <div className="p-6">
-        <div className="space-y-6">
-          <Skeleton className="h-8 w-64" />
-          <Skeleton className="h-64 w-full" />
+      <StickyClientLayout
+        clientName="Laster..."
+        orgNumber=""
+        pageTitle="Saldobalanse opplasting"
+      >
+        <div className="p-6">
+          <div className="space-y-6">
+            <Skeleton className="h-8 w-64" />
+            <Skeleton className="h-64 w-full" />
+          </div>
         </div>
-      </div>
+      </StickyClientLayout>
     );
   }
 
   if (error || !client) {
     return (
-      <div className="p-6">
-        <div className="text-center py-12">
-          <h1 className="text-2xl font-bold mb-4">Klient ikke funnet</h1>
-          <p className="text-muted-foreground">
-            Kunne ikke finne klient med ID {clientId}
-          </p>
+      <StickyClientLayout
+        clientName="Feil"
+        orgNumber=""
+        pageTitle="Saldobalanse opplasting"
+      >
+        <div className="p-6">
+          <div className="text-center py-12">
+            <h1 className="text-2xl font-bold mb-4">Klient ikke funnet</h1>
+            <p className="text-muted-foreground">
+              Kunne ikke finne klient med ID {clientId}
+            </p>
+            {error && (
+              <p className="text-sm text-destructive mt-2">
+                Feil: {error.message}
+              </p>
+            )}
+          </div>
         </div>
-      </div>
+      </StickyClientLayout>
     );
   }
 
@@ -54,12 +71,20 @@ const TrialBalanceUpload = () => {
         
         <div className="flex-1 overflow-auto">
           <div className="space-y-6 p-6">
-            <TrialBalanceUploader 
-              clientId={client.id}
-              onUploadComplete={() => {
-                // Could navigate back or show success message
-              }}
-            />
+            {client?.id ? (
+              <TrialBalanceUploader 
+                clientId={client.id}
+                onUploadComplete={() => {
+                  // Could navigate back or show success message
+                }}
+              />
+            ) : (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">
+                  Ugyldig klient-ID. Kan ikke fortsette med opplasting.
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>
