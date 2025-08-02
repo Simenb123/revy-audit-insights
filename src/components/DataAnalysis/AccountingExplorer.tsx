@@ -30,11 +30,13 @@ interface AccountingExplorerProps {
 const AccountingExplorer: React.FC<AccountingExplorerProps> = ({ clientId }) => {
   const [activeTab, setActiveTab] = useState('overview');
   
+  // Get fiscal year context first
+  const { selectedFiscalYear } = useFiscalYear();
+  
   // Fetch data using new specialized hooks
   const { data: glVersionOptions = [], isLoading: isLoadingGL } = useGLVersionOptions(clientId);
-  const { data: tbVersionOptions = [], isLoading: isLoadingTB } = useTBVersionOptions(clientId);
+  const { data: tbVersionOptions = [], isLoading: isLoadingTB } = useTBVersionOptions(clientId, selectedFiscalYear);
   const { data: accountingData, isLoading: isLoadingAccounting } = useAccountingData(clientId);
-  const { selectedFiscalYear } = useFiscalYear();
 
   console.log('[AccountingExplorer] GL Version Options:', glVersionOptions);
   console.log('[AccountingExplorer] TB Version Options:', tbVersionOptions);
@@ -71,6 +73,14 @@ const AccountingExplorer: React.FC<AccountingExplorerProps> = ({ clientId }) => 
       setSelectedTBVersion(defaultTBVersion);
     }
   }, [defaultTBVersion]);
+
+  // Reset TB version when fiscal year changes and no versions available
+  React.useEffect(() => {
+    if (tbVersionOptions.length === 0 && selectedTBVersion) {
+      console.log('[AccountingExplorer] Resetting TB version - no versions for fiscal year:', selectedFiscalYear);
+      setSelectedTBVersion(null);
+    }
+  }, [tbVersionOptions.length, selectedTBVersion, selectedFiscalYear]);
 
   console.log('[AccountingExplorer] Current Selected GL:', selectedGLVersion);
   console.log('[AccountingExplorer] Current Selected TB:', selectedTBVersion);
