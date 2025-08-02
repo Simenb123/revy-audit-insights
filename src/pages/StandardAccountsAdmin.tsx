@@ -5,6 +5,7 @@ import AccountMappingRulesManager from '@/components/Admin/AccountMappingRulesMa
 import FinancialStatementGenerator from '@/components/Accounting/FinancialStatementGenerator';
 import AccountCategoriesManager from '@/components/Admin/AccountCategoriesManager';
 import MainGroupsManager from '@/components/Admin/MainGroupsManager';
+import FirmStandardAccountsManager from '@/components/Admin/FirmStandardAccountsManager';
 
 const StandardAccountsAdmin = () => {
   return (
@@ -12,6 +13,7 @@ const StandardAccountsAdmin = () => {
       <Tabs defaultValue="accounts" className="space-y-6">
         <TabsList>
           <TabsTrigger value="accounts">Standardkontoer</TabsTrigger>
+          <TabsTrigger value="firm-accounts">Firmaspesifikk</TabsTrigger>
           <TabsTrigger value="categories">Kategorier</TabsTrigger>
           <TabsTrigger value="main-groups">Hovedgrupper</TabsTrigger>
           <TabsTrigger value="mapping-rules">Mappingregler</TabsTrigger>
@@ -20,6 +22,10 @@ const StandardAccountsAdmin = () => {
         
         <TabsContent value="accounts">
           <StandardAccountTable />
+        </TabsContent>
+        
+        <TabsContent value="firm-accounts">
+          <FirmStandardAccountsManager />
         </TabsContent>
         
         <TabsContent value="categories">
