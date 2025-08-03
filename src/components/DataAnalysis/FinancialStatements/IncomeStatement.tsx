@@ -29,7 +29,7 @@ const IncomeStatement: React.FC<IncomeStatementProps> = ({
     return hasContent(line);
   };
 
-  // Group lines by sections based on display_order and line types
+  // Group lines by sections following template structure
   const groupLinesBySection = (lines: any[]) => {
     // Sort all lines by display_order first
     const sortedLines = [...lines].sort((a, b) => {
@@ -39,47 +39,40 @@ const IncomeStatement: React.FC<IncomeStatementProps> = ({
     });
 
     const sections = {
-      revenue: { 
-        title: "DRIFTSINNTEKTER", 
+      operating: { 
+        title: "DRIFTSINNTEKTER OG DRIFTSKOSTNADER", 
         lines: [] as any[], 
-        detailRange: [10, 18], 
-        subtotalNumbers: ['19'] 
-      },
-      expenses: { 
-        title: "DRIFTSKOSTNADER", 
-        lines: [] as any[], 
-        detailRange: [20, 78], 
-        subtotalNumbers: ['79'] 
-      },
-      operatingResult: { 
-        title: "DRIFTSRESULTAT", 
-        lines: [] as any[], 
-        detailRange: [80, 89], 
-        subtotalNumbers: ['80'] 
+        ranges: [[10, 18], [20, 78]], 
+        subtotalNumbers: ['19', '79'],
+        resultNumbers: ['80'] // Driftsresultat
       },
       financial: { 
-        title: "FINANSPOSTER", 
+        title: "FINANSINNTEKTER OG FINANSKOSTNADER", 
         lines: [] as any[], 
-        detailRange: [90, 154], 
-        subtotalNumbers: ['155'] 
-      },
-      resultBeforeTax: { 
-        title: "RESULTAT FØR SKATT", 
-        lines: [] as any[], 
-        detailRange: [160, 164], 
-        subtotalNumbers: ['160'] 
+        ranges: [[90, 154]], 
+        subtotalNumbers: ['155'],
+        resultNumbers: ['160'] // Resultat før skatt
       },
       tax: { 
         title: "SKATTEKOSTNAD", 
         lines: [] as any[], 
-        detailRange: [165, 179], 
-        subtotalNumbers: [] as string[]
+        ranges: [[165, 179]], 
+        subtotalNumbers: [] as string[],
+        resultNumbers: [] as string[]
       },
       annualResult: { 
         title: "ÅRSRESULTAT", 
         lines: [] as any[], 
-        detailRange: [280, 299], 
-        subtotalNumbers: ['280'] 
+        ranges: [[280, 299]], 
+        subtotalNumbers: [] as string[],
+        resultNumbers: ['280']
+      },
+      transfers: { 
+        title: "OVERFØRINGER", 
+        lines: [] as any[], 
+        ranges: [[350, 399]], 
+        subtotalNumbers: [] as string[],
+        resultNumbers: [] as string[]
       }
     };
 
@@ -88,10 +81,13 @@ const IncomeStatement: React.FC<IncomeStatementProps> = ({
       if (isNaN(accountNum)) return;
 
       for (const [key, section] of Object.entries(sections)) {
-        const inDetailRange = accountNum >= section.detailRange[0] && accountNum <= section.detailRange[1];
+        const inDetailRange = section.ranges.some(([start, end]) => 
+          accountNum >= start && accountNum <= end
+        );
         const isSubtotal = section.subtotalNumbers.includes(line.standard_number);
+        const isResult = section.resultNumbers.includes(line.standard_number);
         
-        if (inDetailRange || isSubtotal) {
+        if (inDetailRange || isSubtotal || isResult) {
           section.lines.push(line);
           break;
         }
@@ -101,7 +97,7 @@ const IncomeStatement: React.FC<IncomeStatementProps> = ({
     return sections;
   };
 
-  const renderSection = (sectionTitle: string, lines: any[], isKeyResult = false) => {
+  const renderSection = (sectionTitle: string, lines: any[], section: any) => {
     if (lines.length === 0) return null;
 
     // Sort lines by display_order or standard_number
@@ -111,27 +107,38 @@ const IncomeStatement: React.FC<IncomeStatementProps> = ({
       return orderA - orderB;
     });
 
-    // Separate detail lines and sum lines
-    const detailLines = sortedLines.filter(line => !line.is_total_line && line.line_type !== 'calculation');
-    const sumLines = sortedLines.filter(line => line.is_total_line || line.line_type === 'calculation');
+    // Separate detail lines, subtotals, and results
+    const detailLines = sortedLines.filter(line => 
+      !line.is_total_line && 
+      line.line_type !== 'calculation' && 
+      !section.subtotalNumbers.includes(line.standard_number) &&
+      !section.resultNumbers.includes(line.standard_number)
+    );
+    const subtotalLines = sortedLines.filter(line => 
+      section.subtotalNumbers.includes(line.standard_number)
+    );
+    const resultLines = sortedLines.filter(line => 
+      section.resultNumbers.includes(line.standard_number) || 
+      line.line_type === 'calculation'
+    );
 
     return (
-      <div className="mb-6">
-        {/* Section header */}
-        <div className={cn(
-          "py-3 px-4 font-bold text-base border-b-2 mb-3",
-          isKeyResult 
-            ? "bg-gradient-to-r from-emerald-500/15 to-emerald-500/8 border-emerald-500/30 text-emerald-700"
-            : "bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20 text-primary"
-        )}>
-          {sectionTitle}
-        </div>
+      <div className="mb-4">
+        {/* Simplified section header - only show if there are lines */}
+        {(detailLines.length > 0 || subtotalLines.length > 0) && (
+          <div className="py-2 px-4 font-semibold text-sm text-muted-foreground border-b border-border/30 mb-2">
+            {sectionTitle}
+          </div>
+        )}
 
         {/* Detail lines first */}
-        {detailLines.map(line => renderIncomeLine(line, 0, false))}
+        {detailLines.map(line => renderIncomeLine(line, 0, false, false))}
         
-        {/* Sum lines after detail lines */}
-        {sumLines.map(line => renderIncomeLine(line, 0, true, isKeyResult))}
+        {/* Subtotal lines */}
+        {subtotalLines.map(line => renderIncomeLine(line, 0, true, false))}
+        
+        {/* Result lines with emphasis */}
+        {resultLines.map(line => renderIncomeLine(line, 0, true, true))}
       </div>
     );
   };
@@ -150,61 +157,57 @@ const IncomeStatement: React.FC<IncomeStatementProps> = ({
       <React.Fragment key={line.id}>
         <div 
           className={cn(
-            "group grid grid-cols-3 gap-6 py-2.5 px-4 transition-all duration-200",
-            "hover:bg-muted/40 border-b border-border/10",
-            // Detail line styling
+            "group grid grid-cols-4 gap-4 py-1.5 px-4 transition-all duration-200",
+            "hover:bg-muted/30 border-b border-border/5",
+            // Detail line styling - compact
             !isSum && "text-sm",
-            // Sum line styling
-            isSubTotal && "bg-muted/30 font-semibold border-b-2 border-border/40 text-base mt-2",
-            // Key result styling
-            isMainResult && "bg-gradient-to-r from-emerald-500/10 to-emerald-500/5 font-bold text-lg text-emerald-700 border-b-4 border-emerald-500/30 mt-3 mb-2",
-            // Indentation for detail lines
-            !isSum && level === 0 && "ml-4 border-l-2 border-muted-foreground/15 pl-4",
-            !isSum && level >= 1 && "ml-8 border-l border-muted-foreground/10 pl-4"
+            // Subtotal line styling - subtle
+            isSubTotal && !isMainResult && "bg-muted/20 font-medium border-b border-border/30 text-sm",
+            // Main result styling - blue background like template
+            isMainResult && "bg-blue-50 font-bold text-sm border-b-2 border-blue-200 mt-1 mb-1",
+            // Minimal indentation
+            !isSum && level === 0 && "pl-6",
+            !isSum && level >= 1 && "pl-8"
           )}
         >
-          <div className="flex items-center gap-3 col-span-1 min-w-0">
+          <div className="flex items-center gap-2 col-span-1 min-w-0">
             <span className={cn(
-              "text-xs font-mono shrink-0 px-2 py-1 rounded",
-              isMainResult ? "bg-emerald-500/15 text-emerald-700 font-bold" :
-              isSubTotal ? "bg-muted/70 text-foreground font-semibold" :
-              "bg-muted/50 text-muted-foreground"
+              "text-xs font-mono shrink-0 px-1 py-0.5 rounded bg-muted/40 text-muted-foreground",
+              isMainResult && "bg-blue-100 text-blue-700 font-medium"
             )}>
               {line.standard_number}
             </span>
             <span className={cn(
-              "truncate",
-              isMainResult && "font-bold text-lg text-emerald-700",
-              isSubTotal && "font-semibold text-base",
+              "truncate text-sm",
+              isMainResult && "font-bold text-blue-900",
+              isSubTotal && "font-medium",
               !isSum && "text-foreground"
             )}>
               {line.standard_name}
             </span>
-            {line.line_type === 'calculation' && (
-              <Badge variant="secondary" className="text-xs shrink-0">
-                Beregnet
-              </Badge>
-            )}
+          </div>
+          
+          {/* Note column */}
+          <div className="text-xs text-muted-foreground text-center">
+            {/* Note references would go here */}
           </div>
           
           <div className={cn(
-            "tabular-nums font-mono text-right transition-colors",
-            isMainResult && "font-bold text-lg text-emerald-700",
-            isSubTotal && "font-semibold text-base",
-            !isSum && "text-sm",
-            currentAmount < 0 && "text-destructive font-semibold",
-            currentAmount === 0 && !isMainResult && !isSubTotal && "text-muted-foreground/60"
+            "tabular-nums font-mono text-right text-sm transition-colors",
+            isMainResult && "font-bold text-blue-900",
+            isSubTotal && "font-medium",
+            currentAmount < 0 && "text-red-600",
+            currentAmount === 0 && "text-muted-foreground/60"
           )}>
             {currentAmount < 0 ? `(${formatCurrency(Math.abs(currentAmount))})` : formatCurrency(currentAmount)}
           </div>
           
           <div className={cn(
-            "tabular-nums font-mono text-right text-muted-foreground transition-colors",
-            isMainResult && "font-bold text-base text-emerald-600",
-            isSubTotal && "font-semibold",
-            !isSum && "text-sm",
-            previousAmount < 0 && "text-destructive/70 font-semibold",
-            previousAmount === 0 && !isMainResult && !isSubTotal && "text-muted-foreground/40"
+            "tabular-nums font-mono text-right text-sm text-muted-foreground transition-colors",
+            isMainResult && "font-bold text-blue-700",
+            isSubTotal && "font-medium",
+            previousAmount < 0 && "text-red-500",
+            previousAmount === 0 && "text-muted-foreground/40"
           )}>
             {previousAmount < 0 ? `(${formatCurrency(Math.abs(previousAmount))})` : formatCurrency(previousAmount)}
           </div>
@@ -236,17 +239,18 @@ const IncomeStatement: React.FC<IncomeStatementProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* Header */}
-      <div className="text-center py-4 border-b-2 border-primary/20 bg-gradient-to-r from-primary/5 to-primary/10">
-        <h2 className="text-2xl font-bold text-primary">RESULTATREGNSKAP</h2>
-        <p className="text-sm text-muted-foreground mt-1">
+      {/* Header - simplified */}
+      <div className="text-center py-3 border-b border-border">
+        <h2 className="text-xl font-bold text-foreground">RESULTATREGNSKAP</h2>
+        <p className="text-xs text-muted-foreground mt-1">
           Periode: {currentYear && previousYear ? `${currentYear} / ${previousYear}` : 'Inneværende år'}
         </p>
       </div>
 
-      {/* Table Header */}
-      <div className="grid grid-cols-3 gap-6 py-3 px-4 bg-gradient-to-r from-muted/80 to-muted/50 border-b-2 border-border font-bold text-sm sticky top-0 z-10">
+      {/* Table Header - compact with Note column */}
+      <div className="grid grid-cols-4 gap-4 py-2 px-4 bg-muted/40 border-b border-border font-medium text-xs sticky top-0 z-10">
         <div className="text-foreground">Resultatposter</div>
+        <div className="text-center text-foreground">Note</div>
         <div className="text-right text-foreground">
           {currentYear || 'Dette år'}
         </div>
@@ -255,28 +259,22 @@ const IncomeStatement: React.FC<IncomeStatementProps> = ({
         </div>
       </div>
       
-      {/* Content */}
+      {/* Content - compact layout */}
       <div className="bg-background">
-        {/* Revenue section */}
-        {renderSection(sections.revenue.title, sections.revenue.lines)}
+        {/* Operating income and expenses */}
+        {renderSection(sections.operating.title, sections.operating.lines, sections.operating)}
         
-        {/* Expenses section */}
-        {renderSection(sections.expenses.title, sections.expenses.lines)}
-        
-        {/* Operating result - key result */}
-        {renderSection(sections.operatingResult.title, sections.operatingResult.lines, true)}
-        
-        {/* Financial items */}
-        {renderSection(sections.financial.title, sections.financial.lines)}
-        
-        {/* Result before tax - key result */}
-        {renderSection(sections.resultBeforeTax.title, sections.resultBeforeTax.lines, true)}
+        {/* Financial income and expenses */}
+        {renderSection(sections.financial.title, sections.financial.lines, sections.financial)}
         
         {/* Tax expense */}
-        {renderSection(sections.tax.title, sections.tax.lines)}
+        {renderSection(sections.tax.title, sections.tax.lines, sections.tax)}
         
-        {/* Annual result - key result */}
-        {renderSection(sections.annualResult.title, sections.annualResult.lines, true)}
+        {/* Annual result */}
+        {renderSection(sections.annualResult.title, sections.annualResult.lines, sections.annualResult)}
+        
+        {/* Transfers (if any) */}
+        {renderSection(sections.transfers.title, sections.transfers.lines, sections.transfers)}
       </div>
     </div>
   );
