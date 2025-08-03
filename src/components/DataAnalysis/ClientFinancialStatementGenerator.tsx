@@ -18,7 +18,7 @@ const ClientFinancialStatementGenerator: React.FC<ClientFinancialStatementGenera
   selectedVersion,
   onNavigateToMapping
 }) => {
-  const { financialStatement, mappingStats, isLoading } = useFirmFinancialStatements(clientId, selectedVersion);
+  const { financialStatement, mappingStats, periodInfo, isLoading } = useFirmFinancialStatements(clientId, selectedVersion);
 
   const formatAmount = (amount: number): string => {
     return new Intl.NumberFormat('no-NO', {
@@ -29,20 +29,38 @@ const ClientFinancialStatementGenerator: React.FC<ClientFinancialStatementGenera
     }).format(amount);
   };
 
+  const shouldShowLine = (line: any): boolean => {
+    // Always show total lines even if zero
+    if (line.is_total_line) return true;
+    
+    // Show if current amount or previous amount is not zero
+    const currentAmount = line.amount || 0;
+    const previousAmount = line.previous_amount || 0;
+    
+    return currentAmount !== 0 || previousAmount !== 0;
+  };
+
   const renderFinancialStatementLine = (line: any, level: number = 0): React.ReactNode => {
+    // Don't show lines with zero values (except totals)
+    if (!shouldShowLine(line)) {
+      return null;
+    }
+
     const indentStyle = { paddingLeft: `${level * 24}px` };
+    const currentAmount = line.amount || 0;
+    const previousAmount = line.previous_amount || 0;
     
     return (
       <React.Fragment key={line.id}>
         <div 
           className={cn(
-            "flex items-center justify-between py-2 border-b border-border/40",
-            line.is_total_line && "font-semibold bg-muted/30",
+            "grid grid-cols-3 gap-4 py-2 border-b border-border/40",
+            line.is_total_line && "font-semibold bg-muted/30 border-b-2",
             level === 0 && "bg-muted/20 font-medium"
           )}
           style={indentStyle}
         >
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 col-span-1">
             <span className="text-xs text-muted-foreground font-mono">
               {line.standard_number}
             </span>
@@ -59,12 +77,21 @@ const ClientFinancialStatementGenerator: React.FC<ClientFinancialStatementGenera
               </Badge>
             )}
           </div>
+          
           <div className={cn(
-            "text-sm tabular-nums font-mono",
+            "text-sm tabular-nums font-mono text-right",
             line.is_total_line && "font-semibold",
-            (line.amount || 0) < 0 && "text-destructive"
+            currentAmount < 0 && "text-destructive"
           )}>
-            {formatAmount(line.amount || 0)}
+            {currentAmount < 0 ? `(${formatAmount(Math.abs(currentAmount))})` : formatAmount(currentAmount)}
+          </div>
+          
+          <div className={cn(
+            "text-sm tabular-nums font-mono text-right text-muted-foreground",
+            line.is_total_line && "font-semibold",
+            previousAmount < 0 && "text-destructive"
+          )}>
+            {previousAmount < 0 ? `(${formatAmount(Math.abs(previousAmount))})` : formatAmount(previousAmount)}
           </div>
         </div>
         
@@ -173,6 +200,11 @@ const ClientFinancialStatementGenerator: React.FC<ClientFinancialStatementGenera
             <div className="flex items-center gap-2">
               <FileText className="h-5 w-5" />
               Regnskapsoppstilling
+              {periodInfo && (
+                <span className="text-sm font-normal text-muted-foreground">
+                  ({periodInfo.currentYear})
+                </span>
+              )}
             </div>
             <Button variant="outline" size="sm">
               <Download className="h-4 w-4 mr-2" />
@@ -181,6 +213,17 @@ const ClientFinancialStatementGenerator: React.FC<ClientFinancialStatementGenera
           </CardTitle>
         </CardHeader>
         <CardContent>
+          {/* Table Header */}
+          <div className="grid grid-cols-3 gap-4 py-3 border-b-2 border-border font-semibold text-sm mb-2">
+            <div>Konto</div>
+            <div className="text-right">
+              {periodInfo ? periodInfo.currentYear : 'Dette år'}
+            </div>
+            <div className="text-right text-muted-foreground">
+              {periodInfo ? periodInfo.previousYear : 'Forrige år'}
+            </div>
+          </div>
+          
           <div className="space-y-1">
             {financialStatement.map(line => renderFinancialStatementLine(line))}
           </div>

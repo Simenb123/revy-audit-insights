@@ -16,12 +16,21 @@ interface FinancialStatementLine {
   sign_multiplier: number;
   children?: FinancialStatementLine[];
   amount?: number;
+  previous_amount?: number;
 }
 
 export function useFirmFinancialStatements(clientId: string, selectedVersion?: string) {
   const { data: firmAccounts } = useFirmStandardAccounts();
   const { data: trialBalance } = useTrialBalanceData(clientId, selectedVersion);
   const { data: mappings } = useTrialBalanceMappings(clientId);
+  
+  // Get current year from trial balance
+  const currentYear = trialBalance?.[0]?.period_year;
+  const { data: previousTrialBalance } = useTrialBalanceData(
+    clientId, 
+    undefined, 
+    currentYear ? currentYear - 1 : undefined
+  );
 
   const financialStatement = useMemo(() => {
     if (!firmAccounts || !trialBalance || !mappings) {
@@ -62,15 +71,24 @@ export function useFirmFinancialStatements(clientId: string, selectedVersion?: s
       return rootLines;
     };
 
-    const calculateAmount = (line: FinancialStatementLine): number => {
+    const calculateAmount = (line: FinancialStatementLine, isPrevious = false): number => {
+      const sourceData = isPrevious ? previousTrialBalance : trialBalance;
+      
+      if (!sourceData) return 0;
+      
       if (line.line_type === 'calculation' && line.calculation_formula) {
-        return parseCalculationFormula(line.calculation_formula);
+        return parseCalculationFormula(line.calculation_formula, isPrevious);
       }
 
       if (line.children && line.children.length > 0) {
         return line.children.reduce((sum, child) => {
-          child.amount = calculateAmount(child);
-          return sum + child.amount;
+          const childAmount = calculateAmount(child, isPrevious);
+          if (isPrevious) {
+            child.previous_amount = childAmount;
+          } else {
+            child.amount = childAmount;
+          }
+          return sum + childAmount;
         }, 0);
       }
 
@@ -80,14 +98,14 @@ export function useFirmFinancialStatements(clientId: string, selectedVersion?: s
       );
 
       const amount = relevantMappings.reduce((sum, mapping) => {
-        const tbAccount = trialBalance.find((tb: any) => tb.account_number === mapping.account_number);
+        const tbAccount = sourceData.find((tb: any) => tb.account_number === mapping.account_number);
         return sum + (tbAccount ? (tbAccount.closing_balance || 0) : 0);
       }, 0);
 
       return amount * line.sign_multiplier;
     };
 
-    const parseCalculationFormula = (formula: any): number => {
+    const parseCalculationFormula = (formula: any, isPrevious = false): number => {
       if (!formula || !formula.terms) return 0;
 
       return formula.terms.reduce((result: number, term: any) => {
@@ -95,7 +113,7 @@ export function useFirmFinancialStatements(clientId: string, selectedVersion?: s
           .filter((acc: any) => acc.standard_number === term.account)
           .reduce((sum: any, acc: any) => {
             const line = { ...acc, children: [] } as FinancialStatementLine;
-            return sum + calculateAmount(line);
+            return sum + calculateAmount(line, isPrevious);
           }, 0);
 
         return term.operator === '+' ? result + accountAmount : result - accountAmount;
@@ -104,13 +122,27 @@ export function useFirmFinancialStatements(clientId: string, selectedVersion?: s
 
     const statement = buildFinancialStatementStructure();
     
-    // Calculate amounts for all lines
+    // Calculate amounts for current and previous year
     statement.forEach(line => {
-      line.amount = calculateAmount(line);
+      line.amount = calculateAmount(line, false);
+      line.previous_amount = calculateAmount(line, true);
     });
 
     return statement;
-  }, [firmAccounts, trialBalance, mappings]);
+  }, [firmAccounts, trialBalance, mappings, previousTrialBalance]);
+
+  // Extract period information
+  const periodInfo = useMemo(() => {
+    if (!trialBalance || trialBalance.length === 0) return null;
+    
+    const firstEntry = trialBalance[0];
+    return {
+      currentYear: firstEntry.period_year,
+      previousYear: firstEntry.period_year - 1,
+      periodStart: firstEntry.period_start_date,
+      periodEnd: firstEntry.period_end_date
+    };
+  }, [trialBalance]);
 
   const mappingStats = useMemo(() => {
     if (!trialBalance || !mappings) {
@@ -128,6 +160,7 @@ export function useFirmFinancialStatements(clientId: string, selectedVersion?: s
   return {
     financialStatement,
     mappingStats,
+    periodInfo,
     isLoading: !firmAccounts || !trialBalance || !mappings
   };
 }
