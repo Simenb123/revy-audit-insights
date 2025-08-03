@@ -29,36 +29,24 @@ const IncomeStatement: React.FC<IncomeStatementProps> = ({
     return hasContent(line);
   };
 
-  // Group lines by sections following template structure
+  // Group lines by sections based on display_order ranges - chronological order
   const groupLinesBySection = (lines: any[]) => {
     const sections = {
       operating: { 
         title: "DRIFTSINNTEKTER OG DRIFTSKOSTNADER", 
-        lines: [] as any[], 
-        ranges: [[10, 18], [20, 78]], 
-        subtotalNumbers: ['19', '79'],
-        resultNumbers: ['80'] // Driftsresultat
+        lines: [] as any[]
       },
       financial: { 
         title: "FINANSINNTEKTER OG FINANSKOSTNADER", 
-        lines: [] as any[], 
-        ranges: [[90, 154]], 
-        subtotalNumbers: ['155'],
-        resultNumbers: ['160'] // Resultat før skatt
+        lines: [] as any[]
       },
       tax: { 
         title: "SKATTEKOSTNAD", 
-        lines: [] as any[], 
-        ranges: [[165, 179]], 
-        subtotalNumbers: [] as string[],
-        resultNumbers: [] as string[]
+        lines: [] as any[]
       },
       transfers: { 
         title: "OVERFØRINGER", 
-        lines: [] as any[], 
-        ranges: [[350, 399]], 
-        subtotalNumbers: [] as string[],
-        resultNumbers: [] as string[]
+        lines: [] as any[]
       }
     };
 
@@ -70,53 +58,42 @@ const IncomeStatement: React.FC<IncomeStatementProps> = ({
     });
 
     sortedLines.forEach(line => {
-      const accountNum = parseInt(line.standard_number);
-      if (isNaN(accountNum)) return;
+      const displayOrder = line.display_order || parseInt(line.standard_number) || 0;
 
       // Skip annual result 280 - it will be handled as calculation
       if (line.standard_number === '280') return;
 
-      for (const [key, section] of Object.entries(sections)) {
-        const inDetailRange = section.ranges.some(([start, end]) => 
-          accountNum >= start && accountNum <= end
-        );
-        const isSubtotal = section.subtotalNumbers.includes(line.standard_number);
-        const isResult = section.resultNumbers.includes(line.standard_number);
-        
-        if (inDetailRange || isSubtotal || isResult) {
-          section.lines.push(line);
-          break;
-        }
+      // Group by display_order ranges to ensure chronological order
+      if (displayOrder >= 10 && displayOrder <= 80) {
+        sections.operating.lines.push(line);
+      } else if (displayOrder >= 90 && displayOrder <= 160) {
+        sections.financial.lines.push(line);
+      } else if (displayOrder >= 165 && displayOrder <= 179) {
+        sections.tax.lines.push(line);
+      } else if (displayOrder >= 350 && displayOrder <= 399) {
+        sections.transfers.lines.push(line);
       }
     });
 
     return sections;
   };
 
-  const renderSection = (sectionTitle: string, lines: any[], section: any) => {
+  const renderSection = (sectionTitle: string, lines: any[]) => {
     if (lines.length === 0) return null;
 
-    // Sort lines by display_order or standard_number
-    const sortedLines = [...lines].sort((a, b) => {
-      const orderA = a.display_order || parseInt(a.standard_number) || 0;
-      const orderB = b.display_order || parseInt(b.standard_number) || 0;
-      return orderA - orderB;
-    });
-
-    // Render all lines in chronological order based on display_order
+    // Lines are already sorted by display_order in groupLinesBySection
     return (
       <div className="mb-3">
-        {/* Section header - compact design from patch 2 */}
-        {sortedLines.length > 0 && (
-          <div className="py-1.5 px-4 font-medium text-xs text-muted-foreground uppercase tracking-wide border-b border-border/20 mb-1">
-            {sectionTitle}
-          </div>
-        )}
+        {/* Section header */}
+        <div className="py-1.5 px-4 font-medium text-xs text-muted-foreground uppercase tracking-wide border-b border-border/20 mb-1">
+          {sectionTitle}
+        </div>
 
         {/* Render all lines in chronological order */}
-        {sortedLines.map(line => {
-          const isSubtotal = section.subtotalNumbers.includes(line.standard_number);
-          const isResult = section.resultNumbers.includes(line.standard_number) || line.line_type === 'calculation';
+        {lines.map(line => {
+          // Determine styling based on standard_number and line_type
+          const isSubtotal = ['19', '79', '155'].includes(line.standard_number);
+          const isResult = ['80', '160'].includes(line.standard_number) || line.line_type === 'calculation';
           
           return renderIncomeLine(line, 0, isSubtotal || isResult, isResult);
         })}
@@ -243,13 +220,13 @@ const IncomeStatement: React.FC<IncomeStatementProps> = ({
       {/* Content - compact layout */}
       <div className="bg-background">
         {/* Operating income and expenses */}
-        {renderSection(sections.operating.title, sections.operating.lines, sections.operating)}
+        {renderSection(sections.operating.title, sections.operating.lines)}
         
         {/* Financial income and expenses */}
-        {renderSection(sections.financial.title, sections.financial.lines, sections.financial)}
+        {renderSection(sections.financial.title, sections.financial.lines)}
         
         {/* Tax expense */}
-        {renderSection(sections.tax.title, sections.tax.lines, sections.tax)}
+        {renderSection(sections.tax.title, sections.tax.lines)}
         
         {/* Annual result as single calculation line - no duplication */}
         {(() => {
@@ -259,7 +236,7 @@ const IncomeStatement: React.FC<IncomeStatementProps> = ({
         })()}
         
         {/* Transfers (if any) */}
-        {renderSection(sections.transfers.title, sections.transfers.lines, sections.transfers)}
+        {renderSection(sections.transfers.title, sections.transfers.lines)}
       </div>
     </div>
   );
