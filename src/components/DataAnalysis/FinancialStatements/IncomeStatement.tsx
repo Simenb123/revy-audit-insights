@@ -31,13 +31,6 @@ const IncomeStatement: React.FC<IncomeStatementProps> = ({
 
   // Group lines by sections following template structure
   const groupLinesBySection = (lines: any[]) => {
-    // Sort all lines by display_order first
-    const sortedLines = [...lines].sort((a, b) => {
-      const orderA = a.display_order || parseInt(a.standard_number) || 0;
-      const orderB = b.display_order || parseInt(b.standard_number) || 0;
-      return orderA - orderB;
-    });
-
     const sections = {
       operating: { 
         title: "DRIFTSINNTEKTER OG DRIFTSKOSTNADER", 
@@ -60,13 +53,6 @@ const IncomeStatement: React.FC<IncomeStatementProps> = ({
         subtotalNumbers: [] as string[],
         resultNumbers: [] as string[]
       },
-      annualResult: { 
-        title: "ÅRSRESULTAT", 
-        lines: [] as any[], 
-        ranges: [[280, 299]], 
-        subtotalNumbers: [] as string[],
-        resultNumbers: ['280']
-      },
       transfers: { 
         title: "OVERFØRINGER", 
         lines: [] as any[], 
@@ -76,9 +62,19 @@ const IncomeStatement: React.FC<IncomeStatementProps> = ({
       }
     };
 
+    // Sort all lines by display_order first
+    const sortedLines = [...lines].sort((a, b) => {
+      const orderA = a.display_order || parseInt(a.standard_number) || 0;
+      const orderB = b.display_order || parseInt(b.standard_number) || 0;
+      return orderA - orderB;
+    });
+
     sortedLines.forEach(line => {
       const accountNum = parseInt(line.standard_number);
       if (isNaN(accountNum)) return;
+
+      // Skip annual result 280 - it will be handled as calculation
+      if (line.standard_number === '280') return;
 
       for (const [key, section] of Object.entries(sections)) {
         const inDetailRange = section.ranges.some(([start, end]) => 
@@ -107,37 +103,39 @@ const IncomeStatement: React.FC<IncomeStatementProps> = ({
       return orderA - orderB;
     });
 
-    // Separate detail lines, subtotals, and results
-    const detailLines = sortedLines.filter(line => 
-      !line.is_total_line && 
-      line.line_type !== 'calculation' && 
-      !section.subtotalNumbers.includes(line.standard_number) &&
-      !section.resultNumbers.includes(line.standard_number)
-    );
+    // Separate detail lines, subtotals, and results - correct order
+    const detailLines = sortedLines.filter(line => {
+      const isSubtotal = section.subtotalNumbers.includes(line.standard_number);
+      const isResult = section.resultNumbers.includes(line.standard_number);
+      const isCalculation = line.line_type === 'calculation';
+      return !isSubtotal && !isResult && !isCalculation;
+    });
+    
     const subtotalLines = sortedLines.filter(line => 
       section.subtotalNumbers.includes(line.standard_number)
     );
+    
     const resultLines = sortedLines.filter(line => 
       section.resultNumbers.includes(line.standard_number) || 
       line.line_type === 'calculation'
     );
 
     return (
-      <div className="mb-4">
-        {/* Simplified section header - only show if there are lines */}
-        {(detailLines.length > 0 || subtotalLines.length > 0) && (
-          <div className="py-2 px-4 font-semibold text-sm text-muted-foreground border-b border-border/30 mb-2">
+      <div className="mb-3">
+        {/* Section header - compact design from patch 2 */}
+        {(detailLines.length > 0 || subtotalLines.length > 0 || resultLines.length > 0) && (
+          <div className="py-1.5 px-4 font-medium text-xs text-muted-foreground uppercase tracking-wide border-b border-border/20 mb-1">
             {sectionTitle}
           </div>
         )}
 
-        {/* Detail lines first */}
+        {/* CORRECT ORDER: Detail lines first */}
         {detailLines.map(line => renderIncomeLine(line, 0, false, false))}
         
-        {/* Subtotal lines */}
+        {/* Then subtotal lines */}
         {subtotalLines.map(line => renderIncomeLine(line, 0, true, false))}
         
-        {/* Result lines with emphasis */}
+        {/* Finally result lines with emphasis */}
         {resultLines.map(line => renderIncomeLine(line, 0, true, true))}
       </div>
     );
@@ -270,8 +268,12 @@ const IncomeStatement: React.FC<IncomeStatementProps> = ({
         {/* Tax expense */}
         {renderSection(sections.tax.title, sections.tax.lines, sections.tax)}
         
-        {/* Annual result */}
-        {renderSection(sections.annualResult.title, sections.annualResult.lines, sections.annualResult)}
+        {/* Annual result as single calculation line - no duplication */}
+        {(() => {
+          const annualResultLine = incomeStatementData.find(line => line.standard_number === '280');
+          return annualResultLine && shouldShowLine(annualResultLine) ? 
+            renderIncomeLine(annualResultLine, 0, true, true) : null;
+        })()}
         
         {/* Transfers (if any) */}
         {renderSection(sections.transfers.title, sections.transfers.lines, sections.transfers)}
