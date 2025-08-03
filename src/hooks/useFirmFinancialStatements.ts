@@ -76,12 +76,15 @@ export function useFirmFinancialStatements(clientId: string, selectedVersion?: s
       
       if (!sourceData) return 0;
       
-      if (line.line_type === 'calculation' && line.calculation_formula) {
+      // Handle calculation/subtotal lines with formulas
+      if ((line.line_type === 'calculation' || line.line_type === 'subtotal') && line.calculation_formula) {
+        console.log(`Calculating formula for ${line.standard_name} (${line.standard_number}):`, line.calculation_formula);
         return parseCalculationFormula(line.calculation_formula, isPrevious);
       }
 
+      // Handle lines with children (sum by aggregating children)
       if (line.children && line.children.length > 0) {
-        return line.children.reduce((sum, child) => {
+        const childSum = line.children.reduce((sum, child) => {
           const childAmount = calculateAmount(child, isPrevious);
           if (isPrevious) {
             child.previous_amount = childAmount;
@@ -90,43 +93,98 @@ export function useFirmFinancialStatements(clientId: string, selectedVersion?: s
           }
           return sum + childAmount;
         }, 0);
+        
+        console.log(`Sum for ${line.standard_name} from children:`, childSum);
+        return childSum;
       }
 
-      // Find mapped trial balance accounts
+      // Handle detail lines - find mapped trial balance accounts
       const relevantMappings = mappings.filter(mapping => 
         mapping.statement_line_number === line.standard_number
       );
 
       const amount = relevantMappings.reduce((sum, mapping) => {
         const tbAccount = sourceData.find((tb: any) => tb.account_number === mapping.account_number);
-        return sum + (tbAccount ? (tbAccount.closing_balance || 0) : 0);
+        const accountAmount = tbAccount ? (tbAccount.closing_balance || 0) : 0;
+        return sum + accountAmount;
       }, 0);
 
-      return amount * line.sign_multiplier;
+      const finalAmount = amount * line.sign_multiplier;
+      console.log(`Detail line ${line.standard_name} (${line.standard_number}): ${finalAmount}`);
+      return finalAmount;
     };
 
-    const parseCalculationFormula = (formula: any, isPrevious = false): number => {
-      if (!formula || !formula.terms) return 0;
+    const parseCalculationFormula = (formula: string, isPrevious = false): number => {
+      if (!formula || typeof formula !== 'string') return 0;
 
-      return formula.terms.reduce((result: number, term: any) => {
-        const accountAmount = firmAccounts
-          .filter((acc: any) => acc.standard_number === term.account)
-          .reduce((sum: any, acc: any) => {
-            const line = { ...acc, children: [] } as FinancialStatementLine;
-            return sum + calculateAmount(line, isPrevious);
-          }, 0);
-
-        return term.operator === '+' ? result + accountAmount : result - accountAmount;
-      }, 0);
+      console.log(`Parsing formula: "${formula}"`);
+      
+      // Handle simple formulas like "19 + 79" or "160 - 165"
+      const parts = formula.split(/\s*([+\-])\s*/);
+      let result = 0;
+      let operator = '+';
+      
+      for (let i = 0; i < parts.length; i++) {
+        if (parts[i] === '+' || parts[i] === '-') {
+          operator = parts[i];
+        } else if (parts[i].trim()) {
+          const accountNumber = parts[i].trim();
+          
+          // Find the account with this standard_number
+          const referencedAccount = firmAccounts.find((acc: any) => acc.standard_number === accountNumber);
+          
+          if (referencedAccount) {
+            console.log(`Found referenced account: ${referencedAccount.standard_name} (${accountNumber})`);
+            
+            // Create a temporary line to calculate amount
+            const tempLine: FinancialStatementLine = {
+              id: referencedAccount.id,
+              standard_number: referencedAccount.standard_number,
+              standard_name: referencedAccount.standard_name,
+              account_type: referencedAccount.account_type,
+              display_order: referencedAccount.display_order || 0,
+              line_type: referencedAccount.line_type,
+              parent_line_id: referencedAccount.parent_line_id,
+              calculation_formula: referencedAccount.calculation_formula,
+              is_total_line: referencedAccount.is_total_line,
+              sign_multiplier: referencedAccount.sign_multiplier,
+              children: []
+            };
+            
+            const accountAmount = calculateAmount(tempLine, isPrevious);
+            console.log(`Account ${accountNumber} amount: ${accountAmount}`);
+            
+            if (operator === '+') {
+              result += accountAmount;
+            } else {
+              result -= accountAmount;
+            }
+          } else {
+            console.warn(`Account ${accountNumber} not found in formula ${formula}`);
+          }
+        }
+      }
+      
+      console.log(`Formula "${formula}" result: ${result}`);
+      return result;
     };
 
     const statement = buildFinancialStatementStructure();
     
     // Calculate amounts for current and previous year
-    statement.forEach(line => {
+    // Process in dependency order - detail lines first, then calculated lines
+    const processLine = (line: FinancialStatementLine) => {
+      // First process all children
+      if (line.children && line.children.length > 0) {
+        line.children.forEach(processLine);
+      }
+      
+      // Then calculate this line's amount
       line.amount = calculateAmount(line, false);
       line.previous_amount = calculateAmount(line, true);
-    });
+    };
+    
+    statement.forEach(processLine);
 
     return statement;
   }, [firmAccounts, trialBalance, mappings, previousTrialBalance]);
