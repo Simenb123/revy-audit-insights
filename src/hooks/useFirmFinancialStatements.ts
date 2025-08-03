@@ -38,7 +38,22 @@ export function useFirmFinancialStatements(clientId: string, selectedVersion?: s
     }
 
     const buildFinancialStatementStructure = (): FinancialStatementLine[] => {
-      const lines: FinancialStatementLine[] = firmAccounts
+      console.log('Building financial statement structure from firm accounts:', firmAccounts.length);
+      
+      // Filter to only income statement lines (resultat, revenue, expense)
+      const incomeStatementAccounts = firmAccounts.filter((account: any) => 
+        ['resultat', 'revenue', 'expense'].includes(account.account_type)
+      );
+      
+      console.log('Filtered to income statement accounts:', incomeStatementAccounts.length);
+      console.log('Income statement accounts:', incomeStatementAccounts.map((a: any) => ({
+        number: a.standard_number,
+        name: a.standard_name,
+        display_order: a.display_order,
+        account_type: a.account_type
+      })));
+      
+      const lines: FinancialStatementLine[] = incomeStatementAccounts
         .map((account: any) => ({
           id: account.id,
           standard_number: account.standard_number,
@@ -53,6 +68,11 @@ export function useFirmFinancialStatements(clientId: string, selectedVersion?: s
           children: [] as FinancialStatementLine[],
         }))
         .sort((a: any, b: any) => a.display_order - b.display_order);
+        
+      console.log('Final sorted lines:', lines.map(l => ({ 
+        number: l.standard_number, 
+        display_order: l.display_order 
+      })));
 
       // Build hierarchy
       const lineMap = new Map(lines.map(line => [line.id, line]));

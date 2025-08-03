@@ -219,16 +219,17 @@ const IncomeStatement: React.FC<IncomeStatementProps> = ({
     );
   };
 
-  // Filter data to only include 'resultat' account types
-  const incomeStatementData = data.filter(line => 
-    line.account_type === 'resultat' || 
-    line.account_type === 'revenue' || 
-    line.account_type === 'expense'
-  );
+  // Use ALL data as-is from hook (filtering already done there)
+  console.log('IncomeStatement received data:', data.map(l => ({ 
+    number: l.standard_number, 
+    name: l.standard_name, 
+    display_order: l.display_order,
+    account_type: l.account_type 
+  })));
 
-  const chronologicalList = createChronologicalList(incomeStatementData);
+  const chronologicalList = createChronologicalList(data);
 
-  if (incomeStatementData.length === 0) {
+  if (data.length === 0) {
     return (
       <div className="text-center py-8 text-muted-foreground">
         <p>Ingen resultatregnskapsdata tilgjengelig</p>
@@ -275,7 +276,7 @@ const IncomeStatement: React.FC<IncomeStatementProps> = ({
         
         {/* Annual result as single calculation line - no duplication */}
         {(() => {
-          const annualResultLine = incomeStatementData.find(line => line.standard_number === '280');
+          const annualResultLine = data.find(line => line.standard_number === '280');
           return annualResultLine && shouldShowLine(annualResultLine) ? 
             renderIncomeLine(annualResultLine, 0, true, true) : null;
         })()}
