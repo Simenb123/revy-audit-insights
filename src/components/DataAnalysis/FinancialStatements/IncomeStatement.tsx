@@ -29,52 +29,109 @@ const IncomeStatement: React.FC<IncomeStatementProps> = ({
     return hasContent(line);
   };
 
-  const renderIncomeLine = (line: any, level: number = 0): React.ReactNode => {
+  // Group lines by sections based on account number ranges
+  const groupLinesBySection = (lines: any[]) => {
+    const sections = {
+      revenue: { title: "DRIFTSINNTEKTER", lines: [] as any[], range: [10, 19] },
+      expenses: { title: "DRIFTSKOSTNADER", lines: [] as any[], range: [20, 79] },
+      operatingResult: { title: "DRIFTSRESULTAT", lines: [] as any[], range: [80, 89] },
+      financial: { title: "FINANSPOSTER", lines: [] as any[], range: [90, 155] },
+      resultBeforeTax: { title: "RESULTAT FØR SKATT", lines: [] as any[], range: [160, 164] },
+      tax: { title: "SKATTEKOSTNAD", lines: [] as any[], range: [165, 179] },
+      annualResult: { title: "ÅRSRESULTAT", lines: [] as any[], range: [280, 299] }
+    };
+
+    lines.forEach(line => {
+      const accountNum = parseInt(line.standard_number);
+      if (isNaN(accountNum)) return;
+
+      for (const [key, section] of Object.entries(sections)) {
+        if (accountNum >= section.range[0] && accountNum <= section.range[1]) {
+          section.lines.push(line);
+          break;
+        }
+      }
+    });
+
+    return sections;
+  };
+
+  const renderSection = (sectionTitle: string, lines: any[], isKeyResult = false) => {
+    if (lines.length === 0) return null;
+
+    // Sort lines by display_order or standard_number
+    const sortedLines = [...lines].sort((a, b) => {
+      const orderA = a.display_order || parseInt(a.standard_number) || 0;
+      const orderB = b.display_order || parseInt(b.standard_number) || 0;
+      return orderA - orderB;
+    });
+
+    // Separate detail lines and sum lines
+    const detailLines = sortedLines.filter(line => !line.is_total_line && line.line_type !== 'calculation');
+    const sumLines = sortedLines.filter(line => line.is_total_line || line.line_type === 'calculation');
+
+    return (
+      <div className="mb-6">
+        {/* Section header */}
+        <div className={cn(
+          "py-3 px-4 font-bold text-base border-b-2 mb-3",
+          isKeyResult 
+            ? "bg-gradient-to-r from-emerald-500/15 to-emerald-500/8 border-emerald-500/30 text-emerald-700"
+            : "bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20 text-primary"
+        )}>
+          {sectionTitle}
+        </div>
+
+        {/* Detail lines first */}
+        {detailLines.map(line => renderIncomeLine(line, 0, false))}
+        
+        {/* Sum lines after detail lines */}
+        {sumLines.map(line => renderIncomeLine(line, 0, true, isKeyResult))}
+      </div>
+    );
+  };
+
+  const renderIncomeLine = (line: any, level: number = 0, isSum = false, isKeyResult = false): React.ReactNode => {
     if (!shouldShowLine(line)) {
       return null;
     }
 
     const currentAmount = line.amount || 0;
     const previousAmount = line.previous_amount || 0;
-    const isMainSection = level === 0;
-    const isSubTotal = line.is_total_line && level > 0;
-    const isGrandTotal = line.is_total_line && level === 0;
+    const isSubTotal = isSum && !isKeyResult;
+    const isMainResult = isSum && isKeyResult;
     
     return (
       <React.Fragment key={line.id}>
-        {/* Section divider for main sections */}
-        {isMainSection && (
-          <div className="h-px bg-gradient-to-r from-border via-border/60 to-transparent my-2" />
-        )}
-        
         <div 
           className={cn(
             "group grid grid-cols-3 gap-6 py-2.5 px-4 transition-all duration-200",
-            "hover:bg-muted/40 border-b border-border/20",
-            // Styling based on level and type
-            isMainSection && "bg-gradient-to-r from-primary/8 to-primary/4 font-semibold text-lg border-b-2 border-primary/20",
-            isSubTotal && "bg-muted/30 font-semibold border-b-2 border-border/40 text-base",
-            isGrandTotal && "bg-gradient-to-r from-emerald-500/10 to-emerald-500/5 font-bold text-lg text-emerald-700 border-b-4 border-emerald-500/30",
-            // Indentation
-            level === 1 && "ml-4 border-l-2 border-primary/20 pl-4",
-            level === 2 && "ml-8 border-l border-muted-foreground/15 pl-4",
-            level >= 3 && "ml-12 border-l border-muted-foreground/10 pl-4"
+            "hover:bg-muted/40 border-b border-border/10",
+            // Detail line styling
+            !isSum && "text-sm",
+            // Sum line styling
+            isSubTotal && "bg-muted/30 font-semibold border-b-2 border-border/40 text-base mt-2",
+            // Key result styling
+            isMainResult && "bg-gradient-to-r from-emerald-500/10 to-emerald-500/5 font-bold text-lg text-emerald-700 border-b-4 border-emerald-500/30 mt-3 mb-2",
+            // Indentation for detail lines
+            !isSum && level === 0 && "ml-4 border-l-2 border-muted-foreground/15 pl-4",
+            !isSum && level >= 1 && "ml-8 border-l border-muted-foreground/10 pl-4"
           )}
         >
           <div className="flex items-center gap-3 col-span-1 min-w-0">
             <span className={cn(
               "text-xs font-mono shrink-0 px-2 py-1 rounded",
-              isMainSection ? "bg-primary/10 text-primary font-semibold" : "bg-muted/50 text-muted-foreground",
-              isGrandTotal && "bg-emerald-500/15 text-emerald-700 font-bold"
+              isMainResult ? "bg-emerald-500/15 text-emerald-700 font-bold" :
+              isSubTotal ? "bg-muted/70 text-foreground font-semibold" :
+              "bg-muted/50 text-muted-foreground"
             )}>
               {line.standard_number}
             </span>
             <span className={cn(
               "truncate",
-              isMainSection && "font-bold text-lg text-foreground",
+              isMainResult && "font-bold text-lg text-emerald-700",
               isSubTotal && "font-semibold text-base",
-              isGrandTotal && "font-bold text-lg text-emerald-700",
-              level >= 2 && "text-muted-foreground text-sm"
+              !isSum && "text-foreground"
             )}>
               {line.standard_name}
             </span>
@@ -87,29 +144,29 @@ const IncomeStatement: React.FC<IncomeStatementProps> = ({
           
           <div className={cn(
             "tabular-nums font-mono text-right transition-colors",
-            isMainSection && "font-bold text-lg",
+            isMainResult && "font-bold text-lg text-emerald-700",
             isSubTotal && "font-semibold text-base",
-            isGrandTotal && "font-bold text-lg text-emerald-700",
+            !isSum && "text-sm",
             currentAmount < 0 && "text-destructive font-semibold",
-            currentAmount === 0 && !isGrandTotal && !isMainSection && "text-muted-foreground/60"
+            currentAmount === 0 && !isMainResult && !isSubTotal && "text-muted-foreground/60"
           )}>
             {currentAmount < 0 ? `(${formatCurrency(Math.abs(currentAmount))})` : formatCurrency(currentAmount)}
           </div>
           
           <div className={cn(
             "tabular-nums font-mono text-right text-muted-foreground transition-colors",
-            isMainSection && "font-bold text-base",
+            isMainResult && "font-bold text-base text-emerald-600",
             isSubTotal && "font-semibold",
-            isGrandTotal && "font-bold text-base text-emerald-600",
+            !isSum && "text-sm",
             previousAmount < 0 && "text-destructive/70 font-semibold",
-            previousAmount === 0 && !isGrandTotal && !isMainSection && "text-muted-foreground/40"
+            previousAmount === 0 && !isMainResult && !isSubTotal && "text-muted-foreground/40"
           )}>
             {previousAmount < 0 ? `(${formatCurrency(Math.abs(previousAmount))})` : formatCurrency(previousAmount)}
           </div>
         </div>
         
         {line.children && line.children.map((child: any) => 
-          renderIncomeLine(child, level + 1)
+          renderIncomeLine(child, level + 1, false)
         )}
       </React.Fragment>
     );
@@ -121,6 +178,8 @@ const IncomeStatement: React.FC<IncomeStatementProps> = ({
     line.account_type === 'revenue' || 
     line.account_type === 'expense'
   );
+
+  const sections = groupLinesBySection(incomeStatementData);
 
   if (incomeStatementData.length === 0) {
     return (
@@ -153,7 +212,26 @@ const IncomeStatement: React.FC<IncomeStatementProps> = ({
       
       {/* Content */}
       <div className="max-h-[500px] overflow-y-auto bg-background">
-        {incomeStatementData.map(line => renderIncomeLine(line))}
+        {/* Revenue section */}
+        {renderSection(sections.revenue.title, sections.revenue.lines)}
+        
+        {/* Expenses section */}
+        {renderSection(sections.expenses.title, sections.expenses.lines)}
+        
+        {/* Operating result - key result */}
+        {renderSection(sections.operatingResult.title, sections.operatingResult.lines, true)}
+        
+        {/* Financial items */}
+        {renderSection(sections.financial.title, sections.financial.lines)}
+        
+        {/* Result before tax - key result */}
+        {renderSection(sections.resultBeforeTax.title, sections.resultBeforeTax.lines, true)}
+        
+        {/* Tax expense */}
+        {renderSection(sections.tax.title, sections.tax.lines)}
+        
+        {/* Annual result - key result */}
+        {renderSection(sections.annualResult.title, sections.annualResult.lines, true)}
       </div>
     </div>
   );
