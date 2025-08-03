@@ -29,9 +29,9 @@ const FirmStandardAccountsManager = () => {
     }
   };
 
-  const hasCustomizations = firmAccounts?.some(account => account.is_custom) || false;
-  const totalAccounts = firmAccounts?.length || 0;
-  const customAccounts = firmAccounts?.filter(account => account.is_custom).length || 0;
+  const hasCustomizations = firmAccounts?.some((account: any) => account.is_custom) || false;
+      const totalAccounts = firmAccounts?.length || 0;
+      const customAccounts = firmAccounts?.filter((account: any) => account.is_custom).length || 0;
 
   if (isLoading) {
     return (

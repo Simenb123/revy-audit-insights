@@ -6,13 +6,13 @@ const FirmFinancialStatementPreview = () => {
   const { data: accounts } = useFirmStandardAccounts();
 
   // Group accounts by type for preview
-  const groupedAccounts = accounts?.reduce((acc, account) => {
+  const groupedAccounts = accounts?.reduce((acc: any, account: any) => {
     if (!acc[account.account_type]) {
       acc[account.account_type] = [];
     }
     acc[account.account_type].push(account);
     return acc;
-  }, {} as Record<string, typeof accounts>);
+  }, {} as Record<string, any[]>);
 
   return (
     <Card>
@@ -28,7 +28,7 @@ const FirmFinancialStatementPreview = () => {
             <div key={type} className="space-y-2">
               <h3 className="font-semibold text-lg capitalize">{type}</h3>
               <div className="space-y-1 pl-4">
-                {typeAccounts?.map((account) => (
+                {(typeAccounts as any[])?.map((account: any) => (
                   <div key={account.id} className="flex justify-between items-center py-1">
                     <span className="text-sm">
                       {account.standard_number} {account.standard_name}

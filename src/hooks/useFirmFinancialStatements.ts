@@ -30,8 +30,8 @@ export function useFirmFinancialStatements(clientId: string, selectedVersion?: s
 
     const buildFinancialStatementStructure = (): FinancialStatementLine[] => {
       const lines: FinancialStatementLine[] = firmAccounts
-        .filter(account => account.is_active)
-        .map(account => ({
+        .filter((account: any) => account.is_active)
+        .map((account: any) => ({
           id: account.id,
           standard_number: account.standard_number,
           standard_name: account.standard_name,
@@ -44,7 +44,7 @@ export function useFirmFinancialStatements(clientId: string, selectedVersion?: s
           sign_multiplier: account.sign_multiplier,
           children: [] as FinancialStatementLine[],
         }))
-        .sort((a, b) => a.display_order - b.display_order);
+        .sort((a: any, b: any) => a.display_order - b.display_order);
 
       // Build hierarchy
       const lineMap = new Map(lines.map(line => [line.id, line]));
@@ -93,8 +93,8 @@ export function useFirmFinancialStatements(clientId: string, selectedVersion?: s
 
       return formula.terms.reduce((result: number, term: any) => {
         const accountAmount = firmAccounts
-          .filter(acc => acc.standard_number === term.account)
-          .reduce((sum, acc) => {
+          .filter((acc: any) => acc.standard_number === term.account)
+          .reduce((sum: any, acc: any) => {
             const line = { ...acc, children: [] } as FinancialStatementLine;
             return sum + calculateAmount(line);
           }, 0);
