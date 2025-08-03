@@ -91,11 +91,11 @@ const IncomeStatement: React.FC<IncomeStatementProps> = ({
 
         {/* Render all lines in chronological order */}
         {lines.map(line => {
-          // Determine styling based on standard_number and line_type
-          const isSubtotal = ['19', '79', '155'].includes(line.standard_number);
-          const isResult = ['80', '160'].includes(line.standard_number) || line.line_type === 'calculation';
+          // Use line_type from database for styling - no hardcoded arrays
+          const isSubtotal = line.line_type === 'subtotal';
+          const isCalculation = line.line_type === 'calculation';
           
-          return renderIncomeLine(line, 0, isSubtotal || isResult, isResult);
+          return renderIncomeLine(line, 0, isSubtotal || isCalculation, isCalculation);
         })}
       </div>
     );
