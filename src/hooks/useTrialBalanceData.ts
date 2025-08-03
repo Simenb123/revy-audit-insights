@@ -63,8 +63,20 @@ export const useTrialBalanceData = (clientId: string, version?: string, year?: n
           period_year: tb.period_year,
           version: tb.version,
         })) as TrialBalanceEntry[];
-        console.log('📊 Trial Balance Summary: Opening=', mappedData.reduce((sum, item) => sum + item.opening_balance, 0), 'Closing=', mappedData.reduce((sum, item) => sum + item.closing_balance, 0));
-        return mappedData;
+        
+        // Deduplicate by account_number, keeping the most recent entry (highest id)
+        const uniqueAccounts = new Map<string, TrialBalanceEntry>();
+        mappedData.forEach(account => {
+          const existing = uniqueAccounts.get(account.account_number);
+          if (!existing || account.id > existing.id) {
+            uniqueAccounts.set(account.account_number, account);
+          }
+        });
+        
+        const deduplicatedData = Array.from(uniqueAccounts.values());
+        console.log('📊 Trial Balance Summary: Opening=', deduplicatedData.reduce((sum, item) => sum + item.opening_balance, 0), 'Closing=', deduplicatedData.reduce((sum, item) => sum + item.closing_balance, 0));
+        console.log(`🔧 Deduplicated from ${mappedData.length} to ${deduplicatedData.length} accounts`);
+        return deduplicatedData;
       }
 
       // Fallback: Calculate from general ledger and chart of accounts

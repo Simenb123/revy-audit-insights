@@ -40,11 +40,22 @@ export const useAutoMapping = (clientId: string) => {
     const existingMappingSet = new Set(existingMappings.map(m => m.account_number));
     const standardAccountsMap = new Map(standardAccounts.map(acc => [acc.id, acc.standard_number]));
     
-    const suggestions: AutoMappingSuggestion[] = [];
-
+    // Deduplicate trial balance data by account number first
+    const uniqueAccounts = new Map<string, typeof trialBalanceData[0]>();
     trialBalanceData.forEach(account => {
+      if (!uniqueAccounts.has(account.account_number)) {
+        uniqueAccounts.set(account.account_number, account);
+      }
+    });
+    
+    const suggestions: AutoMappingSuggestion[] = [];
+    const processedAccounts = new Set<string>(); // Additional safety check
+
+    uniqueAccounts.forEach(account => {
       // Skip already mapped accounts
-      if (existingMappingSet.has(account.account_number)) return;
+      if (existingMappingSet.has(account.account_number) || processedAccounts.has(account.account_number)) return;
+      
+      processedAccounts.add(account.account_number);
 
       let bestSuggestion: { standardNumber: string; confidence: number; reason: string } | null = null;
       const accountNumber = parseInt(account.account_number);
