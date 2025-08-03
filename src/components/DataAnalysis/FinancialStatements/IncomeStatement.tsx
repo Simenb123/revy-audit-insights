@@ -59,27 +59,8 @@ const IncomeStatement: React.FC<IncomeStatementProps> = ({
     return hasContent(line);
   };
 
-  // Group lines by sections based on display_order ranges - chronological order
-  const groupLinesBySection = (lines: any[]) => {
-    const sections = {
-      operating: { 
-        title: "DRIFTSINNTEKTER OG DRIFTSKOSTNADER", 
-        lines: [] as any[]
-      },
-      financial: { 
-        title: "FINANSINNTEKTER OG FINANSKOSTNADER", 
-        lines: [] as any[]
-      },
-      tax: { 
-        title: "SKATTEKOSTNAD", 
-        lines: [] as any[]
-      },
-      transfers: { 
-        title: "OVERFØRINGER", 
-        lines: [] as any[]
-      }
-    };
-
+  // Create a single chronological list with section headers
+  const createChronologicalList = (lines: any[]) => {
     // Sort all lines by display_order first
     const sortedLines = [...lines].sort((a, b) => {
       const orderA = a.display_order || parseInt(a.standard_number) || 0;
@@ -87,55 +68,53 @@ const IncomeStatement: React.FC<IncomeStatementProps> = ({
       return orderA - orderB;
     });
 
-    sortedLines.forEach(line => {
-      const displayOrder = line.display_order || parseInt(line.standard_number) || 0;
+    // Define section boundaries
+    const sectionHeaders = [
+      { order: 10, title: "DRIFTSINNTEKTER OG DRIFTSKOSTNADER", key: "operating" },
+      { order: 90, title: "FINANSINNTEKTER OG FINANSKOSTNADER", key: "financial" },
+      { order: 165, title: "SKATTEKOSTNAD", key: "tax" },
+      { order: 350, title: "OVERFØRINGER", key: "transfers" }
+    ];
 
-      // Skip annual result 280 - it will be handled as calculation
+    const result: Array<{ type: 'header' | 'line', data: any }> = [];
+    let currentSectionIndex = 0;
+
+    sortedLines.forEach(line => {
+      // Skip annual result 280 - it will be handled separately
       if (line.standard_number === '280') return;
 
-      // Group by display_order ranges to ensure chronological order
-      if (displayOrder >= 10 && displayOrder <= 80) {
-        sections.operating.lines.push(line);
-      } else if (displayOrder >= 90 && displayOrder <= 160) {
-        sections.financial.lines.push(line);
-      } else if (displayOrder >= 165 && displayOrder <= 179) {
-        sections.tax.lines.push(line);
-      } else if (displayOrder >= 350 && displayOrder <= 399) {
-        sections.transfers.lines.push(line);
+      const displayOrder = line.display_order || parseInt(line.standard_number) || 0;
+
+      // Add section headers when we reach their boundaries
+      while (currentSectionIndex < sectionHeaders.length && 
+             displayOrder >= sectionHeaders[currentSectionIndex].order) {
+        result.push({
+          type: 'header',
+          data: sectionHeaders[currentSectionIndex]
+        });
+        currentSectionIndex++;
       }
+
+      result.push({
+        type: 'line',
+        data: line
+      });
     });
 
-    return sections;
+    return result;
   };
 
-  const renderSection = (sectionTitle: string, lines: any[]) => {
-    if (lines.length === 0) return null;
-
-    // Lines are already sorted by display_order in groupLinesBySection
-    return (
-      <div className="mb-3">
-        {/* Section header */}
-        <div className="py-1.5 px-4 font-medium text-xs text-muted-foreground uppercase tracking-wide border-b border-border/20 mb-1">
-          {sectionTitle}
-        </div>
-
-        {/* Render all lines in chronological order */}
-        {lines.map(line => {
-          // Use line_type from database for styling - no hardcoded arrays
-          const isSubtotal = line.line_type === 'subtotal';
-          const isCalculation = line.line_type === 'calculation';
-          
-          return renderIncomeLine(line, 0, isSubtotal || isCalculation, isCalculation);
-        })}
-      </div>
-    );
-  };
+  const renderSectionHeader = (title: string) => (
+    <div className="py-1.5 px-4 font-medium text-xs text-muted-foreground uppercase tracking-wide border-b border-border/20 mb-1">
+      {title}
+    </div>
+  );
 
   const handleLineClick = (standardNumber: string) => {
     const accountNumbers = lineAccountMappings[standardNumber];
     if (accountNumbers && accountNumbers.length > 0 && actualClientId) {
       // Navigate to trial balance with filtered accounts
-      navigate(`/clients/${actualClientId}/accounting/trial-balance?filtered_accounts=${accountNumbers.join(',')}`);
+      navigate(`/clients/${actualClientId}/trial-balance?filtered_accounts=${accountNumbers.join(',')}`);
     }
   };
 
@@ -258,7 +237,7 @@ const IncomeStatement: React.FC<IncomeStatementProps> = ({
     line.account_type === 'expense'
   );
 
-  const sections = groupLinesBySection(incomeStatementData);
+  const chronologicalList = createChronologicalList(incomeStatementData);
 
   if (incomeStatementData.length === 0) {
     return (
@@ -295,16 +274,24 @@ const IncomeStatement: React.FC<IncomeStatementProps> = ({
         </div>
       </div>
       
-      {/* Content - compact layout */}
+      {/* Content - chronological order with section headers */}
       <div className="bg-background">
-        {/* Operating income and expenses */}
-        {renderSection(sections.operating.title, sections.operating.lines)}
-        
-        {/* Financial income and expenses */}
-        {renderSection(sections.financial.title, sections.financial.lines)}
-        
-        {/* Tax expense */}
-        {renderSection(sections.tax.title, sections.tax.lines)}
+        {chronologicalList.map((item, index) => {
+          if (item.type === 'header') {
+            return (
+              <div key={`header-${item.data.key}`} className="mb-3">
+                {renderSectionHeader(item.data.title)}
+              </div>
+            );
+          } else {
+            const line = item.data;
+            // Use line_type from database for styling - no hardcoded arrays
+            const isSubtotal = line.line_type === 'subtotal';
+            const isCalculation = line.line_type === 'calculation';
+            
+            return renderIncomeLine(line, 0, isSubtotal || isCalculation, isCalculation);
+          }
+        })}
         
         {/* Annual result as single calculation line - no duplication */}
         {(() => {
@@ -312,9 +299,6 @@ const IncomeStatement: React.FC<IncomeStatementProps> = ({
           return annualResultLine && shouldShowLine(annualResultLine) ? 
             renderIncomeLine(annualResultLine, 0, true, true) : null;
         })()}
-        
-        {/* Transfers (if any) */}
-        {renderSection(sections.transfers.title, sections.transfers.lines)}
       </div>
     </div>
   );
