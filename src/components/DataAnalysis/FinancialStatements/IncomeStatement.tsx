@@ -59,49 +59,29 @@ const IncomeStatement: React.FC<IncomeStatementProps> = ({
     return hasContent(line);
   };
 
-  // Create a single chronological list with section headers
+  // Create pure chronological list - NO section grouping
   const createChronologicalList = (lines: any[]) => {
-    // Sort all lines by display_order first
+    console.log('Original lines:', lines.map(l => ({ 
+      number: l.standard_number, 
+      name: l.standard_name, 
+      display_order: l.display_order 
+    })));
+    
+    // Sort ONLY by display_order - no section boundaries
     const sortedLines = [...lines].sort((a, b) => {
       const orderA = a.display_order || parseInt(a.standard_number) || 0;
       const orderB = b.display_order || parseInt(b.standard_number) || 0;
       return orderA - orderB;
     });
 
-    // Define section boundaries
-    const sectionHeaders = [
-      { order: 10, title: "DRIFTSINNTEKTER OG DRIFTSKOSTNADER", key: "operating" },
-      { order: 90, title: "FINANSINNTEKTER OG FINANSKOSTNADER", key: "financial" },
-      { order: 165, title: "SKATTEKOSTNAD", key: "tax" },
-      { order: 350, title: "OVERFØRINGER", key: "transfers" }
-    ];
+    console.log('Sorted lines:', sortedLines.map(l => ({ 
+      number: l.standard_number, 
+      name: l.standard_name, 
+      display_order: l.display_order 
+    })));
 
-    const result: Array<{ type: 'header' | 'line', data: any }> = [];
-    let currentSectionIndex = 0;
-
-    sortedLines.forEach(line => {
-      // Skip annual result 280 - it will be handled separately
-      if (line.standard_number === '280') return;
-
-      const displayOrder = line.display_order || parseInt(line.standard_number) || 0;
-
-      // Add section headers when we reach their boundaries
-      while (currentSectionIndex < sectionHeaders.length && 
-             displayOrder >= sectionHeaders[currentSectionIndex].order) {
-        result.push({
-          type: 'header',
-          data: sectionHeaders[currentSectionIndex]
-        });
-        currentSectionIndex++;
-      }
-
-      result.push({
-        type: 'line',
-        data: line
-      });
-    });
-
-    return result;
+    // Return simple list - no headers that break chronological order
+    return sortedLines.filter(line => line.standard_number !== '280'); // Annual result handled separately
   };
 
   const renderSectionHeader = (title: string) => (
@@ -112,9 +92,18 @@ const IncomeStatement: React.FC<IncomeStatementProps> = ({
 
   const handleLineClick = (standardNumber: string) => {
     const accountNumbers = lineAccountMappings[standardNumber];
+    console.log('Line clicked:', { standardNumber, accountNumbers, actualClientId });
+    console.log('All lineAccountMappings:', lineAccountMappings);
+    
     if (accountNumbers && accountNumbers.length > 0 && actualClientId) {
-      // Navigate to trial balance with filtered accounts
-      navigate(`/clients/${actualClientId}/trial-balance?filtered_accounts=${accountNumbers.join(',')}`);
+      const url = `/clients/${actualClientId}/trial-balance?filtered_accounts=${accountNumbers.join(',')}`;
+      console.log('Navigating to:', url);
+      navigate(url);
+    } else {
+      console.log('No navigation - missing data:', { 
+        hasAccounts: accountNumbers?.length > 0, 
+        hasClientId: !!actualClientId 
+      });
     }
   };
 
@@ -274,23 +263,14 @@ const IncomeStatement: React.FC<IncomeStatementProps> = ({
         </div>
       </div>
       
-      {/* Content - chronological order with section headers */}
+      {/* Content - pure chronological order by display_order */}
       <div className="bg-background">
-        {chronologicalList.map((item, index) => {
-          if (item.type === 'header') {
-            return (
-              <div key={`header-${item.data.key}`} className="mb-3">
-                {renderSectionHeader(item.data.title)}
-              </div>
-            );
-          } else {
-            const line = item.data;
-            // Use line_type from database for styling - no hardcoded arrays
-            const isSubtotal = line.line_type === 'subtotal';
-            const isCalculation = line.line_type === 'calculation';
-            
-            return renderIncomeLine(line, 0, isSubtotal || isCalculation, isCalculation);
-          }
+        {chronologicalList.map((line, index) => {
+          // Use line_type from database for styling - no hardcoded arrays
+          const isSubtotal = line.line_type === 'subtotal';
+          const isCalculation = line.line_type === 'calculation';
+          
+          return renderIncomeLine(line, 0, isSubtotal || isCalculation, isCalculation);
         })}
         
         {/* Annual result as single calculation line - no duplication */}
