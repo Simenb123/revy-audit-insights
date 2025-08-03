@@ -114,21 +114,20 @@ export function useFirmFinancialStatements(clientId: string, selectedVersion?: s
       return finalAmount;
     };
 
-    const parseCalculationFormula = (formula: string, isPrevious = false): number => {
-      if (!formula || typeof formula !== 'string') return 0;
+    const parseCalculationFormula = (formula: any, isPrevious = false): number => {
+      if (!formula) return 0;
 
-      console.log(`Parsing formula: "${formula}"`);
+      console.log(`Parsing calculation_formula:`, formula);
       
-      // Handle simple formulas like "19 + 79" or "160 - 165"
-      const parts = formula.split(/\s*([+\-])\s*/);
-      let result = 0;
-      let operator = '+';
-      
-      for (let i = 0; i < parts.length; i++) {
-        if (parts[i] === '+' || parts[i] === '-') {
-          operator = parts[i];
-        } else if (parts[i].trim()) {
-          const accountNumber = parts[i].trim();
+      // Handle complex object format with terms array
+      if (typeof formula === 'object' && formula.type === 'formula' && Array.isArray(formula.terms)) {
+        let result = 0;
+        
+        for (const term of formula.terms) {
+          const accountNumber = term.account_number;
+          const operator = term.operator || '+'; // Default to addition if no operator
+          
+          console.log(`Processing term: ${accountNumber} with operator: ${operator}`);
           
           // Find the account with this standard_number
           const referencedAccount = firmAccounts.find((acc: any) => acc.standard_number === accountNumber);
@@ -156,17 +155,65 @@ export function useFirmFinancialStatements(clientId: string, selectedVersion?: s
             
             if (operator === '+') {
               result += accountAmount;
-            } else {
+            } else if (operator === '-') {
               result -= accountAmount;
             }
           } else {
-            console.warn(`Account ${accountNumber} not found in formula ${formula}`);
+            console.warn(`Account ${accountNumber} not found in formula terms`);
           }
         }
+        
+        console.log(`Formula result: ${result}`);
+        return result;
       }
       
-      console.log(`Formula "${formula}" result: ${result}`);
-      return result;
+      // Fallback: handle simple string formulas (legacy support)
+      if (typeof formula === 'string') {
+        console.log(`Parsing string formula: "${formula}"`);
+        
+        const parts = formula.split(/\s*([+\-])\s*/);
+        let result = 0;
+        let operator = '+';
+        
+        for (let i = 0; i < parts.length; i++) {
+          if (parts[i] === '+' || parts[i] === '-') {
+            operator = parts[i];
+          } else if (parts[i].trim()) {
+            const accountNumber = parts[i].trim();
+            
+            const referencedAccount = firmAccounts.find((acc: any) => acc.standard_number === accountNumber);
+            
+            if (referencedAccount) {
+              const tempLine: FinancialStatementLine = {
+                id: referencedAccount.id,
+                standard_number: referencedAccount.standard_number,
+                standard_name: referencedAccount.standard_name,
+                account_type: referencedAccount.account_type,
+                display_order: referencedAccount.display_order || 0,
+                line_type: referencedAccount.line_type,
+                parent_line_id: referencedAccount.parent_line_id,
+                calculation_formula: referencedAccount.calculation_formula,
+                is_total_line: referencedAccount.is_total_line,
+                sign_multiplier: referencedAccount.sign_multiplier,
+                children: []
+              };
+              
+              const accountAmount = calculateAmount(tempLine, isPrevious);
+              
+              if (operator === '+') {
+                result += accountAmount;
+              } else {
+                result -= accountAmount;
+              }
+            }
+          }
+        }
+        
+        return result;
+      }
+      
+      console.warn('Unknown formula format:', formula);
+      return 0;
     };
 
     const statement = buildFinancialStatementStructure();
