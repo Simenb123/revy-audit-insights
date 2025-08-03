@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { FileText, Download, Settings, Info, TrendingUp, Scale } from 'lucide-react';
 import IncomeStatement from './IncomeStatement';
+import SimpleIncomeStatement from './SimpleIncomeStatement';
 import BalanceSheet from './BalanceSheet';
 
 interface FinancialStatementsContainerProps {
@@ -114,10 +115,7 @@ const FinancialStatementsContainer: React.FC<FinancialStatementsContainerProps> 
             
             <TabsContent value="income" className="mt-0">
               <div className="p-6">
-                <IncomeStatement 
-                  data={financialStatement}
-                  currentYear={periodInfo?.currentYear}
-                  previousYear={periodInfo?.previousYear}
+                <SimpleIncomeStatement 
                   clientId={periodInfo?.clientId}
                 />
               </div>

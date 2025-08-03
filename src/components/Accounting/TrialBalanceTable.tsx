@@ -108,7 +108,13 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
   const filteredEntries = useMemo(() => {
     if (!trialBalanceData?.trialBalanceEntries) return [];
     
-    return trialBalanceData.trialBalanceEntries.filter(entry => {
+    console.log('🔍 TrialBalanceTable filtering:', { 
+      actualAccountingYear, 
+      filteredAccountNumbers, 
+      totalEntries: trialBalanceData.trialBalanceEntries.length 
+    });
+    
+    const filtered = trialBalanceData.trialBalanceEntries.filter(entry => {
       if (actualAccountingYear && entry.period_year !== actualAccountingYear) return false;
       
       // If filtered accounts are specified, only show those
@@ -118,6 +124,9 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
       
       return true;
     });
+    
+    console.log('✅ Filtered result:', filtered.length, 'entries');
+    return filtered;
   }, [trialBalanceData, actualAccountingYear, filteredAccountNumbers]);
 
   // Function to clear account filter
