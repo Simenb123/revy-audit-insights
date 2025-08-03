@@ -28,7 +28,6 @@ export function useFirmStandardAccounts() {
       const response = await (supabase as any)
         .from('standard_accounts')
         .select('*')
-        .eq('is_active', true)
         .order('display_order', { ascending: true })
         .order('standard_number', { ascending: true });
       
