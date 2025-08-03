@@ -29,67 +29,106 @@ const ClientFinancialStatementGenerator: React.FC<ClientFinancialStatementGenera
     }).format(amount);
   };
 
-  const shouldShowLine = (line: any): boolean => {
-    // Always show total lines even if zero
-    if (line.is_total_line) return true;
-    
-    // Show if current amount or previous amount is not zero
+  const hasContent = (line: any): boolean => {
     const currentAmount = line.amount || 0;
     const previousAmount = line.previous_amount || 0;
     
-    return currentAmount !== 0 || previousAmount !== 0;
+    // Check if this line itself has content
+    const lineHasContent = currentAmount !== 0 || previousAmount !== 0;
+    
+    // Check if any children have content
+    const childrenHaveContent = line.children && line.children.some((child: any) => hasContent(child));
+    
+    return lineHasContent || childrenHaveContent;
+  };
+
+  const shouldShowLine = (line: any): boolean => {
+    // Always show total lines if they or their children have content
+    if (line.is_total_line) return hasContent(line);
+    
+    // For regular lines, only show if they have content
+    return hasContent(line);
   };
 
   const renderFinancialStatementLine = (line: any, level: number = 0): React.ReactNode => {
-    // Don't show lines with zero values (except totals)
+    // Don't show lines without content
     if (!shouldShowLine(line)) {
       return null;
     }
 
-    const indentStyle = { paddingLeft: `${level * 24}px` };
     const currentAmount = line.amount || 0;
     const previousAmount = line.previous_amount || 0;
+    const isMainSection = level === 0;
+    const isSubTotal = line.is_total_line && level > 0;
+    const isGrandTotal = line.is_total_line && level === 0;
     
     return (
       <React.Fragment key={line.id}>
+        {/* Main section separator */}
+        {isMainSection && (
+          <div className="h-4 border-t border-border/60 bg-gradient-to-r from-muted/50 to-transparent" />
+        )}
+        
         <div 
           className={cn(
-            "grid grid-cols-3 gap-4 py-2 border-b border-border/40",
-            line.is_total_line && "font-semibold bg-muted/30 border-b-2",
-            level === 0 && "bg-muted/20 font-medium"
+            "group grid grid-cols-3 gap-6 py-3 px-4 transition-colors hover:bg-muted/30",
+            "border-b border-border/30",
+            // Main sections
+            isMainSection && "bg-gradient-to-r from-muted/40 to-muted/20 font-medium text-foreground border-b-2 border-border/60",
+            // Sub totals
+            isSubTotal && "bg-muted/25 font-semibold border-b-2 border-border/50",
+            // Grand totals
+            isGrandTotal && "bg-gradient-to-r from-primary/10 to-primary/5 font-bold text-primary border-b-4 border-primary/30",
+            // Indentation
+            level === 1 && "ml-6 border-l-2 border-muted-foreground/20 pl-4",
+            level === 2 && "ml-12 border-l border-muted-foreground/15 pl-4",
+            level >= 3 && "ml-16 border-l border-muted-foreground/10 pl-4"
           )}
-          style={indentStyle}
         >
-          <div className="flex items-center gap-2 col-span-1">
-            <span className="text-xs text-muted-foreground font-mono">
+          <div className="flex items-center gap-3 col-span-1 min-w-0">
+            <span className={cn(
+              "text-xs font-mono shrink-0",
+              isMainSection ? "text-primary font-medium" : "text-muted-foreground",
+              isGrandTotal && "text-primary font-bold"
+            )}>
               {line.standard_number}
             </span>
             <span className={cn(
-              "text-sm",
-              line.is_total_line && "font-semibold",
-              level === 0 && "font-medium"
+              "text-sm truncate",
+              isMainSection && "font-semibold text-lg",
+              isSubTotal && "font-semibold",
+              isGrandTotal && "font-bold text-lg",
+              level >= 2 && "text-muted-foreground"
             )}>
               {line.standard_name}
             </span>
             {line.line_type === 'calculation' && (
-              <Badge variant="secondary" className="text-xs">
-                Beregnet
+              <Badge variant="outline" className="text-xs shrink-0">
+                Kalkulert
               </Badge>
             )}
           </div>
           
           <div className={cn(
             "text-sm tabular-nums font-mono text-right",
-            line.is_total_line && "font-semibold",
-            currentAmount < 0 && "text-destructive"
+            "transition-colors group-hover:text-foreground",
+            isMainSection && "font-bold text-base",
+            isSubTotal && "font-semibold",
+            isGrandTotal && "font-bold text-lg text-primary",
+            currentAmount < 0 && "text-destructive font-medium",
+            currentAmount === 0 && !isGrandTotal && !isMainSection && "text-muted-foreground/60"
           )}>
             {currentAmount < 0 ? `(${formatAmount(Math.abs(currentAmount))})` : formatAmount(currentAmount)}
           </div>
           
           <div className={cn(
-            "text-sm tabular-nums font-mono text-right text-muted-foreground",
-            line.is_total_line && "font-semibold",
-            previousAmount < 0 && "text-destructive"
+            "text-sm tabular-nums font-mono text-right",
+            "transition-colors group-hover:text-muted-foreground",
+            isMainSection && "font-bold text-base text-muted-foreground",
+            isSubTotal && "font-semibold text-muted-foreground",
+            isGrandTotal && "font-bold text-lg text-primary/70",
+            previousAmount < 0 && "text-destructive/70 font-medium",
+            previousAmount === 0 && !isGrandTotal && !isMainSection && "text-muted-foreground/40"
           )}>
             {previousAmount < 0 ? `(${formatAmount(Math.abs(previousAmount))})` : formatAmount(previousAmount)}
           </div>
@@ -212,19 +251,19 @@ const ClientFinancialStatementGenerator: React.FC<ClientFinancialStatementGenera
             </Button>
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           {/* Table Header */}
-          <div className="grid grid-cols-3 gap-4 py-3 border-b-2 border-border font-semibold text-sm mb-2">
-            <div>Konto</div>
-            <div className="text-right">
+          <div className="grid grid-cols-3 gap-6 py-4 px-6 bg-gradient-to-r from-muted/60 to-muted/30 border-b-2 border-border font-semibold text-sm sticky top-0 z-10">
+            <div className="text-foreground font-bold">Konto</div>
+            <div className="text-right text-foreground font-bold">
               {periodInfo ? periodInfo.currentYear : 'Dette år'}
             </div>
-            <div className="text-right text-muted-foreground">
+            <div className="text-right text-muted-foreground font-bold">
               {periodInfo ? periodInfo.previousYear : 'Forrige år'}
             </div>
           </div>
           
-          <div className="space-y-1">
+          <div className="max-h-[600px] overflow-y-auto">
             {financialStatement.map(line => renderFinancialStatementLine(line))}
           </div>
           
