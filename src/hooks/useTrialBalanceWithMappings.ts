@@ -29,8 +29,8 @@ export const useTrialBalanceWithMappings = (clientId: string, fiscalYear?: numbe
   return useQuery({
     queryKey: ['trial-balance-with-mappings', clientId, fiscalYear, selectedVersion],
     queryFn: async () => {
-      // Get trial balance data with account mappings
-      let query = supabase
+      // Get trial balance data
+      let trialBalanceQuery = supabase
         .from('trial_balances')
         .select(`
           id,
@@ -45,14 +45,7 @@ export const useTrialBalanceWithMappings = (clientId: string, fiscalYear?: numbe
           version,
           client_chart_of_accounts!inner(
             account_number, 
-            account_name,
-            account_mappings(
-              standard_account_id,
-              standard_account:standard_accounts(
-                standard_number,
-                standard_name
-              )
-            )
+            account_name
           )
         `)
         .eq('client_id', clientId)
@@ -60,17 +53,17 @@ export const useTrialBalanceWithMappings = (clientId: string, fiscalYear?: numbe
 
       // Filter by selected version if provided
       if (selectedVersion) {
-        query = query.eq('version', selectedVersion);
+        trialBalanceQuery = trialBalanceQuery.eq('version', selectedVersion);
       }
 
-      const { data: trialBalanceWithMappings, error: tbError } = await query;
+      const { data: trialBalanceData, error: tbError } = await trialBalanceQuery;
 
       if (tbError) {
-        console.error('Error fetching trial balance with mappings:', tbError);
+        console.error('Error fetching trial balance:', tbError);
         throw tbError;
       }
 
-      if (!trialBalanceWithMappings || trialBalanceWithMappings.length === 0) {
+      if (!trialBalanceData || trialBalanceData.length === 0) {
         // Return empty result if no trial balance data exists for the selected version/year
         return {
           trialBalanceEntries: [],
@@ -83,11 +76,46 @@ export const useTrialBalanceWithMappings = (clientId: string, fiscalYear?: numbe
         };
       }
 
+      // Get trial balance mappings for this client
+      const { data: mappingsData, error: mappingsError } = await supabase
+        .from('trial_balance_mappings')
+        .select('account_number, statement_line_number')
+        .eq('client_id', clientId);
+
+      if (mappingsError) {
+        console.error('Error fetching trial balance mappings:', mappingsError);
+        throw mappingsError;
+      }
+
+      // Get standard accounts to map by statement_line_number
+      const { data: standardAccounts, error: standardError } = await supabase
+        .from('standard_accounts')
+        .select('id, standard_number, standard_name');
+
+      if (standardError) {
+        console.error('Error fetching standard accounts:', standardError);
+        throw standardError;
+      }
+
+      // Create a mapping lookup by account number
+      const mappingLookup = new Map();
+      mappingsData?.forEach(mapping => {
+        // Find standard account by matching statement_line_number with standard_number
+        const standardAccount = standardAccounts?.find(sa => sa.standard_number === mapping.statement_line_number);
+        
+        if (standardAccount) {
+          mappingLookup.set(mapping.account_number, {
+            standard_account_id: standardAccount.id,
+            standard_number: standardAccount.standard_number,
+            standard_name: standardAccount.standard_name,
+          });
+        }
+      });
+
       // Transform the data
-      const trialBalanceEntries: TrialBalanceEntryWithMapping[] = trialBalanceWithMappings.map(tb => {
+      const trialBalanceEntries: TrialBalanceEntryWithMapping[] = trialBalanceData.map(tb => {
         const account = tb.client_chart_of_accounts;
-        const mapping = account?.account_mappings?.[0];
-        const standardAccount = mapping?.standard_account;
+        const mapping = mappingLookup.get(account?.account_number);
 
         return {
           id: tb.id,
@@ -100,8 +128,8 @@ export const useTrialBalanceWithMappings = (clientId: string, fiscalYear?: numbe
           period_end_date: tb.period_end_date,
           period_year: tb.period_year,
           standard_account_id: mapping?.standard_account_id,
-          standard_number: standardAccount?.standard_number,
-          standard_name: standardAccount?.standard_name,
+          standard_number: mapping?.standard_number,
+          standard_name: mapping?.standard_name,
           is_mapped: !!mapping?.standard_account_id,
         };
       });
