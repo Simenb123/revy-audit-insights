@@ -103,40 +103,23 @@ const IncomeStatement: React.FC<IncomeStatementProps> = ({
       return orderA - orderB;
     });
 
-    // Separate detail lines, subtotals, and results - correct order
-    const detailLines = sortedLines.filter(line => {
-      const isSubtotal = section.subtotalNumbers.includes(line.standard_number);
-      const isResult = section.resultNumbers.includes(line.standard_number);
-      const isCalculation = line.line_type === 'calculation';
-      return !isSubtotal && !isResult && !isCalculation;
-    });
-    
-    const subtotalLines = sortedLines.filter(line => 
-      section.subtotalNumbers.includes(line.standard_number)
-    );
-    
-    const resultLines = sortedLines.filter(line => 
-      section.resultNumbers.includes(line.standard_number) || 
-      line.line_type === 'calculation'
-    );
-
+    // Render all lines in chronological order based on display_order
     return (
       <div className="mb-3">
         {/* Section header - compact design from patch 2 */}
-        {(detailLines.length > 0 || subtotalLines.length > 0 || resultLines.length > 0) && (
+        {sortedLines.length > 0 && (
           <div className="py-1.5 px-4 font-medium text-xs text-muted-foreground uppercase tracking-wide border-b border-border/20 mb-1">
             {sectionTitle}
           </div>
         )}
 
-        {/* CORRECT ORDER: Detail lines first */}
-        {detailLines.map(line => renderIncomeLine(line, 0, false, false))}
-        
-        {/* Then subtotal lines */}
-        {subtotalLines.map(line => renderIncomeLine(line, 0, true, false))}
-        
-        {/* Finally result lines with emphasis */}
-        {resultLines.map(line => renderIncomeLine(line, 0, true, true))}
+        {/* Render all lines in chronological order */}
+        {sortedLines.map(line => {
+          const isSubtotal = section.subtotalNumbers.includes(line.standard_number);
+          const isResult = section.resultNumbers.includes(line.standard_number) || line.line_type === 'calculation';
+          
+          return renderIncomeLine(line, 0, isSubtotal || isResult, isResult);
+        })}
       </div>
     );
   };
