@@ -38,20 +38,10 @@ export function useFirmFinancialStatements(clientId: string, selectedVersion?: s
     }
 
     const buildFinancialStatementStructure = (): FinancialStatementLine[] => {
-      console.log('Building financial statement structure from firm accounts:', firmAccounts.length);
-      
-      // Filter to only income statement lines (resultat, revenue, expense)
+      // Filter to only income statement lines (only 'resultat' exists in database)
       const incomeStatementAccounts = firmAccounts.filter((account: any) => 
-        ['resultat', 'revenue', 'expense'].includes(account.account_type)
+        account.account_type === 'resultat'
       );
-      
-      console.log('Filtered to income statement accounts:', incomeStatementAccounts.length);
-      console.log('Income statement accounts:', incomeStatementAccounts.map((a: any) => ({
-        number: a.standard_number,
-        name: a.standard_name,
-        display_order: a.display_order,
-        account_type: a.account_type
-      })));
       
       const lines: FinancialStatementLine[] = incomeStatementAccounts
         .map((account: any) => ({
@@ -68,11 +58,6 @@ export function useFirmFinancialStatements(clientId: string, selectedVersion?: s
           children: [] as FinancialStatementLine[],
         }))
         .sort((a: any, b: any) => a.display_order - b.display_order);
-        
-      console.log('Final sorted lines:', lines.map(l => ({ 
-        number: l.standard_number, 
-        display_order: l.display_order 
-      })));
 
       // Build hierarchy
       const lineMap = new Map(lines.map(line => [line.id, line]));
@@ -91,53 +76,73 @@ export function useFirmFinancialStatements(clientId: string, selectedVersion?: s
       return rootLines;
     };
 
+    // Memoization cache to prevent infinite loops
+    const calculationCache = new Map<string, number>();
+    const visitedNodes = new Set<string>();
+
     const calculateAmount = (line: FinancialStatementLine, isPrevious = false): number => {
       const sourceData = isPrevious ? previousTrialBalance : trialBalance;
+      const cacheKey = `${line.standard_number}-${isPrevious}`;
       
       if (!sourceData) return 0;
       
-      // Handle calculation/subtotal lines with formulas
-      if ((line.line_type === 'calculation' || line.line_type === 'subtotal') && line.calculation_formula) {
-        console.log(`Calculating formula for ${line.standard_name} (${line.standard_number}):`, line.calculation_formula);
-        return parseCalculationFormula(line.calculation_formula, isPrevious);
+      // Check cache first
+      if (calculationCache.has(cacheKey)) {
+        return calculationCache.get(cacheKey)!;
+      }
+      
+      // Detect circular references
+      if (visitedNodes.has(cacheKey)) {
+        console.warn(`Circular reference detected for ${line.standard_name} (${line.standard_number})`);
+        return 0;
+      }
+      
+      visitedNodes.add(cacheKey);
+      let result = 0;
+
+      try {
+        // Handle calculation/subtotal lines with formulas
+        if ((line.line_type === 'calculation' || line.line_type === 'subtotal') && line.calculation_formula) {
+          result = parseCalculationFormula(line.calculation_formula, isPrevious);
+        }
+        // Handle lines with children (sum by aggregating children)
+        else if (line.children && line.children.length > 0) {
+          result = line.children.reduce((sum, child) => {
+            const childAmount = calculateAmount(child, isPrevious);
+            if (isPrevious) {
+              child.previous_amount = childAmount;
+            } else {
+              child.amount = childAmount;
+            }
+            return sum + childAmount;
+          }, 0);
+        }
+        // Handle detail lines - find mapped trial balance accounts
+        else {
+          const relevantMappings = mappings.filter(mapping => 
+            mapping.statement_line_number === line.standard_number
+          );
+
+          const amount = relevantMappings.reduce((sum, mapping) => {
+            const tbAccount = sourceData.find((tb: any) => tb.account_number === mapping.account_number);
+            const accountAmount = tbAccount ? (tbAccount.closing_balance || 0) : 0;
+            return sum + accountAmount;
+          }, 0);
+
+          result = amount * line.sign_multiplier;
+        }
+      } catch (error) {
+        console.error(`Error calculating amount for ${line.standard_name}:`, error);
+        result = 0;
       }
 
-      // Handle lines with children (sum by aggregating children)
-      if (line.children && line.children.length > 0) {
-        const childSum = line.children.reduce((sum, child) => {
-          const childAmount = calculateAmount(child, isPrevious);
-          if (isPrevious) {
-            child.previous_amount = childAmount;
-          } else {
-            child.amount = childAmount;
-          }
-          return sum + childAmount;
-        }, 0);
-        
-        console.log(`Sum for ${line.standard_name} from children:`, childSum);
-        return childSum;
-      }
-
-      // Handle detail lines - find mapped trial balance accounts
-      const relevantMappings = mappings.filter(mapping => 
-        mapping.statement_line_number === line.standard_number
-      );
-
-      const amount = relevantMappings.reduce((sum, mapping) => {
-        const tbAccount = sourceData.find((tb: any) => tb.account_number === mapping.account_number);
-        const accountAmount = tbAccount ? (tbAccount.closing_balance || 0) : 0;
-        return sum + accountAmount;
-      }, 0);
-
-      const finalAmount = amount * line.sign_multiplier;
-      console.log(`Detail line ${line.standard_name} (${line.standard_number}): ${finalAmount}`);
-      return finalAmount;
+      visitedNodes.delete(cacheKey);
+      calculationCache.set(cacheKey, result);
+      return result;
     };
 
     const parseCalculationFormula = (formula: any, isPrevious = false): number => {
       if (!formula) return 0;
-
-      console.log(`Parsing calculation_formula:`, formula);
       
       // Handle complex object format with terms array
       if (typeof formula === 'object' && formula.type === 'formula' && Array.isArray(formula.terms)) {
@@ -145,45 +150,30 @@ export function useFirmFinancialStatements(clientId: string, selectedVersion?: s
         
         for (const term of formula.terms) {
           const accountNumber = term.account_number;
-          const operator = term.operator || '+'; // Default to addition if no operator
+          const operator = term.operator || '+';
           
-          console.log(`Processing term: ${accountNumber} with operator: ${operator}`);
+          // Get amount directly from trial balance using mappings instead of recursive calls
+          const relevantMappings = mappings.filter(mapping => 
+            mapping.statement_line_number === accountNumber
+          );
+
+          let accountAmount = 0;
+          const sourceData = isPrevious ? previousTrialBalance : trialBalance;
           
-          // Find the account with this standard_number
-          const referencedAccount = firmAccounts.find((acc: any) => acc.standard_number === accountNumber);
-          
-          if (referencedAccount) {
-            console.log(`Found referenced account: ${referencedAccount.standard_name} (${accountNumber})`);
+          if (sourceData) {
+            accountAmount = relevantMappings.reduce((sum, mapping) => {
+              const tbAccount = sourceData.find((tb: any) => tb.account_number === mapping.account_number);
+              return sum + (tbAccount ? (tbAccount.closing_balance || 0) : 0);
+            }, 0);
+          }
             
-            // Create a temporary line to calculate amount
-            const tempLine: FinancialStatementLine = {
-              id: referencedAccount.id,
-              standard_number: referencedAccount.standard_number,
-              standard_name: referencedAccount.standard_name,
-              account_type: referencedAccount.account_type,
-              display_order: referencedAccount.display_order || 0,
-              line_type: referencedAccount.line_type,
-              parent_line_id: referencedAccount.parent_line_id,
-              calculation_formula: referencedAccount.calculation_formula,
-              is_total_line: referencedAccount.is_total_line,
-              sign_multiplier: referencedAccount.sign_multiplier,
-              children: []
-            };
-            
-            const accountAmount = calculateAmount(tempLine, isPrevious);
-            console.log(`Account ${accountNumber} amount: ${accountAmount}`);
-            
-            if (operator === '+') {
-              result += accountAmount;
-            } else if (operator === '-') {
-              result -= accountAmount;
-            }
-          } else {
-            console.warn(`Account ${accountNumber} not found in formula terms`);
+          if (operator === '+') {
+            result += accountAmount;
+          } else if (operator === '-') {
+            result -= accountAmount;
           }
         }
         
-        console.log(`Formula result: ${result}`);
         return result;
       }
       

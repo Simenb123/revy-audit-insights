@@ -219,14 +219,7 @@ const IncomeStatement: React.FC<IncomeStatementProps> = ({
     );
   };
 
-  // Use ALL data as-is from hook (filtering already done there)
-  console.log('IncomeStatement received data:', data.map(l => ({ 
-    number: l.standard_number, 
-    name: l.standard_name, 
-    display_order: l.display_order,
-    account_type: l.account_type 
-  })));
-
+  // Use data directly from hook (already filtered and sorted by display_order)
   const chronologicalList = createChronologicalList(data);
 
   if (data.length === 0) {
