@@ -29,24 +29,69 @@ const IncomeStatement: React.FC<IncomeStatementProps> = ({
     return hasContent(line);
   };
 
-  // Group lines by sections based on account number ranges
+  // Group lines by sections based on display_order and line types
   const groupLinesBySection = (lines: any[]) => {
+    // Sort all lines by display_order first
+    const sortedLines = [...lines].sort((a, b) => {
+      const orderA = a.display_order || parseInt(a.standard_number) || 0;
+      const orderB = b.display_order || parseInt(b.standard_number) || 0;
+      return orderA - orderB;
+    });
+
     const sections = {
-      revenue: { title: "DRIFTSINNTEKTER", lines: [] as any[], range: [10, 19] },
-      expenses: { title: "DRIFTSKOSTNADER", lines: [] as any[], range: [20, 79] },
-      operatingResult: { title: "DRIFTSRESULTAT", lines: [] as any[], range: [80, 89] },
-      financial: { title: "FINANSPOSTER", lines: [] as any[], range: [90, 155] },
-      resultBeforeTax: { title: "RESULTAT FØR SKATT", lines: [] as any[], range: [160, 164] },
-      tax: { title: "SKATTEKOSTNAD", lines: [] as any[], range: [165, 179] },
-      annualResult: { title: "ÅRSRESULTAT", lines: [] as any[], range: [280, 299] }
+      revenue: { 
+        title: "DRIFTSINNTEKTER", 
+        lines: [] as any[], 
+        detailRange: [10, 18], 
+        subtotalNumbers: ['19'] 
+      },
+      expenses: { 
+        title: "DRIFTSKOSTNADER", 
+        lines: [] as any[], 
+        detailRange: [20, 78], 
+        subtotalNumbers: ['79'] 
+      },
+      operatingResult: { 
+        title: "DRIFTSRESULTAT", 
+        lines: [] as any[], 
+        detailRange: [80, 89], 
+        subtotalNumbers: ['80'] 
+      },
+      financial: { 
+        title: "FINANSPOSTER", 
+        lines: [] as any[], 
+        detailRange: [90, 154], 
+        subtotalNumbers: ['155'] 
+      },
+      resultBeforeTax: { 
+        title: "RESULTAT FØR SKATT", 
+        lines: [] as any[], 
+        detailRange: [160, 164], 
+        subtotalNumbers: ['160'] 
+      },
+      tax: { 
+        title: "SKATTEKOSTNAD", 
+        lines: [] as any[], 
+        detailRange: [165, 179], 
+        subtotalNumbers: [] as string[]
+      },
+      annualResult: { 
+        title: "ÅRSRESULTAT", 
+        lines: [] as any[], 
+        detailRange: [280, 299], 
+        subtotalNumbers: ['280'] 
+      }
     };
 
-    lines.forEach(line => {
+    sortedLines.forEach(line => {
       const accountNum = parseInt(line.standard_number);
       if (isNaN(accountNum)) return;
 
       for (const [key, section] of Object.entries(sections)) {
-        if (accountNum >= section.range[0] && accountNum <= section.range[1]) {
+        const inDetailRange = accountNum >= section.detailRange[0] && accountNum <= section.detailRange[1];
+        const isSubtotal = section.subtotalNumbers.includes(line.standard_number);
+        
+        if (inDetailRange || isSubtotal) {
           section.lines.push(line);
           break;
         }
@@ -211,7 +256,7 @@ const IncomeStatement: React.FC<IncomeStatementProps> = ({
       </div>
       
       {/* Content */}
-      <div className="max-h-[500px] overflow-y-auto bg-background">
+      <div className="bg-background">
         {/* Revenue section */}
         {renderSection(sections.revenue.title, sections.revenue.lines)}
         
