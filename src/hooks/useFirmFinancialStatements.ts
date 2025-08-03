@@ -30,7 +30,6 @@ export function useFirmFinancialStatements(clientId: string, selectedVersion?: s
 
     const buildFinancialStatementStructure = (): FinancialStatementLine[] => {
       const lines: FinancialStatementLine[] = firmAccounts
-        .filter((account: any) => account.is_active)
         .map((account: any) => ({
           id: account.id,
           standard_number: account.standard_number,
