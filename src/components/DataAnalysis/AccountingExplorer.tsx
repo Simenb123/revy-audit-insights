@@ -205,8 +205,8 @@ const AccountingExplorer: React.FC<AccountingExplorerProps> = ({ clientId }) => 
         variant="underline"
       />
       
-      <div className="flex flex-col xl:flex-row gap-6">
-        <div className="flex-1 min-w-0">
+      <div className="w-full">
+        <div className="w-full">
           {activeTab === 'overview' && (
             <div className="space-y-6">
               {hasGLData && selectedGLVersion && (
@@ -329,32 +329,6 @@ const AccountingExplorer: React.FC<AccountingExplorerProps> = ({ clientId }) => 
                 </Card>
               )}
             </div>
-          )}
-        </div>
-        
-        <div className="w-full xl:w-72 xl:flex-shrink-0 space-y-4">
-          {/* Only render ValidationPanel when we have proper version data */}
-          {selectedGLVersion?.id && selectedTBVersion?.version ? (
-            <ValidationPanel 
-              clientId={clientId} 
-              selectedGLVersion={selectedGLVersion.id}
-              selectedTBVersion={selectedTBVersion.version}
-            />
-          ) : (
-            <Card>
-              <CardHeader>
-                <CardTitle>Validering</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground text-sm">
-                  Venter på at versjon data lastes inn...
-                </p>
-                <div className="text-xs text-muted-foreground mt-2">
-                  GL versjon: {selectedGLVersion?.id ? '✓' : '⏳'}<br/>
-                  TB versjon: {selectedTBVersion?.version ? '✓' : '⏳'}
-                </div>
-              </CardContent>
-            </Card>
           )}
         </div>
       </div>
