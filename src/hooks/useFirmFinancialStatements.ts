@@ -242,12 +242,13 @@ export function useFirmFinancialStatements(clientId: string, selectedVersion?: s
     
     const firstEntry = trialBalance[0];
     return {
+      clientId,
       currentYear: firstEntry.period_year,
       previousYear: firstEntry.period_year - 1,
       periodStart: firstEntry.period_start_date,
       periodEnd: firstEntry.period_end_date
     };
-  }, [trialBalance]);
+  }, [clientId, trialBalance]);
 
   const mappingStats = useMemo(() => {
     if (!trialBalance || !mappings) {

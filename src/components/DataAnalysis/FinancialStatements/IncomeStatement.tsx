@@ -1,19 +1,49 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { formatCurrency } from '@/lib/formatters';
 import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
+import { useTrialBalanceMappings } from '@/hooks/useTrialBalanceMappings';
+import { useFiscalYear } from '@/contexts/FiscalYearContext';
 
 interface IncomeStatementProps {
   data: any[];
   currentYear?: number;
   previousYear?: number;
+  clientId?: string;
 }
 
 const IncomeStatement: React.FC<IncomeStatementProps> = ({ 
   data, 
   currentYear, 
-  previousYear 
+  previousYear,
+  clientId 
 }) => {
+  const navigate = useNavigate();
+  const { selectedClientId } = useFiscalYear();
+  const actualClientId = clientId || selectedClientId;
+  
+  // Fetch trial balance mappings for drill-down functionality
+  const { data: mappings = [] } = useTrialBalanceMappings(actualClientId || '');
+  
+  // State for mapped accounts per line
+  const [lineAccountMappings, setLineAccountMappings] = useState<Record<string, string[]>>({});
+  
+  // Build mapping from statement line numbers to account numbers
+  useEffect(() => {
+    if (mappings.length > 0) {
+      const lineToAccounts: Record<string, string[]> = {};
+      mappings.forEach(mapping => {
+        const lineNumber = mapping.statement_line_number;
+        if (!lineToAccounts[lineNumber]) {
+          lineToAccounts[lineNumber] = [];
+        }
+        lineToAccounts[lineNumber].push(mapping.account_number);
+      });
+      setLineAccountMappings(lineToAccounts);
+    }
+  }, [mappings]);
   const hasContent = (line: any): boolean => {
     const currentAmount = line.amount || 0;
     const previousAmount = line.previous_amount || 0;
@@ -101,6 +131,14 @@ const IncomeStatement: React.FC<IncomeStatementProps> = ({
     );
   };
 
+  const handleLineClick = (standardNumber: string) => {
+    const accountNumbers = lineAccountMappings[standardNumber];
+    if (accountNumbers && accountNumbers.length > 0 && actualClientId) {
+      // Navigate to trial balance with filtered accounts
+      navigate(`/clients/${actualClientId}/accounting/trial-balance?filtered_accounts=${accountNumbers.join(',')}`);
+    }
+  };
+
   const renderIncomeLine = (line: any, level: number = 0, isSum = false, isKeyResult = false): React.ReactNode => {
     if (!shouldShowLine(line)) {
       return null;
@@ -110,66 +148,101 @@ const IncomeStatement: React.FC<IncomeStatementProps> = ({
     const previousAmount = line.previous_amount || 0;
     const isSubTotal = isSum && !isKeyResult;
     const isMainResult = isSum && isKeyResult;
+    const accountNumbers = lineAccountMappings[line.standard_number] || [];
+    const hasAccounts = accountNumbers.length > 0;
     
-    return (
-      <React.Fragment key={line.id}>
-        <div 
-          className={cn(
-            "group grid grid-cols-4 gap-4 py-1.5 px-4 transition-all duration-200",
-            "hover:bg-muted/30 border-b border-border/5",
-            // Detail line styling - compact
-            !isSum && "text-sm",
-            // Subtotal line styling - subtle
-            isSubTotal && !isMainResult && "bg-muted/20 font-medium border-b border-border/30 text-sm",
-            // Main result styling - blue background like template
-            isMainResult && "bg-blue-50 font-bold text-sm border-b-2 border-blue-200 mt-1 mb-1",
-            // Minimal indentation
-            !isSum && level === 0 && "pl-6",
-            !isSum && level >= 1 && "pl-8"
-          )}
-        >
-          <div className="flex items-center gap-2 col-span-1 min-w-0">
-            <span className={cn(
-              "text-xs font-mono shrink-0 px-1 py-0.5 rounded bg-muted/40 text-muted-foreground",
-              isMainResult && "bg-blue-100 text-blue-700 font-medium"
-            )}>
-              {line.standard_number}
-            </span>
-            <span className={cn(
-              "truncate text-sm",
-              isMainResult && "font-bold text-blue-900",
-              isSubTotal && "font-medium",
-              !isSum && "text-foreground"
-            )}>
-              {line.standard_name}
-            </span>
-          </div>
-          
-          {/* Note column */}
-          <div className="text-xs text-muted-foreground text-center">
-            {/* Note references would go here */}
-          </div>
-          
-          <div className={cn(
-            "tabular-nums font-mono text-right text-sm transition-colors",
+    const lineContent = (
+      <div 
+        className={cn(
+          "group grid grid-cols-4 gap-4 py-1.5 px-4 transition-all duration-200",
+          "border-b border-border/5",
+          // Detail line styling - compact
+          !isSum && "text-sm",
+          // Subtotal line styling - subtle
+          isSubTotal && !isMainResult && "bg-muted/20 font-medium border-b border-border/30 text-sm",
+          // Main result styling - blue background like template
+          isMainResult && "bg-blue-50 font-bold text-sm border-b-2 border-blue-200 mt-1 mb-1",
+          // Minimal indentation
+          !isSum && level === 0 && "pl-6",
+          !isSum && level >= 1 && "pl-8",
+          // Clickable styling when has accounts
+          hasAccounts && "cursor-pointer hover:bg-muted/40 hover:shadow-sm"
+        )}
+        onClick={hasAccounts ? () => handleLineClick(line.standard_number) : undefined}
+      >
+        <div className="flex items-center gap-2 col-span-1 min-w-0">
+          <span className={cn(
+            "text-xs font-mono shrink-0 px-1 py-0.5 rounded bg-muted/40 text-muted-foreground",
+            isMainResult && "bg-blue-100 text-blue-700 font-medium"
+          )}>
+            {line.standard_number}
+          </span>
+          <span className={cn(
+            "truncate text-sm",
             isMainResult && "font-bold text-blue-900",
             isSubTotal && "font-medium",
-            currentAmount < 0 && "text-red-600",
-            currentAmount === 0 && "text-muted-foreground/60"
+            !isSum && "text-foreground",
+            hasAccounts && "hover:text-primary hover:underline"
           )}>
-            {currentAmount < 0 ? `(${formatCurrency(Math.abs(currentAmount))})` : formatCurrency(currentAmount)}
-          </div>
-          
-          <div className={cn(
-            "tabular-nums font-mono text-right text-sm text-muted-foreground transition-colors",
-            isMainResult && "font-bold text-blue-700",
-            isSubTotal && "font-medium",
-            previousAmount < 0 && "text-red-500",
-            previousAmount === 0 && "text-muted-foreground/40"
-          )}>
-            {previousAmount < 0 ? `(${formatCurrency(Math.abs(previousAmount))})` : formatCurrency(previousAmount)}
-          </div>
+            {line.standard_name}
+          </span>
+          {hasAccounts && (
+            <Badge variant="secondary" className="text-xs ml-1">
+              {accountNumbers.length}
+            </Badge>
+          )}
         </div>
+        
+        {/* Note column */}
+        <div className="text-xs text-muted-foreground text-center">
+          {/* Note references would go here */}
+        </div>
+        
+        <div className={cn(
+          "tabular-nums font-mono text-right text-sm transition-colors",
+          isMainResult && "font-bold text-blue-900",
+          isSubTotal && "font-medium",
+          currentAmount < 0 && "text-red-600",
+          currentAmount === 0 && "text-muted-foreground/60"
+        )}>
+          {currentAmount < 0 ? `(${formatCurrency(Math.abs(currentAmount))})` : formatCurrency(currentAmount)}
+        </div>
+        
+        <div className={cn(
+          "tabular-nums font-mono text-right text-sm text-muted-foreground transition-colors",
+          isMainResult && "font-bold text-blue-700",
+          isSubTotal && "font-medium",
+          previousAmount < 0 && "text-red-500",
+          previousAmount === 0 && "text-muted-foreground/40"
+        )}>
+          {previousAmount < 0 ? `(${formatCurrency(Math.abs(previousAmount))})` : formatCurrency(previousAmount)}
+        </div>
+      </div>
+    );
+
+    return (
+      <React.Fragment key={line.id}>
+        {hasAccounts ? (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                {lineContent}
+              </TooltipTrigger>
+              <TooltipContent side="left" className="max-w-xs">
+                <div className="space-y-1">
+                  <div className="font-medium text-xs">Tilknyttede kontoer:</div>
+                  <div className="text-xs text-muted-foreground">
+                    {accountNumbers.slice(0, 5).join(', ')}
+                    {accountNumbers.length > 5 && ` og ${accountNumbers.length - 5} flere...`}
+                  </div>
+                  <div className="text-xs text-blue-600 mt-1">Klikk for å se detaljer</div>
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        ) : (
+          lineContent
+        )}
         
         {line.children && line.children.map((child: any) => 
           renderIncomeLine(child, level + 1, false)
@@ -203,6 +276,11 @@ const IncomeStatement: React.FC<IncomeStatementProps> = ({
         <p className="text-xs text-muted-foreground mt-1">
           Periode: {currentYear && previousYear ? `${currentYear} / ${previousYear}` : 'Inneværende år'}
         </p>
+        {Object.keys(lineAccountMappings).length > 0 && (
+          <p className="text-xs text-blue-600 mt-1">
+            💡 Klikk på regnskapslinjer for å se tilknyttede kontoer
+          </p>
+        )}
       </div>
 
       {/* Table Header - compact with Note column */}

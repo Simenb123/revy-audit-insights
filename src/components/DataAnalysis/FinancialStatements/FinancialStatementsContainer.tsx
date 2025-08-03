@@ -16,6 +16,7 @@ interface FinancialStatementsContainerProps {
     unmappedAccounts: number;
   };
   periodInfo?: {
+    clientId?: string;
     currentYear: number;
     previousYear: number;
     periodStart: string;
@@ -117,6 +118,7 @@ const FinancialStatementsContainer: React.FC<FinancialStatementsContainerProps> 
                   data={financialStatement}
                   currentYear={periodInfo?.currentYear}
                   previousYear={periodInfo?.previousYear}
+                  clientId={periodInfo?.clientId}
                 />
               </div>
             </TabsContent>

@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useCallback, useEffect } from 'react';
-import { Layers, Bot, Edit, Check, X } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
+import { Layers, Bot, Edit, Check, X, Filter } from 'lucide-react';
 import { useTrialBalanceWithMappings, TrialBalanceEntryWithMapping } from '@/hooks/useTrialBalanceWithMappings';
 import { useStandardAccounts } from '@/hooks/useChartOfAccounts';
 import { useSaveTrialBalanceMapping } from '@/hooks/useTrialBalanceMappings';
@@ -22,6 +23,7 @@ interface TrialBalanceTableProps {
 const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialBalanceTableProps) => {
   const { selectedFiscalYear } = useFiscalYear();
   const actualAccountingYear = accountingYear || selectedFiscalYear;
+  const [searchParams, setSearchParams] = useSearchParams();
   
   const { data: trialBalanceData, isLoading, error } = useTrialBalanceWithMappings(clientId, actualAccountingYear, selectedVersion);
   const { data: standardAccounts = [] } = useStandardAccounts();
@@ -32,6 +34,10 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
   const [columnConfig, setColumnConfig] = useState<ColumnConfig[]>([]);
   const [editingMapping, setEditingMapping] = useState<string | null>(null);
   const [autoSuggestions, setAutoSuggestions] = useState<any[]>([]);
+  
+  // Get filtered accounts from URL params
+  const filteredAccountsParam = searchParams.get('filtered_accounts');
+  const filteredAccountNumbers = filteredAccountsParam ? filteredAccountsParam.split(',') : null;
 
   // Update column config when fiscal year changes
   useEffect(() => {
@@ -98,15 +104,28 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
     return totalAccounts > 0 ? (mappedAccounts / totalAccounts) * 100 : 0;
   }, [trialBalanceData]);
 
-  // Filter entries by accounting year
+  // Filter entries by accounting year and filtered accounts
   const filteredEntries = useMemo(() => {
     if (!trialBalanceData?.trialBalanceEntries) return [];
     
     return trialBalanceData.trialBalanceEntries.filter(entry => {
       if (actualAccountingYear && entry.period_year !== actualAccountingYear) return false;
+      
+      // If filtered accounts are specified, only show those
+      if (filteredAccountNumbers && filteredAccountNumbers.length > 0) {
+        return filteredAccountNumbers.includes(entry.account_number);
+      }
+      
       return true;
     });
-  }, [trialBalanceData, actualAccountingYear]);
+  }, [trialBalanceData, actualAccountingYear, filteredAccountNumbers]);
+
+  // Function to clear account filter
+  const clearAccountFilter = useCallback(() => {
+    const newSearchParams = new URLSearchParams(searchParams);
+    newSearchParams.delete('filtered_accounts');
+    setSearchParams(newSearchParams);
+  }, [searchParams, setSearchParams]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('nb-NO', {
@@ -343,10 +362,34 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
   // Create description text
   const mappingStats = trialBalanceData?.mappingStats;
   const mappingProgress = getMappingProgress();
-  const description = `Viser ${filteredEntries.length} kontoer • År: ${actualAccountingYear}${mappingStats ? ` • Mappet: ${mappingStats.mappedAccounts}/${mappingStats.totalAccounts}` : ''}`;
+  const baseDescription = `Viser ${filteredEntries.length} kontoer • År: ${actualAccountingYear}${mappingStats ? ` • Mappet: ${mappingStats.mappedAccounts}/${mappingStats.totalAccounts}` : ''}`;
+  const description = filteredAccountNumbers ? `${baseDescription} • Filtrert visning` : baseDescription;
 
   return (
     <div className="space-y-4">
+      {/* Account filter notification */}
+      {filteredAccountNumbers && filteredAccountNumbers.length > 0 && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-blue-600" />
+              <span className="text-sm font-medium text-blue-900">
+                Filtrert på {filteredAccountNumbers.length} kontoer fra regnskapsoppstilling
+              </span>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={clearAccountFilter}
+              className="text-blue-700 border-blue-300 hover:bg-blue-100"
+            >
+              <X className="h-4 w-4 mr-2" />
+              Fjern filter
+            </Button>
+          </div>
+        </div>
+      )}
+      
       {/* Mapping progress and auto-mapping controls */}
       {mappingStats && mappingStats.totalAccounts > 0 && (
         <div className="bg-muted/50 rounded-lg p-4 space-y-3">
