@@ -29,7 +29,7 @@ const FirmStandardAccountTable = () => {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {accounts?.map((account) => (
+          {accounts?.map((account: any) => (
             <div key={account.id} className="flex items-center justify-between p-4 border rounded-lg">
               <div>
                 <div className="font-medium">{account.standard_number} - {account.standard_name}</div>
