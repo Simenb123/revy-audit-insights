@@ -42,7 +42,8 @@ export function useSimpleIncomeStatement(clientId: string, selectedVersion?: str
       number: acc.standard_number,
       name: acc.standard_name,
       display_order: acc.display_order,
-      type: acc.line_type
+      type: acc.line_type,
+      formula: acc.calculation_formula
     })));
 
     // Create mapping lookup for faster access
@@ -57,23 +58,113 @@ export function useSimpleIncomeStatement(clientId: string, selectedVersion?: str
 
     console.log('🔗 Account mappings:', Object.fromEntries(accountMappings));
 
-    // Calculate amounts for each line
+    // Create lines map for recursive calculation
+    const linesMap = new Map<string, SimpleIncomeStatementLine>();
+    const calculationCache = new Map<string, number>();
+
+    // Parse calculation formula
+    function parseCalculationFormula(formula: string | any): number {
+      if (!formula) return 0;
+      
+      try {
+        // Handle JSON formula objects
+        if (typeof formula === 'object' && formula.type === 'formula' && formula.terms) {
+          let result = 0;
+          
+          for (const term of formula.terms) {
+            const accountNumber = term.account_number;
+            const operator = term.operator || '+';
+            
+            const lineAmount = getLineAmount(accountNumber);
+            
+            if (operator === '+') {
+              result += lineAmount;
+            } else if (operator === '-') {
+              result -= lineAmount;
+            }
+            
+            console.log(`🧮 Formula term: ${accountNumber} ${operator} ${lineAmount} = running total: ${result}`);
+          }
+          
+          return result;
+        }
+        
+        // Handle simple string formulas like "19 + 15"
+        if (typeof formula === 'string') {
+          const cleanFormula = formula.replace(/\s/g, '');
+          const terms = cleanFormula.split(/([+-])/);
+          let result = 0;
+          let operator = '+';
+          
+          for (let i = 0; i < terms.length; i++) {
+            const term = terms[i].trim();
+            if (term === '+' || term === '-') {
+              operator = term;
+            } else if (term) {
+              const lineAmount = getLineAmount(term);
+              if (operator === '+') {
+                result += lineAmount;
+              } else {
+                result -= lineAmount;
+              }
+              console.log(`🧮 Simple formula: ${term} ${operator} ${lineAmount} = running total: ${result}`);
+            }
+          }
+          
+          return result;
+        }
+        
+        return 0;
+      } catch (error) {
+        console.error('❌ Error parsing formula:', formula, error);
+        return 0;
+      }
+    }
+
+    // Get amount for a specific line (with caching and recursion)
+    function getLineAmount(lineNumber: string): number {
+      if (calculationCache.has(lineNumber)) {
+        return calculationCache.get(lineNumber)!;
+      }
+
+      const account = resultAccounts.find((acc: any) => acc.standard_number === lineNumber);
+      if (!account) {
+        console.warn(`⚠️ Account not found: ${lineNumber}`);
+        return 0;
+      }
+
+      let amount = 0;
+
+      // Calculate based on line type
+      if (account.line_type === 'detail') {
+        // Detail lines: sum from trial balance mappings
+        const mappedAccounts = accountMappings.get(account.standard_number) || [];
+        mappedAccounts.forEach(accountNumber => {
+          const trialBalanceEntry = trialBalance.find(tb => tb.account_number === accountNumber);
+          if (trialBalanceEntry) {
+            amount += (trialBalanceEntry.closing_balance || 0) * account.sign_multiplier;
+          }
+        });
+      } else if (account.line_type === 'subtotal' || account.line_type === 'calculation') {
+        // Subtotal/calculation lines: use formula
+        if (account.calculation_formula) {
+          amount = parseCalculationFormula(account.calculation_formula);
+        }
+      }
+
+      calculationCache.set(lineNumber, amount);
+      console.log(`💰 Calculated line ${lineNumber} (${account.standard_name}): ${amount} (type: ${account.line_type})`);
+      
+      return amount;
+    }
+
+    // Calculate amounts for all lines
     const lines: SimpleIncomeStatementLine[] = resultAccounts.map((account: any) => {
+      const amount = getLineAmount(account.standard_number);
       const mappedAccounts = accountMappings.get(account.standard_number) || [];
       
-      // Calculate current period amount
-      let amount = 0;
-      mappedAccounts.forEach(accountNumber => {
-        const trialBalanceEntry = trialBalance.find(tb => tb.account_number === accountNumber);
-        if (trialBalanceEntry) {
-          amount += (trialBalanceEntry.closing_balance || 0) * account.sign_multiplier;
-        }
-      });
-
       // For now, set previous amount to 0 (we'll add this later)
       const previous_amount = 0;
-
-      console.log(`💰 Line ${account.standard_number} (${account.standard_name}): ${amount} (${mappedAccounts.length} accounts)`);
 
       return {
         id: account.id,
@@ -87,10 +178,11 @@ export function useSimpleIncomeStatement(clientId: string, selectedVersion?: str
       };
     });
 
-    console.log('✅ Final income statement lines:', lines.map(l => ({
+    console.log('✅ Final income statement lines with calculations:', lines.map(l => ({
       number: l.standard_number,
       name: l.standard_name,
       amount: l.amount,
+      type: l.line_type,
       order: l.display_order
     })));
 
