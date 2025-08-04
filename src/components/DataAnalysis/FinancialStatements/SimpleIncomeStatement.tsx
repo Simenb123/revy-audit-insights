@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { formatCurrency } from '@/lib/formatters';
 import { Badge } from '@/components/ui/badge';
@@ -32,6 +32,28 @@ const SimpleIncomeStatement: React.FC<SimpleIncomeStatementProps> = ({
   // Get mappings for drill-down
   const { data: mappings = [] } = useTrialBalanceMappings(actualClientId || '');
   
+  // Filter lines with zero values (but keep subtotals and calculations)
+  const filteredLines = useMemo(() => {
+    const filtered = incomeStatementLines.filter(line => {
+      // Always keep subtotal and calculation lines for structure
+      if (line.line_type === 'subtotal' || line.line_type === 'calculation') {
+        return true;
+      }
+      // Keep lines that have any non-zero amount
+      return line.amount !== 0 || line.previous_amount !== 0;
+    });
+    
+    console.log('📊 Component data:', { 
+      originalLines: incomeStatementLines.length,
+      filteredLines: filtered.length,
+      hiddenLines: incomeStatementLines.length - filtered.length,
+      mappingsCount: mappings.length,
+      isLoading 
+    });
+    
+    return filtered;
+  }, [incomeStatementLines, mappings.length, isLoading]);
+
   console.log('📊 Component data:', { 
     linesCount: incomeStatementLines.length, 
     mappingsCount: mappings.length,
@@ -85,11 +107,20 @@ const SimpleIncomeStatement: React.FC<SimpleIncomeStatementProps> = ({
     );
   }
 
+  if (filteredLines.length === 0) {
+    return (
+      <div className="text-center py-8 text-muted-foreground">
+        <p>Alle regnskapslinjer har 0 kr</p>
+        <p className="text-xs mt-2">Det finnes ingen transaksjoner for denne perioden</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       {/* Debug info */}
       <div className="text-xs text-muted-foreground bg-muted/20 p-2 rounded">
-        📊 Debug: {incomeStatementLines.length} linjer, {Object.keys(lineAccountMappings).length} mappings
+        📊 Debug: {filteredLines.length} av {incomeStatementLines.length} linjer vises, {Object.keys(lineAccountMappings).length} mappings
       </div>
 
       {/* Header */}
@@ -113,9 +144,9 @@ const SimpleIncomeStatement: React.FC<SimpleIncomeStatementProps> = ({
         <div className="text-right text-muted-foreground">{periodInfo.previousYear}</div>
       </div>
       
-      {/* Income Statement Lines - Pure chronological order */}
+      {/* Income Statement Lines - Pure chronological order (filtered) */}
       <div className="bg-background">
-        {incomeStatementLines.map((line) => {
+        {filteredLines.map((line) => {
           const accountNumbers = lineAccountMappings[line.standard_number] || [];
           const hasAccounts = accountNumbers.length > 0;
           const isSubtotal = line.line_type === 'subtotal';
