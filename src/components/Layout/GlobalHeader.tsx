@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/command';
 import { useDebounce } from '@/hooks/useDebounce';
 import { Users, Book, Brain, FileText } from 'lucide-react';
+import { RecentClientsDropdown } from './RecentClientsDropdown';
 
 interface SearchResult {
   type: 'client' | 'article' | 'document' | 'page';
@@ -177,6 +178,10 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({ className = '' }) => {
           >
             <Search className="h-5 w-5" />
           </Button>
+          
+          <div className="text-white">
+            <RecentClientsDropdown />
+          </div>
           
           <Button variant="ghost" size="sm" className="text-white hover:bg-revio-600">
             <Bell className="h-5 w-5" />

@@ -47,6 +47,7 @@ import TrialBalanceUpload from "./pages/TrialBalanceUpload";
 import AnalysisPage from "./pages/AnalysisPage";
 import NotFound from "./pages/NotFound";
 import LegacyClientRedirect from "./components/Layout/LegacyClientRedirect";
+import { ClientHistoryTracker } from "./components/Layout/ClientHistoryTracker";
 
 const queryClient = new QueryClient();
 
@@ -60,6 +61,7 @@ function App() {
               <FiscalYearProvider>
                 <BrowserRouter>
                   <ScrollToTop />
+                  <ClientHistoryTracker />
                   <RevyContextProvider>
                 <Routes>
                 <Route path="/auth" element={<Auth />} />
