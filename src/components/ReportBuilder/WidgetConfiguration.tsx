@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Settings, Save } from 'lucide-react';
+import { FormulaWidgetConfig } from './WidgetConfiguration/FormulaWidgetConfig';
 
 interface WidgetConfigurationProps {
   widget: Widget;
@@ -17,6 +18,18 @@ export function WidgetConfiguration({ widget, onUpdateWidget }: WidgetConfigurat
   const [isOpen, setIsOpen] = useState(false);
   const [title, setTitle] = useState(widget.title);
   const [config, setConfig] = useState(widget.config || {});
+
+  // Mock standard accounts for now - should come from props or context
+  const standardAccounts = [
+    { standard_number: '1000', standard_name: 'Anleggsmidler' },
+    { standard_number: '1500', standard_name: 'Omløpsmidler' },
+    { standard_number: '2000', standard_name: 'Egenkapital' },
+    { standard_number: '2500', standard_name: 'Kortsiktig gjeld' },
+    { standard_number: '3000', standard_name: 'Salgsinntekter' },
+    { standard_number: '4000', standard_name: 'Varekostnad' },
+    { standard_number: '5000', standard_name: 'Lønnskostnad' },
+    { standard_number: '6000', standard_name: 'Andre driftskostnader' }
+  ];
 
   const handleSave = () => {
     onUpdateWidget({
@@ -186,10 +199,22 @@ export function WidgetConfiguration({ widget, onUpdateWidget }: WidgetConfigurat
           </div>
         );
 
+      case 'formula':
+        return (
+          <FormulaWidgetConfig
+            widget={widget}
+            onUpdateWidget={onUpdateWidget}
+            standardAccounts={standardAccounts}
+          />
+        );
+
       default:
         return null;
     }
   };
+
+  // For formula widgets, use custom dialog sizing
+  const dialogClassName = widget.type === 'formula' ? "sm:max-w-[800px] max-h-[90vh] overflow-y-auto" : "sm:max-w-[425px]";
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -197,36 +222,40 @@ export function WidgetConfiguration({ widget, onUpdateWidget }: WidgetConfigurat
         <Button 
           variant="ghost" 
           size="sm" 
-          className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+          className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground transition-colors"
         >
           <Settings className="h-3 w-3" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className={dialogClassName}>
         <DialogHeader>
           <DialogTitle>Konfigurer widget</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-4">
-          <div>
-            <Label htmlFor="title">Tittel</Label>
-            <Input
-              id="title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Widget tittel"
-            />
-          </div>
+          {widget.type !== 'formula' && (
+            <div>
+              <Label htmlFor="title">Tittel</Label>
+              <Input
+                id="title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Widget tittel"
+              />
+            </div>
+          )}
           {renderTypeSpecificConfig()}
         </div>
-        <div className="flex justify-end space-x-2">
-          <Button variant="outline" onClick={() => setIsOpen(false)}>
-            Avbryt
-          </Button>
-          <Button onClick={handleSave}>
-            <Save className="h-4 w-4 mr-2" />
-            Lagre
-          </Button>
-        </div>
+        {widget.type !== 'formula' && (
+          <div className="flex justify-end space-x-2">
+            <Button variant="outline" onClick={() => setIsOpen(false)}>
+              Avbryt
+            </Button>
+            <Button onClick={handleSave}>
+              <Save className="h-4 w-4 mr-2" />
+              Lagre
+            </Button>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );

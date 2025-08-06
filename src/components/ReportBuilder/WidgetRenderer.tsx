@@ -4,6 +4,7 @@ import { KpiWidget } from './Widgets/KpiWidget';
 import { TableWidget } from './Widgets/TableWidget';
 import { ChartWidget } from './Widgets/ChartWidget';
 import { TextWidget } from './Widgets/TextWidget';
+import { FormulaWidget } from './Widgets/FormulaWidget';
 
 interface WidgetRendererProps {
   widget: Widget;
@@ -19,6 +20,8 @@ export function WidgetRenderer({ widget }: WidgetRendererProps) {
       return <ChartWidget widget={widget} />;
     case 'text':
       return <TextWidget widget={widget} />;
+    case 'formula':
+      return <FormulaWidget widget={widget} />;
     default:
       return (
         <div className="p-4 text-center text-muted-foreground">
