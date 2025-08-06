@@ -26,6 +26,28 @@ export interface EnhancedFieldDefinition extends FieldDefinition {
   };
 }
 
+// Helper function to expand year placeholders in aliases
+function expandYearPlaceholders(alias: string, fiscalYear: number): string[] {
+  const expandedAliases = [alias]; // Include original alias
+  
+  // Expand [YEAR] placeholder
+  if (alias.includes('[YEAR]')) {
+    expandedAliases.push(alias.replace(/\[YEAR\]/g, fiscalYear.toString()));
+  }
+  
+  // Expand [YEAR-1] placeholder
+  if (alias.includes('[YEAR-1]')) {
+    expandedAliases.push(alias.replace(/\[YEAR-1\]/g, (fiscalYear - 1).toString()));
+  }
+  
+  // Expand [YEAR+1] placeholder
+  if (alias.includes('[YEAR+1]')) {
+    expandedAliases.push(alias.replace(/\[YEAR\+1\]/g, (fiscalYear + 1).toString()));
+  }
+  
+  return expandedAliases;
+}
+
 export async function getFieldDefinitions(fileType: string, fiscalYear?: number): Promise<FieldDefinition[]> {
   const { data, error } = await supabase
     .from('field_definitions')
@@ -43,7 +65,16 @@ export async function getFieldDefinitions(fileType: string, fiscalYear?: number)
     let field_label = item.field_label;
     let aliases = [...(item.aliases || [])];
     
-    // Dynamic fiscal year labels for trial balance
+    // Expand year placeholders if fiscal year is provided
+    if (fiscalYear) {
+      const expandedAliases: string[] = [];
+      aliases.forEach(alias => {
+        expandedAliases.push(...expandYearPlaceholders(alias, fiscalYear));
+      });
+      aliases = expandedAliases;
+    }
+    
+    // Dynamic fiscal year labels for trial balance (keep existing logic)
     if (fileType === 'trial_balance' && fiscalYear) {
       if (item.field_key === 'opening_balance') {
         field_label = `Saldo ${fiscalYear - 1}`;
@@ -225,16 +256,27 @@ function calculateEnhancedFieldConfidence(
     confidence = 0.95;
     reasons.push(`Eksakt match med alias "${exactMatch}"`);
   } else {
-    // Partial alias matching
+    // Enhanced year-aware matching
     let bestAliasMatch = 0;
     let bestAlias = '';
     
     for (const alias of field.aliases) {
       const normalizedAlias = normalizeNorwegianText(alias);
       
+      // Check for year patterns in header and alias
+      const headerYearMatch = header.match(/\b(19|20)\d{2}\b/);
+      const aliasYearMatch = alias.match(/\b(19|20)\d{2}\b/);
+      
       if (normalizedHeader.includes(normalizedAlias) || normalizedAlias.includes(normalizedHeader)) {
-        const similarity = Math.min(normalizedAlias.length, normalizedHeader.length) / 
-                          Math.max(normalizedAlias.length, normalizedHeader.length);
+        let similarity = Math.min(normalizedAlias.length, normalizedHeader.length) / 
+                        Math.max(normalizedAlias.length, normalizedHeader.length);
+        
+        // Boost confidence for year matches
+        if (headerYearMatch && aliasYearMatch && headerYearMatch[0] === aliasYearMatch[0]) {
+          similarity = Math.min(similarity * 1.3, 0.98);
+          reasons.push(`År-match funnet: ${headerYearMatch[0]}`);
+        }
+        
         if (similarity > bestAliasMatch) {
           bestAliasMatch = similarity;
           bestAlias = alias;
