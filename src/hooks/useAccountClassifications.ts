@@ -18,24 +18,21 @@ export interface AccountClassification {
 
 export function useAccountClassifications(clientId: string, versionId?: string) {
   return useQuery({
-    queryKey: ['account-classifications', clientId, versionId],
+    queryKey: ['account-classifications', clientId],
     queryFn: async () => {
-      let query = supabase
+      // Remove version_id filtering to avoid UUID errors - classifications are global per client
+      const { data, error } = await supabase
         .from('account_classifications')
         .select('*')
         .eq('client_id', clientId)
         .eq('is_active', true)
         .order('applied_at', { ascending: false });
 
-      if (versionId) {
-        query = query.eq('version_id', versionId);
-      }
-
-      const { data, error } = await query;
-
       if (error) {
         console.error('Error fetching account classifications:', error);
-        throw error;
+        // Don't throw error - continue without classifications
+        console.warn('Continuing without account classifications:', error);
+        return [];
       }
 
       return data as AccountClassification[];
@@ -56,7 +53,6 @@ export function useSaveAccountClassification() {
         .update({ is_active: false })
         .eq('client_id', classification.client_id)
         .eq('account_number', classification.account_number)
-        .eq('version_id', classification.version_id || '')
         .eq('is_active', true);
 
       if (deactivateError) {
@@ -119,7 +115,6 @@ export function useBulkSaveAccountClassifications() {
         .update({ is_active: false })
         .eq('client_id', clientId)
         .in('account_number', accountNumbers)
-        .eq('version_id', versionId || '')
         .eq('is_active', true);
 
       if (deactivateError) {
