@@ -208,7 +208,7 @@ export function detectCSVDelimiter(text: string): string {
   return bestDelimiter;
 }
 
-// Parse CSV with intelligent delimiter detection
+// Enhanced CSV parsing to prevent column merging issues
 export function parseCSV(text: string, delimiter?: string): { headers: string[]; rows: string[][] } {
   const detectedDelimiter = delimiter || detectCSVDelimiter(text);
   const lines = text.split('\n').filter(line => line.trim());
@@ -217,11 +217,20 @@ export function parseCSV(text: string, delimiter?: string): { headers: string[];
     const result: string[] = [];
     let current = '';
     let inQuotes = false;
+    let quoteCount = 0;
     
     for (let i = 0; i < line.length; i++) {
       const char = line[i];
+      
       if (char === '"') {
-        inQuotes = !inQuotes;
+        quoteCount++;
+        // Handle escaped quotes
+        if (i + 1 < line.length && line[i + 1] === '"') {
+          current += '"';
+          i++; // Skip next quote
+        } else {
+          inQuotes = !inQuotes;
+        }
       } else if (char === detectedDelimiter && !inQuotes) {
         result.push(current.trim());
         current = '';
@@ -230,7 +239,15 @@ export function parseCSV(text: string, delimiter?: string): { headers: string[];
       }
     }
     result.push(current.trim());
-    return result.map(field => field.replace(/^"|"$/g, ''));
+    
+    // Clean fields by removing outer quotes only if they wrap the entire field
+    return result.map(field => {
+      const trimmed = field.trim();
+      if (trimmed.length >= 2 && trimmed.startsWith('"') && trimmed.endsWith('"')) {
+        return trimmed.slice(1, -1).replace(/""/g, '"'); // Handle escaped quotes
+      }
+      return trimmed;
+    });
   };
   
   const headers = parseCSVLine(lines[0]);
@@ -403,11 +420,22 @@ export async function processExcelFile(file: File): Promise<FilePreview> {
     const dataRows = jsonData.slice(headerRowIndex + 1);
     const allRows = dataRows.map(row => {
       if (!Array.isArray(row)) return [];
-      // Keep original values (don't convert to string yet) for accurate preview
-      return row.map(cell => {
-        if (cell === null || cell === undefined) return '';
-        return cell; // Keep original type
-      });
+      
+      // Enhanced handling to prevent column merging - ensure consistent column count
+      const processedRow = [];
+      const maxColumns = headers.length;
+      
+      for (let i = 0; i < maxColumns; i++) {
+        const cell = row[i];
+        if (cell === null || cell === undefined) {
+          processedRow.push('');
+        } else {
+          // Keep original value but ensure it's handled correctly
+          processedRow.push(cell);
+        }
+      }
+      
+      return processedRow;
     });
     
     // Create original row numbers for data rows

@@ -24,6 +24,7 @@ interface AccountRow {
   account_name: string;
   balance_current_year?: number;
   balance_last_year?: number;
+  regnskapsnr?: string; // Optional imported accounting number for automatic mapping
 }
 
 interface TrialBalanceUploaderProps {
@@ -223,6 +224,66 @@ const TrialBalanceUploader = ({ clientId, onUploadComplete }: TrialBalanceUpload
 
       setUploadProgress(40);
 
+      // Auto-mapping phase using imported regnskapsnr if available
+      console.log('=== AUTO-MAPPING PHASE ===');
+      let autoMappingResults = { mapped: 0, failed: 0, skipped: 0 };
+      
+      for (const account of accounts) {
+        const accountNumber = account.account_number?.toString();
+        const accountId = accountMapping.get(accountNumber);
+        const regnskapsnr = account.regnskapsnr?.toString().trim();
+        
+        if (!accountId || !regnskapsnr) {
+          autoMappingResults.skipped++;
+          continue;
+        }
+        
+        try {
+          // Look up standard account by regnskapsnr
+          const { data: standardAccount, error: standardError } = await supabase
+            .from('standard_accounts')
+            .select('id, standard_number, standard_name')
+            .eq('standard_number', regnskapsnr)
+            .maybeSingle();
+            
+          if (standardError) {
+            console.warn(`Error looking up standard account ${regnskapsnr}:`, standardError);
+            autoMappingResults.failed++;
+            continue;
+          }
+          
+          if (standardAccount) {
+            // Create or update trial balance mapping
+            const { error: mappingError } = await supabase
+              .from('trial_balance_mappings')
+              .upsert({
+                client_id: clientId,
+                account_number: accountNumber,
+                statement_line_number: standardAccount.standard_number
+              }, {
+                onConflict: 'client_id,account_number'
+              });
+              
+            if (mappingError) {
+              console.warn(`Error creating mapping for ${accountNumber} -> ${regnskapsnr}:`, mappingError);
+              autoMappingResults.failed++;
+            } else {
+              console.log(`✅ Auto-mapped ${accountNumber} -> ${regnskapsnr} (${standardAccount.standard_name})`);
+              autoMappingResults.mapped++;
+            }
+          } else {
+            console.log(`⚠️ Standard account not found for regnskapsnr: ${regnskapsnr}`);
+            autoMappingResults.failed++;
+          }
+        } catch (error) {
+          console.error(`Exception during auto-mapping for ${accountNumber}:`, error);
+          autoMappingResults.failed++;
+        }
+      }
+      
+      console.log('=== AUTO-MAPPING RESULTS ===');
+      console.log(`Mapped: ${autoMappingResults.mapped}, Failed: ${autoMappingResults.failed}, Skipped: ${autoMappingResults.skipped}`);
+      
       // Now insert trial balance data
       let trialBalanceInserted = 0;
       const currentYear = new Date().getFullYear();
@@ -404,7 +465,13 @@ const TrialBalanceUploader = ({ clientId, onUploadComplete }: TrialBalanceUpload
       setUploadProgress(100);
       setStep('mapping');
       
-      toast.success(`${trialBalanceInserted} saldobalanse-poster (${finalVersion}) og ${chartOfAccountsCreated} nye kontoer ble importert for ${accountingYear}`);
+      // Enhanced success message with auto-mapping results
+      let successMessage = `${trialBalanceInserted} saldobalanse-poster (${finalVersion}) og ${chartOfAccountsCreated} nye kontoer ble importert for ${accountingYear}`;
+      if (autoMappingResults.mapped > 0) {
+        successMessage += `. ${autoMappingResults.mapped} kontoer ble automatisk mappet til regnskapslinjer`;
+      }
+      
+      toast.success(successMessage);
       // Don't call onUploadComplete here - wait for mapping to complete
       
     } catch (error: any) {
