@@ -2,21 +2,50 @@ import React from 'react';
 import { Widget } from '@/contexts/WidgetManagerContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer } from 'recharts';
+import { useTrialBalanceWithMappings } from '@/hooks/useTrialBalanceWithMappings';
+import { useFiscalYear } from '@/contexts/FiscalYearContext';
 
 interface ChartWidgetProps {
   widget: Widget;
 }
 
 export function ChartWidget({ widget }: ChartWidgetProps) {
-  // Mock data - will be connected to real data sources later
-  const mockData = [
-    { month: 'Jan', value: 400 },
-    { month: 'Feb', value: 300 },
-    { month: 'Mar', value: 600 },
-    { month: 'Apr', value: 800 },
-    { month: 'May', value: 500 },
-    { month: 'Jun', value: 700 },
-  ];
+  const { selectedFiscalYear } = useFiscalYear();
+  const clientId = widget.config?.clientId;
+  
+  const { data: trialBalanceData, isLoading } = useTrialBalanceWithMappings(
+    clientId, 
+    selectedFiscalYear
+  );
+
+  const chartData = React.useMemo(() => {
+    if (!trialBalanceData?.standardAccountBalances) {
+      return [];
+    }
+
+    // Get top 6 standard accounts by balance for chart
+    return trialBalanceData.standardAccountBalances
+      .filter(account => Math.abs(account.total_balance) > 0)
+      .sort((a, b) => Math.abs(b.total_balance) - Math.abs(a.total_balance))
+      .slice(0, 6)
+      .map(account => ({
+        name: account.standard_name.slice(0, 10), // Truncate long names
+        value: Math.abs(account.total_balance) / 1000 // Convert to thousands
+      }));
+  }, [trialBalanceData]);
+
+  if (isLoading) {
+    return (
+      <Card className="h-full">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium">{widget.title}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-sm text-muted-foreground">Laster data...</div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="h-full">
@@ -25,9 +54,9 @@ export function ChartWidget({ widget }: ChartWidgetProps) {
       </CardHeader>
       <CardContent className="pt-2">
         <ResponsiveContainer width="100%" height={120}>
-          <BarChart data={mockData}>
+          <BarChart data={chartData}>
             <XAxis 
-              dataKey="month" 
+              dataKey="name" 
               axisLine={false}
               tickLine={false}
               tick={{ fontSize: 10 }}

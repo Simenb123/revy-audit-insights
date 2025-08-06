@@ -7,6 +7,9 @@ import StickyClientLayout from '@/components/Layout/StickyClientLayout';
 import ClientNavigation from '@/components/Clients/ClientDetails/ClientNavigation';
 import AccountingExplorer from '@/components/DataAnalysis/AccountingExplorer';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { BarChart3, Database } from 'lucide-react';
+import ReportBuilder from '@/components/ReportBuilder/ReportBuilder';
 
 const AnalysisPage = () => {
   const { clientId } = useParams<{ clientId: string }>();
@@ -65,7 +68,26 @@ const AnalysisPage = () => {
               </p>
             </div>
             
-            <AccountingExplorer clientId={client.id} />
+            <Tabs defaultValue="data" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="data" className="flex items-center gap-2">
+                  <Database className="h-4 w-4" />
+                  Dataanalyse
+                </TabsTrigger>
+                <TabsTrigger value="reports" className="flex items-center gap-2">
+                  <BarChart3 className="h-4 w-4" />
+                  Rapportbygger
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="data" className="mt-6">
+                <AccountingExplorer clientId={client.id} />
+              </TabsContent>
+              
+              <TabsContent value="reports" className="mt-6">
+                <ReportBuilder clientId={client.id} />
+              </TabsContent>
+            </Tabs>
           </div>
         </div>
       </div>

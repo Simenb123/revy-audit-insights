@@ -7,7 +7,11 @@ import 'react-resizable/css/styles.css';
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
 
-export function DashboardCanvas() {
+interface DashboardCanvasProps {
+  clientId: string;
+}
+
+export function DashboardCanvas({ clientId }: DashboardCanvasProps) {
   const { widgets, layouts, updateLayout } = useWidgetManager();
 
   const handleLayoutChange = (layout: Layout[]) => {
@@ -50,7 +54,7 @@ export function DashboardCanvas() {
       >
         {widgets.map(widget => (
           <div key={widget.id} className="bg-card border rounded-lg shadow-sm">
-            <WidgetRenderer widget={widget} />
+            <WidgetRenderer widget={{ ...widget, config: { ...widget.config, clientId } }} />
           </div>
         ))}
       </ResponsiveGridLayout>
