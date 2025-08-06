@@ -28,7 +28,7 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
   const [showLoadDialog, setShowLoadDialog] = useState(false);
   const [selectedVersion, setSelectedVersion] = useState<string>('');
   
-  const { widgets, layouts, addWidget, removeWidget, updateLayout, clearWidgets, setWidgets, setLayouts } = useWidgetManager();
+  const { widgets, layouts, addWidget, removeWidget, updateLayout, clearWidgets, setWidgets, setLayouts, loadFromStorage } = useWidgetManager();
   const { reports, loading, saveReport, deleteReport } = useClientReports(clientId);
   
   // Fetch available trial balance versions
@@ -40,6 +40,11 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
       setSelectedVersion(versionOptions[0].version);
     }
   }, [versionOptions, selectedVersion]);
+
+  // Load any persisted widgets/layouts on mount
+  useEffect(() => {
+    loadFromStorage();
+  }, [loadFromStorage]);
 
   const handleSaveReport = async (reportName: string, description?: string) => {
     try {

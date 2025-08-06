@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { useWidgetPersistence } from '@/hooks/useWidgetPersistence';
 
 export interface WidgetLayout {
   i: string;
@@ -27,6 +28,7 @@ interface WidgetManagerContextType {
   clearWidgets: () => void;
   setWidgets: (widgets: Widget[]) => void;
   setLayouts: (layouts: WidgetLayout[]) => void;
+  loadFromStorage: () => boolean;
 }
 
 const WidgetManagerContext = createContext<WidgetManagerContextType | undefined>(undefined);
@@ -34,6 +36,7 @@ const WidgetManagerContext = createContext<WidgetManagerContextType | undefined>
 export function WidgetManagerProvider({ children }: { children: React.ReactNode }) {
   const [widgets, setWidgets] = useState<Widget[]>([]);
   const [layouts, setLayouts] = useState<WidgetLayout[]>([]);
+  const { load, save, clear } = useWidgetPersistence();
 
   const addWidget = useCallback((widget: Widget, layout: WidgetLayout) => {
     setWidgets(prev => [...prev, widget]);
@@ -56,7 +59,22 @@ export function WidgetManagerProvider({ children }: { children: React.ReactNode 
   const clearWidgets = useCallback(() => {
     setWidgets([]);
     setLayouts([]);
-  }, []);
+    clear();
+  }, [clear]);
+
+  const loadFromStorage = useCallback(() => {
+    const state = load();
+    if (state) {
+      setWidgets(state.widgets);
+      setLayouts(state.layouts);
+      return true;
+    }
+    return false;
+  }, [load]);
+
+  useEffect(() => {
+    save(widgets, layouts);
+  }, [widgets, layouts, save]);
 
   return (
     <WidgetManagerContext.Provider value={{
@@ -69,6 +87,7 @@ export function WidgetManagerProvider({ children }: { children: React.ReactNode 
       clearWidgets,
       setWidgets,
       setLayouts,
+      loadFromStorage,
     }}>
       {children}
     </WidgetManagerContext.Provider>
