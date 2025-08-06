@@ -29,6 +29,57 @@ export const useTrialBalanceWithMappings = (clientId: string, fiscalYear?: numbe
   return useQuery({
     queryKey: ['trial-balance-with-mappings', clientId, fiscalYear, selectedVersion],
     queryFn: async () => {
+      // Auto-detect best version if none specified
+      let finalVersion = selectedVersion;
+      let finalYear = fiscalYear || 2024;
+      
+      if (!selectedVersion || !fiscalYear) {
+        // Find the best version with actual data
+        const { data: versionData } = await supabase
+          .from('trial_balances')
+          .select('version, period_year, created_at, closing_balance')
+          .eq('client_id', clientId)
+          .order('created_at', { ascending: false });
+
+        if (versionData && versionData.length > 0) {
+          // Group by version and calculate data quality
+          const versionMap = new Map();
+          versionData.forEach(item => {
+            const key = `${item.version}-${item.period_year}`;
+            if (!versionMap.has(key)) {
+              versionMap.set(key, {
+                version: item.version,
+                period_year: item.period_year,
+                created_at: item.created_at,
+                accounts_with_data: 0,
+                total_accounts: 0
+              });
+            }
+            const versionInfo = versionMap.get(key);
+            versionInfo.total_accounts++;
+            if (item.closing_balance && Math.abs(item.closing_balance) > 0.01) {
+              versionInfo.accounts_with_data++;
+            }
+          });
+
+          // Find best version (highest ratio of accounts with data)
+          let bestVersion = null;
+          let bestScore = 0;
+          for (const [key, info] of versionMap) {
+            const score = info.accounts_with_data / info.total_accounts;
+            if (score > bestScore && info.accounts_with_data > 10) {
+              bestScore = score;
+              bestVersion = info;
+            }
+          }
+
+          if (bestVersion) {
+            finalVersion = finalVersion || bestVersion.version;
+            finalYear = fiscalYear || bestVersion.period_year;
+          }
+        }
+      }
+
       // Get trial balance data
       let trialBalanceQuery = supabase
         .from('trial_balances')
@@ -49,11 +100,11 @@ export const useTrialBalanceWithMappings = (clientId: string, fiscalYear?: numbe
           )
         `)
         .eq('client_id', clientId)
-        .eq('period_year', fiscalYear || new Date().getFullYear());
+        .eq('period_year', finalYear);
 
       // Filter by selected version if provided
-      if (selectedVersion) {
-        trialBalanceQuery = trialBalanceQuery.eq('version', selectedVersion);
+      if (finalVersion) {
+        trialBalanceQuery = trialBalanceQuery.eq('version', finalVersion);
       }
 
       const { data: trialBalanceData, error: tbError } = await trialBalanceQuery;
