@@ -44,6 +44,56 @@ export type Database = {
         }
         Relationships: []
       }
+      account_classifications: {
+        Row: {
+          account_number: string
+          applied_at: string
+          applied_by: string | null
+          classification_type: string
+          client_id: string
+          id: string
+          is_active: boolean
+          metadata: Json | null
+          new_category: string
+          original_category: string
+          version_id: string | null
+        }
+        Insert: {
+          account_number: string
+          applied_at?: string
+          applied_by?: string | null
+          classification_type?: string
+          client_id: string
+          id?: string
+          is_active?: boolean
+          metadata?: Json | null
+          new_category: string
+          original_category: string
+          version_id?: string | null
+        }
+        Update: {
+          account_number?: string
+          applied_at?: string
+          applied_by?: string | null
+          classification_type?: string
+          client_id?: string
+          id?: string
+          is_active?: boolean
+          metadata?: Json | null
+          new_category?: string
+          original_category?: string
+          version_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_classifications_version_id_fkey"
+            columns: ["version_id"]
+            isOneToOne: false
+            referencedRelation: "accounting_data_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       account_custom_attributes: {
         Row: {
           attribute_name: string

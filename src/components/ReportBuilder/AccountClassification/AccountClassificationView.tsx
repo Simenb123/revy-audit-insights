@@ -1,69 +1,45 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Loader2 } from "lucide-react";
 import { useTrialBalanceWithMappings } from '@/hooks/useTrialBalanceWithMappings';
 import { useFirmStandardAccounts } from '@/hooks/useFirmStandardAccounts';
-import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
-import { FileText, TrendingUp, TrendingDown, DollarSign, Building } from 'lucide-react';
-import { convertAccountType } from '@/utils/accountTypeMapping';
+import { useAccountClassifications, useSaveAccountClassification, useBulkSaveAccountClassifications } from '@/hooks/useAccountClassifications';
+import { ClassificationConfirmationDialog } from './ClassificationConfirmationDialog';
 
 interface AccountClassificationViewProps {
   clientId: string;
-  selectedVersion: string;
+  selectedVersion?: string;
   selectedFiscalYear: number;
 }
 
 interface GroupedAccount {
-  id: string;
   account_number: string;
   account_name: string;
   closing_balance: number;
-  current_category?: string;
-  standard_account_id?: string;
+  current_category: string;
 }
 
 interface CategoryGroup {
-  id: string;
-  name: string;
-  display_name: string;
-  icon: React.ReactNode;
-  color: string;
+  title: string;
   accounts: GroupedAccount[];
+  color: string;
 }
 
-const getCategoryIcon = (category: string) => {
-  switch (category) {
-    case 'eiendeler':
-      return <Building className="h-4 w-4" />;
-    case 'gjeld':
-      return <TrendingDown className="h-4 w-4" />;
-    case 'egenkapital':
-      return <DollarSign className="h-4 w-4" />;
-    case 'resultat':
-      return <TrendingUp className="h-4 w-4" />;
-    default:
-      return <FileText className="h-4 w-4" />;
-  }
-};
+export function AccountClassificationView({ 
+  clientId, 
+  selectedVersion, 
+  selectedFiscalYear 
+}: AccountClassificationViewProps) {
+  const [groupedCategories, setGroupedCategories] = useState<{ [key: string]: CategoryGroup }>({});
+  const [pendingClassification, setPendingClassification] = useState<{
+    account: GroupedAccount;
+    fromCategory: string;
+    toCategory: string;
+    dropResult: DropResult;
+  } | null>(null);
 
-const getCategoryColor = (category: string) => {
-  switch (category) {
-    case 'eiendeler':
-      return 'bg-blue-50 border-blue-200 text-blue-800';
-    case 'gjeld':
-      return 'bg-red-50 border-red-200 text-red-800';
-    case 'egenkapital':
-      return 'bg-green-50 border-green-200 text-green-800';
-    case 'resultat':
-      return 'bg-purple-50 border-purple-200 text-purple-800';
-    default:
-      return 'bg-gray-50 border-gray-200 text-gray-800';
-  }
-};
-
-export function AccountClassificationView({ clientId, selectedVersion, selectedFiscalYear }: AccountClassificationViewProps) {
   const { data: trialBalanceData, isLoading: tbLoading } = useTrialBalanceWithMappings(
     clientId, 
     selectedFiscalYear, 
@@ -72,140 +48,244 @@ export function AccountClassificationView({ clientId, selectedVersion, selectedF
   
   const { data: standardAccounts, isLoading: saLoading } = useFirmStandardAccounts();
   
-  const [groupedCategories, setGroupedCategories] = useState<CategoryGroup[]>([]);
+  const { data: existingClassifications } = useAccountClassifications(clientId, selectedVersion);
+  const saveClassification = useSaveAccountClassification();
+  const bulkSaveClassifications = useBulkSaveAccountClassifications();
 
-  React.useEffect(() => {
-    if (!trialBalanceData?.trialBalanceEntries || !standardAccounts) return;
+  const isLoading = tbLoading || saLoading;
 
-    // Group accounts by their current category (account type)
-    const accountsByCategory = new Map<string, GroupedAccount[]>();
-    
-    trialBalanceData.trialBalanceEntries.forEach(entry => {
-      // Determine category based on account number range or existing mapping
-      let category = 'ukjent';
-      
-      if (entry.standard_account_id) {
-        const standardAccount = standardAccounts.find((sa: any) => sa.id === entry.standard_account_id);
-        if (standardAccount) {
-          category = convertAccountType(standardAccount.account_type);
-        }
-      } else {
-        // Fallback to account number range classification
-        const accountNum = parseInt(entry.account_number);
-        if (accountNum >= 1000 && accountNum < 2000) category = 'eiendeler';
-        else if (accountNum >= 2000 && accountNum < 3000) category = 'gjeld';
-        else if (accountNum >= 2000 && accountNum < 2100) category = 'egenkapital';
-        else if (accountNum >= 3000 && accountNum < 9000) category = 'resultat';
-      }
+  // Group accounts into categories based on their standard_account_id or account number
+  useEffect(() => {
+    if (!trialBalanceData || !standardAccounts) return;
 
-      const account: GroupedAccount = {
-        id: entry.id,
-        account_number: entry.account_number,
-        account_name: entry.account_name,
-        closing_balance: entry.closing_balance,
-        current_category: category,
-        standard_account_id: entry.standard_account_id
-      };
+    const categories: { [key: string]: CategoryGroup } = {
+      'Eiendeler': { title: 'Eiendeler', accounts: [], color: 'bg-blue-50' },
+      'Gjeld': { title: 'Gjeld', accounts: [], color: 'bg-red-50' },
+      'Egenkapital': { title: 'Egenkapital', accounts: [], color: 'bg-green-50' },
+      'Resultater': { title: 'Resultater', accounts: [], color: 'bg-purple-50' },
+    };
 
-      if (!accountsByCategory.has(category)) {
-        accountsByCategory.set(category, []);
-      }
-      accountsByCategory.get(category)!.push(account);
+    // Create a map of existing classifications
+    const classificationMap = new Map<string, string>();
+    existingClassifications?.forEach(classification => {
+      classificationMap.set(classification.account_number, classification.new_category);
     });
 
-    // Create category groups
-    const categories: CategoryGroup[] = [
-      {
-        id: 'eiendeler',
-        name: 'eiendeler',
-        display_name: 'Eiendeler',
-        icon: getCategoryIcon('eiendeler'),
-        color: getCategoryColor('eiendeler'),
-        accounts: accountsByCategory.get('eiendeler') || []
-      },
-      {
-        id: 'gjeld',
-        name: 'gjeld', 
-        display_name: 'Gjeld',
-        icon: getCategoryIcon('gjeld'),
-        color: getCategoryColor('gjeld'),
-        accounts: accountsByCategory.get('gjeld') || []
-      },
-      {
-        id: 'egenkapital',
-        name: 'egenkapital',
-        display_name: 'Egenkapital',
-        icon: getCategoryIcon('egenkapital'),
-        color: getCategoryColor('egenkapital'),
-        accounts: accountsByCategory.get('egenkapital') || []
-      },
-      {
-        id: 'resultat',
-        name: 'resultat',
-        display_name: 'Resultat',
-        icon: getCategoryIcon('resultat'),
-        color: getCategoryColor('resultat'),
-        accounts: accountsByCategory.get('resultat') || []
-      },
-      {
-        id: 'ukjent',
-        name: 'ukjent',
-        display_name: 'Uklassifisert',
-        icon: getCategoryIcon('ukjent'),
-        color: getCategoryColor('ukjent'),
-        accounts: accountsByCategory.get('ukjent') || []
+    trialBalanceData.trialBalanceEntries.forEach((item: any) => {
+      if (!item.account_number || !item.account_name) return;
+
+      const account: GroupedAccount = {
+        account_number: item.account_number,
+        account_name: item.account_name,
+        closing_balance: item.closing_balance || 0,
+        current_category: 'Ukategorisert',
+      };
+
+      // Check if there's an existing classification for this account
+      const existingCategory = classificationMap.get(item.account_number);
+      if (existingCategory && categories[existingCategory]) {
+        account.current_category = existingCategory;
+        categories[existingCategory].accounts.push(account);
+        return;
       }
-    ];
+
+      // Try to find category based on standard_account_id mapping
+      if (item.standard_account_id) {
+        const standardAccount = standardAccounts.find((sa: any) => sa.id === item.standard_account_id);
+        if (standardAccount) {
+          if (standardAccount.account_type === 'asset') {
+            account.current_category = 'Eiendeler';
+            categories['Eiendeler'].accounts.push(account);
+          } else if (standardAccount.account_type === 'liability') {
+            account.current_category = 'Gjeld';
+            categories['Gjeld'].accounts.push(account);
+          } else if (standardAccount.account_type === 'equity') {
+            account.current_category = 'Egenkapital';
+            categories['Egenkapital'].accounts.push(account);
+          } else if (standardAccount.account_type === 'income' || standardAccount.account_type === 'expense') {
+            account.current_category = 'Resultater';
+            categories['Resultater'].accounts.push(account);
+          }
+          return;
+        }
+      }
+
+      // Fallback: categorize based on account number ranges
+      const accountNum = parseInt(item.account_number);
+      if (accountNum >= 1000 && accountNum <= 1999) {
+        account.current_category = 'Eiendeler';
+        categories['Eiendeler'].accounts.push(account);
+      } else if (accountNum >= 2000 && accountNum <= 2999) {
+        account.current_category = 'Gjeld';
+        categories['Gjeld'].accounts.push(account);
+      } else if (accountNum >= 3000 && accountNum <= 3999) {
+        account.current_category = 'Egenkapital';
+        categories['Egenkapital'].accounts.push(account);
+      } else if (accountNum >= 4000 && accountNum <= 8999) {
+        account.current_category = 'Resultater';
+        categories['Resultater'].accounts.push(account);
+      } else {
+        // Default category for unknown accounts
+        if (!categories['Ukategorisert']) {
+          categories['Ukategorisert'] = { title: 'Ukategorisert', accounts: [], color: 'bg-gray-50' };
+        }
+        categories['Ukategorisert'].accounts.push(account);
+      }
+    });
 
     setGroupedCategories(categories);
-  }, [trialBalanceData, standardAccounts]);
+  }, [trialBalanceData, standardAccounts, existingClassifications]);
 
   const handleDragEnd = (result: DropResult) => {
     const { destination, source, draggableId } = result;
 
-    if (!destination) return;
-    if (destination.droppableId === source.droppableId && destination.index === source.index) return;
+    // Check if dropped outside a valid area
+    if (!destination) {
+      return;
+    }
 
-    // Find the account being moved
-    const sourceCategory = groupedCategories.find(cat => cat.id === source.droppableId);
-    const destCategory = groupedCategories.find(cat => cat.id === destination.droppableId);
-    
-    if (!sourceCategory || !destCategory) return;
+    // Check if dropped in the same position
+    if (
+      destination.droppableId === source.droppableId &&
+      destination.index === source.index
+    ) {
+      return;
+    }
 
-    const account = sourceCategory.accounts.find(acc => acc.id === draggableId);
-    if (!account) return;
+    const sourceCategory = source.droppableId;
+    const destinationCategory = destination.droppableId;
 
-    // Update the categories
-    const newCategories = groupedCategories.map(category => {
-      if (category.id === source.droppableId) {
-        // Remove from source
-        return {
-          ...category,
-          accounts: category.accounts.filter(acc => acc.id !== draggableId)
-        };
-      } else if (category.id === destination.droppableId) {
-        // Add to destination
-        const newAccounts = [...category.accounts];
-        const updatedAccount = { ...account, current_category: category.name };
-        newAccounts.splice(destination.index, 0, updatedAccount);
-        return {
-          ...category,
-          accounts: newAccounts
-        };
-      }
-      return category;
+    // Find the account that was dragged
+    const sourceAccounts = groupedCategories[sourceCategory]?.accounts || [];
+    const draggedAccount = sourceAccounts.find(acc => 
+      `${acc.account_number}-${acc.account_name}` === draggableId
+    );
+
+    if (!draggedAccount) return;
+
+    // Store pending classification for confirmation
+    setPendingClassification({
+      account: draggedAccount,
+      fromCategory: sourceCategory,
+      toCategory: destinationCategory,
+      dropResult: result,
     });
-
-    setGroupedCategories(newCategories);
-    
-    // TODO: Show confirmation dialog and save changes
-    console.log(`Moving account ${account.account_number} from ${sourceCategory.display_name} to ${destCategory.display_name}`);
   };
 
-  if (tbLoading || saLoading) {
+  const handleConfirmClassification = (options: {
+    applySimilar: boolean;
+    saveAsRule: boolean;
+  }) => {
+    if (!pendingClassification) return;
+
+    const { account, fromCategory, toCategory, dropResult } = pendingClassification;
+
+    // Apply the visual change immediately
+    applyVisualClassification(dropResult);
+
+    // Prepare classification data
+    const baseClassification = {
+      client_id: clientId,
+      account_number: account.account_number,
+      original_category: fromCategory,
+      new_category: toCategory,
+      classification_type: options.applySimilar ? 'bulk' as const : 'manual' as const,
+      version_id: selectedVersion,
+      is_active: true,
+      metadata: {
+        account_name: account.account_name,
+        closing_balance: account.closing_balance,
+        save_as_rule: options.saveAsRule,
+      },
+    };
+
+    if (options.applySimilar) {
+      // Find similar accounts to classify in bulk
+      const accountPrefix = account.account_number.substring(0, 2);
+      const similarAccounts = Object.values(groupedCategories)
+        .flatMap(category => category.accounts)
+        .filter(acc => 
+          acc.account_number.startsWith(accountPrefix) && 
+          acc.current_category === fromCategory
+        );
+
+      const bulkClassifications = similarAccounts.map(acc => ({
+        ...baseClassification,
+        account_number: acc.account_number,
+        is_active: true,
+        metadata: {
+          ...baseClassification.metadata,
+          account_name: acc.account_name,
+          closing_balance: acc.closing_balance,
+        },
+      }));
+
+      bulkSaveClassifications.mutate(bulkClassifications);
+    } else {
+      saveClassification.mutate(baseClassification);
+    }
+
+    setPendingClassification(null);
+  };
+
+  const applyVisualClassification = (result: DropResult) => {
+    const { destination, source, draggableId } = result;
+    
+    if (!destination) return;
+
+    const sourceCategory = source.droppableId;
+    const destinationCategory = destination.droppableId;
+
+    // Find the account that was dragged
+    const sourceAccounts = groupedCategories[sourceCategory]?.accounts || [];
+    const draggedAccount = sourceAccounts.find(acc => 
+      `${acc.account_number}-${acc.account_name}` === draggableId
+    );
+
+    if (!draggedAccount) return;
+
+    // Create a copy of the current state
+    const newCategories = { ...groupedCategories };
+
+    // Remove from source
+    newCategories[sourceCategory] = {
+      ...newCategories[sourceCategory],
+      accounts: sourceAccounts.filter(acc => 
+        `${acc.account_number}-${acc.account_name}` !== draggableId
+      )
+    };
+
+    // Add to destination
+    const destinationAccounts = [...(newCategories[destinationCategory]?.accounts || [])];
+    const updatedAccount = { ...draggedAccount, current_category: destinationCategory };
+    destinationAccounts.splice(destination.index, 0, updatedAccount);
+
+    newCategories[destinationCategory] = {
+      ...newCategories[destinationCategory],
+      accounts: destinationAccounts
+    };
+
+    // Update state
+    setGroupedCategories(newCategories);
+  };
+
+  const getAllAccounts = () => {
+    return Object.values(groupedCategories).flatMap(category => category.accounts);
+  };
+
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-muted-foreground">Laster kontoklassifisering...</div>
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <span className="ml-2">Laster kontoklassifisering...</span>
+      </div>
+    );
+  }
+
+  if (!trialBalanceData || !trialBalanceData.trialBalanceEntries || trialBalanceData.trialBalanceEntries.length === 0) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-muted-foreground">Ingen regnskapsdata funnet for valgt periode.</p>
       </div>
     );
   }
@@ -220,45 +300,48 @@ export function AccountClassificationView({ clientId, selectedVersion, selectedF
       </div>
 
       <DragDropContext onDragEnd={handleDragEnd}>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-          {groupedCategories.map((category) => (
-            <Card key={category.id} className="h-fit">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {Object.entries(groupedCategories).map(([categoryName, category]) => (
+            <Card key={categoryName} className="h-fit">
               <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-sm">
-                  {category.icon}
-                  {category.display_name}
-                  <Badge variant="secondary" className="ml-auto">
+                <CardTitle className="flex items-center justify-between">
+                  <span>{category.title}</span>
+                  <Badge variant="secondary">
                     {category.accounts.length}
                   </Badge>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="pt-0">
-                <Droppable droppableId={category.id}>
+              <CardContent>
+                <Droppable droppableId={categoryName}>
                   {(provided, snapshot) => (
                     <div
                       ref={provided.innerRef}
                       {...provided.droppableProps}
-                      className={`min-h-[200px] max-h-[400px] overflow-y-auto space-y-2 p-2 rounded-md border-2 border-dashed transition-colors ${
+                      className={`min-h-[200px] max-h-[400px] overflow-y-auto space-y-2 p-4 border-2 border-dashed rounded-lg transition-colors ${
                         snapshot.isDraggingOver 
                           ? 'border-primary bg-primary/5' 
-                          : 'border-border bg-background'
-                      }`}
+                          : 'border-border'
+                      } ${category.color}`}
                     >
                       {category.accounts.map((account, index) => (
-                        <Draggable key={account.id} draggableId={account.id} index={index}>
+                        <Draggable 
+                          key={`${account.account_number}-${account.account_name}`} 
+                          draggableId={`${account.account_number}-${account.account_name}`} 
+                          index={index}
+                        >
                           {(provided, snapshot) => (
                             <div
                               ref={provided.innerRef}
                               {...provided.draggableProps}
                               {...provided.dragHandleProps}
-                              className={`p-3 rounded-md border bg-card text-card-foreground transition-all cursor-move ${
+                              className={`p-3 bg-white border rounded-md shadow-sm cursor-move transition-all ${
                                 snapshot.isDragging 
-                                  ? 'shadow-lg scale-105 rotate-2' 
+                                  ? 'shadow-lg rotate-3 scale-105' 
                                   : 'hover:shadow-md'
                               }`}
                             >
-                              <div className="flex justify-between items-start gap-2">
-                                <div className="min-w-0 flex-1">
+                              <div className="flex justify-between items-start">
+                                <div className="flex-1 min-w-0">
                                   <div className="font-medium text-sm">
                                     {account.account_number}
                                   </div>
@@ -266,13 +349,8 @@ export function AccountClassificationView({ clientId, selectedVersion, selectedF
                                     {account.account_name}
                                   </div>
                                 </div>
-                                <div className="text-xs font-mono text-right">
-                                  {account.closing_balance.toLocaleString('nb-NO', {
-                                    style: 'currency',
-                                    currency: 'NOK',
-                                    minimumFractionDigits: 0,
-                                    maximumFractionDigits: 0
-                                  })}
+                                <div className="text-xs font-mono ml-2">
+                                  {account.closing_balance.toLocaleString('nb-NO')} kr
                                 </div>
                               </div>
                             </div>
@@ -282,7 +360,7 @@ export function AccountClassificationView({ clientId, selectedVersion, selectedF
                       {provided.placeholder}
                       {category.accounts.length === 0 && (
                         <div className="flex items-center justify-center h-32 text-muted-foreground text-sm">
-                          Ingen kontoer
+                          Ingen kontoer i denne kategorien
                         </div>
                       )}
                     </div>
@@ -293,6 +371,16 @@ export function AccountClassificationView({ clientId, selectedVersion, selectedF
           ))}
         </div>
       </DragDropContext>
+
+      <ClassificationConfirmationDialog
+        isOpen={!!pendingClassification}
+        onClose={() => setPendingClassification(null)}
+        onConfirm={handleConfirmClassification}
+        account={pendingClassification?.account || null}
+        fromCategory={pendingClassification?.fromCategory || ''}
+        toCategory={pendingClassification?.toCategory || ''}
+        similarAccounts={getAllAccounts()}
+      />
     </div>
   );
 }
