@@ -4,6 +4,7 @@ import { ReportBuilderContent } from './ReportBuilderContent';
 import { Card, CardContent } from '@/components/ui/card';
 import { useTrialBalanceWithMappings } from '@/hooks/useTrialBalanceWithMappings';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
+import { ClassificationProvider } from '@/contexts/ClassificationContext';
 
 interface ReportBuilderProps {
   clientId: string;
@@ -31,12 +32,14 @@ export default function ReportBuilder({ clientId }: ReportBuilderProps) {
   }
 
   return (
-    <WidgetManagerProvider>
-      <ReportBuilderContent 
-        clientId={clientId}
-        hasData={hasData}
-        selectedFiscalYear={selectedFiscalYear}
-      />
-    </WidgetManagerProvider>
+    <ClassificationProvider>
+      <WidgetManagerProvider>
+        <ReportBuilderContent 
+          clientId={clientId}
+          hasData={hasData}
+          selectedFiscalYear={selectedFiscalYear}
+        />
+      </WidgetManagerProvider>
+    </ClassificationProvider>
   );
 }

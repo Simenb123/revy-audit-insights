@@ -82,6 +82,9 @@ export function useSaveAccountClassification() {
       queryClient.invalidateQueries({ 
         queryKey: ['account-classifications', data.client_id] 
       });
+      queryClient.invalidateQueries({
+        queryKey: ['trial-balance-with-mappings', data.client_id],
+      });
       toast({
         title: "Klassifisering lagret",
         description: `Konto ${data.account_number} er klassifisert til ${data.new_category}`,
@@ -141,6 +144,9 @@ export function useBulkSaveAccountClassifications() {
       if (data.length > 0) {
         queryClient.invalidateQueries({ 
           queryKey: ['account-classifications', data[0].client_id] 
+        });
+        queryClient.invalidateQueries({
+          queryKey: ['trial-balance-with-mappings', data[0].client_id],
         });
         toast({
           title: "Bulk klassifisering lagret",
