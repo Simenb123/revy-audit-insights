@@ -12,6 +12,9 @@ interface ChartWidgetProps {
 export function ChartWidget({ widget }: ChartWidgetProps) {
   const { selectedFiscalYear } = useFiscalYear();
   const clientId = widget.config?.clientId;
+  const chartType = widget.config?.chartType || 'bar';
+  const maxDataPoints = widget.config?.maxDataPoints || 6;
+  const showValues = widget.config?.showValues !== false;
   
   const { data: trialBalanceData, isLoading } = useTrialBalanceWithMappings(
     clientId, 
@@ -23,16 +26,16 @@ export function ChartWidget({ widget }: ChartWidgetProps) {
       return [];
     }
 
-    // Get top 6 standard accounts by balance for chart
+    // Get top accounts by balance for chart
     return trialBalanceData.standardAccountBalances
       .filter(account => Math.abs(account.total_balance) > 0)
       .sort((a, b) => Math.abs(b.total_balance) - Math.abs(a.total_balance))
-      .slice(0, 6)
+      .slice(0, maxDataPoints)
       .map(account => ({
         name: account.standard_name.slice(0, 10), // Truncate long names
         value: Math.abs(account.total_balance) / 1000 // Convert to thousands
       }));
-  }, [trialBalanceData]);
+  }, [trialBalanceData, maxDataPoints]);
 
   if (isLoading) {
     return (

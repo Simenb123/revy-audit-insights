@@ -12,6 +12,9 @@ interface TableWidgetProps {
 export function TableWidget({ widget }: TableWidgetProps) {
   const { selectedFiscalYear } = useFiscalYear();
   const clientId = widget.config?.clientId;
+  const maxRows = widget.config?.maxRows || 10;
+  const sortBy = widget.config?.sortBy || 'balance';
+  const showPercentage = widget.config?.showPercentage !== false;
   
   const { data: trialBalanceData, isLoading } = useTrialBalanceWithMappings(
     clientId, 
@@ -23,17 +26,35 @@ export function TableWidget({ widget }: TableWidgetProps) {
       return [];
     }
 
-    // Get top 10 accounts by balance
-    return trialBalanceData.trialBalanceEntries
-      .filter(entry => Math.abs(entry.closing_balance) > 0)
-      .sort((a, b) => Math.abs(b.closing_balance) - Math.abs(a.closing_balance))
-      .slice(0, 10)
+    let sortedEntries = [...trialBalanceData.trialBalanceEntries]
+      .filter(entry => Math.abs(entry.closing_balance) > 0);
+
+    // Sort based on configuration
+    switch (sortBy) {
+      case 'name':
+        sortedEntries.sort((a, b) => a.account_name.localeCompare(b.account_name));
+        break;
+      case 'number':
+        sortedEntries.sort((a, b) => a.account_number.localeCompare(b.account_number));
+        break;
+      case 'balance':
+      default:
+        sortedEntries.sort((a, b) => Math.abs(b.closing_balance) - Math.abs(a.closing_balance));
+        break;
+    }
+
+    const totalBalance = sortedEntries.reduce((sum, entry) => sum + Math.abs(entry.closing_balance), 0);
+
+    return sortedEntries
+      .slice(0, maxRows)
       .map(entry => ({
         account: `${entry.account_number} - ${entry.account_name}`,
         balance: new Intl.NumberFormat('no-NO').format(entry.closing_balance),
-        percentage: '0%' // Calculate percentage later if needed
+        percentage: showPercentage && totalBalance > 0 
+          ? ((Math.abs(entry.closing_balance) / totalBalance) * 100).toFixed(1) + '%'
+          : '0%'
       }));
-  }, [trialBalanceData]);
+  }, [trialBalanceData, maxRows, sortBy, showPercentage]);
 
   if (isLoading) {
     return (
@@ -59,7 +80,7 @@ export function TableWidget({ widget }: TableWidgetProps) {
             <TableRow>
               <TableHead className="text-xs">Konto</TableHead>
               <TableHead className="text-xs text-right">Saldo</TableHead>
-              <TableHead className="text-xs text-right">%</TableHead>
+              {showPercentage && <TableHead className="text-xs text-right">%</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -67,11 +88,11 @@ export function TableWidget({ widget }: TableWidgetProps) {
               <TableRow key={index} className="text-xs">
                 <TableCell className="font-medium">{row.account}</TableCell>
                 <TableCell className="text-right">{row.balance}</TableCell>
-                <TableCell className="text-right">{row.percentage}</TableCell>
+                {showPercentage && <TableCell className="text-right">{row.percentage}</TableCell>}
               </TableRow>
             )) : (
               <TableRow>
-                <TableCell colSpan={3} className="text-center text-muted-foreground">
+                <TableCell colSpan={showPercentage ? 3 : 2} className="text-center text-muted-foreground">
                   Ingen data tilgjengelig
                 </TableCell>
               </TableRow>

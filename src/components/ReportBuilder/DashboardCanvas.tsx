@@ -2,6 +2,7 @@ import React from 'react';
 import { Responsive, WidthProvider, Layout } from 'react-grid-layout';
 import { useWidgetManager, WidgetLayout } from '@/contexts/WidgetManagerContext';
 import { WidgetRenderer } from './WidgetRenderer';
+import { WidgetWrapper } from './WidgetWrapper';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 
@@ -54,7 +55,9 @@ export function DashboardCanvas({ clientId }: DashboardCanvasProps) {
       >
         {widgets.map(widget => (
           <div key={widget.id} className="bg-card border rounded-lg shadow-sm">
-            <WidgetRenderer widget={{ ...widget, config: { ...widget.config, clientId } }} />
+            <WidgetWrapper widget={widget}>
+              <WidgetRenderer widget={{ ...widget, config: { ...widget.config, clientId } }} />
+            </WidgetWrapper>
           </div>
         ))}
       </ResponsiveGridLayout>

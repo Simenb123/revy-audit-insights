@@ -8,6 +8,17 @@ interface TextWidgetProps {
 
 export function TextWidget({ widget }: TextWidgetProps) {
   const content = widget.config?.content || 'Dette er en tekstwidget. Klikk for å redigere innhold.';
+  const fontSize = widget.config?.fontSize || 'sm';
+
+  const fontSizeMap = {
+    xs: 'text-xs',
+    sm: 'text-sm', 
+    base: 'text-base',
+    lg: 'text-lg',
+    xl: 'text-xl'
+  };
+  
+  const fontSizeClass = fontSizeMap[fontSize as keyof typeof fontSizeMap] || 'text-sm';
 
   return (
     <Card className="h-full">
@@ -15,7 +26,7 @@ export function TextWidget({ widget }: TextWidgetProps) {
         <CardTitle className="text-sm font-medium">{widget.title}</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="text-sm text-muted-foreground whitespace-pre-wrap">
+        <div className={`${fontSizeClass} text-muted-foreground whitespace-pre-wrap`}>
           {content}
         </div>
       </CardContent>
