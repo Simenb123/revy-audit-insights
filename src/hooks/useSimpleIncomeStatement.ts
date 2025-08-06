@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useFirmStandardAccounts } from './useFirmStandardAccounts';
 import { useTrialBalanceData } from './useTrialBalanceData';
 import { useTrialBalanceMappings } from './useTrialBalanceMappings';
+import { evaluateStatementFormula } from '../lib/statementFormula';
 
 interface SimpleIncomeStatementLine {
   id: string;
@@ -58,68 +59,7 @@ export function useSimpleIncomeStatement(clientId: string, selectedVersion?: str
 
     console.log('🔗 Account mappings:', Object.fromEntries(accountMappings));
 
-    // Create lines map for recursive calculation
-    const linesMap = new Map<string, SimpleIncomeStatementLine>();
     const calculationCache = new Map<string, number>();
-
-    // Parse calculation formula
-    function parseCalculationFormula(formula: string | any): number {
-      if (!formula) return 0;
-      
-      try {
-        // Handle JSON formula objects
-        if (typeof formula === 'object' && formula.type === 'formula' && formula.terms) {
-          let result = 0;
-          
-          for (const term of formula.terms) {
-            const accountNumber = term.account_number;
-            const operator = term.operator || '+';
-            
-            const lineAmount = getLineAmount(accountNumber);
-            
-            if (operator === '+') {
-              result += lineAmount;
-            } else if (operator === '-') {
-              result -= lineAmount;
-            }
-            
-            console.log(`🧮 Formula term: ${accountNumber} ${operator} ${lineAmount} = running total: ${result}`);
-          }
-          
-          return result;
-        }
-        
-        // Handle simple string formulas like "19 + 15"
-        if (typeof formula === 'string') {
-          const cleanFormula = formula.replace(/\s/g, '');
-          const terms = cleanFormula.split(/([+-])/);
-          let result = 0;
-          let operator = '+';
-          
-          for (let i = 0; i < terms.length; i++) {
-            const term = terms[i].trim();
-            if (term === '+' || term === '-') {
-              operator = term;
-            } else if (term) {
-              const lineAmount = getLineAmount(term);
-              if (operator === '+') {
-                result += lineAmount;
-              } else {
-                result -= lineAmount;
-              }
-              console.log(`🧮 Simple formula: ${term} ${operator} ${lineAmount} = running total: ${result}`);
-            }
-          }
-          
-          return result;
-        }
-        
-        return 0;
-      } catch (error) {
-        console.error('❌ Error parsing formula:', formula, error);
-        return 0;
-      }
-    }
 
     // Get amount for a specific line (with caching and recursion)
     function getLineAmount(lineNumber: string): number {
@@ -146,9 +86,12 @@ export function useSimpleIncomeStatement(clientId: string, selectedVersion?: str
           }
         });
       } else if (account.line_type === 'subtotal' || account.line_type === 'calculation') {
-        // Subtotal/calculation lines: use formula
         if (account.calculation_formula) {
-          amount = parseCalculationFormula(account.calculation_formula);
+          try {
+            amount = evaluateStatementFormula(account.calculation_formula, getLineAmount);
+          } catch (error) {
+            console.error('❌ Error parsing formula:', account.calculation_formula, error);
+          }
         }
       }
 
