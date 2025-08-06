@@ -14,6 +14,9 @@ export interface TrialBalanceEntryWithMapping {
   standard_account_id?: string;
   standard_number?: string;
   standard_name?: string;
+  standard_category?: string;
+  standard_account_type?: string;
+  standard_analysis_group?: string;
   is_mapped: boolean;
 }
 
@@ -154,7 +157,7 @@ export const useTrialBalanceWithMappings = (clientId: string, fiscalYear?: numbe
       // Get standard accounts to map by statement_line_number
       const { data: standardAccounts, error: standardError } = await supabase
         .from('standard_accounts')
-        .select('id, standard_number, standard_name');
+        .select('id, standard_number, standard_name, category, account_type, analysis_group');
 
       if (standardError) {
         console.error('Error fetching standard accounts:', standardError);
@@ -172,6 +175,9 @@ export const useTrialBalanceWithMappings = (clientId: string, fiscalYear?: numbe
             standard_account_id: standardAccount.id,
             standard_number: standardAccount.standard_number,
             standard_name: standardAccount.standard_name,
+            standard_category: standardAccount.category,
+            standard_account_type: standardAccount.account_type,
+            standard_analysis_group: standardAccount.analysis_group,
           });
         }
       });
@@ -187,6 +193,9 @@ export const useTrialBalanceWithMappings = (clientId: string, fiscalYear?: numbe
             standard_account_id: standardAccount.id,
             standard_number: standardAccount.standard_number,
             standard_name: standardAccount.standard_name,
+            standard_category: standardAccount.category,
+            standard_account_type: standardAccount.account_type,
+            standard_analysis_group: standardAccount.analysis_group,
           });
         }
       });
@@ -212,6 +221,9 @@ export const useTrialBalanceWithMappings = (clientId: string, fiscalYear?: numbe
           standard_account_id: mapping?.standard_account_id,
           standard_number: mapping?.standard_number,
           standard_name: mapping?.standard_name,
+          standard_category: mapping?.standard_category,
+          standard_account_type: mapping?.standard_account_type,
+          standard_analysis_group: mapping?.standard_analysis_group,
           is_mapped: !!mapping?.standard_account_id,
         };
       });

@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import ColumnSelector, { ColumnConfig } from './ColumnSelector';
+import FilterPanel from './FilterPanel';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
 
 interface TrialBalanceTableProps {
@@ -35,9 +36,13 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
   const [editingMapping, setEditingMapping] = useState<string | null>(null);
   const [autoSuggestions, setAutoSuggestions] = useState<any[]>([]);
   
-  // Get filtered accounts from URL params
+  // Get filter parameters from URL
   const filteredAccountsParam = searchParams.get('filtered_accounts');
   const filteredAccountNumbers = filteredAccountsParam ? filteredAccountsParam.split(',') : null;
+  const selectedAccountingLine = searchParams.get('accounting_line');
+  const selectedSummaryLine = searchParams.get('summary_line');
+  const selectedAccountType = searchParams.get('account_type');
+  const selectedAnalysisGroup = searchParams.get('analysis_group');
 
   // Update column config when fiscal year changes
   useEffect(() => {
@@ -45,12 +50,15 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
     setColumnConfig([
       { key: 'account_number', label: 'Kontonr', visible: true, required: true },
       { key: 'account_name', label: 'Kontonavn', visible: true, required: true },
-      { key: 'previous_year_balance', label: `Saldo ${previousYear}`, visible: true },
+      { key: 'previous_year_balance', label: `Saldo ${previousYear}`, visible: false },
       { key: 'opening_balance', label: `Inngående balanse ${actualAccountingYear}`, visible: true },
       { key: 'closing_balance', label: `Saldo ${actualAccountingYear}`, visible: true },
       { key: 'debit_turnover', label: 'Debet', visible: false },
       { key: 'credit_turnover', label: 'Kredit', visible: false },
       { key: 'standard_number', label: 'Regnskapsnr', visible: false },
+      { key: 'standard_category', label: 'Kategori', visible: false },
+      { key: 'standard_account_type', label: 'Kontotype', visible: false },
+      { key: 'standard_analysis_group', label: 'Analysegruppe', visible: false },
       { key: 'mapping', label: 'Regnskapslinje', visible: true },
     ]);
   }, [actualAccountingYear]);
@@ -104,22 +112,43 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
     return totalAccounts > 0 ? (mappedAccounts / totalAccounts) * 100 : 0;
   }, [trialBalanceData]);
 
-  // Filter entries by accounting year and filtered accounts
+  // Filter entries by accounting year and advanced filters
   const filteredEntries = useMemo(() => {
     if (!trialBalanceData?.trialBalanceEntries) return [];
     
     console.log('🔍 TrialBalanceTable filtering:', { 
       actualAccountingYear, 
-      filteredAccountNumbers, 
+      filteredAccountNumbers,
+      selectedAccountingLine,
+      selectedSummaryLine,
+      selectedAccountType,
+      selectedAnalysisGroup,
       totalEntries: trialBalanceData.trialBalanceEntries.length 
     });
     
     const filtered = trialBalanceData.trialBalanceEntries.filter(entry => {
       if (actualAccountingYear && entry.period_year !== actualAccountingYear) return false;
       
-      // If filtered accounts are specified, only show those
+      // If filtered accounts are specified (from report builder), only show those
       if (filteredAccountNumbers && filteredAccountNumbers.length > 0) {
         return filteredAccountNumbers.includes(entry.account_number);
+      }
+      
+      // Advanced filters
+      if (selectedAccountingLine && entry.standard_number !== selectedAccountingLine) {
+        return false;
+      }
+      
+      if (selectedSummaryLine && entry.standard_category !== selectedSummaryLine) {
+        return false;
+      }
+      
+      if (selectedAccountType && entry.standard_account_type !== selectedAccountType) {
+        return false;
+      }
+      
+      if (selectedAnalysisGroup && entry.standard_analysis_group !== selectedAnalysisGroup) {
+        return false;
       }
       
       return true;
@@ -127,7 +156,7 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
     
     console.log('✅ Filtered result:', filtered.length, 'entries');
     return filtered;
-  }, [trialBalanceData, actualAccountingYear, filteredAccountNumbers]);
+  }, [trialBalanceData, actualAccountingYear, filteredAccountNumbers, selectedAccountingLine, selectedSummaryLine, selectedAccountType, selectedAnalysisGroup]);
 
   // Function to clear account filter
   const clearAccountFilter = useCallback(() => {
@@ -135,6 +164,9 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
     newSearchParams.delete('filtered_accounts');
     setSearchParams(newSearchParams);
   }, [searchParams, setSearchParams]);
+
+  // Check if any advanced filters are active
+  const hasAdvancedFilters = selectedAccountingLine || selectedSummaryLine || selectedAccountType || selectedAnalysisGroup;
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('nb-NO', {
@@ -215,6 +247,39 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
         sortable: true,
         searchable: true,
         className: 'font-medium',
+      },
+      {
+        key: 'standard_category',
+        header: 'Kategori',
+        accessor: (entry: TrialBalanceEntryWithMapping) => entry.standard_category || '-',
+        sortable: true,
+        searchable: true,
+        className: 'text-sm',
+      },
+      {
+        key: 'standard_account_type',
+        header: 'Kontotype',
+        accessor: (entry: TrialBalanceEntryWithMapping) => {
+          const typeMap: Record<string, string> = {
+            'asset': 'Eiendel',
+            'liability': 'Gjeld',
+            'equity': 'Egenkapital',
+            'revenue': 'Inntekt',
+            'expense': 'Kostnad'
+          };
+          return typeMap[entry.standard_account_type || ''] || entry.standard_account_type || '-';
+        },
+        sortable: true,
+        searchable: true,
+        className: 'text-sm',
+      },
+      {
+        key: 'standard_analysis_group',
+        header: 'Analysegruppe',
+        accessor: (entry: TrialBalanceEntryWithMapping) => entry.standard_analysis_group || '-',
+        sortable: true,
+        searchable: true,
+        className: 'text-sm',
       },
       {
         key: 'mapping',
@@ -360,8 +425,8 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
       {columnConfig.find(c => c.key === 'credit_turnover' && c.visible) && (
         <TableCell className="text-right font-mono">{formatCurrency(totals?.credit_turnover || 0)}</TableCell>
       )}
-      {columnConfig.find(c => (c.key === 'standard_number' || c.key === 'mapping') && c.visible) && (
-        <TableCell colSpan={columnConfig.filter(c => (c.key === 'standard_number' || c.key === 'mapping') && c.visible).length}>
+      {columnConfig.find(c => ['standard_number', 'standard_category', 'standard_account_type', 'standard_analysis_group', 'mapping'].includes(c.key) && c.visible) && (
+        <TableCell colSpan={columnConfig.filter(c => ['standard_number', 'standard_category', 'standard_account_type', 'standard_analysis_group', 'mapping'].includes(c.key) && c.visible).length}>
           -
         </TableCell>
       )}
@@ -371,12 +436,13 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
   // Create description text
   const mappingStats = trialBalanceData?.mappingStats;
   const mappingProgress = getMappingProgress();
-  const baseDescription = `Viser ${filteredEntries.length} kontoer • År: ${actualAccountingYear}${mappingStats ? ` • Mappet: ${mappingStats.mappedAccounts}/${mappingStats.totalAccounts}` : ''}`;
-  const description = filteredAccountNumbers ? `${baseDescription} • Filtrert visning` : baseDescription;
+  const totalEntries = trialBalanceData?.trialBalanceEntries?.length || 0;
+  const baseDescription = `Viser ${filteredEntries.length}${totalEntries !== filteredEntries.length ? ` av ${totalEntries}` : ''} kontoer • År: ${actualAccountingYear}${mappingStats ? ` • Mappet: ${mappingStats.mappedAccounts}/${mappingStats.totalAccounts}` : ''}`;
+  const description = (filteredAccountNumbers || hasAdvancedFilters) ? `${baseDescription} • Filtrert visning` : baseDescription;
 
   return (
     <div className="space-y-4">
-      {/* Account filter notification */}
+      {/* Filter notifications */}
       {filteredAccountNumbers && filteredAccountNumbers.length > 0 && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <div className="flex items-center justify-between">
@@ -398,6 +464,9 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
           </div>
         </div>
       )}
+
+      {/* Advanced filters panel */}
+      <FilterPanel className="mb-4" />
       
       {/* Mapping progress and auto-mapping controls */}
       {mappingStats && mappingStats.totalAccounts > 0 && (
