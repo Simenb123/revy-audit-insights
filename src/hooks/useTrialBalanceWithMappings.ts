@@ -76,6 +76,24 @@ export const useTrialBalanceWithMappings = (clientId: string, fiscalYear?: numbe
         };
       }
 
+      // Get account classifications for this client and version
+      let classificationsQuery = supabase
+        .from('account_classifications')
+        .select('account_number, new_category')
+        .eq('client_id', clientId)
+        .eq('is_active', true);
+
+      if (selectedVersion) {
+        classificationsQuery = classificationsQuery.eq('version_id', selectedVersion);
+      }
+
+      const { data: classificationsData, error: classificationsError } = await classificationsQuery;
+
+      if (classificationsError) {
+        console.error('Error fetching account classifications:', classificationsError);
+        throw classificationsError;
+      }
+
       // Get trial balance mappings for this client
       const { data: mappingsData, error: mappingsError } = await supabase
         .from('trial_balance_mappings')
@@ -97,7 +115,22 @@ export const useTrialBalanceWithMappings = (clientId: string, fiscalYear?: numbe
         throw standardError;
       }
 
-      // Create a mapping lookup by account number
+      // Create a classification lookup by account number
+      const classificationLookup = new Map();
+      classificationsData?.forEach(classification => {
+        // Find standard account by matching new_category with standard_name
+        const standardAccount = standardAccounts?.find(sa => sa.standard_name === classification.new_category);
+        
+        if (standardAccount) {
+          classificationLookup.set(classification.account_number, {
+            standard_account_id: standardAccount.id,
+            standard_number: standardAccount.standard_number,
+            standard_name: standardAccount.standard_name,
+          });
+        }
+      });
+
+      // Create a mapping lookup by account number (fallback for non-classified accounts)
       const mappingLookup = new Map();
       mappingsData?.forEach(mapping => {
         // Find standard account by matching statement_line_number with standard_number
@@ -115,7 +148,10 @@ export const useTrialBalanceWithMappings = (clientId: string, fiscalYear?: numbe
       // Transform the data
       const trialBalanceEntries: TrialBalanceEntryWithMapping[] = trialBalanceData.map(tb => {
         const account = tb.client_chart_of_accounts;
-        const mapping = mappingLookup.get(account?.account_number);
+        
+        // Use classification first, then fallback to mapping
+        const classification = classificationLookup.get(account?.account_number);
+        const mapping = classification || mappingLookup.get(account?.account_number);
 
         return {
           id: tb.id,
