@@ -36,3 +36,10 @@ Kjør `npm run dev` for å starte utviklingsserveren. Den laster automatisk inn 
 - Gjerne bruk analogier og konkrete eksempler.
 - Del opp forklaringer i små, forståelige trinn slik at en nybegynner kan henge med.
 
+## Supabase og Lovable
+
+- All backend-arbeid gjøres i Supabase gjennom [Lovable.dev](https://lovable.dev/).
+- Dersom en endring krever databaseoppdateringer, Edge Functions eller migrasjoner,
+  forklar behovene i enkle ord.
+- Avslutt svaret med en kort «Lovable‑prompt» som beskriver hva som må gjøres i Supabase,
+  slik at den kan sendes direkte til Lovable.
