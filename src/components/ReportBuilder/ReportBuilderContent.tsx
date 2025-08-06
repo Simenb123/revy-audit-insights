@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useWidgetManager } from '@/contexts/WidgetManagerContext';
 import { DashboardCanvas } from './DashboardCanvas';
 import { WidgetLibrary } from './WidgetLibrary';
+import { StandardReportTemplates } from './StandardReportTemplates';
 import { ReportBuilderTabs } from './ReportBuilderTabs';
 import { SaveReportDialog } from './SaveReportDialog';
 import { LoadReportDialog } from './LoadReportDialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Save, FolderOpen, Database } from 'lucide-react';
+import { Plus, Save, FolderOpen, Database, LayoutTemplate } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
@@ -22,11 +23,12 @@ interface ReportBuilderContentProps {
 
 export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: ReportBuilderContentProps) {
   const [showWidgetLibrary, setShowWidgetLibrary] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [showLoadDialog, setShowLoadDialog] = useState(false);
   const [selectedVersion, setSelectedVersion] = useState<string>('');
   
-  const { widgets, layouts, addWidget, removeWidget, updateLayout } = useWidgetManager();
+  const { widgets, layouts, addWidget, removeWidget, updateLayout, clearWidgets, setWidgets, setLayouts } = useWidgetManager();
   const { reports, loading, saveReport, deleteReport } = useClientReports(clientId);
   
   // Fetch available trial balance versions
@@ -73,6 +75,13 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
     } catch (error) {
       toast.error('Kunne ikke slette rapport');
     }
+  };
+
+  const handleApplyTemplate = (templateWidgets: any[], templateLayouts: any[]) => {
+    clearWidgets();
+    setWidgets(templateWidgets);
+    setLayouts(templateLayouts);
+    toast.success('Rapport mal lastet!');
   };
 
   return (
@@ -124,6 +133,16 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
                 Legg til widget
               </Button>
               
+              <Button
+                variant="outline"
+                onClick={() => setShowTemplates(true)}
+                className="flex items-center gap-2"
+                disabled={!hasData || !selectedVersion}
+              >
+                <LayoutTemplate className="h-4 w-4" />
+                Rapport maler
+              </Button>
+              
               <Button 
                 variant="outline" 
                 className="flex items-center gap-2"
@@ -172,6 +191,25 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
               <WidgetLibrary 
                 clientId={clientId}
                 onClose={() => setShowWidgetLibrary(false)}
+              />
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Standard Report Templates */}
+        {showTemplates && hasData && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Standard rapport maler</CardTitle>
+              <CardDescription>
+                Velg en ferdig rapport mal for rask oppstart
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <StandardReportTemplates 
+                clientId={clientId}
+                onApplyTemplate={handleApplyTemplate}
+                onClose={() => setShowTemplates(false)}
               />
             </CardContent>
           </Card>

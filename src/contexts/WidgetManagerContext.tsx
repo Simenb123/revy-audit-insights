@@ -24,6 +24,9 @@ interface WidgetManagerContextType {
   removeWidget: (widgetId: string) => void;
   updateLayout: (layouts: WidgetLayout[]) => void;
   updateWidget: (widgetId: string, updates: Partial<Widget>) => void;
+  clearWidgets: () => void;
+  setWidgets: (widgets: Widget[]) => void;
+  setLayouts: (layouts: WidgetLayout[]) => void;
 }
 
 const WidgetManagerContext = createContext<WidgetManagerContextType | undefined>(undefined);
@@ -50,6 +53,11 @@ export function WidgetManagerProvider({ children }: { children: React.ReactNode 
     setWidgets(prev => prev.map(w => w.id === widgetId ? { ...w, ...updates } : w));
   }, []);
 
+  const clearWidgets = useCallback(() => {
+    setWidgets([]);
+    setLayouts([]);
+  }, []);
+
   return (
     <WidgetManagerContext.Provider value={{
       widgets,
@@ -58,6 +66,9 @@ export function WidgetManagerProvider({ children }: { children: React.ReactNode 
       removeWidget,
       updateLayout,
       updateWidget,
+      clearWidgets,
+      setWidgets,
+      setLayouts,
     }}>
       {children}
     </WidgetManagerContext.Provider>

@@ -2,7 +2,7 @@ import React from 'react';
 import { useWidgetManager } from '@/contexts/WidgetManagerContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart3, Table, TrendingUp, FileText, X } from 'lucide-react';
+import { BarChart3, Table, TrendingUp, FileText, X, Calculator } from 'lucide-react';
 
 interface WidgetLibraryProps {
   clientId: string;
@@ -50,6 +50,18 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
       icon: FileText,
       defaultConfig: {
         content: 'Skriv dine notater her...'
+      }
+    },
+    {
+      type: 'formula' as const,
+      title: 'Formel/Nøkkeltall',
+      description: 'Beregn finansielle nøkkeltall og formler',
+      icon: Calculator,
+      defaultConfig: {
+        formulaId: null as string | null,
+        showTrend: false,
+        showPercentage: false,
+        showCurrency: true
       }
     }
   ];
