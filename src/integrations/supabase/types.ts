@@ -2143,6 +2143,42 @@ export type Database = {
           },
         ]
       }
+      client_reports: {
+        Row: {
+          client_id: string
+          created_at: string
+          created_by: string
+          id: string
+          layout_config: Json
+          report_description: string | null
+          report_name: string
+          updated_at: string
+          widgets_config: Json
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          created_by: string
+          id?: string
+          layout_config?: Json
+          report_description?: string | null
+          report_name: string
+          updated_at?: string
+          widgets_config?: Json
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          layout_config?: Json
+          report_description?: string | null
+          report_name?: string
+          updated_at?: string
+          widgets_config?: Json
+        }
+        Relationships: []
+      }
       client_risk_assessments: {
         Row: {
           assessed_by: string | null
