@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useWidgetManager } from '@/contexts/WidgetManagerContext';
 import { DashboardCanvas } from './DashboardCanvas';
 import { WidgetLibrary } from './WidgetLibrary';
+import { ReportBuilderTabs } from './ReportBuilderTabs';
 import { SaveReportDialog } from './SaveReportDialog';
 import { LoadReportDialog } from './LoadReportDialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -178,9 +179,12 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
 
         {/* Dashboard Canvas */}
         {hasData && selectedVersion && (
-          <div className="min-h-[600px]">
-            <DashboardCanvas clientId={clientId} selectedVersion={selectedVersion} />
-          </div>
+          <ReportBuilderTabs 
+            clientId={clientId} 
+            selectedVersion={selectedVersion}
+            selectedFiscalYear={selectedFiscalYear}
+            hasData={hasData}
+          />
         )}
       </div>
 
