@@ -18,6 +18,7 @@ interface FinancialStatementLine {
   is_total_line: boolean;
   sign_multiplier: number;
   calculation_formula?: string;
+  account_type?: string;
   parent_line_id?: string;
   amount?: number;
   children?: FinancialStatementLine[];
@@ -32,32 +33,86 @@ const parseCalculationFormula = (
   formula: string,
   getAmountForStandardAccount: (standardNumber: string) => number
 ): number => {
-  const cleanFormula = formula.replace(/\s/g, '');
+  const cleanFormula = formula.replace(/\s+/g, '');
 
-  const additionMatch = cleanFormula.match(/^(\d+)\+(\d+)$/);
-  if (additionMatch) {
-    const [, num1, num2] = additionMatch;
-    return (
-      getAmountForStandardAccount(num1) +
-      getAmountForStandardAccount(num2)
-    );
+  const tokens: string[] = [];
+  let i = 0;
+  while (i < cleanFormula.length) {
+    const char = cleanFormula[i];
+    if (/\d/.test(char)) {
+      let num = '';
+      while (i < cleanFormula.length && /\d/.test(cleanFormula[i])) {
+        num += cleanFormula[i];
+        i++;
+      }
+      tokens.push(num);
+      continue;
+    }
+    if (char === '+' || char === '-' || char === '(' || char === ')') {
+      if (
+        (char === '-' || char === '+') &&
+        (tokens.length === 0 || ['+', '-', '('].includes(tokens[tokens.length - 1]))
+      ) {
+        i++;
+        let num = '';
+        while (i < cleanFormula.length && /\d/.test(cleanFormula[i])) {
+          num += cleanFormula[i];
+          i++;
+        }
+        tokens.push((char === '-' ? '-' : '') + num);
+        continue;
+      }
+      tokens.push(char);
+    }
+    i++;
   }
 
-  const subtractionMatch = cleanFormula.match(/^(\d+)-(\d+)$/);
-  if (subtractionMatch) {
-    const [, num1, num2] = subtractionMatch;
-    return (
-      getAmountForStandardAccount(num1) -
-      getAmountForStandardAccount(num2)
-    );
+  const output: string[] = [];
+  const operators: string[] = [];
+  const precedence = (op: string) => (op === '+' || op === '-' ? 1 : 0);
+
+  tokens.forEach(token => {
+    if (/^-?\d+$/.test(token)) {
+      output.push(token);
+    } else if (token === '+' || token === '-') {
+      while (
+        operators.length &&
+        ['+', '-'].includes(operators[operators.length - 1]) &&
+        precedence(operators[operators.length - 1]) >= precedence(token)
+      ) {
+        output.push(operators.pop()!);
+      }
+      operators.push(token);
+    } else if (token === '(') {
+      operators.push(token);
+    } else if (token === ')') {
+      while (operators.length && operators[operators.length - 1] !== '(') {
+        output.push(operators.pop()!);
+      }
+      operators.pop();
+    }
+  });
+
+  while (operators.length) {
+    output.push(operators.pop()!);
   }
 
-  const singleNumberMatch = cleanFormula.match(/^(\d+)$/);
-  if (singleNumberMatch) {
-    return getAmountForStandardAccount(singleNumberMatch[1]);
-  }
+  const stack: number[] = [];
+  output.forEach(token => {
+    if (/^-?\d+$/.test(token)) {
+      const isNegative = token.startsWith('-');
+      const amount = getAmountForStandardAccount(
+        isNegative ? token.slice(1) : token
+      );
+      stack.push(isNegative ? -amount : amount);
+    } else {
+      const b = stack.pop() ?? 0;
+      const a = stack.pop() ?? 0;
+      stack.push(token === '+' ? a + b : a - b);
+    }
+  });
 
-  return 0;
+  return stack[0] ?? 0;
 };
 
 const FinancialStatementGenerator = ({ clientId, period }: FinancialStatementGeneratorProps) => {
@@ -80,6 +135,7 @@ const FinancialStatementGenerator = ({ clientId, period }: FinancialStatementGen
       is_total_line: account.is_total_line || false,
       sign_multiplier: account.sign_multiplier || 1,
       calculation_formula: account.calculation_formula,
+      account_type: account.account_type,
       parent_line_id: account.parent_line_id,
       children: [] as FinancialStatementLine[]
     }));
@@ -218,38 +274,41 @@ const FinancialStatementGenerator = ({ clientId, period }: FinancialStatementGen
 
   // Calculate totals for validation
   const calculateTotals = () => {
-    if (!trialBalanceData || !standardAccounts) return { assets: 0, liabilities: 0, equity: 0, revenue: 0, expenses: 0 };
-    
-    let assets = 0, liabilities = 0, equity = 0, revenue = 0, expenses = 0;
-    
-    trialBalanceData.forEach(account => {
-      // Find which standard account this is mapped to
-      const mapping = mappings.find(m => m.account_number === account.account_number);
-      if (mapping) {
-        const standardAccount = standardAccounts.find(acc => acc.standard_number === mapping.statement_line_number);
-        if (standardAccount) {
-          const amount = account.closing_balance;
-          const normalizedType = convertAccountType(standardAccount.account_type);
-          
-          switch (normalizedType) {
-            case 'eiendeler':
-              assets += amount;
-              break;
-            case 'gjeld':
-              liabilities += amount;
-              break;
-            case 'egenkapital':
-              equity += amount;
-              break;
-            case 'resultat':
-              if (amount > 0) revenue += amount;
-              else expenses += Math.abs(amount);
-              break;
-          }
+    if (!financialStatement.length) {
+      return { assets: 0, liabilities: 0, equity: 0, revenue: 0, expenses: 0 };
+    }
+
+    let assets = 0,
+      liabilities = 0,
+      equity = 0,
+      revenue = 0,
+      expenses = 0;
+
+    const traverse = (line: FinancialStatementLine) => {
+      if (line.line_type === 'detail' && line.account_type) {
+        const amount = line.amount ?? 0;
+        const normalizedType = convertAccountType(line.account_type);
+        switch (normalizedType) {
+          case 'eiendeler':
+            assets += amount;
+            break;
+          case 'gjeld':
+            liabilities += amount;
+            break;
+          case 'egenkapital':
+            equity += amount;
+            break;
+          case 'resultat':
+            if (amount > 0) revenue += amount;
+            else expenses += Math.abs(amount);
+            break;
         }
       }
-    });
-    
+      line.children?.forEach(traverse);
+    };
+
+    financialStatement.forEach(traverse);
+
     return { assets, liabilities, equity, revenue, expenses };
   };
 
