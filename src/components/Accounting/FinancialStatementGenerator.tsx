@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
@@ -29,18 +29,103 @@ interface FinancialStatementGeneratorProps {
   period: string;
 }
 
+const parseCalculationFormula = (
+  formula: string,
+  getAmountForStandardAccount: (standardNumber: string) => number
+): number => {
+  const cleanFormula = formula.replace(/\s+/g, '');
+  const tokens: string[] = [];
+  let i = 0;
+  while (i < cleanFormula.length) {
+    const char = cleanFormula[i];
+    if (/\d/.test(char)) {
+      let num = '';
+      while (i < cleanFormula.length && /\d/.test(cleanFormula[i])) {
+        num += cleanFormula[i];
+        i++;
+      }
+      tokens.push(num);
+      continue;
+    }
+    if (char === '+' || char === '-' || char === '(' || char === ')') {
+      if (
+        (char === '-' || char === '+') &&
+        (tokens.length === 0 || ['+', '-', '('].includes(tokens[tokens.length - 1]))
+      ) {
+        i++;
+        let num = '';
+        while (i < cleanFormula.length && /\d/.test(cleanFormula[i])) {
+          num += cleanFormula[i];
+          i++;
+        }
+        tokens.push((char === '-' ? '-' : '') + num);
+        continue;
+      }
+      tokens.push(char);
+      i++;
+      continue;
+    }
+    // skip unknown characters
+    i++;
+  }
+
+  const output: string[] = [];
+  const operators: string[] = [];
+  const precedence = (op: string) => (op === '+' || op === '-' ? 1 : 0);
+
+  tokens.forEach(token => {
+    if (/^-?\d+$/.test(token)) {
+      output.push(token);
+    } else if (token === '+' || token === '-') {
+      while (
+        operators.length &&
+        ['+', '-'].includes(operators[operators.length - 1]) &&
+        precedence(operators[operators.length - 1]) >= precedence(token)
+      ) {
+        output.push(operators.pop()!);
+      }
+      operators.push(token);
+    } else if (token === '(') {
+      operators.push(token);
+    } else if (token === ')') {
+      while (operators.length && operators[operators.length - 1] !== '(') {
+        output.push(operators.pop()!);
+      }
+      operators.pop();
+    }
+  });
+
+  while (operators.length) {
+    output.push(operators.pop()!);
+  }
+
+  const stack: number[] = [];
+  output.forEach(token => {
+    if (/^-?\d+$/.test(token)) {
+      const isNegative = token.startsWith('-');
+      const amount = getAmountForStandardAccount(isNegative ? token.slice(1) : token);
+      stack.push(isNegative ? -amount : amount);
+    } else {
+      const b = stack.pop() ?? 0;
+      const a = stack.pop() ?? 0;
+      stack.push(token === '+' ? a + b : a - b);
+    }
+  });
+
+  return stack[0] ?? 0;
+};
+
 const FinancialStatementGenerator = ({ clientId, period }: FinancialStatementGeneratorProps) => {
   const navigate = useNavigate();
   const { data: standardAccounts, isLoading: standardAccountsLoading } = useStandardAccounts();
   const { data: trialBalanceData } = useTrialBalanceData(clientId);
   const { data: mappings = [] } = useTrialBalanceMappings(clientId);
-  
+
   const isLoading = standardAccountsLoading;
 
-  const buildFinancialStatementStructure = (): FinancialStatementLine[] => {
-    if (!standardAccounts) return [];
+  const financialStatement = React.useMemo(() => {
+    if (!standardAccounts) return [] as FinancialStatementLine[];
 
-    // Convert to our interface
     const lines: FinancialStatementLine[] = standardAccounts.map(account => ({
       id: account.id,
       standard_number: account.standard_number,
@@ -52,178 +137,88 @@ const FinancialStatementGenerator = ({ clientId, period }: FinancialStatementGen
       calculation_formula: account.calculation_formula,
       account_type: account.account_type,
       parent_line_id: account.parent_line_id,
-      amount: 0, // TODO: Get actual amounts from trial balance
       children: [] as FinancialStatementLine[]
     }));
 
-    // Sort by display order
     lines.sort((a, b) => a.display_order - b.display_order);
 
-    // Build hierarchy
     const topLevelLines = lines.filter(line => !line.parent_line_id);
     const childLines = lines.filter(line => line.parent_line_id);
 
-    // Add children to their parents
     childLines.forEach(child => {
       const parent = lines.find(line => line.id === child.parent_line_id);
       if (parent) {
-        if (!parent.children) parent.children = [];
+        parent.children = parent.children || [];
         parent.children.push(child);
       }
     });
 
-    return topLevelLines;
-  };
-  const financialStatement = useMemo(
-    () => buildFinancialStatementStructure(),
-    [standardAccounts]
-  );
+    const lineMap: Record<string, FinancialStatementLine> = {};
+    const registerLine = (line: FinancialStatementLine) => {
+      lineMap[line.standard_number] = line;
+      line.children?.forEach(registerLine);
+    };
+    topLevelLines.forEach(registerLine);
 
-  const calculateAmount = (line: FinancialStatementLine): number => {
-    if (!trialBalanceData || !mappings) return 0;
+    function getAmountForStandardAccount(standardNumber: string): number {
+      const target = lineMap[standardNumber];
+      if (!target) return 0;
+      return computeLineAmount(target);
+    }
 
-    if (line.line_type === 'detail') {
-      // Sum all trial balance accounts mapped to this statement line
-      const mappedAccounts = mappings.filter(
-        m => m.statement_line_number === line.standard_number
-      );
-      let total = 0;
+    function computeLineAmount(line: FinancialStatementLine): number {
+      if (typeof line.amount === 'number') return line.amount;
 
-      mappedAccounts.forEach(mapping => {
-        const account = trialBalanceData.find(
-          acc => acc.account_number === mapping.account_number
-        );
-        if (account) {
-          total += account.closing_balance;
+      if (line.line_type === 'detail') {
+        if (!trialBalanceData || !mappings) {
+          line.amount = 0;
+          return 0;
         }
-      });
 
-      return total * line.sign_multiplier;
-    }
+        const mappedAccounts = mappings.filter(
+          m => m.statement_line_number === line.standard_number
+        );
+        let total = 0;
 
-    if (line.line_type === 'subtotal' && line.children) {
-      // Sum all children
-      return line.children.reduce(
-        (sum, child) => sum + calculateAmount(child),
-        0
-      );
-    }
+        mappedAccounts.forEach(mapping => {
+          const account = trialBalanceData.find(
+            acc => acc.account_number === mapping.account_number
+          );
+          if (account) {
+            total += account.closing_balance;
+          }
+        });
 
-    if (line.line_type === 'calculation' && line.calculation_formula) {
-      if (typeof line.calculation_formula === 'string') {
-        return parseCalculationFormula(line.calculation_formula);
+        line.amount = total * line.sign_multiplier;
+        return line.amount;
       }
+
+      if (line.line_type === 'subtotal' && line.children) {
+        line.amount = line.children.reduce(
+          (sum, child) => sum + computeLineAmount(child),
+          0
+        );
+        return line.amount;
+      }
+
+      if (line.line_type === 'calculation' && line.calculation_formula) {
+        line.amount = parseCalculationFormula(
+          line.calculation_formula,
+          getAmountForStandardAccount
+        );
+        return line.amount;
+      }
+
+      line.amount = 0;
       return 0;
     }
 
-    return 0;
-  };
-
-  const parseCalculationFormula = (formula: string): number => {
-    if (!financialStatement.length) return 0;
-
-    const cleanFormula = formula.replace(/\s+/g, '');
-
-    const tokens: string[] = [];
-    let i = 0;
-    while (i < cleanFormula.length) {
-      const char = cleanFormula[i];
-      if (/\d/.test(char)) {
-        let num = '';
-        while (i < cleanFormula.length && /\d/.test(cleanFormula[i])) {
-          num += cleanFormula[i];
-          i++;
-        }
-        tokens.push(num);
-        continue;
-      }
-      if (char === '+' || char === '-' || char === '(' || char === ')') {
-        if (
-          (char === '-' || char === '+') &&
-          (tokens.length === 0 || ['+', '-', '('].includes(tokens[tokens.length - 1]))
-        ) {
-          i++;
-          let num = '';
-          while (i < cleanFormula.length && /\d/.test(cleanFormula[i])) {
-            num += cleanFormula[i];
-            i++;
-          }
-          tokens.push((char === '-' ? '-' : '') + num);
-          continue;
-        }
-        tokens.push(char);
-        i++;
-        continue;
-      }
-      // Skip unknown characters
-      i++;
-    }
-
-    const output: string[] = [];
-    const operators: string[] = [];
-    const precedence = (op: string) => (op === '+' || op === '-' ? 1 : 0);
-
-    tokens.forEach(token => {
-      if (/^-?\d+$/.test(token)) {
-        output.push(token);
-      } else if (token === '+' || token === '-') {
-        while (
-          operators.length &&
-          ['+', '-'].includes(operators[operators.length - 1]) &&
-          precedence(operators[operators.length - 1]) >= precedence(token)
-        ) {
-          output.push(operators.pop()!);
-        }
-        operators.push(token);
-      } else if (token === '(') {
-        operators.push(token);
-      } else if (token === ')') {
-        while (operators.length && operators[operators.length - 1] !== '(') {
-          output.push(operators.pop()!);
-        }
-        operators.pop();
-      }
+    topLevelLines.forEach(line => {
+      line.amount = computeLineAmount(line);
     });
 
-    while (operators.length) {
-      output.push(operators.pop()!);
-    }
-
-    const getAmountForStandardAccount = (standardNumber: string): number => {
-      const findLineRecursively = (
-        lines: FinancialStatementLine[]
-      ): FinancialStatementLine | undefined => {
-        for (const line of lines) {
-          if (line.standard_number === standardNumber) return line;
-          if (line.children) {
-            const found = findLineRecursively(line.children);
-            if (found) return found;
-          }
-        }
-        return undefined;
-      };
-
-      const line = findLineRecursively(financialStatement);
-      return line ? calculateAmount(line) : 0;
-    };
-
-    const stack: number[] = [];
-    output.forEach(token => {
-      if (/^-?\d+$/.test(token)) {
-        const isNegative = token.startsWith('-');
-        const amount = getAmountForStandardAccount(
-          isNegative ? token.slice(1) : token
-        );
-        stack.push(isNegative ? -amount : amount);
-      } else {
-        const b = stack.pop() ?? 0;
-        const a = stack.pop() ?? 0;
-        stack.push(token === '+' ? a + b : a - b);
-      }
-    });
-
-    return stack[0] ?? 0;
-  };
+    return topLevelLines;
+  }, [standardAccounts, trialBalanceData, mappings]);
 
   const formatAmount = (amount: number): string => {
     return new Intl.NumberFormat('nb-NO', {
@@ -233,12 +228,12 @@ const FinancialStatementGenerator = ({ clientId, period }: FinancialStatementGen
   };
 
   const renderLine = (line: FinancialStatementLine, level: number = 0): React.ReactNode => {
-    const amount = calculateAmount(line);
+    const amount = line.amount ?? 0;
     const indent = level * 20;
 
     return (
       <div key={line.id}>
-        <div 
+        <div
           className={`flex justify-between items-center py-1 ${
             line.is_total_line ? 'font-bold border-t border-b' : ''
           } ${line.line_type === 'calculation' ? 'bg-muted/50' : ''}`}
@@ -253,8 +248,8 @@ const FinancialStatementGenerator = ({ clientId, period }: FinancialStatementGen
             </span>
             {line.calculation_formula && (
               <span className="text-xs text-muted-foreground">
-                ({typeof line.calculation_formula === 'string' 
-                  ? line.calculation_formula 
+                ({typeof line.calculation_formula === 'string'
+                  ? line.calculation_formula
                   : JSON.stringify(line.calculation_formula)})
               </span>
             )}
@@ -263,7 +258,7 @@ const FinancialStatementGenerator = ({ clientId, period }: FinancialStatementGen
             {formatAmount(amount)}
           </span>
         </div>
-        
+
         {line.children && line.children.map(child => renderLine(child, level + 1))}
       </div>
     );
@@ -287,7 +282,7 @@ const FinancialStatementGenerator = ({ clientId, period }: FinancialStatementGen
 
     const traverse = (line: FinancialStatementLine) => {
       if (line.line_type === 'detail' && line.account_type) {
-        const amount = calculateAmount(line);
+        const amount = line.amount ?? 0;
         const normalizedType = convertAccountType(line.account_type);
         switch (normalizedType) {
           case 'eiendeler':
@@ -324,9 +319,7 @@ const FinancialStatementGenerator = ({ clientId, period }: FinancialStatementGen
       <Card>
         <CardHeader>
           <CardTitle>Resultatregnskap</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Periode: {period}
-          </p>
+          <p className="text-sm text-muted-foreground">Periode: {period}</p>
         </CardHeader>
         <CardContent>
           <div className="space-y-1">
@@ -356,9 +349,9 @@ const FinancialStatementGenerator = ({ clientId, period }: FinancialStatementGen
                   <span>{trialBalanceData.length - mappings.length}</span>
                 </div>
                 {trialBalanceData.length - mappings.length > 0 && (
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={handleNavigateToMapping}
                     className="w-full mt-2"
                   >
@@ -369,7 +362,7 @@ const FinancialStatementGenerator = ({ clientId, period }: FinancialStatementGen
               </div>
             </CardContent>
           </Card>
-          
+
           <FinancialStatementValidation
             totalAssets={totals.assets}
             totalLiabilities={totals.liabilities}
@@ -389,3 +382,4 @@ const FinancialStatementGenerator = ({ clientId, period }: FinancialStatementGen
 };
 
 export default FinancialStatementGenerator;
+

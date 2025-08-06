@@ -75,7 +75,7 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
       const suggestions = generateAutoMappingSuggestions();
       setAutoSuggestions(suggestions);
     }
-  }, [trialBalanceData, generateAutoMappingSuggestions]);
+  }, [trialBalanceData]);
 
   const handleMappingChange = useCallback(async (accountNumber: string, standardNumber: string) => {
     try {

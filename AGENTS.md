@@ -43,4 +43,3 @@ Kjør `npm run dev` for å starte utviklingsserveren. Den laster automatisk inn 
   forklar behovene i enkle ord.
 - Avslutt svaret med en kort «Lovable‑prompt» som beskriver hva som må gjøres i Supabase,
   slik at den kan sendes direkte til Lovable.
-
