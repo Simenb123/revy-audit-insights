@@ -348,7 +348,7 @@ const TrialBalanceMappingTable = ({ clientId, onComplete }: TrialBalanceMappingT
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-auto">
           <DialogHeader>
             <DialogTitle>Automatiske Mapping-forslag</DialogTitle>
-            <DialogDescription>
+            <DialogDescription asChild>
               <div className="space-y-2">
                 <p>Gjennomgå og velg hvilke automatiske mappinger du vil anvende.</p>
                 <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-200 dark:border-blue-800">
