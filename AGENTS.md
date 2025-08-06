@@ -29,3 +29,10 @@ Kjør `npm run dev` for å starte utviklingsserveren. Den laster automatisk inn 
 - Følg prosjektets ESLint-oppsett ved å kjøre `npm run lint` dersom du har gjort kodeendringer.
 - Hold dokumentasjonen oppdatert dersom nye funksjoner eller skript legges til.
 
+## Kommunikasjon
+
+- Når du forklarer funksjonalitet eller kode, bruk enkelt dagligspråk.
+- Unngå teknisk sjargong; forklar tekniske begreper med vanlige ord.
+- Gjerne bruk analogier og konkrete eksempler.
+- Del opp forklaringer i små, forståelige trinn slik at en nybegynner kan henge med.
+
