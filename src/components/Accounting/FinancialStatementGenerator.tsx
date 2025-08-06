@@ -1,14 +1,12 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useStandardAccounts } from '@/hooks/useChartOfAccounts';
-import { useTrialBalanceWithMappings, getStandardAccountBalance } from '@/hooks/useTrialBalanceWithMappings';
 import { useTrialBalanceMappings } from '@/hooks/useTrialBalanceMappings';
 import { useTrialBalanceData } from '@/hooks/useTrialBalanceData';
 import { convertAccountType } from '@/utils/accountTypeMapping';
-import MappingStatusWidget from './MappingStatusWidget';
 import FinancialStatementValidation from './FinancialStatementValidation';
 
 interface FinancialStatementLine {
@@ -20,6 +18,7 @@ interface FinancialStatementLine {
   is_total_line: boolean;
   sign_multiplier: number;
   calculation_formula?: string;
+  account_type?: string;
   parent_line_id?: string;
   amount?: number;
   children?: FinancialStatementLine[];
@@ -51,6 +50,7 @@ const FinancialStatementGenerator = ({ clientId, period }: FinancialStatementGen
       is_total_line: account.is_total_line || false,
       sign_multiplier: account.sign_multiplier || 1,
       calculation_formula: account.calculation_formula,
+      account_type: account.account_type,
       parent_line_id: account.parent_line_id,
       amount: 0, // TODO: Get actual amounts from trial balance
       children: [] as FinancialStatementLine[]
@@ -74,32 +74,42 @@ const FinancialStatementGenerator = ({ clientId, period }: FinancialStatementGen
 
     return topLevelLines;
   };
+  const financialStatement = useMemo(
+    () => buildFinancialStatementStructure(),
+    [standardAccounts]
+  );
 
   const calculateAmount = (line: FinancialStatementLine): number => {
     if (!trialBalanceData || !mappings) return 0;
 
     if (line.line_type === 'detail') {
       // Sum all trial balance accounts mapped to this statement line
-      const mappedAccounts = mappings.filter(m => m.statement_line_number === line.standard_number);
+      const mappedAccounts = mappings.filter(
+        m => m.statement_line_number === line.standard_number
+      );
       let total = 0;
-      
+
       mappedAccounts.forEach(mapping => {
-        const account = trialBalanceData.find(acc => acc.account_number === mapping.account_number);
+        const account = trialBalanceData.find(
+          acc => acc.account_number === mapping.account_number
+        );
         if (account) {
           total += account.closing_balance;
         }
       });
-      
+
       return total * line.sign_multiplier;
     }
 
     if (line.line_type === 'subtotal' && line.children) {
       // Sum all children
-      return line.children.reduce((sum, child) => sum + calculateAmount(child), 0);
+      return line.children.reduce(
+        (sum, child) => sum + calculateAmount(child),
+        0
+      );
     }
 
     if (line.line_type === 'calculation' && line.calculation_formula) {
-      // Parse and calculate formula (e.g., "19 + 79" or "19-79")
       if (typeof line.calculation_formula === 'string') {
         return parseCalculationFormula(line.calculation_formula);
       }
@@ -110,19 +120,79 @@ const FinancialStatementGenerator = ({ clientId, period }: FinancialStatementGen
   };
 
   const parseCalculationFormula = (formula: string): number => {
-    if (!standardAccounts) return 0;
-    
-    // Simple formula parser for expressions like "19 + 79", "19 - 79", etc.
-    const cleanFormula = formula.replace(/\s/g, '');
-    
-    // Helper function to get amount for a standard account number
+    if (!financialStatement.length) return 0;
+
+    const cleanFormula = formula.replace(/\s+/g, '');
+
+    const tokens: string[] = [];
+    let i = 0;
+    while (i < cleanFormula.length) {
+      const char = cleanFormula[i];
+      if (/\d/.test(char)) {
+        let num = '';
+        while (i < cleanFormula.length && /\d/.test(cleanFormula[i])) {
+          num += cleanFormula[i];
+          i++;
+        }
+        tokens.push(num);
+        continue;
+      }
+      if (char === '+' || char === '-' || char === '(' || char === ')') {
+        if (
+          (char === '-' || char === '+') &&
+          (tokens.length === 0 || ['+', '-', '('].includes(tokens[tokens.length - 1]))
+        ) {
+          i++;
+          let num = '';
+          while (i < cleanFormula.length && /\d/.test(cleanFormula[i])) {
+            num += cleanFormula[i];
+            i++;
+          }
+          tokens.push((char === '-' ? '-' : '') + num);
+          continue;
+        }
+        tokens.push(char);
+        i++;
+        continue;
+      }
+      // Skip unknown characters
+      i++;
+    }
+
+    const output: string[] = [];
+    const operators: string[] = [];
+    const precedence = (op: string) => (op === '+' || op === '-' ? 1 : 0);
+
+    tokens.forEach(token => {
+      if (/^-?\d+$/.test(token)) {
+        output.push(token);
+      } else if (token === '+' || token === '-') {
+        while (
+          operators.length &&
+          ['+', '-'].includes(operators[operators.length - 1]) &&
+          precedence(operators[operators.length - 1]) >= precedence(token)
+        ) {
+          output.push(operators.pop()!);
+        }
+        operators.push(token);
+      } else if (token === '(') {
+        operators.push(token);
+      } else if (token === ')') {
+        while (operators.length && operators[operators.length - 1] !== '(') {
+          output.push(operators.pop()!);
+        }
+        operators.pop();
+      }
+    });
+
+    while (operators.length) {
+      output.push(operators.pop()!);
+    }
+
     const getAmountForStandardAccount = (standardNumber: string): number => {
-      const standardAccount = standardAccounts.find(acc => acc.standard_number === standardNumber);
-      if (!standardAccount) return 0;
-      
-      // Find the line in our financial statement and calculate its amount
-      const financialStatement = buildFinancialStatementStructure();
-      const findLineRecursively = (lines: FinancialStatementLine[]): FinancialStatementLine | undefined => {
+      const findLineRecursively = (
+        lines: FinancialStatementLine[]
+      ): FinancialStatementLine | undefined => {
         for (const line of lines) {
           if (line.standard_number === standardNumber) return line;
           if (line.children) {
@@ -132,31 +202,27 @@ const FinancialStatementGenerator = ({ clientId, period }: FinancialStatementGen
         }
         return undefined;
       };
-      
+
       const line = findLineRecursively(financialStatement);
       return line ? calculateAmount(line) : 0;
     };
-    
-    // Handle addition and subtraction
-    const additionMatch = cleanFormula.match(/^(\d+)\+(\d+)$/);
-    if (additionMatch) {
-      const [, num1, num2] = additionMatch;
-      return getAmountForStandardAccount(num1) + getAmountForStandardAccount(num2);
-    }
-    
-    const subtractionMatch = cleanFormula.match(/^(\d+)-(\d+)$/);
-    if (subtractionMatch) {
-      const [, num1, num2] = subtractionMatch;
-      return getAmountForStandardAccount(num1) - getAmountForStandardAccount(num2);
-    }
-    
-    // If single number, get that standard account balance
-    const singleNumberMatch = cleanFormula.match(/^(\d+)$/);
-    if (singleNumberMatch) {
-      return getAmountForStandardAccount(singleNumberMatch[1]);
-    }
-    
-    return 0;
+
+    const stack: number[] = [];
+    output.forEach(token => {
+      if (/^-?\d+$/.test(token)) {
+        const isNegative = token.startsWith('-');
+        const amount = getAmountForStandardAccount(
+          isNegative ? token.slice(1) : token
+        );
+        stack.push(isNegative ? -amount : amount);
+      } else {
+        const b = stack.pop() ?? 0;
+        const a = stack.pop() ?? 0;
+        stack.push(token === '+' ? a + b : a - b);
+      }
+    });
+
+    return stack[0] ?? 0;
   };
 
   const formatAmount = (amount: number): string => {
@@ -207,42 +273,43 @@ const FinancialStatementGenerator = ({ clientId, period }: FinancialStatementGen
     return <div>Laster regnskapsoppstilling...</div>;
   }
 
-  const financialStatement = buildFinancialStatementStructure();
-
   // Calculate totals for validation
   const calculateTotals = () => {
-    if (!trialBalanceData || !standardAccounts) return { assets: 0, liabilities: 0, equity: 0, revenue: 0, expenses: 0 };
-    
-    let assets = 0, liabilities = 0, equity = 0, revenue = 0, expenses = 0;
-    
-    trialBalanceData.forEach(account => {
-      // Find which standard account this is mapped to
-      const mapping = mappings.find(m => m.account_number === account.account_number);
-      if (mapping) {
-        const standardAccount = standardAccounts.find(acc => acc.standard_number === mapping.statement_line_number);
-        if (standardAccount) {
-          const amount = account.closing_balance;
-          const normalizedType = convertAccountType(standardAccount.account_type);
-          
-          switch (normalizedType) {
-            case 'eiendeler':
-              assets += amount;
-              break;
-            case 'gjeld':
-              liabilities += amount;
-              break;
-            case 'egenkapital':
-              equity += amount;
-              break;
-            case 'resultat':
-              if (amount > 0) revenue += amount;
-              else expenses += Math.abs(amount);
-              break;
-          }
+    if (!financialStatement.length) {
+      return { assets: 0, liabilities: 0, equity: 0, revenue: 0, expenses: 0 };
+    }
+
+    let assets = 0,
+      liabilities = 0,
+      equity = 0,
+      revenue = 0,
+      expenses = 0;
+
+    const traverse = (line: FinancialStatementLine) => {
+      if (line.line_type === 'detail' && line.account_type) {
+        const amount = calculateAmount(line);
+        const normalizedType = convertAccountType(line.account_type);
+        switch (normalizedType) {
+          case 'eiendeler':
+            assets += amount;
+            break;
+          case 'gjeld':
+            liabilities += amount;
+            break;
+          case 'egenkapital':
+            equity += amount;
+            break;
+          case 'resultat':
+            if (amount > 0) revenue += amount;
+            else expenses += Math.abs(amount);
+            break;
         }
       }
-    });
-    
+      if (line.children) line.children.forEach(traverse);
+    };
+
+    financialStatement.forEach(traverse);
+
     return { assets, liabilities, equity, revenue, expenses };
   };
 
