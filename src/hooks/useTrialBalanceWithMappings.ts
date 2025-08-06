@@ -127,22 +127,17 @@ export const useTrialBalanceWithMappings = (clientId: string, fiscalYear?: numbe
         };
       }
 
-      // Get account classifications for this client and version
-      let classificationsQuery = supabase
+      // Get account classifications for this client (without version filtering to avoid UUID errors)
+      const { data: classificationsData, error: classificationsError } = await supabase
         .from('account_classifications')
         .select('account_number, new_category')
         .eq('client_id', clientId)
         .eq('is_active', true);
 
-      if (selectedVersion) {
-        classificationsQuery = classificationsQuery.eq('version_id', selectedVersion);
-      }
-
-      const { data: classificationsData, error: classificationsError } = await classificationsQuery;
-
       if (classificationsError) {
         console.error('Error fetching account classifications:', classificationsError);
-        throw classificationsError;
+        // Don't throw error for classifications - continue without them
+        console.warn('Continuing without account classifications:', classificationsError);
       }
 
       // Get trial balance mappings for this client
