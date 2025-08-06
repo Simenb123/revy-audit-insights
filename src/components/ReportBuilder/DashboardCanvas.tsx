@@ -10,9 +10,10 @@ const ResponsiveGridLayout = WidthProvider(Responsive);
 
 interface DashboardCanvasProps {
   clientId: string;
+  selectedVersion?: string;
 }
 
-export function DashboardCanvas({ clientId }: DashboardCanvasProps) {
+export function DashboardCanvas({ clientId, selectedVersion }: DashboardCanvasProps) {
   const { widgets, layouts, updateLayout } = useWidgetManager();
 
   const handleLayoutChange = (layout: Layout[]) => {
@@ -56,7 +57,7 @@ export function DashboardCanvas({ clientId }: DashboardCanvasProps) {
         {widgets.map(widget => (
           <div key={widget.id} className="bg-card border rounded-lg shadow-sm">
             <WidgetWrapper widget={widget}>
-              <WidgetRenderer widget={{ ...widget, config: { ...widget.config, clientId } }} />
+              <WidgetRenderer widget={{ ...widget, config: { ...widget.config, clientId, selectedVersion } }} />
             </WidgetWrapper>
           </div>
         ))}

@@ -18,7 +18,8 @@ export function ChartWidget({ widget }: ChartWidgetProps) {
   
   const { data: trialBalanceData, isLoading } = useTrialBalanceWithMappings(
     clientId, 
-    selectedFiscalYear
+    selectedFiscalYear,
+    widget.config?.selectedVersion
   );
 
   const chartData = React.useMemo(() => {

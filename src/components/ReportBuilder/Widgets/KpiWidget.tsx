@@ -17,7 +17,8 @@ export function KpiWidget({ widget }: KpiWidgetProps) {
   
   const { data: trialBalanceData, isLoading } = useTrialBalanceWithMappings(
     clientId, 
-    selectedFiscalYear
+    selectedFiscalYear,
+    widget.config?.selectedVersion
   );
 
   // Calculate metric data from trial balance data

@@ -18,7 +18,8 @@ export function TableWidget({ widget }: TableWidgetProps) {
   
   const { data: trialBalanceData, isLoading } = useTrialBalanceWithMappings(
     clientId, 
-    selectedFiscalYear
+    selectedFiscalYear,
+    widget.config?.selectedVersion
   );
 
   const tableData = React.useMemo(() => {

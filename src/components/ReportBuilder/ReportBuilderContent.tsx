@@ -1,13 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useWidgetManager } from '@/contexts/WidgetManagerContext';
 import { DashboardCanvas } from './DashboardCanvas';
 import { WidgetLibrary } from './WidgetLibrary';
 import { SaveReportDialog } from './SaveReportDialog';
 import { LoadReportDialog } from './LoadReportDialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Save, FolderOpen } from 'lucide-react';
+import { Plus, Save, FolderOpen, Database } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 import { useClientReports, type ClientReport } from '@/hooks/useClientReports';
+import { useTBVersionOptions } from '@/hooks/useTrialBalanceVersions';
 import { toast } from 'sonner';
 
 interface ReportBuilderContentProps {
@@ -20,9 +23,20 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
   const [showWidgetLibrary, setShowWidgetLibrary] = useState(false);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [showLoadDialog, setShowLoadDialog] = useState(false);
+  const [selectedVersion, setSelectedVersion] = useState<string>('');
   
   const { widgets, layouts, addWidget, removeWidget, updateLayout } = useWidgetManager();
   const { reports, loading, saveReport, deleteReport } = useClientReports(clientId);
+  
+  // Fetch available trial balance versions
+  const { data: versionOptions = [], isLoading: versionsLoading } = useTBVersionOptions(clientId, selectedFiscalYear);
+  
+  // Set default version to the latest one
+  useEffect(() => {
+    if (versionOptions.length > 0 && !selectedVersion) {
+      setSelectedVersion(versionOptions[0].version);
+    }
+  }, [versionOptions, selectedVersion]);
 
   const handleSaveReport = async (reportName: string, description?: string) => {
     try {
@@ -72,36 +86,63 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
             </p>
           </div>
           
-          <div className="flex flex-wrap gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setShowWidgetLibrary(!showWidgetLibrary)}
-              className="flex items-center gap-2"
-              disabled={!hasData}
-            >
-              <Plus className="h-4 w-4" />
-              Legg til widget
-            </Button>
+          <div className="flex flex-col gap-4">
+            {/* Version Selector */}
+            {versionOptions.length > 0 && (
+              <div className="flex items-center gap-2 min-w-0">
+                <Label htmlFor="version-select" className="flex items-center gap-1 text-sm whitespace-nowrap">
+                  <Database className="h-4 w-4" />
+                  Dataversjon:
+                </Label>
+                <Select value={selectedVersion} onValueChange={setSelectedVersion}>
+                  <SelectTrigger id="version-select" className="w-[200px]">
+                    <SelectValue placeholder="Velg versjon" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {versionOptions.map((option) => (
+                      <SelectItem key={option.id} value={option.version}>
+                        {option.label}
+                        {option.is_locked && (
+                          <span className="ml-2 text-xs text-muted-foreground">(Låst)</span>
+                        )}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             
-            <Button 
-              variant="outline" 
-              className="flex items-center gap-2"
-              onClick={() => setShowLoadDialog(true)}
-              disabled={!hasData}
-            >
-              <FolderOpen className="h-4 w-4" />
-              Last rapport
-            </Button>
-            
-            <Button 
-              variant="outline" 
-              className="flex items-center gap-2"
-              onClick={() => setShowSaveDialog(true)}
-              disabled={!hasData || widgets.length === 0}
-            >
-              <Save className="h-4 w-4" />
-              Lagre rapport
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowWidgetLibrary(!showWidgetLibrary)}
+                className="flex items-center gap-2"
+                disabled={!hasData || !selectedVersion}
+              >
+                <Plus className="h-4 w-4" />
+                Legg til widget
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                className="flex items-center gap-2"
+                onClick={() => setShowLoadDialog(true)}
+                disabled={!hasData || !selectedVersion}
+              >
+                <FolderOpen className="h-4 w-4" />
+                Last rapport
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                className="flex items-center gap-2"
+                onClick={() => setShowSaveDialog(true)}
+                disabled={!hasData || widgets.length === 0 || !selectedVersion}
+              >
+                <Save className="h-4 w-4" />
+                Lagre rapport
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -136,9 +177,9 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
         )}
 
         {/* Dashboard Canvas */}
-        {hasData && (
+        {hasData && selectedVersion && (
           <div className="min-h-[600px]">
-            <DashboardCanvas clientId={clientId} />
+            <DashboardCanvas clientId={clientId} selectedVersion={selectedVersion} />
           </div>
         )}
       </div>
