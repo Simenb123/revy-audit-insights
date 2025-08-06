@@ -214,10 +214,10 @@ export const GENERAL_LEDGER_FIELDS: FieldDefinition[] = [
 export function detectCSVDelimiter(text: string): string {
   const delimiters = [',', ';', '\t', '|'];
   const firstLine = text.split('\n')[0];
-  
+
   let bestDelimiter = ',';
   let maxCount = 0;
-  
+
   for (const delimiter of delimiters) {
     const count = (firstLine.match(new RegExp('\\' + delimiter, 'g')) || []).length;
     if (count > maxCount) {
@@ -225,56 +225,111 @@ export function detectCSVDelimiter(text: string): string {
       bestDelimiter = delimiter;
     }
   }
-  
+
   return bestDelimiter;
+}
+
+// Reusable CSV line parser
+function parseCSVLine(line: string, delimiter: string): string[] {
+  const result: string[] = [];
+  let current = '';
+  let inQuotes = false;
+  let quoteCount = 0;
+
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+
+    if (char === '"') {
+      quoteCount++;
+      // Handle escaped quotes
+      if (i + 1 < line.length && line[i + 1] === '"') {
+        current += '"';
+        i++; // Skip next quote
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (char === delimiter && !inQuotes) {
+      result.push(current.trim());
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  result.push(current.trim());
+
+  // Clean fields by removing outer quotes only if they wrap the entire field
+  return result.map(field => {
+    const trimmed = field.trim();
+    if (trimmed.length >= 2 && trimmed.startsWith('"') && trimmed.endsWith('"')) {
+      return trimmed.slice(1, -1).replace(/""/g, '"'); // Handle escaped quotes
+    }
+    return trimmed;
+  });
 }
 
 // Enhanced CSV parsing to prevent column merging issues
 export function parseCSV(text: string, delimiter?: string): { headers: string[]; rows: string[][] } {
   const detectedDelimiter = delimiter || detectCSVDelimiter(text);
   const lines = text.split('\n').filter(line => line.trim());
-  
-  const parseCSVLine = (line: string): string[] => {
-    const result: string[] = [];
-    let current = '';
-    let inQuotes = false;
-    let quoteCount = 0;
-    
-    for (let i = 0; i < line.length; i++) {
-      const char = line[i];
-      
-      if (char === '"') {
-        quoteCount++;
-        // Handle escaped quotes
-        if (i + 1 < line.length && line[i + 1] === '"') {
-          current += '"';
-          i++; // Skip next quote
-        } else {
-          inQuotes = !inQuotes;
-        }
-      } else if (char === detectedDelimiter && !inQuotes) {
-        result.push(current.trim());
-        current = '';
-      } else {
-        current += char;
-      }
-    }
-    result.push(current.trim());
-    
-    // Clean fields by removing outer quotes only if they wrap the entire field
-    return result.map(field => {
-      const trimmed = field.trim();
-      if (trimmed.length >= 2 && trimmed.startsWith('"') && trimmed.endsWith('"')) {
-        return trimmed.slice(1, -1).replace(/""/g, '"'); // Handle escaped quotes
-      }
-      return trimmed;
-    });
-  };
-  
-  const headers = parseCSVLine(lines[0]);
-  const rows = lines.slice(1).map(parseCSVLine);
-  
+
+  const headers = parseCSVLine(lines[0], detectedDelimiter);
+  const rows = lines.slice(1).map(line => parseCSVLine(line, detectedDelimiter));
+
   return { headers, rows };
+}
+
+// Fuzzy detection of CSV header row using string similarity
+export function detectCSVHeaderRow(rows: string[][]): number {
+  const aliasTerms = [
+    ...TRIAL_BALANCE_FIELDS,
+    ...CHART_OF_ACCOUNTS_FIELDS,
+    ...GENERAL_LEDGER_FIELDS
+  ].flatMap(f => [f.label, ...f.aliases]).map(a => normalizeNorwegianText(a));
+
+  let bestIndex = 0;
+  let bestScore = 0;
+
+  for (let i = 0; i < Math.min(15, rows.length); i++) {
+    const row = rows[i];
+    if (!row) continue;
+
+    const nonEmptyCells = row.filter(cell => cell && cell.toString().trim() !== '');
+    if (nonEmptyCells.length < 2) continue;
+
+    const textCells = nonEmptyCells.filter(cell => {
+      const str = cell.toString().trim();
+      if (!str) return false;
+      const normalizedStr = str.replace(/[\s.,-]/g, '');
+      return isNaN(Number(normalizedStr));
+    });
+
+    let score = 0;
+    for (const cell of textCells) {
+      const normCell = normalizeNorwegianText(cell.toString());
+      const hasAlias = aliasTerms.some(alias => {
+        const dist = levenshteinDistance(normCell, alias);
+        return dist <= 2 || normCell.includes(alias) || alias.includes(normCell);
+      });
+      if (hasAlias) score += 10;
+    }
+
+    const textRatio = textCells.length / nonEmptyCells.length;
+    if (textRatio >= 0.7) score += 5;
+    else if (textRatio >= 0.5) score += 3;
+
+    if (nonEmptyCells.length >= 5) score += 3;
+    else if (nonEmptyCells.length >= 3) score += 2;
+
+    if (i <= 2) score += 2;
+    else if (i <= 5) score += 1;
+
+    if (score > bestScore) {
+      bestScore = score;
+      bestIndex = i;
+    }
+  }
+
+  return bestScore >= 5 ? bestIndex : 0;
 }
 
 // Detect header row in Excel data
@@ -488,23 +543,28 @@ export async function processCSVFile(file: File): Promise<FilePreview> {
   try {
     const text = await file.text();
     const delimiter = detectCSVDelimiter(text);
-    const { headers, rows } = parseCSV(text, delimiter);
-    
-    console.log(`CSV file processed: ${rows.length} total rows`);
-    
-    // For CSV, we assume header is on first row for now
-    // TODO: Implement header detection for CSV similar to Excel
-    const headerRowIndex = 0;
-    const skippedRows: { rowIndex: number; content: string[] }[] = [];
-    const originalRowNumbers = rows.map((_, index) => index + 1);
-    
+    const lines = text.split('\n').filter(line => line.trim());
+    const allRows = lines.map(line => parseCSVLine(line, delimiter));
+
+    console.log(`CSV file processed: ${Math.max(allRows.length - 1, 0)} total rows`);
+
+    const headerRowIndex = detectCSVHeaderRow(allRows);
+    const headers = allRows[headerRowIndex] || [];
+    const dataRows = allRows.slice(headerRowIndex + 1);
+
+    const skippedRows = allRows.slice(0, headerRowIndex).map((row, index) => ({
+      rowIndex: index,
+      content: row
+    }));
+    const originalRowNumbers = dataRows.map((_, index) => headerRowIndex + 1 + index);
+
     return {
       headers,
-      rows: rows.slice(0, 10), // Preview first 10 rows
-      allRows: rows, // Full dataset for processing
+      rows: dataRows.slice(0, 10), // Preview first 10 rows
+      allRows: dataRows, // Full dataset for processing
       detectedDelimiter: delimiter,
       hasHeaders: true,
-      totalRows: rows.length,
+      totalRows: dataRows.length,
       headerRowIndex,
       skippedRows,
       originalRowNumbers
