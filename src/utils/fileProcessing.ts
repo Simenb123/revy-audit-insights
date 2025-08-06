@@ -85,6 +85,27 @@ export const TRIAL_BALANCE_FIELDS: FieldDefinition[] = [
     required: false,
     type: 'text',
     aliases: ['kontotype', 'account_type', 'type', 'kategori', 'category']
+  },
+  {
+    key: 'regnskapsnr',
+    label: 'Regnskapsnummer',
+    required: false,
+    type: 'text',
+    aliases: ['regnskapsnr', 'regnr', 'regnskapsno', 'regnskapsnummer', 'regnskap', 'regulatoryno']
+  },
+  {
+    key: 'regnskapsnr_resultat',
+    label: 'Regnskapsnummer (Resultat)',
+    required: false,
+    type: 'text',
+    aliases: ['resultat', 'rs', 'regnskap_resultat', 'result', 'resultatregnskap', 'income_statement']
+  },
+  {
+    key: 'regnskapsnr_balanse',
+    label: 'Regnskapsnummer (Balanse)',
+    required: false,
+    type: 'text',
+    aliases: ['balanse', 'bs', 'regnskap_balanse', 'balance', 'balanseregnskap', 'balance_sheet']
   }
 ];
 
@@ -1116,6 +1137,29 @@ export function convertDataWithMapping(
   console.log('Mappings to apply:', mappings);
   console.log('Header index map:', headerIndexMap);
   
+  // Helper function to merge regnskapsnr values from multiple sources
+  const mergeRegnskapsnrValues = (row: any[], mappings: Record<string, string>): string | null => {
+    const sources = ['regnskapsnr_resultat', 'regnskapsnr_balanse', 'regnskapsnr'];
+    
+    for (const source of sources) {
+      const sourceColumns = Object.entries(mappings)
+        .filter(([_, targetField]) => targetField === source)
+        .map(([sourceColumn, _]) => sourceColumn);
+      
+      for (const sourceColumn of sourceColumns) {
+        const columnIndex = headerIndexMap[sourceColumn];
+        if (columnIndex !== undefined && row[columnIndex] !== undefined) {
+          const value = row[columnIndex];
+          if (value && value.toString().trim()) {
+            console.log(`Found regnskapsnr value "${value}" from ${source} column "${sourceColumn}"`);
+            return value.toString().trim();
+          }
+        }
+      }
+    }
+    return null;
+  };
+
   const convertedData = dataRows.map((row, index) => {
     const convertedRow: any = {};
     
@@ -1150,6 +1194,12 @@ export function convertDataWithMapping(
         
         convertedRow[targetField] = value;
       }
+    }
+    
+    // Merge regnskapsnr values with priority: resultat > balanse > regnskapsnr
+    const mergedRegnskapsnr = mergeRegnskapsnrValues(row, mappings);
+    if (mergedRegnskapsnr) {
+      convertedRow.regnskapsnr = mergedRegnskapsnr;
     }
     
     // Handle primary amount field mapping - if user mapped to 'amount', use it as the primary source
