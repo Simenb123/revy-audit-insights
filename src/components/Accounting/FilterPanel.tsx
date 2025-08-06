@@ -53,7 +53,7 @@ const FilterPanel = ({ className }: FilterPanelProps) => {
 
   const handleFilterChange = (key: string, value: string | null) => {
     const newSearchParams = new URLSearchParams(searchParams);
-    if (value) {
+    if (value && value !== 'all') {
       newSearchParams.set(key, value);
     } else {
       newSearchParams.delete(key);
@@ -97,14 +97,14 @@ const FilterPanel = ({ className }: FilterPanelProps) => {
           <div className="space-y-2">
             <label className="text-sm font-medium">Regnskapslinje</label>
             <Select
-              value={selectedAccountingLine || ''}
+              value={selectedAccountingLine || 'all'}
               onValueChange={(value) => handleFilterChange('accounting_line', value || null)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Velg regnskapslinje" />
               </SelectTrigger>
               <SelectContent className="max-h-60">
-                <SelectItem value="">Alle regnskapslinjer</SelectItem>
+                <SelectItem value="all">Alle regnskapslinjer</SelectItem>
                 {standardAccounts.map((account) => (
                   <SelectItem key={account.id} value={account.standard_number}>
                     {account.standard_number} - {account.standard_name}
@@ -118,14 +118,14 @@ const FilterPanel = ({ className }: FilterPanelProps) => {
           <div className="space-y-2">
             <label className="text-sm font-medium">Kategori (Sumlinje)</label>
             <Select
-              value={selectedSummaryLine || ''}
+              value={selectedSummaryLine || 'all'}
               onValueChange={(value) => handleFilterChange('summary_line', value || null)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Velg kategori" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Alle kategorier</SelectItem>
+                <SelectItem value="all">Alle kategorier</SelectItem>
                 {summaryLineOptions.map((category) => (
                   <SelectItem key={category} value={category}>
                     {category}
@@ -139,14 +139,14 @@ const FilterPanel = ({ className }: FilterPanelProps) => {
           <div className="space-y-2">
             <label className="text-sm font-medium">Kontotype</label>
             <Select
-              value={selectedAccountType || ''}
+              value={selectedAccountType || 'all'}
               onValueChange={(value) => handleFilterChange('account_type', value || null)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Velg kontotype" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Alle kontotyper</SelectItem>
+                <SelectItem value="all">Alle kontotyper</SelectItem>
                 {accountTypeOptions.map((option) => (
                   <SelectItem key={option.value} value={option.value}>
                     {option.label}
@@ -160,14 +160,14 @@ const FilterPanel = ({ className }: FilterPanelProps) => {
           <div className="space-y-2">
             <label className="text-sm font-medium">Analysegruppe</label>
             <Select
-              value={selectedAnalysisGroup || ''}
+              value={selectedAnalysisGroup || 'all'}
               onValueChange={(value) => handleFilterChange('analysis_group', value || null)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Velg analysegruppe" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Alle analysegrupper</SelectItem>
+                <SelectItem value="all">Alle analysegrupper</SelectItem>
                 {analysisGroupOptions.map((group) => (
                   <SelectItem key={group} value={group}>
                     {group}
