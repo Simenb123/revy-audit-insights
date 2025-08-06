@@ -7,6 +7,7 @@ import DataTable, { DataTableColumn } from '@/components/ui/data-table';
 import { TableRow, TableCell } from '@/components/ui/table';
 import { format } from 'date-fns';
 import { useQuery } from '@tanstack/react-query';
+import { logger } from '@/utils/logger';
 
 interface GeneralLedgerTableProps {
   clientId: string;
@@ -16,19 +17,24 @@ interface GeneralLedgerTableProps {
 const GeneralLedgerTable = ({ clientId, versionId }: GeneralLedgerTableProps) => {
   const [currentPage, setCurrentPage] = React.useState(1);
   const pageSize = 100;
-  
-  console.log('🔍 GeneralLedgerTable rendering for client:', clientId, 'version:', versionId);
+  const isDebug = process.env.NODE_ENV !== 'production';
+
+  if (isDebug) {
+    logger.log('🔍 GeneralLedgerTable rendering for client:', clientId, 'version:', versionId);
+  }
   
   const { data: transactions, isLoading, error } = useGeneralLedgerData(clientId, versionId, { page: currentPage, pageSize });
   const { data: totalCount, isLoading: isCountLoading } = useGeneralLedgerCount(clientId, versionId);
   const { data: allTransactions, isLoading: isExportLoading } = useGeneralLedgerData(clientId, versionId, undefined);
-  
-  console.log('📊 GeneralLedgerTable data:', {
-    transactionsCount: transactions?.length || 0,
-    totalCount,
-    isLoading,
-    error: error?.message
-  });
+
+  if (isDebug) {
+    logger.log('📊 GeneralLedgerTable data:', {
+      transactionsCount: transactions?.length || 0,
+      totalCount,
+      isLoading,
+      error: error?.message
+    });
+  }
   
   // Get field definitions for general ledger
   const { data: fieldDefinitions } = useQuery({
