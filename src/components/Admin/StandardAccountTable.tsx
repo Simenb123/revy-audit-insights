@@ -21,6 +21,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -209,6 +210,9 @@ const StandardAccountTable = () => {
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Opprett ny standardkonto</DialogTitle>
+                <DialogDescription>
+                  Opprett en ny standardkonto med kontonummer, navn og kategori.
+                </DialogDescription>
               </DialogHeader>
               <StandardAccountForm onSubmit={handleCreate} />
             </DialogContent>
@@ -326,6 +330,9 @@ const StandardAccountTable = () => {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Rediger standardkonto</DialogTitle>
+            <DialogDescription>
+              Rediger kontonummer, navn og kategori for den valgte standardkontoen.
+            </DialogDescription>
           </DialogHeader>
           <StandardAccountForm 
             defaultValues={editingAccount || undefined} 

@@ -27,6 +27,7 @@ class FormulaEvaluator {
 
     try {
       let expression = '';
+      let openParenCount = 0;
       
       for (const term of formula.terms) {
         if (term.operator && expression.length > 0) {
@@ -46,16 +47,34 @@ class FormulaEvaluator {
             expression += (term.constant || 0).toString();
             break;
           case 'parenthesis':
-            expression += term.parenthesis === 'open' ? '(' : ')';
+            if (term.parenthesis === 'open') {
+              expression += '(';
+              openParenCount++;
+            } else if (term.parenthesis === 'close') {
+              expression += ')';
+              openParenCount--;
+            }
             break;
         }
       }
 
+      // Validate parentheses balance
+      if (openParenCount !== 0) {
+        console.warn('Unbalanced parentheses in formula:', expression);
+        return 0;
+      }
+
+      // Validate expression is not empty and contains valid syntax
+      if (!expression.trim() || expression.includes('()') || /[\+\-\*\/]{2,}/.test(expression)) {
+        console.warn('Invalid formula expression:', expression);
+        return 0;
+      }
+
       // Safe evaluation using Function constructor
       const result = new Function('return ' + expression)();
-      return isNaN(result) ? 0 : result;
+      return isNaN(result) || !isFinite(result) ? 0 : result;
     } catch (error) {
-      console.error('Formula evaluation error:', error);
+      console.warn('Formula evaluation error - returning 0:', error.message);
       return 0;
     }
   }

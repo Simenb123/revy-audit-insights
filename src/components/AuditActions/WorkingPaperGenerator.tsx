@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { FileText, Wand2, Save, Download, CheckCircle, AlertTriangle } from 'lucide-react';
 import { WorkingPaperTemplate, EnhancedAuditActionTemplate } from '@/types/enhanced-audit-actions';
 
@@ -219,6 +219,9 @@ const WorkingPaperGenerator = ({
               <FileText className="w-5 h-5" />
               Generer arbeidspapir
             </DialogTitle>
+            <DialogDescription className="sr-only">
+              Generer et strukturert arbeidspapir basert på valgte maler og data
+            </DialogDescription>
             <div className="flex items-center gap-2">
               {completion.percentage === 100 ? (
                 <Badge className="bg-green-500">
