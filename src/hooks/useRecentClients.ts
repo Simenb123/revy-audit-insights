@@ -13,12 +13,15 @@ const MAX_RECENT_CLIENTS = 10;
 const STORAGE_EXPIRY_DAYS = 30;
 
 export const useRecentClients = () => {
-  const { session } = useAuth();
+  const { session, isLoading } = useAuth();
   const [recentClients, setRecentClients] = useState<RecentClient[]>([]);
 
-  const storageKey = `recent_clients_${session?.user?.id || 'anonymous'}`;
+  const storageKey = !isLoading
+    ? `recent_clients_${session?.user?.id ?? 'anonymous'}`
+    : null;
 
   const loadRecentClients = useCallback(() => {
+    if (!storageKey) return;
     try {
       const stored = localStorage.getItem(storageKey);
       if (stored) {
@@ -38,6 +41,7 @@ export const useRecentClients = () => {
   }, [storageKey]);
 
   const saveRecentClients = useCallback((clients: RecentClient[]) => {
+    if (!storageKey) return;
     try {
       localStorage.setItem(storageKey, JSON.stringify(clients));
     } catch (error) {
@@ -53,13 +57,16 @@ export const useRecentClients = () => {
       const filtered = prev.filter(c => c.id !== client.id);
       const updated = [newClient, ...filtered].slice(0, MAX_RECENT_CLIENTS);
       saveRecentClients(updated);
-      window.dispatchEvent(new Event('recent-clients-updated'));
+      if (storageKey) {
+        window.dispatchEvent(new Event('recent-clients-updated'));
+      }
       return updated;
     });
-  }, [saveRecentClients]);
+  }, [saveRecentClients, storageKey]);
 
   const clearHistory = useCallback(() => {
     setRecentClients([]);
+    if (!storageKey) return;
     try {
       localStorage.removeItem(storageKey);
     } catch (error) {
@@ -68,16 +75,18 @@ export const useRecentClients = () => {
   }, [storageKey]);
 
   useEffect(() => {
+    if (!storageKey) return;
     loadRecentClients();
-  }, [loadRecentClients]);
+  }, [loadRecentClients, storageKey]);
 
   useEffect(() => {
+    if (!storageKey) return;
     const handleUpdate = () => loadRecentClients();
     window.addEventListener('recent-clients-updated', handleUpdate);
     return () => {
       window.removeEventListener('recent-clients-updated', handleUpdate);
     };
-  }, [loadRecentClients]);
+  }, [loadRecentClients, storageKey]);
 
   return {
     recentClients,
