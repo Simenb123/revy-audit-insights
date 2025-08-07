@@ -20,6 +20,7 @@ export function TableWidget({ widget }: TableWidgetProps) {
   const sortBy = widget.config?.sortBy || 'balance';
   const showPercentage = widget.config?.showPercentage !== false;
   const groupByCategory = widget.config?.groupByCategory !== false;
+  const classificationFilter = widget.config?.filterByClassification;
   
   const [selectedCategory, setSelectedCategory] = React.useState<string>('all');
   const [expandedGroups, setExpandedGroups] = React.useState<Set<string>>(new Set());
@@ -37,6 +38,14 @@ export function TableWidget({ widget }: TableWidgetProps) {
 
     let filteredEntries = [...trialBalanceData.trialBalanceEntries]
       .filter(entry => Math.abs(entry.closing_balance) > 0);
+
+    // Filter by classification if configured
+    if (classificationFilter) {
+      filteredEntries = filteredEntries.filter(entry =>
+        entry.standard_account_type === classificationFilter ||
+        entry.standard_category === classificationFilter
+      );
+    }
 
     // Filter by selected category
     if (selectedCategory !== 'all') {
@@ -90,7 +99,7 @@ export function TableWidget({ widget }: TableWidgetProps) {
       categories: cats, 
       totalBalance: total 
     };
-  }, [trialBalanceData, selectedCategory, sortBy]);
+  }, [trialBalanceData, selectedCategory, sortBy, classificationFilter]);
 
   const toggleGroup = (category: string) => {
     const newExpanded = new Set(expandedGroups);
