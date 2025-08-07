@@ -3,6 +3,7 @@ import { useWidgetManager } from '@/contexts/WidgetManagerContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart3, Table, TrendingUp, FileText, X, Calculator } from 'lucide-react';
+import { useWidgetTemplates } from '@/hooks/useWidgetTemplates';
 
 interface WidgetLibraryProps {
   clientId: string;
@@ -11,8 +12,9 @@ interface WidgetLibraryProps {
 
 export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
   const { addWidget } = useWidgetManager();
+  const { data: dbTemplates } = useWidgetTemplates();
 
-  const widgetTemplates = [
+  const defaultTemplates = [
     {
       type: 'kpi' as const,
       title: 'Nøkkeltall',
@@ -66,7 +68,30 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
     }
   ];
 
-  const handleAddWidget = (template: typeof widgetTemplates[0]) => {
+  const templates = React.useMemo(() => {
+    if (dbTemplates && dbTemplates.length > 0) {
+      return dbTemplates.map(t => {
+        const fallback = defaultTemplates.find(dt => dt.type === t.type);
+        if (fallback) {
+          return {
+            ...fallback,
+            description: t.description,
+            defaultConfig: t.defaultConfig,
+          };
+        }
+        return {
+          type: t.type,
+          title: t.type,
+          description: t.description,
+          icon: FileText,
+          defaultConfig: t.defaultConfig,
+        };
+      });
+    }
+    return defaultTemplates;
+  }, [dbTemplates]);
+
+  const handleAddWidget = (template: typeof templates[0]) => {
     const widgetId = `widget-${Date.now()}`;
     const widget = {
       id: widgetId,
@@ -98,7 +123,7 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {widgetTemplates.map((template) => (
+        {templates.map((template) => (
           <Card 
             key={template.type} 
             className="cursor-pointer hover:shadow-md transition-shadow"
