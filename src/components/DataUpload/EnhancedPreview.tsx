@@ -5,7 +5,7 @@ import { CheckCircle, AlertCircle, Brain, Zap } from 'lucide-react';
 import { FilePreview, ColumnMapping, FieldDefinition } from '@/utils/fileProcessing';
 import { getFieldDefinitions, saveColumnMappingHistory, getHistoricalMappings, suggestEnhancedColumnMappings } from '@/utils/fieldDefinitions';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
-import HeaderRowSelector from './HeaderRowSelector';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import ColumnMappingTable from './ColumnMappingTable';
 import MappingSummary from './MappingSummary';
 
@@ -353,15 +353,40 @@ const EnhancedPreview: React.FC<EnhancedPreviewProps> = ({
         </div>
       </div>
 
-      {/* Header Row Selection */}
-      <HeaderRowSelector
-        currentHeaderRowIndex={currentHeaderRowIndex}
-        displayRows={displayRows}
-        showAllRows={showAllRows}
-        onHeaderRowChange={handleHeaderRowChange}
-        onToggleRows={() => setShowAllRows(!showAllRows)}
-        skippedRowsCount={preview.skippedRows.length}
-      />
+      {/* Kompakt valg av header-rad (uten forhåndsvisningstabell) */}
+      <div className="border border-border rounded-lg p-3 bg-muted/30">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <AlertCircle className="w-4 h-4" />
+            <span className="font-medium">Header rad valgt: rad {currentHeaderRowIndex + 1}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm">Velg header rad:</span>
+            <Select value={currentHeaderRowIndex.toString()} onValueChange={handleHeaderRowChange}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder={`Rad ${currentHeaderRowIndex + 1}`} />
+              </SelectTrigger>
+              <SelectContent>
+                {displayRows.map((row, index) => (
+                  <SelectItem key={index} value={index.toString()}>
+                    <div className="flex items-center gap-2">
+                      <span>Rad {index + 1}</span>
+                      {row.content.slice(0, 3).some(cell => {
+                        const strCell = typeof cell === 'string' ? cell : cell != null ? String(cell) : '';
+                        return strCell && ['konto', 'beløp', 'saldo', 'dato', 'navn'].some(term => 
+                          strCell.toLowerCase().includes(term)
+                        );
+                      }) && (
+                        <Badge variant="secondary" className="text-[10px]">Sannsynlig header</Badge>
+                      )}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </div>
 
       {/* Column Mapping Table */}
       <ColumnMappingTable
