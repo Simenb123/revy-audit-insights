@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Settings, Save } from 'lucide-react';
 import { FormulaWidgetConfig } from './WidgetConfiguration/FormulaWidgetConfig';
+import { useFirmStandardAccounts } from '@/hooks/useFirmStandardAccounts';
 
 interface WidgetConfigurationProps {
   widget: Widget;
@@ -18,18 +19,7 @@ export function WidgetConfiguration({ widget, onUpdateWidget }: WidgetConfigurat
   const [isOpen, setIsOpen] = useState(false);
   const [title, setTitle] = useState(widget.title);
   const [config, setConfig] = useState(widget.config || {});
-
-  // Mock standard accounts for now - should come from props or context
-  const standardAccounts = [
-    { standard_number: '1000', standard_name: 'Anleggsmidler' },
-    { standard_number: '1500', standard_name: 'Omløpsmidler' },
-    { standard_number: '2000', standard_name: 'Egenkapital' },
-    { standard_number: '2500', standard_name: 'Kortsiktig gjeld' },
-    { standard_number: '3000', standard_name: 'Salgsinntekter' },
-    { standard_number: '4000', standard_name: 'Varekostnad' },
-    { standard_number: '5000', standard_name: 'Lønnskostnad' },
-    { standard_number: '6000', standard_name: 'Andre driftskostnader' }
-  ];
+  const { data: standardAccounts = [] } = useFirmStandardAccounts();
 
   const handleSave = () => {
     onUpdateWidget({
