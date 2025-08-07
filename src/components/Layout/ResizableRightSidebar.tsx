@@ -4,7 +4,7 @@ import { useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Drawer, DrawerTrigger, DrawerContent } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { MessageSquare, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useClientLookup } from '@/hooks/useClientLookup';
 import { detectPageType, extractClientId } from './pageDetectionHelpers';
@@ -15,14 +15,8 @@ import ResizableHandle from './ResizableHandle';
 import { useRightSidebar } from './RightSidebarContext';
 
 const ResizableRightSidebar = () => {
-  const {
-    isCollapsed,
-    setIsCollapsed,
-    isHidden,
-    setIsHidden,
-    width,
-    setWidth
-  } = useRightSidebar();
+  const { isCollapsed, setIsCollapsed, width, setWidth } = useRightSidebar();
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const isMobile = useIsMobile();
   const [isDragging, setIsDragging] = useState(false);
   const location = useLocation();
@@ -86,17 +80,7 @@ const ResizableRightSidebar = () => {
   }, [isDragging, handleMouseMove, handleMouseUp]);
 
   const toggleSidebar = () => {
-    if (isHidden) {
-      setIsHidden(false);
-      setIsCollapsed(false);
-    } else {
-      setIsCollapsed(!isCollapsed);
-    }
-  };
-
-  const closeSidebar = () => {
-    setIsHidden(true);
-    setIsCollapsed(false);
+    setIsCollapsed(!isCollapsed);
   };
 
   const getPageTitle = () => {
@@ -132,7 +116,7 @@ const ResizableRightSidebar = () => {
   // Mobile version
   if (isMobile) {
     return (
-      <Drawer open={!isHidden} onOpenChange={(open) => setIsHidden(!open)}>
+      <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
         <DrawerTrigger asChild>
           <Button
             variant="default"
@@ -147,13 +131,6 @@ const ResizableRightSidebar = () => {
           <div className="flex flex-col h-full">
             <div className="flex items-center justify-between p-4 border-b">
               <h3 className="text-lg font-semibold">{getPageTitle()}</h3>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={closeSidebar}
-              >
-                <X className="h-4 w-4" />
-              </Button>
             </div>
             <ScrollArea className="flex-1">
               {renderContent()}
@@ -161,20 +138,6 @@ const ResizableRightSidebar = () => {
           </div>
         </DrawerContent>
       </Drawer>
-    );
-  }
-
-  // Desktop version - hidden state
-  if (isHidden) {
-    return (
-      <Button
-        variant="outline"
-        size="icon"
-        className="fixed top-20 right-4 z-50 h-10 w-10 shadow-lg bg-background border"
-        onClick={() => setIsHidden(false)}
-      >
-        <MessageSquare className="h-4 w-4" />
-      </Button>
     );
   }
 
@@ -218,15 +181,6 @@ const ResizableRightSidebar = () => {
                 aria-label="Kollaps sidebar"
               >
                 <ChevronLeft className="h-3 w-3" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6 hover:bg-muted transition-colors"
-                onClick={closeSidebar}
-                aria-label="Lukk sidebar"
-              >
-                <X className="h-3 w-3" />
               </Button>
             </div>
           </>
