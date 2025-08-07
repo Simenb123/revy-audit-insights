@@ -11,6 +11,24 @@ const corsHeaders = {
 
 
 async function analyzeDocumentWithAI(text: string, fileName: string): Promise<string> {
+  // Check if text is mostly PDF metadata/garbage
+  const isGarbageText = text.includes('PDF obj') || 
+                       text.includes('FlateDecode') || 
+                       text.includes('Filter') ||
+                       text.split(' ').filter(word => word.length > 2).length < 10;
+  
+  if (isGarbageText) {
+    log('⚠️ [DOCUMENT-AI-ANALYZER] Text appears to be PDF metadata, providing generic analysis');
+    return `Dette dokumentet ("${fileName}") ser ut til å være en PDF-fil som krever spesialisert tekstutvinning. 
+    
+    Basert på filnavnet kan dokumentet inneholde:
+    - Regnskapsinformasjon eller økonomiske data
+    - Revisjonsrelevant informasjon
+    - Dokumentasjon som krever nærmere gjennomgang
+    
+    Anbefaler manuell gjennomgang av dette dokumentet da automatisk tekstutvinning ikke ga tilfredsstillende resultat.`;
+  }
+
   const data = await callOpenAI('chat/completions', {
     model: 'gpt-4o-mini',
     messages: [

@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FileText, Upload, BarChart3, Brain, Search, Workflow } from 'lucide-react';
+import { TestAIPipelineButton } from '../documents/TestAIPipelineButton';
 import { useClientDocumentsList } from '@/hooks/useClientDocumentsList';
 import { useDocumentCategories } from '@/hooks/useDocumentCategories';
 import { useDocumentOperations } from '@/hooks/useDocumentOperations';

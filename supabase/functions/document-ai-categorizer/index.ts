@@ -1,5 +1,7 @@
+import "../xhr.ts";
 import { log } from "../_shared/log.ts";
 import { getSupabase } from "../_shared/supabaseClient.ts";
+import { callOpenAI } from "../_shared/openai.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -33,30 +35,91 @@ Deno.serve(async (req: Request) => {
       throw new Error(`Failed to fetch categories: ${categoriesError.message}`);
     }
 
-    // Simple filename-based categorization
+    // Enhanced AI-based categorization
     let bestMatch = null;
     let highestScore = 0;
+    let aiCategory = null;
+    let aiConfidence = 0.5;
 
     const lowerFileName = fileName.toLowerCase();
 
-    for (const category of categories) {
-      for (const pattern of category.expected_file_patterns) {
-        if (lowerFileName.includes(pattern.toLowerCase())) {
-          const score = pattern.length / fileName.length; // Longer patterns get higher scores
-          if (score > highestScore) {
-            highestScore = score;
-            bestMatch = category;
+    // First try AI categorization if we have good extracted text
+    const hasGoodText = extractedText && 
+                       extractedText.length > 50 && 
+                       !extractedText.includes('PDF obj') &&
+                       !extractedText.includes('FlateDecode');
+
+    if (hasGoodText) {
+      try {
+        log('🤖 [DOCUMENT-AI-CATEGORIZER] Using AI for categorization...');
+        
+        const categoryNames = categories.map(c => c.category_name).join(', ');
+        
+        const data = await callOpenAI('chat/completions', {
+          model: 'gpt-4o-mini',
+          messages: [
+            {
+              role: 'system',
+              content: `Du er en AI-assistent som kategoriserer revisjonsdokumenter. 
+
+              Analyser dokumentet og velg den mest passende kategorien fra listen nedenfor:
+              ${categoryNames}
+
+              Svar kun med følgende JSON-format:
+              {"category": "kategori_navn", "confidence": 0.85}
+              
+              Confidence skal være mellom 0.0 og 1.0 basert på hvor sikker du er på kategoriseringen.`
+            },
+            {
+              role: 'user',
+              content: `Filnavn: ${fileName}\n\nInnhold:\n${extractedText.substring(0, 2000)}`
+            }
+          ],
+          max_tokens: 100,
+          temperature: 0.1
+        });
+
+        const response = JSON.parse(data.choices[0].message.content);
+        aiCategory = response.category;
+        aiConfidence = Math.max(0, Math.min(1, response.confidence || 0.5));
+        
+        // Find the matching category object
+        bestMatch = categories.find(c => c.category_name === aiCategory);
+        if (bestMatch) {
+          highestScore = aiConfidence;
+        }
+        
+        log(`✅ [DOCUMENT-AI-CATEGORIZER] AI categorized as: ${aiCategory} (${Math.round(aiConfidence * 100)}%)`);
+        
+      } catch (aiError) {
+        log(`⚠️ [DOCUMENT-AI-CATEGORIZER] AI categorization failed: ${aiError.message}`);
+      }
+    }
+
+    // Fallback to filename-based categorization if AI didn't work
+    if (!bestMatch) {
+      log('📋 [DOCUMENT-AI-CATEGORIZER] Using filename-based categorization...');
+      
+      for (const category of categories) {
+        for (const pattern of category.expected_file_patterns) {
+          if (lowerFileName.includes(pattern.toLowerCase())) {
+            const score = pattern.length / fileName.length; // Longer patterns get higher scores
+            if (score > highestScore) {
+              highestScore = score;
+              bestMatch = category;
+            }
           }
         }
       }
     }
 
-    // If we have extracted text, we could do more sophisticated AI analysis here
+    // Generate analysis summary
     let aiAnalysis = '';
-    if (extractedText && bestMatch) {
-      aiAnalysis = `Dokument kategorisert som "${bestMatch.category_name}" basert på filnavn og innhold.`;
-    } else if (bestMatch) {
-      aiAnalysis = `Dokument kategorisert som "${bestMatch.category_name}" basert på filnavn.`;
+    if (bestMatch) {
+      const method = aiCategory ? 'AI-analyse og innhold' : 'filnavn';
+      aiAnalysis = `Dokument kategorisert som "${bestMatch.category_name}" basert på ${method}.`;
+    } else {
+      aiAnalysis = 'Kunne ikke kategorisere dokumentet automatisk. Krever manuell gjennomgang.';
     }
 
     // Update document with AI categorization results
@@ -67,7 +130,7 @@ Deno.serve(async (req: Request) => {
 
     if (bestMatch) {
       updateData.ai_suggested_category = bestMatch.category_name;
-      updateData.ai_confidence_score = Math.min(0.95, 0.5 + highestScore); // Cap at 95%
+      updateData.ai_confidence_score = aiCategory ? aiConfidence : Math.min(0.95, 0.5 + highestScore); // Cap at 95%
       updateData.subject_area = bestMatch.subject_area;
       
       // If no manual category is set, use AI suggestion

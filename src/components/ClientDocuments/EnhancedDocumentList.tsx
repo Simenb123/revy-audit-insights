@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FileText, Download, Trash2, Search, Calendar } from 'lucide-react';
+import { TestAIPipelineButton } from '../documents/TestAIPipelineButton';
 import { ClientDocument, useClientDocuments } from '@/hooks/useClientDocuments';
 import { useDocumentFilters } from '@/hooks/useDocumentFilters';
 import { useDownload } from '@/hooks/useDownload';
@@ -193,6 +194,10 @@ const EnhancedDocumentList = ({ documents, isLoading, clientId, onUpdate }: Enha
                   </div>
 
                   <div className="flex items-center gap-2 ml-4">
+                    <TestAIPipelineButton 
+                      documentId={document.id} 
+                      fileName={document.file_name} 
+                    />
                     <Button
                       size="sm"
                       variant="outline"
