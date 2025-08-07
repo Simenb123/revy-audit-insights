@@ -2,7 +2,17 @@ import React from 'react';
 import { useWidgetManager, Widget } from '@/contexts/WidgetManagerContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart3, Table, TrendingUp, FileText, X, Calculator, Filter } from 'lucide-react';
+import {
+  BarChart3,
+  Table,
+  TrendingUp,
+  FileText,
+  X,
+  Calculator,
+  Filter,
+  Gauge,
+  Grid3x3,
+} from 'lucide-react';
 import { useWidgetTemplates } from '@/hooks/useWidgetTemplates';
 
 interface WidgetLibraryProps {
@@ -77,6 +87,25 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
         showPercentage: false,
         showCurrency: true
       }
+    },
+    {
+      type: 'pivot' as const,
+      title: 'Pivot-tabell',
+      description: 'Vis data i pivottabell',
+      icon: Grid3x3,
+      defaultConfig: {
+        data: []
+      }
+    },
+    {
+      type: 'gauge' as const,
+      title: 'Måler',
+      description: 'Vis en enkel måler',
+      icon: Gauge,
+      defaultConfig: {
+        value: 50,
+        max: 100
+      }
     }
   ];
 
@@ -116,8 +145,28 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
       i: widgetId,
       x: 0,
       y: 0,
-      w: template.type === 'filter' ? 4 : template.type === 'text' ? 6 : template.type === 'kpi' ? 3 : 6,
-      h: template.type === 'filter' ? 4 : template.type === 'kpi' ? 2 : template.type === 'chart' ? 4 : 3,
+      w:
+        template.type === 'filter'
+          ? 4
+          : template.type === 'text'
+          ? 6
+          : template.type === 'kpi'
+          ? 3
+          : template.type === 'gauge'
+          ? 3
+          : 6,
+      h:
+        template.type === 'filter'
+          ? 4
+          : template.type === 'kpi'
+          ? 2
+          : template.type === 'chart'
+          ? 4
+          : template.type === 'pivot'
+          ? 4
+          : template.type === 'gauge'
+          ? 3
+          : 3,
       widgetId: widgetId,
     };
 
