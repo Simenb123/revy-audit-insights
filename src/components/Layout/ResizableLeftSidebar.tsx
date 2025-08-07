@@ -118,6 +118,11 @@ const ResizableLeftSidebar = () => {
       url: `/clients/${clientId}/general-ledger`,
       icon: FileText,
     },
+    {
+      title: 'PDF-filer',
+      url: `/clients/${clientId}/documents`,
+      icon: FileText,
+    },
     ...generalWorkItems.filter(item => item.title === 'Regnskap').map(item => ({
       ...item,
       url: `/clients/${clientId}/accounting`
