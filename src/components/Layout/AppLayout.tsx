@@ -15,8 +15,7 @@ import PageLoader from './PageLoader';
 import OnboardingCheck from './OnboardingCheck';
 
 import { SidebarProvider } from '@/components/ui/sidebar';
-import { useRightSidebar } from './RightSidebarContext';
-import { useSidebar } from '@/components/ui/sidebar';
+import { LayoutProvider } from './LayoutContext';
 
 /**
  * Hovedlayout for hele app-skallet med responsivt design
@@ -41,23 +40,25 @@ const AppLayout = () => {
   // If no connection to Supabase, allow demo mode
   if (connectionStatus === 'disconnected') {
     return (
-      <div className="min-h-screen bg-background flex flex-col">
-        <GlobalHeader />
-        <SidebarProvider>
-        <GridLayoutContainer>
-          <ResizableLeftSidebar />
-          <ResponsiveLayout maxWidth="full">
-            <div className="p-3 bg-yellow-50 border-b border-yellow-200">
-              <p className="text-sm text-yellow-800">
-                Demo-modus: Appen kjører uten tilkobling til backend.
-              </p>
-            </div>
-            <Outlet />
-          </ResponsiveLayout>
-          <ResizableRightSidebar />
-        </GridLayoutContainer>
-        </SidebarProvider>
-      </div>
+      <LayoutProvider>
+        <div className="min-h-screen bg-background flex flex-col">
+          <GlobalHeader />
+          <SidebarProvider>
+            <GridLayoutContainer>
+              <ResizableLeftSidebar />
+              <ResponsiveLayout maxWidth="full">
+                <div className="p-3 bg-yellow-50 border-b border-yellow-200">
+                  <p className="text-sm text-yellow-800">
+                    Demo-modus: Appen kjører uten tilkobling til backend.
+                  </p>
+                </div>
+                <Outlet />
+              </ResponsiveLayout>
+              <ResizableRightSidebar />
+            </GridLayoutContainer>
+          </SidebarProvider>
+        </div>
+      </LayoutProvider>
     );
   }
   
@@ -76,18 +77,20 @@ const AppLayout = () => {
   /* ---------------------------------------------------------------------- */
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <GlobalHeader />
-      <SidebarProvider>
-        <GridLayoutContainer>
-          <ResizableLeftSidebar />
-          <ResponsiveLayout maxWidth="full">
-            <Outlet />
-          </ResponsiveLayout>
-          <ResizableRightSidebar />
-        </GridLayoutContainer>
-      </SidebarProvider>
-    </div>
+    <LayoutProvider>
+      <div className="min-h-screen bg-background flex flex-col">
+        <GlobalHeader />
+        <SidebarProvider>
+          <GridLayoutContainer>
+            <ResizableLeftSidebar />
+            <ResponsiveLayout maxWidth="full">
+              <Outlet />
+            </ResponsiveLayout>
+            <ResizableRightSidebar />
+          </GridLayoutContainer>
+        </SidebarProvider>
+      </div>
+    </LayoutProvider>
   );
 };
 
