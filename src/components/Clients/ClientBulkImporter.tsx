@@ -199,8 +199,31 @@ const ClientBulkImporter = ({ onImportComplete, onCancel }: ClientBulkImporterPr
           <EnhancedPreview
             preview={filePreview}
             fileName={selectedFile?.name || ''}
-            clientId="" // Not needed for client bulk import
-            fileType="trial_balance" // Reuse field definitions
+            clientId="bulk"
+            fileType="client_bulk"
+            customFieldDefinitions={[
+              {
+                field_key: 'org_number',
+                field_label: 'Organisasjonsnummer',
+                data_type: 'text',
+                is_required: true,
+                aliases: ['orgnr','org nr','organisasjonsnummer','orgnummer','org-nr','org no','kundenr','kundenummer','customer number','kundenr.']
+              },
+              {
+                field_key: 'client_group',
+                field_label: 'Klientgruppe',
+                data_type: 'text',
+                is_required: false,
+                aliases: ['gruppe','kundegruppe','klientgruppe','group','client group']
+              },
+              {
+                field_key: 'accounting_system',
+                field_label: 'Regnskapssystem',
+                data_type: 'text',
+                is_required: false,
+                aliases: ['regnskapssystem','økonomisystem','accounting system','erp','visma','tripletex','poweroffice','fiken','xledger','24sevenoffice']
+              }
+            ]}
             onMappingComplete={handleMappingComplete}
             onCancel={() => {
               setShowMapping(false);

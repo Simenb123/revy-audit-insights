@@ -9,6 +9,44 @@ import HeaderRowSelector from './HeaderRowSelector';
 import ColumnMappingTable from './ColumnMappingTable';
 import MappingSummary from './MappingSummary';
 
+// Helpers for simple mapping when using custom field definitions (e.g., client bulk)
+const normalizeText = (text: string) => (text || '')
+  .toLowerCase()
+  .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  .replace(/æ/g, 'ae').replace(/ø/g, 'o').replace(/å/g, 'a')
+  .replace(/[^a-z0-9\s]/g, ' ')
+  .replace(/\s+/g, ' ')
+  .trim();
+
+function simpleSuggestMappings(headers: string[], sampleData: any[][], fields: any[]): ColumnMapping[] {
+  const suggestions: ColumnMapping[] = [];
+  const usedTargets = new Set<string>();
+
+  headers.forEach((header) => {
+    const nHeader = normalizeText(header);
+    let bestScore = 0;
+    let bestField: any = null;
+
+    fields.forEach((f: any) => {
+      const candidates = [f.field_label, ...(f.aliases || [])].map(normalizeText);
+      let score = 0;
+      for (const c of candidates) {
+        if (!c) continue;
+        if (nHeader === c) { score = 0.95; break; }
+        if (nHeader.includes(c) || c.includes(nHeader)) score = Math.max(score, 0.8);
+      }
+      if (score > bestScore) { bestScore = score; bestField = f; }
+    });
+
+    if (bestField && bestScore >= 0.6 && !usedTargets.has(bestField.field_key)) {
+      usedTargets.add(bestField.field_key);
+      suggestions.push({ sourceColumn: header, targetField: bestField.field_key, confidence: bestScore });
+    }
+  });
+
+  return suggestions.sort((a, b) => b.confidence - a.confidence);
+}
+
 interface EnhancedPreviewProps {
   preview: FilePreview;
   fileName: string;
@@ -114,8 +152,8 @@ const EnhancedPreview: React.FC<EnhancedPreviewProps> = ({
     }
     setMapping(newMapping);
 
-    // Save to history
-    if (targetField && clientId) {
+    // Save to history (skip for client_bulk or when using custom fields)
+    if (targetField && clientId && fileType !== 'client_bulk' && !(customFieldDefinitions && customFieldDefinitions.length)) {
       saveColumnMappingHistory(
         clientId,
         fileType,
