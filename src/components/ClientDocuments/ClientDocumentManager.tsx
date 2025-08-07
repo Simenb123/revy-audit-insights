@@ -43,12 +43,19 @@ const ClientDocumentManager = ({ clientId, clientName, enableAI = false }: Clien
   // Force cache clear and refetch when clientId changes to prevent showing cached documents from other clients
   React.useEffect(() => {
     if (clientId) {
-      // Invalidate all client-documents queries to clear cache
+      // Invalidate specific client-documents query with exact key match
+      queryClient.invalidateQueries({ queryKey: ['client-documents', clientId] });
+      // Also invalidate all client-documents queries to be safe
       queryClient.invalidateQueries({ queryKey: ['client-documents'] });
       // Force refetch for this specific client
       documentsQuery.refetch();
     }
   }, [clientId, queryClient, documentsQuery.refetch]);
+
+  // Synchronize filteredDocuments with documents when documents data changes
+  React.useEffect(() => {
+    setFilteredDocuments(documents);
+  }, [documents]);
   
   const [activeTab, setActiveTab] = useState('documents');
   const [filteredDocuments, setFilteredDocuments] = useState(documents);
