@@ -27,12 +27,15 @@ const ClientsOverview = () => {
   const { handleRefreshBrregData, isRefreshing, hasApiError, refreshProgress } = useBrregRefresh({ clients });
   
   // Filter clients based on search and department
-  const { 
-    searchTerm, 
-    setSearchTerm, 
-    departmentFilter, 
-    setDepartmentFilter, 
-    departments, 
+  const {
+    searchTerm,
+    setSearchTerm,
+    departmentFilter,
+    setDepartmentFilter,
+    departments,
+    groupFilter,
+    setGroupFilter,
+    groups,
     filteredClients,
     showTestData,
     setShowTestData
@@ -86,6 +89,9 @@ const ClientsOverview = () => {
           departmentFilter={departmentFilter}
           onDepartmentChange={setDepartmentFilter}
           departments={departments}
+          groupFilter={groupFilter}
+          onGroupChange={setGroupFilter}
+          groups={groups}
           onRefresh={handleRefreshBrregData}
           isRefreshing={isRefreshing}
           hasApiError={hasApiError}

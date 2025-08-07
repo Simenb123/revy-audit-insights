@@ -105,6 +105,7 @@ export interface Client {
   audit_fee?: number;
   board_meetings_per_year?: number;
   is_test_data?: boolean;
+  client_group?: string | null;
   riskAreas?: RiskArea[]; // Alternative field name
   user_id?: string;
 }

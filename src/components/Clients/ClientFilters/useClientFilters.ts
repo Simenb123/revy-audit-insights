@@ -11,6 +11,7 @@ import { Client } from '@/types/revio';
 export function useClientFilters(clients: Client[]) {
   const [searchTerm, setSearchTerm] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState('all');
+  const [groupFilter, setGroupFilter] = useState('all');
   const [showTestData, setShowTestData] = useState(true);
 
   // Get unique departments from clients
@@ -23,6 +24,18 @@ export function useClientFilters(clients: Client[]) {
       )
     );
     return uniqueDepartments.sort();
+  }, [clients]);
+
+  // Get unique groups from clients
+  const groups = useMemo(() => {
+    const uniqueGroups = Array.from(
+      new Set(
+        clients
+          .filter(client => client.client_group && client.client_group.trim() !== '')
+          .map(client => client.client_group)
+      )
+    );
+    return uniqueGroups.sort();
   }, [clients]);
 
   // Filter clients based on search term, department, and test data preference
@@ -47,16 +60,21 @@ export function useClientFilters(clients: Client[]) {
       const matchesSearch = !searchTerm || 
         client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         client.company_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        client.org_number.includes(searchTerm);
+        client.org_number.includes(searchTerm) ||
+        (client.client_group && client.client_group.toLowerCase().includes(searchTerm.toLowerCase()));
 
       // Department filter
       const matchesDepartment = departmentFilter === 'all' || 
         client.department === departmentFilter;
 
+      // Group filter
+      const matchesGroup = groupFilter === 'all' || 
+        client.client_group === groupFilter;
+
       // Test data filter - FIXED: Now correctly shows/hides test data based on toggle
       const matchesTestDataPreference = showTestData ? true : !client.is_test_data;
 
-      const shouldShow = matchesSearch && matchesDepartment && matchesTestDataPreference;
+      const shouldShow = matchesSearch && matchesDepartment && matchesGroup && matchesTestDataPreference;
       
       if (client.is_test_data) {
         logger.log(`Test client ${client.name}:`, {
@@ -88,7 +106,7 @@ export function useClientFilters(clients: Client[]) {
     }
 
     return result;
-  }, [clients, searchTerm, departmentFilter, showTestData]);
+  }, [clients, searchTerm, departmentFilter, groupFilter, showTestData]);
 
   return {
     searchTerm,
@@ -96,6 +114,9 @@ export function useClientFilters(clients: Client[]) {
     departmentFilter,
     setDepartmentFilter,
     departments,
+    groupFilter,
+    setGroupFilter,
+    groups,
     filteredClients,
     showTestData,
     setShowTestData

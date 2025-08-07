@@ -21,6 +21,9 @@ interface ClientsHeaderProps {
   departmentFilter: string;
   onDepartmentChange: (value: string) => void;
   departments: string[];
+  groupFilter: string;
+  onGroupChange: (value: string) => void;
+  groups: string[];
   onRefresh: () => void;
   isRefreshing: boolean;
   hasApiError: boolean;
@@ -38,6 +41,9 @@ const ClientsHeader: React.FC<ClientsHeaderProps> = ({
   departmentFilter,
   onDepartmentChange,
   departments,
+  groupFilter,
+  onGroupChange,
+  groups,
   onRefresh,
   isRefreshing,
   hasApiError,
@@ -115,6 +121,20 @@ const ClientsHeader: React.FC<ClientsHeaderProps> = ({
             {departments.map((dept) => (
               <SelectItem key={dept} value={dept}>
                 {dept}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={groupFilter} onValueChange={onGroupChange}>
+          <SelectTrigger className="w-48">
+            <SelectValue placeholder="Alle grupper" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Alle grupper</SelectItem>
+            {groups.map((group) => (
+              <SelectItem key={group} value={group}>
+                {group}
               </SelectItem>
             ))}
           </SelectContent>

@@ -2412,6 +2412,7 @@ export type Database = {
           ceo: string | null
           chair: string | null
           city: string | null
+          client_group: string | null
           company_name: string
           contact_person: string | null
           created_at: string
@@ -2462,6 +2463,7 @@ export type Database = {
           ceo?: string | null
           chair?: string | null
           city?: string | null
+          client_group?: string | null
           company_name: string
           contact_person?: string | null
           created_at?: string
@@ -2512,6 +2514,7 @@ export type Database = {
           ceo?: string | null
           chair?: string | null
           city?: string | null
+          client_group?: string | null
           company_name?: string
           contact_person?: string | null
           created_at?: string

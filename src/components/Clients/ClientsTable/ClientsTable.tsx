@@ -150,12 +150,13 @@ const ClientsTable = ({ clients, onRowSelect, selectedClientId }: ClientsTablePr
             <TableHead>Kommune</TableHead>
             <TableHead>Kapital</TableHead>
             <TableHead>Avdeling</TableHead>
+            <TableHead>Gruppe</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {sortedClients.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={7} className="text-center text-muted-foreground h-32">
+              <TableCell colSpan={8} className="text-center text-muted-foreground h-32">
                 Ingen klienter funnet
               </TableCell>
             </TableRow>
@@ -200,6 +201,7 @@ const ClientsTable = ({ clients, onRowSelect, selectedClientId }: ClientsTablePr
                     <EquityBadge equityCapital={client.equity_capital} shareCapital={client.share_capital} />
                   </TableCell>
                   <TableCell>{client.department?.trim() || "—"}</TableCell>
+                  <TableCell>{client.client_group?.trim() || "—"}</TableCell>
                 </TableRow>
               );
             })

@@ -10,6 +10,9 @@ interface ClientFiltersProps {
   departmentFilter: string;
   onDepartmentChange: (value: string) => void;
   departments: string[];
+  groupFilter: string;
+  onGroupChange: (value: string) => void;
+  groups: string[];
 }
 
 const ClientFilters = ({ 
@@ -17,7 +20,10 @@ const ClientFilters = ({
   onSearchChange, 
   departmentFilter, 
   onDepartmentChange,
-  departments 
+  departments,
+  groupFilter,
+  onGroupChange,
+  groups
 }: ClientFiltersProps) => {
   return (
     <div className="flex gap-3">
@@ -39,6 +45,18 @@ const ClientFilters = ({
           <SelectItem value="all">Alle avdelinger</SelectItem>
           {departments.map(dept => (
             <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      
+      <Select value={groupFilter} onValueChange={onGroupChange}>
+        <SelectTrigger className="w-40">
+          <SelectValue placeholder="Velg gruppe" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">Alle grupper</SelectItem>
+          {groups.map(group => (
+            <SelectItem key={group} value={group}>{group}</SelectItem>
           ))}
         </SelectContent>
       </Select>

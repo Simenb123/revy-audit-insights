@@ -8,6 +8,7 @@ export interface ClientListItem {
   name: string;
   company_name: string;
   org_number: string;
+  client_group: string | null;
 }
 
 export function useClientList() {
@@ -16,7 +17,7 @@ export function useClientList() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('clients')
-        .select('id, name, company_name, org_number')
+        .select('id, name, company_name, org_number, client_group')
         .order('company_name');
 
       if (error) {
