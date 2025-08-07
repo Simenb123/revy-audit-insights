@@ -3,8 +3,6 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 interface RightSidebarContextType {
   isCollapsed: boolean;
   setIsCollapsed: React.Dispatch<React.SetStateAction<boolean>>;
-  isHidden: boolean;
-  setIsHidden: React.Dispatch<React.SetStateAction<boolean>>;
   width: number;
   setWidth: React.Dispatch<React.SetStateAction<number>>;
 }
@@ -21,7 +19,6 @@ export const useRightSidebar = () => {
 
 export const RightSidebarProvider = ({ children }: { children: React.ReactNode }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [isHidden, setIsHidden] = useState(false);
   const [width, setWidth] = useState(() => {
     const stored = localStorage.getItem('rightSidebarWidth');
     const parsed = stored ? parseInt(stored, 10) : NaN;
@@ -35,7 +32,7 @@ export const RightSidebarProvider = ({ children }: { children: React.ReactNode }
   }, [width]);
 
   return (
-    <RightSidebarContext.Provider value={{ isCollapsed, setIsCollapsed, isHidden, setIsHidden, width, setWidth }}>
+    <RightSidebarContext.Provider value={{ isCollapsed, setIsCollapsed, width, setWidth }}>
       {children}
     </RightSidebarContext.Provider>
   );
