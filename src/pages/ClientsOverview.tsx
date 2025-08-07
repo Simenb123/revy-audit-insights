@@ -8,6 +8,8 @@ import ClientsTable from '@/components/Clients/ClientsTable/ClientsTable';
 import AnnouncementsList from '@/components/Clients/Announcements/AnnouncementsList';
 import ClientsHeader from '@/components/Clients/ClientsHeader/ClientsHeader';
 import AddClientDialog from '@/components/Clients/AddClientDialog';
+import ClientBulkImporter from '@/components/Clients/ClientBulkImporter';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useClientData } from '@/components/Clients/ClientFetcher/useClientData';
 import { useClientFilters } from '@/components/Clients/ClientFilters/useClientFilters';
 import { useBrregRefresh } from '@/hooks/useBrregRefresh';
@@ -18,6 +20,7 @@ const ClientsOverview = () => {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [showAddClientDialog, setShowAddClientDialog] = useState(false);
+  const [showBulkImportDialog, setShowBulkImportDialog] = useState(false);
   
   // Fetch client data
   const { data: clients = [], isLoading, error, refetch } = useClientData();
@@ -98,6 +101,7 @@ const ClientsOverview = () => {
         onAddClient={() => setShowAddClientDialog(true)}
       />
 
+
       {/* Stats Grid */}
       <div className="mb-6">
         <ClientStatsGrid clients={clients} announcements={announcements} />
@@ -131,6 +135,20 @@ const ClientsOverview = () => {
         onClientAdded={handleClientAdded}
       />
     </div>
+
+      {/* Bulk Import Dialog */}
+      <Dialog open={showBulkImportDialog} onOpenChange={setShowBulkImportDialog}>
+        <DialogContent className="max-w-5xl">
+          <DialogHeader>
+            <DialogTitle>Bulk import av klientdata</DialogTitle>
+          </DialogHeader>
+          <ClientBulkImporter 
+            onImportComplete={() => { setShowBulkImportDialog(false); refetch(); }}
+            onCancel={() => setShowBulkImportDialog(false)}
+          />
+        </DialogContent>
+      </Dialog>
+    </PageLayout>
   );
 };
 

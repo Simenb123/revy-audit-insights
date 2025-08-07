@@ -2,7 +2,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Drawer, DrawerTrigger, DrawerContent } from '@/components/ui/drawer';
+import { Drawer, DrawerTrigger, DrawerContent, DrawerClose } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { MessageSquare, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -13,6 +13,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import ResizableHandle from './ResizableHandle';
 
 import { useRightSidebar } from './RightSidebarContext';
+import { useLayout } from './LayoutContext';
 
 const ResizableRightSidebar = () => {
   const {
@@ -23,6 +24,9 @@ const ResizableRightSidebar = () => {
     width,
     setWidth
   } = useRightSidebar();
+  const { globalHeaderHeight, subHeaderHeight } = useLayout();
+  const { isCollapsed, setIsCollapsed, width, setWidth } = useRightSidebar();
+
   const isMobile = useIsMobile();
   const [isDragging, setIsDragging] = useState(false);
   const location = useLocation();
@@ -86,17 +90,7 @@ const ResizableRightSidebar = () => {
   }, [isDragging, handleMouseMove, handleMouseUp]);
 
   const toggleSidebar = () => {
-    if (isHidden) {
-      setIsHidden(false);
-      setIsCollapsed(false);
-    } else {
-      setIsCollapsed(!isCollapsed);
-    }
-  };
-
-  const closeSidebar = () => {
-    setIsHidden(true);
-    setIsCollapsed(false);
+    setIsCollapsed(!isCollapsed);
   };
 
   const getPageTitle = () => {
@@ -132,7 +126,7 @@ const ResizableRightSidebar = () => {
   // Mobile version
   if (isMobile) {
     return (
-      <Drawer open={!isHidden} onOpenChange={(open) => setIsHidden(!open)}>
+      <Drawer>
         <DrawerTrigger asChild>
           <Button
             variant="default"
@@ -147,13 +141,14 @@ const ResizableRightSidebar = () => {
           <div className="flex flex-col h-full">
             <div className="flex items-center justify-between p-4 border-b">
               <h3 className="text-lg font-semibold">{getPageTitle()}</h3>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={closeSidebar}
-              >
-                <X className="h-4 w-4" />
-              </Button>
+              <DrawerClose asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </DrawerClose>
             </div>
             <ScrollArea className="flex-1">
               {renderContent()}
@@ -164,25 +159,13 @@ const ResizableRightSidebar = () => {
     );
   }
 
-  // Desktop version - hidden state
-  if (isHidden) {
-    return (
-      <Button
-        variant="outline"
-        size="icon"
-        className="fixed top-20 right-4 z-50 h-10 w-10 shadow-lg bg-background border"
-        onClick={() => setIsHidden(false)}
-      >
-        <MessageSquare className="h-4 w-4" />
-      </Button>
-    );
-  }
-
   return (
     <motion.div
-      className="sticky top-[calc(var(--global-header-height)+var(--client-sub-header-height))] bg-background border-l flex flex-col z-10"
+      data-testid="right-sidebar"
+      className="sticky bg-background border-l flex flex-col z-10"
       style={{
-        height: 'calc(100vh - var(--global-header-height) - var(--client-sub-header-height))'
+        top: globalHeaderHeight + subHeaderHeight,
+        height: `calc(100vh - ${globalHeaderHeight + subHeaderHeight}px)`
       }}
       animate={{ width: isCollapsed ? 32 : width }}
       transition={{ duration: 0.2, ease: 'easeInOut' }}
@@ -195,7 +178,7 @@ const ResizableRightSidebar = () => {
       )}
 
       {/* Sticky Header */}
-      <div className="sticky top-[calc(var(--global-header-height)+var(--sub-header-height))] z-50 bg-background border-b flex items-center justify-between px-3 py-2">
+      <div className="sticky top-0 z-50 bg-background border-b flex items-center justify-between px-3 py-2">
         {isCollapsed ? (
           <Button
             variant="ghost"
@@ -218,15 +201,6 @@ const ResizableRightSidebar = () => {
                 aria-label="Kollaps sidebar"
               >
                 <ChevronLeft className="h-3 w-3" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6 hover:bg-muted transition-colors"
-                onClick={closeSidebar}
-                aria-label="Lukk sidebar"
-              >
-                <X className="h-3 w-3" />
               </Button>
             </div>
           </>
