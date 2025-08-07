@@ -42,7 +42,7 @@ const ClientHistoryByOrg = ({ orgNumber }: { orgNumber: string }): null => {
   return null;
 };
 
-export const ClientHistoryTracker = (): null => {
+export const ClientHistoryTracker = () => {
   const { clientId, orgNumber } = useParams();
   const location = useLocation();
 

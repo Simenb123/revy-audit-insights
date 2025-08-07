@@ -1,10 +1,11 @@
 import React from 'react';
 import { Widget } from '@/contexts/WidgetManagerContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calculator, TrendingUp, TrendingDown } from 'lucide-react';
+import { Calculator, TrendingUp, TrendingDown, AlertCircle } from 'lucide-react';
 import { useTrialBalanceWithMappings } from '@/hooks/useTrialBalanceWithMappings';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
 import { useFormulaDefinitions } from '@/hooks/useFormulas';
+import { formatCurrency } from '@/lib/formatters';
 
 interface FormulaWidgetProps {
   widget: Widget;
@@ -165,6 +166,23 @@ export function FormulaWidget({ widget }: FormulaWidgetProps) {
   const showTrend = widget.config?.showTrend !== false;
   const displayAsPercentage = widget.config?.displayAsPercentage || false;
   const showCurrency = widget.config?.showCurrency !== false;
+
+  // Validation: Ensure clientId is provided
+  if (!clientId) {
+    return (
+      <Card className="h-full border-destructive">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium flex items-center gap-2 text-destructive">
+            <AlertCircle className="h-4 w-4" />
+            {widget.title}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-sm text-muted-foreground">Klient ikke valgt</div>
+        </CardContent>
+      </Card>
+    );
+  }
   
   const { data: trialBalanceData, isLoading: trialBalanceLoading } = useTrialBalanceWithMappings(
     clientId, 
@@ -191,7 +209,12 @@ export function FormulaWidget({ widget }: FormulaWidgetProps) {
   // Calculate formula result
   const formulaResult = React.useMemo(() => {
     if (!trialBalanceData || !formula) {
-      return { value: '0', change: '0%', trend: 'up' as const };
+      return { 
+        value: displayAsPercentage ? '0%' : (showCurrency ? formatCurrency(0) : '0'), 
+        change: null, 
+        trend: null,
+        hasHistoricalData: false
+      };
     }
 
     const evaluator = new FormulaEvaluator(trialBalanceData);
@@ -201,15 +224,19 @@ export function FormulaWidget({ widget }: FormulaWidgetProps) {
     if (displayAsPercentage) {
       formattedValue = `${result.toFixed(1)}%`;
     } else if (showCurrency) {
-      formattedValue = `kr ${new Intl.NumberFormat('no-NO').format(Math.abs(result))}`;
+      formattedValue = formatCurrency(result);
     } else {
-      formattedValue = result.toFixed(2);
+      formattedValue = new Intl.NumberFormat('nb-NO', { 
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2 
+      }).format(result);
     }
     
     return {
       value: formattedValue,
-      change: '+12.5%', // Mock change for now - could be calculated from previous period
-      trend: 'up' as const,
+      change: null, // Remove mock data - will be calculated from actual historical data
+      trend: null,
+      hasHistoricalData: false
     };
   }, [trialBalanceData, formula, displayAsPercentage, showCurrency]);
 
@@ -255,18 +282,23 @@ export function FormulaWidget({ widget }: FormulaWidgetProps) {
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-bold">{formulaResult.value}</div>
-        {showTrend && (
+        {showTrend && formulaResult.hasHistoricalData && formulaResult.change && formulaResult.trend && (
           <div className="flex items-center pt-1">
             {formulaResult.trend === 'up' ? (
-              <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
+              <TrendingUp className="h-4 w-4 text-success mr-1" />
             ) : (
-              <TrendingDown className="h-4 w-4 text-red-500 mr-1" />
+              <TrendingDown className="h-4 w-4 text-destructive mr-1" />
             )}
             <span className={`text-xs ${
-              formulaResult.trend === 'up' ? 'text-green-500' : 'text-red-500'
+              formulaResult.trend === 'up' ? 'text-success' : 'text-destructive'
             }`}>
               {formulaResult.change}
             </span>
+          </div>
+        )}
+        {showTrend && !formulaResult.hasHistoricalData && (
+          <div className="text-xs text-muted-foreground pt-1">
+            Ingen historiske data tilgjengelig
           </div>
         )}
         {formula.metadata?.description && (
