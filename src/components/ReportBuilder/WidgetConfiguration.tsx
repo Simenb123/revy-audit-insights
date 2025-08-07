@@ -271,10 +271,11 @@ export function WidgetConfiguration({ widget, onUpdateWidget }: WidgetConfigurat
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button 
-          variant="ghost" 
-          size="sm" 
+        <Button
+          variant="ghost"
+          size="sm"
           className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground transition-colors"
+          onMouseDown={e => e.stopPropagation()}
         >
           <Settings className="h-3 w-3" />
         </Button>
