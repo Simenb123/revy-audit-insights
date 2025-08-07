@@ -2,7 +2,7 @@
 import React from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, RefreshCw, AlertTriangle, UserPlus } from 'lucide-react';
+import { Search, RefreshCw, AlertTriangle, UserPlus, FileSpreadsheet } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -31,6 +31,7 @@ interface ClientsHeaderProps {
   showTestData?: boolean;
   onTestDataToggle?: (show: boolean) => void;
   onAddClient?: () => void;
+  onBulkImport?: () => void;
 }
 
 const ClientsHeader: React.FC<ClientsHeaderProps> = ({
@@ -50,7 +51,8 @@ const ClientsHeader: React.FC<ClientsHeaderProps> = ({
   refreshProgress,
   showTestData = true,
   onTestDataToggle,
-  onAddClient
+  onAddClient,
+  onBulkImport
 }) => {
   return (
     <header className="space-y-4">
@@ -72,6 +74,13 @@ const ClientsHeader: React.FC<ClientsHeaderProps> = ({
             <Button onClick={onAddClient} className="flex items-center gap-2">
               <UserPlus size={16} />
               Ny klient
+            </Button>
+          )}
+
+          {onBulkImport && (
+            <Button variant="outline" onClick={onBulkImport} className="flex items-center gap-2">
+              <FileSpreadsheet size={16} />
+              Bulk import
             </Button>
           )}
           
