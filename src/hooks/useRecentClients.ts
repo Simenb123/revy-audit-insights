@@ -53,6 +53,7 @@ export const useRecentClients = () => {
       const filtered = prev.filter(c => c.id !== client.id);
       const updated = [newClient, ...filtered].slice(0, MAX_RECENT_CLIENTS);
       saveRecentClients(updated);
+      window.dispatchEvent(new Event('recent-clients-updated'));
       return updated;
     });
   }, [saveRecentClients]);
@@ -68,6 +69,14 @@ export const useRecentClients = () => {
 
   useEffect(() => {
     loadRecentClients();
+  }, [loadRecentClients]);
+
+  useEffect(() => {
+    const handleUpdate = () => loadRecentClients();
+    window.addEventListener('recent-clients-updated', handleUpdate);
+    return () => {
+      window.removeEventListener('recent-clients-updated', handleUpdate);
+    };
   }, [loadRecentClients]);
 
   return {
