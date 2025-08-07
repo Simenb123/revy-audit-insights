@@ -45,6 +45,7 @@ const ClientInfoForm = ({ client }: ClientInfoFormProps) => {
   const [contacts, setContacts] = useState<ClientContact[]>([]);
   const [showCustomAccountingSystem, setShowCustomAccountingSystem] = useState(false);
   const [formData, setFormData] = useState({
+    client_group: '',
     accounting_system: '',
     previous_auditor: '',
     audit_fee: '',
@@ -58,6 +59,7 @@ const ClientInfoForm = ({ client }: ClientInfoFormProps) => {
   useEffect(() => {
     // Initialize form data with client data
     setFormData({
+      client_group: client.client_group || '',
       accounting_system: client.accounting_system || '',
       previous_auditor: client.previous_auditor || '',
       audit_fee: client.audit_fee?.toString() || '',
@@ -91,6 +93,7 @@ const ClientInfoForm = ({ client }: ClientInfoFormProps) => {
       const { error: clientError } = await supabase
         .from('clients')
         .update({
+          client_group: formData.client_group || null,
           accounting_system: formData.accounting_system || null,
           previous_auditor: formData.previous_auditor || null,
           audit_fee: formData.audit_fee ? parseFloat(formData.audit_fee) : null,
@@ -217,6 +220,16 @@ const ClientInfoForm = ({ client }: ClientInfoFormProps) => {
             <CardDescription>Detaljer om regnskapsføring og systemer</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div>
+              <Label htmlFor="client_group">Klientgruppe</Label>
+              <Input
+                id="client_group"
+                value={formData.client_group}
+                onChange={(e) => setFormData({...formData, client_group: e.target.value})}
+                disabled={!isEditing}
+                placeholder="Skriv inn klientgruppe"
+              />
+            </div>
             <div>
               <Label htmlFor="accounting_system">Regnskapssystem</Label>
               {isEditing ? (
