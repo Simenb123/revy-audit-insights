@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Widget } from '@/contexts/WidgetManagerContext';
 import { useFilters } from '@/contexts/FilterContext';
@@ -40,6 +41,22 @@ export function FilterWidget({ widget }: FilterWidgetProps) {
   ];
 
   const hasActiveFilters = Object.keys(filters).length > 0;
+
+  const handleAccountCategoryChange = (value: string) => {
+    if (value === 'all') {
+      updateFilter('accountCategory', undefined);
+    } else {
+      updateFilter('accountCategory', value);
+    }
+  };
+
+  const handleAccountTypeChange = (value: string) => {
+    if (value === 'all') {
+      updateFilter('accountType', undefined);
+    } else {
+      updateFilter('accountType', value);
+    }
+  };
 
   return (
     <Card className="h-full">
@@ -112,14 +129,14 @@ export function FilterWidget({ widget }: FilterWidgetProps) {
           <div className="space-y-1">
             <Label className="text-xs font-medium">Kontokategori</Label>
             <Select 
-              value={filters.accountCategory || ''} 
-              onValueChange={(value) => updateFilter('accountCategory', value || undefined)}
+              value={filters.accountCategory || 'all'} 
+              onValueChange={handleAccountCategoryChange}
             >
               <SelectTrigger className="h-9">
                 <SelectValue placeholder="Alle kategorier" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Alle kategorier</SelectItem>
+                <SelectItem value="all">Alle kategorier</SelectItem>
                 {accountCategories.map((category) => (
                   <SelectItem key={category.value} value={category.value}>
                     {category.label}
@@ -134,14 +151,14 @@ export function FilterWidget({ widget }: FilterWidgetProps) {
           <div className="space-y-1">
             <Label className="text-xs font-medium">Kontotype</Label>
             <Select 
-              value={filters.accountType || ''} 
-              onValueChange={(value) => updateFilter('accountType', value || undefined)}
+              value={filters.accountType || 'all'} 
+              onValueChange={handleAccountTypeChange}
             >
               <SelectTrigger className="h-9">
                 <SelectValue placeholder="Alle typer" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Alle typer</SelectItem>
+                <SelectItem value="all">Alle typer</SelectItem>
                 {accountTypes.map((type) => (
                   <SelectItem key={type.value} value={type.value}>
                     {type.label}
