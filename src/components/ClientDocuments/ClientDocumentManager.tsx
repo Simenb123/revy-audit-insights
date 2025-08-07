@@ -15,6 +15,9 @@ import SmartDocumentOverview from '@/components/Revy/SmartDocumentOverview';
 import AdvancedDocumentSearch from './AdvancedDocumentSearch';
 import DocumentAnalyticsDashboard from './DocumentAnalyticsDashboard';
 import DocumentWorkflowManager from './DocumentWorkflowManager';
+import { DocumentVersionControl } from './DocumentVersionControl';
+import { DocumentApprovalWorkflow } from './DocumentApprovalWorkflow';
+import { DocumentComplianceTracker } from './DocumentComplianceTracker';
 
 interface ClientDocumentManagerProps {
   clientId: string;
@@ -111,7 +114,7 @@ const ClientDocumentManager = ({ clientId, clientName, enableAI = false }: Clien
       )}
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className={`grid w-full ${enableAI ? 'grid-cols-6' : 'grid-cols-3'}`}>
+        <TabsList className={`grid w-full ${enableAI ? 'grid-cols-9' : 'grid-cols-3'}`}>
           <TabsTrigger value="upload" className="flex items-center gap-2">
             <Upload className="h-4 w-4" />
             Last opp
@@ -137,6 +140,18 @@ const ClientDocumentManager = ({ clientId, clientName, enableAI = false }: Clien
               <TabsTrigger value="ai-overview" className="flex items-center gap-2">
                 <Brain className="h-4 w-4" />
                 AI-Chat
+              </TabsTrigger>
+              <TabsTrigger value="versions" className="flex items-center gap-2">
+                <Workflow className="h-4 w-4" />
+                Versjoner
+              </TabsTrigger>
+              <TabsTrigger value="approval" className="flex items-center gap-2">
+                <Brain className="h-4 w-4" />
+                Godkjenning
+              </TabsTrigger>
+              <TabsTrigger value="compliance" className="flex items-center gap-2">
+                <Search className="h-4 w-4" />
+                Compliance
               </TabsTrigger>
             </>
           )}
@@ -200,6 +215,27 @@ const ClientDocumentManager = ({ clientId, clientName, enableAI = false }: Clien
               <SmartDocumentOverview 
                 client={{ id: clientId, company_name: clientName } as any}
                 documents={documents}
+              />
+            </TabsContent>
+
+            <TabsContent value="versions">
+              <DocumentVersionControl 
+                documents={documents} 
+                className="mt-6" 
+              />
+            </TabsContent>
+
+            <TabsContent value="approval">
+              <DocumentApprovalWorkflow 
+                documents={documents} 
+                className="mt-6" 
+              />
+            </TabsContent>
+
+            <TabsContent value="compliance">
+              <DocumentComplianceTracker 
+                documents={documents} 
+                className="mt-6" 
               />
             </TabsContent>
           </>
