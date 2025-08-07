@@ -119,7 +119,15 @@ export function FormulaWidgetConfig({ widget, onUpdateWidget, standardAccounts }
     }
   };
 
-  const handleFormulaSaved = () => {
+  const handleFormulaSaved = (savedFormulaId: string) => {
+    // Automatically select the newly saved formula
+    onUpdateWidget({
+      config: {
+        ...widget.config,
+        formulaId: savedFormulaId,
+        customFormula: null // Clear custom formula since we now have a saved one
+      }
+    });
     refetch(); // Refresh the formula definitions list
   };
 
@@ -158,7 +166,10 @@ export function FormulaWidgetConfig({ widget, onUpdateWidget, standardAccounts }
               />
               
               {widget.config?.customFormula && (
-                <div className="mt-4 pt-4 border-t">
+                <div className="mt-4 pt-4 border-t flex items-center justify-between">
+                  <div className="text-sm text-muted-foreground">
+                    Bygg egen formel eller velg en lagret formel nedenfor
+                  </div>
                   <Button 
                     onClick={handleSaveFormula}
                     variant="outline"
@@ -172,12 +183,19 @@ export function FormulaWidgetConfig({ widget, onUpdateWidget, standardAccounts }
             </CardContent>
           </Card>
 
-          {formulaDefinitions && formulaDefinitions.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Lagrede formler</CardTitle>
-              </CardHeader>
-              <CardContent>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center justify-between">
+                Lagrede formler
+                {widget.config?.formulaId && (
+                  <Badge variant="default" className="text-xs">
+                    Aktiv
+                  </Badge>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {formulaDefinitions && formulaDefinitions.length > 0 ? (
                 <Select
                   value={widget.config?.formulaId || ''}
                   onValueChange={handleDatabaseFormulaSelect}
@@ -200,9 +218,13 @@ export function FormulaWidgetConfig({ widget, onUpdateWidget, standardAccounts }
                     ))}
                   </SelectContent>
                 </Select>
-              </CardContent>
-            </Card>
-          )}
+              ) : (
+                <div className="text-sm text-muted-foreground p-4 text-center border border-dashed rounded-lg">
+                  Ingen lagrede formler ennå. Lag en formel ovenfor og trykk "Lagre formel".
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="standard" className="space-y-4">

@@ -14,7 +14,7 @@ interface SaveFormulaDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   formula: FormulaData | null;
-  onSave?: () => void;
+  onSave?: (savedFormulaId: string) => void;
 }
 
 const categories = [
@@ -53,16 +53,16 @@ export function SaveFormulaDialog({ open, onOpenChange, formula, onSave }: SaveF
       version: 1,
       metadata: {},
     }, {
-      onSuccess: () => {
+      onSuccess: (savedFormula) => {
         toast({
           title: "Suksess",
-          description: "Formelen ble lagret",
+          description: `Formelen "${savedFormula.name}" ble lagret og er nå aktiv`,
         });
         setName('');
         setDescription('');
         setCategory('custom');
         onOpenChange(false);
-        onSave?.();
+        onSave?.(savedFormula.id);
       },
       onError: (error) => {
         const errorMessage = error?.message?.includes('authenticated') 
