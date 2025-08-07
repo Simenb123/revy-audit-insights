@@ -13,9 +13,20 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import ResizableHandle from './ResizableHandle';
 
 import { useRightSidebar } from './RightSidebarContext';
+import { useLayout } from './LayoutContext';
 
 const ResizableRightSidebar = () => {
+  const {
+    isCollapsed,
+    setIsCollapsed,
+    isHidden,
+    setIsHidden,
+    width,
+    setWidth
+  } = useRightSidebar();
+  const { globalHeaderHeight, subHeaderHeight } = useLayout();
   const { isCollapsed, setIsCollapsed, width, setWidth } = useRightSidebar();
+
   const isMobile = useIsMobile();
   const [isDragging, setIsDragging] = useState(false);
   const location = useLocation();
@@ -150,9 +161,11 @@ const ResizableRightSidebar = () => {
 
   return (
     <motion.div
-      className="sticky top-[calc(var(--global-header-height)+var(--client-sub-header-height))] bg-background border-l flex flex-col z-10"
+      data-testid="right-sidebar"
+      className="sticky bg-background border-l flex flex-col z-10"
       style={{
-        height: 'calc(100vh - var(--global-header-height) - var(--client-sub-header-height))'
+        top: globalHeaderHeight + subHeaderHeight,
+        height: `calc(100vh - ${globalHeaderHeight + subHeaderHeight}px)`
       }}
       animate={{ width: isCollapsed ? 32 : width }}
       transition={{ duration: 0.2, ease: 'easeInOut' }}
@@ -165,7 +178,7 @@ const ResizableRightSidebar = () => {
       )}
 
       {/* Sticky Header */}
-      <div className="sticky top-[calc(var(--global-header-height)+var(--sub-header-height))] z-50 bg-background border-b flex items-center justify-between px-3 py-2">
+      <div className="sticky top-0 z-50 bg-background border-b flex items-center justify-between px-3 py-2">
         {isCollapsed ? (
           <Button
             variant="ghost"
