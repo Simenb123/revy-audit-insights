@@ -365,14 +365,17 @@ Jeg kan hjelpe deg med **revisjon**, **regnskapsføring**, **dokumentanalyse** o
     } catch (error) {
       logger.error('Error getting AI response:', error);
       
-      let errorMessage = `Beklager, jeg opplever tekniske problemer akkurat nå. 
+      let errorMessage = `Beklager, jeg kunne ikke behandle forespørselen din akkurat nå. 
 
-**Feilmelding:** ${error.message}
+**For best resultat med dokumentanalyse, prøv å være mer spesifikk:**
+• "Analyser lønnsoppgaven for 2024"
+• "Finn alle skattetrekk i dokumentene"  
+• "Sammendrag av regnskapsdata"
+• "Hvilke dokumenter handler om feriepenger?"
 
-**Forslag:**
-• Prøv igjen om litt
-• Sjekk internett-tilkoblingen din
-• Kontakt support hvis problemet vedvarer`;
+**Teknisk feilmelding:** ${error.message}
+
+Du kan også prøve å stille spørsmålet på en annen måte eller kontakte support hvis problemet vedvarer.`;
 
       // Show user-friendly toast
       if (error.message.includes('timeout') || error.message.includes('timed out')) {

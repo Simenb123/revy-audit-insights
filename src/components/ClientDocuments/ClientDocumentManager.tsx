@@ -22,6 +22,7 @@ import DocumentWorkflowManager from './DocumentWorkflowManager';
 import { DocumentVersionControl } from './DocumentVersionControl';
 import { DocumentApprovalWorkflow } from './DocumentApprovalWorkflow';
 import { DocumentComplianceTracker } from './DocumentComplianceTracker';
+import { DocumentGuidanceCard } from '../Revy/DocumentGuidanceCard';
 
 interface ClientDocumentManagerProps {
   clientId: string;
@@ -116,36 +117,11 @@ const ClientDocumentManager = ({ clientId, clientName, enableAI = false }: Clien
       </div>
 
       {enableAI && documents.length > 0 && (
-        <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-medium text-purple-900 mb-2 flex items-center gap-2">
-                <Brain className="h-5 w-5" />
-                AI-prosessering for {clientName || 'klient'}
-              </h3>
-              <div className="text-sm text-purple-700 space-y-1">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div>
-                    <span className="font-medium text-green-700">{stats.completed}</span>
-                    <span className="text-green-600"> AI kan lese</span>
-                  </div>
-                  <div>
-                    <span className="font-medium text-blue-700">{stats.processing}</span>
-                    <span className="text-blue-600"> prosesserer</span>
-                  </div>
-                  <div>
-                    <span className="font-medium text-yellow-700">{stats.pending}</span>
-                    <span className="text-yellow-600"> venter</span>
-                  </div>
-                  <div>
-                    <span className="font-medium text-red-700">{stats.failed}</span>
-                    <span className="text-red-600"> feilet</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <DocumentGuidanceCard 
+          documentCount={documents.length}
+          readableDocuments={stats.completed}
+          className="mb-4"
+        />
       )}
 
       {enableAI && documents.length > 0 && (

@@ -8,7 +8,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Simple DOCX text extraction (basic implementation)
+// Enhanced DOCX text extraction with better Norwegian support
 function extractTextFromDocx(uint8Array: Uint8Array): string {
   try {
     const text = new TextDecoder('utf-8', { fatal: false }).decode(uint8Array);
@@ -18,60 +18,106 @@ function extractTextFromDocx(uint8Array: Uint8Array): string {
     if (textMatches) {
       const extractedText = textMatches
         .map(match => match.replace(/<w:t[^>]*>([^<]*)<\/w:t>/, '$1'))
+        .filter(text => text.trim().length > 0)
         .join(' ')
         .trim();
       
       if (extractedText.length > 10) {
-        return extractedText;
+        return cleanExtractedText(extractedText);
       }
     }
     
-    // Fallback: extract readable text
+    // Enhanced fallback: extract readable text with better Norwegian character support
     const readableText = text
-      .replace(/[^\x20-\x7E\s]/g, ' ')
+      .replace(/[^\x20-\x7E\u00C0-\u017F\u0100-\u024F\s]/g, ' ') // Include Norwegian characters
       .replace(/\s+/g, ' ')
       .trim();
     
-    const words = readableText.match(/[a-zA-ZæøåÆØÅ]{3,}/g)?.slice(0, 500) || [];
-    return words.length > 5 ? words.join(' ') : '[DOCX innhold krever avansert prosessering]';
+    const words = readableText.match(/[a-zA-ZæøåÆØÅ0-9]{2,}/g)?.slice(0, 500) || [];
+    const validWords = words.filter(word => !isPdfMetadata(word));
+    
+    return validWords.length > 5 ? validWords.join(' ') : '[DOCX innhold krever avansert prosessering]';
   } catch (error) {
     console.error('DOCX extraction error:', error);
     return '[Feil ved DOCX tekstekstraksjon]';
   }
 }
 
-// Simple XLSX text extraction (basic implementation)
+// Enhanced text cleaning function
+function cleanExtractedText(text: string): string {
+  return text
+    .replace(/\s+/g, ' ')
+    .replace(/[^\w\s\u00C0-\u017F\u0100-\u024F.,!?;:()\-]/g, '')
+    .trim();
+}
+
+// Check if word is likely PDF metadata
+function isPdfMetadata(word: string): boolean {
+  const metadataTerms = [
+    'pdf', 'obj', 'endobj', 'stream', 'endstream', 'xref', 'trailer',
+    'flateDecode', 'filter', 'length', 'catalog', 'pages', 'type',
+    'font', 'encoding', 'width', 'height', 'bbox', 'matrix', 'creator',
+    'producer', 'moddate', 'creationdate', 'procset', 'imageb', 'imagec',
+    'imagei', 'text', 'pagemode', 'viewnone', 'viewer'
+  ];
+  return metadataTerms.some(term => word.toLowerCase().includes(term.toLowerCase()));
+}
+
+// Enhanced XLSX text extraction with better content recognition
 function extractTextFromXlsx(uint8Array: Uint8Array): string {
   try {
     const text = new TextDecoder('utf-8', { fatal: false }).decode(uint8Array);
+    let extractedContent: string[] = [];
     
-    // Look for shared strings in XLSX
-    const stringMatches = text.match(/<si><t>([^<]*)<\/t><\/si>/g);
-    if (stringMatches) {
-      const extractedText = stringMatches
-        .map(match => match.replace(/<si><t>([^<]*)<\/t><\/si>/, '$1'))
-        .filter(str => str.length > 0)
-        .slice(0, 100)
-        .join(' ')
-        .trim();
+    // Look for shared strings in XLSX (headers and text content)
+    const stringMatches = text.match(/<si><t[^>]*>([^<]*)<\/t><\/si>/g) || 
+                          text.match(/<si><t>([^<]*)<\/t><\/si>/g) || [];
+    
+    if (stringMatches.length > 0) {
+      const sharedStrings = stringMatches
+        .map(match => match.replace(/<si><t[^>]*>([^<]*)<\/t><\/si>/, '$1').replace(/<si><t>([^<]*)<\/t><\/si>/, '$1'))
+        .filter(str => str.trim().length > 0 && !isPdfMetadata(str))
+        .slice(0, 200);
       
-      if (extractedText.length > 10) {
-        return `Regneark innhold: ${extractedText}`;
-      }
+      extractedContent.push(...sharedStrings);
     }
     
-    // Look for worksheet data
-    const cellMatches = text.match(/<c[^>]*><v>([^<]*)<\/v><\/c>/g);
-    if (cellMatches) {
+    // Look for worksheet data and cell values
+    const cellMatches = text.match(/<c[^>]*><v>([^<]*)<\/v><\/c>/g) || [];
+    if (cellMatches.length > 0) {
       const cellValues = cellMatches
         .map(match => match.replace(/<c[^>]*><v>([^<]*)<\/v><\/c>/, '$1'))
-        .filter(val => val && isNaN(Number(val))) // Filter out pure numbers
-        .slice(0, 50)
-        .join(' ');
+        .filter(val => val && val.trim().length > 0)
+        .filter(val => isNaN(Number(val)) || val.length > 8) // Keep non-numbers or long numbers (like account numbers)
+        .slice(0, 100);
       
-      if (cellValues.length > 5) {
-        return `Regneark data: ${cellValues}`;
-      }
+      extractedContent.push(...cellValues);
+    }
+    
+    // Look for row data patterns that might indicate structured content
+    const rowMatches = text.match(/<row[^>]*>.*?<\/row>/g) || [];
+    if (rowMatches.length > 0) {
+      rowMatches.slice(0, 50).forEach(row => {
+        const cellsInRow = row.match(/<c[^>]*r="[A-Z]+\d+"[^>]*><v>([^<]*)<\/v><\/c>/g) || [];
+        if (cellsInRow.length > 2) { // Rows with multiple cells are likely data rows
+          const rowData = cellsInRow
+            .map(cell => cell.replace(/<c[^>]*r="[A-Z]+\d+"[^>]*><v>([^<]*)<\/v><\/c>/, '$1'))
+            .filter(val => val.trim().length > 0)
+            .join(',');
+          if (rowData.length > 5) {
+            extractedContent.push(`--- ${rowData.substring(0, 50)} ---`);
+          }
+        }
+      });
+    }
+    
+    if (extractedContent.length > 0) {
+      const cleanedContent = extractedContent
+        .map(str => cleanExtractedText(str))
+        .filter(str => str.length > 1)
+        .join('\n');
+      
+      return cleanedContent.length > 20 ? cleanedContent : '[XLSX regneark - begrenset tekstinnhold]';
     }
     
     return '[XLSX regneark - krever spesialisert prosessering for full tekstekstraksjon]';
