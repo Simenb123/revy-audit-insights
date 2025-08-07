@@ -1,20 +1,14 @@
 
 import React from 'react';
 import EnhancedAdminDashboard from '@/components/AIRevyAdmin/EnhancedAdminDashboard';
-import ResponsiveLayout from '@/components/Layout/ResponsiveLayout';
-import ConstrainedWidth from '@/components/Layout/ConstrainedWidth';
-import StandardPageLayout from '@/components/Layout/StandardPageLayout';
 import PageHeader from '@/components/Layout/PageHeader';
 
 const AIRevyAdmin = () => {
   return (
-    <ResponsiveLayout>
-      <ConstrainedWidth width="full">
-        <StandardPageLayout header={<PageHeader title="AI Revy Admin" />}>
-          <EnhancedAdminDashboard />
-        </StandardPageLayout>
-      </ConstrainedWidth>
-    </ResponsiveLayout>
+    <div className="space-y-[var(--content-gap)] w-full">
+      <PageHeader title="AI Revy Admin" />
+      <EnhancedAdminDashboard />
+    </div>
   );
 };
 
