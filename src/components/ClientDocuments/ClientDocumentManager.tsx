@@ -3,7 +3,9 @@ import React, { useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FileText, Upload, BarChart3, Brain, Search, Workflow } from 'lucide-react';
-import { useClientDocuments } from '@/hooks/useClientDocuments';
+import { useClientDocumentsList } from '@/hooks/useClientDocumentsList';
+import { useDocumentCategories } from '@/hooks/useDocumentCategories';
+import { useDocumentOperations } from '@/hooks/useDocumentOperations';
 import DocumentUploader from './DocumentUploader';
 import DocumentList from './DocumentList';
 import EnhancedDocumentList from './EnhancedDocumentList';
@@ -26,9 +28,25 @@ interface ClientDocumentManagerProps {
 }
 
 const ClientDocumentManager = ({ clientId, clientName, enableAI = false }: ClientDocumentManagerProps) => {
-  const { documents, categories, isLoading, refetch } = useClientDocuments(clientId);
+  // Direct data fetching with client ID - no lookup needed
+  const documentsQuery = useClientDocumentsList(clientId);
+  const categoriesQuery = useDocumentCategories();
+  const documentOperations = useDocumentOperations(clientId);
+  
+  const documents = documentsQuery.data || [];
+  const categories = categoriesQuery.data || [];
+  const isLoading = documentsQuery.isLoading || categoriesQuery.isLoading;
+  
   const [activeTab, setActiveTab] = useState('documents');
   const [filteredDocuments, setFilteredDocuments] = useState(documents);
+  
+  // Debug logging (temporary)
+  console.log('ClientDocumentManager Debug:', {
+    clientId,
+    documentsCount: documents.length,
+    firstDocumentClientId: documents[0]?.client_id,
+    isLoading
+  });
 
   const handleSearchResults = useCallback((results: typeof documents) => {
     setFilteredDocuments(results);
@@ -61,7 +79,7 @@ const ClientDocumentManager = ({ clientId, clientName, enableAI = false }: Clien
   const stats = getExtractionStats();
 
   const handleDocumentUpdate = () => {
-    refetch();
+    documentsQuery.refetch();
   };
 
   return (
@@ -167,8 +185,8 @@ const ClientDocumentManager = ({ clientId, clientName, enableAI = false }: Clien
 
         <TabsContent value="documents">
           <div className="space-y-4">
-            <DocumentExtractionFixer onUpdate={refetch} />
-            <DocumentAIPipelineManager onUpdate={refetch} />
+            <DocumentExtractionFixer onUpdate={handleDocumentUpdate} />
+            <DocumentAIPipelineManager onUpdate={handleDocumentUpdate} />
             {enableAI ? (
               <EnhancedDocumentList
                 documents={documents}

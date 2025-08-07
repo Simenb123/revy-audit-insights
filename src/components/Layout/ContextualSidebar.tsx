@@ -33,6 +33,16 @@ export default function ContextualSidebar() {
   const extractedClientId = extractClientIdFromPath(location.pathname);
   const clientIdentifier = extractedClientId || clientId || orgNumber;
   
+  // Debug logging (temporary)
+  console.log('ContextualSidebar Debug:', {
+    pathname: location.pathname,
+    extractedClientId,
+    clientId,
+    orgNumber,
+    clientIdentifier,
+    hasClient: !!clientIdentifier
+  });
+  
   const { data: client } = useClientDetails(clientIdentifier || '');
   const { data: userProfile } = useUserProfile();
   const { data: auditFirm } = useAuditFirm();
