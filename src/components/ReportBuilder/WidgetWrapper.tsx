@@ -26,16 +26,17 @@ export function WidgetWrapper({ widget, children }: WidgetWrapperProps) {
     <div className="relative group h-full">
       {children}
       {!isViewMode && (
-        <div className="absolute top-2 right-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <WidgetConfiguration 
-            widget={widget} 
+        <div className="widget-controls absolute top-2 right-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <WidgetConfiguration
+            widget={widget}
             onUpdateWidget={handleUpdateWidget}
           />
-          <Button 
-            variant="ghost" 
-            size="sm" 
+          <Button
+            variant="ghost"
+            size="sm"
             className="h-6 w-6 p-0 text-destructive hover:text-destructive-foreground hover:bg-destructive"
             onClick={handleRemoveWidget}
+            onMouseDown={e => e.stopPropagation()}
           >
             <X className="h-3 w-3" />
           </Button>

@@ -64,6 +64,7 @@ export function DashboardCanvas({ clientId, selectedVersion }: DashboardCanvasPr
         useCSSTransforms
         compactType="vertical"
         preventCollision={false}
+        draggableCancel=".widget-controls"
       >
         {widgets.map(widget => (
           <div key={widget.id} className={cn(
