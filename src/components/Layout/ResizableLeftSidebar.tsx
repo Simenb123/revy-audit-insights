@@ -42,7 +42,7 @@ const generalWorkItems = [
 // Administrative områder - rollebasert tilgang
 const adminItems = [
   {
-    title: 'Dokumenter',
+    title: 'PDF-filer',
     url: '/documents',
     icon: FileText,
   },
@@ -119,7 +119,7 @@ const ResizableLeftSidebar = () => {
       icon: FileText,
     },
     {
-      title: 'PDF-filer',
+      title: 'Dokumenter',
       url: `/clients/${clientId}/documents`,
       icon: FileText,
     },

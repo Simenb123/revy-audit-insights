@@ -35,8 +35,22 @@ export const useClientDocumentsList = (clientId?: string) => {
         return [];
       }
 
-      devLog('Fetching client documents for client UUID:', clientId);
+      // EXTENSIVE DEBUG LOGGING FOR DOCUMENT LEAKAGE INVESTIGATION
+      devLog('=== DOCUMENT QUERY DEBUG START ===');
+      devLog('Requested client ID:', clientId);
+      
+      // Check current user
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError) {
+        devLog('❌ Auth error:', authError);
+        throw authError;
+      }
+      
+      devLog('Current user ID:', user?.id);
+      devLog('Current user email:', user?.email);
 
+      // Perform the query
+      devLog('Executing query with client_id filter:', clientId);
       const { data: documents, error } = await supabase
         .from('client_documents_files')
         .select('*')
@@ -44,11 +58,58 @@ export const useClientDocumentsList = (clientId?: string) => {
         .order('created_at', { ascending: false });
 
       if (error) {
-        devLog('Error fetching client documents:', error);
+        devLog('❌ Database error:', error);
         throw error;
       }
 
-      devLog('Client documents fetched:', { count: documents?.length || 0 });
+      // DETAILED ANALYSIS OF RETURNED DOCUMENTS
+      devLog('✅ Query executed successfully');
+      devLog('Total documents returned:', documents?.length || 0);
+      
+      if (documents && documents.length > 0) {
+        devLog('=== DOCUMENT ANALYSIS ===');
+        
+        // Group by client_id to detect leakage
+        const clientGroups = documents.reduce((acc, doc) => {
+          const clientId = doc.client_id;
+          if (!acc[clientId]) {
+            acc[clientId] = [];
+          }
+          acc[clientId].push(doc);
+          return acc;
+        }, {} as Record<string, typeof documents>);
+        
+        devLog('Documents grouped by client_id:', Object.keys(clientGroups).map(cId => ({
+          client_id: cId,
+          count: clientGroups[cId].length,
+          matches_requested: cId === clientId
+        })));
+        
+        // Check for data leakage
+        const wrongClientDocs = documents.filter(doc => doc.client_id !== clientId);
+        if (wrongClientDocs.length > 0) {
+          devLog('🚨 CRITICAL: Documents from wrong clients detected!');
+          devLog('Wrong client documents:', wrongClientDocs.map(doc => ({
+            id: doc.id,
+            file_name: doc.file_name,
+            actual_client_id: doc.client_id,
+            expected_client_id: clientId,
+            user_id: doc.user_id
+          })));
+        }
+        
+        // Sample first few documents for detailed inspection
+        const sampleDocs = documents.slice(0, 3);
+        devLog('Sample documents:', sampleDocs.map(doc => ({
+          id: doc.id,
+          file_name: doc.file_name,
+          client_id: doc.client_id,
+          user_id: doc.user_id,
+          created_at: doc.created_at
+        })));
+      }
+      
+      devLog('=== DOCUMENT QUERY DEBUG END ===');
       return documents || [];
     },
     enabled: !!clientId,
