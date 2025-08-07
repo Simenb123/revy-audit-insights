@@ -20,14 +20,6 @@ export default function ContextualSidebar() {
   
   // Determine client identifier - use clientId for new routes, orgNumber for legacy routes
   const clientIdentifier = clientId || orgNumber;
-  console.log('🔍 [CONTEXTUAL_SIDEBAR] Debug info:', {
-    pathname: location.pathname,
-    orgNumber,
-    clientId,
-    clientIdentifier,
-    isClientContext: (location.pathname.includes('/klienter/') && orgNumber) || 
-                     (location.pathname.includes('/clients/') && clientId)
-  });
   const { data: client } = useClientDetails(clientIdentifier || '');
   const { data: userProfile } = useUserProfile();
   const { data: auditFirm } = useAuditFirm();

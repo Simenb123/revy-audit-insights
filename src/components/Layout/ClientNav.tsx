@@ -17,14 +17,6 @@ const ClientNav = () => {
   const location = useLocation();
   const { clientId } = useParams<{ clientId: string }>();
   
-  // Debug logging to see what we're getting
-  console.log('🔍 [CLIENT_NAV] Debug info:', {
-    pathname: location.pathname,
-    clientId,
-    clientIdType: typeof clientId,
-    hasClientId: !!clientId
-  });
-  
   const clientNavItems = [
     {
       to: `/clients/${clientId}`,
