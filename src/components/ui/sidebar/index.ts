@@ -20,6 +20,5 @@ export { SidebarMenuSub } from "./SidebarMenuSub";
 export { SidebarMenuSubButton } from "./SidebarMenuSubButton";
 export { SidebarMenuSubItem } from "./SidebarMenuSubItem";
 export { SidebarProvider, useSidebar } from "./SidebarContext";
-export { SidebarRail } from "./SidebarRail";
 export { SidebarSeparator } from "./SidebarSeparator";
 export { SidebarTrigger } from "./SidebarTrigger";
