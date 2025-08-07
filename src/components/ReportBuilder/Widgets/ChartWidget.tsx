@@ -1,7 +1,18 @@
 import React from 'react';
 import { Widget } from '@/contexts/WidgetManagerContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer } from 'recharts';
+import {
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  PieChart,
+  Pie,
+  XAxis,
+  YAxis,
+  ResponsiveContainer,
+  LabelList
+} from 'recharts';
 import { useTrialBalanceWithMappings } from '@/hooks/useTrialBalanceWithMappings';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
 
@@ -58,16 +69,58 @@ export function ChartWidget({ widget }: ChartWidgetProps) {
       </CardHeader>
       <CardContent className="pt-2">
         <ResponsiveContainer width="100%" height={120}>
-          <BarChart data={chartData}>
-            <XAxis 
-              dataKey="name" 
-              axisLine={false}
-              tickLine={false}
-              tick={{ fontSize: 10 }}
-            />
-            <YAxis hide />
-            <Bar dataKey="value" fill="hsl(var(--primary))" radius={[2, 2, 0, 0]} />
-          </BarChart>
+          {chartType === 'line' ? (
+            <LineChart data={chartData}>
+              <XAxis
+                dataKey="name"
+                axisLine={false}
+                tickLine={false}
+                tick={{ fontSize: 10 }}
+              />
+              <YAxis hide />
+              <Line
+                type="monotone"
+                dataKey="value"
+                stroke="hsl(var(--primary))"
+                strokeWidth={2}
+              >
+                {showValues && (
+                  <LabelList dataKey="value" position="top" fontSize={10} />
+                )}
+              </Line>
+            </LineChart>
+          ) : chartType === 'pie' ? (
+            <PieChart>
+              <Pie
+                data={chartData}
+                dataKey="value"
+                nameKey="name"
+                fill="hsl(var(--primary))"
+                outerRadius={50}
+              >
+                {showValues && <LabelList dataKey="value" fontSize={10} />}
+              </Pie>
+            </PieChart>
+          ) : (
+            <BarChart data={chartData}>
+              <XAxis
+                dataKey="name"
+                axisLine={false}
+                tickLine={false}
+                tick={{ fontSize: 10 }}
+              />
+              <YAxis hide />
+              <Bar
+                dataKey="value"
+                fill="hsl(var(--primary))"
+                radius={[2, 2, 0, 0]}
+              >
+                {showValues && (
+                  <LabelList dataKey="value" position="top" fontSize={10} />
+                )}
+              </Bar>
+            </BarChart>
+          )}
         </ResponsiveContainer>
       </CardContent>
     </Card>
