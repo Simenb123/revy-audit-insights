@@ -18,15 +18,31 @@ export default function ContextualSidebar() {
   const location = useLocation();
   const { orgNumber, clientId } = useParams<{ orgNumber: string; clientId: string }>();
   
-  // Determine client identifier - use clientId for new routes, orgNumber for legacy routes
-  const clientIdentifier = clientId || orgNumber;
+  // Extract clientId from URL path more robustly for nested routes
+  const extractClientIdFromPath = (pathname: string): string | null => {
+    const clientsMatch = pathname.match(/\/clients\/([a-f0-9-]{36})/);
+    if (clientsMatch) return clientsMatch[1];
+    
+    const klienterMatch = pathname.match(/\/klienter\/(\d+)/);
+    if (klienterMatch) return klienterMatch[1];
+    
+    return null;
+  };
+  
+  // Determine client identifier - use extracted from URL, then params
+  const extractedClientId = extractClientIdFromPath(location.pathname);
+  const clientIdentifier = extractedClientId || clientId || orgNumber;
+  
   const { data: client } = useClientDetails(clientIdentifier || '');
   const { data: userProfile } = useUserProfile();
   const { data: auditFirm } = useAuditFirm();
   
-  // Check if we're in a client context (both legacy and new routes)
-  const isClientContext = (location.pathname.includes('/klienter/') && orgNumber) || 
-                          (location.pathname.includes('/clients/') && clientId);
+  // Improved client context detection using regex patterns
+  const isClientContext = !!(
+    location.pathname.match(/\/clients\/[a-f0-9-]{36}/) || 
+    (location.pathname.includes('/klienter/') && orgNumber) ||
+    extractedClientId
+  );
   
   // Check if we're in organization context
   const isOrganizationContext = location.pathname.match(/^\/(organisasjon|avdeling|team|kommunikasjon|brukeradministrasjon|organisasjonsinnstillinger)/);
