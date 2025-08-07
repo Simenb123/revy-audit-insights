@@ -1,14 +1,15 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { FileText, Download, Trash2, Search, Calendar } from 'lucide-react';
+import { FileText, Download, Trash2, Search, Calendar, Eye } from 'lucide-react';
+import DocumentViewer from './DocumentViewer';
 import { ClientDocument, useClientDocuments } from '@/hooks/useClientDocuments';
 import { useDocumentFilters } from '@/hooks/useDocumentFilters';
-import { useDownload } from '@/hooks/useDownload';
+
 import { formatDistanceToNow } from 'date-fns';
 import { nb } from 'date-fns/locale';
 
@@ -19,7 +20,9 @@ interface DocumentListProps {
 }
 
 const DocumentList = ({ documents, documentsByCategory, isLoading }: DocumentListProps) => {
-  const { deleteDocument, getDocumentUrl } = useClientDocuments('');
+  const { deleteDocument, downloadDocument } = useClientDocuments('');
+  const [selectedDocument, setSelectedDocument] = useState<ClientDocument | null>(null);
+  const [isViewerOpen, setIsViewerOpen] = useState(false);
 
   const {
     searchTerm,
@@ -33,7 +36,23 @@ const DocumentList = ({ documents, documentsByCategory, isLoading }: DocumentLis
     filteredDocuments,
   } = useDocumentFilters(documents, { enableSubjectArea: true });
 
-  const handleDownload = useDownload(getDocumentUrl);
+  const handleDownload = async (documentId: string, fileName: string) => {
+    try {
+      await downloadDocument(documentId);
+    } catch (error) {
+      console.error('Download failed:', error);
+    }
+  };
+
+  const handleView = (document: ClientDocument) => {
+    setSelectedDocument(document);
+    setIsViewerOpen(true);
+  };
+
+  const handleCloseViewer = () => {
+    setIsViewerOpen(false);
+    setSelectedDocument(null);
+  };
 
   const getFileIcon = (mimeType: string) => {
     if (mimeType.includes('pdf')) return '📄';
@@ -167,7 +186,16 @@ const DocumentList = ({ documents, documentsByCategory, isLoading }: DocumentLis
                     <Button
                       size="sm"
                       variant="outline"
+                      onClick={() => handleView(document)}
+                      title="Vis dokument"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
                       onClick={() => handleDownload(document.id, document.file_name)}
+                      title="Last ned"
                     >
                       <Download className="h-4 w-4" />
                     </Button>
@@ -176,6 +204,7 @@ const DocumentList = ({ documents, documentsByCategory, isLoading }: DocumentLis
                       variant="outline"
                       onClick={() => deleteDocument.mutate(document.id)}
                       disabled={deleteDocument.isPending}
+                      title="Slett"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -186,6 +215,13 @@ const DocumentList = ({ documents, documentsByCategory, isLoading }: DocumentLis
           ))}
         </div>
       )}
+
+      <DocumentViewer
+        document={selectedDocument}
+        isOpen={isViewerOpen}
+        onClose={handleCloseViewer}
+        onDownload={handleDownload}
+      />
     </div>
   );
 };
