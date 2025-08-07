@@ -10,7 +10,13 @@ export interface FormulaCalculationResult {
   error?: string;
 }
 
+/**
+ * @deprecated Use useFormulaCalculation hook instead for better performance and consistency
+ * This hook is kept for backward compatibility but will be removed in future versions
+ */
 export function useFormulaCalculator(standardAccountBalances: StandardAccountBalance[]) {
+  console.warn('useFormulaCalculator is deprecated. Use useFormulaCalculation hook instead.');
+  
   const calculator = useMemo(() => {
     return new FormulaCalculator(standardAccountBalances);
   }, [standardAccountBalances]);
@@ -18,6 +24,10 @@ export function useFormulaCalculator(standardAccountBalances: StandardAccountBal
   return calculator;
 }
 
+/**
+ * @deprecated Use edge function calculate-formula instead for better performance
+ * This class is kept for backward compatibility but will be removed in future versions
+ */
 class FormulaCalculator {
   private standardAccountBalances: StandardAccountBalance[];
 

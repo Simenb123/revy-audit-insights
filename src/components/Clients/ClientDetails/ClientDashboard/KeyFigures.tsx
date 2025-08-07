@@ -1,8 +1,6 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useTrialBalanceWithMappings } from "@/hooks/useTrialBalanceWithMappings";
-
-import { useFormulaCalculator } from "@/hooks/useFormulaCalculator";
+import { useFormulaCalculation } from "@/hooks/useFormulaCalculation";
 import { useFiscalYear } from "@/contexts/FiscalYearContext";
 
 interface KeyFiguresProps {
@@ -11,10 +9,32 @@ interface KeyFiguresProps {
 
 const KeyFigures = ({ clientId }: KeyFiguresProps) => {
   const { selectedFiscalYear } = useFiscalYear();
-  const { data: trialBalanceData, isLoading: isLoadingTrialBalance } = useTrialBalanceWithMappings(clientId, selectedFiscalYear);
-  const calculator = useFormulaCalculator(trialBalanceData?.standardAccountBalances || []);
+  
+  // Use new formula calculation for all key figures
+  const liquidityResult = useFormulaCalculation({
+    clientId,
+    fiscalYear: selectedFiscalYear,
+    formulaId: 'liquidity_ratio',
+    enabled: !!clientId && !!selectedFiscalYear
+  });
+  
+  const equityResult = useFormulaCalculation({
+    clientId,
+    fiscalYear: selectedFiscalYear,
+    formulaId: 'equity_ratio',
+    enabled: !!clientId && !!selectedFiscalYear
+  });
+  
+  const profitResult = useFormulaCalculation({
+    clientId,
+    fiscalYear: selectedFiscalYear,
+    formulaId: 'profit_margin',
+    enabled: !!clientId && !!selectedFiscalYear
+  });
 
-  if (isLoadingTrialBalance) {
+  const isLoading = liquidityResult.isLoading || equityResult.isLoading || profitResult.isLoading;
+
+  if (isLoading) {
     return (
       <Card>
         <CardHeader>
@@ -35,9 +55,6 @@ const KeyFigures = ({ clientId }: KeyFiguresProps) => {
     );
   }
 
-  const liquidityResult = calculator.calculateFormula('liquidity_ratio');
-  const equityResult = calculator.calculateFormula('equity_ratio');
-  const profitResult = calculator.calculateFormula('profit_margin');
   return (
     <Card>
       <CardHeader>
@@ -47,32 +64,32 @@ const KeyFigures = ({ clientId }: KeyFiguresProps) => {
         <div className="grid grid-cols-3 gap-4">
           <div>
             <h3 className="text-sm font-medium text-muted-foreground">Likviditetsgrad</h3>
-            <p className={`text-2xl font-bold ${liquidityResult.isValid ? '' : 'text-destructive'}`}>
-              {liquidityResult.isValid ? liquidityResult.formattedValue : 'N/A'}
+            <p className={`text-2xl font-bold ${liquidityResult.data?.isValid ? '' : 'text-destructive'}`}>
+              {liquidityResult.data?.isValid ? liquidityResult.data.formattedValue : 'N/A'}
             </p>
             <p className="text-xs text-muted-foreground">Omløpsmidler / Kortsiktig gjeld</p>
-            {!liquidityResult.isValid && liquidityResult.error && (
-              <p className="text-xs text-destructive mt-1">{liquidityResult.error}</p>
+            {(!liquidityResult.data?.isValid || liquidityResult.error) && (
+              <p className="text-xs text-destructive mt-1">{liquidityResult.data?.error || liquidityResult.error?.message}</p>
             )}
           </div>
           <div>
             <h3 className="text-sm font-medium text-muted-foreground">Egenkapitalandel</h3>
-            <p className={`text-2xl font-bold ${equityResult.isValid ? '' : 'text-destructive'}`}>
-              {equityResult.isValid ? equityResult.formattedValue : 'N/A'}
+            <p className={`text-2xl font-bold ${equityResult.data?.isValid ? '' : 'text-destructive'}`}>
+              {equityResult.data?.isValid ? equityResult.data.formattedValue : 'N/A'}
             </p>
             <p className="text-xs text-muted-foreground">Egenkapital / Sum eiendeler</p>
-            {!equityResult.isValid && equityResult.error && (
-              <p className="text-xs text-destructive mt-1">{equityResult.error}</p>
+            {(!equityResult.data?.isValid || equityResult.error) && (
+              <p className="text-xs text-destructive mt-1">{equityResult.data?.error || equityResult.error?.message}</p>
             )}
           </div>
           <div>
             <h3 className="text-sm font-medium text-muted-foreground">Resultatgrad</h3>
-            <p className={`text-2xl font-bold ${profitResult.isValid ? '' : 'text-destructive'}`}>
-              {profitResult.isValid ? profitResult.formattedValue : 'N/A'}
+            <p className={`text-2xl font-bold ${profitResult.data?.isValid ? '' : 'text-destructive'}`}>
+              {profitResult.data?.isValid ? profitResult.data.formattedValue : 'N/A'}
             </p>
             <p className="text-xs text-muted-foreground">Driftsresultat / Driftsinntekter</p>
-            {!profitResult.isValid && profitResult.error && (
-              <p className="text-xs text-destructive mt-1">{profitResult.error}</p>
+            {(!profitResult.data?.isValid || profitResult.error) && (
+              <p className="text-xs text-destructive mt-1">{profitResult.data?.error || profitResult.error?.message}</p>
             )}
           </div>
         </div>

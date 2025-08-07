@@ -3,173 +3,29 @@ import { Widget, useWidgetManager } from '@/contexts/WidgetManagerContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { InlineEditableTitle } from '../InlineEditableTitle';
 import { Calculator, TrendingUp, TrendingDown, AlertCircle } from 'lucide-react';
-import { useTrialBalanceWithMappings } from '@/hooks/useTrialBalanceWithMappings';
-import { useFilteredData } from '@/hooks/useFilteredData';
-import { useFilters } from '@/contexts/FilterContext';
+import { useFormulaCalculation } from '@/hooks/useFormulaCalculation';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
-import { useFormulaDefinitions } from '@/hooks/useFormulas';
 import { formatCurrency } from '@/lib/formatters';
 
 interface FormulaWidgetProps {
   widget: Widget;
 }
 
-// Formula evaluation engine
-class FormulaEvaluator {
-  private trialBalanceData: any;
-  private standardAccountBalances: any[];
-
-  constructor(trialBalanceData: any) {
-    this.trialBalanceData = trialBalanceData;
-    this.standardAccountBalances = trialBalanceData?.standardAccountBalances || [];
-  }
-
-  evaluateFormula(formula: any): number {
-    if (!formula || !formula.terms || formula.terms.length === 0) {
-      return 0;
-    }
-
-    try {
-      let expression = '';
-      let openParenCount = 0;
-      
-      for (const term of formula.terms) {
-        if (term.operator && expression.length > 0) {
-          expression += ` ${term.operator} `;
-        }
-
-        switch (term.type) {
-          case 'account':
-            const accountValue = this.getAccountValue(term.account);
-            expression += accountValue.toString();
-            break;
-          case 'variable':
-            const variableValue = this.getVariableValue(term.variable);
-            expression += variableValue.toString();
-            break;
-          case 'constant':
-            expression += (term.constant || 0).toString();
-            break;
-          case 'parenthesis':
-            if (term.parenthesis === 'open') {
-              expression += '(';
-              openParenCount++;
-            } else if (term.parenthesis === 'close') {
-              expression += ')';
-              openParenCount--;
-            }
-            break;
-        }
-      }
-
-      // Validate parentheses balance
-      if (openParenCount !== 0) {
-        console.warn('Unbalanced parentheses in formula:', expression);
-        return 0;
-      }
-
-      // Validate expression is not empty and contains valid syntax
-      if (!expression.trim() || expression.includes('()') || /[\+\-\*\/]{2,}/.test(expression)) {
-        console.warn('Invalid formula expression:', expression);
-        return 0;
-      }
-
-      // Safe evaluation using Function constructor
-      const result = new Function('return ' + expression)();
-      return isNaN(result) || !isFinite(result) ? 0 : result;
-    } catch (error) {
-      console.warn('Formula evaluation error - returning 0:', error.message);
-      return 0;
-    }
-  }
-
-  private getAccountValue(accountNumber: string): number {
-    if (!accountNumber) return 0;
-    
-    const account = this.standardAccountBalances.find(
-      acc => acc.standard_number === accountNumber
-    );
-    return account?.total_balance || 0;
-  }
-
-  private getVariableValue(variableName: string): number {
-    if (!variableName) return 0;
-
-    switch (variableName) {
-      case 'gross_profit_margin':
-        return this.calculateGrossProfitMargin();
-      case 'operating_margin':
-        return this.calculateOperatingMargin();
-      case 'equity_ratio':
-        return this.calculateEquityRatio();
-      case 'current_ratio':
-        return this.calculateCurrentRatio();
-      case 'debt_ratio':
-        return this.calculateDebtRatio();
-      default:
-        return 0;
-    }
-  }
-
-  private calculateGrossProfitMargin(): number {
-    const revenue = this.getAccountsByRange('3000', '3999');
-    const cogs = this.getAccountsByRange('4000', '4999');
-    
-    if (revenue === 0) return 0;
-    return ((revenue + cogs) / revenue) * 100;
-  }
-
-  private calculateOperatingMargin(): number {
-    const revenue = this.getAccountsByRange('3000', '3999');
-    const operatingExpenses = this.getAccountsByRange('4000', '6999');
-    
-    if (revenue === 0) return 0;
-    return ((revenue + operatingExpenses) / revenue) * 100;
-  }
-
-  private calculateEquityRatio(): number {
-    const equity = this.getAccountsByRange('2000', '2999');
-    const totalAssets = this.getAccountsByRange('1000', '1999');
-    
-    if (totalAssets === 0) return 0;
-    return (Math.abs(equity) / Math.abs(totalAssets)) * 100;
-  }
-
-  private calculateCurrentRatio(): number {
-    const currentAssets = this.getAccountsByRange('1500', '1999');
-    const currentLiabilities = this.getAccountsByRange('2500', '2999');
-    
-    if (currentLiabilities === 0) return 0;
-    return Math.abs(currentAssets) / Math.abs(currentLiabilities);
-  }
-
-  private calculateDebtRatio(): number {
-    const totalLiabilities = this.getAccountsByRange('2500', '2999');
-    const totalAssets = this.getAccountsByRange('1000', '1999');
-    
-    if (totalAssets === 0) return 0;
-    return (Math.abs(totalLiabilities) / Math.abs(totalAssets)) * 100;
-  }
-
-  private getAccountsByRange(startRange: string, endRange: string): number {
-    return this.standardAccountBalances
-      .filter(account => {
-        const accountNum = account.standard_number;
-        return accountNum >= startRange && accountNum <= endRange;
-      })
-      .reduce((sum, account) => sum + account.total_balance, 0);
-  }
-}
+/**
+ * @deprecated FormulaEvaluator class is no longer used.
+ * Formula calculations are now handled by the calculate-formula edge function.
+ * This code is kept for reference but should be removed in future versions.
+ */
 
 export function FormulaWidget({ widget }: FormulaWidgetProps) {
   const { selectedFiscalYear } = useFiscalYear();
   const { updateWidget } = useWidgetManager();
-  const { filters } = useFilters();
   const clientId = widget.config?.clientId;
 
   const handleTitleChange = (newTitle: string) => {
     updateWidget(widget.id, { title: newTitle });
   };
+  
   const formulaId = widget.config?.formulaId;
   const customFormula = widget.config?.customFormula;
   const showTrend = widget.config?.showTrend !== false;
@@ -197,92 +53,74 @@ export function FormulaWidget({ widget }: FormulaWidgetProps) {
     );
   }
   
-  const { data: rawTrialBalanceData, isLoading: trialBalanceLoading } = useTrialBalanceWithMappings(
-    clientId, 
-    selectedFiscalYear,
-    widget.config?.selectedVersion
-  );
+  // Use new formula calculation with edge function
+  const formulaResult = useFormulaCalculation({
+    clientId,
+    fiscalYear: selectedFiscalYear,
+    formulaId,
+    customFormula,
+    selectedVersion: widget.config?.selectedVersion,
+    enabled: !!clientId && !!selectedFiscalYear && (!!formulaId || !!customFormula)
+  });
 
-  // Apply global filters
-  const filteredTrialBalanceEntries = useFilteredData(rawTrialBalanceData?.trialBalanceEntries || []);
-  
-  // Create filtered trial balance data structure
-  const trialBalanceData = React.useMemo(() => {
-    if (!rawTrialBalanceData) return null;
-    
-    // Recalculate standardAccountBalances based on filtered entries
-    const standardBalances: Record<string, number> = {};
-    filteredTrialBalanceEntries.forEach(entry => {
-      const standardName = entry.standard_name;
-      if (standardName) {
-        standardBalances[standardName] = (standardBalances[standardName] || 0) + entry.closing_balance;
-      }
-    });
+  // Calculate trend if show trend is enabled
+  const previousYear = selectedFiscalYear - 1;
+  const previousFormulaResult = useFormulaCalculation({
+    clientId,
+    fiscalYear: previousYear,
+    formulaId,
+    customFormula,
+    selectedVersion: widget.config?.selectedVersion,
+    enabled: showTrend && !!clientId && !!previousYear && (!!formulaId || !!customFormula)
+  });
 
-    const standardAccountBalances = Object.entries(standardBalances).map(([standard_name, total_balance]) => ({
-      standard_name,
-      total_balance,
-      standard_number: standard_name // For compatibility
-    }));
-
-    return {
-      ...rawTrialBalanceData,
-      trialBalanceEntries: filteredTrialBalanceEntries,
-      standardAccountBalances
-    };
-  }, [rawTrialBalanceData, filteredTrialBalanceEntries]);
-
-  const { data: formulaDefinitions, isLoading: formulaLoading } = useFormulaDefinitions();
-
-  // Get formula from database or use custom formula
-  const formula = React.useMemo(() => {
-    if (customFormula) {
-      return customFormula;
-    }
-    
-    if (formulaId && formulaDefinitions) {
-      const definition = formulaDefinitions.find(f => f.id === formulaId);
-      return definition?.formula_expression;
-    }
-    
-    return null;
-  }, [formulaId, formulaDefinitions, customFormula]);
-
-  // Calculate formula result
-  const formulaResult = React.useMemo(() => {
-    if (!trialBalanceData || !formula) {
-      return { 
-        value: displayAsPercentage ? '0%' : (showCurrency ? formatCurrency(0) : '0'), 
-        change: null as string | null, 
-        trend: null as 'up' | 'down' | null,
-        hasHistoricalData: false
-      };
+  // Format result based on widget configuration
+  const displayResult = React.useMemo(() => {
+    if (formulaResult.isLoading) {
+      return { value: 'Laster...', change: null, trend: null };
     }
 
-    const evaluator = new FormulaEvaluator(trialBalanceData);
-    const result = evaluator.evaluateFormula(formula);
-    
+    if (formulaResult.error || !formulaResult.data?.isValid) {
+      return { value: 'N/A', change: null, trend: null };
+    }
+
+    const value = formulaResult.data.value;
     let formattedValue: string;
+
     if (displayAsPercentage) {
-      formattedValue = `${result.toFixed(1)}%`;
+      formattedValue = `${value.toFixed(1)}%`;
     } else if (showCurrency) {
-      formattedValue = formatCurrency(result);
+      formattedValue = formatCurrency(value);
     } else {
       formattedValue = new Intl.NumberFormat('nb-NO', { 
         minimumFractionDigits: 0,
         maximumFractionDigits: 2 
-      }).format(result);
+      }).format(value);
     }
-    
+
+    // Calculate trend if previous data is available
+    if (!showTrend || previousFormulaResult.isLoading || previousFormulaResult.error || !previousFormulaResult.data?.isValid) {
+      return { value: formattedValue, change: null, trend: null };
+    }
+
+    const previousValue = previousFormulaResult.data.value;
+    if (previousValue === 0) {
+      return { value: formattedValue, change: null, trend: null };
+    }
+
+    const diff = value - previousValue;
+    const changePercent = (diff / Math.abs(previousValue)) * 100;
+    const trend = changePercent > 0 ? 'up' as const : changePercent < 0 ? 'down' as const : null;
+    const formattedChange = (changePercent > 0 ? '+' : '') + changePercent.toFixed(1) + '%';
+
     return {
       value: formattedValue,
-      change: null as string | null, // Remove mock data - will be calculated from actual historical data
-      trend: null as 'up' | 'down' | null,
-      hasHistoricalData: false
+      change: formattedChange,
+      trend
     };
-  }, [trialBalanceData, formula, displayAsPercentage, showCurrency]);
+  }, [formulaResult, previousFormulaResult, displayAsPercentage, showCurrency, showTrend]);
 
-  if (trialBalanceLoading || formulaLoading) {
+  if (formulaResult.isLoading) {
     return (
       <Card className="h-full">
         <CardHeader className="pb-2">
@@ -302,7 +140,7 @@ export function FormulaWidget({ widget }: FormulaWidgetProps) {
     );
   }
 
-  if (!formula) {
+  if (!formulaId && !customFormula) {
     return (
       <Card className="h-full">
         <CardHeader className="pb-2">
@@ -335,29 +173,29 @@ export function FormulaWidget({ widget }: FormulaWidgetProps) {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-bold">{formulaResult.value}</div>
-        {showTrend && formulaResult.hasHistoricalData && formulaResult.change && formulaResult.trend && (
+        <div className="text-2xl font-bold">{displayResult.value}</div>
+        {showTrend && displayResult.change && displayResult.trend && (
           <div className="flex items-center pt-1">
-            {formulaResult.trend === 'up' ? (
+            {displayResult.trend === 'up' ? (
               <TrendingUp className="h-4 w-4 text-success mr-1" />
             ) : (
               <TrendingDown className="h-4 w-4 text-destructive mr-1" />
             )}
             <span className={`text-xs ${
-              formulaResult.trend === 'up' ? 'text-success' : 'text-destructive'
+              displayResult.trend === 'up' ? 'text-success' : 'text-destructive'
             }`}>
-              {formulaResult.change}
+              {displayResult.change}
             </span>
           </div>
         )}
-        {showTrend && !formulaResult.hasHistoricalData && (
+        {showTrend && !displayResult.change && (
           <div className="text-xs text-muted-foreground pt-1">
             Ingen historiske data tilgjengelig
           </div>
         )}
-        {formula.metadata?.description && (
-          <div className="mt-2 text-xs text-muted-foreground">
-            {formula.metadata.description}
+        {formulaResult.data?.error && (
+          <div className="mt-2 text-xs text-destructive">
+            {formulaResult.data.error}
           </div>
         )}
       </CardContent>
