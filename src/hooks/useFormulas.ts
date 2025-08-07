@@ -69,10 +69,19 @@ export const useCreateFormulaDefinition = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async (formula: Omit<FormulaDefinition, 'id' | 'created_at' | 'updated_at'>) => {
+    mutationFn: async (formula: Omit<FormulaDefinition, 'id' | 'created_at' | 'updated_at' | 'created_by'>) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error('User must be authenticated to create formulas');
+      }
+
       const { data, error } = await supabase
         .from('formula_definitions')
-        .insert([formula])
+        .insert([{
+          ...formula,
+          created_by: user.id
+        }])
         .select()
         .single();
       
@@ -128,10 +137,19 @@ export const useCreateFormulaVariable = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async (variable: Omit<FormulaVariable, 'id' | 'created_at' | 'updated_at'>) => {
+    mutationFn: async (variable: Omit<FormulaVariable, 'id' | 'created_at' | 'updated_at' | 'created_by'>) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error('User must be authenticated to create formula variables');
+      }
+
       const { data, error } = await supabase
         .from('formula_variables')
-        .insert([variable])
+        .insert([{
+          ...variable,
+          created_by: user.id
+        }])
         .select()
         .single();
       

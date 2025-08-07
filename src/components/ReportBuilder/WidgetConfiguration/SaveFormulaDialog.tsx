@@ -65,9 +65,13 @@ export function SaveFormulaDialog({ open, onOpenChange, formula, onSave }: SaveF
         onSave?.();
       },
       onError: (error) => {
+        const errorMessage = error?.message?.includes('authenticated') 
+          ? "Du må være logget inn for å lagre formler"
+          : "Kunne ikke lagre formelen";
+          
         toast({
           title: "Feil",
-          description: "Kunne ikke lagre formelen",
+          description: errorMessage,
           variant: "destructive",
         });
         console.error('Error saving formula:', error);
