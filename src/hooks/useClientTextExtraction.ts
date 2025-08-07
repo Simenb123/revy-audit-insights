@@ -121,37 +121,55 @@ export const useClientTextExtraction = () => {
     try {
       logger.log('🔄 Calling backend extraction for document:', documentId);
       
-      // Update status to indicate backend processing
+      // Update status to indicate backend processing with timeout tracking
       await supabase
         .from('client_documents_files')
         .update({ 
           text_extraction_status: 'processing',
-          extracted_text: '[Backend prosessering startet...]'
+          extracted_text: '[Backend prosessering startet...]',
+          updated_at: new Date().toISOString()
         })
         .eq('id', documentId);
 
-      // Call the enhanced PDF text extractor edge function
-      const { data, error } = await supabase.functions.invoke('enhanced-pdf-text-extractor', {
-        body: { documentId }
-      });
+      // Call the enhanced PDF text extractor edge function with timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minutes timeout
 
-      if (error) {
-        logger.error('❌ Backend extraction failed:', error);
-        throw new Error(`Backend-prosessering feilet: ${error.message}`);
+      try {
+        const { data, error } = await supabase.functions.invoke('enhanced-pdf-text-extractor', {
+          body: { documentId }
+        });
+
+        clearTimeout(timeoutId);
+
+        if (error) {
+          logger.error('❌ Backend extraction failed:', error);
+          throw new Error(`Backend-prosessering feilet: ${error.message}`);
+        }
+
+        logger.log('✅ Backend extraction completed successfully:', data);
+        return true;
+        
+      } catch (error) {
+        clearTimeout(timeoutId);
+        
+        if (error.name === 'AbortError') {
+          throw new Error('Backend-prosessering tok for lang tid (timeout)');
+        }
+        throw error;
       }
-
-      logger.log('✅ Backend extraction completed successfully:', data);
-      return true;
       
     } catch (error) {
       logger.error('❌ Backend extraction error:', error);
       
-      // Update with failed status
+      // Update with failed status and detailed error message
+      const errorMessage = error.message || 'Ukjent feil';
       await supabase
         .from('client_documents_files')
         .update({ 
           text_extraction_status: 'failed',
-          extracted_text: `[Backend ekstrasjon feilet: ${error.message}]`
+          extracted_text: `[Backend ekstrasjon feilet: ${errorMessage}]`,
+          updated_at: new Date().toISOString()
         })
         .eq('id', documentId);
       

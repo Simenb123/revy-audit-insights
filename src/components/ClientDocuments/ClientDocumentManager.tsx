@@ -9,6 +9,7 @@ import DocumentList from './DocumentList';
 import EnhancedDocumentList from './EnhancedDocumentList';
 import BulkTextExtraction from './BulkTextExtraction';
 import DocumentCategories from './DocumentCategories';
+import { DocumentExtractionFixer } from './DocumentExtractionFixer';
 
 interface ClientDocumentManagerProps {
   clientId: string;
@@ -120,20 +121,23 @@ const ClientDocumentManager = ({ clientId, clientName, enableAI = false }: Clien
         </TabsContent>
 
         <TabsContent value="documents">
-          {enableAI ? (
-            <EnhancedDocumentList
-              documents={documents}
-              isLoading={isLoading}
-              clientId={clientId}
-              onUpdate={handleDocumentUpdate}
-            />
-          ) : (
-            <DocumentList
-              documents={documents}
-              documentsByCategory={documentsByCategory}
-              isLoading={isLoading}
-            />
-          )}
+          <div className="space-y-4">
+            <DocumentExtractionFixer onUpdate={refetch} />
+            {enableAI ? (
+              <EnhancedDocumentList
+                documents={documents}
+                isLoading={isLoading}
+                clientId={clientId}
+                onUpdate={handleDocumentUpdate}
+              />
+            ) : (
+              <DocumentList
+                documents={documents}
+                documentsByCategory={documentsByCategory}
+                isLoading={isLoading}
+              />
+            )}
+          </div>
         </TabsContent>
 
         <TabsContent value="categories">

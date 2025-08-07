@@ -88,6 +88,7 @@ Deno.serve(async (req) => {
   }
 
   let documentId: string | null = null;
+  const startTime = Date.now();
   
   try {
     log('📄 [ENHANCED-PDF-EXTRACTOR] Function invoked with DOCX/XLSX support...');
@@ -124,6 +125,16 @@ Deno.serve(async (req) => {
     }
 
     log('✅ [ENHANCED-PDF-EXTRACTOR] Request validation passed for document:', documentId);
+
+    // Check if processing is taking too long (timeout protection)
+    const timeoutMinutes = 2;
+    const timeoutMs = timeoutMinutes * 60 * 1000;
+    
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => {
+        reject(new Error(`Prosessering tok for lang tid (over ${timeoutMinutes} minutter)`));
+      }, timeoutMs);
+    });
 
     // Step 2: Initialize Supabase client
     log('🔄 [ENHANCED-PDF-EXTRACTOR] Initializing Supabase client...');
