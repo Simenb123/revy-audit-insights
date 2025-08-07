@@ -16,6 +16,7 @@ import { useClientReports, type ClientReport } from '@/hooks/useClientReports';
 import { useTBVersionOptions } from '@/hooks/useTrialBalanceVersions';
 import { ViewModeProvider } from './ViewModeContext';
 import { ViewModeToggle } from './ViewModeToggle';
+import { FilterProvider } from '@/contexts/FilterContext';
 import { toast } from 'sonner';
 
 interface ReportBuilderContentProps {
@@ -94,7 +95,8 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
 
   return (
     <ViewModeProvider>
-      <div className="space-y-6">
+      <FilterProvider>
+        <div className="space-y-6">
         {/* Client Report Header */}
         <ClientReportHeader 
           clientId={clientId} 
@@ -260,6 +262,7 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
         onDeleteReport={handleDeleteReport}
         loading={loading}
       />
+      </FilterProvider>
     </ViewModeProvider>
   );
 }

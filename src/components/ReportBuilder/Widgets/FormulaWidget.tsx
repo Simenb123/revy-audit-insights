@@ -4,6 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { InlineEditableTitle } from '../InlineEditableTitle';
 import { Calculator, TrendingUp, TrendingDown, AlertCircle } from 'lucide-react';
 import { useTrialBalanceWithMappings } from '@/hooks/useTrialBalanceWithMappings';
+import { useFilteredData } from '@/hooks/useFilteredData';
+import { useFilters } from '@/contexts/FilterContext';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
 import { useFormulaDefinitions } from '@/hooks/useFormulas';
 import { formatCurrency } from '@/lib/formatters';
@@ -162,6 +164,7 @@ class FormulaEvaluator {
 export function FormulaWidget({ widget }: FormulaWidgetProps) {
   const { selectedFiscalYear } = useFiscalYear();
   const { updateWidget } = useWidgetManager();
+  const { filters } = useFilters();
   const clientId = widget.config?.clientId;
 
   const handleTitleChange = (newTitle: string) => {
@@ -194,11 +197,40 @@ export function FormulaWidget({ widget }: FormulaWidgetProps) {
     );
   }
   
-  const { data: trialBalanceData, isLoading: trialBalanceLoading } = useTrialBalanceWithMappings(
+  const { data: rawTrialBalanceData, isLoading: trialBalanceLoading } = useTrialBalanceWithMappings(
     clientId, 
     selectedFiscalYear,
     widget.config?.selectedVersion
   );
+
+  // Apply global filters
+  const filteredTrialBalanceEntries = useFilteredData(rawTrialBalanceData?.trialBalanceEntries || []);
+  
+  // Create filtered trial balance data structure
+  const trialBalanceData = React.useMemo(() => {
+    if (!rawTrialBalanceData) return null;
+    
+    // Recalculate standardAccountBalances based on filtered entries
+    const standardBalances: Record<string, number> = {};
+    filteredTrialBalanceEntries.forEach(entry => {
+      const standardName = entry.standard_name;
+      if (standardName) {
+        standardBalances[standardName] = (standardBalances[standardName] || 0) + entry.closing_balance;
+      }
+    });
+
+    const standardAccountBalances = Object.entries(standardBalances).map(([standard_name, total_balance]) => ({
+      standard_name,
+      total_balance,
+      standard_number: standard_name // For compatibility
+    }));
+
+    return {
+      ...rawTrialBalanceData,
+      trialBalanceEntries: filteredTrialBalanceEntries,
+      standardAccountBalances
+    };
+  }, [rawTrialBalanceData, filteredTrialBalanceEntries]);
 
   const { data: formulaDefinitions, isLoading: formulaLoading } = useFormulaDefinitions();
 

@@ -13,7 +13,7 @@ export interface WidgetLayout {
 
 export interface Widget {
   id: string;
-  type: 'kpi' | 'table' | 'chart' | 'text' | 'formula';
+  type: 'kpi' | 'table' | 'chart' | 'text' | 'formula' | 'filter';
   title: string;
   config?: Record<string, any>;
 }

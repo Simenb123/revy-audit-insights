@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Settings, Save } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 import { FormulaWidgetConfig } from './WidgetConfiguration/FormulaWidgetConfig';
 import { useFirmStandardAccounts } from '@/hooks/useFirmStandardAccounts';
 
@@ -35,6 +36,47 @@ export function WidgetConfiguration({ widget, onUpdateWidget }: WidgetConfigurat
 
   const renderTypeSpecificConfig = () => {
     switch (widget.type) {
+      case 'filter':
+        return (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="show-search">Vis søkefelt</Label>
+              <Switch
+                id="show-search"
+                checked={config.showSearch !== false}
+                onCheckedChange={(checked) => updateConfig('showSearch', checked)}
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <Label htmlFor="show-category">Vis kontokategori-filter</Label>
+              <Switch
+                id="show-category"
+                checked={config.showAccountCategory !== false}
+                onCheckedChange={(checked) => updateConfig('showAccountCategory', checked)}
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <Label htmlFor="show-type">Vis kontotype-filter</Label>
+              <Switch
+                id="show-type"
+                checked={config.showAccountType !== false}
+                onCheckedChange={(checked) => updateConfig('showAccountType', checked)}
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <Label htmlFor="show-date">Vis datofilter</Label>
+              <Switch
+                id="show-date"
+                checked={config.showDateRange !== false}
+                onCheckedChange={(checked) => updateConfig('showDateRange', checked)}
+              />
+            </div>
+          </div>
+        );
+
       case 'kpi':
         return (
           <div className="space-y-4">

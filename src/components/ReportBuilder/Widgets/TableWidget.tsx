@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Filter, ChevronDown, ChevronRight } from 'lucide-react';
 import { useTrialBalanceWithMappings } from '@/hooks/useTrialBalanceWithMappings';
+import { useFilteredData } from '@/hooks/useFilteredData';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
 
 interface TableWidgetProps {
@@ -37,12 +38,15 @@ export function TableWidget({ widget }: TableWidgetProps) {
     widget.config?.selectedVersion
   );
 
+  // Apply global filters to trial balance entries
+  const filteredTrialBalanceEntries = useFilteredData(trialBalanceData?.trialBalanceEntries || []);
+
   const { groupedData, categories, totalBalance } = React.useMemo(() => {
-    if (!trialBalanceData?.trialBalanceEntries) {
+    if (!filteredTrialBalanceEntries || filteredTrialBalanceEntries.length === 0) {
       return { groupedData: {}, categories: [], totalBalance: 0 };
     }
 
-    let filteredEntries = [...trialBalanceData.trialBalanceEntries]
+    let filteredEntries = [...filteredTrialBalanceEntries]
       .filter(entry => Math.abs(entry.closing_balance) > 0);
 
     // Filter by classification if configured
@@ -105,7 +109,7 @@ export function TableWidget({ widget }: TableWidgetProps) {
       categories: cats, 
       totalBalance: total 
     };
-  }, [trialBalanceData, selectedCategory, sortBy, classificationFilter]);
+  }, [filteredTrialBalanceEntries, selectedCategory, sortBy, classificationFilter]);
 
   const toggleGroup = (category: string) => {
     const newExpanded = new Set(expandedGroups);

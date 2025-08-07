@@ -15,6 +15,7 @@ import {
   LabelList
 } from 'recharts';
 import { useTrialBalanceWithMappings } from '@/hooks/useTrialBalanceWithMappings';
+import { useFilteredData } from '@/hooks/useFilteredData';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
 
 interface ChartWidgetProps {
@@ -39,21 +40,31 @@ export function ChartWidget({ widget }: ChartWidgetProps) {
     widget.config?.selectedVersion
   );
 
+  // Apply global filters
+  const filteredTrialBalanceEntries = useFilteredData(trialBalanceData?.trialBalanceEntries || []);
+
   const chartData = React.useMemo(() => {
-    if (!trialBalanceData?.standardAccountBalances) {
+    if (!filteredTrialBalanceEntries || filteredTrialBalanceEntries.length === 0) {
       return [];
     }
 
+    // Group filtered entries by standard name and calculate totals
+    const grouped: Record<string, number> = {};
+    filteredTrialBalanceEntries.forEach(entry => {
+      const standardName = entry.standard_name || 'Ikke klassifisert';
+      grouped[standardName] = (grouped[standardName] || 0) + Math.abs(entry.closing_balance);
+    });
+
     // Get top accounts by balance for chart
-    return trialBalanceData.standardAccountBalances
-      .filter(account => Math.abs(account.total_balance) > 0)
-      .sort((a, b) => Math.abs(b.total_balance) - Math.abs(a.total_balance))
+    return Object.entries(grouped)
+      .filter(([_, balance]) => Math.abs(balance) > 0)
+      .sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]))
       .slice(0, maxDataPoints)
-      .map(account => ({
-        name: account.standard_name.slice(0, 10), // Truncate long names
-        value: Math.abs(account.total_balance) / 1000 // Convert to thousands
+      .map(([name, balance]) => ({
+        name: name.slice(0, 10), // Truncate long names
+        value: Math.abs(balance) / 1000 // Convert to thousands
       }));
-  }, [trialBalanceData, maxDataPoints]);
+  }, [filteredTrialBalanceEntries, maxDataPoints]);
 
   if (isLoading) {
     return (

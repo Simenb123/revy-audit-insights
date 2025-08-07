@@ -5,6 +5,7 @@ import { TableWidget } from './Widgets/TableWidget';
 import { ChartWidget } from './Widgets/ChartWidget';
 import { TextWidget } from './Widgets/TextWidget';
 import { FormulaWidget } from './Widgets/FormulaWidget';
+import { FilterWidget } from './Widgets/FilterWidget';
 
 interface WidgetRendererProps {
   widget: Widget;
@@ -12,6 +13,8 @@ interface WidgetRendererProps {
 
 export function WidgetRenderer({ widget }: WidgetRendererProps) {
   switch (widget.type) {
+    case 'filter':
+      return <FilterWidget widget={widget} />;
     case 'kpi':
       return <KpiWidget widget={widget} />;
     case 'table':

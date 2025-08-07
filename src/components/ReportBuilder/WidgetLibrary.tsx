@@ -2,7 +2,7 @@ import React from 'react';
 import { useWidgetManager, Widget } from '@/contexts/WidgetManagerContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart3, Table, TrendingUp, FileText, X, Calculator } from 'lucide-react';
+import { BarChart3, Table, TrendingUp, FileText, X, Calculator, Filter } from 'lucide-react';
 import { useWidgetTemplates } from '@/hooks/useWidgetTemplates';
 
 interface WidgetLibraryProps {
@@ -15,6 +15,18 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
   const { data: dbTemplates } = useWidgetTemplates();
 
   const defaultTemplates = [
+    {
+      type: 'filter' as const,
+      title: 'Filter',
+      description: 'Filtrer data på tvers av widgets',
+      icon: Filter,
+      defaultConfig: {
+        showSearch: true,
+        showAccountCategory: true,
+        showAccountType: false,
+        showDateRange: false
+      }
+    },
     {
       type: 'kpi' as const,
       title: 'Nøkkeltall',
@@ -104,8 +116,8 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
       i: widgetId,
       x: 0,
       y: 0,
-      w: template.type === 'text' ? 6 : template.type === 'kpi' ? 3 : 6,
-      h: template.type === 'kpi' ? 2 : template.type === 'chart' ? 4 : 3,
+      w: template.type === 'filter' ? 4 : template.type === 'text' ? 6 : template.type === 'kpi' ? 3 : 6,
+      h: template.type === 'filter' ? 4 : template.type === 'kpi' ? 2 : template.type === 'chart' ? 4 : 3,
       widgetId: widgetId,
     };
 
