@@ -33,6 +33,14 @@ export default function ContextualSidebar() {
   const extractedClientId = extractClientIdFromPath(location.pathname);
   const clientIdentifier = extractedClientId || clientId || orgNumber;
   
+  // Improved client context detection using regex patterns
+  const isClientContext = !!(
+    location.pathname.match(/\/clients\/[a-f0-9-]{36}/) || 
+    location.pathname.match(/\/clients\/[a-f0-9-]{36}\//) ||  // Also match client sub-routes
+    (location.pathname.includes('/klienter/') && orgNumber) ||
+    extractedClientId
+  );
+  
   // Debug logging (temporary)
   console.log('ContextualSidebar Debug:', {
     pathname: location.pathname,
@@ -40,19 +48,13 @@ export default function ContextualSidebar() {
     clientId,
     orgNumber,
     clientIdentifier,
-    hasClient: !!clientIdentifier
+    hasClient: !!clientIdentifier,
+    isClientContext: isClientContext
   });
   
   const { data: client } = useClientDetails(clientIdentifier || '');
   const { data: userProfile } = useUserProfile();
   const { data: auditFirm } = useAuditFirm();
-  
-  // Improved client context detection using regex patterns
-  const isClientContext = !!(
-    location.pathname.match(/\/clients\/[a-f0-9-]{36}/) || 
-    (location.pathname.includes('/klienter/') && orgNumber) ||
-    extractedClientId
-  );
   
   // Check if we're in organization context
   const isOrganizationContext = location.pathname.match(/^\/(organisasjon|avdeling|team|kommunikasjon|brukeradministrasjon|organisasjonsinnstillinger)/);

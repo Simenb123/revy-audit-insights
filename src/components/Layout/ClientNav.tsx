@@ -36,7 +36,7 @@ const ClientNav = () => {
     {
       to: `/clients/${clientId}/documents`,
       icon: FileText,
-      label: "Dokumenter"
+      label: "PDF-filer"
     }
   ];
 
