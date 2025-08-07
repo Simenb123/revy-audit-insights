@@ -11,7 +11,6 @@ import AddClientDialog from '@/components/Clients/AddClientDialog';
 import { useClientData } from '@/components/Clients/ClientFetcher/useClientData';
 import { useClientFilters } from '@/components/Clients/ClientFilters/useClientFilters';
 import { useBrregRefresh } from '@/hooks/useBrregRefresh';
-import PageLayout from '@/components/Layout/PageLayout';
 import FlexibleGrid from '@/components/Layout/FlexibleGrid';
 
 const ClientsOverview = () => {
@@ -78,35 +77,32 @@ const ClientsOverview = () => {
   }
 
   return (
-    <PageLayout
-      width="full"
-      header={
-        <ClientsHeader
-          title="Mine klienter"
-          subtitle="Oversikt over klienter og revisjonsstatus"
-          searchTerm={searchTerm}
-          onSearchChange={setSearchTerm}
-          departmentFilter={departmentFilter}
-          onDepartmentChange={setDepartmentFilter}
-          departments={departments}
-          groupFilter={groupFilter}
-          onGroupChange={setGroupFilter}
-          groups={groups}
-          onRefresh={handleRefreshBrregData}
-          isRefreshing={isRefreshing}
-          hasApiError={hasApiError}
-          refreshProgress={refreshProgress}
-          showTestData={showTestData}
-          onTestDataToggle={setShowTestData}
-          onAddClient={() => setShowAddClientDialog(true)}
-        />
-      }
-    >
+    <div className="space-y-[var(--content-gap)] w-full">
+      <ClientsHeader
+        title="Mine klienter"
+        subtitle="Oversikt over klienter og revisjonsstatus"
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        departmentFilter={departmentFilter}
+        onDepartmentChange={setDepartmentFilter}
+        departments={departments}
+        groupFilter={groupFilter}
+        onGroupChange={setGroupFilter}
+        groups={groups}
+        onRefresh={handleRefreshBrregData}
+        isRefreshing={isRefreshing}
+        hasApiError={hasApiError}
+        refreshProgress={refreshProgress}
+        showTestData={showTestData}
+        onTestDataToggle={setShowTestData}
+        onAddClient={() => setShowAddClientDialog(true)}
+      />
+
       {/* Stats Grid */}
       <div className="mb-6">
         <ClientStatsGrid clients={clients} announcements={announcements} />
       </div>
-      
+
       {/* Main Content Grid - Mer plass til klienttabellen */}
       <FlexibleGrid>
         <div className="col-span-full xl:col-span-8">
@@ -115,8 +111,8 @@ const ClientsOverview = () => {
               <CardTitle>Klientliste</CardTitle>
             </CardHeader>
             <CardContent>
-              <ClientsTable 
-                clients={filteredClients} 
+              <ClientsTable
+                clients={filteredClients}
                 onRowSelect={handleRowSelect}
                 selectedClientId={selectedClientId}
               />
@@ -134,7 +130,7 @@ const ClientsOverview = () => {
         onOpenChange={setShowAddClientDialog}
         onClientAdded={handleClientAdded}
       />
-    </PageLayout>
+    </div>
   );
 };
 
