@@ -12,10 +12,18 @@ import MappingSummary from './MappingSummary';
 interface EnhancedPreviewProps {
   preview: FilePreview;
   fileName: string;
-  clientId: string;
-  fileType: 'trial_balance' | 'general_ledger' | 'chart_of_accounts';
+  clientId: string; // can be placeholder like 'bulk' for non-client specific flows
+  fileType: 'trial_balance' | 'general_ledger' | 'chart_of_accounts' | 'client_bulk';
   onMappingComplete: (mappings: Record<string, string>, headerRowIndex?: number, headers?: string[]) => void;
   onCancel: () => void;
+  // Optional: allow callers to override field definitions (e.g. for client bulk import)
+  customFieldDefinitions?: {
+    field_key: string;
+    field_label: string;
+    data_type: 'text' | 'number' | 'date';
+    is_required: boolean;
+    aliases?: string[];
+  }[];
 }
 
 const EnhancedPreview: React.FC<EnhancedPreviewProps> = ({
@@ -24,7 +32,8 @@ const EnhancedPreview: React.FC<EnhancedPreviewProps> = ({
   clientId,
   fileType,
   onMappingComplete,
-  onCancel
+  onCancel,
+  customFieldDefinitions
 }) => {
   const { selectedFiscalYear } = useFiscalYear();
   const [fieldDefinitions, setFieldDefinitions] = useState<any[]>([]);
@@ -39,50 +48,62 @@ const EnhancedPreview: React.FC<EnhancedPreviewProps> = ({
   useEffect(() => {
     const initializeMapping = async () => {
       setIsLoading(true);
-      
-      // Load field definitions from database
-      const fields = await getFieldDefinitions(fileType, selectedFiscalYear);
-      setFieldDefinitions(fields);
-
-      // Get historical mappings for this client and file type
-      const historicalMappings = await getHistoricalMappings(clientId, fileType, selectedFiscalYear);
-
-      // Convert database fields to FieldDefinition format for AI suggestions
-      const convertedFields: FieldDefinition[] = fields.map(f => ({
-        key: f.field_key,
-        label: f.field_label,
-        required: f.is_required,
-        type: f.data_type as 'text' | 'number' | 'date',
-        aliases: f.aliases || []
-      }));
-
-      // Generate AI suggestions with enhanced algorithm
-      const suggestions = await suggestEnhancedColumnMappings(
-        clientId,
-        fileType,
-        currentHeaders,
-        preview.rows.slice(0, 10), // Sample data for content validation
-        fileName,
-        selectedFiscalYear
-      );
-
-      setSuggestedMappings(suggestions);
-
-      // Auto-apply high-confidence suggestions (>= 0.8)
-      const autoMapping: Record<string, string> = {};
-      suggestions.forEach(suggestion => {
-        if (suggestion.confidence >= 0.8) {
-          autoMapping[suggestion.sourceColumn] = suggestion.targetField;
+      try {
+        // Use custom field definitions if provided, otherwise fetch from DB
+        let fields: any[] = [];
+        if (customFieldDefinitions && customFieldDefinitions.length) {
+          fields = customFieldDefinitions.map(f => ({
+            field_key: f.field_key,
+            field_label: f.field_label,
+            data_type: f.data_type,
+            is_required: f.is_required,
+            aliases: f.aliases || []
+          }));
+        } else {
+          fields = await getFieldDefinitions(fileType, selectedFiscalYear);
         }
-      });
-      setMapping(autoMapping);
-      setIsLoading(false);
+        setFieldDefinitions(fields);
+
+        // Build suggestions
+        let suggestions: ColumnMapping[] = [];
+        if (customFieldDefinitions && customFieldDefinitions.length) {
+          suggestions = simpleSuggestMappings(
+            currentHeaders,
+            preview.rows.slice(0, 10),
+            fields
+          );
+        } else {
+          suggestions = await suggestEnhancedColumnMappings(
+            clientId || 'bulk',
+            fileType,
+            currentHeaders,
+            preview.rows.slice(0, 10),
+            fileName,
+            selectedFiscalYear
+          );
+        }
+
+        setSuggestedMappings(suggestions);
+
+        // Auto-apply high-confidence suggestions (>= 0.8)
+        const autoMapping: Record<string, string> = {};
+        suggestions.forEach(suggestion => {
+          if (suggestion.confidence >= 0.8) {
+            autoMapping[suggestion.sourceColumn] = suggestion.targetField;
+          }
+        });
+        setMapping(autoMapping);
+      } catch (e) {
+        console.error('EnhancedPreview initialization failed:', e);
+      } finally {
+        setIsLoading(false);
+      }
     };
 
-    if (clientId && currentHeaders.length > 0) {
+    if (currentHeaders.length > 0) {
       initializeMapping();
     }
-  }, [preview, clientId, fileType, currentHeaders, selectedFiscalYear]);
+  }, [preview, clientId, fileType, currentHeaders, selectedFiscalYear, customFieldDefinitions]);
 
   const handleMappingChange = (sourceColumn: string, targetField: string) => {
     const newMapping = { ...mapping };
