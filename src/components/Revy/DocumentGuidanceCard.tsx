@@ -114,11 +114,19 @@ export const DocumentGuidanceCard: React.FC<DocumentGuidanceCardProps> = ({
         </Collapsible>
 
         {readableDocuments < documentCount && (
-          <div className="flex items-start gap-2 p-2 bg-yellow-50 rounded border border-yellow-200">
+          <div className="flex items-start gap-2 p-3 bg-yellow-50 rounded border border-yellow-200">
             <FileText className="h-4 w-4 text-yellow-600 mt-0.5 flex-shrink-0" />
-            <div className="text-xs text-yellow-800">
-              <p className="font-medium">Tips for bedre tekstlesing:</p>
-              <p>Noen PDF-er kan være skannede bilder. For best resultat, bruk tekstbaserte PDF-er eller konverter skannede dokumenter til tekst først.</p>
+            <div className="text-sm text-yellow-800">
+              <p className="font-medium mb-2">⚠️ {documentCount - readableDocuments} dokumenter kan ikke leses av AI</p>
+              <div className="space-y-1">
+                <p className="text-xs"><strong>Vanlige årsaker:</strong></p>
+                <ul className="text-xs space-y-0.5 ml-3">
+                  <li>• Skannede PDF-er (bilder, ikke tekst)</li>
+                  <li>• Passordbeskyttede filer</li>
+                  <li>• Korrupte eller tomme dokumenter</li>
+                </ul>
+                <p className="text-xs mt-2"><strong>Løsning:</strong> Last opp som tekstbaserte PDF-er, Word- eller Excel-filer.</p>
+              </div>
             </div>
           </div>
         )}

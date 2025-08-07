@@ -95,7 +95,6 @@ function App() {
                   <Route path="training" element={<Training />} />
                   
                   <Route path="accounting" element={<AccountingData />} />
-                  <Route path="data-import" element={<DataImport />} />
                   <Route path="documents" element={<PDFDocuments />} />
                   <Route path="audit-logs" element={<AuditLogs />} />
                   <Route path="ai-usage" element={<AIUsage />} />

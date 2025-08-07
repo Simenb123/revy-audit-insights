@@ -387,7 +387,7 @@ Du kan også prøve å stille spørsmålet på en annen måte eller kontakte sup
           description: 'Prøv igjen om noen minutter'
         });
       } else {
-        toast.error('Teknisk feil', {
+        toast.error('AI-Revy kunne ikke svare', {
           description: 'AI-Revy kunne ikke svare på spørsmålet ditt'
         });
       }
