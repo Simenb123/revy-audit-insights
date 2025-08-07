@@ -19,13 +19,10 @@ const ResizableRightSidebar = () => {
   const {
     isCollapsed,
     setIsCollapsed,
-    isHidden,
-    setIsHidden,
     width,
     setWidth
   } = useRightSidebar();
   const { globalHeaderHeight, subHeaderHeight } = useLayout();
-  const { isCollapsed, setIsCollapsed, width, setWidth } = useRightSidebar();
 
   const isMobile = useIsMobile();
   const [isDragging, setIsDragging] = useState(false);

@@ -2404,6 +2404,7 @@ export type Database = {
           accounting_system: string | null
           address: string | null
           address_line: string | null
+          ansv: string | null
           audit_fee: number | null
           auditor_since: string | null
           bank_account: string | null
@@ -2438,6 +2439,7 @@ export type Database = {
           org_form_code: string | null
           org_form_description: string | null
           org_number: string
+          partner: string | null
           phase: Database["public"]["Enums"]["audit_phase"]
           phone: string | null
           postal_code: string | null
@@ -2455,6 +2457,7 @@ export type Database = {
           accounting_system?: string | null
           address?: string | null
           address_line?: string | null
+          ansv?: string | null
           audit_fee?: number | null
           auditor_since?: string | null
           bank_account?: string | null
@@ -2489,6 +2492,7 @@ export type Database = {
           org_form_code?: string | null
           org_form_description?: string | null
           org_number: string
+          partner?: string | null
           phase?: Database["public"]["Enums"]["audit_phase"]
           phone?: string | null
           postal_code?: string | null
@@ -2506,6 +2510,7 @@ export type Database = {
           accounting_system?: string | null
           address?: string | null
           address_line?: string | null
+          ansv?: string | null
           audit_fee?: number | null
           auditor_since?: string | null
           bank_account?: string | null
@@ -2540,6 +2545,7 @@ export type Database = {
           org_form_code?: string | null
           org_form_description?: string | null
           org_number?: string
+          partner?: string | null
           phase?: Database["public"]["Enums"]["audit_phase"]
           phone?: string | null
           postal_code?: string | null

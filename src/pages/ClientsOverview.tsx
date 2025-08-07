@@ -134,7 +134,6 @@ const ClientsOverview = () => {
         onOpenChange={setShowAddClientDialog}
         onClientAdded={handleClientAdded}
       />
-    </div>
 
       {/* Bulk Import Dialog */}
       <Dialog open={showBulkImportDialog} onOpenChange={setShowBulkImportDialog}>
@@ -148,7 +147,7 @@ const ClientsOverview = () => {
           />
         </DialogContent>
       </Dialog>
-    </PageLayout>
+    </div>
   );
 };
 
