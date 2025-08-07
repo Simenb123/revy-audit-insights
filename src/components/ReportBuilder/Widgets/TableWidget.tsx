@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Filter, ChevronDown, ChevronRight } from 'lucide-react';
 import { useTrialBalanceWithMappings } from '@/hooks/useTrialBalanceWithMappings';
 import { useFilteredData } from '@/hooks/useFilteredData';
+import { useFilters } from '@/contexts/FilterContext';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
 
 interface TableWidgetProps {
@@ -18,6 +19,7 @@ interface TableWidgetProps {
 export function TableWidget({ widget }: TableWidgetProps) {
   const { selectedFiscalYear } = useFiscalYear();
   const { updateWidget } = useWidgetManager();
+  const { filters, setCrossFilter, clearCrossFilter } = useFilters();
   const clientId = widget.config?.clientId;
 
   const handleTitleChange = (newTitle: string) => {
@@ -28,6 +30,7 @@ export function TableWidget({ widget }: TableWidgetProps) {
   const showPercentage = widget.config?.showPercentage !== false;
   const groupByCategory = widget.config?.groupByCategory !== false;
   const classificationFilter = widget.config?.filterByClassification;
+  const enableCrossFilter = widget.config?.enableCrossFilter !== false;
   
   const [selectedCategory, setSelectedCategory] = React.useState<string>('all');
   const [expandedGroups, setExpandedGroups] = React.useState<Set<string>>(new Set());
@@ -121,6 +124,43 @@ export function TableWidget({ widget }: TableWidgetProps) {
     setExpandedGroups(newExpanded);
   };
 
+  // Handle account row clicks for cross-filtering
+  const handleAccountClick = (entry: any) => {
+    if (!enableCrossFilter) return;
+    
+    // Check if this account is already filtered
+    if (filters.crossFilter?.value === entry.account_number) {
+      clearCrossFilter();
+    } else {
+      setCrossFilter(
+        widget.id,
+        'account',
+        entry.account_number,
+        `Konto: ${entry.account_name}`
+      );
+    }
+  };
+
+  // Handle category clicks for cross-filtering  
+  const handleCategoryClick = (category: string, totalBalance: number) => {
+    if (!enableCrossFilter) return;
+    
+    // Check if this category is already filtered
+    if (filters.crossFilter?.value === category) {
+      clearCrossFilter();
+    } else {
+      setCrossFilter(
+        widget.id,
+        'category',
+        category,
+        `Kategori: ${category}`
+      );
+    }
+  };
+
+  // Check if this widget is the source of current cross-filter
+  const isFilterSource = filters.crossFilter?.sourceWidgetId === widget.id;
+
   if (isLoading) {
     return (
       <Card className="h-full">
@@ -139,13 +179,26 @@ export function TableWidget({ widget }: TableWidgetProps) {
   }
 
   return (
-    <Card className="h-full">
+    <Card className={`h-full ${isFilterSource ? 'ring-2 ring-primary' : ''}`}>
       <CardHeader className="pb-3">
-        <InlineEditableTitle 
-          title={widget.title} 
-          onTitleChange={handleTitleChange}
-          size="sm"
-        />
+        <div className="flex items-center justify-between">
+          <InlineEditableTitle 
+            title={widget.title} 
+            onTitleChange={handleTitleChange}
+            size="sm"
+          />
+          {filters.crossFilter && !isFilterSource && (
+            <div className="text-xs text-muted-foreground flex items-center">
+              <span className="w-2 h-2 bg-primary rounded-full mr-1"></span>
+              Filtrert
+            </div>
+          )}
+        </div>
+        {enableCrossFilter && (
+          <div className="text-xs text-muted-foreground">
+            💡 Klikk på kategorier/kontoer for å filtrere andre widgets
+          </div>
+        )}
         {groupByCategory && categories.length > 1 && (
           <div className="flex items-center gap-2 mt-2">
             <Filter className="h-3 w-3 text-muted-foreground" />
@@ -179,8 +232,15 @@ export function TableWidget({ widget }: TableWidgetProps) {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="w-full justify-between p-2 h-auto text-xs font-medium hover:bg-muted/50"
-                    onClick={() => toggleGroup(category)}
+                    className={`w-full justify-between p-2 h-auto text-xs font-medium hover:bg-muted/50 ${
+                      enableCrossFilter ? 'cursor-pointer' : ''
+                    } ${filters.crossFilter?.value === category ? 'bg-primary/10' : ''}`}
+                    onClick={() => {
+                      toggleGroup(category);
+                      if (enableCrossFilter) {
+                        handleCategoryClick(category, categoryTotal);
+                      }
+                    }}
                   >
                     <div className="flex items-center gap-2">
                       {isExpanded ? (
@@ -202,7 +262,13 @@ export function TableWidget({ widget }: TableWidgetProps) {
                     <Table>
                       <TableBody>
                         {displayEntries.map((entry, index) => (
-                          <TableRow key={`${category}-${index}`} className="text-xs border-l-2 border-l-muted ml-4">
+                          <TableRow 
+                            key={`${category}-${index}`} 
+                            className={`text-xs border-l-2 border-l-muted ml-4 ${
+                              enableCrossFilter ? 'cursor-pointer hover:bg-muted/50' : ''
+                            } ${filters.crossFilter?.value === entry.account_number ? 'bg-primary/10' : ''}`}
+                            onClick={() => enableCrossFilter && handleAccountClick(entry)}
+                          >
                             <TableCell className="font-medium pl-6">{entry.account}</TableCell>
                             <TableCell className="text-right">{entry.formattedBalance}</TableCell>
                             {showPercentage && (
@@ -245,7 +311,13 @@ export function TableWidget({ widget }: TableWidgetProps) {
             </TableHeader>
             <TableBody>
               {Object.values(groupedData).flat().slice(0, maxRows).map((entry, index) => (
-                <TableRow key={index} className="text-xs">
+                <TableRow 
+                  key={index} 
+                  className={`text-xs ${
+                    enableCrossFilter ? 'cursor-pointer hover:bg-muted/50' : ''
+                  } ${filters.crossFilter?.value === entry.account_number ? 'bg-primary/10' : ''}`}
+                  onClick={() => enableCrossFilter && handleAccountClick(entry)}
+                >
                   <TableCell className="font-medium">{entry.account}</TableCell>
                   <TableCell className="text-right">{entry.formattedBalance}</TableCell>
                   {showPercentage && (

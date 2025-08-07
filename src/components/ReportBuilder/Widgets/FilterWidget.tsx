@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { X, Search, Filter } from 'lucide-react';
+import { X, Search, Filter, Target } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface FilterWidgetProps {
@@ -14,7 +14,7 @@ interface FilterWidgetProps {
 }
 
 export function FilterWidget({ widget }: FilterWidgetProps) {
-  const { filters, updateFilter, clearFilter, clearFilters } = useFilters();
+  const { filters, updateFilter, clearFilter, clearFilters, clearCrossFilter, isCrossFiltered } = useFilters();
   const config = widget.config || {};
 
   const showDateRange = config.showDateRange !== false;
@@ -51,7 +51,10 @@ export function FilterWidget({ widget }: FilterWidgetProps) {
             <Button
               variant="ghost"
               size="sm"
-              onClick={clearFilters}
+              onClick={() => {
+                clearFilters();
+                clearCrossFilter();
+              }}
               className="h-auto p-1 text-xs hover:bg-destructive hover:text-destructive-foreground"
             >
               <X className="h-3 w-3" />
@@ -59,6 +62,22 @@ export function FilterWidget({ widget }: FilterWidgetProps) {
             </Button>
           )}
         </CardTitle>
+        
+        {/* Cross-filter indicator */}
+        {isCrossFiltered && filters.crossFilter && (
+          <div className="flex items-center gap-2 text-xs text-primary bg-primary/10 px-2 py-1 rounded">
+            <Target className="h-3 w-3" />
+            <span>Kryssfilter: {filters.crossFilter.label}</span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={clearCrossFilter}
+              className="h-auto p-0.5 ml-1 hover:bg-primary/20"
+            >
+              <X className="h-2 w-2" />
+            </Button>
+          </div>
+        )}
       </CardHeader>
       <CardContent className="space-y-4">
         {showSearch && (

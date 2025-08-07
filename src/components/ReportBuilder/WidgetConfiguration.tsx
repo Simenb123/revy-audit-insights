@@ -151,6 +151,16 @@ export function WidgetConfiguration({ widget, onUpdateWidget }: WidgetConfigurat
               />
               <Label htmlFor="showPercentage">Vis prosent</Label>
             </div>
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="enableTableCrossFilter"
+                checked={config.enableCrossFilter !== false}
+                onChange={(e) => updateConfig('enableCrossFilter', e.target.checked)}
+                className="rounded"
+              />
+              <Label htmlFor="enableTableCrossFilter">Aktiver kryssfiltrering</Label>
+            </div>
           </div>
         );
 
@@ -193,6 +203,16 @@ export function WidgetConfiguration({ widget, onUpdateWidget }: WidgetConfigurat
                 className="rounded"
               />
               <Label htmlFor="showValues">Vis verdier</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="enableCrossFilter"
+                checked={config.enableCrossFilter !== false}
+                onChange={(e) => updateConfig('enableCrossFilter', e.target.checked)}
+                className="rounded"
+              />
+              <Label htmlFor="enableCrossFilter">Aktiver kryssfiltrering</Label>
             </div>
           </div>
         );

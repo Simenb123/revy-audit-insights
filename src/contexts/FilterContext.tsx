@@ -8,6 +8,13 @@ export interface FilterState {
   accountCategory?: string;
   accountType?: string;
   searchTerm?: string;
+  // Cross-filtering from widget interactions
+  crossFilter?: {
+    sourceWidgetId: string;
+    filterType: 'category' | 'account' | 'amount_range';
+    value: any;
+    label: string;
+  };
 }
 
 interface FilterContextType {
@@ -15,6 +22,10 @@ interface FilterContextType {
   updateFilter: (key: keyof FilterState, value: any) => void;
   clearFilters: () => void;
   clearFilter: (key: keyof FilterState) => void;
+  // Cross-filtering methods
+  setCrossFilter: (sourceWidgetId: string, filterType: string, value: any, label: string) => void;
+  clearCrossFilter: () => void;
+  isCrossFiltered: boolean;
 }
 
 const FilterContext = createContext<FilterContextType | undefined>(undefined);
@@ -41,12 +52,37 @@ export function FilterProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  const setCrossFilter = useCallback((sourceWidgetId: string, filterType: string, value: any, label: string) => {
+    setFilters(prev => ({
+      ...prev,
+      crossFilter: {
+        sourceWidgetId,
+        filterType: filterType as 'category' | 'account' | 'amount_range',
+        value,
+        label
+      }
+    }));
+  }, []);
+
+  const clearCrossFilter = useCallback(() => {
+    setFilters(prev => {
+      const newFilters = { ...prev };
+      delete newFilters.crossFilter;
+      return newFilters;
+    });
+  }, []);
+
+  const isCrossFiltered = Boolean(filters.crossFilter);
+
   return (
     <FilterContext.Provider value={{
       filters,
       updateFilter,
       clearFilters,
       clearFilter,
+      setCrossFilter,
+      clearCrossFilter,
+      isCrossFiltered,
     }}>
       {children}
     </FilterContext.Provider>

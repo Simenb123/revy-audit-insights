@@ -29,6 +29,30 @@ export function useFilteredData<T extends TrialBalanceEntry>(data: T[]): T[] {
         }
       }
 
+      // Cross-filter from widget interactions
+      if (filters.crossFilter) {
+        const { filterType, value } = filters.crossFilter;
+        
+        switch (filterType) {
+          case 'category':
+            if (item.standard_name !== value) {
+              return false;
+            }
+            break;
+          case 'account':
+            if (item.account_number !== value && item.account_name !== value) {
+              return false;
+            }
+            break;
+          case 'amount_range':
+            const balance = Math.abs(item.closing_balance || item.net_balance || item.debit_balance || item.credit_balance || 0);
+            if (balance < value.min || balance > value.max) {
+              return false;
+            }
+            break;
+        }
+      }
+
       // Account category filter
       if (filters.accountCategory) {
         const standardType = item.standard_account_type?.toLowerCase();
@@ -84,6 +108,30 @@ export function applyFiltersToAccountBalances(
       const accountNumber = item.account_number?.toLowerCase() || '';
       if (!accountName.includes(searchLower) && !accountNumber.includes(searchLower)) {
         return false;
+      }
+    }
+
+    // Cross-filter support
+    if (filters.crossFilter) {
+      const { filterType, value } = filters.crossFilter;
+      
+      switch (filterType) {
+        case 'category':
+          if (item.standard_name !== value) {
+            return false;
+          }
+          break;
+        case 'account':
+          if (item.account_number !== value && item.account_name !== value) {
+            return false;
+          }
+          break;
+        case 'amount_range':
+          const balance = Math.abs(item.closing_balance || item.net_balance || item.debit_balance || item.credit_balance || 0);
+          if (balance < value.min || balance > value.max) {
+            return false;
+          }
+          break;
       }
     }
 
