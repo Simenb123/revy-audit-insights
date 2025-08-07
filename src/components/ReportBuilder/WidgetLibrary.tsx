@@ -94,7 +94,7 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
       description: 'Vis data i pivottabell',
       icon: Grid3x3,
       defaultConfig: {
-        data: []
+        data: [] as any[]
       }
     },
     {

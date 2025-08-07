@@ -2,9 +2,8 @@ import React from 'react';
 import { Widget, useWidgetManager } from '@/contexts/WidgetManagerContext';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
-import { useTrialBalanceWithMappings } from '@/hooks/useTrialBalanceWithMappings';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
-import { useFormulaCalculator } from '@/hooks/useFormulaCalculator';
+import { useFormulaCalculation } from '@/hooks/useFormulaCalculation';
 import { InlineEditableTitle } from '../InlineEditableTitle';
 
 interface KpiWidgetProps {
@@ -22,103 +21,50 @@ export function KpiWidget({ widget }: KpiWidgetProps) {
     updateWidget(widget.id, { title: newTitle });
   };
   
-  const { data: trialBalanceData, isLoading } = useTrialBalanceWithMappings(
+  // Use new formula calculation for current year
+  const currentFormulaResult = useFormulaCalculation({
     clientId,
-    selectedFiscalYear,
-    widget.config?.selectedVersion
-  );
+    fiscalYear: selectedFiscalYear,
+    customFormula: metric,
+    selectedVersion: widget.config?.selectedVersion,
+    enabled: !!clientId && !!selectedFiscalYear
+  });
+
+  // Use new formula calculation for previous year (for trend calculation)
   const previousFiscalYear = selectedFiscalYear - 1;
-  const { data: previousTrialBalanceData } = useTrialBalanceWithMappings(
+  const previousFormulaResult = useFormulaCalculation({
     clientId,
-    previousFiscalYear,
-    widget.config?.selectedVersion
-  );
+    fiscalYear: previousFiscalYear,
+    customFormula: metric,
+    selectedVersion: widget.config?.selectedVersion,
+    enabled: !!clientId && !!previousFiscalYear && showTrend
+  });
 
-  const calculator = useFormulaCalculator(trialBalanceData?.standardAccountBalances || []);
-  const previousCalculator = useFormulaCalculator(previousTrialBalanceData?.standardAccountBalances || []);
-
-  // Calculate metric data using formula calculator
+  // Calculate metric data using new edge function
   const metricData = React.useMemo(() => {
-    if (!trialBalanceData?.standardAccountBalances) {
-      return { value: '0', change: '0%', trend: 'neutral' as const };
+    if (currentFormulaResult.isLoading) {
+      return { value: 'Laster...', change: '0%', trend: 'neutral' as const };
     }
 
-    // Get current value using formula calculator
-    let currentResult;
-    switch (metric) {
-      case 'revenue':
-        // Create a temporary formula for revenue
-        const revenueValue = calculator.calculatePrefixSum('3');
-        currentResult = {
-          value: Math.abs(revenueValue),
-          formattedValue: `kr ${new Intl.NumberFormat('no-NO').format(Math.abs(revenueValue))}`,
-          isValid: true
-        };
-        break;
-      case 'assets':
-        const assetsValue = calculator.calculatePrefixSum('1');
-        currentResult = {
-          value: assetsValue,
-          formattedValue: `kr ${new Intl.NumberFormat('no-NO').format(Math.abs(assetsValue))}`,
-          isValid: true
-        };
-        break;
-      case 'equity':
-        const equityValue = calculator.calculatePrefixSum('20');
-        currentResult = {
-          value: equityValue,
-          formattedValue: `kr ${new Intl.NumberFormat('no-NO').format(Math.abs(equityValue))}`,
-          isValid: true
-        };
-        break;
-      case 'result':
-        // Calculate operating result using formula
-        currentResult = {
-          ...calculator.calculateFormula('operating_result'),
-          formattedValue: `kr ${new Intl.NumberFormat('no-NO').format(Math.abs(calculator.calculateFormula('operating_result').value))}`
-        };
-        break;
-      default:
-        // Try to use the metric as a formula name
-        currentResult = calculator.calculateFormula(metric);
-        break;
-    }
-
-    if (!currentResult.isValid) {
+    if (currentFormulaResult.error || !currentFormulaResult.data?.isValid) {
       return { value: 'N/A', change: '0%', trend: 'neutral' as const };
     }
 
-    // Calculate previous value if available
-    let previousResult = null;
-    if (previousTrialBalanceData?.standardAccountBalances) {
-      switch (metric) {
-        case 'revenue':
-          const prevRevenueValue = previousCalculator.calculatePrefixSum('3');
-          previousResult = { value: Math.abs(prevRevenueValue), isValid: true };
-          break;
-        case 'assets':
-          const prevAssetsValue = previousCalculator.calculatePrefixSum('1');
-          previousResult = { value: prevAssetsValue, isValid: true };
-          break;
-        case 'equity':
-          const prevEquityValue = previousCalculator.calculatePrefixSum('20');
-          previousResult = { value: prevEquityValue, isValid: true };
-          break;
-        case 'result':
-          previousResult = previousCalculator.calculateFormula('operating_result');
-          break;
-        default:
-          previousResult = previousCalculator.calculateFormula(metric);
-          break;
-      }
+    const currentValue = currentFormulaResult.data.value;
+    const formattedValue = currentFormulaResult.data.formattedValue;
+
+    // Calculate trend if previous data is available
+    if (!showTrend || previousFormulaResult.isLoading || previousFormulaResult.error || !previousFormulaResult.data?.isValid) {
+      return { value: formattedValue, change: '0%', trend: 'neutral' as const };
     }
 
-    if (!previousResult?.isValid || previousResult.value === 0) {
-      return { value: currentResult.formattedValue, change: '0%', trend: 'neutral' as const };
+    const previousValue = previousFormulaResult.data.value;
+    if (previousValue === 0) {
+      return { value: formattedValue, change: '0%', trend: 'neutral' as const };
     }
 
-    const diff = currentResult.value - previousResult.value;
-    const changePercent = (diff / Math.abs(previousResult.value)) * 100;
+    const diff = currentValue - previousValue;
+    const changePercent = (diff / Math.abs(previousValue)) * 100;
     const trend =
       changePercent > 0
         ? ('up' as const)
@@ -129,13 +75,13 @@ export function KpiWidget({ widget }: KpiWidgetProps) {
       (changePercent > 0 ? '+' : '') + changePercent.toFixed(1) + '%';
 
     return {
-      value: currentResult.formattedValue,
+      value: formattedValue,
       change: formattedChange,
       trend,
     };
-  }, [trialBalanceData, previousTrialBalanceData, metric, calculator, previousCalculator]);
+  }, [currentFormulaResult, previousFormulaResult, showTrend]);
 
-  if (isLoading) {
+  if (currentFormulaResult.isLoading) {
     return (
       <Card className="h-full">
         <CardHeader className="pb-2">
