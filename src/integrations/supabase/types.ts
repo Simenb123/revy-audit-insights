@@ -3441,6 +3441,66 @@ export type Database = {
           },
         ]
       }
+      firm_formula_definitions: {
+        Row: {
+          audit_firm_id: string | null
+          base_formula_id: string | null
+          category: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          formula_expression: Json
+          id: string
+          is_active: boolean | null
+          is_custom: boolean | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          audit_firm_id?: string | null
+          base_formula_id?: string | null
+          category?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          formula_expression: Json
+          id?: string
+          is_active?: boolean | null
+          is_custom?: boolean | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          audit_firm_id?: string | null
+          base_formula_id?: string | null
+          category?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          formula_expression?: Json
+          id?: string
+          is_active?: boolean | null
+          is_custom?: boolean | null
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "firm_formula_definitions_audit_firm_id_fkey"
+            columns: ["audit_firm_id"]
+            isOneToOne: false
+            referencedRelation: "audit_firms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "firm_formula_definitions_base_formula_id_fkey"
+            columns: ["base_formula_id"]
+            isOneToOne: false
+            referencedRelation: "formula_definitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       firm_standard_accounts: {
         Row: {
           account_type: Database["public"]["Enums"]["account_type_enum"]
@@ -5121,6 +5181,62 @@ export type Database = {
           },
         ]
       }
+      report_templates: {
+        Row: {
+          audit_firm_id: string | null
+          category: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          is_global: boolean
+          layouts: Json
+          name: string
+          sort_order: number | null
+          updated_at: string
+          widgets: Json
+        }
+        Insert: {
+          audit_firm_id?: string | null
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          is_global?: boolean
+          layouts?: Json
+          name: string
+          sort_order?: number | null
+          updated_at?: string
+          widgets?: Json
+        }
+        Update: {
+          audit_firm_id?: string | null
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          is_global?: boolean
+          layouts?: Json
+          name?: string
+          sort_order?: number | null
+          updated_at?: string
+          widgets?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_templates_audit_firm_id_fkey"
+            columns: ["audit_firm_id"]
+            isOneToOne: false
+            referencedRelation: "audit_firms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       revy_chat_messages: {
         Row: {
           content: string
@@ -6083,6 +6199,65 @@ export type Database = {
             columns: ["current_room_id"]
             isOneToOne: false
             referencedRelation: "chat_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      widget_templates: {
+        Row: {
+          audit_firm_id: string | null
+          category: string | null
+          created_at: string
+          created_by: string | null
+          default_config: Json
+          description: string | null
+          icon: string | null
+          id: string
+          is_active: boolean
+          is_global: boolean
+          name: string
+          sort_order: number | null
+          updated_at: string
+          widget_type: string
+        }
+        Insert: {
+          audit_firm_id?: string | null
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          default_config?: Json
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          is_global?: boolean
+          name: string
+          sort_order?: number | null
+          updated_at?: string
+          widget_type: string
+        }
+        Update: {
+          audit_firm_id?: string | null
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          default_config?: Json
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          is_global?: boolean
+          name?: string
+          sort_order?: number | null
+          updated_at?: string
+          widget_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "widget_templates_audit_firm_id_fkey"
+            columns: ["audit_firm_id"]
+            isOneToOne: false
+            referencedRelation: "audit_firms"
             referencedColumns: ["id"]
           },
         ]

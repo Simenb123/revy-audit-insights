@@ -6,6 +6,7 @@ import { StandardReportTemplates } from './StandardReportTemplates';
 import { ReportBuilderTabs } from './ReportBuilderTabs';
 import { SaveReportDialog } from './SaveReportDialog';
 import { LoadReportDialog } from './LoadReportDialog';
+import { ClientReportHeader } from './ClientReportHeader';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus, Save, FolderOpen, Database, LayoutTemplate } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -92,6 +93,12 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
   return (
     <>
       <div className="space-y-6">
+        {/* Client Report Header */}
+        <ClientReportHeader 
+          clientId={clientId} 
+          selectedFiscalYear={selectedFiscalYear} 
+        />
+        
         {/* Header */}
         <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4">
           <div>

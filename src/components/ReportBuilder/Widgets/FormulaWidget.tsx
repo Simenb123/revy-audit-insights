@@ -211,8 +211,8 @@ export function FormulaWidget({ widget }: FormulaWidgetProps) {
     if (!trialBalanceData || !formula) {
       return { 
         value: displayAsPercentage ? '0%' : (showCurrency ? formatCurrency(0) : '0'), 
-        change: null, 
-        trend: null,
+        change: null as string | null, 
+        trend: null as 'up' | 'down' | null,
         hasHistoricalData: false
       };
     }
@@ -234,8 +234,8 @@ export function FormulaWidget({ widget }: FormulaWidgetProps) {
     
     return {
       value: formattedValue,
-      change: null, // Remove mock data - will be calculated from actual historical data
-      trend: null,
+      change: null as string | null, // Remove mock data - will be calculated from actual historical data
+      trend: null as 'up' | 'down' | null,
       hasHistoricalData: false
     };
   }, [trialBalanceData, formula, displayAsPercentage, showCurrency]);
