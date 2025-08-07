@@ -1,5 +1,6 @@
 
 import React, { useState, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FileText, Upload, BarChart3, Brain, Search, Workflow } from 'lucide-react';
@@ -28,6 +29,8 @@ interface ClientDocumentManagerProps {
 }
 
 const ClientDocumentManager = ({ clientId, clientName, enableAI = false }: ClientDocumentManagerProps) => {
+  const queryClient = useQueryClient();
+  
   // Direct data fetching with client ID - no lookup needed
   const documentsQuery = useClientDocumentsList(clientId);
   const categoriesQuery = useDocumentCategories();
@@ -36,6 +39,16 @@ const ClientDocumentManager = ({ clientId, clientName, enableAI = false }: Clien
   const documents = documentsQuery.data || [];
   const categories = categoriesQuery.data || [];
   const isLoading = documentsQuery.isLoading || categoriesQuery.isLoading;
+
+  // Force cache clear and refetch when clientId changes to prevent showing cached documents from other clients
+  React.useEffect(() => {
+    if (clientId) {
+      // Invalidate all client-documents queries to clear cache
+      queryClient.invalidateQueries({ queryKey: ['client-documents'] });
+      // Force refetch for this specific client
+      documentsQuery.refetch();
+    }
+  }, [clientId, queryClient, documentsQuery.refetch]);
   
   const [activeTab, setActiveTab] = useState('documents');
   const [filteredDocuments, setFilteredDocuments] = useState(documents);

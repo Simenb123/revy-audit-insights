@@ -113,5 +113,9 @@ export const useClientDocumentsList = (clientId?: string) => {
       return documents || [];
     },
     enabled: !!clientId,
+    staleTime: 0, // Always refetch when query is accessed
+    gcTime: 0, // Don't cache results between component unmounts (new tanstack query v5 prop)
+    refetchOnMount: 'always', // Always refetch when component mounts
+    refetchOnWindowFocus: false, // Don't refetch on window focus
   });
 };
