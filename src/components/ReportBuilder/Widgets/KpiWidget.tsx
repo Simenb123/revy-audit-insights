@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { useTrialBalanceWithMappings } from '@/hooks/useTrialBalanceWithMappings';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
+import { useFormulaCalculator } from '@/hooks/useFormulaCalculator';
 import { InlineEditableTitle } from '../InlineEditableTitle';
 
 interface KpiWidgetProps {
@@ -33,71 +34,91 @@ export function KpiWidget({ widget }: KpiWidgetProps) {
     widget.config?.selectedVersion
   );
 
-  // Calculate metric data from trial balance data
+  const calculator = useFormulaCalculator(trialBalanceData?.standardAccountBalances || []);
+  const previousCalculator = useFormulaCalculator(previousTrialBalanceData?.standardAccountBalances || []);
+
+  // Calculate metric data using formula calculator
   const metricData = React.useMemo(() => {
     if (!trialBalanceData?.standardAccountBalances) {
       return { value: '0', change: '0%', trend: 'neutral' as const };
     }
 
-    const getMetricValue = (data: typeof trialBalanceData) => {
-      if (!data?.standardAccountBalances) return 0;
-      switch (metric) {
-        case 'revenue':
-          return (
-            data.standardAccountBalances.find(account =>
-              account.standard_number.startsWith('3')
-            )?.total_balance || 0
-          );
-        case 'expenses':
-          return (
-            data.standardAccountBalances.find(account =>
-              account.standard_number.startsWith('4') ||
-              account.standard_number.startsWith('5')
-            )?.total_balance || 0
-          );
-        case 'result':
-          const revenue =
-            data.standardAccountBalances.find(account =>
-              account.standard_number.startsWith('3')
-            )?.total_balance || 0;
-          const expenses = data.standardAccountBalances
-            .filter(account =>
-              account.standard_number.startsWith('4') ||
-              account.standard_number.startsWith('5')
-            )
-            .reduce((sum, acc) => sum + acc.total_balance, 0);
-          return revenue + expenses;
-        case 'assets':
-          return (
-            data.standardAccountBalances.find(account =>
-              account.standard_number.startsWith('1')
-            )?.total_balance || 0
-          );
-        case 'equity':
-          return (
-            data.standardAccountBalances.find(account =>
-              account.standard_number.startsWith('2')
-            )?.total_balance || 0
-          );
-        default:
-          return data.standardAccountBalances[0]?.total_balance || 0;
-      }
-    };
-
-    const currentValue = getMetricValue(trialBalanceData);
-    const previousValue = previousTrialBalanceData?.standardAccountBalances
-      ? getMetricValue(previousTrialBalanceData)
-      : null;
-    const prefix = 'kr ';
-    const formattedValue =
-      prefix + new Intl.NumberFormat('no-NO').format(Math.abs(currentValue));
-
-    if (!previousValue) {
-      return { value: formattedValue, change: '0%', trend: 'neutral' as const };
+    // Get current value using formula calculator
+    let currentResult;
+    switch (metric) {
+      case 'revenue':
+        // Create a temporary formula for revenue
+        const revenueValue = calculator.calculatePrefixSum('3');
+        currentResult = {
+          value: Math.abs(revenueValue),
+          formattedValue: `kr ${new Intl.NumberFormat('no-NO').format(Math.abs(revenueValue))}`,
+          isValid: true
+        };
+        break;
+      case 'assets':
+        const assetsValue = calculator.calculatePrefixSum('1');
+        currentResult = {
+          value: assetsValue,
+          formattedValue: `kr ${new Intl.NumberFormat('no-NO').format(Math.abs(assetsValue))}`,
+          isValid: true
+        };
+        break;
+      case 'equity':
+        const equityValue = calculator.calculatePrefixSum('20');
+        currentResult = {
+          value: equityValue,
+          formattedValue: `kr ${new Intl.NumberFormat('no-NO').format(Math.abs(equityValue))}`,
+          isValid: true
+        };
+        break;
+      case 'result':
+        // Calculate operating result using formula
+        currentResult = {
+          ...calculator.calculateFormula('operating_result'),
+          formattedValue: `kr ${new Intl.NumberFormat('no-NO').format(Math.abs(calculator.calculateFormula('operating_result').value))}`
+        };
+        break;
+      default:
+        // Try to use the metric as a formula name
+        currentResult = calculator.calculateFormula(metric);
+        break;
     }
 
-    const diff = currentValue - previousValue;
-    const changePercent = (diff / Math.abs(previousValue)) * 100;
+    if (!currentResult.isValid) {
+      return { value: 'N/A', change: '0%', trend: 'neutral' as const };
+    }
+
+    // Calculate previous value if available
+    let previousResult = null;
+    if (previousTrialBalanceData?.standardAccountBalances) {
+      switch (metric) {
+        case 'revenue':
+          const prevRevenueValue = previousCalculator.calculatePrefixSum('3');
+          previousResult = { value: Math.abs(prevRevenueValue), isValid: true };
+          break;
+        case 'assets':
+          const prevAssetsValue = previousCalculator.calculatePrefixSum('1');
+          previousResult = { value: prevAssetsValue, isValid: true };
+          break;
+        case 'equity':
+          const prevEquityValue = previousCalculator.calculatePrefixSum('20');
+          previousResult = { value: prevEquityValue, isValid: true };
+          break;
+        case 'result':
+          previousResult = previousCalculator.calculateFormula('operating_result');
+          break;
+        default:
+          previousResult = previousCalculator.calculateFormula(metric);
+          break;
+      }
+    }
+
+    if (!previousResult?.isValid || previousResult.value === 0) {
+      return { value: currentResult.formattedValue, change: '0%', trend: 'neutral' as const };
+    }
+
+    const diff = currentResult.value - previousResult.value;
+    const changePercent = (diff / Math.abs(previousResult.value)) * 100;
     const trend =
       changePercent > 0
         ? ('up' as const)
@@ -108,11 +129,11 @@ export function KpiWidget({ widget }: KpiWidgetProps) {
       (changePercent > 0 ? '+' : '') + changePercent.toFixed(1) + '%';
 
     return {
-      value: formattedValue,
+      value: currentResult.formattedValue,
       change: formattedChange,
       trend,
     };
-  }, [trialBalanceData, previousTrialBalanceData, metric]);
+  }, [trialBalanceData, previousTrialBalanceData, metric, calculator, previousCalculator]);
 
   if (isLoading) {
     return (

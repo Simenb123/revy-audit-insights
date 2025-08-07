@@ -130,7 +130,18 @@ export const useTrialBalanceWithMappings = (clientId: string, fiscalYear?: numbe
         };
       }
 
-      // Get account classifications for this client (without version filtering to avoid UUID errors)
+      // Get trial balance mappings for this client - prioritize these over classifications
+      const { data: mappingsData, error: mappingsError } = await supabase
+        .from('trial_balance_mappings')
+        .select('account_number, statement_line_number')
+        .eq('client_id', clientId);
+
+      if (mappingsError) {
+        console.error('Error fetching trial balance mappings:', mappingsError);
+        throw mappingsError;
+      }
+
+      // Get account classifications as fallback (only if no mapping exists)
       const { data: classificationsData, error: classificationsError } = await supabase
         .from('account_classifications')
         .select('account_number, new_category')
@@ -143,17 +154,6 @@ export const useTrialBalanceWithMappings = (clientId: string, fiscalYear?: numbe
         console.warn('Continuing without account classifications:', classificationsError);
       }
 
-      // Get trial balance mappings for this client
-      const { data: mappingsData, error: mappingsError } = await supabase
-        .from('trial_balance_mappings')
-        .select('account_number, statement_line_number')
-        .eq('client_id', clientId);
-
-      if (mappingsError) {
-        console.error('Error fetching trial balance mappings:', mappingsError);
-        throw mappingsError;
-      }
-
       // Get standard accounts to map by statement_line_number
       const { data: standardAccounts, error: standardError } = await supabase
         .from('standard_accounts')
@@ -164,25 +164,7 @@ export const useTrialBalanceWithMappings = (clientId: string, fiscalYear?: numbe
         throw standardError;
       }
 
-      // Create a classification lookup by account number
-      const classificationLookup = new Map();
-      classificationsData?.forEach(classification => {
-        // Find standard account by matching new_category with standard_name
-        const standardAccount = standardAccounts?.find(sa => sa.standard_name === classification.new_category);
-        
-        if (standardAccount) {
-          classificationLookup.set(classification.account_number, {
-            standard_account_id: standardAccount.id,
-            standard_number: standardAccount.standard_number,
-            standard_name: standardAccount.standard_name,
-            standard_category: standardAccount.category,
-            standard_account_type: standardAccount.account_type,
-            standard_analysis_group: standardAccount.analysis_group,
-          });
-        }
-      });
-
-      // Create a mapping lookup by account number (fallback for non-classified accounts)
+      // Create a mapping lookup by account number - prioritize trial_balance_mappings
       const mappingLookup = new Map();
       mappingsData?.forEach(mapping => {
         // Find standard account by matching statement_line_number with standard_number
@@ -200,13 +182,35 @@ export const useTrialBalanceWithMappings = (clientId: string, fiscalYear?: numbe
         }
       });
 
+      // Create a classification lookup as fallback (only for accounts not in mappingLookup)
+      const classificationLookup = new Map();
+      classificationsData?.forEach(classification => {
+        // Skip if already mapped via trial_balance_mappings
+        if (mappingLookup.has(classification.account_number)) {
+          return;
+        }
+        
+        // Find standard account by matching new_category with standard_name
+        const standardAccount = standardAccounts?.find(sa => sa.standard_name === classification.new_category);
+        
+        if (standardAccount) {
+          classificationLookup.set(classification.account_number, {
+            standard_account_id: standardAccount.id,
+            standard_number: standardAccount.standard_number,
+            standard_name: standardAccount.standard_name,
+            standard_category: standardAccount.category,
+            standard_account_type: standardAccount.account_type,
+            standard_analysis_group: standardAccount.analysis_group,
+          });
+        }
+      });
+
       // Transform the data
       const trialBalanceEntries: TrialBalanceEntryWithMapping[] = trialBalanceData.map(tb => {
         const account = tb.client_chart_of_accounts;
         
-        // Use classification first, then fallback to mapping
-        const classification = classificationLookup.get(account?.account_number);
-        const mapping = classification || mappingLookup.get(account?.account_number);
+        // Use mapping first, then fallback to classification
+        const mapping = mappingLookup.get(account?.account_number) || classificationLookup.get(account?.account_number);
 
         return {
           id: tb.id,
