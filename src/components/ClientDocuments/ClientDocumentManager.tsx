@@ -10,6 +10,7 @@ import EnhancedDocumentList from './EnhancedDocumentList';
 import BulkTextExtraction from './BulkTextExtraction';
 import DocumentCategories from './DocumentCategories';
 import { DocumentExtractionFixer } from './DocumentExtractionFixer';
+import { DocumentAIPipelineManager } from './DocumentAIPipelineManager';
 
 interface ClientDocumentManagerProps {
   clientId: string;
@@ -123,6 +124,7 @@ const ClientDocumentManager = ({ clientId, clientName, enableAI = false }: Clien
         <TabsContent value="documents">
           <div className="space-y-4">
             <DocumentExtractionFixer onUpdate={refetch} />
+            <DocumentAIPipelineManager onUpdate={refetch} />
             {enableAI ? (
               <EnhancedDocumentList
                 documents={documents}
