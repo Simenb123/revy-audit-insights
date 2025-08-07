@@ -47,7 +47,7 @@ import TrialBalanceUpload from "./pages/TrialBalanceUpload";
 import AnalysisPage from "./pages/AnalysisPage";
 import ClientDocuments from "./pages/ClientDocuments";
 import NotFound from "./pages/NotFound";
-import LegacyClientRedirect from "./components/Layout/LegacyClientRedirect";
+import ClientRedirect from "./components/Layout/ClientRedirect";
 import { ClientHistoryTracker } from "./components/Layout/ClientHistoryTracker";
 
 const queryClient = new QueryClient();
@@ -71,7 +71,7 @@ function App() {
                   <Route index element={<ProtectedRoute><Index /></ProtectedRoute>} />
                   <Route path="dashboard" element={<ProtectedRoute><NavigationDashboard /></ProtectedRoute>} />
                   <Route path="clients" element={<ProtectedRoute><ClientsOverview /></ProtectedRoute>} />
-                  <Route path="clients/:clientId" element={<ProtectedRoute><ClientDetail /></ProtectedRoute>} />
+                  <Route path="clients/:clientId" element={<ProtectedRoute><ClientRedirect /></ProtectedRoute>} />
                   <Route path="clients/:clientId/dashboard" element={<ProtectedRoute><ClientDetail /></ProtectedRoute>} />
                   <Route path="clients/:clientId/:phase" element={<ProtectedRoute><ClientDetail /></ProtectedRoute>} />
                   <Route path="clients/:clientId/trial-balance" element={<ProtectedRoute><TrialBalanceUpload /></ProtectedRoute>} />
@@ -81,7 +81,7 @@ function App() {
                   
                   {/* Legacy routes for backward compatibility */}
                   <Route path="klienter" element={<ProtectedRoute><ClientsOverview /></ProtectedRoute>} />
-                  <Route path="klienter/:orgNumber" element={<LegacyClientRedirect />} />
+                  <Route path="klienter/:orgNumber" element={<ClientRedirect />} />
                   <Route path="client-admin" element={<ClientAdmin />} />
                   <Route path="user-admin" element={<UserAdmin />} />
                   <Route path="profile" element={<UserProfile />} />
