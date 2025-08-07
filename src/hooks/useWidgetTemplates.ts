@@ -12,16 +12,15 @@ export function useWidgetTemplates() {
   return useQuery({
     queryKey: ['widget-templates'],
     queryFn: async (): Promise<WidgetTemplate[]> => {
-      const { data, error } = await (supabase as any)
-        .from('widget_templates')
-        .select('type, description, default_config');
+      // Use edge function since the table isn't in types yet
+      const { data, error } = await supabase.functions.invoke('get-widget-templates');
 
       if (error) {
         logger.error('Error fetching widget templates:', error);
         return [];
       }
 
-      return (data || []).map(t => ({
+      return (data || []).map((t: any) => ({
         type: t.type,
         description: t.description,
         defaultConfig: t.default_config,

@@ -8,9 +8,10 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Calculator, TrendingUp } from 'lucide-react';
+import { Calculator, TrendingUp, Save } from 'lucide-react';
 import { useFormulaDefinitions } from '@/hooks/useFormulas';
 import { EnhancedFormulaBuilder, FormulaData } from '@/components/Admin/forms/EnhancedFormulaBuilder';
+import { SaveFormulaDialog } from './SaveFormulaDialog';
 
 interface FormulaWidgetConfigProps {
   widget: Widget;
@@ -73,7 +74,8 @@ const standardFormulas = [
 
 export function FormulaWidgetConfig({ widget, onUpdateWidget, standardAccounts }: FormulaWidgetConfigProps) {
   const [activeTab, setActiveTab] = useState('formula');
-  const { data: formulaDefinitions } = useFormulaDefinitions();
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const { data: formulaDefinitions, refetch } = useFormulaDefinitions();
 
   const handleFormulaChange = (formula: FormulaData | null) => {
     onUpdateWidget({
@@ -111,6 +113,16 @@ export function FormulaWidgetConfig({ widget, onUpdateWidget, standardAccounts }
     });
   };
 
+  const handleSaveFormula = () => {
+    if (widget.config?.customFormula) {
+      setShowSaveDialog(true);
+    }
+  };
+
+  const handleFormulaSaved = () => {
+    refetch(); // Refresh the formula definitions list
+  };
+
   return (
     <div className="space-y-6">
       <div className="space-y-2">
@@ -144,6 +156,19 @@ export function FormulaWidgetConfig({ widget, onUpdateWidget, standardAccounts }
                 onChange={handleFormulaChange}
                 standardAccounts={standardAccounts}
               />
+              
+              {widget.config?.customFormula && (
+                <div className="mt-4 pt-4 border-t">
+                  <Button 
+                    onClick={handleSaveFormula}
+                    variant="outline"
+                    className="flex items-center gap-2"
+                  >
+                    <Save className="h-4 w-4" />
+                    Lagre formel
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -285,6 +310,13 @@ export function FormulaWidgetConfig({ widget, onUpdateWidget, standardAccounts }
           </Card>
         </TabsContent>
       </Tabs>
+      
+      <SaveFormulaDialog
+        open={showSaveDialog}
+        onOpenChange={setShowSaveDialog}
+        formula={widget.config?.customFormula}
+        onSave={handleFormulaSaved}
+      />
     </div>
   );
 }

@@ -16,9 +16,8 @@ export function useReportTemplates() {
   return useQuery({
     queryKey: ['report-templates'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('report_templates')
-        .select('id, title, description, icon, widgets, layouts');
+      // Use edge function since the table isn't in types yet
+      const { data, error } = await supabase.functions.invoke('get-report-templates');
 
       if (error) {
         devLog('Error fetching report templates:', error);

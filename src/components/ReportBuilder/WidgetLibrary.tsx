@@ -1,5 +1,5 @@
 import React from 'react';
-import { useWidgetManager } from '@/contexts/WidgetManagerContext';
+import { useWidgetManager, Widget } from '@/contexts/WidgetManagerContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart3, Table, TrendingUp, FileText, X, Calculator } from 'lucide-react';
@@ -80,7 +80,7 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
           };
         }
         return {
-          type: t.type,
+          type: t.type as Widget['type'],
           title: t.type,
           description: t.description,
           icon: FileText,
