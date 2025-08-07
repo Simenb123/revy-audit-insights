@@ -13,7 +13,7 @@ const GridLayoutContainer: React.FC<GridLayoutContainerProps> = ({
   children,
   className
 }) => {
-  const { isCollapsed: rightCollapsed, isHidden: rightHidden, width: rightWidth } = useRightSidebar();
+  const { isCollapsed: rightCollapsed, width: rightWidth } = useRightSidebar();
   const { state: leftSidebarState } = useSidebar();
   const isMobile = useIsMobile();
   
@@ -27,11 +27,7 @@ const GridLayoutContainer: React.FC<GridLayoutContainerProps> = ({
     }
     
     const leftSidebarWidth = leftCollapsed ? 'var(--grid-left-sidebar-collapsed)' : 'var(--grid-left-sidebar)';
-    
-    if (rightHidden) {
-      return `${leftSidebarWidth} 1fr 0px`;
-    }
-    
+
     // Use 32px for collapsed sidebar or actual width for expanded
     const rightSidebarWidth = rightCollapsed ? '32px' : `${rightWidth}px`;
     
