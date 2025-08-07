@@ -1,8 +1,8 @@
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FileText, Upload, BarChart3, Brain } from 'lucide-react';
+import { FileText, Upload, BarChart3, Brain, Search, Workflow } from 'lucide-react';
 import { useClientDocuments } from '@/hooks/useClientDocuments';
 import DocumentUploader from './DocumentUploader';
 import DocumentList from './DocumentList';
@@ -12,6 +12,9 @@ import DocumentCategories from './DocumentCategories';
 import { DocumentExtractionFixer } from './DocumentExtractionFixer';
 import { DocumentAIPipelineManager } from './DocumentAIPipelineManager';
 import SmartDocumentOverview from '@/components/Revy/SmartDocumentOverview';
+import AdvancedDocumentSearch from './AdvancedDocumentSearch';
+import DocumentAnalyticsDashboard from './DocumentAnalyticsDashboard';
+import DocumentWorkflowManager from './DocumentWorkflowManager';
 
 interface ClientDocumentManagerProps {
   clientId: string;
@@ -22,6 +25,11 @@ interface ClientDocumentManagerProps {
 const ClientDocumentManager = ({ clientId, clientName, enableAI = false }: ClientDocumentManagerProps) => {
   const { documents, categories, isLoading, refetch } = useClientDocuments(clientId);
   const [activeTab, setActiveTab] = useState('documents');
+  const [filteredDocuments, setFilteredDocuments] = useState(documents);
+
+  const handleSearchResults = useCallback((results: typeof documents) => {
+    setFilteredDocuments(results);
+  }, []);
 
   // Fix: Group documents by category properly
   const documentsByCategory: Record<string, typeof documents> = {};
@@ -103,7 +111,7 @@ const ClientDocumentManager = ({ clientId, clientName, enableAI = false }: Clien
       )}
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className={`grid w-full ${enableAI ? 'grid-cols-4' : 'grid-cols-3'}`}>
+        <TabsList className={`grid w-full ${enableAI ? 'grid-cols-6' : 'grid-cols-3'}`}>
           <TabsTrigger value="upload" className="flex items-center gap-2">
             <Upload className="h-4 w-4" />
             Last opp
@@ -113,10 +121,24 @@ const ClientDocumentManager = ({ clientId, clientName, enableAI = false }: Clien
             Dokumenter ({documents.length})
           </TabsTrigger>
           {enableAI && (
-            <TabsTrigger value="ai-overview" className="flex items-center gap-2">
-              <Brain className="h-4 w-4" />
-              AI-Analyse
-            </TabsTrigger>
+            <>
+              <TabsTrigger value="search" className="flex items-center gap-2">
+                <Search className="h-4 w-4" />
+                Søk
+              </TabsTrigger>
+              <TabsTrigger value="analytics" className="flex items-center gap-2">
+                <BarChart3 className="h-4 w-4" />
+                Analyse
+              </TabsTrigger>
+              <TabsTrigger value="workflow" className="flex items-center gap-2">
+                <Brain className="h-4 w-4" />
+                Arbeidsflyt
+              </TabsTrigger>
+              <TabsTrigger value="ai-overview" className="flex items-center gap-2">
+                <Brain className="h-4 w-4" />
+                AI-Chat
+              </TabsTrigger>
+            </>
           )}
           <TabsTrigger value="categories" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
@@ -150,12 +172,37 @@ const ClientDocumentManager = ({ clientId, clientName, enableAI = false }: Clien
         </TabsContent>
 
         {enableAI && (
-          <TabsContent value="ai-overview">
-            <SmartDocumentOverview 
-              client={{ id: clientId, company_name: clientName } as any}
-              documents={documents}
-            />
-          </TabsContent>
+          <>
+            <TabsContent value="search">
+              <AdvancedDocumentSearch
+                documents={documents}
+                onSearchResults={handleSearchResults}
+                categories={categories.map(c => c.category_name)}
+              />
+            </TabsContent>
+
+            <TabsContent value="analytics">
+              <DocumentAnalyticsDashboard
+                documents={documents}
+                clientName={clientName}
+              />
+            </TabsContent>
+
+            <TabsContent value="workflow">
+              <DocumentWorkflowManager
+                documents={documents}
+                clientId={clientId}
+                onUpdate={handleDocumentUpdate}
+              />
+            </TabsContent>
+
+            <TabsContent value="ai-overview">
+              <SmartDocumentOverview 
+                client={{ id: clientId, company_name: clientName } as any}
+                documents={documents}
+              />
+            </TabsContent>
+          </>
         )}
 
         <TabsContent value="categories">
