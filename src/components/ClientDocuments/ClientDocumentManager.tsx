@@ -11,6 +11,7 @@ import BulkTextExtraction from './BulkTextExtraction';
 import DocumentCategories from './DocumentCategories';
 import { DocumentExtractionFixer } from './DocumentExtractionFixer';
 import { DocumentAIPipelineManager } from './DocumentAIPipelineManager';
+import SmartDocumentOverview from '@/components/Revy/SmartDocumentOverview';
 
 interface ClientDocumentManagerProps {
   clientId: string;
@@ -102,7 +103,7 @@ const ClientDocumentManager = ({ clientId, clientName, enableAI = false }: Clien
       )}
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className={`grid w-full ${enableAI ? 'grid-cols-4' : 'grid-cols-3'}`}>
           <TabsTrigger value="upload" className="flex items-center gap-2">
             <Upload className="h-4 w-4" />
             Last opp
@@ -111,6 +112,12 @@ const ClientDocumentManager = ({ clientId, clientName, enableAI = false }: Clien
             <FileText className="h-4 w-4" />
             Dokumenter ({documents.length})
           </TabsTrigger>
+          {enableAI && (
+            <TabsTrigger value="ai-overview" className="flex items-center gap-2">
+              <Brain className="h-4 w-4" />
+              AI-Analyse
+            </TabsTrigger>
+          )}
           <TabsTrigger value="categories" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
             Kategorier
@@ -141,6 +148,15 @@ const ClientDocumentManager = ({ clientId, clientName, enableAI = false }: Clien
             )}
           </div>
         </TabsContent>
+
+        {enableAI && (
+          <TabsContent value="ai-overview">
+            <SmartDocumentOverview 
+              client={{ id: clientId, company_name: clientName } as any}
+              documents={documents}
+            />
+          </TabsContent>
+        )}
 
         <TabsContent value="categories">
           <DocumentCategories 

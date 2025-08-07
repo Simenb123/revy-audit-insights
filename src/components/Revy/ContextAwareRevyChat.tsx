@@ -71,6 +71,17 @@ const ContextAwareRevyChat: React.FC<ContextAwareRevyChatProps> = ({
           {safeDocuments.length} dokumenter
         </Badge>
       );
+      
+      // Count AI-analyzed documents
+      const aiAnalyzedDocs = safeDocuments.filter(doc => doc.ai_analysis_summary || doc.ai_suggested_category);
+      if (aiAnalyzedDocs.length > 0) {
+        badges.push(
+          <Badge key="ai-docs" variant="default" className="text-xs bg-purple-600">
+            <Brain className="h-3 w-3 mr-1" />
+            {aiAnalyzedDocs.length} AI-analysert
+          </Badge>
+        );
+      }
     }
     
     if (client?.phase) {

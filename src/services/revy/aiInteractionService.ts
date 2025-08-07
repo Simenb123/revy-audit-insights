@@ -11,7 +11,8 @@ export const generateAIResponse = async (
   history: RevyChatMessage[],
   clientData?: any,
   userRole?: string,
-  sessionId?: string
+  sessionId?: string,
+  clientDocuments?: any[]
 ): Promise<string> => {
   if (!isSupabaseConfigured || !supabase) {
     logger.error("Supabase is not configured. AI response cannot proceed.");
@@ -45,7 +46,8 @@ export const generateAIResponse = async (
       clientData,
       userRole,
       sessionId,
-      userId: user.id
+      userId: user.id,
+      clientDocuments: clientDocuments || []
     };
 
     logger.log('📤 Sending request to revy-ai-chat edge function', { sessionId });

@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/Auth/AuthProvider';
 import { RevyContext, RevyChatMessage, RevyMessage } from '@/types/revio';
 import { enhanceAIResponse } from '@/services/revyEnhancementService';
+import { useClientDocuments } from '@/hooks/useClientDocuments';
 import { toast } from 'sonner';
 
 interface UseRevyMessageHandlingProps {
@@ -26,6 +27,9 @@ export const useRevyMessageHandling = ({
   const [isAnalyzingDocuments, setIsAnalyzingDocuments] = useState(false);
   const { session } = useAuth();
   const [sessionId, setSessionId] = useState<string | null>(null);
+  
+  // Get client documents for AI context
+  const { documents: clientDocuments } = useClientDocuments(clientData?.id);
 
   // Create or load session
   useEffect(() => {
@@ -296,7 +300,9 @@ Jeg kan hjelpe deg med **revisjon**, **regnskapsføring**, **dokumentanalyse** o
         body: {
           message: userMessage,
           context: context,
-          variantName: selectedVariant?.name || 'support'
+          variantName: selectedVariant?.name || 'support',
+          clientData: clientData,
+          clientDocuments: clientDocuments || []
         }
       });
 

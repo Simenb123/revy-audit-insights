@@ -13,9 +13,10 @@ serve(async (req) => {
   }
 
   try {
-    const { message, context, variantName } = await req.json()
+    const { message, context, variantName, clientData, clientDocuments } = await req.json()
     console.log('🚀 AI-Revy chat function started')
     console.log('📝 Processing message:', message.substring(0, 50) + '...')
+    console.log('📂 Client documents available:', clientDocuments?.length || 0)
 
     // Get environment variables
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
@@ -39,6 +40,37 @@ serve(async (req) => {
     let knowledgeContext = ''
     let knowledgeArticles = []
     let hasKnowledgeReferences = false
+    
+    // Prepare client documents context
+    let clientDocumentContext = ''
+    if (clientDocuments && clientDocuments.length > 0) {
+      const documentSummary = clientDocuments
+        .filter(doc => doc.ai_analysis_summary || doc.extracted_text)
+        .slice(0, 10) // Limit to 10 most relevant docs
+        .map(doc => ({
+          name: doc.file_name,
+          category: doc.ai_suggested_category || doc.category || 'Ukategoriseret',
+          summary: doc.ai_analysis_summary || (doc.extracted_text ? doc.extracted_text.substring(0, 200) + '...' : 'Ingen sammendrag'),
+          confidence: doc.ai_confidence_score || 0,
+          created: doc.created_at
+        }))
+      
+      if (documentSummary.length > 0) {
+        clientDocumentContext = `
+KLIENTDOKUMENTER TILGJENGELIG:
+Du har tilgang til følgende dokumenter for ${clientData?.company_name || 'klienten'}:
+
+${documentSummary.map(doc => `
+📄 **${doc.name}**
+   Kategori: ${doc.category}
+   Sammendrag: ${doc.summary}
+   AI-sikkerhet: ${Math.round(doc.confidence * 100)}%
+   Dato: ${new Date(doc.created).toLocaleDateString('no-NO')}
+`).join('')}
+
+VIKTIG: Referer til disse dokumentene når det er relevant for brukerens spørsmål. Bruk dokumentnavnene når du refererer til dem.`
+      }
+    }
 
     try {
       const controller = new AbortController()
@@ -96,8 +128,11 @@ VIKTIG: Når du refererer til disse artiklene, bruk lenkeformat som vist over.`;
 
 KONTEKST: ${context || 'general'}
 VARIANT: ${variantName || 'support'}
+KLIENT: ${clientData?.company_name || 'Ikke spesifisert'}
 
 ${knowledgeContext}
+
+${clientDocumentContext}
 
 RETNINGSLINJER:
 - Svar alltid på norsk
@@ -110,11 +145,14 @@ RETNINGSLINJER:
 - Vær profesjonell men vennlig
 - Hvis du ikke vet noe, si det ærlig og foreslå hvor bruker kan finne mer informasjon
 - Ved tekniske spørsmål, gi trinnvise instruksjoner med konkrete eksempler
+- VIKTIG: Når du har tilgang til klientdokumenter, bruk dem aktivt i dine svar
+- Referer til spesifikke dokumenter når det er relevant for spørsmålet
+- Kombiner dokumentinnsikt med fagkunnskap for beste resultat
 
-${context === 'client-detail' ? 'Du hjelper med klient-spesifikke spørsmål og analyse.' : ''}
-${context === 'documentation' ? 'Du fokuserer på dokumentanalyse og kvalitetssikring.' : ''}
-${context === 'audit-actions' ? 'Du hjelper med revisjonshandlinger og ISA-standarder.' : ''}
-${context === 'risk-assessment' ? 'Du fokuserer på risikovurdering og kontroller.' : ''}`;
+${context === 'client-detail' ? 'Du hjelper med klient-spesifikke spørsmål og analyse. Bruk tilgjengelige klientdokumenter aktivt i dine svar.' : ''}
+${context === 'documentation' ? 'Du fokuserer på dokumentanalyse og kvalitetssikring. Analyser tilgjengelige dokumenter grundig.' : ''}
+${context === 'audit-actions' ? 'Du hjelper med revisjonshandlinger og ISA-standarder. Knytt revisjonshandlinger til dokumentene.' : ''}
+${context === 'risk-assessment' ? 'Du fokuserer på risikovurdering og kontroller. Bruk dokumenter til å identifisere risikoområder.' : ''}`;
 
     console.log('🤖 Calling OpenAI API...')
 
