@@ -138,7 +138,7 @@ const ClientsOverview = () => {
 
       {/* Bulk Import Dialog */}
       <Dialog open={showBulkImportDialog} onOpenChange={setShowBulkImportDialog}>
-        <DialogContent className="max-w-5xl">
+        <DialogContent draggable resizable className="max-w-none w-[90vw] h-[80vh]">
           <DialogHeader>
             <DialogTitle>Bulk import av klientdata</DialogTitle>
           </DialogHeader>
@@ -148,6 +148,7 @@ const ClientsOverview = () => {
           />
         </DialogContent>
       </Dialog>
+
     </div>
   );
 };

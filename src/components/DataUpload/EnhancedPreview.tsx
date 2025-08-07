@@ -398,6 +398,7 @@ const EnhancedPreview: React.FC<EnhancedPreviewProps> = ({
         suggestedMappings={suggestedMappings}
         validationErrors={validationErrors}
         requiredStatus={requiredStatus}
+        headerRowIndex={currentHeaderRowIndex}
         onMappingChange={handleMappingChange}
       />
 

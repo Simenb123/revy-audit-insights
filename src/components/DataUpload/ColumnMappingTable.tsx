@@ -18,6 +18,7 @@ interface ColumnMappingTableProps {
     mapped: number;
     complete: boolean;
   };
+  headerRowIndex?: number;
   onMappingChange: (sourceColumn: string, targetField: string) => void;
 }
 

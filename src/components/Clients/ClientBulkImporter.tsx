@@ -18,6 +18,8 @@ interface ClientBulkImportData {
   org_number: string;
   client_group?: string;
   accounting_system?: string;
+  partner?: string;
+  customer_number?: string;
 }
 
 interface ClientBulkImporterProps {
@@ -133,10 +135,12 @@ const ClientBulkImporter = ({ onImportComplete, onCancel }: ClientBulkImporterPr
           updateData.accounting_system = row.accounting_system.toString().trim();
         }
 
-        // Only update if there's something to update
-        if (Object.keys(updateData).length === 0) {
-          warnings.push(`Rad ${i + 1}: Ingen data å oppdatere for ${orgNumber}`);
-          continue;
+        if (row.partner !== undefined && row.partner !== '') {
+          updateData.partner = row.partner.toString().trim();
+        }
+
+        if (row.customer_number !== undefined && row.customer_number !== '') {
+          updateData.customer_number = row.customer_number.toString().trim();
         }
 
         try {
@@ -207,7 +211,21 @@ const ClientBulkImporter = ({ onImportComplete, onCancel }: ClientBulkImporterPr
                 field_label: 'Organisasjonsnummer',
                 data_type: 'text',
                 is_required: true,
-                aliases: ['orgnr','org nr','organisasjonsnummer','orgnummer','org-nr','org no','kundenr','kundenummer','customer number','kundenr.']
+                aliases: ['orgnr','org nr','organisasjonsnummer','orgnummer','org-nr','org no']
+              },
+              {
+                field_key: 'customer_number',
+                field_label: 'Kundenummer',
+                data_type: 'text',
+                is_required: false,
+                aliases: ['kundenr','kunde nr','kundenummer','customer number','customer no','customer id','kundeid','kunderef']
+              },
+              {
+                field_key: 'partner',
+                field_label: 'Partner',
+                data_type: 'text',
+                is_required: false,
+                aliases: ['partner','ansvarlig partner','oppdragsansvarlig','engagement partner','oppdragsansvarlig revisor']
               },
               {
                 field_key: 'client_group',
@@ -256,6 +274,10 @@ const ClientBulkImporter = ({ onImportComplete, onCancel }: ClientBulkImporterPr
                   <strong>Forventet format:</strong>
                   <br />
                   • Organisasjonsnummer (påkrevd) - for å identifisere klienter
+                  <br />
+                  • Kundenummer (valgfri) - intern ID fra revisjonsfirmaet
+                  <br />
+                  • Partner (valgfri) - oppdragsansvarlig/ansvarlig partner
                   <br />
                   • Klientgruppe (valgfri) - for å sette/oppdatere gruppe
                   <br />
