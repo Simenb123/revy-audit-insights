@@ -1,16 +1,12 @@
 # Right Sidebar Overview
 
-This guide explains how the assistant sidebar on the right side of the screen is built.
+This guide explains how the right sidebar is built.
 
 The legacy `Sidebar` and `FloatingRevyAssistant` components have been removed in favor of a unified approach.
 
-## AssistantSidebar
-
-`AssistantSidebar` is a wrapper that shows the sidebar as a drawer on small screens and as a panel on desktop. Inside it we render `ResizableRightSidebar`, which holds the actual content.
-
 ## ResizableRightSidebar
 
-`ResizableRightSidebar` manages the width, collapsed state and visibility. The header and collapse toggle are provided via `SidebarHeader`. The width is stored in `RightSidebarContext` so it persists between pages and can be resized by dragging the divider.
+`ResizableRightSidebar` manages the width, collapsed state and visibility. The width is stored in `RightSidebarContext` so it persists between pages and can be resized by dragging the divider.
 
 Instead of switching between multiple sidebar components, the current implementation always renders the `AiRevyCard` component. The card adapts based on the current route:
 
