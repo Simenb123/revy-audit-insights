@@ -6400,6 +6400,15 @@ export type Database = {
           valid_until: string
         }[]
       }
+      process_existing_completed_documents: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          document_id: string
+          file_name: string
+          triggered: boolean
+          error_message: string
+        }[]
+      }
       queue_articles_for_embedding: {
         Args: Record<PropertyKey, never>
         Returns: {
