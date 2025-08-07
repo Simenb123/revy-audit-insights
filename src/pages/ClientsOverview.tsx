@@ -99,6 +99,7 @@ const ClientsOverview = () => {
         showTestData={showTestData}
         onTestDataToggle={setShowTestData}
         onAddClient={() => setShowAddClientDialog(true)}
+        onBulkImport={() => setShowBulkImportDialog(true)}
       />
 
 
