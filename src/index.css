@@ -143,6 +143,50 @@
   .z-tooltip { z-index: var(--z-tooltip); }
   .z-toast { z-index: var(--z-toast); }
 
+  /* Print styles for report export */
+  @media print {
+    @page {
+      margin: 1cm;
+      size: A4;
+    }
+
+    body {
+      -webkit-print-color-adjust: exact;
+      color-adjust: exact;
+    }
+
+    .react-grid-item {
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    .react-grid-layout {
+      position: static !important;
+      height: auto !important;
+      width: 100% !important;
+    }
+
+    .react-grid-item {
+      position: static !important;
+      transform: none !important;
+      width: 100% !important;
+      height: auto !important;
+      margin-bottom: 1rem !important;
+    }
+
+    /* Hide navigation and controls */
+    .no-print,
+    button,
+    .opacity-0 {
+      display: none !important;
+    }
+
+    /* Optimize spacing for print */
+    .p-4 {
+      padding: 0.5rem !important;
+    }
+  }
+
   /* Existing utilities */
   .drag-handle {
     @apply cursor-grab active:cursor-grabbing;

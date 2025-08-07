@@ -1,6 +1,7 @@
 import React from 'react';
-import { Widget } from '@/contexts/WidgetManagerContext';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Widget, useWidgetManager } from '@/contexts/WidgetManagerContext';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { InlineEditableTitle } from '../InlineEditableTitle';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
@@ -15,7 +16,12 @@ interface TableWidgetProps {
 
 export function TableWidget({ widget }: TableWidgetProps) {
   const { selectedFiscalYear } = useFiscalYear();
+  const { updateWidget } = useWidgetManager();
   const clientId = widget.config?.clientId;
+
+  const handleTitleChange = (newTitle: string) => {
+    updateWidget(widget.id, { title: newTitle });
+  };
   const maxRows = widget.config?.maxRows || 10;
   const sortBy = widget.config?.sortBy || 'balance';
   const showPercentage = widget.config?.showPercentage !== false;
@@ -115,7 +121,11 @@ export function TableWidget({ widget }: TableWidgetProps) {
     return (
       <Card className="h-full">
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-medium">{widget.title}</CardTitle>
+          <InlineEditableTitle 
+            title={widget.title} 
+            onTitleChange={handleTitleChange}
+            size="sm"
+          />
         </CardHeader>
         <CardContent>
           <div className="text-sm text-muted-foreground">Laster data...</div>
@@ -127,7 +137,11 @@ export function TableWidget({ widget }: TableWidgetProps) {
   return (
     <Card className="h-full">
       <CardHeader className="pb-3">
-        <CardTitle className="text-sm font-medium">{widget.title}</CardTitle>
+        <InlineEditableTitle 
+          title={widget.title} 
+          onTitleChange={handleTitleChange}
+          size="sm"
+        />
         {groupByCategory && categories.length > 1 && (
           <div className="flex items-center gap-2 mt-2">
             <Filter className="h-3 w-3 text-muted-foreground" />

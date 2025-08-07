@@ -14,6 +14,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { useClientReports, type ClientReport } from '@/hooks/useClientReports';
 import { useTBVersionOptions } from '@/hooks/useTrialBalanceVersions';
+import { ViewModeProvider } from './ViewModeContext';
+import { ViewModeToggle } from './ViewModeToggle';
 import { toast } from 'sonner';
 
 interface ReportBuilderContentProps {
@@ -91,7 +93,7 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
   };
 
   return (
-    <>
+    <ViewModeProvider>
       <div className="space-y-6">
         {/* Client Report Header */}
         <ClientReportHeader 
@@ -135,6 +137,10 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
             )}
             
             <div className="flex flex-wrap gap-2">
+              <ViewModeToggle 
+                disabled={!hasData || widgets.length === 0 || !selectedVersion}
+              />
+              
               <Button
                 variant="outline"
                 onClick={() => setShowWidgetLibrary(!showWidgetLibrary)}
@@ -254,6 +260,6 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
         onDeleteReport={handleDeleteReport}
         loading={loading}
       />
-    </>
+    </ViewModeProvider>
   );
 }

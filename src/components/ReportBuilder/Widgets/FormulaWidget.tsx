@@ -1,6 +1,7 @@
 import React from 'react';
-import { Widget } from '@/contexts/WidgetManagerContext';
+import { Widget, useWidgetManager } from '@/contexts/WidgetManagerContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { InlineEditableTitle } from '../InlineEditableTitle';
 import { Calculator, TrendingUp, TrendingDown, AlertCircle } from 'lucide-react';
 import { useTrialBalanceWithMappings } from '@/hooks/useTrialBalanceWithMappings';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
@@ -160,7 +161,12 @@ class FormulaEvaluator {
 
 export function FormulaWidget({ widget }: FormulaWidgetProps) {
   const { selectedFiscalYear } = useFiscalYear();
+  const { updateWidget } = useWidgetManager();
   const clientId = widget.config?.clientId;
+
+  const handleTitleChange = (newTitle: string) => {
+    updateWidget(widget.id, { title: newTitle });
+  };
   const formulaId = widget.config?.formulaId;
   const customFormula = widget.config?.customFormula;
   const showTrend = widget.config?.showTrend !== false;
@@ -172,10 +178,14 @@ export function FormulaWidget({ widget }: FormulaWidgetProps) {
     return (
       <Card className="h-full border-destructive">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium flex items-center gap-2 text-destructive">
+          <div className="flex items-center gap-2 text-destructive">
             <AlertCircle className="h-4 w-4" />
-            {widget.title}
-          </CardTitle>
+            <InlineEditableTitle 
+              title={widget.title} 
+              onTitleChange={handleTitleChange}
+              size="sm"
+            />
+          </div>
         </CardHeader>
         <CardContent>
           <div className="text-sm text-muted-foreground">Klient ikke valgt</div>
@@ -244,10 +254,14 @@ export function FormulaWidget({ widget }: FormulaWidgetProps) {
     return (
       <Card className="h-full">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium flex items-center gap-2">
+          <div className="flex items-center gap-2">
             <Calculator className="h-4 w-4" />
-            {widget.title}
-          </CardTitle>
+            <InlineEditableTitle 
+              title={widget.title} 
+              onTitleChange={handleTitleChange}
+              size="sm"
+            />
+          </div>
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">Laster...</div>
@@ -260,10 +274,14 @@ export function FormulaWidget({ widget }: FormulaWidgetProps) {
     return (
       <Card className="h-full">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium flex items-center gap-2">
+          <div className="flex items-center gap-2">
             <Calculator className="h-4 w-4" />
-            {widget.title}
-          </CardTitle>
+            <InlineEditableTitle 
+              title={widget.title} 
+              onTitleChange={handleTitleChange}
+              size="sm"
+            />
+          </div>
         </CardHeader>
         <CardContent>
           <div className="text-sm text-muted-foreground">Ingen formel konfigurert</div>
@@ -275,10 +293,14 @@ export function FormulaWidget({ widget }: FormulaWidgetProps) {
   return (
     <Card className="h-full">
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium flex items-center gap-2">
+        <div className="flex items-center gap-2">
           <Calculator className="h-4 w-4" />
-          {widget.title}
-        </CardTitle>
+          <InlineEditableTitle 
+            title={widget.title} 
+            onTitleChange={handleTitleChange}
+            size="sm"
+          />
+        </div>
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-bold">{formulaResult.value}</div>

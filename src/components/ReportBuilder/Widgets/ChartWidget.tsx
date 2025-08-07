@@ -1,6 +1,7 @@
 import React from 'react';
-import { Widget } from '@/contexts/WidgetManagerContext';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Widget, useWidgetManager } from '@/contexts/WidgetManagerContext';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { InlineEditableTitle } from '../InlineEditableTitle';
 import {
   BarChart,
   Bar,
@@ -22,10 +23,15 @@ interface ChartWidgetProps {
 
 export function ChartWidget({ widget }: ChartWidgetProps) {
   const { selectedFiscalYear } = useFiscalYear();
+  const { updateWidget } = useWidgetManager();
   const clientId = widget.config?.clientId;
   const chartType = widget.config?.chartType || 'bar';
   const maxDataPoints = widget.config?.maxDataPoints || 6;
   const showValues = widget.config?.showValues !== false;
+
+  const handleTitleChange = (newTitle: string) => {
+    updateWidget(widget.id, { title: newTitle });
+  };
   
   const { data: trialBalanceData, isLoading } = useTrialBalanceWithMappings(
     clientId, 
@@ -53,7 +59,11 @@ export function ChartWidget({ widget }: ChartWidgetProps) {
     return (
       <Card className="h-full">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium">{widget.title}</CardTitle>
+          <InlineEditableTitle 
+            title={widget.title} 
+            onTitleChange={handleTitleChange}
+            size="sm"
+          />
         </CardHeader>
         <CardContent>
           <div className="text-sm text-muted-foreground">Laster data...</div>
@@ -65,7 +75,11 @@ export function ChartWidget({ widget }: ChartWidgetProps) {
   return (
     <Card className="h-full">
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium">{widget.title}</CardTitle>
+        <InlineEditableTitle 
+          title={widget.title} 
+          onTitleChange={handleTitleChange}
+          size="sm"
+        />
       </CardHeader>
       <CardContent className="pt-2">
         <ResponsiveContainer width="100%" height={120}>

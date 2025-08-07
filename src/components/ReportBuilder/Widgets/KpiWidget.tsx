@@ -1,9 +1,10 @@
 import React from 'react';
-import { Widget } from '@/contexts/WidgetManagerContext';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Widget, useWidgetManager } from '@/contexts/WidgetManagerContext';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { useTrialBalanceWithMappings } from '@/hooks/useTrialBalanceWithMappings';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
+import { InlineEditableTitle } from '../InlineEditableTitle';
 
 interface KpiWidgetProps {
   widget: Widget;
@@ -11,9 +12,14 @@ interface KpiWidgetProps {
 
 export function KpiWidget({ widget }: KpiWidgetProps) {
   const { selectedFiscalYear } = useFiscalYear();
+  const { updateWidget } = useWidgetManager();
   const clientId = widget.config?.clientId;
   const metric = widget.config?.metric || 'revenue';
   const showTrend = widget.config?.showTrend !== false;
+
+  const handleTitleChange = (newTitle: string) => {
+    updateWidget(widget.id, { title: newTitle });
+  };
   
   const { data: trialBalanceData, isLoading } = useTrialBalanceWithMappings(
     clientId,
@@ -112,7 +118,11 @@ export function KpiWidget({ widget }: KpiWidgetProps) {
     return (
       <Card className="h-full">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium">{widget.title}</CardTitle>
+          <InlineEditableTitle 
+            title={widget.title} 
+            onTitleChange={handleTitleChange}
+            size="sm"
+          />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">Laster...</div>
@@ -124,7 +134,11 @@ export function KpiWidget({ widget }: KpiWidgetProps) {
   return (
     <Card className="h-full">
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium">{widget.title}</CardTitle>
+        <InlineEditableTitle 
+          title={widget.title} 
+          onTitleChange={handleTitleChange}
+          size="sm"
+        />
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-bold">{metricData.value}</div>

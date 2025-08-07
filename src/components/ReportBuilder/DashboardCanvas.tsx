@@ -3,6 +3,8 @@ import { Responsive, WidthProvider, Layout } from 'react-grid-layout';
 import { useWidgetManager, WidgetLayout } from '@/contexts/WidgetManagerContext';
 import { WidgetRenderer } from './WidgetRenderer';
 import { WidgetWrapper } from './WidgetWrapper';
+import { useViewMode } from './ViewModeContext';
+import { cn } from '@/lib/utils';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 
@@ -15,6 +17,7 @@ interface DashboardCanvasProps {
 
 export function DashboardCanvas({ clientId, selectedVersion }: DashboardCanvasProps) {
   const { widgets, layouts, updateLayout } = useWidgetManager();
+  const { isViewMode } = useViewMode();
 
   const handleLayoutChange = (layout: Layout[]) => {
     const updatedLayouts: WidgetLayout[] = layout.map(item => {
@@ -41,21 +44,32 @@ export function DashboardCanvas({ clientId, selectedVersion }: DashboardCanvasPr
   }));
 
   return (
-    <div className="p-4 min-h-screen bg-background">
+    <div className={cn(
+      "p-4 min-h-screen bg-background",
+      isViewMode && "print:p-0 print:min-h-0 print:bg-white"
+    )}>
       <ResponsiveGridLayout
-        className="layout"
+        className={cn(
+          "layout",
+          isViewMode && "print:static"
+        )}
         layouts={{ lg: gridLayouts }}
         onLayoutChange={handleLayoutChange}
         cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
         rowHeight={60}
         margin={[16, 16]}
         containerPadding={[0, 0]}
-        isDraggable
-        isResizable
+        isDraggable={!isViewMode}
+        isResizable={!isViewMode}
         useCSSTransforms
+        compactType="vertical"
+        preventCollision={false}
       >
         {widgets.map(widget => (
-          <div key={widget.id} className="bg-card border rounded-lg shadow-sm">
+          <div key={widget.id} className={cn(
+            "bg-card border rounded-lg shadow-sm",
+            isViewMode && "print:shadow-none print:border-gray-300"
+          )}>
             <WidgetWrapper widget={widget}>
               <WidgetRenderer widget={{ ...widget, config: { ...widget.config, clientId, selectedVersion } }} />
             </WidgetWrapper>

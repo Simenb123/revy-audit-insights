@@ -1,14 +1,20 @@
 import React from 'react';
-import { Widget } from '@/contexts/WidgetManagerContext';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Widget, useWidgetManager } from '@/contexts/WidgetManagerContext';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { InlineEditableTitle } from '../InlineEditableTitle';
 
 interface TextWidgetProps {
   widget: Widget;
 }
 
 export function TextWidget({ widget }: TextWidgetProps) {
+  const { updateWidget } = useWidgetManager();
   const content = widget.config?.content || 'Dette er en tekstwidget. Klikk for å redigere innhold.';
   const fontSize = widget.config?.fontSize || 'sm';
+
+  const handleTitleChange = (newTitle: string) => {
+    updateWidget(widget.id, { title: newTitle });
+  };
 
   const fontSizeMap = {
     xs: 'text-xs',
@@ -23,7 +29,11 @@ export function TextWidget({ widget }: TextWidgetProps) {
   return (
     <Card className="h-full">
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium">{widget.title}</CardTitle>
+        <InlineEditableTitle 
+          title={widget.title} 
+          onTitleChange={handleTitleChange}
+          size="sm"
+        />
       </CardHeader>
       <CardContent>
         <div className={`${fontSizeClass} text-muted-foreground whitespace-pre-wrap`}>
