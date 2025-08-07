@@ -16,13 +16,17 @@ import { useAuditFirm } from '@/hooks/useAuditFirm';
 
 export default function ContextualSidebar() {
   const location = useLocation();
-  const { orgNumber } = useParams<{ orgNumber: string }>();
-  const { data: client } = useClientDetails(orgNumber || '');
+  const { orgNumber, clientId } = useParams<{ orgNumber: string; clientId: string }>();
+  
+  // Determine client identifier - use clientId for new routes, orgNumber for legacy routes
+  const clientIdentifier = clientId || orgNumber;
+  const { data: client } = useClientDetails(clientIdentifier || '');
   const { data: userProfile } = useUserProfile();
   const { data: auditFirm } = useAuditFirm();
   
-  // Check if we're in a client context
-  const isClientContext = location.pathname.includes('/klienter/') && orgNumber;
+  // Check if we're in a client context (both legacy and new routes)
+  const isClientContext = (location.pathname.includes('/klienter/') && orgNumber) || 
+                          (location.pathname.includes('/clients/') && clientId);
   
   // Check if we're in organization context
   const isOrganizationContext = location.pathname.match(/^\/(organisasjon|avdeling|team|kommunikasjon|brukeradministrasjon|organisasjonsinnstillinger)/);
