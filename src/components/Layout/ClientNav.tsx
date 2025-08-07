@@ -32,6 +32,11 @@ const ClientNav = () => {
       to: `/clients/${clientId}/analysis`,
       icon: BarChart3,
       label: "Analyser"
+    },
+    {
+      to: `/clients/${clientId}/documents`,
+      icon: FileText,
+      label: "Dokumenter"
     }
   ];
 

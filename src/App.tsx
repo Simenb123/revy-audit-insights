@@ -45,6 +45,7 @@ import AuditActionLibrary from "./pages/Admin/AuditActionLibrary";
 import GeneralLedgerUpload from "./pages/GeneralLedgerUpload";
 import TrialBalanceUpload from "./pages/TrialBalanceUpload";
 import AnalysisPage from "./pages/AnalysisPage";
+import ClientDocuments from "./pages/ClientDocuments";
 import NotFound from "./pages/NotFound";
 import LegacyClientRedirect from "./components/Layout/LegacyClientRedirect";
 import { ClientHistoryTracker } from "./components/Layout/ClientHistoryTracker";
@@ -76,6 +77,7 @@ function App() {
                   <Route path="clients/:clientId/trial-balance" element={<ProtectedRoute><TrialBalanceUpload /></ProtectedRoute>} />
                   <Route path="clients/:clientId/general-ledger" element={<ProtectedRoute><GeneralLedgerUpload /></ProtectedRoute>} />
                   <Route path="clients/:clientId/analysis" element={<ProtectedRoute><AnalysisPage /></ProtectedRoute>} />
+                  <Route path="clients/:clientId/documents" element={<ProtectedRoute><ClientDocuments /></ProtectedRoute>} />
                   
                   {/* Legacy routes for backward compatibility */}
                   <Route path="klienter" element={<ProtectedRoute><ClientsOverview /></ProtectedRoute>} />
