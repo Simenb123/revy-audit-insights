@@ -196,6 +196,7 @@ const ClientDocumentManager = ({ clientId, clientName, enableAI = false }: Clien
                 documents={documents}
                 documentsByCategory={documentsByCategory}
                 isLoading={isLoading}
+                clientId={clientId}
               />
             )}
           </div>

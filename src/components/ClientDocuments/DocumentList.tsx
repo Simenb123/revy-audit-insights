@@ -17,10 +17,11 @@ interface DocumentListProps {
   documents: ClientDocument[];
   documentsByCategory: Record<string, ClientDocument[]>;
   isLoading: boolean;
+  clientId: string;
 }
 
-const DocumentList = ({ documents, documentsByCategory, isLoading }: DocumentListProps) => {
-  const { deleteDocument, downloadDocument } = useClientDocuments('');
+const DocumentList = ({ documents, documentsByCategory, isLoading, clientId }: DocumentListProps) => {
+  const { deleteDocument, downloadDocument } = useClientDocuments(clientId);
   const [selectedDocument, setSelectedDocument] = useState<ClientDocument | null>(null);
   const [isViewerOpen, setIsViewerOpen] = useState(false);
 
