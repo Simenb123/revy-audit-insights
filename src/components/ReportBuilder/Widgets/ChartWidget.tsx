@@ -112,7 +112,7 @@ export function ChartWidget({ widget }: ChartWidgetProps) {
   // Check if this widget is the source of current cross-filter
   const isFilterSource = filters.crossFilter?.sourceWidgetId === widget.id;
 
-  if (isLoading) {
+  if (isLoadingTB) {
     return (
       <Card className="h-full">
         <CardHeader className="pb-2">
