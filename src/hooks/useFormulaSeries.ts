@@ -16,6 +16,7 @@ interface FormulaPoint {
   value: number;
   formattedValue: string;
   isValid: boolean;
+  type?: 'amount' | 'percentage' | 'ratio';
   error?: string;
 }
 
@@ -59,8 +60,8 @@ export function useFormulaSeries({
           if (error) {
             return { year, value: 0, formattedValue: '0', isValid: false, error: error.message } as FormulaPoint;
           }
-          const res = data as { value: number; formattedValue: string; isValid: boolean; error?: string };
-          return { year, value: res.value, formattedValue: res.formattedValue, isValid: res.isValid, error: res.error };
+          const res = data as { value: number; formattedValue: string; isValid: boolean; error?: string; metadata?: any };
+          return { year, value: res.value, formattedValue: res.formattedValue, isValid: res.isValid, error: res.error, type: res.metadata?.type } as FormulaPoint;
         })
       );
 

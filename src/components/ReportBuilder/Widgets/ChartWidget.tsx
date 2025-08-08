@@ -87,6 +87,24 @@ export function ChartWidget({ widget }: ChartWidgetProps) {
     [unitScale]
   );
 
+  const scaleValueByType = React.useCallback(
+    (val: number, type?: string) => {
+      // Percentages are already in 0-100 range from the API; don't multiply again
+      if (unitScale === 'percent') {
+        const base = type === 'percentage' ? val : val * 100;
+        return base;
+      }
+      let v = val;
+      // Only scale amounts; not percentages/ratios
+      if (type !== 'percentage' && type !== 'ratio') {
+        if (unitScale === 'thousand') v = v / 1_000;
+        else if (unitScale === 'million') v = v / 1_000_000;
+      }
+      return v;
+    },
+    [unitScale]
+  );
+
   const formatDisplay = React.useCallback(
     (val: number) => {
       if (unitScale === 'percent') {
@@ -100,7 +118,7 @@ export function ChartWidget({ widget }: ChartWidgetProps) {
   const chartData = React.useMemo(() => {
     if (dataSource === 'formulaSeries') {
       const series = formulaSeries ?? [];
-      return series.map(p => ({ name: String(p.year), value: scaleValue(p.value) }));
+      return series.map(p => ({ name: String(p.year), value: scaleValueByType(p.value, p.type) }));
     }
 
     if (!filteredTrialBalanceEntries || filteredTrialBalanceEntries.length === 0) {

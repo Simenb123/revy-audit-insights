@@ -169,7 +169,27 @@ async function fetchStandardAccountBalances(
 
   // 5) Aggregate balances by standard_number
   const grouped = new Map<string, number>();
-  for (const row of tbRows) {
+
+  // Auto-select best version when none provided: pick the version with most rows
+  const rowsToUse: any[] = (() => {
+    if (selectedVersion) return tbRows as any[];
+    const counts = new Map<string, number>();
+    for (const r of tbRows as any[]) {
+      if (r.version) counts.set(r.version, (counts.get(r.version) || 0) + 1);
+    }
+    if (counts.size > 0) {
+      let bestVer = '';
+      let max = -1;
+      for (const [ver, c] of counts) {
+        if (c > max) { max = c; bestVer = ver; }
+      }
+      log(`Auto-selected version '${bestVer}' for ${clientId} ${fiscalYear}`);
+      return (tbRows as any[]).filter(r => r.version === bestVer);
+    }
+    return tbRows as any[];
+  })();
+
+  for (const row of rowsToUse) {
     const accountNumber = row.client_chart_of_accounts?.account_number;
     if (!accountNumber) continue;
 
@@ -480,7 +500,7 @@ async function calculateFormula(
       value: resultValue,
       formattedValue: formatValue(resultValue, resultType),
       isValid: true,
-      metadata: meta
+      metadata: { ...meta, type: resultType }
     };
   } catch (error) {
     logError('Error in calculateFormula:', error);
