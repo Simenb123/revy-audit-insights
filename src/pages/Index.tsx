@@ -63,7 +63,20 @@ const Index = () => {
   ];
 
   return (
-    <PageLayout width="full">
+// <<<<<<< codex/implement-pagetitlecontext-and-integrate-layout
+      <PageLayout width="full">
+// =======
+//     <PageLayout
+//       width="full"
+//       header={
+//         <PageHeader
+//           title="Dashboard"
+//           subtitle={`Hei ${userProfile?.firstName || 'Bruker'}, Dashboardet skal få inn Widgets fra rapportbyggeren, `}
+//           size="lg"
+//         />
+//       }
+//     >
+// >>>>>>> main
         <FlexibleGrid 
           columns={{ sm: 1, md: 2, lg: 3 }} 
           gap="md"
