@@ -1,6 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { log, error as logError } from '../_shared/log.ts'
-import { enforceRateLimit, getRateLimitId } from '../_shared/rateLimiter.ts'
+// Rate limiter removed for Edge runtime compatibility
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -97,31 +97,96 @@ function validateInput(body: any): FormulaCalculationRequest {
 }
 
 async function fetchStandardAccountBalances(
-  supabase: any, 
-  clientId: string, 
-  fiscalYear: number
+  supabase: any,
+  clientId: string,
+  fiscalYear: number,
+  selectedVersion?: string
 ): Promise<StandardAccountBalance[]> {
-  log(`Fetching account balances for client ${clientId}, fiscal year ${fiscalYear}`);
-  
-  const { data, error } = await supabase
-    .from('trial_balance_with_mappings')
-    .select('standard_number, total_balance')
-    .eq('client_id', clientId)
-    .eq('fiscal_year', fiscalYear)
-    .not('standard_number', 'is', null);
+  log(`Fetching account balances for client ${clientId}, fiscal year ${fiscalYear}, version ${selectedVersion || 'auto'}`);
 
-  if (error) {
-    logError('Error fetching account balances:', error);
-    throw new Error(`Failed to fetch account balances: ${error.message}`);
+  // 1) Fetch trial balance rows for the client/year (+ optional version)
+  let tbQuery = supabase
+    .from('trial_balances')
+    .select(`
+      id,
+      client_id,
+      opening_balance,
+      debit_turnover,
+      credit_turnover,
+      closing_balance,
+      period_end_date,
+      period_year,
+      version,
+      client_chart_of_accounts!inner(account_number, account_name)
+    `)
+    .eq('client_id', clientId)
+    .eq('period_year', fiscalYear);
+
+  if (selectedVersion) {
+    tbQuery = tbQuery.eq('version', selectedVersion);
   }
 
-  if (!data || data.length === 0) {
-    log(`No account balances found for client ${clientId}, fiscal year ${fiscalYear}`);
+  const { data: tbRows, error: tbError } = await tbQuery;
+  if (tbError) {
+    logError('Error fetching trial balances:', tbError);
+    throw new Error(`Failed to fetch trial balances: ${tbError.message}`);
+  }
+  if (!tbRows || tbRows.length === 0) {
+    log(`No trial balance rows for ${clientId} ${fiscalYear}`);
     return [];
   }
 
-  log(`Found ${data.length} account balances`);
-  return data;
+  // 2) Fetch explicit mappings (preferred over classifications)
+  const { data: mappings, error: mapError } = await supabase
+    .from('trial_balance_mappings')
+    .select('account_number, statement_line_number')
+    .eq('client_id', clientId);
+  if (mapError) {
+    logError('Error fetching trial balance mappings:', mapError);
+    throw new Error(`Failed to fetch trial balance mappings: ${mapError.message}`);
+  }
+
+  // 3) Fetch standard accounts to resolve statement_line_number -> standard_number
+  const { data: standardAccounts, error: stdErr } = await supabase
+    .from('standard_accounts')
+    .select('id, standard_number, standard_name');
+  if (stdErr) {
+    logError('Error fetching standard accounts:', stdErr);
+    throw new Error(`Failed to fetch standard accounts: ${stdErr.message}`);
+  }
+
+  const standardByNumber = new Map(standardAccounts?.map((sa: any) => [sa.standard_number, sa]) || []);
+
+  // 4) Build mapping lookup by account_number
+  const mappingLookup = new Map<string, { standard_number: string }>();
+  mappings?.forEach((m: any) => {
+    const target = standardByNumber.get(m.statement_line_number);
+    if (target) {
+      mappingLookup.set(m.account_number, { standard_number: target.standard_number });
+    }
+  });
+
+  // 5) Aggregate balances by standard_number
+  const grouped = new Map<string, number>();
+  for (const row of tbRows) {
+    const accountNumber = row.client_chart_of_accounts?.account_number;
+    if (!accountNumber) continue;
+
+    const map = mappingLookup.get(accountNumber);
+    if (!map) continue; // skip unmapped accounts
+
+    const key = map.standard_number;
+    const prev = grouped.get(key) || 0;
+    grouped.set(key, prev + (row.closing_balance || 0));
+  }
+
+  const result: StandardAccountBalance[] = Array.from(grouped.entries()).map(([standard_number, total_balance]) => ({
+    standard_number,
+    total_balance,
+  }));
+
+  log(`Aggregated ${result.length} standard account balances`);
+  return result;
 }
 
 function calculatePrefixSum(accounts: StandardAccountBalance[], prefix: string): number {
@@ -178,6 +243,87 @@ function formatValue(value: number, type: string): string {
   }
 }
 
+// -------- Custom formula evaluation (supports numbers + - * / and parentheses) --------
+function getNumericStandardAmount(accounts: StandardAccountBalance[], standardNumber: string): number {
+  const found = accounts.find(a => a.standard_number === standardNumber);
+  return found?.total_balance ? Number(found.total_balance) : 0;
+}
+
+function tokenize(expr: string): string[] {
+  const tokens: string[] = [];
+  let current = '';
+  const pushCurrent = () => {
+    if (current.trim().length > 0) tokens.push(current.trim());
+    current = '';
+  };
+  for (let i = 0; i < expr.length; i++) {
+    const ch = expr[i];
+    if ('+-*/()'.includes(ch)) {
+      pushCurrent();
+      tokens.push(ch);
+    } else {
+      current += ch;
+    }
+  }
+  pushCurrent();
+  return tokens.filter(t => t.length > 0);
+}
+
+function toRPN(tokens: string[]): string[] {
+  const output: string[] = [];
+  const ops: string[] = [];
+  const prec: Record<string, number> = { '+': 1, '-': 1, '*': 2, '/': 2 };
+  for (const t of tokens) {
+    if (!isNaN(Number(t))) {
+      output.push(t);
+    } else if (t in prec) {
+      while (ops.length && ops[ops.length - 1] in prec && prec[ops[ops.length - 1]] >= prec[t]) {
+        output.push(ops.pop()!);
+      }
+      ops.push(t);
+    } else if (t === '(') {
+      ops.push(t);
+    } else if (t === ')') {
+      while (ops.length && ops[ops.length - 1] !== '(') output.push(ops.pop()!);
+      if (ops[ops.length - 1] === '(') ops.pop();
+    } else {
+      // Allow bare identifiers (e.g., standard numbers like 10 treated above)
+      output.push(t);
+    }
+  }
+  while (ops.length) output.push(ops.pop()!);
+  return output;
+}
+
+function evaluateRPN(rpn: string[], accounts: StandardAccountBalance[]): number {
+  const stack: number[] = [];
+  for (const t of rpn) {
+    if (!isNaN(Number(t))) {
+      stack.push(Number(t));
+    } else if (t === '+' || t === '-' || t === '*' || t === '/') {
+      const b = stack.pop() || 0;
+      const a = stack.pop() || 0;
+      switch (t) {
+        case '+': stack.push(a + b); break;
+        case '-': stack.push(a - b); break;
+        case '*': stack.push(a * b); break;
+        case '/': stack.push(b === 0 ? 0 : a / b); break;
+      }
+    } else {
+      // Treat as a standard number reference
+      const val = getNumericStandardAmount(accounts, t);
+      stack.push(val);
+    }
+  }
+  return stack.pop() || 0;
+}
+
+function evaluateCustomFormula(expr: string, accounts: StandardAccountBalance[]): number {
+  const tokens = tokenize(expr.replace(/\s+/g, ''));
+  const rpn = toRPN(tokens);
+  return evaluateRPN(rpn, accounts);
+}
+
 async function calculateFormula(
   accounts: StandardAccountBalance[],
   formulaId?: string,
@@ -217,12 +363,13 @@ async function calculateFormula(
       };
     }
 
-    // TODO: Implement custom formula evaluation
+    // Custom formula evaluation using standard numbers
+    const value = evaluateCustomFormula(customFormula!, accounts);
     return {
-      value: 0,
-      formattedValue: '0',
-      isValid: false,
-      error: 'Custom formula evaluation not yet implemented'
+      value,
+      formattedValue: formatValue(value, 'amount'),
+      isValid: true,
+      metadata: { formula: customFormula }
     };
   } catch (error) {
     logError('Error in calculateFormula:', error);
@@ -242,13 +389,6 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Rate limiting
-    const rateLimitId = getRateLimitId(req);
-    const rateLimitResponse = await enforceRateLimit(rateLimitId, corsHeaders);
-    if (rateLimitResponse) {
-      return rateLimitResponse;
-    }
-
     // Validate request method
     if (req.method !== 'POST') {
       return new Response(
@@ -273,7 +413,8 @@ Deno.serve(async (req) => {
     const accounts = await fetchStandardAccountBalances(
       supabase,
       validatedInput.clientId,
-      validatedInput.fiscalYear
+      validatedInput.fiscalYear,
+      validatedInput.selectedVersion
     );
 
     // Calculate formula
