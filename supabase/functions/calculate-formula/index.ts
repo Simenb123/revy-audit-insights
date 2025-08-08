@@ -79,19 +79,22 @@ function validateInput(body: any): FormulaCalculationRequest {
     throw new Error('fiscalYear is required and must be a number');
   }
 
-  if (body.formulaId && typeof body.formulaId !== 'string') {
+  if (body.formulaId !== undefined && body.formulaId !== null && typeof body.formulaId !== 'string') {
     throw new Error('formulaId must be a string if provided');
   }
 
-  if (body.customFormula && typeof body.customFormula !== 'string') {
+  if (body.customFormula !== undefined && body.customFormula !== null && typeof body.customFormula !== 'string') {
     throw new Error('customFormula must be a string if provided');
   }
+
+  const formulaId = body.formulaId ?? undefined;
+  const customFormula = body.customFormula ?? undefined;
 
   return {
     clientId: body.clientId,
     fiscalYear: body.fiscalYear,
-    formulaId: body.formulaId,
-    customFormula: body.customFormula,
+    formulaId,
+    customFormula,
     selectedVersion: body.selectedVersion
   };
 }
@@ -325,6 +328,7 @@ function evaluateCustomFormula(expr: string, accounts: StandardAccountBalance[])
 }
 
 async function calculateFormula(
+  supabase: any,
   accounts: StandardAccountBalance[],
   formulaId?: string,
   customFormula?: string
@@ -340,26 +344,46 @@ async function calculateFormula(
     }
 
     if (formulaId) {
+      // 1) Try built-in formulas first
       const formula = HARDCODED_FORMULAS.find(f => f.name === formulaId);
-      if (!formula) {
+      if (formula) {
+        const value = evaluateFormula(formula, accounts);
         return {
-          value: 0,
-          formattedValue: '0',
-          isValid: false,
-          error: `Formula '${formulaId}' not found`
+          value,
+          formattedValue: formatValue(value, formula.type),
+          isValid: true,
+          metadata: { formula: formula.formula, type: formula.type }
         };
       }
 
-      const value = evaluateFormula(formula, accounts);
-      
+      // 2) Try database-backed formulas
+      const { data: dbFormula, error: dbErr } = await supabase
+        .from('formula_definitions')
+        .select('id, name, formula_expression, metadata')
+        .eq('id', formulaId)
+        .maybeSingle();
+
+      if (dbErr) {
+        logError('Error fetching formula from DB:', dbErr);
+      }
+
+      if (dbFormula && dbFormula.formula_expression) {
+        const expr: string = String(dbFormula.formula_expression);
+        const value = evaluateCustomFormula(expr, accounts);
+        const fType = dbFormula?.metadata?.type || 'amount';
+        return {
+          value,
+          formattedValue: formatValue(value, fType),
+          isValid: true,
+          metadata: { formula: expr, type: fType, source: 'db' }
+        };
+      }
+
       return {
-        value,
-        formattedValue: formatValue(value, formula.type),
-        isValid: true,
-        metadata: {
-          formula: formula.formula,
-          type: formula.type
-        }
+        value: 0,
+        formattedValue: '0',
+        isValid: false,
+        error: `Formula '${formulaId}' not found`
       };
     }
 
@@ -419,6 +443,7 @@ Deno.serve(async (req) => {
 
     // Calculate formula
     const result = await calculateFormula(
+      supabase,
       accounts,
       validatedInput.formulaId,
       validatedInput.customFormula

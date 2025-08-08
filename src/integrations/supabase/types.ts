@@ -5197,12 +5197,15 @@ export type Database = {
           created_at: string
           created_by: string | null
           description: string | null
+          icon: string | null
           id: string
           is_active: boolean
           is_global: boolean
+          is_system_template: boolean
           layouts: Json
           name: string
           sort_order: number | null
+          title: string | null
           updated_at: string
           widgets: Json
         }
@@ -5212,12 +5215,15 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           description?: string | null
+          icon?: string | null
           id?: string
           is_active?: boolean
           is_global?: boolean
+          is_system_template?: boolean
           layouts?: Json
           name: string
           sort_order?: number | null
+          title?: string | null
           updated_at?: string
           widgets?: Json
         }
@@ -5227,12 +5233,15 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           description?: string | null
+          icon?: string | null
           id?: string
           is_active?: boolean
           is_global?: boolean
+          is_system_template?: boolean
           layouts?: Json
           name?: string
           sort_order?: number | null
+          title?: string | null
           updated_at?: string
           widgets?: Json
         }

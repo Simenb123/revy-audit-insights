@@ -33,13 +33,14 @@ export function useFormulaCalculation({
         throw new Error('Client ID and fiscal year are required');
       }
 
-      const payload = {
+      const payload: any = {
         clientId,
         fiscalYear,
-        formulaId,
-        customFormula,
         selectedVersion
       };
+
+      if (typeof formulaId === 'string') payload.formulaId = formulaId;
+      if (typeof customFormula === 'string') payload.customFormula = customFormula;
 
       const { data, error } = await supabase.functions.invoke('calculate-formula', {
         body: payload
