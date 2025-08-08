@@ -1,4 +1,6 @@
 
+project_id = "fxelhfwaoizqyecikscu"
+
 [functions]
   [functions.brreg]
     verify_jwt = true
@@ -23,4 +25,6 @@
   [functions.generate-embeddings]
     verify_jwt = true
   [functions.calculate-formula]
+    verify_jwt = true
+  [functions.group-messages]
     verify_jwt = true
