@@ -60,14 +60,23 @@ export function KpiWidget({ widget }: KpiWidgetProps) {
     }
 
     const currentValue = currentFormulaResult.data.value;
-    const scaleDivisor = unitScale === 'thousand' ? 1000 : unitScale === 'million' ? 1_000_000 : 1;
+    const resultType = currentFormulaResult.data.metadata?.type as 'amount' | 'percentage' | 'ratio' | undefined;
+
+    const scaleDivisor =
+      resultType === 'amount'
+        ? (unitScale === 'thousand' ? 1000 : unitScale === 'million' ? 1_000_000 : 1)
+        : 1;
+
     const scaledCurrent = currentValue / scaleDivisor;
 
-    const formattedValue = displayAsPercentage
-      ? `${scaledCurrent.toFixed(1)}%`
-      : showCurrency
-        ? formatCurrency(scaledCurrent)
-        : new Intl.NumberFormat('nb-NO', { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(scaledCurrent);
+    const formattedValue =
+      (displayAsPercentage || resultType === 'percentage')
+        ? `${scaledCurrent.toFixed(1)}%`
+        : resultType === 'ratio'
+          ? new Intl.NumberFormat('nb-NO', { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(scaledCurrent)
+          : showCurrency
+            ? formatCurrency(scaledCurrent)
+            : new Intl.NumberFormat('nb-NO', { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(scaledCurrent);
 
     // Calculate trend if previous data is available
     if (!showTrend || previousFormulaResult.isLoading || previousFormulaResult.error || !previousFormulaResult.data?.isValid) {

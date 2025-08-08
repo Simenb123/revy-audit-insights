@@ -157,13 +157,31 @@ async function fetchStandardAccountBalances(
   }
 
   const standardByNumber = new Map(standardAccounts?.map((sa: any) => [sa.standard_number, sa]) || []);
+  const standardByName = new Map((standardAccounts || []).map((sa: any) => [String(sa.standard_name || '').toLowerCase().trim(), sa]));
 
-  // 4) Build mapping lookup by account_number
+  // 4) Build mapping lookup by account_number (explicit mappings)
   const mappingLookup = new Map<string, { standard_number: string }>();
   mappings?.forEach((m: any) => {
     const target = standardByNumber.get(m.statement_line_number);
     if (target) {
       mappingLookup.set(m.account_number, { standard_number: target.standard_number });
+    }
+  });
+
+  // 5) Fetch account classifications for fallback mapping (by new_category -> standard_name)
+  const { data: classifications, error: classErr } = await supabase
+    .from('account_classifications')
+    .select('account_number, new_category, is_active, client_id')
+    .eq('client_id', clientId)
+    .eq('is_active', true);
+  if (classErr) {
+    logError('Error fetching account classifications (fallback):', classErr);
+  }
+  const classificationLookup = new Map<string, { standard_number: string }>();
+  (classifications || []).forEach((c: any) => {
+    const std = standardByName.get(String(c.new_category || '').toLowerCase().trim());
+    if (std) {
+      classificationLookup.set(c.account_number, { standard_number: std.standard_number });
     }
   });
 
@@ -194,9 +212,19 @@ async function fetchStandardAccountBalances(
     if (!accountNumber) continue;
 
     const map = mappingLookup.get(accountNumber);
-    if (!map) continue; // skip unmapped accounts
+    let standardNumber = map?.standard_number;
 
-    const key = map.standard_number;
+    // Fallback: use classification mapping when explicit mapping is missing
+    if (!standardNumber) {
+      const cls = classificationLookup.get(accountNumber);
+      if (cls) {
+        standardNumber = cls.standard_number;
+      }
+    }
+
+    if (!standardNumber) continue; // skip unmapped and unclassified accounts
+
+    const key = standardNumber;
     const prev = grouped.get(key) || 0;
     grouped.set(key, prev + (row.closing_balance || 0));
   }
@@ -391,8 +419,37 @@ function evaluateRPN(rpn: string[], accounts: StandardAccountBalance[]): number 
   return stack.pop() || 0;
 }
 
+function preprocessFormula(expr: string, accounts: StandardAccountBalance[]): string {
+  let out = expr || '';
+  // Normalize whitespace
+  out = out.replace(/\s+/g, '');
+  // Expand sum(...) wrappers to just (...)
+  out = out.replace(/sum\(/gi, '(');
+  // Replace interval references like [19-79] with summed numeric values
+  out = out.replace(/\[(\d+)\s*-\s*(\d+)\]/g, (_m, a, b) => {
+    const start = parseInt(String(a), 10);
+    const end = parseInt(String(b), 10);
+    if (!Number.isFinite(start) || !Number.isFinite(end)) return '0';
+    const lo = Math.min(start, end);
+    const hi = Math.max(start, end);
+    const sum = accounts.reduce((acc, it) => {
+      const n = parseInt(String(it.standard_number), 10);
+      if (Number.isFinite(n) && n >= lo && n <= hi) return acc + (Number(it.total_balance) || 0);
+      return acc;
+    }, 0);
+    return String(sum);
+  });
+  // Replace single line references like [10] with their numeric values
+  out = out.replace(/\[(\d+)\]/g, (_m, a) => {
+    const val = getNumericStandardAmount(accounts, String(a));
+    return String(val);
+  });
+  return out;
+}
+
 function evaluateCustomFormula(expr: string, accounts: StandardAccountBalance[]): number {
-  const tokens = tokenize(expr.replace(/\s+/g, ''));
+  const prepared = preprocessFormula(expr, accounts);
+  const tokens = tokenize(prepared.replace(/\s+/g, ''));
   const rpn = toRPN(tokens);
   return evaluateRPN(rpn, accounts);
 }

@@ -143,6 +143,46 @@ export function FormulaWidgetConfig({ widget, onUpdateWidget, standardAccounts }
         />
       </div>
 
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Regnskapslinje (valgfritt)</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-end gap-3">
+            <div className="flex-1">
+              <Label htmlFor="std-line">Standardnr</Label>
+              <Input
+                id="std-line"
+                value={(typeof widget.config?.customFormula === 'string' && /^\[(\d+)\]$/.test(widget.config?.customFormula)) ? (widget.config?.customFormula.match(/^\[(\d+)\]$/)?.[1] || '') : ''}
+                onChange={(e) => {
+                  const raw = e.target.value || '';
+                  const v = raw.replace(/[^0-9-]/g, '');
+                  const expr = v ? `[${v}]` : '';
+                  onUpdateWidget({
+                    config: {
+                      ...widget.config,
+                      sourceType: 'expr',
+                      customFormula: expr,
+                      formulaId: null
+                    }
+                  });
+                }}
+                placeholder="10 for Salgsinntekter (eller 19-79 for intervall)"
+              />
+              <div className="text-xs text-muted-foreground mt-2">Bruker [NN]-syntaks, f.eks. [10] eller [19-79].</div>
+            </div>
+            <Button
+              variant="outline"
+              onClick={() =>
+                onUpdateWidget({
+                  config: { ...widget.config, customFormula: null }
+                })
+              }
+            >Fjern</Button>
+          </div>
+        </CardContent>
+      </Card>
+
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="formula">Formel</TabsTrigger>
