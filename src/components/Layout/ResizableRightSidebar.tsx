@@ -111,12 +111,14 @@ const ResizableRightSidebar = () => {
           : 'general';
 
     return (
-      <AiRevyCard
-        variant={variant}
-        className="h-full w-full flex flex-col border-0"
-        context={clientId ? 'client-detail' : 'general'}
-        clientData={clientId ? { id: clientId } : undefined}
-      />
+      <div className="flex h-full flex-col justify-end">
+        <AiRevyCard
+          variant={variant}
+          className="w-full border-0"
+          context={clientId ? 'client-detail' : 'general'}
+          clientData={clientId ? { id: clientId } : undefined}
+        />
+      </div>
     );
   };
 
