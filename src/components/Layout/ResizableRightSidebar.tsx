@@ -17,7 +17,7 @@ import { useRightSidebar } from './RightSidebarContext';
 import { useLayout } from './LayoutContext';
 import ClientFiguresPanel from '@/components/Sidebar/ClientFiguresPanel';
 
-const COLLAPSED_WIDTH = 48;
+const COLLAPSED_WIDTH = 44;
 
 const ResizableRightSidebar = () => {
   const {
@@ -215,7 +215,7 @@ useEffect(() => {
         <TooltipProvider>
           {isCollapsed ? (
             <div 
-              className="flex flex-col items-start gap-3 pl-1 pr-0 py-3 h-full cursor-pointer"
+              className="flex flex-col items-center gap-3 px-0 py-3 h-full cursor-pointer"
               onDoubleClick={toggleSidebar}
             >
               <Tooltip>
@@ -224,11 +224,11 @@ useEffect(() => {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className={`w-full h-10 justify-start hover-scale ${activeTab === 'ai' ? 'bg-primary/10 text-primary ring-1 ring-primary/30' : 'hover:bg-muted'}`}
+                      className={`w-full h-10 justify-center hover-scale ${activeTab === 'ai' ? 'bg-primary/10 text-primary ring-1 ring-primary/30' : 'hover:bg-muted'}`}
                       onClick={() => openTab('ai')}
                       aria-label="Åpne AI-Revy Chat"
                     >
-                      <Bot className="h-6 w-6" />
+                      <Bot className="h-7 w-7" />
                     </Button>
                     {activeTab === 'ai' && (
                       <span className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-0.5 rounded-full bg-primary" />
@@ -245,11 +245,11 @@ useEffect(() => {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className={`w-full h-10 justify-start hover-scale ${activeTab === 'chat' ? 'bg-primary/10 text-primary ring-1 ring-primary/30' : 'hover:bg-muted'}`}
+                      className={`w-full h-10 justify-center hover-scale ${activeTab === 'chat' ? 'bg-primary/10 text-primary ring-1 ring-primary/30' : 'hover:bg-muted'}`}
                       onClick={() => openTab('chat')}
                       aria-label="Åpne Teamchat"
                     >
-                      <MessageSquare className="h-6 w-6" />
+                      <MessageSquare className="h-7 w-7" />
                     </Button>
                     {activeTab === 'chat' && (
                       <span className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-0.5 rounded-full bg-primary" />
@@ -266,11 +266,11 @@ useEffect(() => {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className={`w-full h-10 justify-start hover-scale ${activeTab === 'figures' ? 'bg-primary/10 text-primary ring-1 ring-primary/30' : 'hover:bg-muted'}`}
+                      className={`w-full h-10 justify-center hover-scale ${activeTab === 'figures' ? 'bg-primary/10 text-primary ring-1 ring-primary/30' : 'hover:bg-muted'}`}
                       onClick={() => openTab('figures')}
                       aria-label="Åpne Analyse"
                     >
-                      <BarChart2 className="h-6 w-6" />
+                      <BarChart2 className="h-7 w-7" />
                     </Button>
                     {activeTab === 'figures' && (
                       <span className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-0.5 rounded-full bg-primary" />
