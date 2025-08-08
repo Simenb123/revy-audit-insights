@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -106,6 +106,7 @@ const DataTable = <T extends Record<string, any>>({
   };
 
   const [views, setViews] = useLocalStorage<TableView[]>(preferencesKey ? `${preferencesKey}:views` : undefined, []);
+  const [colWidths, setColWidths] = useLocalStorage<Record<string, number>>(preferencesKey ? `${preferencesKey}:widths` : undefined, {});
 
   const saveCurrentView = () => {
     const name = window.prompt('Navn på visning');
@@ -269,43 +270,58 @@ const DataTable = <T extends Record<string, any>>({
   const hasNextPage = currentPage < totalPages;
   const hasPrevPage = currentPage > 1;
 
+  const resizingRef = useRef<{ key: string; startX: number; startWidth: number } | null>(null);
+  const onResizeStart = (key: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const th = (e.currentTarget as HTMLElement).closest('th') as HTMLElement | null;
+    const startWidth = th?.offsetWidth || colWidths[key] || 160;
+    resizingRef.current = { key, startX: e.clientX, startWidth };
+    const onMove = (ev: MouseEvent) => {
+      if (!resizingRef.current) return;
+      const delta = ev.clientX - resizingRef.current.startX;
+      const next = Math.max(80, Math.min(600, Math.round(resizingRef.current.startWidth + delta)));
+      setColWidths({ ...(colWidths || {}), [resizingRef.current.key]: next });
+    };
+    const onUp = () => {
+      resizingRef.current = null;
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  };
+
+  const getColStyle = (key: string): React.CSSProperties => {
+    const w = colWidths?.[key];
+    return w ? { width: w, minWidth: w, maxWidth: 1000 } : {};
+  };
+
   const TableBlock = (
     <div className="space-y-4">
-      {showSearch && (
-        <div className="flex items-center gap-2">
-          <Search className="h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder={searchPlaceholder}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="max-w-sm"
-          />
-          {enableColumnManager && (
-            <div className="ml-auto">
-              <ColumnManager
-                columns={cmState}
-                onChange={setCmState}
-                allowPinLeft
-                title="Tilpass kolonner"
-                triggerLabel="Kolonner"
-              />
-            </div>
-          )}
-        </div>
-      )}
-
       <div className="rounded-md border">
+        {showSearch && (
+          <div className="flex items-center gap-2 p-3 border-b">
+            <Search className="h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder={searchPlaceholder}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="max-w-sm"
+            />
+          </div>
+        )}
         <Table>
           <TableHeader>
             <TableRow>
               {effectiveColumns.list.map(({ def }) => (
                 <TableHead
                   key={def.key}
-                  className={`$${''} ${def.sortable !== false ? 'cursor-pointer hover:bg-muted/50 select-none' : ''} ${
+                  className={`${def.sortable !== false ? 'cursor-pointer hover:bg-muted/50 select-none' : ''} ${
                     def.align === 'right' ? 'text-right' : def.align === 'center' ? 'text-center' : ''
                   } ${def.className || ''} ${
                     effectiveColumns.pinnedLeftKey === def.key ? 'sticky left-0 z-10 bg-background' : ''
-                  }`}
+                  } relative`}
+                  style={getColStyle(def.key)}
                   onClick={() => def.sortable !== false && handleSort(def.key)}
                 >
                   <div
@@ -316,6 +332,13 @@ const DataTable = <T extends Record<string, any>>({
                     {def.header}
                     {getSortIcon(def.key)}
                   </div>
+                  <span
+                    role="separator"
+                    aria-label="Endre kolonnebredde"
+                    title="Dra for å endre bredde"
+                    className="absolute right-0 top-0 h-full w-1.5 cursor-col-resize bg-transparent hover:bg-border"
+                    onMouseDown={(e) => onResizeStart(def.key, e)}
+                  />
                 </TableHead>
               ))}
             </TableRow>
@@ -354,6 +377,7 @@ const DataTable = <T extends Record<string, any>>({
                           } ${def.className || ''} ${
                             effectiveColumns.pinnedLeftKey === def.key ? 'sticky left-0 z-10 bg-background' : ''
                           }`}
+                          style={getColStyle(def.key)}
                         >
                           {formatted}
                         </TableCell>
