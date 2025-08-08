@@ -1,31 +1,39 @@
+import React, { useState, useCallback, useEffect } from "react";
+import { useLocation } from "react-router-dom";
+import { motion } from "framer-motion";
+import {
+  Drawer,
+  DrawerTrigger,
+  DrawerContent,
+  DrawerClose,
+} from "@/components/ui/drawer";
+import { Button } from "@/components/ui/button";
+import {
+  MessageSquare,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  Bot,
+  Users,
+} from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useClientLookup } from "@/hooks/useClientLookup";
+import { detectPageType, extractClientId } from "./pageDetectionHelpers";
+import AiRevyCard, { AiRevyVariant } from "@/components/AiRevyCard";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import ResizableHandle from "./ResizableHandle";
+import TeamChatPanel from "@/components/RightSidebar/TeamChatPanel";
 
-import React, { useState, useCallback, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { Drawer, DrawerTrigger, DrawerContent, DrawerClose } from '@/components/ui/drawer';
-import { Button } from '@/components/ui/button';
-import { MessageSquare, X, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { useClientLookup } from '@/hooks/useClientLookup';
-import { detectPageType, extractClientId } from './pageDetectionHelpers';
-import AiRevyCard, { AiRevyVariant } from '@/components/AiRevyCard';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import ResizableHandle from './ResizableHandle';
-
-import { useRightSidebar } from './RightSidebarContext';
-import { useLayout } from './LayoutContext';
+import { useRightSidebar } from "./RightSidebarContext";
+import { useLayout } from "./LayoutContext";
 
 const ResizableRightSidebar = () => {
-  const {
-    isCollapsed,
-    setIsCollapsed,
-    width,
-    setWidth
-  } = useRightSidebar();
+  const { isCollapsed, setIsCollapsed, width, setWidth } = useRightSidebar();
   const { globalHeaderHeight, subHeaderHeight } = useLayout();
 
   const isMobile = useIsMobile();
   const [isDragging, setIsDragging] = useState(false);
+  const [activeView, setActiveView] = useState<"ai" | "team">("ai");
   const location = useLocation();
   const pageType = detectPageType(location.pathname);
   const clientIdOrOrg = extractClientId(location.pathname);
@@ -40,7 +48,7 @@ const ResizableRightSidebar = () => {
       startWidthRef.current = width;
       setIsDragging(true);
     },
-    [width]
+    [width],
   );
 
   const handleMouseMove = useCallback(
@@ -50,7 +58,7 @@ const ResizableRightSidebar = () => {
       const clampedWidth = Math.max(320, Math.min(600, rawWidth));
       setWidth(clampedWidth);
     },
-    [isDragging, setWidth]
+    [isDragging, setWidth],
   );
 
   const handleMouseUp = useCallback(() => {
@@ -60,28 +68,28 @@ const ResizableRightSidebar = () => {
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.shiftKey && e.key === 'R') {
+      if (e.ctrlKey && e.shiftKey && e.key === "R") {
         e.preventDefault();
         toggleSidebar();
       }
     };
 
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
   }, []);
 
   React.useEffect(() => {
     if (isDragging) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-      document.body.style.cursor = 'col-resize';
-      document.body.style.userSelect = 'none';
-      
+      document.addEventListener("mousemove", handleMouseMove);
+      document.addEventListener("mouseup", handleMouseUp);
+      document.body.style.cursor = "col-resize";
+      document.body.style.userSelect = "none";
+
       return () => {
-        document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', handleMouseUp);
-        document.body.style.cursor = '';
-        document.body.style.userSelect = '';
+        document.removeEventListener("mousemove", handleMouseMove);
+        document.removeEventListener("mouseup", handleMouseUp);
+        document.body.style.cursor = "";
+        document.body.style.userSelect = "";
       };
     }
   }, [isDragging, handleMouseMove, handleMouseUp]);
@@ -91,30 +99,36 @@ const ResizableRightSidebar = () => {
   };
 
   const getPageTitle = () => {
+    if (activeView === "team") {
+      return "Team Chat";
+    }
     switch (pageType) {
-      case 'admin':
-        return 'Admin Assistent';
-      case 'knowledge':
-        return 'Kunnskapsbase';
+      case "admin":
+        return "Admin Assistent";
+      case "knowledge":
+        return "Kunnskapsbase";
       default:
-        return clientId ? 'Klient Assistent' : 'AI Assistent';
+        return clientId ? "Klient Assistent" : "AI Assistent";
     }
   };
 
   const renderContent = () => {
+    if (activeView === "team") {
+      return <TeamChatPanel />;
+    }
     const variant: AiRevyVariant = clientId
-      ? 'client'
-      : pageType === 'admin'
-        ? 'admin'
-        : pageType === 'knowledge'
-          ? 'knowledge'
-          : 'general';
+      ? "client"
+      : pageType === "admin"
+        ? "admin"
+        : pageType === "knowledge"
+          ? "knowledge"
+          : "general";
 
     return (
       <AiRevyCard
         variant={variant}
         className="h-full w-full flex flex-col border-0"
-        context={clientId ? 'client-detail' : 'general'}
+        context={clientId ? "client-detail" : "general"}
         clientData={clientId ? { id: clientId } : undefined}
       />
     );
@@ -129,7 +143,7 @@ const ResizableRightSidebar = () => {
             variant="default"
             size="icon"
             className="fixed bottom-4 right-4 z-50 h-12 w-12 max-h-12 max-w-12 rounded-full shadow-lg"
-            style={{ maxWidth: '48px', maxHeight: '48px' }}
+            style={{ maxWidth: "48px", maxHeight: "48px" }}
           >
             <MessageSquare className="h-5 w-5" />
           </Button>
@@ -138,18 +152,33 @@ const ResizableRightSidebar = () => {
           <div className="flex flex-col h-full">
             <div className="flex items-center justify-between p-4 border-b">
               <h3 className="text-lg font-semibold">{getPageTitle()}</h3>
-              <DrawerClose asChild>
+              <div className="flex items-center gap-2">
                 <Button
                   variant="ghost"
                   size="icon"
+                  className={`h-8 w-8 hover:bg-muted transition-colors ${activeView === "ai" ? "text-primary" : ""}`}
+                  onClick={() => setActiveView("ai")}
+                  aria-label="Vis AI panel"
                 >
-                  <X className="h-4 w-4" />
+                  <Bot className="h-4 w-4" />
                 </Button>
-              </DrawerClose>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={`h-8 w-8 hover:bg-muted transition-colors ${activeView === "team" ? "text-primary" : ""}`}
+                  onClick={() => setActiveView("team")}
+                  aria-label="Vis teamchat"
+                >
+                  <Users className="h-4 w-4" />
+                </Button>
+                <DrawerClose asChild>
+                  <Button variant="ghost" size="icon">
+                    <X className="h-4 w-4" />
+                  </Button>
+                </DrawerClose>
+              </div>
             </div>
-            <ScrollArea className="flex-1">
-              {renderContent()}
-            </ScrollArea>
+            <ScrollArea className="flex-1">{renderContent()}</ScrollArea>
           </div>
         </DrawerContent>
       </Drawer>
@@ -162,10 +191,10 @@ const ResizableRightSidebar = () => {
       className="sticky bg-background border-l flex flex-col z-10"
       style={{
         top: globalHeaderHeight + subHeaderHeight,
-        height: `calc(100vh - ${globalHeaderHeight + subHeaderHeight}px)`
+        height: `calc(100vh - ${globalHeaderHeight + subHeaderHeight}px)`,
       }}
       animate={{ width: isCollapsed ? 32 : width }}
-      transition={{ duration: 0.2, ease: 'easeInOut' }}
+      transition={{ duration: 0.2, ease: "easeInOut" }}
     >
       {/* Enhanced Resize handle */}
       {!isCollapsed && (
@@ -193,6 +222,24 @@ const ResizableRightSidebar = () => {
               <Button
                 variant="ghost"
                 size="icon"
+                className={`h-6 w-6 hover:bg-muted transition-colors ${activeView === "ai" ? "text-primary" : ""}`}
+                onClick={() => setActiveView("ai")}
+                aria-label="Vis AI panel"
+              >
+                <Bot className="h-3 w-3" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className={`h-6 w-6 hover:bg-muted transition-colors ${activeView === "team" ? "text-primary" : ""}`}
+                onClick={() => setActiveView("team")}
+                aria-label="Vis teamchat"
+              >
+                <Users className="h-3 w-3" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
                 className="h-6 w-6 hover:bg-muted transition-colors"
                 onClick={toggleSidebar}
                 aria-label="Kollaps sidebar"
@@ -206,9 +253,7 @@ const ResizableRightSidebar = () => {
 
       {/* Content area */}
       {!isCollapsed && (
-        <div className="flex-1 flex flex-col min-h-0">
-          {renderContent()}
-        </div>
+        <div className="flex-1 flex flex-col min-h-0">{renderContent()}</div>
       )}
     </motion.div>
   );
