@@ -280,6 +280,130 @@ const { data: standardAccounts = [] } = useFirmStandardAccounts();
                 </SelectContent>
               </Select>
             </div>
+
+            <div>
+              <Label htmlFor="dataSource">Datakilde</Label>
+              <Select 
+                value={config.chartDataSource || 'breakdown'} 
+                onValueChange={(value) => updateConfig('chartDataSource', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="breakdown">Saldobalanse-kategorier (inneværende år)</SelectItem>
+                  <SelectItem value="formulaSeries">Tidsserie av formel</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {config.chartDataSource === 'formulaSeries' && (
+              <div className="space-y-4">
+                <div>
+                  <Label>Kildetype</Label>
+                  <Select
+                    value={config.sourceType || 'alias'}
+                    onValueChange={(value) => updateConfig('sourceType', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="alias">Forhåndsdefinert nøkkeltall</SelectItem>
+                      <SelectItem value="formula">Lagret formel</SelectItem>
+                      <SelectItem value="expr">Egendefinert uttrykk</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {(!config.sourceType || config.sourceType === 'alias') && (
+                  <div>
+                    <Label>Nøkkeltall</Label>
+                    <Select
+                      value={config.metric || 'revenue'}
+                      onValueChange={(value) => updateConfig('metric', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="revenue">Omsetning</SelectItem>
+                        <SelectItem value="expenses">Kostnader</SelectItem>
+                        <SelectItem value="profit">Resultat</SelectItem>
+                        <SelectItem value="assets">Eiendeler</SelectItem>
+                        <SelectItem value="equity">Egenkapital</SelectItem>
+                        <SelectItem value="equity_ratio">Egenkapitalandel</SelectItem>
+                        <SelectItem value="liquidity_ratio">Likviditetsgrad</SelectItem>
+                        <SelectItem value="profit_margin">Fortjenestemargin</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {config.sourceType === 'formula' && (
+                  <div>
+                    <Label>Lagret formel</Label>
+                    <Select
+                      value={config.formulaId || ''}
+                      onValueChange={(value) => updateConfig('formulaId', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={formulas.length ? 'Velg formel' : 'Ingen lagrede formler'} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {formulas.map((f: any) => (
+                          <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {config.sourceType === 'expr' && (
+                  <div>
+                    <Label>Egendefinert uttrykk</Label>
+                    <Textarea
+                      value={config.customFormula || ''}
+                      onChange={(e) => updateConfig('customFormula', e.target.value)}
+                      placeholder="19 - 79"
+                      rows={3}
+                    />
+                  </div>
+                )}
+
+                <div>
+                  <Label htmlFor="yearsBack">Antall år</Label>
+                  <Input
+                    id="yearsBack"
+                    type="number"
+                    value={config.yearsBack || 5}
+                    onChange={(e) => updateConfig('yearsBack', Math.max(1, parseInt(e.target.value) || 1))}
+                    min="1"
+                    max="15"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="unitScaleChart">Enhetsskala</Label>
+                  <Select
+                    value={config.unitScale || 'none'}
+                    onValueChange={(value) => updateConfig('unitScale', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Ingen</SelectItem>
+                      <SelectItem value="thousand">Tusen</SelectItem>
+                      <SelectItem value="million">Millioner</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="text-xs text-muted-foreground">Tips: For tidsserier anbefales linjediagram.</div>
+              </div>
+            )}
+
             <div>
               <Label htmlFor="maxDataPoints">Maksimalt antall datapunkter</Label>
               <Input
@@ -289,6 +413,7 @@ const { data: standardAccounts = [] } = useFirmStandardAccounts();
                 onChange={(e) => updateConfig('maxDataPoints', parseInt(e.target.value))}
                 min="3"
                 max="20"
+                disabled={config.chartDataSource === 'formulaSeries'}
               />
             </div>
             <div className="flex items-center space-x-2">
@@ -308,6 +433,7 @@ const { data: standardAccounts = [] } = useFirmStandardAccounts();
                 checked={config.enableCrossFilter !== false}
                 onChange={(e) => updateConfig('enableCrossFilter', e.target.checked)}
                 className="rounded"
+                disabled={config.chartDataSource === 'formulaSeries'}
               />
               <Label htmlFor="enableCrossFilter">Aktiver kryssfiltrering</Label>
             </div>

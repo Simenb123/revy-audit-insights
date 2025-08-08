@@ -18,6 +18,7 @@ import { useTrialBalanceWithMappings } from '@/hooks/useTrialBalanceWithMappings
 import { useFilteredData } from '@/hooks/useFilteredData';
 import { useFilters } from '@/contexts/FilterContext';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
+import { useFormulaSeries } from '@/hooks/useFormulaSeries';
 
 interface ChartWidgetProps {
   widget: Widget;
@@ -32,12 +33,20 @@ export function ChartWidget({ widget }: ChartWidgetProps) {
   const maxDataPoints = widget.config?.maxDataPoints || 6;
   const showValues = widget.config?.showValues !== false;
   const enableCrossFilter = widget.config?.enableCrossFilter !== false;
+  const dataSource = widget.config?.chartDataSource || 'breakdown';
+  const yearsBack = widget.config?.yearsBack || 5;
+  const startYear = selectedFiscalYear - (yearsBack - 1);
+  const unitScale = widget.config?.unitScale || 'none';
+  const sourceType = widget.config?.sourceType || 'alias';
+  const metric = widget.config?.metric || 'revenue';
+  const formulaIdSel = sourceType === 'formula' ? widget.config?.formulaId : undefined;
+  const customFormulaSel = sourceType === 'expr' ? (widget.config?.customFormula ?? '') : metric;
 
   const handleTitleChange = (newTitle: string) => {
     updateWidget(widget.id, { title: newTitle });
   };
   
-  const { data: trialBalanceData, isLoading } = useTrialBalanceWithMappings(
+  const { data: trialBalanceData, isLoading: isLoadingTB } = useTrialBalanceWithMappings(
     clientId, 
     selectedFiscalYear,
     widget.config?.selectedVersion
