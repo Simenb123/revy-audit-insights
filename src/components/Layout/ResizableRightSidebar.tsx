@@ -177,7 +177,7 @@ const ResizableRightSidebar = () => {
       )}
 
       {/* Sticky Header */}
-      <div className="sticky top-0 z-50 bg-background border-b flex items-center justify-between px-3 py-2">
+      <div className="sticky top-0 z-50 bg-background border-b flex items-center px-3 py-2 gap-2">
         {isCollapsed ? (
           <Button
             variant="ghost"
@@ -190,18 +190,16 @@ const ResizableRightSidebar = () => {
           </Button>
         ) : (
           <>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 hover:bg-muted transition-colors"
+              onClick={toggleSidebar}
+              aria-label="Kollaps sidebar"
+            >
+              <ChevronLeft className="h-3 w-3" />
+            </Button>
             <h3 className="text-sm font-semibold">{getPageTitle()}</h3>
-            <div className="flex items-center gap-1">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6 hover:bg-muted transition-colors"
-                onClick={toggleSidebar}
-                aria-label="Kollaps sidebar"
-              >
-                <ChevronLeft className="h-3 w-3" />
-              </Button>
-            </div>
           </>
         )}
       </div>
