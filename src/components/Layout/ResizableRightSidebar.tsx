@@ -4,13 +4,14 @@ import { useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Drawer, DrawerTrigger, DrawerContent, DrawerClose } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { MessageSquare, Users, Bell, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useClientLookup } from '@/hooks/useClientLookup';
 import { detectPageType, extractClientId } from './pageDetectionHelpers';
 import AiRevyCard, { AiRevyVariant } from '@/components/AiRevyCard';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import ResizableHandle from './ResizableHandle';
+import { cn } from '@/lib/utils';
 
 import { useRightSidebar } from './RightSidebarContext';
 import { useLayout } from './LayoutContext';
@@ -175,21 +176,78 @@ const ResizableRightSidebar = () => {
       )}
 
       {/* Sticky Header */}
-      <div className="sticky top-0 z-50 bg-background border-b flex items-center justify-between px-3 py-2">
+      <div
+        className={cn(
+          'sticky top-0 z-50 bg-background border-b',
+          isCollapsed
+            ? 'flex flex-col items-center gap-1 p-1'
+            : 'flex items-center justify-between px-3 py-2'
+        )}
+      >
         {isCollapsed ? (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 hover:bg-muted transition-colors"
-            onClick={toggleSidebar}
-            aria-label="Utvid sidebar"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+          <>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 hover:bg-muted transition-colors"
+              onClick={toggleSidebar}
+              aria-label="Utvid sidebar"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 hover:bg-muted transition-colors"
+              aria-label="Meldinger"
+            >
+              <MessageSquare className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 hover:bg-muted transition-colors"
+              aria-label="Brukere"
+            >
+              <Users className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 hover:bg-muted transition-colors"
+              aria-label="Varsler"
+            >
+              <Bell className="h-4 w-4" />
+            </Button>
+          </>
         ) : (
           <>
             <h3 className="text-sm font-semibold">{getPageTitle()}</h3>
             <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 hover:bg-muted transition-colors"
+                aria-label="Meldinger"
+              >
+                <MessageSquare className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 hover:bg-muted transition-colors"
+                aria-label="Brukere"
+              >
+                <Users className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 hover:bg-muted transition-colors"
+                aria-label="Varsler"
+              >
+                <Bell className="h-4 w-4" />
+              </Button>
               <Button
                 variant="ghost"
                 size="icon"
