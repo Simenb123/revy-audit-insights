@@ -3,11 +3,13 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
-import { 
+import {
   Users, Home, BarChart3, Book, Settings, Building2, MessageSquare,
-  UserCog, GraduationCap, FileText, Brain, Database, HelpCircle 
+  UserCog, GraduationCap, FileText, Brain, Database, HelpCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import StandardPageLayout from '@/components/Layout/StandardPageLayout';
+import PageHeader from '@/components/Layout/PageHeader';
 
 const NavigationDashboard = () => {
   const navigationSections = [
@@ -51,14 +53,17 @@ const NavigationDashboard = () => {
   ];
 
   return (
-    <div className="w-full px-4 py-6 md:px-6 lg:px-8 space-y-8">
-      <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold mb-2">Hovedmeny</h1>
-        <p className="text-muted-foreground text-lg">
-          Velg en funksjon fra kategoriene under
-        </p>
-      </div>
-      
+    <StandardPageLayout
+      className="w-full px-4 py-6 md:px-6 lg:px-8 space-y-8"
+      header={
+        <PageHeader
+          title="Hovedmeny"
+          subtitle="Velg en funksjon fra kategoriene under"
+          size="lg"
+          className="items-center text-center"
+        />
+      }
+    >
       {navigationSections.map((section, sectionIndex) => (
         <Card key={sectionIndex}>
           <CardHeader>
@@ -99,7 +104,7 @@ const NavigationDashboard = () => {
           </CardContent>
         </Card>
       ))}
-    </div>
+    </StandardPageLayout>
   );
 };
 

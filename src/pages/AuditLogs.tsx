@@ -10,6 +10,8 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, Search, Filter, FileText, Eye, CheckCircle } from 'lucide-react';
+import StandardPageLayout from '@/components/Layout/StandardPageLayout';
+import PageHeader from '@/components/Layout/PageHeader';
 import { format } from 'date-fns';
 import { nb } from 'date-fns/locale';
 import AuditLogStats from '@/components/AuditLogs/AuditLogStats';
@@ -92,21 +94,24 @@ const AuditLogs = () => {
   }
 
   return (
-    <div className="w-full px-4 py-6 md:px-6 lg:px-8">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-3xl font-bold">Revisjonslogger</h1>
-          <p className="text-muted-foreground">
-            Spor alle handlinger og anmeldelser i systemet
-          </p>
+    <StandardPageLayout
+      className="w-full px-4 py-6 md:px-6 lg:px-8"
+      header={
+        <div className="flex items-center justify-between">
+          <PageHeader
+            title="Revisjonslogger"
+            subtitle="Spor alle handlinger og anmeldelser i systemet"
+            size="lg"
+          />
+          {canReview && (
+            <Button onClick={handleCreateTestLog} variant="outline">
+              Opprett test-logg
+            </Button>
+          )}
         </div>
-        {canReview && (
-          <Button onClick={handleCreateTestLog} variant="outline">
-            Opprett test-logg
-          </Button>
-        )}
-      </div>
-
+      }
+      contentClassName="space-y-6"
+    >
       {/* Stats */}
       <AuditLogStats />
 
@@ -239,7 +244,7 @@ const AuditLogs = () => {
           )}
         </CardContent>
       </Card>
-    </div>
+    </StandardPageLayout>
   );
 };
 

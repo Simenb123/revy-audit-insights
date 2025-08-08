@@ -3,6 +3,8 @@ import { useParams } from 'react-router-dom';
 import { useClientDetails } from '@/hooks/useClientDetails';
 import ClientDocumentManager from '@/components/ClientDocuments/ClientDocumentManager';
 import { logger } from '@/utils/logger';
+import StandardPageLayout from '@/components/Layout/StandardPageLayout';
+import PageHeader from '@/components/Layout/PageHeader';
 
 const ClientDocuments = () => {
   const { clientId } = useParams<{ clientId: string }>();
@@ -40,20 +42,21 @@ const ClientDocuments = () => {
   }
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-foreground">Dokumenter</h1>
-        <p className="text-muted-foreground">
-          {client.company_name || client.name} - {client.org_number}
-        </p>
-      </div>
-      
+    <StandardPageLayout
+      className="container mx-auto p-6"
+      header={
+        <PageHeader
+          title="Dokumenter"
+          subtitle={`${client.company_name || client.name} - ${client.org_number}`}
+        />
+      }
+    >
       <ClientDocumentManager
         clientId={client.id}
         clientName={client.company_name || client.name}
         enableAI
       />
-    </div>
+    </StandardPageLayout>
   );
 };
 

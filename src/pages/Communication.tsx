@@ -9,6 +9,8 @@ import EmptyState from '@/components/Communication/EmptyState';
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import StandardPageLayout from '@/components/Layout/StandardPageLayout';
+import PageHeader from '@/components/Layout/PageHeader';
 
 const Communication = () => {
   const { data: userProfile, isLoading: profileLoading } = useUserProfile();
@@ -16,7 +18,7 @@ const Communication = () => {
 
   if (profileLoading || roomsLoading) {
     return (
-      <div className="space-y-[var(--content-gap)] w-full">
+      <StandardPageLayout className="w-full space-y-[var(--content-gap)]">
         <div className="animate-pulse">
           <div className="h-8 bg-gray-200 rounded w-64 mb-2"></div>
           <div className="h-4 bg-gray-200 rounded w-96 mb-6"></div>
@@ -26,27 +28,29 @@ const Communication = () => {
             ))}
           </div>
         </div>
-      </div>
+      </StandardPageLayout>
     );
   }
 
   return (
-    <div className="space-y-[var(--content-gap)] w-full">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-3xl font-bold">Kommunikasjon</h1>
-          <p className="text-muted-foreground mt-1">
-            Samarbeid og kommuniser med teamet ditt
-          </p>
+    <StandardPageLayout
+      className="w-full"
+      header={
+        <div className="flex justify-between items-center">
+          <PageHeader
+            title="Kommunikasjon"
+            subtitle="Samarbeid og kommuniser med teamet ditt"
+            size="lg"
+          />
+          <Link to="/dashboard">
+            <Button variant="outline" className="gap-2">
+              <ArrowLeft className="h-4 w-4" />
+              Tilbake
+            </Button>
+          </Link>
         </div>
-        <Link to="/dashboard">
-          <Button variant="outline" className="gap-2">
-            <ArrowLeft className="h-4 w-4" />
-            Tilbake
-          </Button>
-        </Link>
-      </div>
-
+      }
+    >
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <div className="lg:col-span-3">
           {chatRooms.length === 0 ? (
@@ -65,7 +69,7 @@ const Communication = () => {
           <OnlineUsers />
         </div>
       </div>
-    </div>
+    </StandardPageLayout>
   );
 };
 

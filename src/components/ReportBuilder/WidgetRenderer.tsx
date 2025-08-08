@@ -8,6 +8,7 @@ import { FormulaWidget } from './Widgets/FormulaWidget';
 import { FilterWidget } from './Widgets/FilterWidget';
 import { PivotWidget } from './Widgets/PivotWidget';
 import { GaugeWidget } from './Widgets/GaugeWidget';
+import { AccountLinesWidget } from './Widgets/AccountLinesWidget';
 
 interface WidgetRendererProps {
   widget: Widget;
@@ -31,6 +32,8 @@ export function WidgetRenderer({ widget }: WidgetRendererProps) {
       return <PivotWidget widget={widget} />;
     case 'gauge':
       return <GaugeWidget widget={widget} />;
+    case 'accountLines':
+      return <AccountLinesWidget widget={widget} />;
     default:
       return (
         <div className="p-4 text-center text-muted-foreground">

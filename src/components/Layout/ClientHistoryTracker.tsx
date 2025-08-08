@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useParams, useLocation } from 'react-router-dom';
+import { useLocation, matchPath } from 'react-router-dom';
 import { useRecentClients } from '@/hooks/useRecentClients';
 import { useClientData } from '@/components/Clients/ClientFetcher/useClientData';
 import { useClientDetails } from '@/hooks/useClientDetails';
@@ -43,15 +43,16 @@ const ClientHistoryByOrg = ({ orgNumber }: { orgNumber: string }): null => {
 };
 
 export const ClientHistoryTracker = () => {
-  const { clientId, orgNumber } = useParams();
   const location = useLocation();
 
-  if (clientId && location.pathname.startsWith('/clients/')) {
-    return <ClientHistoryById clientId={clientId} />;
+  const clientMatch = matchPath('/clients/:clientId/*', location.pathname);
+  if (clientMatch?.params.clientId) {
+    return <ClientHistoryById clientId={clientMatch.params.clientId} />;
   }
 
-  if (orgNumber && location.pathname.startsWith('/klienter/')) {
-    return <ClientHistoryByOrg orgNumber={orgNumber} />;
+  const orgMatch = matchPath('/klienter/:orgNumber/*', location.pathname);
+  if (orgMatch?.params.orgNumber) {
+    return <ClientHistoryByOrg orgNumber={orgMatch.params.orgNumber} />;
   }
 
   return null; // This component doesn't render anything

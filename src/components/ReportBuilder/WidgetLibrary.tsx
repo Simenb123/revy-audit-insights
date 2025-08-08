@@ -12,6 +12,7 @@ import {
   Filter,
   Gauge,
   Grid3x3,
+  ListOrdered,
 } from 'lucide-react';
 import { useWidgetTemplates } from '@/hooks/useWidgetTemplates';
 
@@ -105,6 +106,21 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
       defaultConfig: {
         value: 50,
         max: 100
+      }
+    },
+    {
+      type: 'accountLines' as const,
+      title: 'Regnskapslinjer',
+      description: 'Vis flere regnskapslinjer og intervaller',
+      icon: ListOrdered,
+      defaultConfig: {
+        accountLines: [] as string[],
+        accountIntervals: [] as string[],
+        unitScale: 'none',
+        showCurrency: true,
+        showYoY: true,
+        showShareOf: false,
+        shareBaseExpr: '[10]'
       }
     }
   ];
