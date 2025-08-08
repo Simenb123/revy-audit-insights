@@ -144,12 +144,12 @@ const { data: standardAccounts = [] } = useFirmStandardAccounts();
 
             {config.sourceType === 'expr' && (
               <div>
-                <Label htmlFor="customFormula">Uttrykk (bruk standardnumre, f.eks. 19 - 79)</Label>
+                <Label htmlFor="customFormula">Uttrykk (bruk [NN] eller [A-B], f.eks. [19-79])</Label>
                 <Textarea
                   id="customFormula"
                   value={config.customFormula || ''}
                   onChange={(e) => updateConfig('customFormula', e.target.value)}
-                  placeholder="19 - 79"
+                  placeholder="[19-79]"
                   rows={3}
                 />
               </div>
@@ -361,11 +361,11 @@ const { data: standardAccounts = [] } = useFirmStandardAccounts();
 
                 {config.sourceType === 'expr' && (
                   <div>
-                    <Label>Egendefinert uttrykk</Label>
+                    <Label>Egendefinert uttrykk (bruk [NN] eller [A-B], f.eks. [19-79])</Label>
                     <Textarea
                       value={config.customFormula || ''}
                       onChange={(e) => updateConfig('customFormula', e.target.value)}
-                      placeholder="19 - 79"
+                      placeholder="[19-79]"
                       rows={3}
                     />
                   </div>
@@ -483,6 +483,118 @@ const { data: standardAccounts = [] } = useFirmStandardAccounts();
           />
         );
 
+      case 'accountLines':
+        return (
+          <div className="space-y-4">
+            <div>
+              <Label>Legg til regnskapslinje</Label>
+              <div className="flex gap-2 items-center mt-1">
+                <Select onValueChange={(value) => {
+                  const arr = Array.isArray(config.accountLines) ? config.accountLines : [];
+                  if (!arr.includes(value)) updateConfig('accountLines', [...arr, value]);
+                }}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Velg linje (standardnr)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {standardAccounts.map((acc: any) => (
+                      <SelectItem key={acc.standard_number} value={String(acc.standard_number)}>
+                        {acc.standard_number} - {acc.standard_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {(Array.isArray(config.accountLines) && config.accountLines.length > 0) && (
+                <div className="mt-2 space-y-1">
+                  {config.accountLines.map((num: string, idx: number) => (
+                    <div key={`${num}-${idx}`} className="flex items-center justify-between text-xs">
+                      <span>
+                        {num} - {standardAccounts.find((a: any) => String(a.standard_number) === String(num))?.standard_name || ''}
+                      </span>
+                      <Button variant="ghost" size="sm" className="h-6 px-2"
+                        onClick={() => updateConfig('accountLines', config.accountLines.filter((n: string) => n !== num))}>
+                        Fjern
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div>
+              <Label>Legg til intervall (A-B)</Label>
+              <div className="flex gap-2 items-center mt-1">
+                <Input placeholder="Fra" className="w-20" id="intervalFrom" />
+                <Input placeholder="Til" className="w-20" id="intervalTo" />
+                <Button
+                  type="button"
+                  onClick={() => {
+                    const from = (document.getElementById('intervalFrom') as HTMLInputElement)?.value?.trim();
+                    const to = (document.getElementById('intervalTo') as HTMLInputElement)?.value?.trim();
+                    if (!from || !to) return;
+                    const interval = `${from}-${to}`;
+                    const arr = Array.isArray(config.accountIntervals) ? config.accountIntervals : [];
+                    if (!arr.includes(interval)) updateConfig('accountIntervals', [...arr, interval]);
+                    (document.getElementById('intervalFrom') as HTMLInputElement).value = '';
+                    (document.getElementById('intervalTo') as HTMLInputElement).value = '';
+                  }}
+                >
+                  Legg til
+                </Button>
+              </div>
+              {(Array.isArray(config.accountIntervals) && config.accountIntervals.length > 0) && (
+                <div className="mt-2 space-y-1">
+                  {config.accountIntervals.map((iv: string, idx: number) => (
+                    <div key={`${iv}-${idx}`} className="flex items-center justify-between text-xs">
+                      <span>[{iv}]</span>
+                      <Button variant="ghost" size="sm" className="h-6 px-2"
+                        onClick={() => updateConfig('accountIntervals', config.accountIntervals.filter((v: string) => v !== iv))}>
+                        Fjern
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div>
+              <Label>Enhetsskala</Label>
+              <Select value={config.unitScale || 'none'} onValueChange={(value) => updateConfig('unitScale', value)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Ingen</SelectItem>
+                  <SelectItem value="thousand">Tusen</SelectItem>
+                  <SelectItem value="million">Millioner</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <Label htmlFor="showYoY">Vis endring YoY</Label>
+              <Switch id="showYoY" checked={config.showYoY !== false} onCheckedChange={(checked) => updateConfig('showYoY', checked)} />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <Label htmlFor="showCurrency">Vis valuta</Label>
+              <Switch id="showCurrency" checked={config.showCurrency !== false} onCheckedChange={(checked) => updateConfig('showCurrency', checked)} />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <Label htmlFor="showShareOf">Vis andel av base</Label>
+              <Switch id="showShareOf" checked={!!config.showShareOf} onCheckedChange={(checked) => updateConfig('showShareOf', checked)} />
+            </div>
+
+            {config.showShareOf && (
+              <div>
+                <Label htmlFor="shareBaseExpr">Base-uttrykk (f.eks. [10])</Label>
+                <Input id="shareBaseExpr" value={config.shareBaseExpr || '[10]'} onChange={(e) => updateConfig('shareBaseExpr', e.target.value)} placeholder="[10]" />
+              </div>
+            )}
+          </div>
+        );
       default:
         return null;
     }

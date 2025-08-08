@@ -8,6 +8,7 @@ import { FormulaWidget } from './Widgets/FormulaWidget';
 import { FilterWidget } from './Widgets/FilterWidget';
 import { PivotWidget } from './Widgets/PivotWidget';
 import { GaugeWidget } from './Widgets/GaugeWidget';
+import { AccountLinesWidget } from './Widgets/AccountLinesWidget';
 
 interface WidgetRendererProps {
   widget: Widget;
