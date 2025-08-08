@@ -228,7 +228,7 @@ useEffect(() => {
                       onClick={() => openTab('ai')}
                       aria-label="Åpne AI-Revy Chat"
                     >
-                      <Bot className="h-9 w-9" />
+                      <Bot className="h-13 w-13" />
                     </Button>
                     {activeTab === 'ai' && (
                       <span className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-0.5 rounded-full bg-primary" />
