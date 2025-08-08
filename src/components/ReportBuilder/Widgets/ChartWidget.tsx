@@ -12,7 +12,8 @@ import {
   XAxis,
   YAxis,
   ResponsiveContainer,
-  LabelList
+  LabelList,
+  Tooltip
 } from 'recharts';
 import { useTrialBalanceWithMappings } from '@/hooks/useTrialBalanceWithMappings';
 import { useFilteredData } from '@/hooks/useFilteredData';
@@ -40,7 +41,10 @@ export function ChartWidget({ widget }: ChartWidgetProps) {
   const sourceType = widget.config?.sourceType || 'alias';
   const metric = widget.config?.metric || 'revenue';
   const formulaIdSel = sourceType === 'formula' ? widget.config?.formulaId : undefined;
-  const customFormulaSel = sourceType === 'expr' ? (widget.config?.customFormula ?? '') : metric;
+  const customFormulaSel = sourceType === 'expr'
+    ? (widget.config?.customFormula ?? '')
+    : (sourceType === 'alias' ? metric : undefined);
+  const crossFilterEnabled = enableCrossFilter && dataSource !== 'formulaSeries';
 
   const handleTitleChange = (newTitle: string) => {
     updateWidget(widget.id, { title: newTitle });
@@ -63,7 +67,7 @@ export function ChartWidget({ widget }: ChartWidgetProps) {
     formulaId: formulaIdSel,
     customFormula: customFormulaSel,
     selectedVersion: widget.config?.selectedVersion,
-    enabled: dataSource === 'timeseries' && !!clientId,
+    enabled: dataSource === 'formulaSeries' && !!clientId,
   });
 
   // Scale helper based on configured unitScale
@@ -83,8 +87,18 @@ export function ChartWidget({ widget }: ChartWidgetProps) {
     [unitScale]
   );
 
+  const formatDisplay = React.useCallback(
+    (val: number) => {
+      if (unitScale === 'percent') {
+        return `${val.toFixed(1)}%`;
+      }
+      return new Intl.NumberFormat('nb-NO', { maximumFractionDigits: 2 }).format(val);
+    },
+    [unitScale]
+  );
+
   const chartData = React.useMemo(() => {
-    if (dataSource === 'timeseries') {
+    if (dataSource === 'formulaSeries') {
       const series = formulaSeries ?? [];
       return series.map(p => ({ name: String(p.year), value: scaleValue(p.value) }));
     }
@@ -113,7 +127,7 @@ export function ChartWidget({ widget }: ChartWidgetProps) {
 
   // Handle chart element clicks for cross-filtering
   const handleChartClick = (data: any, index: number) => {
-    if (!enableCrossFilter || !data || !data.activePayload?.[0]) return;
+    if (!crossFilterEnabled || !data || !data.activePayload?.[0]) return;
     
     const clickedData = data.activePayload[0].payload;
     const categoryName = clickedData.name;
@@ -145,7 +159,7 @@ export function ChartWidget({ widget }: ChartWidgetProps) {
   // Check if this widget is the source of current cross-filter
   const isFilterSource = filters.crossFilter?.sourceWidgetId === widget.id;
 
-  const isLoadingCurrent = dataSource === 'timeseries' ? isLoadingSeries : isLoadingTB;
+  const isLoadingCurrent = dataSource === 'formulaSeries' ? isLoadingSeries : isLoadingTB;
 
   if (isLoadingCurrent) {
     return (
@@ -181,7 +195,7 @@ export function ChartWidget({ widget }: ChartWidgetProps) {
           )}
         </div>
       </CardHeader>
-      <CardContent className="pt-2">{enableCrossFilter && (
+      <CardContent className="pt-2">{crossFilterEnabled && (
           <div className="text-xs text-muted-foreground mb-2">
             💡 Klikk på diagrammet for å filtrere andre widgets
           </div>
@@ -195,13 +209,14 @@ export function ChartWidget({ widget }: ChartWidgetProps) {
                 tickLine={false}
                 tick={{ fontSize: 10 }}
               />
+              <Tooltip formatter={(value: number) => formatDisplay(Number(value))} />
               <YAxis hide />
               <Line
                 type="monotone"
                 dataKey="value"
                 stroke="hsl(var(--primary))"
                 strokeWidth={2}
-                style={{ cursor: enableCrossFilter ? 'pointer' : 'default' }}
+                style={{ cursor: crossFilterEnabled ? 'pointer' : 'default' }}
               >
                 {showValues && (
                   <LabelList dataKey="value" position="top" fontSize={10} />
@@ -210,13 +225,14 @@ export function ChartWidget({ widget }: ChartWidgetProps) {
             </LineChart>
           ) : chartType === 'pie' ? (
             <PieChart onClick={handleChartClick}>
+              <Tooltip formatter={(value: number) => formatDisplay(Number(value))} />
               <Pie
                 data={chartData}
                 dataKey="value"
                 nameKey="name"
                 fill="hsl(var(--primary))"
                 outerRadius={50}
-                style={{ cursor: enableCrossFilter ? 'pointer' : 'default' }}
+                style={{ cursor: crossFilterEnabled ? 'pointer' : 'default' }}
               >
                 {showValues && <LabelList dataKey="value" fontSize={10} />}
               </Pie>
@@ -229,12 +245,13 @@ export function ChartWidget({ widget }: ChartWidgetProps) {
                 tickLine={false}
                 tick={{ fontSize: 10 }}
               />
+              <Tooltip formatter={(value: number) => formatDisplay(Number(value))} />
               <YAxis hide />
               <Bar
                 dataKey="value"
                 fill="hsl(var(--primary))"
                 radius={[2, 2, 0, 0]}
-                style={{ cursor: enableCrossFilter ? 'pointer' : 'default' }}
+                style={{ cursor: crossFilterEnabled ? 'pointer' : 'default' }}
               >
                 {showValues && (
                   <LabelList dataKey="value" position="top" fontSize={10} />
