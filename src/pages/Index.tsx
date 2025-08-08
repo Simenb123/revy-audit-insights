@@ -63,7 +63,7 @@ const Index = () => {
       header={
         <PageHeader
           title="Dashboard"
-          subtitle={`Velkommen tilbake, ${userProfile?.firstName || 'Bruker'}`}
+          subtitle={`Hei ${userProfile?.firstName || 'Bruker'}, Dashboardet skal få inn Widgets fra rapportbyggeren, `}
           size="lg"
         />
       }
