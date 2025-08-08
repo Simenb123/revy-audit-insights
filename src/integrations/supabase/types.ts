@@ -5215,6 +5215,7 @@ export type Database = {
           is_system_template: boolean
           layouts: Json
           name: string
+          scope: string
           sort_order: number | null
           title: string | null
           updated_at: string
@@ -5233,6 +5234,7 @@ export type Database = {
           is_system_template?: boolean
           layouts?: Json
           name: string
+          scope?: string
           sort_order?: number | null
           title?: string | null
           updated_at?: string
@@ -5251,6 +5253,7 @@ export type Database = {
           is_system_template?: boolean
           layouts?: Json
           name?: string
+          scope?: string
           sort_order?: number | null
           title?: string | null
           updated_at?: string
