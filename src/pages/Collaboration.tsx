@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import StandardPageLayout from '@/components/Layout/StandardPageLayout';
+import PageHeader from '@/components/Layout/PageHeader';
 import { 
   Users, 
   MessageSquare, 
@@ -76,59 +78,68 @@ const Collaboration = () => {
 
   if (activeView === 'workspace' && selectedWorkspace) {
     return (
-      <main className="w-full px-4 py-6 md:px-6 lg:px-8">
-        <Button
-          variant="outline"
-          onClick={handleBackToOverview}
-          className="mb-6 gap-2"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Tilbake til oversikt
-        </Button>
-        
+      <StandardPageLayout
+        className="w-full px-4 py-6 md:px-6 lg:px-8"
+        header={
+          <Button
+            variant="outline"
+            onClick={handleBackToOverview}
+            className="gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Tilbake til oversikt
+          </Button>
+        }
+      >
         <CollaborativeWorkspace
           workspaceId={selectedWorkspace.id}
           workspaceName={selectedWorkspace.name}
           members={selectedWorkspace.members}
           isOwner={selectedWorkspace.isOwner}
         />
-      </main>
+      </StandardPageLayout>
     );
   }
 
   if (activeView === 'video') {
     return (
-      <main className="w-full px-4 py-6 md:px-6 lg:px-8">
-        <Button
-          variant="outline"
-          onClick={handleBackToOverview}
-          className="mb-6 gap-2"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Tilbake til oversikt
-        </Button>
-        
+      <StandardPageLayout
+        className="w-full px-4 py-6 md:px-6 lg:px-8"
+        header={
+          <Button
+            variant="outline"
+            onClick={handleBackToOverview}
+            className="gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Tilbake til oversikt
+          </Button>
+        }
+      >
         <VideoCallInterface
           roomId="demo-room"
           isHost={true}
           participants={['Sarah Berg', 'Erik Nordahl']}
         />
-      </main>
+      </StandardPageLayout>
     );
   }
 
   if (activeView === 'chat') {
     return (
-      <main className="w-full px-4 py-6 md:px-6 lg:px-8">
-        <Button
-          variant="outline"
-          onClick={handleBackToOverview}
-          className="mb-6 gap-2"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Tilbake til oversikt
-        </Button>
-        
+      <StandardPageLayout
+        className="w-full px-4 py-6 md:px-6 lg:px-8"
+        header={
+          <Button
+            variant="outline"
+            onClick={handleBackToOverview}
+            className="gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Tilbake til oversikt
+          </Button>
+        }
+      >
         <Card className="max-w-4xl mx-auto">
           <EnhancedChatRoom
             roomId="demo-chat"
@@ -136,27 +147,29 @@ const Collaboration = () => {
             participants={['Sarah Berg', 'Erik Nordahl', 'Lisa Hansen']}
           />
         </Card>
-      </main>
+      </StandardPageLayout>
     );
   }
 
   return (
-    <main className="w-full px-4 py-6 md:px-6 lg:px-8">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-3xl font-bold">Samarbeid</h1>
-          <p className="text-muted-foreground mt-1">
-            Avanserte verktøy for teamsamarbeid og kommunikasjon
-          </p>
+    <StandardPageLayout
+      className="w-full px-4 py-6 md:px-6 lg:px-8"
+      header={
+        <div className="flex justify-between items-center">
+          <PageHeader
+            title="Samarbeid"
+            subtitle="Avanserte verktøy for teamsamarbeid og kommunikasjon"
+            size="lg"
+          />
+          <Link to="/dashboard">
+            <Button variant="outline" className="gap-2">
+              <ArrowLeft className="h-4 w-4" />
+              Tilbake
+            </Button>
+          </Link>
         </div>
-        <Link to="/dashboard">
-          <Button variant="outline" className="gap-2">
-            <ArrowLeft className="h-4 w-4" />
-            Tilbake
-          </Button>
-        </Link>
-      </div>
-
+      }
+    >
       <Tabs defaultValue="workspaces" className="w-full">
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="workspaces" className="flex items-center gap-2">
@@ -377,7 +390,7 @@ const Collaboration = () => {
           </Card>
         </TabsContent>
       </Tabs>
-    </main>
+    </StandardPageLayout>
   );
 };
 

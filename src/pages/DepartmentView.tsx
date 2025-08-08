@@ -6,6 +6,8 @@ import { useClientTeams } from '@/hooks/useClientTeams';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Users, Briefcase, MessageSquare } from 'lucide-react';
+import StandardPageLayout from '@/components/Layout/StandardPageLayout';
+import PageHeader from '@/components/Layout/PageHeader';
 
 const DepartmentView = () => {
   const { data: userProfile } = useUserProfile();
@@ -16,26 +18,29 @@ const DepartmentView = () => {
 
   if (!userProfile || !userDepartment) {
     return (
-      <main className="p-6">
+      <StandardPageLayout className="p-6">
         <div className="text-center">
           <p className="text-muted-foreground">Du er ikke tilknyttet en avdeling</p>
         </div>
-      </main>
+      </StandardPageLayout>
     );
   }
 
   return (
-    <main className="space-y-6 p-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">{userDepartment.name}</h1>
-          {userDepartment.description && (
-            <p className="text-muted-foreground mt-1">{userDepartment.description}</p>
-          )}
+    <StandardPageLayout
+      className="p-6"
+      contentClassName="space-y-6"
+      header={
+        <div className="flex items-center justify-between">
+          <PageHeader
+            title={userDepartment.name}
+            subtitle={userDepartment.description}
+            size="lg"
+          />
+          <Badge variant="outline">Min avdeling</Badge>
         </div>
-        <Badge variant="outline">Min avdeling</Badge>
-      </div>
-
+      }
+    >
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {/* Active Teams */}
         <Card>
@@ -115,7 +120,7 @@ const DepartmentView = () => {
           </CardContent>
         </Card>
       )}
-    </main>
+    </StandardPageLayout>
   );
 };
 

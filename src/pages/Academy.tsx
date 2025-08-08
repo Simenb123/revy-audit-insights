@@ -6,6 +6,8 @@ import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import AICharacterSimulator from '@/components/Training/AICharacterSimulator'
 import { useTrainingProgress, useUserBadges } from '@/hooks/useTraining'
+import StandardPageLayout from '@/components/Layout/StandardPageLayout'
+import PageHeader from '@/components/Layout/PageHeader'
 
 const Academy = () => {
   const { data: userProgress, isLoading: progressLoading } = useTrainingProgress();
@@ -88,28 +90,26 @@ const Academy = () => {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <GraduationCap className="h-8 w-8 text-primary" />
-            Revisjons Akademiet
-          </h1>
-          <p className="text-muted-foreground mt-2">
-            Profesjonell utvikling og opplæring for revisorer - nå med AI-drevne oppstartsmøter
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Badge className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-2">
-            🤖 AI Simulator
-          </Badge>
-          <Badge className="bg-gradient-to-r from-green-400 to-blue-500 text-white px-4 py-2">
-            🎓 Strukturert læring
-          </Badge>
-        </div>
-      </div>
-
+    <StandardPageLayout
+      contentClassName="space-y-6"
+      header={
+        <PageHeader
+          title="Revisjons Akademiet"
+          subtitle="Profesjonell utvikling og opplæring for revisorer - nå med AI-drevne oppstartsmøter"
+          size="lg"
+          actions={
+            <div className="flex gap-2">
+              <Badge className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-2">
+                🤖 AI Simulator
+              </Badge>
+              <Badge className="bg-gradient-to-r from-green-400 to-blue-500 text-white px-4 py-2">
+                🎓 Strukturert læring
+              </Badge>
+            </div>
+          }
+        />
+      }
+    >
       {/* Enhanced Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, index) => (
@@ -440,7 +440,7 @@ const Academy = () => {
           </div>
         </TabsContent>
       </Tabs>
-    </div>
+    </StandardPageLayout>
   )
 }
 
