@@ -7,14 +7,23 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Users, Briefcase, MessageSquare } from 'lucide-react';
 import StandardPageLayout from '@/components/Layout/StandardPageLayout';
-import PageHeader from '@/components/Layout/PageHeader';
+import { usePageTitle } from '@/components/Layout/PageTitleContext';
 
 const DepartmentView = () => {
   const { data: userProfile } = useUserProfile();
   const { data: departments } = useDepartments();
   const { data: clientTeams } = useClientTeams();
+  const { setPageTitle } = usePageTitle();
 
   const userDepartment = departments?.find(dept => dept.id === userProfile?.departmentId);
+
+  React.useEffect(() => {
+    if (userDepartment) {
+      setPageTitle(userDepartment.name);
+    } else {
+      setPageTitle('Avdeling');
+    }
+  }, [userDepartment, setPageTitle]);
 
   if (!userProfile || !userDepartment) {
     return (
@@ -31,12 +40,7 @@ const DepartmentView = () => {
       className="p-6"
       contentClassName="space-y-6"
       header={
-        <div className="flex items-center justify-between">
-          <PageHeader
-            title={userDepartment.name}
-            subtitle={userDepartment.description}
-            size="lg"
-          />
+        <div className="flex items-center justify-end">
           <Badge variant="outline">Min avdeling</Badge>
         </div>
       }

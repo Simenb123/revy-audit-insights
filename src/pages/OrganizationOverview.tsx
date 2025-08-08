@@ -9,13 +9,18 @@ import { Link } from 'react-router-dom';
 import PageLayout from '@/components/Layout/PageLayout';
 import FlexibleGrid from '@/components/Layout/FlexibleGrid';
 import ConstrainedWidth from '@/components/Layout/ConstrainedWidth';
-import PageHeader from '@/components/Layout/PageHeader';
+import { usePageTitle } from '@/components/Layout/PageTitleContext';
 import { logger } from '@/utils/logger';
 
 const OrganizationOverview = () => {
   const { data: userProfile, isLoading: profileLoading } = useUserProfile();
   const { data: departments = [], isLoading: departmentsLoading } = useDepartments();
   const { data: teams = [], isLoading: teamsLoading } = useClientTeams();
+  const { setPageTitle } = usePageTitle();
+
+  React.useEffect(() => {
+    setPageTitle('Organisasjonsoversikt');
+  }, [setPageTitle]);
 
   logger.log('OrganizationOverview rendering with profile:', userProfile);
 
@@ -58,11 +63,7 @@ const OrganizationOverview = () => {
     <PageLayout
       width="full"
       header={
-        <div className="flex justify-between items-center">
-          <PageHeader
-            title="Organisasjonsoversikt"
-            subtitle="Oversikt over din organisasjon og rolle"
-          />
+        <div className="flex justify-end items-center">
           <Link to="/dashboard">
             <Button variant="outline" className="gap-2">
               <ArrowLeft className="h-4 w-4" />

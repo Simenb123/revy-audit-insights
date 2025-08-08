@@ -10,12 +10,17 @@ import { Shield } from 'lucide-react';
 import type { UserRole } from '@/types/organization';
 import PageLayout from '@/components/Layout/PageLayout';
 import ConstrainedWidth from '@/components/Layout/ConstrainedWidth';
-import PageHeader from '@/components/Layout/PageHeader';
+import { usePageTitle } from '@/components/Layout/PageTitleContext';
 
 const RoleAccessAdmin = () => {
   const { data: userProfile } = useUserProfile();
   const { data: users, isLoading } = useAllUserProfiles();
   const updateRole = useUpdateUserRole();
+  const { setPageTitle } = usePageTitle();
+
+  React.useEffect(() => {
+    setPageTitle('Rolleadministrasjon');
+  }, [setPageTitle]);
 
   const canAccess = userProfile?.userRole === 'admin' || userProfile?.userRole === 'partner';
 
@@ -34,15 +39,7 @@ const RoleAccessAdmin = () => {
   }
 
   return (
-    <PageLayout
-      width="full"
-      header={
-        <PageHeader
-          title="Rolleadministrasjon"
-          subtitle="Endre roller for brukere i organisasjonen"
-        />
-      }
-    >
+    <PageLayout width="full">
         <Card>
           <CardHeader>
             <CardTitle>Brukere</CardTitle>

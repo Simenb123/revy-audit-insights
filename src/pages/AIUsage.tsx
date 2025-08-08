@@ -1,10 +1,10 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import StandardPageLayout from '@/components/Layout/StandardPageLayout';
-import PageHeader from '@/components/Layout/PageHeader';
+import { usePageTitle } from '@/components/Layout/PageTitleContext';
 import { 
   Brain, 
   TrendingUp, 
@@ -20,6 +20,11 @@ import { useAIUsage } from '@/hooks/useAIUsage';
 
 const AIUsage = () => {
   const { personalStats, loading } = useAIUsage('week');
+  const { setPageTitle } = usePageTitle();
+
+  useEffect(() => {
+    setPageTitle('AI-bruksstatistikk');
+  }, [setPageTitle]);
 
   if (loading) {
     return (
@@ -85,12 +90,7 @@ const AIUsage = () => {
       className="p-6"
       contentClassName="space-y-6"
       header={
-        <div className="flex justify-between items-center">
-          <PageHeader
-            title="AI-bruksstatistikk"
-            subtitle="Oversikt over din bruk av Revy AI-assistenten"
-            size="lg"
-          />
+        <div className="flex justify-end items-center">
           <Badge variant="outline" className="flex items-center gap-2">
             <Brain className="h-4 w-4" />
             Revy AI v2.0

@@ -1,16 +1,21 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import WelcomeDashboard from '@/components/Welcome/WelcomeDashboard';
 import PageLayout from '@/components/Layout/PageLayout';
 import FlexibleGrid from '@/components/Layout/FlexibleGrid';
 import ConstrainedWidth from '@/components/Layout/ConstrainedWidth';
-import PageHeader from '@/components/Layout/PageHeader';
+import { usePageTitle } from '@/components/Layout/PageTitleContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart3, Users, FileText, TrendingUp } from 'lucide-react';
 
 const Index = () => {
   const { data: userProfile, isLoading } = useUserProfile();
+  const { setPageTitle } = usePageTitle();
+
+  useEffect(() => {
+    setPageTitle('Dashboard');
+  }, [setPageTitle]);
 
   // Show loading state
   if (isLoading) {
@@ -58,16 +63,20 @@ const Index = () => {
   ];
 
   return (
-    <PageLayout
-      width="full"
-      header={
-        <PageHeader
-          title="Dashboard"
-          subtitle={`Hei ${userProfile?.firstName || 'Bruker'}, Dashboardet skal få inn Widgets fra rapportbyggeren, `}
-          size="lg"
-        />
-      }
-    >
+// <<<<<<< codex/implement-pagetitlecontext-and-integrate-layout
+      <PageLayout width="full">
+// =======
+//     <PageLayout
+//       width="full"
+//       header={
+//         <PageHeader
+//           title="Dashboard"
+//           subtitle={`Hei ${userProfile?.firstName || 'Bruker'}, Dashboardet skal få inn Widgets fra rapportbyggeren, `}
+//           size="lg"
+//         />
+//       }
+//     >
+// >>>>>>> main
         <FlexibleGrid 
           columns={{ sm: 1, md: 2, lg: 3 }} 
           gap="md"

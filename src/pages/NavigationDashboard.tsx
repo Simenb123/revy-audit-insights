@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
@@ -9,9 +9,15 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import StandardPageLayout from '@/components/Layout/StandardPageLayout';
-import PageHeader from '@/components/Layout/PageHeader';
+import { usePageTitle } from '@/components/Layout/PageTitleContext';
 
 const NavigationDashboard = () => {
+  const { setPageTitle } = usePageTitle();
+
+  useEffect(() => {
+    setPageTitle('Hovedmeny');
+  }, [setPageTitle]);
+
   const navigationSections = [
     {
       title: 'Hovedfunksjoner',
@@ -55,14 +61,6 @@ const NavigationDashboard = () => {
   return (
     <StandardPageLayout
       className="w-full px-4 py-6 md:px-6 lg:px-8 space-y-8"
-      header={
-        <PageHeader
-          title="Hovedmeny"
-          subtitle="Velg en funksjon fra kategoriene under"
-          size="lg"
-          className="items-center text-center"
-        />
-      }
     >
       {navigationSections.map((section, sectionIndex) => (
         <Card key={sectionIndex}>

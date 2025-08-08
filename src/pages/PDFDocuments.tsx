@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Upload, FileText } from 'lucide-react';
@@ -6,21 +6,19 @@ import PDFUploader from '@/components/PDFDocuments/PDFUploader';
 import PDFDocumentList from '@/components/PDFDocuments/PDFDocumentList';
 import ConstrainedWidth from '@/components/Layout/ConstrainedWidth';
 import StandardPageLayout from '@/components/Layout/StandardPageLayout';
-import PageHeader from '@/components/Layout/PageHeader';
+import { usePageTitle } from '@/components/Layout/PageTitleContext';
 
 const PDFDocuments = () => {
   const [activeTab, setActiveTab] = useState('browse');
+  const { setPageTitle } = usePageTitle();
+
+  useEffect(() => {
+    setPageTitle('PDF-dokumenter');
+  }, [setPageTitle]);
 
   return (
     <ConstrainedWidth width="full">
-      <StandardPageLayout
-        header={
-          <PageHeader
-            title="PDF-dokumenter"
-            subtitle="Last opp, organiser og se PDF-dokumenter som ISA-standarder og andre viktige dokumenter"
-          />
-        }
-      >
+      <StandardPageLayout>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="browse" className="flex items-center gap-2">

@@ -1,11 +1,11 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import StandardPageLayout from '@/components/Layout/StandardPageLayout';
-import PageHeader from '@/components/Layout/PageHeader';
+import { usePageTitle } from '@/components/Layout/PageTitleContext';
 import { 
   Users, 
   MessageSquare, 
@@ -35,6 +35,11 @@ interface WorkspaceData {
 const Collaboration = () => {
   const [activeView, setActiveView] = useState<'overview' | 'workspace' | 'video' | 'chat'>('overview');
   const [selectedWorkspace, setSelectedWorkspace] = useState<WorkspaceData | null>(null);
+  const { setPageTitle } = usePageTitle();
+
+  useEffect(() => {
+    setPageTitle('Samarbeid');
+  }, [setPageTitle]);
   
   const [workspaces] = useState<WorkspaceData[]>([
     {
@@ -155,12 +160,7 @@ const Collaboration = () => {
     <StandardPageLayout
       className="w-full px-4 py-6 md:px-6 lg:px-8"
       header={
-        <div className="flex justify-between items-center">
-          <PageHeader
-            title="Samarbeid"
-            subtitle="Avanserte verktøy for teamsamarbeid og kommunikasjon"
-            size="lg"
-          />
+        <div className="flex justify-end items-center">
           <Link to="/dashboard">
             <Button variant="outline" className="gap-2">
               <ArrowLeft className="h-4 w-4" />

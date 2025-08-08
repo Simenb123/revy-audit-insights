@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { useChatRooms } from '@/hooks/useChatRooms';
 import CommunicationStatus from '@/components/Communication/CommunicationStatus';
@@ -10,11 +10,16 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import StandardPageLayout from '@/components/Layout/StandardPageLayout';
-import PageHeader from '@/components/Layout/PageHeader';
+import { usePageTitle } from '@/components/Layout/PageTitleContext';
 
 const Communication = () => {
   const { data: userProfile, isLoading: profileLoading } = useUserProfile();
   const { data: chatRooms = [], isLoading: roomsLoading } = useChatRooms();
+  const { setPageTitle } = usePageTitle();
+
+  useEffect(() => {
+    setPageTitle('Kommunikasjon');
+  }, [setPageTitle]);
 
   if (profileLoading || roomsLoading) {
     return (
@@ -36,12 +41,7 @@ const Communication = () => {
     <StandardPageLayout
       className="w-full"
       header={
-        <div className="flex justify-between items-center">
-          <PageHeader
-            title="Kommunikasjon"
-            subtitle="Samarbeid og kommuniser med teamet ditt"
-            size="lg"
-          />
+        <div className="flex justify-end items-center">
           <Link to="/dashboard">
             <Button variant="outline" className="gap-2">
               <ArrowLeft className="h-4 w-4" />
