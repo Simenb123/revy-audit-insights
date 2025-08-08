@@ -97,7 +97,7 @@ const ClientsTable = ({ clients, onRowSelect, selectedClientId }: ClientsTablePr
   ];
 
   return (
-    <DataTable<Client>
+    <DataTable
       title="Klienter"
       data={clients}
       columns={columns}
