@@ -95,6 +95,11 @@ const ResizableRightSidebar = () => {
     setIsCollapsed(!isCollapsed);
   };
 
+  const openTab = (tab: 'ai' | 'chat') => {
+    setActiveTab(tab);
+    if (isCollapsed) setIsCollapsed(false);
+  };
+
   const getPageTitle = () => {
     switch (pageType) {
       case 'admin':
@@ -122,6 +127,8 @@ const ResizableRightSidebar = () => {
           className="w-full border-0"
           context={clientId ? 'client-detail' : 'general'}
           clientData={clientId ? { id: clientId } : undefined}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
         />
       </div>
     );
@@ -171,7 +178,7 @@ const ResizableRightSidebar = () => {
         top: globalHeaderHeight + subHeaderHeight,
         height: `calc(100vh - ${globalHeaderHeight + subHeaderHeight}px)`
       }}
-      animate={{ width: isCollapsed ? 32 : width }}
+      animate={{ width: isCollapsed ? COLLAPSED_WIDTH : width }}
       transition={{ duration: 0.2, ease: 'easeInOut' }}
     >
       {/* Enhanced Resize handle */}
@@ -182,31 +189,88 @@ const ResizableRightSidebar = () => {
       )}
 
       {/* Sticky Header */}
-      <div className="sticky top-0 z-50 bg-background border-b flex items-center px-3 py-2 gap-2">
-        {isCollapsed ? (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 hover:bg-muted transition-colors"
-            onClick={toggleSidebar}
-            aria-label="Utvid sidebar"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        ) : (
-          <>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6 hover:bg-muted transition-colors"
-              onClick={toggleSidebar}
-              aria-label="Kollaps sidebar"
-            >
-              <ChevronLeft className="h-3 w-3" />
-            </Button>
-            <h3 className="text-sm font-semibold">{getPageTitle()}</h3>
-          </>
-        )}
+      <div className="sticky top-0 z-50 bg-background border-b">
+        <TooltipProvider>
+          {isCollapsed ? (
+            <div className="flex flex-col items-center gap-2 px-2 py-2">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9 hover-scale"
+                    onClick={() => openTab('ai')}
+                    aria-label="Åpne AI-Revy Chat"
+                  >
+                    <Bot className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="left">AI‑Revy Chat</TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9 hover-scale"
+                    onClick={() => openTab('chat')}
+                    aria-label="Åpne Teamchat"
+                  >
+                    <MessageSquare className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="left">Teamchat</TooltipContent>
+              </Tooltip>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 px-3 py-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 hover:bg-muted transition-colors"
+                onClick={toggleSidebar}
+                aria-label="Kollaps sidebar"
+              >
+                <ChevronLeft className="h-3 w-3" />
+              </Button>
+
+              <h3 className="text-sm font-semibold">{getPageTitle()}</h3>
+
+              <div className="ml-auto flex items-center gap-1">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className={`h-8 w-8 hover-scale ${activeTab === 'ai' ? 'bg-primary/10 text-primary' : 'hover:bg-muted'}`}
+                      onClick={() => setActiveTab('ai')}
+                      aria-label="Bytt til AI-Revy Chat"
+                    >
+                      <Bot className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="left">AI‑Revy Chat</TooltipContent>
+                </Tooltip>
+
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className={`h-8 w-8 hover-scale ${activeTab === 'chat' ? 'bg-primary/10 text-primary' : 'hover:bg-muted'}`}
+                      onClick={() => setActiveTab('chat')}
+                      aria-label="Bytt til Teamchat"
+                    >
+                      <MessageSquare className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="left">Teamchat</TooltipContent>
+                </Tooltip>
+              </div>
+            </div>
+          )}
+        </TooltipProvider>
       </div>
 
       {/* Content area */}
