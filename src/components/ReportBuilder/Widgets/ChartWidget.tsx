@@ -55,7 +55,40 @@ export function ChartWidget({ widget }: ChartWidgetProps) {
   // Apply global filters
   const filteredTrialBalanceEntries = useFilteredData(trialBalanceData?.trialBalanceEntries || []);
 
+  // Fetch formula time series when timeseries data source is selected
+  const { data: formulaSeries, isLoading: isLoadingSeries } = useFormulaSeries({
+    clientId,
+    startYear,
+    endYear: selectedFiscalYear,
+    formulaId: formulaIdSel,
+    customFormula: customFormulaSel,
+    selectedVersion: widget.config?.selectedVersion,
+    enabled: dataSource === 'timeseries' && !!clientId,
+  });
+
+  // Scale helper based on configured unitScale
+  const scaleValue = React.useCallback(
+    (val: number) => {
+      switch (unitScale) {
+        case 'thousand':
+          return val / 1_000;
+        case 'million':
+          return val / 1_000_000;
+        case 'percent':
+          return val * 100;
+        default:
+          return val;
+      }
+    },
+    [unitScale]
+  );
+
   const chartData = React.useMemo(() => {
+    if (dataSource === 'timeseries') {
+      const series = formulaSeries ?? [];
+      return series.map(p => ({ name: String(p.year), value: scaleValue(p.value) }));
+    }
+
     if (!filteredTrialBalanceEntries || filteredTrialBalanceEntries.length === 0) {
       return [];
     }
@@ -74,9 +107,9 @@ export function ChartWidget({ widget }: ChartWidgetProps) {
       .slice(0, maxDataPoints)
       .map(([name, balance]) => ({
         name: name.slice(0, 10), // Truncate long names
-        value: Math.abs(balance) / 1000 // Convert to thousands
+        value: scaleValue(Math.abs(balance))
       }));
-  }, [filteredTrialBalanceEntries, maxDataPoints]);
+  }, [dataSource, formulaSeries, filteredTrialBalanceEntries, maxDataPoints, scaleValue]);
 
   // Handle chart element clicks for cross-filtering
   const handleChartClick = (data: any, index: number) => {
@@ -112,7 +145,9 @@ export function ChartWidget({ widget }: ChartWidgetProps) {
   // Check if this widget is the source of current cross-filter
   const isFilterSource = filters.crossFilter?.sourceWidgetId === widget.id;
 
-  if (isLoadingTB) {
+  const isLoadingCurrent = dataSource === 'timeseries' ? isLoadingSeries : isLoadingTB;
+
+  if (isLoadingCurrent) {
     return (
       <Card className="h-full">
         <CardHeader className="pb-2">
