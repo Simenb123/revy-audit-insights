@@ -216,6 +216,7 @@ function getBaseValues(accounts: StandardAccountBalance[]) {
     total_assets: calculatePrefixSum(accounts, '5') + calculatePrefixSum(accounts, '6'),
     total_equity: calculatePrefixSum(accounts, '670') + calculatePrefixSum(accounts, '680') + calculatePrefixSum(accounts, '681') + calculatePrefixSum(accounts, '690') + calculatePrefixSum(accounts, '695') + calculatePrefixSum(accounts, '700') + calculatePrefixSum(accounts, '705'),
     revenue: totalRevenue,
+    total_operating_costs: totalOperatingCosts,
     operating_result: totalRevenue - totalOperatingCosts
   };
 }
@@ -250,18 +251,26 @@ function evaluateAlias(alias: string, accounts: StandardAccountBalance[]): { val
     case 'turnover':
       return { value: base.revenue, type: 'amount' };
     case 'profit':
+    case 'result':
     case 'operating_result':
     case 'ebit':
       return { value: base.operating_result, type: 'amount' };
+    case 'expenses':
+      return { value: base.total_operating_costs, type: 'amount' };
+    case 'assets':
+      return { value: base.total_assets, type: 'amount' };
     case 'liquidity':
     case 'liquidity_ratio': {
       const value = evaluateFormula({ name: 'liquidity_ratio', formula: '', type: 'ratio' }, accounts);
       return { value, type: 'ratio' };
     }
-    case 'equity':
+    case 'equity': {
+      // amount (egenkapital)
+      return { value: base.total_equity, type: 'amount' };
+    }
     case 'equity_ratio': {
       const value = evaluateFormula({ name: 'equity_ratio', formula: '', type: 'percentage' }, accounts);
-      return { value, type: 'percentage' };
+      return { value, type: 'percentage' }; 
     }
     case 'profit_margin': {
       const value = evaluateFormula({ name: 'profit_margin', formula: '', type: 'percentage' }, accounts);
