@@ -32,6 +32,8 @@ export function WidgetRenderer({ widget }: WidgetRendererProps) {
       return <PivotWidget widget={widget} />;
     case 'gauge':
       return <GaugeWidget widget={widget} />;
+    case 'accountLines':
+      return <AccountLinesWidget widget={widget} />;
     default:
       return (
         <div className="p-4 text-center text-muted-foreground">
