@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useRef, useState, ReactNode } from 'react';
-import { useWidgetManager, Widget, WidgetLayout } from '@/contexts/WidgetManagerContext';
+import { WidgetManagerContext, Widget, WidgetLayout } from '@/contexts/WidgetManagerContext';
 
 interface HistoryState {
   widgets: Widget[];
@@ -16,7 +16,15 @@ interface HistoryContextType {
 const HistoryContext = createContext<HistoryContextType | undefined>(undefined);
 
 export function HistoryProvider({ children }: { children: ReactNode }) {
-  const { widgets, layouts, setWidgets, setLayouts } = useWidgetManager();
+  const manager = useContext(WidgetManagerContext);
+  if (!manager) {
+    return (
+      <HistoryContext.Provider value={{ undo: () => {}, redo: () => {}, canUndo: false, canRedo: false }}>
+        {children}
+      </HistoryContext.Provider>
+    );
+  }
+  const { widgets, layouts, setWidgets, setLayouts } = manager;
   const [past, setPast] = useState<HistoryState[]>([]);
   const [future, setFuture] = useState<HistoryState[]>([]);
   const lastState = useRef<HistoryState>({ widgets, layouts });

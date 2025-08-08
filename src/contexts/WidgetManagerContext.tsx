@@ -40,7 +40,7 @@ interface WidgetManagerContextType {
   loadFromStorage: () => boolean;
 }
 
-const WidgetManagerContext = createContext<WidgetManagerContextType | undefined>(undefined);
+export const WidgetManagerContext = createContext<WidgetManagerContextType | undefined>(undefined);
 
 export function WidgetManagerProvider({ children }: { children: React.ReactNode }) {
   const [widgets, setWidgets] = useState<Widget[]>([]);
