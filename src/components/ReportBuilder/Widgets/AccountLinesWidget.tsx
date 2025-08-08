@@ -49,7 +49,7 @@ function AccountLineRow({
     clientId,
     fiscalYear: fiscalYear - 1,
     customFormula: expr,
-    selectedVersion,
+    selectedVersion: undefined,
     enabled: showYoY && !!clientId && !!fiscalYear && !!expr,
   });
 
@@ -71,6 +71,7 @@ function AccountLineRow({
   const hasError = !!current.error || (showYoY && !!prev.error);
 
   let valueCell = '—';
+  let prevValueCell: string | null = null;
   let yoyCell: string | null = null;
   let shareCell: string | null = null;
 
@@ -85,6 +86,7 @@ function AccountLineRow({
 
     if (showYoY && prev.data?.isValid) {
       const prevVal = prev.data.value;
+      prevValueCell = formatAmount(scale(prevVal));
       if (prevVal !== 0) {
         const diffPct = ((current.data.value - prevVal) / Math.abs(prevVal)) * 100;
         yoyCell = (diffPct > 0 ? '+' : '') + diffPct.toFixed(1) + '%';
@@ -98,6 +100,7 @@ function AccountLineRow({
     <TableRow>
       <TableCell className="text-xs">{label}</TableCell>
       <TableCell className="text-right text-xs">{valueCell}</TableCell>
+      {showYoY && <TableCell className="text-right text-xs">{prevValueCell ?? '—'}</TableCell>}
       {shareCell !== null && <TableCell className="text-right text-xs">{shareCell}</TableCell>}
       {showYoY && <TableCell className="text-right text-xs">{yoyCell ?? '—'}</TableCell>}
     </TableRow>
@@ -162,7 +165,8 @@ export function AccountLinesWidget({ widget }: AccountLinesWidgetProps) {
           <TableHeader>
             <TableRow>
               <TableHead className="text-xs">Linje</TableHead>
-              <TableHead className="text-xs text-right">Verdi</TableHead>
+              <TableHead className="text-xs text-right">Verdi ({selectedFiscalYear})</TableHead>
+              {showYoY && <TableHead className="text-xs text-right">Verdi ({selectedFiscalYear - 1})</TableHead>}
               {showShareOf && <TableHead className="text-xs text-right">Andel av {shareBaseExpr}</TableHead>}
               {showYoY && <TableHead className="text-xs text-right">Endring YoY</TableHead>}
             </TableRow>
@@ -170,7 +174,7 @@ export function AccountLinesWidget({ widget }: AccountLinesWidgetProps) {
           <TableBody>
             {rows.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={showYoY ? (showShareOf ? 4 : 3) : (showShareOf ? 3 : 2)} className="text-center text-muted-foreground text-xs">
+                <TableCell colSpan={2 + (showShareOf ? 1 : 0) + (showYoY ? 2 : 0)} className="text-center text-muted-foreground text-xs">
                   Ingen linjer valgt. Åpne konfigurasjonen og legg til linjer eller intervaller.
                 </TableCell>
               </TableRow>

@@ -150,7 +150,7 @@ async function fetchStandardAccountBalances(
   // 3) Fetch standard accounts to resolve statement_line_number -> standard_number
   const { data: standardAccounts, error: stdErr } = await supabase
     .from('standard_accounts')
-    .select('id, standard_number, standard_name');
+    .select('id, standard_number, standard_name, is_total_line, calculation_formula, sign_multiplier');
   if (stdErr) {
     logError('Error fetching standard accounts:', stdErr);
     throw new Error(`Failed to fetch standard accounts: ${stdErr.message}`);
@@ -226,7 +226,38 @@ async function fetchStandardAccountBalances(
 
     const key = standardNumber;
     const prev = grouped.get(key) || 0;
-    grouped.set(key, prev + (row.closing_balance || 0));
+    const sn = parseInt(String(standardNumber), 10);
+    const isPL = Number.isFinite(sn) && sn >= 10 && sn <= 79;
+    const amount = isPL
+      ? (Number(row.credit_turnover) || 0) - (Number(row.debit_turnover) || 0)
+      : (Number(row.closing_balance) || 0);
+    grouped.set(key, prev + amount);
+  }
+
+  // Apply sign multipliers to normalize display conventions
+  for (const [key, val] of grouped.entries()) {
+    const meta = standardByNumber.get(key);
+    const mult = Number(meta?.sign_multiplier ?? 1);
+    if (Number.isFinite(mult) && mult !== 1) {
+      grouped.set(key, val * mult);
+    }
+  }
+
+  // Compute derived totals from standard account formulas (e.g., Sum driftsinntekter)
+  for (const sa of standardAccounts || []) {
+    if (sa?.is_total_line && sa?.calculation_formula) {
+      try {
+        const synthetic = evaluateCustomFormula(
+          String(sa.calculation_formula),
+          Array.from(grouped.entries()).map(([standard_number, total_balance]) => ({ standard_number, total_balance }))
+        );
+        const mult = Number(sa.sign_multiplier ?? 1);
+        const adjusted = Number.isFinite(mult) ? synthetic * mult : synthetic;
+        grouped.set(sa.standard_number, adjusted);
+      } catch (e) {
+        logError(`Failed computing total for ${sa.standard_number}: ${e}`);
+      }
+    }
   }
 
   const result: StandardAccountBalance[] = Array.from(grouped.entries()).map(([standard_number, total_balance]) => ({
