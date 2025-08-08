@@ -189,7 +189,7 @@ const ClientBulkImporter = ({ onImportComplete, onCancel }: ClientBulkImporterPr
 
   if (showMapping && filePreview) {
     return (
-      <Card className="w-full max-w-6xl mx-auto">
+      <Card className="w-full max-w-none mx-auto">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileSpreadsheet className="w-5 h-5" />

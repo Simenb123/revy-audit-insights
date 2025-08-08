@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, AlertCircle, Brain, Zap } from 'lucide-react';
+import { CheckCircle, AlertCircle } from 'lucide-react';
 import { FilePreview, ColumnMapping, FieldDefinition } from '@/utils/fileProcessing';
 import { getFieldDefinitions, saveColumnMappingHistory, getHistoricalMappings, suggestEnhancedColumnMappings } from '@/utils/fieldDefinitions';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import ColumnMappingTable from './ColumnMappingTable';
 import MappingSummary from './MappingSummary';
 
