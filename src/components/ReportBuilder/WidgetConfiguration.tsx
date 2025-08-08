@@ -10,6 +10,7 @@ import { Settings, Save } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { FormulaWidgetConfig } from './WidgetConfiguration/FormulaWidgetConfig';
 import { useFirmStandardAccounts } from '@/hooks/useFirmStandardAccounts';
+import { useFormulaDefinitions } from '@/hooks/useFormulas';
 
 interface WidgetConfigurationProps {
   widget: Widget;
@@ -20,7 +21,8 @@ export function WidgetConfiguration({ widget, onUpdateWidget }: WidgetConfigurat
   const [isOpen, setIsOpen] = useState(false);
   const [title, setTitle] = useState(widget.title);
   const [config, setConfig] = useState(widget.config || {});
-  const { data: standardAccounts = [] } = useFirmStandardAccounts();
+const { data: standardAccounts = [] } = useFirmStandardAccounts();
+  const { data: formulas = [] } = useFormulaDefinitions();
 
   const handleSave = () => {
     onUpdateWidget({
@@ -81,23 +83,78 @@ export function WidgetConfiguration({ widget, onUpdateWidget }: WidgetConfigurat
         return (
           <div className="space-y-4">
             <div>
-              <Label htmlFor="metric">Nøkkeltall</Label>
-              <Select 
-                value={config.metric || 'revenue'} 
-                onValueChange={(value) => updateConfig('metric', value)}
+              <Label htmlFor="sourceType">Kildetype</Label>
+              <Select
+                value={config.sourceType || 'alias'}
+                onValueChange={(value) => updateConfig('sourceType', value)}
               >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="revenue">Omsetning</SelectItem>
-                  <SelectItem value="expenses">Kostnader</SelectItem>
-                  <SelectItem value="result">Resultat</SelectItem>
-                  <SelectItem value="assets">Eiendeler</SelectItem>
-                  <SelectItem value="equity">Egenkapital</SelectItem>
+                  <SelectItem value="alias">Forhåndsdefinert nøkkeltall</SelectItem>
+                  <SelectItem value="formula">Lagret formel</SelectItem>
+                  <SelectItem value="expr">Egendefinert uttrykk</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+
+            {(!config.sourceType || config.sourceType === 'alias') && (
+              <div>
+                <Label htmlFor="metric">Nøkkeltall</Label>
+                <Select
+                  value={config.metric || 'revenue'}
+                  onValueChange={(value) => updateConfig('metric', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="revenue">Omsetning</SelectItem>
+                    <SelectItem value="expenses">Kostnader</SelectItem>
+                    <SelectItem value="profit">Resultat</SelectItem>
+                    <SelectItem value="assets">Eiendeler</SelectItem>
+                    <SelectItem value="equity">Egenkapital</SelectItem>
+                    <SelectItem value="equity_ratio">Egenkapitalandel</SelectItem>
+                    <SelectItem value="liquidity_ratio">Likviditetsgrad</SelectItem>
+                    <SelectItem value="profit_margin">Fortjenestemargin</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {config.sourceType === 'formula' && (
+              <div>
+                <Label htmlFor="formulaId">Lagret formel</Label>
+                <Select
+                  value={config.formulaId || ''}
+                  onValueChange={(value) => updateConfig('formulaId', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={formulas.length ? 'Velg formel' : 'Ingen lagrede formler'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {formulas.map((f: any) => (
+                      <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {config.sourceType === 'expr' && (
+              <div>
+                <Label htmlFor="customFormula">Uttrykk (bruk standardnumre, f.eks. 19 - 79)</Label>
+                <Textarea
+                  id="customFormula"
+                  value={config.customFormula || ''}
+                  onChange={(e) => updateConfig('customFormula', e.target.value)}
+                  placeholder="19 - 79"
+                  rows={3}
+                />
+              </div>
+            )}
+
             <div className="flex items-center space-x-2">
               <input
                 type="checkbox"

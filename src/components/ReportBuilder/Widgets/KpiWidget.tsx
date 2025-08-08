@@ -14,7 +14,10 @@ export function KpiWidget({ widget }: KpiWidgetProps) {
   const { selectedFiscalYear } = useFiscalYear();
   const { updateWidget } = useWidgetManager();
   const clientId = widget.config?.clientId;
+  const sourceType = widget.config?.sourceType || 'alias';
   const metric = widget.config?.metric || 'revenue';
+  const formulaId = sourceType === 'formula' ? widget.config?.formulaId : undefined;
+  const customFormula = sourceType === 'expr' ? (widget.config?.customFormula ?? '') : metric; // alias string by default
   const showTrend = widget.config?.showTrend !== false;
 
   const handleTitleChange = (newTitle: string) => {
@@ -25,7 +28,8 @@ export function KpiWidget({ widget }: KpiWidgetProps) {
   const currentFormulaResult = useFormulaCalculation({
     clientId,
     fiscalYear: selectedFiscalYear,
-    customFormula: metric,
+    formulaId,
+    customFormula,
     selectedVersion: widget.config?.selectedVersion,
     enabled: !!clientId && !!selectedFiscalYear
   });
@@ -35,7 +39,8 @@ export function KpiWidget({ widget }: KpiWidgetProps) {
   const previousFormulaResult = useFormulaCalculation({
     clientId,
     fiscalYear: previousFiscalYear,
-    customFormula: metric,
+    formulaId,
+    customFormula,
     selectedVersion: widget.config?.selectedVersion,
     enabled: !!clientId && !!previousFiscalYear && showTrend
   });
