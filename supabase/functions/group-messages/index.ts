@@ -1,6 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.192.0/http/server.ts";
-import { getSupabase } from "../_shared/supabaseClient.ts";
+import { getSupabase, createClient } from "../_shared/supabaseClient.ts";
 import { log, error as logError } from "../_shared/log.ts";
 
 const corsHeaders = {
@@ -9,6 +9,26 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
   "Content-Type": "application/json",
 };
+
+// Helper to support token via query param for WebSocket auth from browsers
+function getSupabaseWithAuth(req: Request) {
+  const hasAuthHeader = !!req.headers.get("authorization");
+  if (hasAuthHeader) return getSupabase(req);
+
+  try {
+    const url = new URL(req.url);
+    const token = url.searchParams.get("token");
+    if (token) {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+      const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+      return createClient(supabaseUrl, supabaseAnonKey, {
+        global: { headers: { Authorization: `Bearer ${token}` } },
+      });
+    }
+  } catch (_) {}
+
+  return getSupabase(req);
+}
 
 type ReceiverType = "team" | "department" | "firm";
 
@@ -47,7 +67,7 @@ serve(async (req: Request): Promise<Response> => {
     socket.onopen = () => {
       (async () => {
         try {
-          const supabase = getSupabase(req);
+          const supabase = getSupabaseWithAuth(req);
           const { data: userData, error: userError } = await supabase.auth.getUser();
           if (userError || !userData?.user) {
             logError("Unauthorized websocket connection attempt", userError);
@@ -161,7 +181,7 @@ serve(async (req: Request): Promise<Response> => {
   }
 
   // Handle HTTP GET/POST
-  const supabase = getSupabase(req);
+  const supabase = getSupabaseWithAuth(req);
   const { data: userData, error: userError } = await supabase.auth.getUser();
   if (userError || !userData?.user) {
     return err("Unauthorized", 401);

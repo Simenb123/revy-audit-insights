@@ -79,7 +79,7 @@ export function useUserPresence() {
           is_online: params.isOnline,
           current_room_id: params.currentRoomId,
           last_seen: new Date().toISOString()
-        });
+        }, { onConflict: 'user_id' });
 
       if (error) throw error;
     },

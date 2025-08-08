@@ -4,6 +4,8 @@ import RevyAvatar from '@/components/Revy/RevyAvatar'
 import SmartReviAssistant from '@/components/Revy/SmartReviAssistant'
 import { cn } from '@/lib/utils'
 import { RevyContext } from '@/types/revio'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import GroupChatSidebar from '@/components/Communication/GroupChatSidebar'
 
 export type AiRevyVariant =
   | 'dashboard'
@@ -52,12 +54,25 @@ const AiRevyCard: React.FC<AiRevyCardProps> = ({
         </div>
       </div>
       <div className="flex flex-col flex-1 min-h-0">
-        <SmartReviAssistant
-          embedded
-          context={context}
-          clientData={clientData}
-          userRole={userRole}
-        />
+        <Tabs defaultValue="ai" className="flex-1 flex flex-col min-h-0">
+          <div className="px-2 pt-2">
+            <TabsList>
+              <TabsTrigger value="ai">AI</TabsTrigger>
+              <TabsTrigger value="chat">Chat</TabsTrigger>
+            </TabsList>
+          </div>
+          <TabsContent value="ai" className="flex-1 min-h-0 flex flex-col">
+            <SmartReviAssistant
+              embedded
+              context={context}
+              clientData={clientData}
+              userRole={userRole}
+            />
+          </TabsContent>
+          <TabsContent value="chat" className="flex-1 min-h-0 flex flex-col">
+            <GroupChatSidebar />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   )
