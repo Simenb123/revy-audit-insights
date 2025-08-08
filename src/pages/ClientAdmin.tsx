@@ -10,7 +10,7 @@ import ClientList from '@/components/Clients/ClientAdmin/ClientList';
 import BrregSearch from '@/components/Clients/ClientAdmin/BrregSearch';
 import { mockClients } from '@/components/Clients/ClientAdmin/mockData';
 import StandardPageLayout from '@/components/Layout/StandardPageLayout';
-import PageHeader from '@/components/Layout/PageHeader';
+import { usePageTitle } from '@/components/Layout/PageTitleContext';
 
 const ClientAdmin = () => {
   const { setContext } = useRevyContext();
@@ -19,6 +19,11 @@ const ClientAdmin = () => {
   const [activeTab, setActiveTab] = useState('list');
   const [isSearching, setIsSearching] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Partial<Client> | null>(null);
+  const { setPageTitle } = usePageTitle();
+
+  useEffect(() => {
+    setPageTitle('Klientadministrasjon');
+  }, [setPageTitle]);
 
   React.useEffect(() => {
     setContext('general');
@@ -109,16 +114,7 @@ const ClientAdmin = () => {
   };
 
   return (
-    <StandardPageLayout
-      className="w-full px-4 py-6 md:px-6 lg:px-8"
-      header={
-        <PageHeader
-          title="Klientadministrasjon"
-          subtitle="Administrer klienter og importer fra Brønnøysundregisteret"
-          size="lg"
-        />
-      }
-    >
+    <StandardPageLayout className="w-full px-4 py-6 md:px-6 lg:px-8">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
         <TabsList className="grid grid-cols-3 w-[400px]">
           <TabsTrigger value="list">Klientliste</TabsTrigger>

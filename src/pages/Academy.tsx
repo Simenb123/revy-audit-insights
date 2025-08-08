@@ -7,11 +7,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import AICharacterSimulator from '@/components/Training/AICharacterSimulator'
 import { useTrainingProgress, useUserBadges } from '@/hooks/useTraining'
 import StandardPageLayout from '@/components/Layout/StandardPageLayout'
-import PageHeader from '@/components/Layout/PageHeader'
+import { usePageTitle } from '@/components/Layout/PageTitleContext'
 
 const Academy = () => {
   const { data: userProgress, isLoading: progressLoading } = useTrainingProgress();
   const { data: userBadges, isLoading: badgesLoading } = useUserBadges();
+  const { setPageTitle } = usePageTitle();
+
+  React.useEffect(() => {
+    setPageTitle('Revisjons Akademiet');
+  }, [setPageTitle]);
 
   const courses = [
     {
@@ -93,21 +98,14 @@ const Academy = () => {
     <StandardPageLayout
       contentClassName="space-y-6"
       header={
-        <PageHeader
-          title="Revisjons Akademiet"
-          subtitle="Profesjonell utvikling og opplæring for revisorer - nå med AI-drevne oppstartsmøter"
-          size="lg"
-          actions={
-            <div className="flex gap-2">
-              <Badge className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-2">
-                🤖 AI Simulator
-              </Badge>
-              <Badge className="bg-gradient-to-r from-green-400 to-blue-500 text-white px-4 py-2">
-                🎓 Strukturert læring
-              </Badge>
-            </div>
-          }
-        />
+        <div className="flex justify-end gap-2">
+          <Badge className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-2">
+            🤖 AI Simulator
+          </Badge>
+          <Badge className="bg-gradient-to-r from-green-400 to-blue-500 text-white px-4 py-2">
+            🎓 Strukturert læring
+          </Badge>
+        </div>
       }
     >
       {/* Enhanced Stats */}

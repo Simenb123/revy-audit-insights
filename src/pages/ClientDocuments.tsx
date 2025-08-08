@@ -1,14 +1,23 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useClientDetails } from '@/hooks/useClientDetails';
 import ClientDocumentManager from '@/components/ClientDocuments/ClientDocumentManager';
 import { logger } from '@/utils/logger';
 import StandardPageLayout from '@/components/Layout/StandardPageLayout';
-import PageHeader from '@/components/Layout/PageHeader';
+import { usePageTitle } from '@/components/Layout/PageTitleContext';
 
 const ClientDocuments = () => {
   const { clientId } = useParams<{ clientId: string }>();
   const { data: client, isLoading, error } = useClientDetails(clientId || '');
+  const { setPageTitle } = usePageTitle();
+
+  useEffect(() => {
+    if (client) {
+      setPageTitle(`Dokumenter: ${client.company_name || client.name}`);
+    } else {
+      setPageTitle('Dokumenter');
+    }
+  }, [client, setPageTitle]);
 
   logger.log('📄 [CLIENT_DOCUMENTS] Page rendered', {
     clientId,
@@ -42,15 +51,7 @@ const ClientDocuments = () => {
   }
 
   return (
-    <StandardPageLayout
-      className="container mx-auto p-6"
-      header={
-        <PageHeader
-          title="Dokumenter"
-          subtitle={`${client.company_name || client.name} - ${client.org_number}`}
-        />
-      }
-    >
+    <StandardPageLayout className="container mx-auto p-6">
       <ClientDocumentManager
         clientId={client.id}
         clientName={client.company_name || client.name}

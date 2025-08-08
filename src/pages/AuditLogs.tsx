@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Calendar, Search, Filter, FileText, Eye, CheckCircle } from 'lucide-react';
 import StandardPageLayout from '@/components/Layout/StandardPageLayout';
-import PageHeader from '@/components/Layout/PageHeader';
+import { usePageTitle } from '@/components/Layout/PageTitleContext';
 import { format } from 'date-fns';
 import { nb } from 'date-fns/locale';
 import AuditLogStats from '@/components/AuditLogs/AuditLogStats';
@@ -19,6 +19,11 @@ import { AuditLogAction } from '@/types/organization';
 
 const AuditLogs = () => {
   const { data: userProfile } = useUserProfile();
+  const { setPageTitle } = usePageTitle();
+
+  React.useEffect(() => {
+    setPageTitle('Revisjonslogger');
+  }, [setPageTitle]);
   const [searchTerm, setSearchTerm] = useState('');
   const [actionFilter, setActionFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -97,12 +102,7 @@ const AuditLogs = () => {
     <StandardPageLayout
       className="w-full px-4 py-6 md:px-6 lg:px-8"
       header={
-        <div className="flex items-center justify-between">
-          <PageHeader
-            title="Revisjonslogger"
-            subtitle="Spor alle handlinger og anmeldelser i systemet"
-            size="lg"
-          />
+        <div className="flex items-center justify-end">
           {canReview && (
             <Button onClick={handleCreateTestLog} variant="outline">
               Opprett test-logg

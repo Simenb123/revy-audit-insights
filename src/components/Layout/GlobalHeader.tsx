@@ -28,6 +28,7 @@ import { Users, Book, Brain, FileText, MessageSquare } from 'lucide-react';
 import { RecentClientsDropdown } from './RecentClientsDropdown';
 import TeamChatPanel from '@/components/Communication/TeamChatPanel';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import { usePageTitle } from '@/components/Layout/PageTitleContext';
 
 interface SearchResult {
   type: 'client' | 'article' | 'document' | 'page';
@@ -46,6 +47,7 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({ className = '' }) => {
   const { session } = useAuth();
   const { data: profile } = useUserProfile();
   const navigate = useNavigate();
+  const { pageTitle } = usePageTitle();
   
   // Search state
   const [searchOpen, setSearchOpen] = useState(false);
@@ -166,7 +168,7 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({ className = '' }) => {
 
   return (
     <>
-      <header className="sticky top-0 z-50 bg-revio-500 border-b border-revio-600 flex items-center justify-between px-6 py-3 text-white h-[var(--global-header-height)] shadow-sm">
+      <header className="sticky top-0 z-50 bg-revio-500 border-b border-revio-600 grid grid-cols-3 items-center px-6 py-3 text-white h-[var(--global-header-height)] shadow-sm">
         <div className="flex items-center">
           <Link
             to="/"
@@ -175,8 +177,11 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({ className = '' }) => {
             Revio
           </Link>
         </div>
+        <h1 className="text-lg font-semibold text-center truncate" data-testid="page-title">
+          {pageTitle}
+        </h1>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 justify-self-end">
           <Button 
             variant="ghost" 
             size="sm" 
