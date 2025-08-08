@@ -3,11 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Search, Download, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, Settings2, Bookmark, Plus } from 'lucide-react';
+import { Search, Download, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, Settings2, Bookmark, Plus, RotateCcw, Pencil, Trash } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import ColumnManager, { ColumnState as CMState } from '@/components/ui/column-manager';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger } from '@/components/ui/dropdown-menu';
 export interface DataTableColumn<T = any> {
   key: string;
   header: string;
@@ -127,6 +127,25 @@ const DataTable = <T extends Record<string, any>>({
     }
   };
 
+  const renameView = (id: string) => {
+    const current = (views || []).find((v) => v.id === id);
+    if (!current) return;
+    const name = window.prompt('Nytt navn på visning', current.name);
+    if (!name) return;
+    setViews((views || []).map((v) => (v.id === id ? { ...v, name } : v)));
+  };
+
+  const deleteView = (id: string) => {
+    const current = (views || []).find((v) => v.id === id);
+    if (!current) return;
+    if (!window.confirm(`Slette visning "${current.name}"?`)) return;
+    setViews((views || []).filter((v) => v.id !== id));
+  };
+
+  const resetColWidths = () => {
+    setColWidths({});
+  };
+
   const ViewsDropdown = () => (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -135,7 +154,7 @@ const DataTable = <T extends Record<string, any>>({
           Visninger
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
+      <DropdownMenuContent align="end" className="w-64">
         <DropdownMenuItem onClick={saveCurrentView}>
           <Plus className="h-4 w-4 mr-2" />
           Lagre ny visning
@@ -143,9 +162,23 @@ const DataTable = <T extends Record<string, any>>({
         <DropdownMenuSeparator />
         {views && views.length > 0 ? (
           views.map((v) => (
-            <DropdownMenuItem key={v.id} onClick={() => applyView(v)}>
-              {v.name}
-            </DropdownMenuItem>
+            <DropdownMenuSub key={v.id}>
+              <DropdownMenuSubTrigger>{v.name}</DropdownMenuSubTrigger>
+              <DropdownMenuSubContent>
+                <DropdownMenuItem onClick={() => applyView(v)}>
+                  <Settings2 className="h-4 w-4 mr-2" />
+                  Bruk visning
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => renameView(v.id)}>
+                  <Pencil className="h-4 w-4 mr-2" />
+                  Gi nytt navn
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => deleteView(v.id)}>
+                  <Trash className="h-4 w-4 mr-2" />
+                  Slett
+                </DropdownMenuItem>
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
           ))
         ) : (
           <div className="px-2 py-1.5 text-sm text-muted-foreground">Ingen lagrede visninger</div>
@@ -480,6 +513,12 @@ const DataTable = <T extends Record<string, any>>({
             {enableColumnManager && (
               <ColumnManager columns={cmState} onChange={setCmState} allowPinLeft title="Tilpass kolonner" triggerLabel="Kolonner" />
             )}
+            {preferencesKey && (
+              <Button variant="outline" size="sm" onClick={resetColWidths} title="Tilbakestill kolonnebredder">
+                <RotateCcw className="h-4 w-4 mr-2" />
+                Tilbakestill bredder
+              </Button>
+            )}
             {enableExport && (
               <Button variant="outline" size="sm" onClick={handleExport} disabled={!data || data.length === 0}>
                 <Download className="h-4 w-4 mr-2" />
@@ -511,6 +550,12 @@ const DataTable = <T extends Record<string, any>>({
             {preferencesKey && <ViewsDropdown />}
             {enableColumnManager && (
               <ColumnManager columns={cmState} onChange={setCmState} allowPinLeft title="Tilpass kolonner" triggerLabel="Kolonner" />
+            )}
+            {preferencesKey && (
+              <Button variant="outline" size="sm" onClick={resetColWidths} title="Tilbakestill kolonnebredder">
+                <RotateCcw className="h-4 w-4 mr-2" />
+                Tilbakestill bredder
+              </Button>
             )}
             {enableExport && (
               <Button variant="outline" size="sm" onClick={handleExport} disabled={!data || data.length === 0}>
