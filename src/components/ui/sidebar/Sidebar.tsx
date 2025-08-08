@@ -87,7 +87,7 @@ export const Sidebar = React.forwardRef<
         />
         <div
           className={cn(
-            "duration-300 fixed top-[var(--header-height)] h-[calc(100dvh-var(--header-height))] bg-sidebar transition-[left,right,width,transform] ease-in-out md:flex",
+            "duration-300 fixed top-[var(--global-header-height)] h-[calc(100dvh-var(--global-header-height))] bg-sidebar transition-[left,right,width,transform] ease-in-out md:flex",
             width,
             side === "left"
               ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"
