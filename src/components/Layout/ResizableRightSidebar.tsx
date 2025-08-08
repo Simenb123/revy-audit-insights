@@ -17,7 +17,7 @@ import { useRightSidebar } from './RightSidebarContext';
 import { useLayout } from './LayoutContext';
 import ClientFiguresPanel from '@/components/Sidebar/ClientFiguresPanel';
 
-const COLLAPSED_WIDTH = 72;
+const COLLAPSED_WIDTH = 56;
 
 const ResizableRightSidebar = () => {
   const {

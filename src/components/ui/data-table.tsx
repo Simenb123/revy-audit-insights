@@ -465,7 +465,7 @@ const TableBlock = (
           className={`${maxBodyHeight ? 'relative overflow-auto' : 'overflow-x-auto'}`}
           style={maxBodyHeight ? { maxHeight: typeof maxBodyHeight === 'number' ? `${maxBodyHeight}px` : maxBodyHeight } : undefined}
         >
-          <Table>
+          <Table noWrapper>
             <TableHeader className={stickyHeader ? 'sticky top-0 z-30 bg-background' : undefined}>
               <DndContext sensors={colSensors} collisionDetection={closestCenter} onDragEnd={onColDragEnd}>
                 <SortableContext items={effectiveColumns.list.map(({ def }) => def.key)} strategy={horizontalListSortingStrategy}>
