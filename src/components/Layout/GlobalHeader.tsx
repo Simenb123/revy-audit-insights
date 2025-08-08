@@ -24,8 +24,10 @@ import {
   CommandList,
 } from '@/components/ui/command';
 import { useDebounce } from '@/hooks/useDebounce';
-import { Users, Book, Brain, FileText } from 'lucide-react';
+import { Users, Book, Brain, FileText, MessageSquare } from 'lucide-react';
 import { RecentClientsDropdown } from './RecentClientsDropdown';
+import TeamChatPanel from '@/components/Communication/TeamChatPanel';
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 
 interface SearchResult {
   type: 'client' | 'article' | 'document' | 'page';
@@ -51,6 +53,11 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({ className = '' }) => {
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const debouncedQuery = useDebounce(query, 300);
+
+  // Team chat state
+  const [teamChatOpen, setTeamChatOpen] = useState(false);
+  const [teamChatMessages] = useState<string[]>([]);
+  const [teamChatUnread, setTeamChatUnread] = useState(0);
 
   const handleSignOut = async () => {
     try {
@@ -182,7 +189,28 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({ className = '' }) => {
           <div className="text-white">
             <RecentClientsDropdown />
           </div>
-          
+
+          <Dialog open={teamChatOpen} onOpenChange={setTeamChatOpen}>
+            <DialogTrigger asChild>
+              <Button variant="ghost" size="sm" className="relative text-white hover:bg-revio-600">
+                <MessageSquare className="h-5 w-5" />
+                {teamChatUnread > 0 && (
+                  <span
+                    data-testid="teamchat-unread-badge"
+                    className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-red-500"
+                  />
+                )}
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="p-0">
+              <TeamChatPanel
+                isOpen={teamChatOpen}
+                messages={teamChatMessages}
+                onUnreadChange={setTeamChatUnread}
+              />
+            </DialogContent>
+          </Dialog>
+
           <Button variant="ghost" size="sm" className="text-white hover:bg-revio-600">
             <Bell className="h-5 w-5" />
           </Button>
