@@ -197,13 +197,26 @@ function calculatePrefixSum(accounts: StandardAccountBalance[], prefix: string):
 }
 
 function getBaseValues(accounts: StandardAccountBalance[]) {
+  // Using STANDARD account numbers (10/15 revenues, 20-70 costs, 5xx-6xx assets, 7xx-8xx liabilities)
+  const revenue10 = Math.abs(calculatePrefixSum(accounts, '10'));
+  const revenue15 = Math.abs(calculatePrefixSum(accounts, '15'));
+  const totalRevenue = revenue10 + revenue15;
+
+  const costs20 = Math.abs(calculatePrefixSum(accounts, '20'));
+  const costs30 = Math.abs(calculatePrefixSum(accounts, '30'));
+  const costs40 = Math.abs(calculatePrefixSum(accounts, '40'));
+  const costs50 = Math.abs(calculatePrefixSum(accounts, '50'));
+  const costs60 = Math.abs(calculatePrefixSum(accounts, '60'));
+  const costs70 = Math.abs(calculatePrefixSum(accounts, '70'));
+  const totalOperatingCosts = costs20 + costs30 + costs40 + costs50 + costs60 + costs70;
+
   return {
-    current_assets: calculatePrefixSum(accounts, '1') - calculatePrefixSum(accounts, '10'), // Omløpsmidler (1x - 10x)
-    current_liabilities: calculatePrefixSum(accounts, '21') + calculatePrefixSum(accounts, '22'), // Kortsiktig gjeld (21x + 22x)
-    total_assets: calculatePrefixSum(accounts, '1'), // Sum eiendeler (1x)
-    total_equity: calculatePrefixSum(accounts, '20'), // Egenkapital (20x)
-    revenue: Math.abs(calculatePrefixSum(accounts, '3')), // Driftsinntekter (3x)
-    operating_result: Math.abs(calculatePrefixSum(accounts, '3')) - Math.abs(calculatePrefixSum(accounts, '4')) - Math.abs(calculatePrefixSum(accounts, '5')) // Driftsresultat
+    current_assets: calculatePrefixSum(accounts, '605') + calculatePrefixSum(accounts, '610') + calculatePrefixSum(accounts, '611') + calculatePrefixSum(accounts, '615') + calculatePrefixSum(accounts, '618') + calculatePrefixSum(accounts, '655'),
+    current_liabilities: calculatePrefixSum(accounts, '780') + calculatePrefixSum(accounts, '790'),
+    total_assets: calculatePrefixSum(accounts, '5') + calculatePrefixSum(accounts, '6'),
+    total_equity: calculatePrefixSum(accounts, '670') + calculatePrefixSum(accounts, '680') + calculatePrefixSum(accounts, '681') + calculatePrefixSum(accounts, '690') + calculatePrefixSum(accounts, '695') + calculatePrefixSum(accounts, '700') + calculatePrefixSum(accounts, '705'),
+    revenue: totalRevenue,
+    operating_result: totalRevenue - totalOperatingCosts
   };
 }
 
