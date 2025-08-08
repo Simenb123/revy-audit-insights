@@ -368,7 +368,7 @@ function processRolesStrict(roller) {
   if (ceoRole && (ceoRole.person || ceoRole.navn)) {
     let personName = ceoRole.person?.navn
       ?? ((ceoRole.person?.fornavn && ceoRole.person?.etternavn) ? `${ceoRole.person.fornavn} ${ceoRole.person.etternavn}` : null)
-      ?? ceoRole.navn || null;
+      ?? ceoRole.navn ?? null;
     if (personName) {
       result.ceo = {
         name: personName,
@@ -387,7 +387,7 @@ function processRolesStrict(roller) {
   if (chairRole && (chairRole.person || chairRole.navn)) {
     let personName = chairRole.person?.navn
       ?? ((chairRole.person?.fornavn && chairRole.person?.etternavn) ? `${chairRole.person.fornavn} ${chairRole.person.etternavn}` : null)
-      ?? chairRole.navn || null;
+      ?? chairRole.navn ?? null;
     if (personName) {
       result.chair = {
         name: personName,
@@ -407,7 +407,7 @@ function processRolesStrict(roller) {
     if (!isChair && isStyr && (r.person || r.navn)) {
       let personName = r.person?.navn
         ?? ((r.person?.fornavn && r.person?.etternavn) ? `${r.person.fornavn} ${r.person.etternavn}` : null)
-        ?? r.navn || null;
+        ?? r.navn ?? null;
       if (personName) {
         result.boardMembers.push({
           name: personName,
