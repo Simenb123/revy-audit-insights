@@ -172,7 +172,7 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({ className = '' }) => {
             to="/"
             className="text-2xl font-extrabold tracking-wide text-white hover:opacity-90"
           >
-            Reviooo
+            Revio
           </Link>
         </div>
 
