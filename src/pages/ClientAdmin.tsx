@@ -9,6 +9,8 @@ import ClientForm from '@/components/Clients/ClientAdmin/ClientForm';
 import ClientList from '@/components/Clients/ClientAdmin/ClientList';
 import BrregSearch from '@/components/Clients/ClientAdmin/BrregSearch';
 import { mockClients } from '@/components/Clients/ClientAdmin/mockData';
+import StandardPageLayout from '@/components/Layout/StandardPageLayout';
+import PageHeader from '@/components/Layout/PageHeader';
 
 const ClientAdmin = () => {
   const { setContext } = useRevyContext();
@@ -107,16 +109,16 @@ const ClientAdmin = () => {
   };
 
   return (
-    <div className="w-full px-4 py-6 md:px-6 lg:px-8">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-3xl font-bold">Klientadministrasjon</h1>
-          <p className="text-muted-foreground mt-1">
-            Administrer klienter og importer fra Brønnøysundregisteret
-          </p>
-        </div>
-      </div>
-      
+    <StandardPageLayout
+      className="w-full px-4 py-6 md:px-6 lg:px-8"
+      header={
+        <PageHeader
+          title="Klientadministrasjon"
+          subtitle="Administrer klienter og importer fra Brønnøysundregisteret"
+          size="lg"
+        />
+      }
+    >
       <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
         <TabsList className="grid grid-cols-3 w-[400px]">
           <TabsTrigger value="list">Klientliste</TabsTrigger>
@@ -174,7 +176,7 @@ const ClientAdmin = () => {
           />
         </TabsContent>
       </Tabs>
-    </div>
+    </StandardPageLayout>
   );
 };
 

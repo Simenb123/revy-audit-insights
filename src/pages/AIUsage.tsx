@@ -3,6 +3,8 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import StandardPageLayout from '@/components/Layout/StandardPageLayout';
+import PageHeader from '@/components/Layout/PageHeader';
 import { 
   Brain, 
   TrendingUp, 
@@ -79,18 +81,23 @@ const AIUsage = () => {
   };
 
   return (
-    <main className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold">AI-bruksstatistikk</h1>
-          <p className="text-muted-foreground">Oversikt over din bruk av Revy AI-assistenten</p>
+    <StandardPageLayout
+      className="p-6"
+      contentClassName="space-y-6"
+      header={
+        <div className="flex justify-between items-center">
+          <PageHeader
+            title="AI-bruksstatistikk"
+            subtitle="Oversikt over din bruk av Revy AI-assistenten"
+            size="lg"
+          />
+          <Badge variant="outline" className="flex items-center gap-2">
+            <Brain className="h-4 w-4" />
+            Revy AI v2.0
+          </Badge>
         </div>
-        <Badge variant="outline" className="flex items-center gap-2">
-          <Brain className="h-4 w-4" />
-          Revy AI v2.0
-        </Badge>
-      </div>
-
+      }
+    >
       {/* Enhanced overview cards */}
       {personalStats && (
         <div className="grid grid-cols-4 gap-4 mb-6">
@@ -183,7 +190,7 @@ const AIUsage = () => {
 
       {/* Main dashboard */}
       <AIUsageDashboard />
-    </main>
+    </StandardPageLayout>
   );
 };
 
