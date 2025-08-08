@@ -17,7 +17,7 @@ import { useRightSidebar } from './RightSidebarContext';
 import { useLayout } from './LayoutContext';
 import ClientFiguresPanel from '@/components/Sidebar/ClientFiguresPanel';
 
-const COLLAPSED_WIDTH = 56;
+const COLLAPSED_WIDTH = 48;
 
 const ResizableRightSidebar = () => {
   const {
@@ -228,12 +228,12 @@ useEffect(() => {
                       onClick={() => openTab('ai')}
                       aria-label="Åpne AI-Revy Chat"
                     >
-                      <Bot className="h-5 w-5" />
+                      <Bot className="h-6 w-6" />
                     </Button>
                     {activeTab === 'ai' && (
                       <span className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-0.5 rounded-full bg-primary" />
                     )}
-                    <span className="absolute left-8 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground pointer-events-none">AI</span>
+                    
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="left">AI‑Revy Chat</TooltipContent>
@@ -249,12 +249,12 @@ useEffect(() => {
                       onClick={() => openTab('chat')}
                       aria-label="Åpne Teamchat"
                     >
-                      <MessageSquare className="h-5 w-5" />
+                      <MessageSquare className="h-6 w-6" />
                     </Button>
                     {activeTab === 'chat' && (
                       <span className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-0.5 rounded-full bg-primary" />
                     )}
-                    <span className="absolute left-8 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground pointer-events-none">Chat</span>
+                    
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="left">Teamchat</TooltipContent>
@@ -270,12 +270,12 @@ useEffect(() => {
                       onClick={() => openTab('figures')}
                       aria-label="Åpne Analyse"
                     >
-                      <BarChart2 className="h-5 w-5" />
+                      <BarChart2 className="h-6 w-6" />
                     </Button>
                     {activeTab === 'figures' && (
                       <span className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-0.5 rounded-full bg-primary" />
                     )}
-                    <span className="absolute left-8 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground pointer-events-none">Analyse</span>
+                    
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="left">Analyse</TooltipContent>
