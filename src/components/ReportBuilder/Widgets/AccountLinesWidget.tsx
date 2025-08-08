@@ -5,7 +5,7 @@ import { InlineEditableTitle } from '../InlineEditableTitle';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
 import { useFormulaCalculation } from '@/hooks/useFormulaCalculation';
-import { useFirmStandardAccounts } from '@/hooks/useFirmStandardAccounts';
+import { useFirmStandardAccounts, type FirmStandardAccount } from '@/hooks/useFirmStandardAccounts';
 import { formatCurrency } from '@/lib/formatters';
 
 interface AccountLinesWidgetProps {
@@ -127,7 +127,7 @@ export function AccountLinesWidget({ widget }: AccountLinesWidgetProps) {
 
   const rows: RowDef[] = React.useMemo(() => {
     const r: RowDef[] = [];
-    const byNumber = new Map(standardAccounts.map(sa => [String(sa.standard_number), sa.standard_name]));
+    const byNumber = new Map<string, string>(standardAccounts.map((sa: FirmStandardAccount) => [String(sa.standard_number), sa.standard_name] as [string, string]));
 
     lineNumbers.forEach(num => {
       const name = byNumber.get(String(num));

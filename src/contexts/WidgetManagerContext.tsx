@@ -21,7 +21,8 @@ export interface Widget {
     | 'formula'
     | 'filter'
     | 'pivot'
-    | 'gauge';
+    | 'gauge'
+    | 'accountLines';
   title: string;
   config?: Record<string, any>;
 }
