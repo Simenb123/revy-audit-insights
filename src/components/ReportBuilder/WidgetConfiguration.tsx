@@ -165,6 +165,46 @@ const { data: standardAccounts = [] } = useFirmStandardAccounts();
               />
               <Label htmlFor="showTrend">Vis trend</Label>
             </div>
+
+            <div>
+              <Label htmlFor="unitScale">Enhetsskala</Label>
+              <Select
+                value={config.unitScale || 'none'}
+                onValueChange={(value) => updateConfig('unitScale', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Ingen</SelectItem>
+                  <SelectItem value="thousand">Tusen</SelectItem>
+                  <SelectItem value="million">Millioner</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="displayAsPercentage"
+                checked={config.displayAsPercentage || false}
+                onChange={(e) => updateConfig('displayAsPercentage', e.target.checked)}
+                className="rounded"
+              />
+              <Label htmlFor="displayAsPercentage">Vis som prosent</Label>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="showCurrency"
+                checked={(config.showCurrency !== false) && !config.displayAsPercentage}
+                onChange={(e) => updateConfig('showCurrency', e.target.checked)}
+                className="rounded"
+                disabled={config.displayAsPercentage}
+              />
+              <Label htmlFor="showCurrency">Vis valuta</Label>
+            </div>
           </div>
         );
 
