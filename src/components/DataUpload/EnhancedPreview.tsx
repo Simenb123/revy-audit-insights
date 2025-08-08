@@ -83,6 +83,7 @@ const EnhancedPreview: React.FC<EnhancedPreviewProps> = ({
   const [currentHeaderRowIndex, setCurrentHeaderRowIndex] = useState<number>(preview.headerRowIndex);
   const [currentHeaders, setCurrentHeaders] = useState<string[]>(preview.headers);
   const [showAllRows, setShowAllRows] = useState(false);
+  const [isSourcePreviewOpen, setIsSourcePreviewOpen] = useState(false);
 
   useEffect(() => {
     const initializeMapping = async () => {
@@ -328,18 +329,13 @@ const EnhancedPreview: React.FC<EnhancedPreviewProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* AI Suggestions Header */}
-      <div className="bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/20 rounded-lg p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Brain className="w-5 h-5 text-primary" />
-            <h3 className="font-semibold">Intelligent kolonnmapping</h3>
+      {/* Kilde-forhåndsvisning (kompakt, collapsible) */}
+      <Collapsible open={isSourcePreviewOpen} onOpenChange={setIsSourcePreviewOpen}>
+        <div className="bg-muted/30 border border-border rounded-lg p-3 flex items-center justify-between">
+          <div className="text-sm text-muted-foreground">
+            Kilde-forhåndsvisning
           </div>
-          <div className="flex items-center gap-4">
-            <Badge variant="outline" className="flex items-center gap-1">
-              <Zap className="w-3 h-3" />
-              {suggestedMappings.length} AI-forslag
-            </Badge>
+          <div className="flex items-center gap-2">
             {suggestedMappings.length > 0 && (
               <Button 
                 variant="outline" 
@@ -350,21 +346,62 @@ const EnhancedPreview: React.FC<EnhancedPreviewProps> = ({
                 Bruk alle forslag
               </Button>
             )}
+            <CollapsibleTrigger asChild>
+              <Button variant="ghost" size="sm">
+                {isSourcePreviewOpen ? 'Skjul' : 'Vis'}
+              </Button>
+            </CollapsibleTrigger>
           </div>
         </div>
-      </div>
+        <CollapsibleContent>
+          <div className="mt-2 overflow-x-auto border rounded">
+            <table className="w-full text-xs">
+              <tbody>
+                {displayRows.map((row) => (
+                  <tr
+                    key={row.index}
+                    className={`cursor-pointer ${
+                      row.isHeader
+                        ? 'bg-primary/10 ring-1 ring-primary/30'
+                        : row.isSkipped
+                        ? 'bg-muted/30'
+                        : ''
+                    }`}
+                    onClick={() => handleHeaderRowChange(row.index.toString())}
+                    title={row.isHeader ? 'Valgt header' : 'Klikk for å velge som header'}
+                  >
+                    {row.content
+                      .slice(0, Math.max(3, Math.min(8, currentHeaders.length || row.content.length)))
+                      .map((cell, i) => (
+                        <td key={i} className="px-2 py-1 border-b">
+                          <span className="text-[11px]">
+                            {typeof cell === 'string' ? cell : cell != null ? String(cell) : ''}
+                          </span>
+                        </td>
+                      ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
 
       {/* Kompakt valg av header-rad (uten forhåndsvisningstabell) */}
       <div className="border border-border rounded-lg p-3 bg-muted/30">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-muted-foreground">
+          <div className="flex items-center gap-2 text-muted-foreground min-w-0">
             <AlertCircle className="w-4 h-4" />
-            <span className="font-medium">Header rad valgt: rad {currentHeaderRowIndex + 1}</span>
+            <span className="font-medium shrink-0">Header rad valgt: rad {currentHeaderRowIndex + 1}</span>
+            <span className="text-xs text-muted-foreground truncate max-w-[50vw]">
+              {/* lite snapshot av headerinnholdet */}
+              {currentHeaders.slice(0, 4).map((h, i) => (i === 0 ? h : ` | ${h}`))}
+            </span>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-sm">Velg header rad:</span>
             <Select value={currentHeaderRowIndex.toString()} onValueChange={handleHeaderRowChange}>
-              <SelectTrigger className="w-40">
+              <SelectTrigger className="w-44">
                 <SelectValue placeholder={`Rad ${currentHeaderRowIndex + 1}`} />
               </SelectTrigger>
               <SelectContent>
