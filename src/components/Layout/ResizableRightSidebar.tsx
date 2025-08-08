@@ -4,7 +4,7 @@ import { useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Drawer, DrawerTrigger, DrawerContent, DrawerClose } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, X, ChevronLeft, ChevronRight, Bot } from 'lucide-react';
+import { MessageSquare, X, ChevronLeft, ChevronRight, Bot, BarChart2 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useClientLookup } from '@/hooks/useClientLookup';
 import { detectPageType, extractClientId } from './pageDetectionHelpers';
@@ -15,6 +15,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 
 import { useRightSidebar } from './RightSidebarContext';
 import { useLayout } from './LayoutContext';
+import ClientFiguresPanel from '@/components/Sidebar/ClientFiguresPanel';
 
 const COLLAPSED_WIDTH = 64;
 
@@ -35,7 +36,7 @@ const ResizableRightSidebar = () => {
   const { data: clientLookup } = useClientLookup(clientIdOrOrg);
   const clientId = clientLookup?.id;
 
-  const [activeTab, setActiveTab] = useState<'ai' | 'chat'>('ai');
+  const [activeTab, setActiveTab] = useState<'ai' | 'chat' | 'figures'>('ai');
 
   const startWidthRef = React.useRef(width);
 
@@ -62,7 +63,7 @@ const ResizableRightSidebar = () => {
     setIsDragging(false);
   }, []);
 
-  // Keyboard shortcuts
+// Keyboard shortcuts
 useEffect(() => {
   const handleKeyDown = (e: KeyboardEvent) => {
     const key = e.key.toLowerCase();
@@ -76,6 +77,9 @@ useEffect(() => {
       } else if (key === 'c') {
         e.preventDefault();
         openTab('chat');
+      } else if (key === 'f') {
+        e.preventDefault();
+        openTab('figures');
       }
     }
   };
@@ -104,11 +108,10 @@ useEffect(() => {
     setIsCollapsed(!isCollapsed);
   };
 
-  const openTab = (tab: 'ai' | 'chat') => {
+  const openTab = (tab: 'ai' | 'chat' | 'figures') => {
     setActiveTab(tab);
     if (isCollapsed) setIsCollapsed(false);
   };
-
   const getPageTitle = () => {
     switch (pageType) {
       case 'admin':
