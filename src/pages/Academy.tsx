@@ -1,4 +1,4 @@
-
+import React from 'react';
 import { GraduationCap, BookOpen, PlayCircle, Award, Users, Calendar, MessageSquare, Mic, Star } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
