@@ -17,7 +17,7 @@ import { useRightSidebar } from './RightSidebarContext';
 import { useLayout } from './LayoutContext';
 import ClientFiguresPanel from '@/components/Sidebar/ClientFiguresPanel';
 
-const COLLAPSED_WIDTH = 64;
+const COLLAPSED_WIDTH = 72;
 
 const ResizableRightSidebar = () => {
   const {
@@ -134,15 +134,19 @@ useEffect(() => {
 
     return (
       <div className="flex h-full flex-col justify-end">
-        <AiRevyCard
-          variant={variant}
-          className="w-full border-0"
-          context={clientId ? 'client-detail' : 'general'}
-          clientData={clientId ? { id: clientId } : undefined}
-          activeTab={activeTab === 'chat' ? 'chat' : 'ai'}
-          onTabChange={(tab) => setActiveTab(tab)}
-          hideTabs={!isMobile}
-        />
+        {activeTab === 'figures' ? (
+          <ClientFiguresPanel clientId={clientId} />
+        ) : (
+          <AiRevyCard
+            variant={variant}
+            className="w-full border-0"
+            context={clientId ? 'client-detail' : 'general'}
+            clientData={clientId ? { id: clientId } : undefined}
+            activeTab={activeTab === 'chat' ? 'chat' : 'ai'}
+            onTabChange={(tab) => setActiveTab(tab)}
+            hideTabs={!isMobile}
+          />
+        )}
       </div>
     );
   };
@@ -255,6 +259,27 @@ useEffect(() => {
                 </TooltipTrigger>
                 <TooltipContent side="left">Teamchat</TooltipContent>
               </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="relative w-full">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className={`w-full h-10 justify-start hover-scale ${activeTab === 'figures' ? 'bg-primary/10 text-primary ring-1 ring-primary/30' : 'hover:bg-muted'}`}
+                      onClick={() => openTab('figures')}
+                      aria-label="Åpne Analyse"
+                    >
+                      <BarChart2 className="h-5 w-5" />
+                    </Button>
+                    {activeTab === 'figures' && (
+                      <span className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-0.5 rounded-full bg-primary" />
+                    )}
+                    <span className="absolute left-8 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground pointer-events-none">Analyse</span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="left">Analyse</TooltipContent>
+              </Tooltip>
             </div>
           ) : (
             <div className="flex items-center gap-2 px-3 py-2">
@@ -299,6 +324,21 @@ useEffect(() => {
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent side="left">Teamchat</TooltipContent>
+                </Tooltip>
+
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className={`h-8 w-8 hover-scale ${activeTab === 'figures' ? 'bg-primary/10 text-primary' : 'hover:bg-muted'}`}
+                      onClick={() => setActiveTab('figures')}
+                      aria-label="Bytt til Analyse"
+                    >
+                      <BarChart2 className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="left">Analyse</TooltipContent>
                 </Tooltip>
               </div>
             </div>
