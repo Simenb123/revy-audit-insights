@@ -139,8 +139,8 @@ useEffect(() => {
           className="w-full border-0"
           context={clientId ? 'client-detail' : 'general'}
           clientData={clientId ? { id: clientId } : undefined}
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
+          activeTab={activeTab === 'chat' ? 'chat' : 'ai'}
+          onTabChange={(tab) => setActiveTab(tab)}
           hideTabs={!isMobile}
         />
       </div>
