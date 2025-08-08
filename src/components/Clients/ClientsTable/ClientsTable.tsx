@@ -152,6 +152,8 @@ const ClientsTable = ({ clients, onRowSelect, selectedClientId }: ClientsTablePr
         navigate(`/clients/${row.id}`);
       }}
       getRowClassName={(row) => (selectedClientId === row.id ? "bg-muted" : "")}
+      stickyHeader
+      maxBodyHeight="70vh"
       wrapInCard={false}
       showSearch={false}
       emptyMessage="Ingen klienter funnet"

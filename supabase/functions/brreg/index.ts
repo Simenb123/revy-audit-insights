@@ -420,23 +420,31 @@ function processRolesStrict(roller) {
     }
   });
 
-  // Registrert regnskapsfører: forsøk å finne rolle med beskrivelse som matcher "regnskapsfør" eller typekode "REGN"
-  const accountantRole = roller.find(r =>
-    (typeof r.rolleBeskrivelse === 'string' && /regnskapsf[øo]rer/i.test(r.rolleBeskrivelse)) ||
-    (r.type === 'REGN' || r.type?.kode === 'REGN')
-  );
-  if (accountantRole) {
-    const nameCandidate = accountantRole.person?.navn
-      ?? ((accountantRole.person?.fornavn && accountantRole.person?.etternavn) ? `${accountantRole.person.fornavn} ${accountantRole.person.etternavn}` : null)
-      ?? accountantRole.enhet?.navn
-      ?? accountantRole.organisasjon?.navn
-      ?? accountantRole.virksomhet?.navn
-      ?? accountantRole.navn
+  // Registrert regnskapsfører: bredere deteksjon via rollebeskrivelser og typekoder
+  const accountantCandidates = roller.filter((r) => {
+    const desc = String(r.rolleBeskrivelse || r.beskrivelse || r.type?.beskrivelse || '').toLowerCase();
+    const typeCode = (r.type && (r.type.kode || r.type)) || '';
+    const typeStr = String(typeCode).toLowerCase();
+    const roleStr = String(r.rolle || '').toLowerCase();
+    // Treff på "regnsk" dekker regnskap/regnskapsfører/regnskapsforetak
+    return /regnsk/.test(desc) || /regnsk/.test(typeStr) || /regnsk/.test(roleStr);
+  });
+
+  if (accountantCandidates.length > 0) {
+    const best = accountantCandidates.find((r) => r.enhet?.navn || r.organisasjon?.navn || r.virksomhet?.navn) || accountantCandidates[0];
+    const nameCandidate = best.enhet?.navn
+      ?? best.organisasjon?.navn
+      ?? best.virksomhet?.navn
+      ?? best.person?.navn
+      ?? ((best.person?.fornavn && best.person?.etternavn) ? `${best.person.fornavn} ${best.person.etternavn}` : null)
+      ?? best.navn
       ?? null;
     if (nameCandidate) {
       result.accountantName = nameCandidate;
     }
   }
+
+  try { log('[BRREG] Accountant detected:', result.accountantName || 'None'); } catch {}
 
   return result;
 }

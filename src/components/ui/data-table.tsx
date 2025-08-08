@@ -51,6 +51,8 @@ export interface DataTableProps<T = any> {
   getRowClassName?: (row: T) => string | undefined;
   wrapInCard?: boolean; // default true
   showSearch?: boolean; // default true
+  stickyHeader?: boolean; // make header stick to top while scrolling
+  maxBodyHeight?: string | number; // e.g., '70vh' or 480
 }
 
 const DataTable = <T extends Record<string, any>>({
@@ -79,6 +81,8 @@ const DataTable = <T extends Record<string, any>>({
   getRowClassName,
   wrapInCard = true,
   showSearch = true,
+  stickyHeader = true,
+  maxBodyHeight,
 }: DataTableProps<T>) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<string>('');
@@ -363,7 +367,7 @@ const SortableHeader: React.FC<{ def: DataTableColumn<T>; pinned: boolean }> = (
       ref={setNodeRef as any}
       className={`${def.sortable !== false ? 'cursor-pointer hover:bg-muted/50 select-none' : ''} ${
         def.align === 'right' ? 'text-right' : def.align === 'center' ? 'text-center' : ''
-      } ${def.className || ''} ${pinned ? 'sticky left-0 z-10 bg-background' : ''} relative`}
+      } ${def.className || ''} ${pinned ? 'sticky left-0 z-30 bg-background' : ''} relative`}
       style={style}
       onClick={() => def.sortable !== false && handleSort(def.key)}
       {...attributes}
@@ -410,65 +414,70 @@ const TableBlock = (
             />
           </div>
         )}
-        <Table>
-          <TableHeader>
-            <DndContext sensors={colSensors} collisionDetection={closestCenter} onDragEnd={onColDragEnd}>
-              <SortableContext items={effectiveColumns.list.map(({ def }) => def.key)} strategy={horizontalListSortingStrategy}>
-                <TableRow>
-                  {effectiveColumns.list.map(({ def }) => (
-                    <SortableHeader key={def.key} def={def} pinned={effectiveColumns.pinnedLeftKey === def.key} />
-                  ))}
-                </TableRow>
-              </SortableContext>
-            </DndContext>
-          </TableHeader>
-          <TableBody>
-            {filteredAndSortedData.length === 0 ? (
-              <>
-                <TableRow>
-                  <TableCell colSpan={effectiveColumns.list.length} className="text-center text-muted-foreground">
-                    {emptyMessage}
-                  </TableCell>
-                </TableRow>
-                {showTotals && totalRow && totalRow}
-              </>
-            ) : (
-              <>
-                {filteredAndSortedData.map((item, index) => (
-                  <TableRow
-                    key={(item as any).id ?? index}
-                    className={`${onRowClick ? 'cursor-pointer hover:bg-muted/50' : ''} ${
-                      getRowClassName?.(item) || ''
-                    }`}
-                    onClick={() => onRowClick?.(item)}
-                  >
-                    {effectiveColumns.list.map(({ def }) => {
-                      const value =
-                        typeof def.accessor === 'function'
-                          ? def.accessor(item)
-                          : (item[def.accessor as keyof T] as any);
-                      const formatted = def.format ? def.format(value, item) : value;
-                      return (
-                        <TableCell
-                          key={def.key}
-                          className={`${
-                            def.align === 'right' ? 'text-right' : def.align === 'center' ? 'text-center' : ''
-                          } ${def.className || ''} ${
-                            effectiveColumns.pinnedLeftKey === def.key ? 'sticky left-0 z-10 bg-background' : ''
-                          }`}
-                          style={getColStyle(def.key)}
-                        >
-                          {formatted}
-                        </TableCell>
-                      );
-                    })}
+        <div
+          className={`${maxBodyHeight ? 'relative overflow-auto' : 'overflow-x-auto'}`}
+          style={maxBodyHeight ? { maxHeight: typeof maxBodyHeight === 'number' ? `${maxBodyHeight}px` : maxBodyHeight } : undefined}
+        >
+          <Table>
+            <TableHeader className={stickyHeader ? 'sticky top-0 z-20 bg-background' : undefined}>
+              <DndContext sensors={colSensors} collisionDetection={closestCenter} onDragEnd={onColDragEnd}>
+                <SortableContext items={effectiveColumns.list.map(({ def }) => def.key)} strategy={horizontalListSortingStrategy}>
+                  <TableRow>
+                    {effectiveColumns.list.map(({ def }) => (
+                      <SortableHeader key={def.key} def={def} pinned={effectiveColumns.pinnedLeftKey === def.key} />
+                    ))}
                   </TableRow>
-                ))}
-                {showTotals && totalRow && totalRow}
-              </>
-            )}
-          </TableBody>
-        </Table>
+                </SortableContext>
+              </DndContext>
+            </TableHeader>
+            <TableBody>
+              {filteredAndSortedData.length === 0 ? (
+                <>
+                  <TableRow>
+                    <TableCell colSpan={effectiveColumns.list.length} className="text-center text-muted-foreground">
+                      {emptyMessage}
+                    </TableCell>
+                  </TableRow>
+                  {showTotals && totalRow && totalRow}
+                </>
+              ) : (
+                <>
+                  {filteredAndSortedData.map((item, index) => (
+                    <TableRow
+                      key={(item as any).id ?? index}
+                      className={`${onRowClick ? 'cursor-pointer hover:bg-muted/50' : ''} ${
+                        getRowClassName?.(item) || ''
+                      }`}
+                      onClick={() => onRowClick?.(item)}
+                    >
+                      {effectiveColumns.list.map(({ def }) => {
+                        const value =
+                          typeof def.accessor === 'function'
+                            ? def.accessor(item)
+                            : (item[def.accessor as keyof T] as any);
+                        const formatted = def.format ? def.format(value, item) : value;
+                        return (
+                          <TableCell
+                            key={def.key}
+                            className={`${
+                              def.align === 'right' ? 'text-right' : def.align === 'center' ? 'text-center' : ''
+                            } ${def.className || ''} ${
+                              effectiveColumns.pinnedLeftKey === def.key ? 'sticky left-0 z-10 bg-background' : ''
+                            }`}
+                            style={getColStyle(def.key)}
+                          >
+                            {formatted}
+                          </TableCell>
+                        );
+                      })}
+                    </TableRow>
+                  ))}
+                  {showTotals && totalRow && totalRow}
+                </>
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
       <div className="flex items-center justify-between">
