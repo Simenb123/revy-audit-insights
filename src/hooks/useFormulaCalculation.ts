@@ -5,7 +5,7 @@ interface FormulaCalculationParams {
   clientId?: string;
   fiscalYear?: number;
   formulaId?: string;
-  customFormula?: string;
+  customFormula?: unknown; // allow string or structured JSON
   selectedVersion?: string;
   enabled?: boolean;
 }
@@ -27,7 +27,7 @@ export function useFormulaCalculation({
   enabled = true
 }: FormulaCalculationParams) {
   return useQuery({
-    queryKey: ['formula-calculation', clientId, fiscalYear, formulaId, customFormula, selectedVersion],
+    queryKey: ['formula-calculation', clientId, fiscalYear, formulaId, typeof customFormula === 'object' ? JSON.stringify(customFormula) : customFormula, selectedVersion],
     queryFn: async (): Promise<FormulaCalculationResult> => {
       if (!clientId || !fiscalYear) {
         throw new Error('Client ID and fiscal year are required');
@@ -39,8 +39,8 @@ export function useFormulaCalculation({
         selectedVersion
       };
 
-      if (typeof formulaId === 'string') payload.formulaId = formulaId;
-      if (typeof customFormula === 'string') payload.customFormula = customFormula;
+    if (typeof formulaId === 'string') payload.formulaId = formulaId;
+    if (customFormula !== undefined) payload.customFormula = customFormula;
 
       const { data, error } = await supabase.functions.invoke('calculate-formula', {
         body: payload

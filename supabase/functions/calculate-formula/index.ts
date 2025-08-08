@@ -11,7 +11,7 @@ interface FormulaCalculationRequest {
   clientId: string;
   fiscalYear: number;
   formulaId?: string;
-  customFormula?: string;
+  customFormula?: unknown;
   selectedVersion?: string;
 }
 
@@ -83,10 +83,8 @@ function validateInput(body: any): FormulaCalculationRequest {
     throw new Error('formulaId must be a string if provided');
   }
 
-  if (body.customFormula !== undefined && body.customFormula !== null && typeof body.customFormula !== 'string') {
-    throw new Error('customFormula must be a string if provided');
-  }
-
+  // customFormula can be string or object; no strict type check
+  
   const formulaId = body.formulaId ?? undefined;
   const customFormula = body.customFormula ?? undefined;
 
@@ -231,6 +229,36 @@ function evaluateFormula(formula: FormulaCalculation, accounts: StandardAccountB
   }
 }
 
+function evaluateAlias(alias: string, accounts: StandardAccountBalance[]): { value: number; type: 'amount' | 'percentage' | 'ratio' } {
+  const a = alias.trim().toLowerCase();
+  const base = getBaseValues(accounts);
+  switch (a) {
+    case 'revenue':
+    case 'turnover':
+      return { value: base.revenue, type: 'amount' };
+    case 'profit':
+    case 'operating_result':
+    case 'ebit':
+      return { value: base.operating_result, type: 'amount' };
+    case 'liquidity':
+    case 'liquidity_ratio': {
+      const value = evaluateFormula({ name: 'liquidity_ratio', formula: '', type: 'ratio' }, accounts);
+      return { value, type: 'ratio' };
+    }
+    case 'equity':
+    case 'equity_ratio': {
+      const value = evaluateFormula({ name: 'equity_ratio', formula: '', type: 'percentage' }, accounts);
+      return { value, type: 'percentage' };
+    }
+    case 'profit_margin': {
+      const value = evaluateFormula({ name: 'profit_margin', formula: '', type: 'percentage' }, accounts);
+      return { value, type: 'percentage' };
+    }
+    default:
+      return { value: 0, type: 'amount' };
+  }
+}
+
 function formatValue(value: number, type: string): string {
   const absValue = Math.abs(value);
   
@@ -331,7 +359,7 @@ async function calculateFormula(
   supabase: any,
   accounts: StandardAccountBalance[],
   formulaId?: string,
-  customFormula?: string
+  customFormula?: unknown
 ): Promise<FormulaCalculationResult> {
   try {
     if (!formulaId && !customFormula) {
@@ -387,13 +415,50 @@ async function calculateFormula(
       };
     }
 
-    // Custom formula evaluation using standard numbers
-    const value = evaluateCustomFormula(customFormula!, accounts);
+    // Custom formula evaluation: support alias strings and structured JSON
+    let resultValue = 0;
+    let resultType: 'amount' | 'percentage' | 'ratio' = 'amount';
+    let meta: any = {};
+
+    const cf: any = customFormula;
+    if (cf && typeof cf === 'object') {
+      if (typeof cf.alias === 'string') {
+        const res = evaluateAlias(cf.alias, accounts);
+        resultValue = res.value;
+        resultType = res.type;
+        meta = { source: 'alias', alias: cf.alias };
+      } else if (typeof cf.expr === 'string') {
+        resultValue = evaluateCustomFormula(cf.expr, accounts);
+        resultType = (cf.type === 'percentage' || cf.type === 'ratio' || cf.type === 'amount') ? cf.type : 'amount';
+        meta = { source: 'expr', expr: cf.expr, type: resultType };
+      } else if (Array.isArray(cf.sumPrefixes)) {
+        resultValue = (cf.sumPrefixes as string[]).reduce((sum, p) => sum + calculatePrefixSum(accounts, p), 0);
+        resultType = 'amount';
+        meta = { source: 'sumPrefixes', prefixes: cf.sumPrefixes };
+      } else {
+        // Fallback if unknown structure
+        resultValue = 0;
+        resultType = 'amount';
+        meta = { source: 'unknown-structure' };
+      }
+    } else if (typeof customFormula === 'string') {
+      const alias = evaluateAlias(customFormula, accounts);
+      if (alias.value !== 0 || ['revenue','profit','operating_result','equity','equity_ratio','liquidity','liquidity_ratio','profit_margin','turnover','ebit'].includes(customFormula.trim().toLowerCase())) {
+        resultValue = alias.value;
+        resultType = alias.type;
+        meta = { source: 'alias', alias: customFormula };
+      } else {
+        resultValue = evaluateCustomFormula(customFormula, accounts);
+        resultType = 'amount';
+        meta = { source: 'raw', formula: customFormula };
+      }
+    }
+
     return {
-      value,
-      formattedValue: formatValue(value, 'amount'),
+      value: resultValue,
+      formattedValue: formatValue(resultValue, resultType),
       isValid: true,
-      metadata: { formula: customFormula }
+      metadata: meta
     };
   } catch (error) {
     logError('Error in calculateFormula:', error);
