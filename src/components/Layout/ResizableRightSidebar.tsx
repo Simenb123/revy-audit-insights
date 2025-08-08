@@ -16,7 +16,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { useRightSidebar } from './RightSidebarContext';
 import { useLayout } from './LayoutContext';
 
-const COLLAPSED_WIDTH = 64;
+const COLLAPSED_WIDTH = 72;
 
 const ResizableRightSidebar = () => {
   const {
@@ -63,17 +63,26 @@ const ResizableRightSidebar = () => {
   }, []);
 
   // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.shiftKey && e.key === 'R') {
+useEffect(() => {
+  const handleKeyDown = (e: KeyboardEvent) => {
+    const key = e.key.toLowerCase();
+    if (e.ctrlKey && e.shiftKey) {
+      if (key === 'r') {
         e.preventDefault();
         toggleSidebar();
+      } else if (key === 'a') {
+        e.preventDefault();
+        openTab('ai');
+      } else if (key === 'c') {
+        e.preventDefault();
+        openTab('chat');
       }
-    };
+    }
+  };
 
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  document.addEventListener('keydown', handleKeyDown);
+  return () => document.removeEventListener('keydown', handleKeyDown);
+}, []);
 
   React.useEffect(() => {
     if (isDragging) {
@@ -129,6 +138,7 @@ const ResizableRightSidebar = () => {
           clientData={clientId ? { id: clientId } : undefined}
           activeTab={activeTab}
           onTabChange={setActiveTab}
+          hideTabs={!isMobile}
         />
       </div>
     );
@@ -192,33 +202,45 @@ const ResizableRightSidebar = () => {
       <div className="sticky top-0 z-50 bg-background border-b">
         <TooltipProvider>
           {isCollapsed ? (
-            <div className="flex flex-col items-center gap-2 px-2 py-2">
+            <div className="flex flex-col items-center gap-3 px-2 py-3">
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-9 w-9 hover-scale"
-                    onClick={() => openTab('ai')}
-                    aria-label="Åpne AI-Revy Chat"
-                  >
-                    <Bot className="h-4 w-4" />
-                  </Button>
+                  <div className="relative flex flex-col items-center">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className={`h-10 w-10 hover-scale ${activeTab === 'ai' ? 'bg-primary/10 text-primary ring-1 ring-primary/30' : 'hover:bg-muted'}`}
+                      onClick={() => openTab('ai')}
+                      aria-label="Åpne AI-Revy Chat"
+                    >
+                      <Bot className="h-5 w-5" />
+                    </Button>
+                    {activeTab === 'ai' && (
+                      <span className="absolute right-0 top-1/2 -translate-y-1/2 h-6 w-1 rounded-full bg-primary" />
+                    )}
+                    <span className="mt-1 text-[10px] text-muted-foreground">AI</span>
+                  </div>
                 </TooltipTrigger>
                 <TooltipContent side="left">AI‑Revy Chat</TooltipContent>
               </Tooltip>
 
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-9 w-9 hover-scale"
-                    onClick={() => openTab('chat')}
-                    aria-label="Åpne Teamchat"
-                  >
-                    <MessageSquare className="h-4 w-4" />
-                  </Button>
+                  <div className="relative flex flex-col items-center">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className={`h-10 w-10 hover-scale ${activeTab === 'chat' ? 'bg-primary/10 text-primary ring-1 ring-primary/30' : 'hover:bg-muted'}`}
+                      onClick={() => openTab('chat')}
+                      aria-label="Åpne Teamchat"
+                    >
+                      <MessageSquare className="h-5 w-5" />
+                    </Button>
+                    {activeTab === 'chat' && (
+                      <span className="absolute right-0 top-1/2 -translate-y-1/2 h-6 w-1 rounded-full bg-primary" />
+                    )}
+                    <span className="mt-1 text-[10px] text-muted-foreground">Chat</span>
+                  </div>
                 </TooltipTrigger>
                 <TooltipContent side="left">Teamchat</TooltipContent>
               </Tooltip>

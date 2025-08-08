@@ -22,6 +22,7 @@ interface AiRevyCardProps {
   userRole?: string
   activeTab?: 'ai' | 'chat'
   onTabChange?: (tab: 'ai' | 'chat') => void
+  hideTabs?: boolean
 }
 
 const getSystemPrompt = (variant: AiRevyVariant): string => {
@@ -42,7 +43,8 @@ const AiRevyCard: React.FC<AiRevyCardProps> = ({
   clientData,
   userRole,
   activeTab,
-  onTabChange
+  onTabChange,
+  hideTabs = false,
 }) => {
   const systemPrompt = getSystemPrompt(variant)
 
@@ -66,12 +68,14 @@ const AiRevyCard: React.FC<AiRevyCardProps> = ({
       </div>
       <div className="flex flex-col flex-1 min-h-0">
         <Tabs value={currentTab} onValueChange={(v) => handleTabChange(v as 'ai' | 'chat')} className="flex-1 flex flex-col min-h-0">
-          <div className="px-2 pt-2">
-            <TabsList>
-              <TabsTrigger value="ai">AI</TabsTrigger>
-              <TabsTrigger value="chat">Chat</TabsTrigger>
-            </TabsList>
-          </div>
+          { !hideTabs && (
+            <div className="px-2 pt-2">
+              <TabsList>
+                <TabsTrigger value="ai">AI</TabsTrigger>
+                <TabsTrigger value="chat">Chat</TabsTrigger>
+              </TabsList>
+            </div>
+          ) }
           <TabsContent value="ai" className="flex-1 min-h-0 flex flex-col">
             <SmartReviAssistant
               embedded
