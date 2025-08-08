@@ -20,6 +20,8 @@ interface AiRevyCardProps {
   context?: RevyContext
   clientData?: any
   userRole?: string
+  activeTab?: 'ai' | 'chat'
+  onTabChange?: (tab: 'ai' | 'chat') => void
 }
 
 const getSystemPrompt = (variant: AiRevyVariant): string => {
@@ -38,9 +40,18 @@ const AiRevyCard: React.FC<AiRevyCardProps> = ({
   className = '',
   context = 'general',
   clientData,
-  userRole
+  userRole,
+  activeTab,
+  onTabChange
 }) => {
   const systemPrompt = getSystemPrompt(variant)
+
+  const [internalTab, setInternalTab] = React.useState<'ai' | 'chat'>("ai")
+  const currentTab = activeTab ?? internalTab
+  const handleTabChange = (tab: 'ai' | 'chat') => {
+    if (onTabChange) onTabChange(tab)
+    else setInternalTab(tab)
+  }
 
   return (
     <div className={cn('h-full w-full flex flex-col', className)}>
@@ -54,7 +65,7 @@ const AiRevyCard: React.FC<AiRevyCardProps> = ({
         </div>
       </div>
       <div className="flex flex-col flex-1 min-h-0">
-        <Tabs defaultValue="ai" className="flex-1 flex flex-col min-h-0">
+        <Tabs value={currentTab} onValueChange={(v) => handleTabChange(v as 'ai' | 'chat')} className="flex-1 flex flex-col min-h-0">
           <div className="px-2 pt-2">
             <TabsList>
               <TabsTrigger value="ai">AI</TabsTrigger>

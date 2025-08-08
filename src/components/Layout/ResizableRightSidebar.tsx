@@ -4,16 +4,19 @@ import { useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Drawer, DrawerTrigger, DrawerContent, DrawerClose } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { MessageSquare, X, ChevronLeft, ChevronRight, Bot } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useClientLookup } from '@/hooks/useClientLookup';
 import { detectPageType, extractClientId } from './pageDetectionHelpers';
 import AiRevyCard, { AiRevyVariant } from '@/components/AiRevyCard';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import ResizableHandle from './ResizableHandle';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 import { useRightSidebar } from './RightSidebarContext';
 import { useLayout } from './LayoutContext';
+
+const COLLAPSED_WIDTH = 64;
 
 const ResizableRightSidebar = () => {
   const {
@@ -31,6 +34,8 @@ const ResizableRightSidebar = () => {
   const clientIdOrOrg = extractClientId(location.pathname);
   const { data: clientLookup } = useClientLookup(clientIdOrOrg);
   const clientId = clientLookup?.id;
+
+  const [activeTab, setActiveTab] = useState<'ai' | 'chat'>('ai');
 
   const startWidthRef = React.useRef(width);
 
