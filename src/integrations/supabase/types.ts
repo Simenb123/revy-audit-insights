@@ -3704,6 +3704,7 @@ export type Database = {
           data_type: string
           description: string | null
           display_name: string
+          formula_id: string | null
           id: string
           is_active: boolean
           is_system_variable: boolean
@@ -3720,6 +3721,7 @@ export type Database = {
           data_type?: string
           description?: string | null
           display_name: string
+          formula_id?: string | null
           id?: string
           is_active?: boolean
           is_system_variable?: boolean
@@ -3736,6 +3738,7 @@ export type Database = {
           data_type?: string
           description?: string | null
           display_name?: string
+          formula_id?: string | null
           id?: string
           is_active?: boolean
           is_system_variable?: boolean
@@ -3745,7 +3748,15 @@ export type Database = {
           value_expression?: Json | null
           variable_type?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "formula_variables_formula_id_fkey"
+            columns: ["formula_id"]
+            isOneToOne: false
+            referencedRelation: "formula_definitions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       general_ledger_transactions: {
         Row: {
