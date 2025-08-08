@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Announcement, Client } from '@/types/revio';
 import ClientStatsGrid from '@/components/Clients/ClientStats/ClientStatsGrid';
 import ClientsTable from '@/components/Clients/ClientsTable/ClientsTable';
-import AnnouncementsList from '@/components/Clients/Announcements/AnnouncementsList';
+
 import ClientsHeader from '@/components/Clients/ClientsHeader/ClientsHeader';
 import AddClientDialog from '@/components/Clients/AddClientDialog';
 import ClientBulkImporter from '@/components/Clients/ClientBulkImporter';
@@ -123,9 +123,6 @@ const ClientsOverview = () => {
               />
             </CardContent>
           </Card>
-        </div>
-        <div className="col-span-full xl:col-span-4">
-          <AnnouncementsList announcements={announcements} />
         </div>
       </FlexibleGrid>
 

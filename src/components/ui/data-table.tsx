@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -88,6 +88,42 @@ const DataTable = <T extends Record<string, any>>({
   const [sortBy, setSortBy] = useState<string>('');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
+  // Synchronized horizontal scrollbar (top) and body scroll container
+  const topScrollRef = useRef<HTMLDivElement | null>(null);
+  const bodyScrollRef = useRef<HTMLDivElement | null>(null);
+  const [topScrollWidth, setTopScrollWidth] = useState(0);
+
+  useEffect(() => {
+    const body = bodyScrollRef.current;
+    const top = topScrollRef.current;
+    if (!body || !top) return;
+
+    const syncFromBody = () => {
+      if (top) top.scrollLeft = body.scrollLeft;
+    };
+    const syncFromTop = () => {
+      if (body) body.scrollLeft = top.scrollLeft;
+    };
+
+    body.addEventListener('scroll', syncFromBody, { passive: true });
+    top.addEventListener('scroll', syncFromTop, { passive: true });
+
+    const measure = () => {
+      setTopScrollWidth(body.scrollWidth);
+    };
+    measure();
+
+    const ro = new ResizeObserver(measure);
+    ro.observe(body);
+    window.addEventListener('resize', measure);
+
+    return () => {
+      body.removeEventListener('scroll', syncFromBody);
+      top.removeEventListener('scroll', syncFromTop);
+      ro.disconnect();
+      window.removeEventListener('resize', measure);
+    };
+  }, []);
   // Derive initial column state
   const initialCMState: CMState[] = useMemo(() => {
     const mapDefaults = new Map<string, { visible: boolean; pinnedLeft?: boolean }>();
@@ -414,12 +450,23 @@ const TableBlock = (
             />
           </div>
         )}
+        {/* Synchronized top horizontal scrollbar (visible when table has vertical scroll) */}
+        {maxBodyHeight && (
+          <div
+            ref={topScrollRef}
+            className="overflow-x-auto h-3"
+            aria-hidden="true"
+          >
+            <div style={{ width: topScrollWidth, height: 1 }} />
+          </div>
+        )}
         <div
+          ref={bodyScrollRef}
           className={`${maxBodyHeight ? 'relative overflow-auto' : 'overflow-x-auto'}`}
           style={maxBodyHeight ? { maxHeight: typeof maxBodyHeight === 'number' ? `${maxBodyHeight}px` : maxBodyHeight } : undefined}
         >
           <Table>
-            <TableHeader className={stickyHeader ? 'sticky top-0 z-20 bg-background' : undefined}>
+            <TableHeader className={stickyHeader ? 'sticky top-0 z-30 bg-background' : undefined}>
               <DndContext sensors={colSensors} collisionDetection={closestCenter} onDragEnd={onColDragEnd}>
                 <SortableContext items={effectiveColumns.list.map(({ def }) => def.key)} strategy={horizontalListSortingStrategy}>
                   <TableRow>

@@ -24,7 +24,7 @@ const GlobalLayoutContainer: React.FC<GlobalLayoutContainerProps> = ({
     <main 
       className={cn(
         'h-[calc(100vh-var(--global-header-height))]',
-        'w-full mx-auto px-4 lg:pr-6',
+        'w-full mx-auto px-4 lg:pr-6 min-w-0 overflow-x-hidden',
         maxWidthClasses[maxWidth],
         // Add top border line for visual consistency
         'border-t-2 border-t-border/50',
