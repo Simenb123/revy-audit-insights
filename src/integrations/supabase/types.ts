@@ -2401,6 +2401,7 @@ export type Database = {
       }
       clients: {
         Row: {
+          accountant_name: string | null
           accounting_system: string | null
           address: string | null
           address_line: string | null
@@ -2432,6 +2433,7 @@ export type Database = {
           last_brreg_sync_at: string | null
           municipality_code: string | null
           municipality_name: string | null
+          mva_registered: boolean | null
           nace_code: string | null
           nace_description: string | null
           name: string
@@ -2454,6 +2456,7 @@ export type Database = {
           year_end_date: string | null
         }
         Insert: {
+          accountant_name?: string | null
           accounting_system?: string | null
           address?: string | null
           address_line?: string | null
@@ -2485,6 +2488,7 @@ export type Database = {
           last_brreg_sync_at?: string | null
           municipality_code?: string | null
           municipality_name?: string | null
+          mva_registered?: boolean | null
           nace_code?: string | null
           nace_description?: string | null
           name: string
@@ -2507,6 +2511,7 @@ export type Database = {
           year_end_date?: string | null
         }
         Update: {
+          accountant_name?: string | null
           accounting_system?: string | null
           address?: string | null
           address_line?: string | null
@@ -2538,6 +2543,7 @@ export type Database = {
           last_brreg_sync_at?: string | null
           municipality_code?: string | null
           municipality_name?: string | null
+          mva_registered?: boolean | null
           nace_code?: string | null
           nace_description?: string | null
           name?: string

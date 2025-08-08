@@ -286,11 +286,19 @@ Deno.serve(async (req) => {
       sum_egenkapital: baseData.kapital?.sum_egenkapital,
     });
 
-    // Logg den faktiske mappingen ut
-    log("Saved capital:", { equity: equityCapital, share: shareCapital });
+// Logg den faktiske mappingen ut
+log("Saved capital:", { equity: equityCapital, share: shareCapital });
 
-    // Build enhanced data object, taking from BRREG mapping table
-    const enhancedData = {
+// Utled MVA-registrering fra ulike mulige feltnavn i BRREG-responsen
+const mvaRegistered = (
+  typeof baseData.registrertIMvaRegisteret === 'boolean' ? baseData.registrertIMvaRegisteret :
+  typeof baseData.registrertIMvaregisteret === 'boolean' ? baseData.registrertIMvaregisteret :
+  typeof baseData.registrertIMvaRegister === 'boolean' ? baseData.registrertIMvaRegister :
+  null
+);
+
+// Build enhanced data object, taking from BRREG mapping table
+const enhancedData = {
       basis: {
         organisasjonsnummer: baseData.organisasjonsnummer,
         navn: baseData.navn,
@@ -314,7 +322,8 @@ Deno.serve(async (req) => {
         kapital: {
           equityCapital: equityCapital,
           shareCapital: shareCapital
-        }
+        },
+        mvaRegistered: mvaRegistered
       },
       roles: processedRoles
     };
@@ -338,13 +347,14 @@ Deno.serve(async (req) => {
 });
 
 /**
- * Strikt og eksplisitt mapping til CEO, Chair, BoardMembers basert kun på ønsket spesifikasjon.
+ * Strikt og eksplisitt mapping til CEO, Chair, BoardMembers og Regnskapsfører
  */
 function processRolesStrict(roller) {
   const result = {
     ceo: null,
     chair: null,
-    boardMembers: []
+    boardMembers: [],
+    accountantName: null,
   };
   if (!roller || !Array.isArray(roller) || roller.length === 0) {
     return result;
@@ -355,9 +365,10 @@ function processRolesStrict(roller) {
     (r.type === 'DAGL' || r.type?.kode === 'DAGL') ||
     (r.rolleBeskrivelse && /daglig leder/i.test(r.rolleBeskrivelse))
   );
-  if (ceoRole && ceoRole.person) {
-    let personName = ceoRole.person.navn
-      ?? ((ceoRole.person?.fornavn && ceoRole.person?.etternavn) ? `${ceoRole.person.fornavn} ${ceoRole.person.etternavn}` : null);
+  if (ceoRole && (ceoRole.person || ceoRole.navn)) {
+    let personName = ceoRole.person?.navn
+      ?? ((ceoRole.person?.fornavn && ceoRole.person?.etternavn) ? `${ceoRole.person.fornavn} ${ceoRole.person.etternavn}` : null)
+      ?? ceoRole.navn || null;
     if (personName) {
       result.ceo = {
         name: personName,
@@ -373,9 +384,10 @@ function processRolesStrict(roller) {
     (r.type === 'STYR' || r.type?.kode === 'STYR') &&
     r.rolleBeskrivelse && /styrets leder/i.test(r.rolleBeskrivelse)
   );
-  if (chairRole && chairRole.person) {
-    let personName = chairRole.person.navn
-      ?? ((chairRole.person?.fornavn && chairRole.person?.etternavn) ? `${chairRole.person.fornavn} ${chairRole.person.etternavn}` : null);
+  if (chairRole && (chairRole.person || chairRole.navn)) {
+    let personName = chairRole.person?.navn
+      ?? ((chairRole.person?.fornavn && chairRole.person?.etternavn) ? `${chairRole.person.fornavn} ${chairRole.person.etternavn}` : null)
+      ?? chairRole.navn || null;
     if (personName) {
       result.chair = {
         name: personName,
@@ -392,9 +404,10 @@ function processRolesStrict(roller) {
       && r.rolleBeskrivelse
       && /styrets leder/i.test(r.rolleBeskrivelse);
     let isStyr = (r.type === 'STYR' || r.type?.kode === 'STYR');
-    if (!isChair && isStyr && r.person) {
-      let personName = r.person.navn
-        ?? ((r.person?.fornavn && r.person?.etternavn) ? `${r.person.fornavn} ${r.person.etternavn}` : null);
+    if (!isChair && isStyr && (r.person || r.navn)) {
+      let personName = r.person?.navn
+        ?? ((r.person?.fornavn && r.person?.etternavn) ? `${r.person.fornavn} ${r.person.etternavn}` : null)
+        ?? r.navn || null;
       if (personName) {
         result.boardMembers.push({
           name: personName,
@@ -406,5 +419,24 @@ function processRolesStrict(roller) {
       }
     }
   });
+
+  // Registrert regnskapsfører: forsøk å finne rolle med beskrivelse som matcher "regnskapsfør" eller typekode "REGN"
+  const accountantRole = roller.find(r =>
+    (typeof r.rolleBeskrivelse === 'string' && /regnskapsf[øo]rer/i.test(r.rolleBeskrivelse)) ||
+    (r.type === 'REGN' || r.type?.kode === 'REGN')
+  );
+  if (accountantRole) {
+    const nameCandidate = accountantRole.person?.navn
+      ?? ((accountantRole.person?.fornavn && accountantRole.person?.etternavn) ? `${accountantRole.person.fornavn} ${accountantRole.person.etternavn}` : null)
+      ?? accountantRole.enhet?.navn
+      ?? accountantRole.organisasjon?.navn
+      ?? accountantRole.virksomhet?.navn
+      ?? accountantRole.navn
+      ?? null;
+    if (nameCandidate) {
+      result.accountantName = nameCandidate;
+    }
+  }
+
   return result;
 }

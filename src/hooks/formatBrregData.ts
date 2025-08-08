@@ -15,6 +15,7 @@ export interface BrregBasis {
   status?: string | null;
   naeringskode1?: { kode?: string; beskrivelse?: string };
   registreringsdatoEnhetsregisteret?: string;
+  mvaRegistered?: boolean | null;
 }
 
 export function fixValue(val: string | undefined | null): string | null {
@@ -66,6 +67,8 @@ export function formatUpdateData(basis: any, roles: any, client: any) {
     chair: chairName || client.chair || null,
     equity_capital: equityCapital,
     share_capital: shareCapital,
+    mva_registered: typeof basis.mvaRegistered === 'boolean' ? basis.mvaRegistered : null,
+    accountant_name: roles?.accountantName || null,
   };
 }
 

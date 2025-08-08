@@ -108,6 +108,8 @@ export interface Client {
   client_group?: string | null;
   riskAreas?: RiskArea[]; // Alternative field name
   user_id?: string;
+  mva_registered?: boolean;
+  accountant_name?: string;
 }
 
 export type AuditPhase = 'engagement' | 'planning' | 'execution' | 'completion' | 'risk_assessment' | 'reporting' | 'overview';

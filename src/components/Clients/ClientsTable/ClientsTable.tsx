@@ -85,6 +85,35 @@ const ClientsTable = ({ clients, onRowSelect, selectedClientId }: ClientsTablePr
     { key: "org", header: "Org.nummer", accessor: (row) => row.org_number || "—", sortable: true },
     { key: "municipality", header: "Kommune", accessor: (row) => getMunicipality(row), sortable: true },
     {
+      key: "mva_registered",
+      header: "MVA",
+      accessor: (row) => (row.mva_registered ? "Ja" : "Nei"),
+      sortable: true,
+      format: (_v, row) => (
+        <Badge variant={row.mva_registered ? 'success' as any : 'outline'}>
+          {row.mva_registered ? 'Ja' : 'Nei'}
+        </Badge>
+      ),
+    },
+    {
+      key: "nace_code",
+      header: "Bransjekode",
+      accessor: (row) => row.nace_code?.trim() || "—",
+      sortable: true,
+    },
+    {
+      key: "nace_description",
+      header: "Bransjenavn",
+      accessor: (row) => row.nace_description?.trim() || "—",
+      sortable: true,
+    },
+    {
+      key: "accountant_name",
+      header: "Regnskapsfører",
+      accessor: (row) => row.accountant_name?.trim() || "—",
+      sortable: true,
+    },
+    {
       key: "capital",
       header: "Kapital",
       accessor: (row) => row,
@@ -110,6 +139,10 @@ const ClientsTable = ({ clients, onRowSelect, selectedClientId }: ClientsTablePr
         { key: "progress", visible: true },
         { key: "org", visible: true },
         { key: "municipality", visible: true },
+        { key: "mva_registered", visible: true },
+        { key: "nace_code", visible: false },
+        { key: "nace_description", visible: false },
+        { key: "accountant_name", visible: false },
         { key: "capital", visible: true },
         { key: "department", visible: true },
         { key: "group", visible: true },
