@@ -3,11 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Search, Download, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, Settings2 } from 'lucide-react';
+import { Search, Download, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, Settings2, Bookmark, Plus } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import ColumnManager, { ColumnState as CMState } from '@/components/ui/column-manager';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
-
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 export interface DataTableColumn<T = any> {
   key: string;
   header: string;
@@ -95,6 +95,63 @@ const DataTable = <T extends Record<string, any>>({
   }, [columns, defaultColumnState]);
 
   const [cmState, setCmState] = useLocalStorage<CMState[]>(preferencesKey, initialCMState);
+
+  type TableView = {
+    id: string;
+    name: string;
+    columns: CMState[];
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+    searchTerm?: string;
+  };
+
+  const [views, setViews] = useLocalStorage<TableView[]>(preferencesKey ? `${preferencesKey}:views` : undefined, []);
+
+  const saveCurrentView = () => {
+    const name = window.prompt('Navn på visning');
+    if (!name) return;
+    const id = Date.now().toString(36);
+    const view: TableView = { id, name, columns: cmState, sortBy, sortOrder, searchTerm: showSearch ? searchTerm : undefined };
+    setViews([...(views || []), view]);
+  };
+
+  const applyView = (view: TableView) => {
+    setCmState(view.columns);
+    if (view.sortBy) {
+      setSortBy(view.sortBy);
+      setSortOrder(view.sortOrder || 'asc');
+    }
+    if (showSearch && typeof view.searchTerm === 'string') {
+      setSearchTerm(view.searchTerm);
+    }
+  };
+
+  const ViewsDropdown = () => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="outline" size="sm">
+          <Bookmark className="h-4 w-4 mr-2" />
+          Visninger
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56">
+        <DropdownMenuItem onClick={saveCurrentView}>
+          <Plus className="h-4 w-4 mr-2" />
+          Lagre ny visning
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        {views && views.length > 0 ? (
+          views.map((v) => (
+            <DropdownMenuItem key={v.id} onClick={() => applyView(v)}>
+              {v.name}
+            </DropdownMenuItem>
+          ))
+        ) : (
+          <div className="px-2 py-1.5 text-sm text-muted-foreground">Ingen lagrede visninger</div>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 
   const effectiveColumns = useMemo(() => {
     // order by cmState order; fallback to columns order
@@ -395,6 +452,7 @@ const DataTable = <T extends Record<string, any>>({
             )}
           </div>
           <div className="flex items-center gap-2">
+            {preferencesKey && <ViewsDropdown />}
             {enableColumnManager && (
               <ColumnManager columns={cmState} onChange={setCmState} allowPinLeft title="Tilpass kolonner" triggerLabel="Kolonner" />
             )}
@@ -426,6 +484,7 @@ const DataTable = <T extends Record<string, any>>({
             )}
           </div>
           <div className="flex items-center gap-2">
+            {preferencesKey && <ViewsDropdown />}
             {enableColumnManager && (
               <ColumnManager columns={cmState} onChange={setCmState} allowPinLeft title="Tilpass kolonner" triggerLabel="Kolonner" />
             )}
