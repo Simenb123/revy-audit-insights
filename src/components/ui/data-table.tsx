@@ -3,11 +3,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Search, Download, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, Settings2, Bookmark, Plus, RotateCcw, Pencil, Trash } from 'lucide-react';
+import { Search, Download, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, Settings2, Bookmark, Plus, RotateCcw, Pencil, Trash, GripHorizontal } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import ColumnManager, { ColumnState as CMState } from '@/components/ui/column-manager';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger } from '@/components/ui/dropdown-menu';
+import { DndContext, PointerSensor, useSensor, useSensors, DragEndEvent, closestCenter } from '@dnd-kit/core';
+import { SortableContext, useSortable, arrayMove, horizontalListSortingStrategy } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 export interface DataTableColumn<T = any> {
   key: string;
   header: string;
@@ -329,7 +332,71 @@ const DataTable = <T extends Record<string, any>>({
     return w ? { width: w, minWidth: w, maxWidth: 1000 } : {};
   };
 
-  const TableBlock = (
+const colSensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
+
+const onColDragEnd = (event: DragEndEvent) => {
+  const { active, over } = event;
+  if (!over || active.id === over.id) return;
+  const visibleKeys = effectiveColumns.list.map(({ def }) => def.key);
+  const oldIndex = visibleKeys.indexOf(String(active.id));
+  const newIndex = visibleKeys.indexOf(String(over.id));
+  if (oldIndex < 0 || newIndex < 0) return;
+  const visItems = cmState.filter((c) => visibleKeys.includes(c.key));
+  const hiddenSet = new Set(cmState.filter((c) => !visibleKeys.includes(c.key)).map((c) => c.key));
+  const movedVis = arrayMove(visItems, oldIndex, newIndex);
+  let v = 0;
+  const next = cmState.map((c) => (hiddenSet.has(c.key) ? c : movedVis[v++]));
+  setCmState(next);
+};
+
+const SortableHeader: React.FC<{ def: DataTableColumn<T>; pinned: boolean }> = ({ def, pinned }) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: def.key });
+  const baseStyle = getColStyle(def.key);
+  const style: React.CSSProperties = {
+    ...baseStyle,
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.9 : undefined,
+  };
+  return (
+    <TableHead
+      ref={setNodeRef as any}
+      className={`${def.sortable !== false ? 'cursor-pointer hover:bg-muted/50 select-none' : ''} ${
+        def.align === 'right' ? 'text-right' : def.align === 'center' ? 'text-center' : ''
+      } ${def.className || ''} ${pinned ? 'sticky left-0 z-10 bg-background' : ''} relative`}
+      style={style}
+      onClick={() => def.sortable !== false && handleSort(def.key)}
+      {...attributes}
+    >
+      <div
+        className={`flex items-center gap-2 ${
+          def.align === 'right' ? 'justify-end' : def.align === 'center' ? 'justify-center' : ''
+        }`}
+      >
+        <button
+          className="h-4 w-4 grid place-items-center rounded cursor-grab active:cursor-grabbing"
+          aria-label="Dra for å flytte kolonne"
+          onClick={(e) => e.stopPropagation()}
+          {...listeners}
+        >
+          <GripHorizontal className="h-3.5 w-3.5 text-muted-foreground" />
+        </button>
+        <span>{def.header}</span>
+        {getSortIcon(def.key)}
+      </div>
+      <span
+        role="separator"
+        aria-label="Endre kolonnebredde"
+        title="Dra for å endre bredde"
+        className="absolute right-0 top-0 h-full w-1.5 cursor-col-resize bg-transparent hover:bg-border"
+        onMouseDown={(e) => onResizeStart(def.key, e)}
+        onClick={(e) => e.stopPropagation()}
+      />
+    </TableHead>
+  );
+};
+
+const TableBlock = (
     <div className="space-y-4">
       <div className="rounded-md border">
         {showSearch && (
@@ -345,36 +412,15 @@ const DataTable = <T extends Record<string, any>>({
         )}
         <Table>
           <TableHeader>
-            <TableRow>
-              {effectiveColumns.list.map(({ def }) => (
-                <TableHead
-                  key={def.key}
-                  className={`${def.sortable !== false ? 'cursor-pointer hover:bg-muted/50 select-none' : ''} ${
-                    def.align === 'right' ? 'text-right' : def.align === 'center' ? 'text-center' : ''
-                  } ${def.className || ''} ${
-                    effectiveColumns.pinnedLeftKey === def.key ? 'sticky left-0 z-10 bg-background' : ''
-                  } relative`}
-                  style={getColStyle(def.key)}
-                  onClick={() => def.sortable !== false && handleSort(def.key)}
-                >
-                  <div
-                    className={`flex items-center gap-2 ${
-                      def.align === 'right' ? 'justify-end' : def.align === 'center' ? 'justify-center' : ''
-                    }`}
-                  >
-                    {def.header}
-                    {getSortIcon(def.key)}
-                  </div>
-                  <span
-                    role="separator"
-                    aria-label="Endre kolonnebredde"
-                    title="Dra for å endre bredde"
-                    className="absolute right-0 top-0 h-full w-1.5 cursor-col-resize bg-transparent hover:bg-border"
-                    onMouseDown={(e) => onResizeStart(def.key, e)}
-                  />
-                </TableHead>
-              ))}
-            </TableRow>
+            <DndContext sensors={colSensors} collisionDetection={closestCenter} onDragEnd={onColDragEnd}>
+              <SortableContext items={effectiveColumns.list.map(({ def }) => def.key)} strategy={horizontalListSortingStrategy}>
+                <TableRow>
+                  {effectiveColumns.list.map(({ def }) => (
+                    <SortableHeader key={def.key} def={def} pinned={effectiveColumns.pinnedLeftKey === def.key} />
+                  ))}
+                </TableRow>
+              </SortableContext>
+            </DndContext>
           </TableHeader>
           <TableBody>
             {filteredAndSortedData.length === 0 ? (
