@@ -2424,6 +2424,7 @@ export type Database = {
           department: string | null
           department_id: string | null
           email: string | null
+          engagement_type: Database["public"]["Enums"]["engagement_type"] | null
           equity_capital: number | null
           homepage: string | null
           id: string
@@ -2479,6 +2480,9 @@ export type Database = {
           department?: string | null
           department_id?: string | null
           email?: string | null
+          engagement_type?:
+            | Database["public"]["Enums"]["engagement_type"]
+            | null
           equity_capital?: number | null
           homepage?: string | null
           id?: string
@@ -2534,6 +2538,9 @@ export type Database = {
           department?: string | null
           department_id?: string | null
           email?: string | null
+          engagement_type?:
+            | Database["public"]["Enums"]["engagement_type"]
+            | null
           equity_capital?: number | null
           homepage?: string | null
           id?: string
@@ -6519,6 +6526,7 @@ export type Database = {
       communication_type: "team" | "department" | "firm"
       document_status: "pending" | "submitted" | "accepted" | "rejected"
       document_type: "shareholder_report" | "tax_return" | "annual_report"
+      engagement_type: "revisjon" | "regnskap" | "annet"
       planning_module_key:
         | "ANALYTICAL_REVIEW"
         | "TEAM_DISCUSSION"
@@ -6710,6 +6718,7 @@ export const Constants = {
       communication_type: ["team", "department", "firm"],
       document_status: ["pending", "submitted", "accepted", "rejected"],
       document_type: ["shareholder_report", "tax_return", "annual_report"],
+      engagement_type: ["revisjon", "regnskap", "annet"],
       planning_module_key: [
         "ANALYTICAL_REVIEW",
         "TEAM_DISCUSSION",

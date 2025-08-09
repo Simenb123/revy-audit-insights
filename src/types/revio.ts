@@ -1,4 +1,3 @@
-
 export interface RevyMessage {
   id: string;
   sender: 'user' | 'assistant';
@@ -113,6 +112,10 @@ export interface Client {
   partner?: string;
   ansv?: string;
   account_manager?: string;
+
+  // NEW: Support for engagement type and auditor name
+  engagement_type?: 'revisjon' | 'regnskap' | 'annet';
+  current_auditor_name?: string;
 }
 
 export type AuditPhase = 'engagement' | 'planning' | 'execution' | 'completion' | 'risk_assessment' | 'reporting' | 'overview';

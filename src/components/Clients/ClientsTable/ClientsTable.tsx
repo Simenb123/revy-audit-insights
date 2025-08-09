@@ -31,6 +31,19 @@ const getMunicipality = (client: Client) =>
     ? client.municipality_code
     : "—";
 
+const engagementTypeOrder: Record<string, number> = {
+  revisjon: 1,
+  regnskap: 2,
+  annet: 3,
+};
+
+const engagementTypeLabel = (t?: Client["engagement_type"]) => {
+  if (t === 'revisjon') return 'Revisjon';
+  if (t === 'regnskap') return 'Regnskap';
+  if (t === 'annet') return 'Annet';
+  return '—';
+};
+
 const ClientsTable = ({ clients, onRowSelect, selectedClientId }: ClientsTableProps) => {
   const navigate = useNavigate();
 
@@ -131,6 +144,16 @@ const ClientsTable = ({ clients, onRowSelect, selectedClientId }: ClientsTablePr
         accessor: (row) => row.accounting_system?.trim() || "—",
         sortable: true,
       },
+      {
+        key: "engagement_type",
+        header: "Type oppdrag",
+        accessor: (row) => engagementTypeLabel(row.engagement_type),
+        sortAccessor: (row) => engagementTypeOrder[row.engagement_type || ''] ?? 999,
+        sortable: true,
+        format: (_v, row) => (
+          <Badge variant="secondary">{engagementTypeLabel(row.engagement_type)}</Badge>
+        ),
+      },
 
     {
       key: "capital",
@@ -165,6 +188,7 @@ const ClientsTable = ({ clients, onRowSelect, selectedClientId }: ClientsTablePr
          { key: "partner", visible: false },
          { key: "account_manager", visible: false },
          { key: "accounting_system", visible: false },
+         { key: "engagement_type", visible: true },
          { key: "capital", visible: true },
          { key: "department", visible: true },
          { key: "group", visible: true },

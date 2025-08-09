@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,6 +21,10 @@ interface ClientBulkImportData {
   accounting_system?: string;
   partner?: string;
   ansv?: string;
+  // NEW fields
+  current_auditor_name?: string;
+  accountant_name?: string;
+  engagement_type?: string;
 }
 
 interface ClientBulkImporterProps {
@@ -81,6 +86,29 @@ const ClientBulkImporter = ({ onImportComplete, onCancel }: ClientBulkImporterPr
     }
   };
 
+  // Normalize the engagement type to enum values
+  const normalizeEngagementType = (value: string): 'revisjon' | 'regnskap' | 'annet' | null => {
+    if (!value) return null;
+    const v = value.toString().trim().toLowerCase();
+    const map: Record<string, 'revisjon' | 'regnskap' | 'annet'> = {
+      'revisjon': 'revisjon',
+      'revision': 'revisjon',
+      'audit': 'revisjon',
+      'regnskap': 'regnskap',
+      'accounting': 'regnskap',
+      'økonomi': 'regnskap',
+      'annet': 'annet',
+      'other': 'annet',
+      'an net': 'annet', // common typo safeguard
+    };
+    // Simple startsWith mapping for robustness
+    if (v.startsWith('rev')) return 'revisjon';
+    if (v.startsWith('aud')) return 'revisjon';
+    if (v.startsWith('regn') || v.startsWith('acc') || v.startsWith('øk')) return 'regnskap';
+    if (v.startsWith('ann') || v.startsWith('oth')) return 'annet';
+    return map[v] || null;
+  };
+
   const processBulkImport = async (data: any[]) => {
     setUploadProgress(10);
     const errors: string[] = [];
@@ -110,8 +138,8 @@ const ClientBulkImporter = ({ onImportComplete, onCancel }: ClientBulkImporterPr
 
       // Process each row
       for (let i = 0; i < data.length; i++) {
-        const row = data[i];
-        const orgNumber = row.org_number?.toString()?.trim();
+        const row = data[i] as ClientBulkImportData;
+        const orgNumber = (row.org_number as any)?.toString()?.trim();
         
         if (!orgNumber) {
           errors.push(`Rad ${i + 1}: Mangler organisasjonsnummer`);
@@ -141,6 +169,26 @@ const ClientBulkImporter = ({ onImportComplete, onCancel }: ClientBulkImporterPr
 
         if (row.ansv !== undefined && row.ansv !== '') {
           updateData.ansv = row.ansv.toString().trim();
+        }
+
+        // NEW: registered auditor
+        if (row.current_auditor_name !== undefined && row.current_auditor_name !== '') {
+          updateData.current_auditor_name = row.current_auditor_name.toString().trim();
+        }
+
+        // NEW: registered accountant
+        if (row.accountant_name !== undefined && row.accountant_name !== '') {
+          updateData.accountant_name = row.accountant_name.toString().trim();
+        }
+
+        // NEW: engagement type normalization
+        if (row.engagement_type !== undefined && row.engagement_type !== '') {
+          const normalized = normalizeEngagementType(row.engagement_type.toString());
+          if (normalized) {
+            updateData.engagement_type = normalized;
+          } else {
+            warnings.push(`Rad ${i + 1}: Ugyldig 'Type oppdrag' (${row.engagement_type}); hoppet over`);
+          }
         }
 
         try {
@@ -240,6 +288,30 @@ const ClientBulkImporter = ({ onImportComplete, onCancel }: ClientBulkImporterPr
                     data_type: 'text',
                     is_required: false,
                     aliases: ['regnskapssystem','økonomisystem','accounting system','erp','visma','tripletex','poweroffice','fiken','xledger','24sevenoffice']
+                  },
+                  // NEW fields for mapping
+                  {
+                    field_key: 'current_auditor_name',
+                    field_label: 'Registrert revisor',
+                    data_type: 'text',
+                    is_required: false,
+                    aliases: ['revisor','registrert revisor','auditor','current auditor','oppnevnt revisor']
+                  },
+                  {
+                    field_key: 'accountant_name',
+                    field_label: 'Registrert regnskapsfører',
+                    data_type: 'text',
+                    is_required: false,
+                    aliases: ['regnskapsfører','autoriserte regnskapsfører','accountant','bookkeeper','registrert regnskapsfører']
+                  },
+                  {
+                    field_key: 'engagement_type',
+                    field_label: 'Type oppdrag',
+                    data_type: 'text',
+                    is_required: false,
+                    aliases: ['oppdragstype','type','engagement type','oppdrag'],
+                    // tips for brukeren via helper (EnhancedPreview kan vise dette om støttet)
+                    helper_text: "Tillatte verdier: Revisjon, Regnskap, Annet"
                   }
                 ]}
                 onMappingComplete={handleMappingComplete}
@@ -282,6 +354,12 @@ const ClientBulkImporter = ({ onImportComplete, onCancel }: ClientBulkImporterPr
                   • Klientgruppe (valgfri) - for å sette/oppdatere gruppe
                   <br />
                   • Regnskapssystem (valgfri) - for å sette/oppdatere regnskapssystem
+                  <br />
+                  • Registrert revisor (valgfri) - oppgitt revisor for klienten
+                  <br />
+                  • Registrert regnskapsfører (valgfri) - oppgitt regnskapsfører for klienten
+                  <br />
+                  • Type oppdrag (valgfri) - Revisjon, Regnskap eller Annet
                   <br />
                   <br />
                   <strong>Viktig:</strong> Kun eksisterende klienter i din klientliste kan oppdateres.
