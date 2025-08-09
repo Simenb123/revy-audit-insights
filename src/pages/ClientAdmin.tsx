@@ -25,7 +25,7 @@ const ClientAdmin = () => {
     setPageTitle('Klientadministrasjon');
   }, [setPageTitle]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     setContext('general');
   }, [setContext]);
 
