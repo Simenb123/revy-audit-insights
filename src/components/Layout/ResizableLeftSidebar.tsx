@@ -16,17 +16,18 @@ import { useSidebar } from '@/components/ui/sidebar/SidebarContext'
 import { Link, useLocation, useParams } from 'react-router-dom'
 import { 
   LayoutDashboard, 
-  Users, 
-  BarChart3, 
-  FileText, 
-  Settings, 
+  Users,
+  BarChart3,
+  FileText,
+  Settings,
   Building,
   BookOpen,
   MessageSquare,
   Database,
   Brain,
   UserCog,
-  GraduationCap
+  GraduationCap,
+  Info
 } from 'lucide-react'
 import { useUserProfile } from '@/hooks/useUserProfile'
 
@@ -107,6 +108,11 @@ const ResizableLeftSidebar = () => {
       title: 'Oversikt',
       url: `/clients/${clientId}/dashboard`,
       icon: LayoutDashboard,
+    },
+    {
+      title: 'Klientinformasjon',
+      url: `/clients/${clientId}/overview`,
+      icon: Info,
     },
     {
       title: 'Analyse',
