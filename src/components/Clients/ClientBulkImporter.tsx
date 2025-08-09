@@ -318,7 +318,7 @@ const ClientBulkImporter = ({ onImportComplete, onCancel }: ClientBulkImporterPr
               <div className="text-center">
                 <h3 className="text-lg font-medium mb-2">Prosesserer import...</h3>
                 <Progress value={uploadProgress} className="w-full" />
-                <p className="text-sm text-gray-600 mt-2">{uploadProgress}% fullført</p>
+                <p className="text-sm text-gray-600 mt-2">{uploadProgress.toFixed(1)}% fullført</p>
               </div>
             </div>
           )}
