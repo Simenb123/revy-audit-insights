@@ -45,7 +45,7 @@ const EmbeddedRevyAssistant: React.FC<EmbeddedRevyAssistantProps> = ({
       </div>
 
       {/* Messages area - flex-grow with overflow */}
-      <div className="min-h-0 overflow-y-auto">
+      <ScrollArea className="min-h-0 h-full">
         <div className="space-y-0.5 px-1 pb-2">
           {messages.length === 0 ? (
             <div className="text-xs text-muted-foreground p-2 text-center">
@@ -68,7 +68,7 @@ const EmbeddedRevyAssistant: React.FC<EmbeddedRevyAssistantProps> = ({
           )}
           <div ref={messagesEndRef} />
         </div>
-      </div>
+      </ScrollArea>
 
       {/* Input area - flex-shrink-0 and sticky bottom */}
       <div className="flex-none bg-background border-t p-1 flex gap-1">
