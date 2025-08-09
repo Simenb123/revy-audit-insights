@@ -494,9 +494,9 @@ const TableBlock = (
           className={`${maxBodyHeight ? 'relative overflow-auto' : 'overflow-x-auto'}`}
           style={maxBodyHeight ? { maxHeight: typeof maxBodyHeight === 'number' ? `${maxBodyHeight}px` : maxBodyHeight } : undefined}
         >
-          <Table noWrapper>
-            <TableHeader className={stickyHeader ? 'sticky top-0 z-30 bg-background' : undefined}>
-              <DndContext sensors={colSensors} collisionDetection={closestCenter} onDragEnd={onColDragEnd}>
+          <DndContext sensors={colSensors} collisionDetection={closestCenter} onDragEnd={onColDragEnd}>
+            <Table noWrapper>
+              <TableHeader className={stickyHeader ? 'sticky top-0 z-30 bg-background' : undefined}>
                 <SortableContext items={effectiveColumns.list.map(({ def }) => def.key)} strategy={horizontalListSortingStrategy}>
                   <TableRow>
                     {effectiveColumns.list.map(({ def }) => (
@@ -504,55 +504,55 @@ const TableBlock = (
                     ))}
                   </TableRow>
                 </SortableContext>
-              </DndContext>
-            </TableHeader>
-            <TableBody>
-              {filteredAndSortedData.length === 0 ? (
-                <>
-                  <TableRow>
-                    <TableCell colSpan={effectiveColumns.list.length} className="text-center text-muted-foreground">
-                      {emptyMessage}
-                    </TableCell>
-                  </TableRow>
-                  {showTotals && totalRow && totalRow}
-                </>
-              ) : (
-                <>
-                  {filteredAndSortedData.map((item, index) => (
-                    <TableRow
-                      key={(item as any).id ?? index}
-                      className={`${onRowClick ? 'cursor-pointer hover:bg-muted/50' : ''} ${
-                        getRowClassName?.(item) || ''
-                      }`}
-                      onClick={() => onRowClick?.(item)}
-                    >
-                      {effectiveColumns.list.map(({ def }) => {
-                        const value =
-                          typeof def.accessor === 'function'
-                            ? def.accessor(item)
-                            : (item[def.accessor as keyof T] as any);
-                        const formatted = def.format ? def.format(value, item) : value;
-                        return (
-                          <TableCell
-                            key={def.key}
-                            className={`${
-                              def.align === 'right' ? 'text-right' : def.align === 'center' ? 'text-center' : ''
-                            } ${def.className || ''} ${
-                              effectiveColumns.pinnedLeftKey === def.key ? 'sticky left-0 z-10 bg-background' : ''
-                            }`}
-                            style={getColStyle(def.key)}
-                          >
-                            {formatted}
-                          </TableCell>
-                        );
-                      })}
+              </TableHeader>
+              <TableBody>
+                {filteredAndSortedData.length === 0 ? (
+                  <>
+                    <TableRow>
+                      <TableCell colSpan={effectiveColumns.list.length} className="text-center text-muted-foreground">
+                        {emptyMessage}
+                      </TableCell>
                     </TableRow>
-                  ))}
-                  {showTotals && totalRow && totalRow}
-                </>
-              )}
-            </TableBody>
-          </Table>
+                    {showTotals && totalRow && totalRow}
+                  </>
+                ) : (
+                  <>
+                    {filteredAndSortedData.map((item, index) => (
+                      <TableRow
+                        key={(item as any).id ?? index}
+                        className={`${onRowClick ? 'cursor-pointer hover:bg-muted/50' : ''} ${
+                          getRowClassName?.(item) || ''
+                        }`}
+                        onClick={() => onRowClick?.(item)}
+                      >
+                        {effectiveColumns.list.map(({ def }) => {
+                          const value =
+                            typeof def.accessor === 'function'
+                              ? def.accessor(item)
+                              : (item[def.accessor as keyof T] as any);
+                          const formatted = def.format ? def.format(value, item) : value;
+                          return (
+                            <TableCell
+                              key={def.key}
+                              className={`${
+                                def.align === 'right' ? 'text-right' : def.align === 'center' ? 'text-center' : ''
+                              } ${def.className || ''} ${
+                                effectiveColumns.pinnedLeftKey === def.key ? 'sticky left-0 z-10 bg-background' : ''
+                              }`}
+                              style={getColStyle(def.key)}
+                            >
+                              {formatted}
+                            </TableCell>
+                          );
+                        })}
+                      </TableRow>
+                    ))}
+                    {showTotals && totalRow && totalRow}
+                  </>
+                )}
+              </TableBody>
+            </Table>
+          </DndContext>
         </div>
       </div>
 
