@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -248,78 +247,76 @@ const ClientBulkImporter = ({ onImportComplete, onCancel }: ClientBulkImporterPr
           </CardDescription>
         </CardHeader>
         <CardContent>
-              <EnhancedPreview
-                preview={filePreview}
-                fileName={selectedFile?.name || ''}
-                clientId="bulk"
-                fileType="client_bulk"
-                customFieldDefinitions={[
-                  {
-                    field_key: 'org_number',
-                    field_label: 'Organisasjonsnummer',
-                    data_type: 'text',
-                    is_required: true,
-                    aliases: ['orgnr','org nr','organisasjonsnummer','orgnummer','org-nr','org no']
-                  },
-                  {
-                    field_key: 'partner',
-                    field_label: 'Partner',
-                    data_type: 'text',
-                    is_required: false,
-                    aliases: ['partner','ansvarlig partner','oppdragsansvarlig','engagement partner','oppdragsansvarlig revisor']
-                  },
-                  {
-                    field_key: 'ansv',
-                    field_label: 'Kundeansvarlig',
-                    data_type: 'text',
-                    is_required: false,
-                    aliases: ['kundeansvarlig','kunde ansvarlig','kundansvarlig','client manager','account manager','engagement manager','oppdragsleder']
-                  },
-                  {
-                    field_key: 'client_group',
-                    field_label: 'Klientgruppe',
-                    data_type: 'text',
-                    is_required: false,
-                    aliases: ['gruppe','kundegruppe','klientgruppe','group','client group']
-                  },
-                  {
-                    field_key: 'accounting_system',
-                    field_label: 'Regnskapssystem',
-                    data_type: 'text',
-                    is_required: false,
-                    aliases: ['regnskapssystem','økonomisystem','accounting system','erp','visma','tripletex','poweroffice','fiken','xledger','24sevenoffice']
-                  },
-                  // NEW fields for mapping
-                  {
-                    field_key: 'current_auditor_name',
-                    field_label: 'Registrert revisor',
-                    data_type: 'text',
-                    is_required: false,
-                    aliases: ['revisor','registrert revisor','auditor','current auditor','oppnevnt revisor']
-                  },
-                  {
-                    field_key: 'accountant_name',
-                    field_label: 'Registrert regnskapsfører',
-                    data_type: 'text',
-                    is_required: false,
-                    aliases: ['regnskapsfører','autoriserte regnskapsfører','accountant','bookkeeper','registrert regnskapsfører']
-                  },
-                  {
-                    field_key: 'engagement_type',
-                    field_label: 'Type oppdrag',
-                    data_type: 'text',
-                    is_required: false,
-                    aliases: ['oppdragstype','type','engagement type','oppdrag'],
-                    // tips for brukeren via helper (EnhancedPreview kan vise dette om støttet)
-                    helper_text: "Tillatte verdier: Revisjon, Regnskap, Annet"
-                  }
-                ]}
-                onMappingComplete={handleMappingComplete}
-                onCancel={() => {
-                  setShowMapping(false);
-                  setStep('select');
-                }}
-              />
+          <EnhancedPreview
+            preview={filePreview}
+            fileName={selectedFile?.name || ''}
+            clientId="bulk"
+            fileType="client_bulk"
+            customFieldDefinitions={[
+              {
+                field_key: 'org_number',
+                field_label: 'Organisasjonsnummer',
+                data_type: 'text',
+                is_required: true,
+                aliases: ['orgnr','org nr','organisasjonsnummer','orgnummer','org-nr','org no']
+              },
+              {
+                field_key: 'partner',
+                field_label: 'Partner',
+                data_type: 'text',
+                is_required: false,
+                aliases: ['partner','ansvarlig partner','oppdragsansvarlig','engagement partner','oppdragsansvarlig revisor']
+              },
+              {
+                field_key: 'ansv',
+                field_label: 'Kundeansvarlig',
+                data_type: 'text',
+                is_required: false,
+                aliases: ['kundeansvarlig','kunde ansvarlig','kundansvarlig','client manager','account manager','engagement manager','oppdragsleder']
+              },
+              {
+                field_key: 'client_group',
+                field_label: 'Klientgruppe',
+                data_type: 'text',
+                is_required: false,
+                aliases: ['gruppe','kundegruppe','klientgruppe','group','client group']
+              },
+              {
+                field_key: 'accounting_system',
+                field_label: 'Regnskapssystem',
+                data_type: 'text',
+                is_required: false,
+                aliases: ['regnskapssystem','økonomisystem','accounting system','erp','visma','tripletex','poweroffice','fiken','xledger','24sevenoffice']
+              },
+              // NEW fields for mapping
+              {
+                field_key: 'current_auditor_name',
+                field_label: 'Registrert revisor',
+                data_type: 'text',
+                is_required: false,
+                aliases: ['revisor','registrert revisor','auditor','current auditor','oppnevnt revisor']
+              },
+              {
+                field_key: 'accountant_name',
+                field_label: 'Registrert regnskapsfører',
+                data_type: 'text',
+                is_required: false,
+                aliases: ['regnskapsfører','autoriserte regnskapsfører','accountant','bookkeeper','registrert regnskapsfører']
+              },
+              {
+                field_key: 'engagement_type',
+                field_label: 'Type oppdrag',
+                data_type: 'text',
+                is_required: false,
+                aliases: ['oppdragstype','type','engagement type','oppdrag']
+              }
+            ]}
+            onMappingComplete={handleMappingComplete}
+            onCancel={() => {
+              setShowMapping(false);
+              setStep('select');
+            }}
+          />
         </CardContent>
       </Card>
     );
