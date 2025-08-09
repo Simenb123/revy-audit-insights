@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { cn } from '@/lib/utils';
-import { useLayout } from '@/components/Layout/LayoutContext';
+
 interface GlobalLayoutContainerProps {
   children: React.ReactNode;
   className?: string;
@@ -13,8 +13,7 @@ const GlobalLayoutContainer: React.FC<GlobalLayoutContainerProps> = ({
   className,
   maxWidth = 'wide'
 }) => {
-  const { globalHeaderHeight, subHeaderHeight } = useLayout();
-  const computedHeight = `calc(100vh - ${globalHeaderHeight + subHeaderHeight}px)`;
+  // Height is controlled by parent containers; no layout context needed here.
   const maxWidthClasses = {
     narrow: 'max-w-[var(--content-narrow)]',
     medium: 'max-w-[var(--content-medium)]',
