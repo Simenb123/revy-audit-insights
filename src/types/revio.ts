@@ -110,6 +110,8 @@ export interface Client {
   user_id?: string;
   mva_registered?: boolean;
   accountant_name?: string;
+  partner?: string;
+  account_manager?: string;
 }
 
 export type AuditPhase = 'engagement' | 'planning' | 'execution' | 'completion' | 'risk_assessment' | 'reporting' | 'overview';

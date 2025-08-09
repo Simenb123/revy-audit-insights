@@ -107,12 +107,31 @@ const ClientsTable = ({ clients, onRowSelect, selectedClientId }: ClientsTablePr
       accessor: (row) => row.nace_description?.trim() || "—",
       sortable: true,
     },
-    {
-      key: "accountant_name",
-      header: "Regnskapsfører",
-      accessor: (row) => row.accountant_name?.trim() || "—",
-      sortable: true,
-    },
+      {
+        key: "accountant_name",
+        header: "Regnskapsfører",
+        accessor: (row) => row.accountant_name?.trim() || "—",
+        sortable: true,
+      },
+      {
+        key: "partner",
+        header: "Partner",
+        accessor: (row) => row.partner?.trim() || "—",
+        sortable: true,
+      },
+      {
+        key: "account_manager",
+        header: "Kundeansvarlig",
+        accessor: (row) => row.account_manager?.trim() || "—",
+        sortable: true,
+      },
+      {
+        key: "accounting_system",
+        header: "Regnskapssystem",
+        accessor: (row) => row.accounting_system?.trim() || "—",
+        sortable: true,
+      },
+
     {
       key: "capital",
       header: "Kapital",
@@ -142,10 +161,14 @@ const ClientsTable = ({ clients, onRowSelect, selectedClientId }: ClientsTablePr
         { key: "mva_registered", visible: true },
         { key: "nace_code", visible: false },
         { key: "nace_description", visible: false },
-        { key: "accountant_name", visible: false },
-        { key: "capital", visible: true },
-        { key: "department", visible: true },
-        { key: "group", visible: true },
+         { key: "accountant_name", visible: false },
+         { key: "partner", visible: false },
+         { key: "account_manager", visible: false },
+         { key: "accounting_system", visible: false },
+         { key: "capital", visible: true },
+         { key: "department", visible: true },
+         { key: "group", visible: true },
+
       ]}
       onRowClick={(row) => {
         onRowSelect?.(row);
