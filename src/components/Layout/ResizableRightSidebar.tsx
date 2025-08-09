@@ -193,7 +193,7 @@ useEffect(() => {
       className="sticky bg-background border-l flex flex-col z-10 overflow-hidden"
       style={{
         top: globalHeaderHeight + subHeaderHeight,
-        height: `calc(100vh - ${globalHeaderHeight + subHeaderHeight}px)`
+        height: `calc(100dvh - ${globalHeaderHeight + subHeaderHeight}px)`
       }}
       animate={{ width: isCollapsed ? COLLAPSED_WIDTH : width }}
       transition={{ duration: 0.2, ease: 'easeInOut' }}

@@ -14,21 +14,41 @@ export const LayoutProvider = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
 
   useEffect(() => {
-    const updateHeights = () => {
+    const readGlobalHeaderHeight = () => {
       const rootStyle = getComputedStyle(document.documentElement);
       const globalHeight = parseInt(rootStyle.getPropertyValue('--global-header-height'), 10);
       setGlobalHeaderHeight(isNaN(globalHeight) ? 0 : globalHeight);
+    };
 
+    const readAndSetSubHeaderHeight = () => {
       const subHeader = document.querySelector('[data-sub-header]');
       const height = subHeader instanceof HTMLElement ? subHeader.offsetHeight : 0;
       setSubHeaderHeight(height);
+      // Expose current subheader height as CSS var for any sticky elements
+      document.documentElement.style.setProperty('--sub-header-current-height', `${height}px`);
     };
 
-    updateHeights();
-    window.addEventListener('resize', updateHeights);
+    // Initial read
+    readGlobalHeaderHeight();
+    readAndSetSubHeaderHeight();
+
+    // Observe dynamic size changes of subheader
+    const subHeader = document.querySelector('[data-sub-header]') as HTMLElement | null;
+    const ro = new ResizeObserver(() => {
+      readAndSetSubHeaderHeight();
+    });
+    if (subHeader) ro.observe(subHeader);
+
+    const handleResize = () => {
+      readGlobalHeaderHeight();
+      readAndSetSubHeaderHeight();
+    };
+
+    window.addEventListener('resize', handleResize);
 
     return () => {
-      window.removeEventListener('resize', updateHeights);
+      window.removeEventListener('resize', handleResize);
+      ro.disconnect();
     };
   }, [location.pathname]);
 

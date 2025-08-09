@@ -17,7 +17,7 @@ const GridLayoutContainer: React.FC<GridLayoutContainerProps> = ({
   const { state: leftSidebarState } = useSidebar();
   const isMobile = useIsMobile();
   const { globalHeaderHeight, subHeaderHeight } = useLayout();
-  const minHeight = `calc(100vh - ${globalHeaderHeight + subHeaderHeight}px)`;
+  const computedHeight = `calc(100dvh - ${globalHeaderHeight + subHeaderHeight}px)`;
   
   const leftCollapsed = leftSidebarState === 'collapsed';
 
@@ -47,8 +47,7 @@ const GridLayoutContainer: React.FC<GridLayoutContainerProps> = ({
       style={{
         gridTemplateColumns: getGridTemplateColumns(),
         display: isMobile ? 'block' : 'grid',
-        height: 'auto',
-        minHeight
+        height: computedHeight
       }}
     >
       {children}

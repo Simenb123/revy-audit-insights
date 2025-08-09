@@ -46,7 +46,7 @@ const AppLayout = () => {
         <LayoutProvider>
           <PageTitleProvider>
             <SubHeaderProvider>
-              <div className="min-h-screen bg-background flex flex-col">
+              <div className="h-screen overflow-hidden bg-background flex flex-col">
                 <GlobalHeader />
                 <SubHeaderHost />
                 <SidebarProvider>
@@ -88,7 +88,7 @@ const AppLayout = () => {
     <LayoutProvider>
       <PageTitleProvider>
         <SubHeaderProvider>
-          <div className="min-h-screen bg-background flex flex-col">
+          <div className="h-screen overflow-hidden bg-background flex flex-col">
             <GlobalHeader />
             <SubHeaderHost />
             <SidebarProvider>

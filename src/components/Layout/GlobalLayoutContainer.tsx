@@ -28,10 +28,9 @@ const GlobalLayoutContainer: React.FC<GlobalLayoutContainerProps> = ({
         'min-h-0',
         'w-full mx-auto px-4 lg:pr-6 min-w-0 overflow-x-hidden overflow-y-auto',
         maxWidthClasses[maxWidth],
-        'border-t-2 border-t-border/50',
         className
       )}
-      style={{ height: computedHeight }}
+      style={{ height: '100%' }}
     >
       {children}
     </main>
