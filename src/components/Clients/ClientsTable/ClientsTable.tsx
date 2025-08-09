@@ -165,6 +165,22 @@ const ClientsTable = ({ clients, onRowSelect, selectedClientId }: ClientsTablePr
     },
     { key: "department", header: "Avdeling", accessor: (row) => row.department?.trim() || "—", sortable: true },
     { key: "group", header: "Gruppe", accessor: (row) => row.client_group?.trim() || "—", sortable: true },
+
+    // New "Aktiv" column
+    {
+      key: "is_active",
+      header: "Aktiv",
+      accessor: (row) => ((row as any).is_active !== false ? "Ja" : "Nei"),
+      sortable: true,
+      format: (_v, row) => {
+        const active = (row as any).is_active !== false; // default to Ja if undefined (demo data)
+        return (
+          <Badge variant={active ? ('success' as any) : ('destructive' as any)}>
+            {active ? 'Ja' : 'Nei'}
+          </Badge>
+        );
+      },
+    },
   ];
 
   return (
@@ -192,7 +208,7 @@ const ClientsTable = ({ clients, onRowSelect, selectedClientId }: ClientsTablePr
          { key: "capital", visible: true },
          { key: "department", visible: true },
          { key: "group", visible: true },
-
+         { key: "is_active", visible: true }, // New default visibility
       ]}
       onRowClick={(row) => {
         onRowSelect?.(row);

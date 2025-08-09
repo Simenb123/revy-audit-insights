@@ -2430,6 +2430,7 @@ export type Database = {
           id: string
           industry: string | null
           internal_controls: string | null
+          is_active: boolean
           is_test_data: boolean | null
           last_brreg_sync_at: string | null
           municipality_code: string | null
@@ -2488,6 +2489,7 @@ export type Database = {
           id?: string
           industry?: string | null
           internal_controls?: string | null
+          is_active?: boolean
           is_test_data?: boolean | null
           last_brreg_sync_at?: string | null
           municipality_code?: string | null
@@ -2546,6 +2548,7 @@ export type Database = {
           id?: string
           industry?: string | null
           internal_controls?: string | null
+          is_active?: boolean
           is_test_data?: boolean | null
           last_brreg_sync_at?: string | null
           municipality_code?: string | null
