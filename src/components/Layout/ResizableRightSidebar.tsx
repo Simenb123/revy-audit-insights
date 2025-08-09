@@ -192,8 +192,8 @@ useEffect(() => {
       data-testid="right-sidebar"
       className="fixed bg-background border-l flex flex-col z-10 overflow-hidden"
       style={{
-        top: 'calc(var(--global-header-height) + var(--sub-header-current-height))',
-        height: 'calc(100dvh - (var(--global-header-height) + var(--sub-header-current-height)))',
+        top: 'calc(var(--global-header-current-height) + var(--sub-header-current-height))',
+        height: 'calc(100dvh - (var(--global-header-current-height) + var(--sub-header-current-height)))',
         right: 0
       }}
       animate={{ width: isCollapsed ? COLLAPSED_WIDTH : width }}

@@ -14,10 +14,20 @@ export const LayoutProvider = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
 
   useEffect(() => {
-    const readGlobalHeaderHeight = () => {
-      const rootStyle = getComputedStyle(document.documentElement);
-      const globalHeight = parseInt(rootStyle.getPropertyValue('--global-header-height'), 10);
-      setGlobalHeaderHeight(isNaN(globalHeight) ? 0 : globalHeight);
+    const readAndSetGlobalHeaderHeight = () => {
+      const globalHeader = document.querySelector('[data-global-header]');
+      if (globalHeader instanceof HTMLElement) {
+        const height = globalHeader.offsetHeight || 0;
+        setGlobalHeaderHeight(height);
+        document.documentElement.style.setProperty('--global-header-current-height', `${height}px`);
+      } else {
+        // Fallback to CSS var if element not found
+        const rootStyle = getComputedStyle(document.documentElement);
+        const globalHeight = parseInt(rootStyle.getPropertyValue('--global-header-height'), 10);
+        const fallback = isNaN(globalHeight) ? 0 : globalHeight;
+        setGlobalHeaderHeight(fallback);
+        document.documentElement.style.setProperty('--global-header-current-height', `${fallback}px`);
+      }
     };
 
     const readAndSetSubHeaderHeight = () => {
@@ -29,18 +39,25 @@ export const LayoutProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     // Initial read
-    readGlobalHeaderHeight();
+    readAndSetGlobalHeaderHeight();
     readAndSetSubHeaderHeight();
 
-    // Observe dynamic size changes of subheader
+    // Observe dynamic size changes
+    const globalHeader = document.querySelector('[data-global-header]') as HTMLElement | null;
     const subHeader = document.querySelector('[data-sub-header]') as HTMLElement | null;
-    const ro = new ResizeObserver(() => {
+
+    const roGlobal = new ResizeObserver(() => {
+      readAndSetGlobalHeaderHeight();
+    });
+    if (globalHeader) roGlobal.observe(globalHeader);
+
+    const roSub = new ResizeObserver(() => {
       readAndSetSubHeaderHeight();
     });
-    if (subHeader) ro.observe(subHeader);
+    if (subHeader) roSub.observe(subHeader);
 
     const handleResize = () => {
-      readGlobalHeaderHeight();
+      readAndSetGlobalHeaderHeight();
       readAndSetSubHeaderHeight();
     };
 
@@ -48,7 +65,8 @@ export const LayoutProvider = ({ children }: { children: React.ReactNode }) => {
 
     return () => {
       window.removeEventListener('resize', handleResize);
-      ro.disconnect();
+      roGlobal.disconnect();
+      roSub.disconnect();
     };
   }, [location.pathname]);
 

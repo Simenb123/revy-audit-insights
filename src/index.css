@@ -34,6 +34,10 @@
     --client-header-height: 60px;
     --client-sub-header-height: 48px;
 
+    /* Dynamic computed heights (fallbacks) */
+    --global-header-current-height: var(--global-header-height);
+    --sub-header-current-height: 0px;
+
     /* Sidebar farger - lys variant */
     --sidebar-background: var(--revio-500);
     --sidebar-foreground: 0 0% 100%;
@@ -77,7 +81,7 @@
   /* CSS Grid Layout System */
   .app-grid {
     display: grid;
-    min-height: calc(100vh - var(--global-header-height));
+    min-height: calc(100vh - var(--global-header-current-height));
     /* grid-template-columns will be set dynamically by GridLayoutContainer */
   }
 
@@ -85,7 +89,7 @@
   @media (max-width: 767px) {
     .app-grid {
       display: block !important;
-      min-height: calc(100vh - var(--global-header-height));
+      min-height: calc(100vh - var(--global-header-current-height));
     }
     
     .app-grid > *:first-child,
@@ -96,7 +100,7 @@
     .app-grid > *:nth-child(2) {
       display: block !important;
       width: 100% !important;
-      min-height: calc(100vh - var(--global-header-height));
+      min-height: calc(100vh - var(--global-header-current-height));
       overflow: auto;
     }
   }

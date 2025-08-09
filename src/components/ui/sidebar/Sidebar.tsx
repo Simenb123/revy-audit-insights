@@ -98,8 +98,8 @@ export const Sidebar = React.forwardRef<
             className
           )}
           style={{
-            top: "calc(var(--global-header-height) + var(--sub-header-current-height))",
-            height: "calc(100dvh - (var(--global-header-height) + var(--sub-header-current-height)))",
+            top: "calc(var(--global-header-current-height) + var(--sub-header-current-height))",
+            height: "calc(100dvh - (var(--global-header-current-height) + var(--sub-header-current-height)))",
           }}
         >
           <aside
