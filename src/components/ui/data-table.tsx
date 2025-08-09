@@ -139,6 +139,37 @@ const DataTable = <T extends Record<string, any>>({
 
   const [cmState, setCmState] = useLocalStorage<CMState[]>(preferencesKey, initialCMState);
 
+  // Normalize/sanitize column state to prevent invalid entries
+  const safeCmState: CMState[] = useMemo(() => {
+    const colsMap = new Map(columns.map((c) => [c.key, c]));
+    const base = Array.isArray(cmState) ? (cmState as any[]).filter(Boolean) : [];
+    const filtered: CMState[] = base
+      .filter((s: any) => s && typeof s.key === 'string' && colsMap.has(s.key))
+      .map((s: any) => {
+        const def = colsMap.get(s.key)!;
+        return {
+          key: s.key,
+          label: def.header,
+          visible: s.visible !== false,
+          required: def.required,
+          pinnedLeft: s.pinnedLeft ?? false,
+        } as CMState;
+      });
+    // ensure all current columns exist in state
+    columns.forEach((c) => {
+      if (!filtered.some((s) => s.key === c.key)) {
+        filtered.push({
+          key: c.key,
+          label: c.header,
+          visible: true,
+          required: c.required,
+          pinnedLeft: false,
+        });
+      }
+    });
+    return filtered;
+  }, [cmState, columns]);
+
   type TableView = {
     id: string;
     name: string;
@@ -155,7 +186,7 @@ const DataTable = <T extends Record<string, any>>({
     const name = window.prompt('Navn på visning');
     if (!name) return;
     const id = Date.now().toString(36);
-    const view: TableView = { id, name, columns: cmState, sortBy, sortOrder, searchTerm: showSearch ? searchTerm : undefined };
+    const view: TableView = { id, name, columns: safeCmState, sortBy, sortOrder, searchTerm: showSearch ? searchTerm : undefined };
     setViews([...(views || []), view]);
   };
 
@@ -231,12 +262,12 @@ const DataTable = <T extends Record<string, any>>({
   );
 
   const effectiveColumns = useMemo(() => {
-    // order by cmState order; fallback to columns order
-    const orderMap = new Map(cmState.map((c, i) => [c.key, i] as const));
+    // order by column manager state; fallback to columns order
+    const orderMap = new Map(safeCmState.map((c, i) => [c.key, i] as const));
     const withMeta = columns.map((c) => ({
       def: c,
-      st: cmState.find((s) => s.key === c.key) || { key: c.key, label: c.header, visible: true, pinnedLeft: false },
-      order: orderMap.has(c.key) ? orderMap.get(c.key)! : Number.MAX_SAFE_INTEGER,
+      st: safeCmState.find((s) => s.key === c.key) || { key: c.key, label: c.header, visible: true, pinnedLeft: false },
+      order: orderMap.has(c.key) ? (orderMap.get(c.key) as number) : Number.MAX_SAFE_INTEGER,
     }));
     withMeta.sort((a, b) => a.order - b.order);
     const pinnedLeftKey = withMeta.find((x) => x.st.pinnedLeft)?.def.key;
@@ -244,7 +275,7 @@ const DataTable = <T extends Record<string, any>>({
       pinnedLeftKey: pinnedLeftKey || null,
       list: withMeta.filter((x) => x.st.visible !== false),
     };
-  }, [columns, cmState]);
+  }, [columns, safeCmState]);
 
   const filteredAndSortedData = useMemo(() => {
     if (!data) return [];
@@ -381,11 +412,11 @@ const onColDragEnd = (event: DragEndEvent) => {
   const oldIndex = visibleKeys.indexOf(String(active.id));
   const newIndex = visibleKeys.indexOf(String(over.id));
   if (oldIndex < 0 || newIndex < 0) return;
-  const visItems = cmState.filter((c) => visibleKeys.includes(c.key));
-  const hiddenSet = new Set(cmState.filter((c) => !visibleKeys.includes(c.key)).map((c) => c.key));
+  const visItems = safeCmState.filter((c) => visibleKeys.includes(c.key));
+  const hiddenSet = new Set(safeCmState.filter((c) => !visibleKeys.includes(c.key)).map((c) => c.key));
   const movedVis = arrayMove(visItems, oldIndex, newIndex);
   let v = 0;
-  const next = cmState.map((c) => (hiddenSet.has(c.key) ? c : movedVis[v++]));
+  const next = safeCmState.map((c) => (hiddenSet.has(c.key) ? c : movedVis[v++]));
   setCmState(next);
 };
 
@@ -611,7 +642,7 @@ const TableBlock = (
           <div className="flex items-center gap-2">
             {preferencesKey && <ViewsDropdown />}
             {enableColumnManager && (
-              <ColumnManager columns={cmState} onChange={setCmState} allowPinLeft title="Tilpass kolonner" triggerLabel="Kolonner" />
+              <ColumnManager columns={safeCmState} onChange={setCmState} allowPinLeft title="Tilpass kolonner" triggerLabel="Kolonner" />
             )}
             {preferencesKey && (
               <Button variant="outline" size="sm" onClick={resetColWidths} title="Tilbakestill kolonnebredder">
@@ -649,7 +680,7 @@ const TableBlock = (
           <div className="flex items-center gap-2">
             {preferencesKey && <ViewsDropdown />}
             {enableColumnManager && (
-              <ColumnManager columns={cmState} onChange={setCmState} allowPinLeft title="Tilpass kolonner" triggerLabel="Kolonner" />
+              <ColumnManager columns={safeCmState} onChange={setCmState} allowPinLeft title="Tilpass kolonner" triggerLabel="Kolonner" />
             )}
             {preferencesKey && (
               <Button variant="outline" size="sm" onClick={resetColWidths} title="Tilbakestill kolonnebredder">
