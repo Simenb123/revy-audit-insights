@@ -122,7 +122,7 @@ const ClientsTable = ({ clients, onRowSelect, selectedClientId }: ClientsTablePr
       {
         key: "account_manager",
         header: "Kundeansvarlig",
-        accessor: (row) => row.account_manager?.trim() || "—",
+        accessor: (row) => row.ansv?.trim() || row.account_manager?.trim() || "—",
         sortable: true,
       },
       {

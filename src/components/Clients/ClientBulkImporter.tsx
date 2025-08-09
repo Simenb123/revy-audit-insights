@@ -19,7 +19,7 @@ interface ClientBulkImportData {
   client_group?: string;
   accounting_system?: string;
   partner?: string;
-  account_manager?: string;
+  ansv?: string;
 }
 
 interface ClientBulkImporterProps {
@@ -139,8 +139,8 @@ const ClientBulkImporter = ({ onImportComplete, onCancel }: ClientBulkImporterPr
           updateData.partner = row.partner.toString().trim();
         }
 
-        if (row.account_manager !== undefined && row.account_manager !== '') {
-          updateData.account_manager = row.account_manager.toString().trim();
+        if (row.ansv !== undefined && row.ansv !== '') {
+          updateData.ansv = row.ansv.toString().trim();
         }
 
         try {
@@ -221,7 +221,7 @@ const ClientBulkImporter = ({ onImportComplete, onCancel }: ClientBulkImporterPr
                     aliases: ['partner','ansvarlig partner','oppdragsansvarlig','engagement partner','oppdragsansvarlig revisor']
                   },
                   {
-                    field_key: 'account_manager',
+                    field_key: 'ansv',
                     field_label: 'Kundeansvarlig',
                     data_type: 'text',
                     is_required: false,

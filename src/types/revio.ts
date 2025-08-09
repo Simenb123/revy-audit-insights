@@ -111,6 +111,7 @@ export interface Client {
   mva_registered?: boolean;
   accountant_name?: string;
   partner?: string;
+  ansv?: string;
   account_manager?: string;
 }
 
