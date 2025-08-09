@@ -1,21 +1,21 @@
 import { logger } from '@/utils/logger';
 
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useClientDetails } from '@/hooks/useClientDetails';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import StickyClientLayout from '@/components/Layout/StickyClientLayout';
-import ClientNavigation from '@/components/Clients/ClientDetails/ClientNavigation';
 import RevisionWorkflow from '@/components/Clients/ClientDetails/RevisionWorkflow';
 import PhaseContent from '@/components/Clients/ClientDetails/PhaseContent';
 import { AuditPhase } from '@/types/revio';
 
 const ClientDetail = () => {
-  const { clientId } = useParams<{ clientId: string }>();
-  const [selectedPhase, setSelectedPhase] = useState<AuditPhase>('overview');
+  const { clientId, phase } = useParams<{ clientId: string; phase?: AuditPhase }>();
+  const navigate = useNavigate();
+  const [selectedPhase, setSelectedPhase] = useState<AuditPhase>(phase || 'overview');
   const { setSelectedClientId } = useFiscalYear();
 
   logger.log('🏢 [CLIENT_DETAIL] Component rendered:', {
@@ -33,6 +33,17 @@ const ClientDetail = () => {
       setSelectedClientId(client.id);
     }
   }, [client?.id, setSelectedClientId]);
+
+  // Update selected phase when URL phase changes
+  useEffect(() => {
+    if (phase) {
+      if (phase !== selectedPhase) {
+        setSelectedPhase(phase);
+      }
+    } else if (selectedPhase !== 'overview') {
+      setSelectedPhase('overview');
+    }
+  }, [phase, selectedPhase]);
 
   logger.log('🏢 [CLIENT_DETAIL] Client query result:', {
     clientId,
@@ -137,6 +148,9 @@ const ClientDetail = () => {
   const handlePhaseClick = (phase: AuditPhase) => {
     logger.log('🔄 [CLIENT_DETAIL] Phase changed:', { from: selectedPhase, to: phase });
     setSelectedPhase(phase);
+    if (clientId) {
+      navigate(`/clients/${clientId}/${phase}`);
+    }
   };
 
   return (
@@ -147,10 +161,10 @@ const ClientDetail = () => {
     >
       <div className="space-y-6 p-6">
         {/* Revision Workflow Progress */}
-        <RevisionWorkflow 
+        <RevisionWorkflow
           currentPhase={client.phase}
           progress={client.progress || 0}
-          onPhaseClick={setSelectedPhase}
+          onPhaseClick={handlePhaseClick}
           clientId={client.id}
         />
         
