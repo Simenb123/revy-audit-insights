@@ -14,7 +14,7 @@ import ResizableHandle from './ResizableHandle';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 import { useRightSidebar } from './RightSidebarContext';
-import { useLayout } from './LayoutContext';
+
 import ClientFiguresPanel from '@/components/Sidebar/ClientFiguresPanel';
 
 const COLLAPSED_WIDTH = 44;
@@ -26,7 +26,7 @@ const ResizableRightSidebar = () => {
     width,
     setWidth
   } = useRightSidebar();
-  const { globalHeaderHeight, subHeaderHeight } = useLayout();
+  
 
   const isMobile = useIsMobile();
   const [isDragging, setIsDragging] = useState(false);
@@ -192,8 +192,8 @@ useEffect(() => {
       data-testid="right-sidebar"
       className="sticky bg-background border-l flex flex-col z-10 overflow-hidden"
       style={{
-        top: globalHeaderHeight + subHeaderHeight,
-        height: `calc(100dvh - ${globalHeaderHeight + subHeaderHeight}px)`
+        top: 'calc(var(--global-header-height) + var(--sub-header-current-height))',
+        height: 'calc(100dvh - (var(--global-header-height) + var(--sub-header-current-height)))'
       }}
       animate={{ width: isCollapsed ? COLLAPSED_WIDTH : width }}
       transition={{ duration: 0.2, ease: 'easeInOut' }}
