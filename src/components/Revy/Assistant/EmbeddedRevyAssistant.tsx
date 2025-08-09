@@ -30,6 +30,8 @@ const EmbeddedRevyAssistant: React.FC<EmbeddedRevyAssistantProps> = ({
   onSendMessage
 }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const contentWrapperRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
@@ -37,6 +39,19 @@ const EmbeddedRevyAssistant: React.FC<EmbeddedRevyAssistantProps> = ({
     });
     return () => cancelAnimationFrame(frame);
   }, [messages, isLoading]);
+
+  useEffect(() => {
+    const container = scrollAreaRef.current;
+    const wrapper = contentWrapperRef.current;
+    if (!container || !wrapper) return;
+    // Temporary layout diagnostics
+    console.log('EmbeddedRevyAssistant sizes', {
+      containerH: container.clientHeight,
+      wrapperH: wrapper.clientHeight,
+      messages: messages.length,
+    });
+  }, [messages, isLoading]);
+
   return (
     <div className="flex h-full min-h-0 flex-col">
       {/* Context indicator */}
@@ -48,28 +63,30 @@ const EmbeddedRevyAssistant: React.FC<EmbeddedRevyAssistantProps> = ({
       </div>
 
       {/* Messages area - flex-grow with overflow */}
-      <div className="flex-1 min-h-0 overflow-y-auto">
-        <div className="space-y-0.5 px-1 pb-8">
-          {messages.length === 0 ? (
-            <div className="text-xs text-muted-foreground p-2 text-center">
-              Spør meg om hjelp med revisjonen
-            </div>
-          ) : (
-            messages.map((message) => (
-              <MessageItem 
-                key={message.id} 
-                message={message} 
-                compact={true}
-              />
-            ))
-          )}
-          {isLoading && (
-            <div className="flex items-center gap-2 text-xs text-muted-foreground p-2">
-              <Loader2 className="h-3 w-3 animate-spin" />
-              AI-Revy tenker...
-            </div>
-          )}
-          <div ref={messagesEndRef} />
+      <div ref={scrollAreaRef} className="flex-1 min-h-0 overflow-y-auto">
+        <div ref={contentWrapperRef} className="flex min-h-full flex-col justify-end">
+          <div className="space-y-0.5 px-1 pb-12">
+            {messages.length === 0 ? (
+              <div className="text-xs text-muted-foreground p-2 text-center">
+                Spør meg om hjelp med revisjonen
+              </div>
+            ) : (
+              messages.map((message) => (
+                <MessageItem 
+                  key={message.id} 
+                  message={message} 
+                  compact={true}
+                />
+              ))
+            )}
+            {isLoading && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground p-2">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                AI-Revy tenker...
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
         </div>
       </div>
 
