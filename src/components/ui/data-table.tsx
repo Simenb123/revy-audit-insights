@@ -401,9 +401,7 @@ const SortableHeader: React.FC<{ def: DataTableColumn<T>; pinned: boolean; stick
   return (
     <TableHead
       ref={setNodeRef as any}
-      className={`${def.sortable !== false ? 'cursor-pointer hover:bg-muted/50 select-none' : ''} ${
-        def.align === 'right' ? 'text-right' : def.align === 'center' ? 'text-center' : ''
-      } ${def.className || ''} ${sticky ? 'sticky top-0 z-30 bg-background' : ''} ${pinned ? 'sticky left-0 z-30 bg-background' : ''} relative`}
+      className={`${def.sortable !== false ? 'cursor-pointer hover:bg-muted/50 select-none' : ''} ${def.align === 'right' ? 'text-right' : def.align === 'center' ? 'text-center' : ''} ${def.className || ''} ${pinned ? 'sticky left-0 z-40 bg-background' : ''} relative`}
       style={style}
       onClick={() => def.sortable !== false && handleSort(def.key)}
       {...attributes}
@@ -466,7 +464,7 @@ const TableBlock = (
           style={maxBodyHeight ? { maxHeight: typeof maxBodyHeight === 'number' ? `${maxBodyHeight}px` : maxBodyHeight } : undefined}
         >
           <Table noWrapper>
-            <TableHeader>
+            <TableHeader className={stickyHeader ? 'sticky top-0 z-30 bg-background' : undefined}>
               <DndContext sensors={colSensors} collisionDetection={closestCenter} onDragEnd={onColDragEnd}>
                 <SortableContext items={effectiveColumns.list.map(({ def }) => def.key)} strategy={horizontalListSortingStrategy}>
                   <TableRow>
