@@ -35,7 +35,7 @@ const EmbeddedRevyAssistant: React.FC<EmbeddedRevyAssistantProps> = ({
     messagesEndRef.current?.scrollIntoView?.({ behavior: 'smooth' });
   }, [messages]);
   return (
-    <div className="grid h-full min-h-0 grid-rows-[auto,1fr,auto]">
+    <div className="flex h-full min-h-0 flex-col">
       {/* Context indicator */}
       <div className="mb-1 px-1 pt-1">
         <Badge variant="outline" className="text-xs">
@@ -45,7 +45,7 @@ const EmbeddedRevyAssistant: React.FC<EmbeddedRevyAssistantProps> = ({
       </div>
 
       {/* Messages area - flex-grow with overflow */}
-      <ScrollArea className="min-h-0 h-full">
+      <ScrollArea className="flex-1 min-h-0">
         <div className="space-y-0.5 px-1 pb-2">
           {messages.length === 0 ? (
             <div className="text-xs text-muted-foreground p-2 text-center">
