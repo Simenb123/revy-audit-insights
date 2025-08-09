@@ -35,11 +35,11 @@ const ClientRedirect = (): null => {
 
   useEffect(() => {
     if (clientId && location.pathname === `/clients/${clientId}`) {
-      // Redirect base client route to trial-balance
-      navigate(`/clients/${clientId}/trial-balance`, { replace: true });
+      // Redirect base client route to dashboard (oversikt)
+      navigate(`/clients/${clientId}/dashboard`, { replace: true });
     } else if (client?.id) {
       // Redirect legacy org number route to new URL structure
-      navigate(`/clients/${client.id}/trial-balance`, { replace: true });
+      navigate(`/clients/${client.id}/dashboard`, { replace: true });
     } else if (orgNumber && client === null) {
       // If lookup completed but no client found, go to client list
       navigate('/clients', { replace: true });

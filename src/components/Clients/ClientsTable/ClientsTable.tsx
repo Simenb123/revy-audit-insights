@@ -212,7 +212,7 @@ const ClientsTable = ({ clients, onRowSelect, selectedClientId }: ClientsTablePr
       ]}
       onRowClick={(row) => {
         onRowSelect?.(row);
-        navigate(`/clients/${row.id}`);
+        navigate(`/clients/${row.id}/dashboard`);
       }}
       getRowClassName={(row) => (selectedClientId === row.id ? "bg-muted" : "")}
       stickyHeader
