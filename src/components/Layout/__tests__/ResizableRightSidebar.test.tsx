@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import ResizableRightSidebar from '../ResizableRightSidebar';
@@ -55,18 +55,21 @@ describe('ResizableRightSidebar', () => {
 
   it('renders the AI-Revy assistant card when a client id is detected', () => {
     renderSidebar('/clients/acme-inc');
+    fireEvent.click(screen.getByLabelText('Åpne AI-Revy Chat'));
     expect(screen.getByText('AI-Revy')).toBeInTheDocument();
   });
 
   it('renders the admin assistant on admin pages', () => {
-    useClientLookupMock.mockReturnValueOnce({ data: undefined });
+    useClientLookupMock.mockReturnValue({ data: undefined });
     renderSidebar('/ai-revy-admin');
+    fireEvent.click(screen.getByLabelText('Åpne AI-Revy Chat'));
     expect(screen.getByText('Admin Assistent')).toBeInTheDocument();
   });
 
   it('renders the general assistant when no client id is present', () => {
-    useClientLookupMock.mockReturnValueOnce({ data: undefined });
+    useClientLookupMock.mockReturnValue({ data: undefined });
     renderSidebar('/dashboard');
+    fireEvent.click(screen.getByLabelText('Åpne AI-Revy Chat'));
     expect(screen.getByText('AI Assistent')).toBeInTheDocument();
   });
 

@@ -18,7 +18,7 @@ export const useRightSidebar = () => {
 };
 
 export const RightSidebarProvider = ({ children }: { children: React.ReactNode }) => {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(true);
   const [width, setWidth] = useState(() => {
     const stored = localStorage.getItem('rightSidebarWidth');
     const parsed = stored ? parseInt(stored, 10) : NaN;
