@@ -17,6 +17,8 @@ import OnboardingCheck from './OnboardingCheck';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { LayoutProvider } from './LayoutContext';
 import { PageTitleProvider } from './PageTitleContext';
+import { SubHeaderProvider } from './SubHeaderContext';
+import SubHeaderHost from './SubHeaderHost';
 
 /**
  * Hovedlayout for hele app-skallet med responsivt design
@@ -41,27 +43,30 @@ const AppLayout = () => {
   // If no connection to Supabase, allow demo mode
   if (connectionStatus === 'disconnected') {
     return (
-      <LayoutProvider>
-        <PageTitleProvider>
-          <div className="min-h-screen bg-background flex flex-col">
-            <GlobalHeader />
-            <SidebarProvider>
-              <GridLayoutContainer>
-                <ResizableLeftSidebar />
-                <ResponsiveLayout maxWidth="full">
-                  <div className="p-3 bg-yellow-50 border-b border-yellow-200">
-                    <p className="text-sm text-yellow-800">
-                      Demo-modus: Appen kjører uten tilkobling til backend.
-                    </p>
-                  </div>
-                  <Outlet />
-                </ResponsiveLayout>
-                <ResizableRightSidebar />
-              </GridLayoutContainer>
-            </SidebarProvider>
-          </div>
-        </PageTitleProvider>
-      </LayoutProvider>
+        <LayoutProvider>
+          <PageTitleProvider>
+            <SubHeaderProvider>
+              <div className="min-h-screen bg-background flex flex-col">
+                <GlobalHeader />
+                <SubHeaderHost />
+                <SidebarProvider>
+                  <GridLayoutContainer>
+                    <ResizableLeftSidebar />
+                    <ResponsiveLayout maxWidth="full">
+                      <div className="p-3 bg-yellow-50 border-b border-yellow-200">
+                        <p className="text-sm text-yellow-800">
+                          Demo-modus: Appen kjører uten tilkobling til backend.
+                        </p>
+                      </div>
+                      <Outlet />
+                    </ResponsiveLayout>
+                    <ResizableRightSidebar />
+                  </GridLayoutContainer>
+                </SidebarProvider>
+              </div>
+            </SubHeaderProvider>
+          </PageTitleProvider>
+        </LayoutProvider>
     );
   }
   
@@ -82,18 +87,21 @@ const AppLayout = () => {
   return (
     <LayoutProvider>
       <PageTitleProvider>
-        <div className="min-h-screen bg-background flex flex-col">
-          <GlobalHeader />
-          <SidebarProvider>
-            <GridLayoutContainer>
-              <ResizableLeftSidebar />
-              <ResponsiveLayout maxWidth="full">
-                <Outlet />
-              </ResponsiveLayout>
-              <ResizableRightSidebar />
-            </GridLayoutContainer>
-          </SidebarProvider>
-        </div>
+        <SubHeaderProvider>
+          <div className="min-h-screen bg-background flex flex-col">
+            <GlobalHeader />
+            <SubHeaderHost />
+            <SidebarProvider>
+              <GridLayoutContainer>
+                <ResizableLeftSidebar />
+                <ResponsiveLayout maxWidth="full">
+                  <Outlet />
+                </ResponsiveLayout>
+                <ResizableRightSidebar />
+              </GridLayoutContainer>
+            </SidebarProvider>
+          </div>
+        </SubHeaderProvider>
       </PageTitleProvider>
     </LayoutProvider>
   );

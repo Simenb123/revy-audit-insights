@@ -1,7 +1,7 @@
 import React from 'react';
-import ClientContextHeader from './ClientContextHeader';
 import ClientSubHeader from './ClientSubHeader';
 import FiscalYearSelector from './FiscalYearSelector';
+import { useSubHeader } from './SubHeaderContext';
 
 interface StickyClientLayoutProps {
   clientName: string;
@@ -18,8 +18,10 @@ const StickyClientLayout: React.FC<StickyClientLayoutProps> = ({
   showBackButton = true,
   children
 }) => {
-  return (
-    <div className="flex flex-col h-full">
+  const { setSubHeader, clearSubHeader } = useSubHeader();
+
+  React.useEffect(() => {
+    setSubHeader(
       <ClientSubHeader
         leftContent={
           <span className="text-xs font-medium text-muted-foreground">Navigation</span>
@@ -45,9 +47,13 @@ const StickyClientLayout: React.FC<StickyClientLayoutProps> = ({
           />
         }
       />
-      <div className="flex-1 min-h-0">
-        {children}
-      </div>
+    );
+    return () => clearSubHeader();
+  }, [clientName, orgNumber, pageTitle, setSubHeader, clearSubHeader]);
+
+  return (
+    <div className="flex-1 min-h-0">
+      {children}
     </div>
   );
 };

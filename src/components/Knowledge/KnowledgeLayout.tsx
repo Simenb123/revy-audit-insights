@@ -2,6 +2,7 @@
 import React from 'react';
 import GlobalSubHeader from '@/components/Layout/GlobalSubHeader';
 import { usePageTitle } from '@/components/Layout/PageTitleContext';
+import { useSubHeader } from '@/components/Layout/SubHeaderContext';
 
 interface KnowledgeLayoutProps {
   children: React.ReactNode;
@@ -12,6 +13,7 @@ interface KnowledgeLayoutProps {
 
 const KnowledgeLayout = ({ children, title, actions, filters }: KnowledgeLayoutProps) => {
   const { setPageTitle } = usePageTitle();
+  const { setSubHeader, clearSubHeader } = useSubHeader();
 
   React.useEffect(() => {
     if (title) setPageTitle(title);
@@ -23,18 +25,21 @@ const KnowledgeLayout = ({ children, title, actions, filters }: KnowledgeLayoutP
     </div>
   );
 
-  return (
-    <div className="flex flex-col h-full">
+  React.useEffect(() => {
+    setSubHeader(
       <GlobalSubHeader
         title={title}
         actions={actions}
         filters={filters}
         moduleIndicator={moduleIndicator}
       />
-      
-      <div className="flex-1 p-4 space-y-4">
-        {children}
-      </div>
+    );
+    return () => clearSubHeader();
+  }, [title, actions, filters, moduleIndicator, setSubHeader, clearSubHeader]);
+
+  return (
+    <div className="flex-1 min-h-0 p-4 space-y-4">
+      {children}
     </div>
   );
 };
