@@ -77,14 +77,12 @@ const AiRevyCard: React.FC<AiRevyCardProps> = ({
             </div>
           ) }
           <TabsContent value="ai" className="mt-0 flex-1 min-h-0 h-full flex flex-col overflow-hidden">
-            <div className="flex-1 min-h-0 h-full">
-              <SmartReviAssistant
-                embedded
-                context={context}
-                clientData={clientData}
-                userRole={userRole}
-              />
-            </div>
+            <SmartReviAssistant
+              embedded
+              context={context}
+              clientData={clientData}
+              userRole={userRole}
+            />
           </TabsContent>
           <TabsContent value="chat" className="flex-1 min-h-0 flex flex-col">
             <GroupChatSidebar />
