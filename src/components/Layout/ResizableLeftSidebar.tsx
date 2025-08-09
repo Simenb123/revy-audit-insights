@@ -83,6 +83,11 @@ const resourceItems = [
     icon: GraduationCap,
   },
   {
+    title: 'Læring',
+    url: '/training',
+    icon: GraduationCap,
+  },
+  {
     title: 'Kommunikasjon',
     url: '/communication',
     icon: MessageSquare,
