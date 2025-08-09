@@ -177,7 +177,7 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({ className = '' }) => {
             Revio
           </Link>
         </div>
-        <h1 className="text-lg font-semibold text-center truncate" data-testid="page-title">
+        <h1 className="text-2xl font-bold text-center truncate" data-testid="page-title">
           {pageTitle}
         </h1>
 
