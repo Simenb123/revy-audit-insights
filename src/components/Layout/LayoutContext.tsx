@@ -80,7 +80,15 @@ export const LayoutProvider = ({ children }: { children: React.ReactNode }) => {
 export const useLayout = () => {
   const context = useContext(LayoutContext);
   if (!context) {
-    throw new Error('useLayout must be used within a LayoutProvider');
+    // Fallback: derive heights from CSS variables to avoid crashes when provider is missing
+    const rootStyle = getComputedStyle(document.documentElement);
+    const globalCurrent = parseInt(rootStyle.getPropertyValue('--global-header-current-height') || '0', 10);
+    const globalFallback = parseInt(rootStyle.getPropertyValue('--global-header-height') || '0', 10);
+    const subCurrent = parseInt(rootStyle.getPropertyValue('--sub-header-current-height') || '0', 10);
+    return {
+      globalHeaderHeight: isNaN(globalCurrent) ? (isNaN(globalFallback) ? 0 : globalFallback) : globalCurrent,
+      subHeaderHeight: isNaN(subCurrent) ? 0 : subCurrent,
+    };
   }
   return context;
 };
