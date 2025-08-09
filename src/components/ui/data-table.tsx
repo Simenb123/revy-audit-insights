@@ -389,7 +389,7 @@ const onColDragEnd = (event: DragEndEvent) => {
   setCmState(next);
 };
 
-const SortableHeader: React.FC<{ def: DataTableColumn<T>; pinned: boolean }> = ({ def, pinned }) => {
+const SortableHeader: React.FC<{ def: DataTableColumn<T>; pinned: boolean; sticky: boolean }> = ({ def, pinned, sticky }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: def.key });
   const baseStyle = getColStyle(def.key);
   const style: React.CSSProperties = {
@@ -403,7 +403,7 @@ const SortableHeader: React.FC<{ def: DataTableColumn<T>; pinned: boolean }> = (
       ref={setNodeRef as any}
       className={`${def.sortable !== false ? 'cursor-pointer hover:bg-muted/50 select-none' : ''} ${
         def.align === 'right' ? 'text-right' : def.align === 'center' ? 'text-center' : ''
-      } ${def.className || ''} ${pinned ? 'sticky left-0 z-30 bg-background' : ''} relative`}
+      } ${def.className || ''} ${sticky ? 'sticky top-0 z-30 bg-background' : ''} ${pinned ? 'sticky left-0 z-30 bg-background' : ''} relative`}
       style={style}
       onClick={() => def.sortable !== false && handleSort(def.key)}
       {...attributes}
@@ -466,12 +466,12 @@ const TableBlock = (
           style={maxBodyHeight ? { maxHeight: typeof maxBodyHeight === 'number' ? `${maxBodyHeight}px` : maxBodyHeight } : undefined}
         >
           <Table noWrapper>
-            <TableHeader className={stickyHeader ? 'sticky top-0 z-30 bg-background' : undefined}>
+            <TableHeader>
               <DndContext sensors={colSensors} collisionDetection={closestCenter} onDragEnd={onColDragEnd}>
                 <SortableContext items={effectiveColumns.list.map(({ def }) => def.key)} strategy={horizontalListSortingStrategy}>
                   <TableRow>
                     {effectiveColumns.list.map(({ def }) => (
-                      <SortableHeader key={def.key} def={def} pinned={effectiveColumns.pinnedLeftKey === def.key} />
+                      <SortableHeader key={def.key} def={def} pinned={effectiveColumns.pinnedLeftKey === def.key} sticky={stickyHeader} />
                     ))}
                   </TableRow>
                 </SortableContext>
