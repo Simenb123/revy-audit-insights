@@ -1,6 +1,7 @@
 
 import React from 'react';
 import GlobalSubHeader from '@/components/Layout/GlobalSubHeader';
+import { usePageTitle } from '@/components/Layout/PageTitleContext';
 
 interface KnowledgeLayoutProps {
   children: React.ReactNode;
@@ -10,6 +11,12 @@ interface KnowledgeLayoutProps {
 }
 
 const KnowledgeLayout = ({ children, title, actions, filters }: KnowledgeLayoutProps) => {
+  const { setPageTitle } = usePageTitle();
+
+  React.useEffect(() => {
+    if (title) setPageTitle(title);
+  }, [title, setPageTitle]);
+
   const moduleIndicator = (
     <div className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
       Kunnskapsbase
