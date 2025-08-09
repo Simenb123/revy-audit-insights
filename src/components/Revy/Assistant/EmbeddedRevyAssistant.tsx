@@ -46,7 +46,7 @@ const EmbeddedRevyAssistant: React.FC<EmbeddedRevyAssistantProps> = ({
 
       {/* Messages area - flex-grow with overflow */}
       <div className="min-h-0 overflow-y-auto">
-        <div className="space-y-0.5 px-1 pb-1">
+        <div className="space-y-0.5 px-1 pb-2">
           {messages.length === 0 ? (
             <div className="text-xs text-muted-foreground p-2 text-center">
               Spør meg om hjelp med revisjonen
