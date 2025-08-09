@@ -289,96 +289,34 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
         searchable: false,
         format: (value: string, entry?: TrialBalanceEntryWithMapping) => {
           if (!entry) return value;
-          
+
           const suggestion = getAutoSuggestion(entry.account_number);
-          const isEditing = editingMapping === entry.account_number;
-          const hasMappingGap = !entry.standard_name;
-
-          if (isEditing) {
-            return (
-              <div className="flex items-center gap-2 min-w-[200px]">
-                <Select
-                  defaultValue={entry.standard_number || suggestion?.suggestedMapping || ''}
-                  onValueChange={(value) => {
-                    if (value) {
-                      handleMappingChange(entry.account_number, value);
-                    }
-                  }}
-                >
-                  <SelectTrigger className="h-8 text-xs">
-                    <SelectValue placeholder="Velg regnskapslinje" />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-60">
-                    {standardAccounts.map(account => (
-                      <SelectItem key={account.id} value={account.standard_number}>
-                        {account.standard_number} - {account.standard_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => setEditingMapping(null)}
-                  className="h-6 w-6 p-0"
-                >
-                  <X className="h-3 w-3" />
-                </Button>
-              </div>
-            );
-          }
-
-          if (hasMappingGap) {
-            return (
-              <div className="flex items-center gap-2">
-                {suggestion ? (
-                  <div className="flex items-center gap-2">
-                    <Badge 
-                      variant="outline" 
-                      className="text-xs bg-blue-50 border-blue-200 text-blue-700"
-                    >
-                      <Bot className="h-3 w-3 mr-1" />
-                      {suggestion.suggestedMapping}
-                    </Badge>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleMappingChange(entry.account_number, suggestion.suggestedMapping)}
-                      className="h-6 px-2 text-xs"
-                      disabled={saveMapping.isPending}
-                    >
-                      <Check className="h-3 w-3 mr-1" />
-                      Bruk
-                    </Button>
-                  </div>
-                ) : (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setEditingMapping(entry.account_number)}
-                    className="h-6 px-2 text-xs text-muted-foreground"
-                  >
-                    <Edit className="h-3 w-3 mr-1" />
-                    Mapp
-                  </Button>
-                )}
-              </div>
-            );
-          }
 
           return (
-            <div className="flex items-center gap-2">
-              <span className="text-sm">
-                {entry.standard_number} - {entry.standard_name}
-              </span>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => setEditingMapping(entry.account_number)}
-                className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+            <div className="flex items-center gap-2 min-w-[260px]">
+              <Select
+                value={entry.standard_number || ''}
+                onValueChange={(val) => {
+                  if (val) handleMappingChange(entry.account_number, val);
+                }}
               >
-                <Edit className="h-3 w-3" />
-              </Button>
+                <SelectTrigger className="h-8 text-xs bg-background">
+                  <SelectValue placeholder={suggestion ? `Foreslås: ${suggestion.suggestedMapping}` : 'Velg regnskapslinje'} />
+                </SelectTrigger>
+                <SelectContent className="z-50 bg-background max-h-60 shadow-md border">
+                  {standardAccounts.map((account) => (
+                    <SelectItem key={account.id} value={account.standard_number}>
+                      {account.standard_number} - {account.standard_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {!entry.standard_number && suggestion && (
+                <Badge variant="outline" className="text-xs">
+                  <Bot className="h-3 w-3 mr-1" />{suggestion.suggestedMapping}
+                </Badge>
+              )}
             </div>
           );
         },
