@@ -19,7 +19,7 @@ interface ClientBulkImportData {
   client_group?: string;
   accounting_system?: string;
   partner?: string;
-  customer_number?: string;
+  account_manager?: string;
 }
 
 interface ClientBulkImporterProps {
@@ -124,7 +124,7 @@ const ClientBulkImporter = ({ onImportComplete, onCancel }: ClientBulkImporterPr
           continue;
         }
 
-        // Prepare update data
+        // Prepare update data (whitelisted fields only)
         const updateData: any = {};
         
         if (row.client_group !== undefined && row.client_group !== '') {
@@ -139,8 +139,8 @@ const ClientBulkImporter = ({ onImportComplete, onCancel }: ClientBulkImporterPr
           updateData.partner = row.partner.toString().trim();
         }
 
-        if (row.customer_number !== undefined && row.customer_number !== '') {
-          updateData.customer_number = row.customer_number.toString().trim();
+        if (row.account_manager !== undefined && row.account_manager !== '') {
+          updateData.account_manager = row.account_manager.toString().trim();
         }
 
         try {
@@ -200,54 +200,54 @@ const ClientBulkImporter = ({ onImportComplete, onCancel }: ClientBulkImporterPr
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <EnhancedPreview
-            preview={filePreview}
-            fileName={selectedFile?.name || ''}
-            clientId="bulk"
-            fileType="client_bulk"
-            customFieldDefinitions={[
-              {
-                field_key: 'org_number',
-                field_label: 'Organisasjonsnummer',
-                data_type: 'text',
-                is_required: true,
-                aliases: ['orgnr','org nr','organisasjonsnummer','orgnummer','org-nr','org no']
-              },
-              {
-                field_key: 'customer_number',
-                field_label: 'Kundenummer',
-                data_type: 'text',
-                is_required: false,
-                aliases: ['kundenr','kunde nr','kundenummer','customer number','customer no','customer id','kundeid','kunderef']
-              },
-              {
-                field_key: 'partner',
-                field_label: 'Partner',
-                data_type: 'text',
-                is_required: false,
-                aliases: ['partner','ansvarlig partner','oppdragsansvarlig','engagement partner','oppdragsansvarlig revisor']
-              },
-              {
-                field_key: 'client_group',
-                field_label: 'Klientgruppe',
-                data_type: 'text',
-                is_required: false,
-                aliases: ['gruppe','kundegruppe','klientgruppe','group','client group']
-              },
-              {
-                field_key: 'accounting_system',
-                field_label: 'Regnskapssystem',
-                data_type: 'text',
-                is_required: false,
-                aliases: ['regnskapssystem','økonomisystem','accounting system','erp','visma','tripletex','poweroffice','fiken','xledger','24sevenoffice']
-              }
-            ]}
-            onMappingComplete={handleMappingComplete}
-            onCancel={() => {
-              setShowMapping(false);
-              setStep('select');
-            }}
-          />
+              <EnhancedPreview
+                preview={filePreview}
+                fileName={selectedFile?.name || ''}
+                clientId="bulk"
+                fileType="client_bulk"
+                customFieldDefinitions={[
+                  {
+                    field_key: 'org_number',
+                    field_label: 'Organisasjonsnummer',
+                    data_type: 'text',
+                    is_required: true,
+                    aliases: ['orgnr','org nr','organisasjonsnummer','orgnummer','org-nr','org no']
+                  },
+                  {
+                    field_key: 'partner',
+                    field_label: 'Partner',
+                    data_type: 'text',
+                    is_required: false,
+                    aliases: ['partner','ansvarlig partner','oppdragsansvarlig','engagement partner','oppdragsansvarlig revisor']
+                  },
+                  {
+                    field_key: 'account_manager',
+                    field_label: 'Kundeansvarlig',
+                    data_type: 'text',
+                    is_required: false,
+                    aliases: ['kundeansvarlig','kunde ansvarlig','kundansvarlig','client manager','account manager','engagement manager','oppdragsleder']
+                  },
+                  {
+                    field_key: 'client_group',
+                    field_label: 'Klientgruppe',
+                    data_type: 'text',
+                    is_required: false,
+                    aliases: ['gruppe','kundegruppe','klientgruppe','group','client group']
+                  },
+                  {
+                    field_key: 'accounting_system',
+                    field_label: 'Regnskapssystem',
+                    data_type: 'text',
+                    is_required: false,
+                    aliases: ['regnskapssystem','økonomisystem','accounting system','erp','visma','tripletex','poweroffice','fiken','xledger','24sevenoffice']
+                  }
+                ]}
+                onMappingComplete={handleMappingComplete}
+                onCancel={() => {
+                  setShowMapping(false);
+                  setStep('select');
+                }}
+              />
         </CardContent>
       </Card>
     );
@@ -275,9 +275,9 @@ const ClientBulkImporter = ({ onImportComplete, onCancel }: ClientBulkImporterPr
                   <br />
                   • Organisasjonsnummer (påkrevd) - for å identifisere klienter
                   <br />
-                  • Kundenummer (valgfri) - intern ID fra revisjonsfirmaet
-                  <br />
                   • Partner (valgfri) - oppdragsansvarlig/ansvarlig partner
+                  <br />
+                  • Kundeansvarlig (valgfri) - kontaktperson/oppdragsleder
                   <br />
                   • Klientgruppe (valgfri) - for å sette/oppdatere gruppe
                   <br />
