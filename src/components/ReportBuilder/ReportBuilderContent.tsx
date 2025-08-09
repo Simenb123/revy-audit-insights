@@ -31,9 +31,11 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [showLoadDialog, setShowLoadDialog] = useState(false);
   const [selectedVersion, setSelectedVersion] = useState<string>('');
+  const [currentReport, setCurrentReport] = useState<ClientReport | null>(null);
+  const [hasUnsaved, setHasUnsaved] = useState(false);
   
   const { widgets, layouts, addWidget, removeWidget, updateLayout, clearWidgets, setWidgets, setLayouts, loadFromStorage } = useWidgetManager();
-  const { reports, loading, saveReport, deleteReport } = useClientReports(clientId);
+  const { reports, loading, saveReport, updateReport, deleteReport } = useClientReports(clientId);
   const savedSettings = loadReportBuilderSettings(clientId, selectedFiscalYear);
   // Fetch available trial balance versions
   const { data: versionOptions = [], isLoading: versionsLoading } = useTBVersionOptions(clientId, selectedFiscalYear);
@@ -61,9 +63,23 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
     saveReportBuilderSettings(clientId, selectedFiscalYear, { ...prev, selectedVersion });
   }, [clientId, selectedFiscalYear, selectedVersion]);
 
+  // Track unsaved changes when editing an existing report
+  useEffect(() => {
+    if (!currentReport) {
+      setHasUnsaved(false);
+      return;
+    }
+    const equalWidgets = JSON.stringify(widgets) === JSON.stringify(currentReport.widgets_config);
+    const equalLayouts = JSON.stringify(layouts) === JSON.stringify(currentReport.layout_config);
+    setHasUnsaved(!(equalWidgets && equalLayouts));
+  }, [widgets, layouts, currentReport]);
+
   const handleSaveReport = async (reportName: string, description?: string) => {
     try {
-      await saveReport(reportName, widgets, layouts, description);
+      const saved = await saveReport(reportName, widgets, layouts, description);
+      setCurrentReport(saved);
+      setHasUnsaved(false);
+      setShowSaveDialog(false);
       toast.success('Rapport lagret!');
     } catch (error) {
       toast.error('Kunne ikke lagre rapport');
@@ -71,20 +87,14 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
   };
 
   const handleLoadReport = (report: ClientReport) => {
-    // Clear existing widgets
-    widgets.forEach(widget => removeWidget(widget.id));
-    
-    // Add widgets from report
-    report.widgets_config.forEach((widget, index) => {
-      const layout = report.layout_config[index];
-      if (layout) {
-        addWidget(widget, layout);
-      }
-    });
-    
-    // Update layouts
-    updateLayout(report.layout_config);
-    
+    // Clear current and load from selected report
+    clearWidgets();
+    setWidgets(report.widgets_config);
+    setLayouts(report.layout_config);
+
+    setCurrentReport(report);
+    setHasUnsaved(false);
+    setShowLoadDialog(false);
     toast.success(`Rapport "${report.report_name}" lastet!`);
   };
 
@@ -97,10 +107,30 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
     }
   };
 
+  const handleSaveChanges = async () => {
+    if (!currentReport) return;
+    try {
+      const updated = await updateReport(
+        currentReport.id,
+        currentReport.report_name,
+        widgets,
+        layouts,
+        currentReport.report_description
+      );
+      setCurrentReport(updated);
+      setHasUnsaved(false);
+      toast.success('Endringer lagret');
+    } catch (error) {
+      toast.error('Kunne ikke lagre endringer');
+    }
+  };
+
   const handleApplyTemplate = (templateWidgets: any[], templateLayouts: any[]) => {
     clearWidgets();
     setWidgets(templateWidgets);
     setLayouts(templateLayouts);
+    setCurrentReport(null);
+    setHasUnsaved(true);
     toast.success('Rapport mal lastet!');
   };
   function ViewModeSettingsSync(): JSX.Element | null {
@@ -191,7 +221,19 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
                 <FolderOpen className="h-4 w-4" />
                 Last rapport
               </Button>
-              
+
+              {currentReport && hasUnsaved && (
+                <Button 
+                  variant="default" 
+                  className="flex items-center gap-2"
+                  onClick={handleSaveChanges}
+                  disabled={loading}
+                >
+                  <Save className="h-4 w-4" />
+                  Lagre endringer
+                </Button>
+              )}
+
               <Button 
                 variant="outline" 
                 className="flex items-center gap-2"
@@ -199,11 +241,15 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
                 disabled={!hasData || widgets.length === 0 || !selectedVersion}
               >
                 <Save className="h-4 w-4" />
-                Lagre rapport
+                {currentReport ? 'Lagre som ny' : 'Lagre rapport'}
               </Button>
+
+              {currentReport && hasUnsaved && (
+                <span className="text-xs text-muted-foreground self-center">Endringer ikke lagret</span>
+              )}
             </div>
           </div>
-        </div>
+          </div>
 
         {/* Data Status */}
         {!hasData && (
