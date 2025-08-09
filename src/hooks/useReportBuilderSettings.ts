@@ -1,0 +1,35 @@
+import { useCallback } from 'react';
+
+export interface ReportBuilderSettings {
+  selectedVersion?: string;
+  isViewMode?: boolean;
+}
+
+const STORAGE_PREFIX = 'report-builder-settings';
+
+function getKey(clientId: string, fiscalYear: number) {
+  return `${STORAGE_PREFIX}:${clientId}:${fiscalYear}`;
+}
+
+export function loadReportBuilderSettings(clientId: string, fiscalYear: number): ReportBuilderSettings | null {
+  try {
+    if (typeof window === 'undefined') return null;
+    const raw = localStorage.getItem(getKey(clientId, fiscalYear));
+    return raw ? (JSON.parse(raw) as ReportBuilderSettings) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveReportBuilderSettings(
+  clientId: string,
+  fiscalYear: number,
+  settings: ReportBuilderSettings
+) {
+  try {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(getKey(clientId, fiscalYear), JSON.stringify(settings));
+  } catch {
+    // ignore write errors
+  }
+}

@@ -14,11 +14,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { useClientReports, type ClientReport } from '@/hooks/useClientReports';
 import { useTBVersionOptions } from '@/hooks/useTrialBalanceVersions';
-import { ViewModeProvider } from './ViewModeContext';
+import { ViewModeProvider, useViewMode } from './ViewModeContext';
 import { ViewModeToggle } from './ViewModeToggle';
 import { FilterProvider } from '@/contexts/FilterContext';
 import { toast } from 'sonner';
-
+import { loadReportBuilderSettings, saveReportBuilderSettings } from '@/hooks/useReportBuilderSettings';
 interface ReportBuilderContentProps {
   clientId: string;
   hasData: boolean;
@@ -34,21 +34,32 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
   
   const { widgets, layouts, addWidget, removeWidget, updateLayout, clearWidgets, setWidgets, setLayouts, loadFromStorage } = useWidgetManager();
   const { reports, loading, saveReport, deleteReport } = useClientReports(clientId);
-  
+  const savedSettings = loadReportBuilderSettings(clientId, selectedFiscalYear);
   // Fetch available trial balance versions
   const { data: versionOptions = [], isLoading: versionsLoading } = useTBVersionOptions(clientId, selectedFiscalYear);
   
-  // Set default version to the latest one
+  // Set selected version from saved settings if valid, otherwise default to latest
   useEffect(() => {
-    if (versionOptions.length > 0 && !selectedVersion) {
+    if (versionOptions.length === 0 || selectedVersion) return;
+    const saved = savedSettings;
+    if (saved?.selectedVersion && versionOptions.some(o => o.version === saved.selectedVersion)) {
+      setSelectedVersion(saved.selectedVersion);
+    } else {
       setSelectedVersion(versionOptions[0].version);
     }
-  }, [versionOptions, selectedVersion]);
+  }, [versionOptions, selectedVersion, savedSettings]);
 
   // Load any persisted widgets/layouts on mount
   useEffect(() => {
     loadFromStorage();
   }, [loadFromStorage]);
+
+  // Persist selected version when it changes
+  useEffect(() => {
+    if (!selectedVersion) return;
+    const prev = loadReportBuilderSettings(clientId, selectedFiscalYear) || {};
+    saveReportBuilderSettings(clientId, selectedFiscalYear, { ...prev, selectedVersion });
+  }, [clientId, selectedFiscalYear, selectedVersion]);
 
   const handleSaveReport = async (reportName: string, description?: string) => {
     try {
@@ -92,9 +103,17 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
     setLayouts(templateLayouts);
     toast.success('Rapport mal lastet!');
   };
+  function ViewModeSettingsSync(): JSX.Element | null {
+    const { isViewMode } = useViewMode();
+    useEffect(() => {
+      const prev = loadReportBuilderSettings(clientId, selectedFiscalYear) || {};
+      saveReportBuilderSettings(clientId, selectedFiscalYear, { ...prev, isViewMode });
+    }, [isViewMode]);
+    return null;
+  }
 
   return (
-    <ViewModeProvider>
+    <ViewModeProvider initialIsViewMode={!!savedSettings?.isViewMode}>
       <FilterProvider>
         <div className="space-y-6">
         {/* Client Report Header */}

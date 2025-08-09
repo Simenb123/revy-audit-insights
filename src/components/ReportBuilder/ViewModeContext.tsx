@@ -8,8 +8,8 @@ interface ViewModeContextType {
 
 const ViewModeContext = createContext<ViewModeContextType | undefined>(undefined);
 
-export function ViewModeProvider({ children }: { children: React.ReactNode }) {
-  const [isViewMode, setIsViewMode] = useState(false);
+export function ViewModeProvider({ children, initialIsViewMode = false }: { children: React.ReactNode; initialIsViewMode?: boolean }) {
+  const [isViewMode, setIsViewMode] = useState(initialIsViewMode);
 
   const setViewMode = (viewMode: boolean) => {
     setIsViewMode(viewMode);
