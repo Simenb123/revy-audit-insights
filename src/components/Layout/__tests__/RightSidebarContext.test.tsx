@@ -2,9 +2,14 @@ import { describe, it, expect, afterEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { RightSidebarProvider, useRightSidebar } from '../RightSidebarContext';
 
-const TestComponent = () => {
+const WidthTestComponent = () => {
   const { width } = useRightSidebar();
   return <span data-testid="width">{width}</span>;
+};
+
+const CollapseTestComponent = () => {
+  const { isCollapsed } = useRightSidebar();
+  return <span data-testid="collapsed">{isCollapsed.toString()}</span>;
 };
 
 describe('RightSidebarProvider width initialization', () => {
@@ -16,7 +21,7 @@ describe('RightSidebarProvider width initialization', () => {
     localStorage.setItem('rightSidebarWidth', '750');
     render(
       <RightSidebarProvider>
-        <TestComponent />
+        <WidthTestComponent />
       </RightSidebarProvider>
     );
     expect(screen.getByTestId('width').textContent).toBe('600');
@@ -26,9 +31,18 @@ describe('RightSidebarProvider width initialization', () => {
     localStorage.setItem('rightSidebarWidth', '100');
     render(
       <RightSidebarProvider>
-        <TestComponent />
+        <WidthTestComponent />
       </RightSidebarProvider>
     );
     expect(screen.getByTestId('width').textContent).toBe('360');
+  });
+
+  it('is collapsed by default', () => {
+    render(
+      <RightSidebarProvider>
+        <CollapseTestComponent />
+      </RightSidebarProvider>
+    );
+    expect(screen.getByTestId('collapsed').textContent).toBe('true');
   });
 });
