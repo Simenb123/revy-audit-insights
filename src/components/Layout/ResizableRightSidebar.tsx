@@ -190,10 +190,11 @@ useEffect(() => {
   return (
     <motion.div
       data-testid="right-sidebar"
-      className="sticky bg-background border-l flex flex-col z-10 overflow-hidden"
+      className="fixed bg-background border-l flex flex-col z-10 overflow-hidden"
       style={{
         top: 'calc(var(--global-header-height) + var(--sub-header-current-height))',
-        height: 'calc(100dvh - (var(--global-header-height) + var(--sub-header-current-height)))'
+        height: 'calc(100dvh - (var(--global-header-height) + var(--sub-header-current-height)))',
+        right: 0
       }}
       animate={{ width: isCollapsed ? COLLAPSED_WIDTH : width }}
       transition={{ duration: 0.2, ease: 'easeInOut' }}
