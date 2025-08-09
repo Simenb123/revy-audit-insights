@@ -35,7 +35,7 @@ const EmbeddedRevyAssistant: React.FC<EmbeddedRevyAssistantProps> = ({
     messagesEndRef.current?.scrollIntoView?.({ behavior: 'smooth' });
   }, [messages]);
   return (
-    <div className="flex flex-col h-full">
+    <div className="grid h-full min-h-0 grid-rows-[auto,1fr,auto]">
       {/* Context indicator */}
       <div className="mb-1 px-1 pt-1">
         <Badge variant="outline" className="text-xs">
@@ -45,8 +45,8 @@ const EmbeddedRevyAssistant: React.FC<EmbeddedRevyAssistantProps> = ({
       </div>
 
       {/* Messages area - flex-grow with overflow */}
-      <div className="flex-grow overflow-y-auto">
-        <div className="space-y-0.5 px-1 pb-1 min-h-full">
+      <div className="min-h-0 overflow-y-auto">
+        <div className="space-y-0.5 px-1 pb-1">
           {messages.length === 0 ? (
             <div className="text-xs text-muted-foreground p-2 text-center">
               Spør meg om hjelp med revisjonen
@@ -71,7 +71,7 @@ const EmbeddedRevyAssistant: React.FC<EmbeddedRevyAssistantProps> = ({
       </div>
 
       {/* Input area - flex-shrink-0 and sticky bottom */}
-      <div className="flex-shrink-0 sticky bottom-0 bg-background border-t p-1 flex gap-1">
+      <div className="flex-none bg-background border-t p-1 flex gap-1">
         <Input
           value={input}
           onChange={onInputChange}
