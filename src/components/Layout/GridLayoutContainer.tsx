@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils';
 import { useRightSidebar } from './RightSidebarContext';
 import { useSidebar } from '@/components/ui/sidebar';
 import { useIsMobile } from '@/hooks/use-mobile';
-
+import { useLayout } from '@/components/Layout/LayoutContext';
 interface GridLayoutContainerProps {
   children: React.ReactNode;
   className?: string;
@@ -16,6 +16,8 @@ const GridLayoutContainer: React.FC<GridLayoutContainerProps> = ({
   const { isCollapsed: rightCollapsed, width: rightWidth } = useRightSidebar();
   const { state: leftSidebarState } = useSidebar();
   const isMobile = useIsMobile();
+  const { globalHeaderHeight, subHeaderHeight } = useLayout();
+  const minHeight = `calc(100vh - ${globalHeaderHeight + subHeaderHeight}px)`;
   
   const leftCollapsed = leftSidebarState === 'collapsed';
 
@@ -38,16 +40,15 @@ const GridLayoutContainer: React.FC<GridLayoutContainerProps> = ({
     <div
       className={cn(
         'w-full app-grid transition-[grid-template-columns] duration-300 ease-in-out',
-        // Ensure mobile shows main content properly
-        'min-h-0',
+        'min-h-0 overflow-hidden',
         isMobile && 'block',
         className
       )}
       style={{
         gridTemplateColumns: getGridTemplateColumns(),
-        // Ensure mobile grid works correctly
         display: isMobile ? 'block' : 'grid',
-        height: 'auto'
+        height: 'auto',
+        minHeight
       }}
     >
       {children}

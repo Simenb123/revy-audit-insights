@@ -133,7 +133,7 @@ useEffect(() => {
           : 'general';
 
     return (
-      <div className="flex h-full flex-1 flex-col">
+      <div className="flex h-full flex-1 flex-col min-h-0 overflow-hidden">
         {activeTab === 'figures' ? (
           <ClientFiguresPanel clientId={clientId} />
         ) : (
@@ -190,7 +190,7 @@ useEffect(() => {
   return (
     <motion.div
       data-testid="right-sidebar"
-      className="sticky bg-background border-l flex flex-col z-10"
+      className="sticky bg-background border-l flex flex-col z-10 overflow-hidden"
       style={{
         top: globalHeaderHeight + subHeaderHeight,
         height: `calc(100vh - ${globalHeaderHeight + subHeaderHeight}px)`
@@ -348,7 +348,7 @@ useEffect(() => {
 
       {/* Content area */}
       {!isCollapsed && (
-        <div className="flex-1 flex flex-col min-h-0">
+        <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
           {renderContent()}
         </div>
       )}
