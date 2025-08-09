@@ -139,7 +139,7 @@ useEffect(() => {
         ) : (
           <AiRevyCard
             variant={variant}
-            className="w-full border-0"
+            className="w-full h-full border-0"
             context={clientId ? 'client-detail' : 'general'}
             clientData={clientId ? { id: clientId } : undefined}
             activeTab={activeTab === 'chat' ? 'chat' : 'ai'}

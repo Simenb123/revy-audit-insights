@@ -76,7 +76,7 @@ const AiRevyCard: React.FC<AiRevyCardProps> = ({
               </TabsList>
             </div>
           ) }
-          <TabsContent value="ai" className="flex-1 min-h-0 flex flex-col">
+          <TabsContent value="ai" className="mt-0 flex-1 min-h-0 flex flex-col">
             <SmartReviAssistant
               embedded
               context={context}
