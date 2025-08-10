@@ -99,6 +99,15 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
     (incomeStatement.length > 0 ? 1 + countVisibleLines(incomeStatement) : 0) +
     (balanceStatement.length > 0 ? 1 + countVisibleLines(balanceStatement) : 0);
 
+  const headerRowIndex = 1;
+  const incomeHeadingIndex = incomeStatement.length > 0 ? headerRowIndex + 1 : undefined;
+  const incomeStartIndex = incomeHeadingIndex ? incomeHeadingIndex + 1 : undefined;
+  const incomeRowsCount = incomeStatement.length > 0 ? countVisibleLines(incomeStatement) : 0;
+  const balanceHeadingIndex = balanceStatement.length > 0
+    ? headerRowIndex + (incomeStatement.length > 0 ? 1 + incomeRowsCount : 0) + 1
+    : undefined;
+  const balanceStartIndex = balanceHeadingIndex ? balanceHeadingIndex + 1 : undefined;
+
   return (
     <Card className="h-full">
       <CardHeader className="pb-3">
@@ -124,7 +133,7 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
             <div className="overflow-x-auto">
               <Table role="treegrid" aria-label="Finansoppstilling" aria-colcount={colCount} aria-rowcount={rowCount}>
               <TableHeader>
-                <TableRow role="row" className="[&_th]:sticky [&_th]:top-0 bg-background z-10">
+                <TableRow role="row" aria-rowindex={headerRowIndex} className="[&_th]:sticky [&_th]:top-0 bg-background z-10">
                   <TableHead role="columnheader" aria-colindex={1} className="text-xs sticky left-0 z-20 bg-background">Linje</TableHead>
                   <TableHead role="columnheader" aria-colindex={2} className="text-xs text-right whitespace-nowrap">{periodInfo?.currentYear ?? 'År'}</TableHead>
                   {showPrevious && (
@@ -141,7 +150,7 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
             <TableBody>
               {incomeStatement.length > 0 && (
                 <>
-                  <SectionHeading title="Resultat" colSpan={2 + (showPrevious ? 1 : 0) + (showDifference ? 1 : 0) + (showPercent ? 1 : 0)} />
+                  <SectionHeading title="Resultat" rowIndex={incomeHeadingIndex} colSpan={2 + (showPrevious ? 1 : 0) + (showDifference ? 1 : 0) + (showPercent ? 1 : 0)} />
                   {incomeStatement.map((line, idx, arr) => (
                     <StatementLineRow
                       key={line.id}
@@ -155,13 +164,14 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
                       onDrilldown={handleDrilldown}
                       siblingIndex={idx + 1}
                       siblingCount={arr.length}
+                      rowIndex={(incomeStartIndex ?? 0) + countVisibleLines(incomeStatement.slice(0, idx))}
                     />
                   ))}
                 </>
               )}
               {balanceStatement.length > 0 && (
                 <>
-                  <SectionHeading title="Balanse" colSpan={2 + (showPrevious ? 1 : 0) + (showDifference ? 1 : 0) + (showPercent ? 1 : 0)} />
+                  <SectionHeading title="Balanse" rowIndex={balanceHeadingIndex} colSpan={2 + (showPrevious ? 1 : 0) + (showDifference ? 1 : 0) + (showPercent ? 1 : 0)} />
                   {balanceStatement.map((line, idx, arr) => (
                     <StatementLineRow
                       key={line.id}
@@ -175,6 +185,7 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
                       onDrilldown={handleDrilldown}
                       siblingIndex={idx + 1}
                       siblingCount={arr.length}
+                      rowIndex={(balanceStartIndex ?? 0) + countVisibleLines(balanceStatement.slice(0, idx))}
                     />
                   ))}
                 </>
