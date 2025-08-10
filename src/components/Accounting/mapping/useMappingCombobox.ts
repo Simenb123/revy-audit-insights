@@ -47,6 +47,7 @@ const fuseIndex = useMemo(() => {
   if (!fuzzy) return null;
   return new Fuse(options, {
     includeScore: true,
+    includeMatches: true,
     threshold: 0.35,
     ignoreLocation: true,
     minMatchCharLength: 1,
@@ -57,13 +58,28 @@ const fuseIndex = useMemo(() => {
   });
 }, [options, fuzzy]);
 
-const filtered = useMemo(() => {
+const { filtered, matchesById } = useMemo(() => {
   const raw = effectiveQuery.trim();
   const nq = normalize(raw);
-  if (!nq) return options;
+  if (!nq) {
+    return { filtered: options, matchesById: {} as Record<string, { numberRanges: Array<[number, number]>; nameRanges: Array<[number, number]> }> };
+  }
 
   if (fuzzy && fuseIndex && raw) {
-    return fuseIndex.search(raw).map((r) => r.item as StandardAccountOption);
+    const results = fuseIndex.search(raw);
+    const byId: Record<string, { numberRanges: Array<[number, number]>; nameRanges: Array<[number, number]> }> = {};
+    results.forEach((r) => {
+      const entry = { numberRanges: [] as Array<[number, number]>, nameRanges: [] as Array<[number, number]> };
+      (r.matches || []).forEach((m) => {
+        const indices = (m.indices || []) as Array<[number, number]>;
+        if (m.key === 'standard_number') entry.numberRanges.push(...indices);
+        if (m.key === 'standard_name') entry.nameRanges.push(...indices);
+      });
+      if (entry.numberRanges.length || entry.nameRanges.length) {
+        byId[(r.item as StandardAccountOption).id] = entry;
+      }
+    });
+    return { filtered: results.map((r) => r.item as StandardAccountOption), matchesById: byId };
   }
 
   const tokens = nq.split(/\s+/).filter(Boolean);
@@ -82,7 +98,7 @@ const filtered = useMemo(() => {
     .sort((a, b) => b.score - a.score)
     .map(({ o }) => o);
 
-  return ranked;
+  return { filtered: ranked, matchesById: {} as Record<string, { numberRanges: Array<[number, number]>; nameRanges: Array<[number, number]> }> };
 }, [options, effectiveQuery, normalizedOptions, fuzzy, fuseIndex]);
 
   useEffect(() => {
@@ -176,6 +192,7 @@ const filtered = useMemo(() => {
     selected,
     filtered,
     listboxId,
+    matchesById,
     // setters
     setQuery,
     setOpen,

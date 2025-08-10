@@ -12,9 +12,11 @@ interface OptionItemProps {
   onSelect: () => void;
   listboxId: string;
   effectiveQuery: string;
+  numberRanges?: Array<[number, number]>;
+  nameRanges?: Array<[number, number]>;
 }
 
-export function OptionItem({ opt, isActive, isSelected, onSelect, listboxId, effectiveQuery }: OptionItemProps) {
+export function OptionItem({ opt, isActive, isSelected, onSelect, listboxId, effectiveQuery, numberRanges, nameRanges }: OptionItemProps) {
   return (
     <CommandItem
       key={opt.id}
@@ -27,11 +29,11 @@ export function OptionItem({ opt, isActive, isSelected, onSelect, listboxId, eff
     >
       <Check className={cn('mr-2 h-4 w-4', isSelected ? 'opacity-100' : 'opacity-0')} />
       <span className="mr-1">
-        <HighlightedText text={opt.standard_number} query={effectiveQuery} />
+        <HighlightedText text={opt.standard_number} query={effectiveQuery} ranges={numberRanges} />
       </span>
       <span className="text-muted-foreground">-</span>
       <span className="ml-1">
-        <HighlightedText text={opt.standard_name} query={effectiveQuery} />
+        <HighlightedText text={opt.standard_name} query={effectiveQuery} ranges={nameRanges} />
       </span>
     </CommandItem>
   );

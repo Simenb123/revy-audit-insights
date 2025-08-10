@@ -3,13 +3,56 @@ import React from 'react';
 interface HighlightedTextProps {
   text: string;
   query: string;
+  ranges?: Array<[number, number]>;
 }
 
 const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-export function HighlightedText({ text, query }: HighlightedTextProps) {
+export function HighlightedText({ text, query, ranges }: HighlightedTextProps) {
   const t = String(text ?? '');
   const qq = String(query ?? '').trim();
+
+  // If explicit index ranges are provided (from fuzzy matching), use them
+  if (ranges && ranges.length > 0 && t.length > 0) {
+    // sanitize and merge overlapping ranges, clamp to string bounds
+    const merged: Array<[number, number]> = [];
+    [...ranges]
+      .map(([s, e]) => [Math.max(0, s), Math.min(t.length - 1, e)] as [number, number])
+      .filter(([s, e]) => s <= e)
+      .sort((a, b) => a[0] - b[0])
+      .forEach(([s, e]) => {
+        if (!merged.length) {
+          merged.push([s, e]);
+        } else {
+          const last = merged[merged.length - 1];
+          if (s <= last[1] + 1) {
+            last[1] = Math.max(last[1], e);
+          } else {
+            merged.push([s, e]);
+          }
+        }
+      });
+
+    const parts: React.ReactNode[] = [];
+    let cursor = 0;
+    merged.forEach(([s, e], idx) => {
+      if (cursor < s) {
+        parts.push(<React.Fragment key={`n-${idx}-pre`}>{t.slice(cursor, s)}</React.Fragment>);
+      }
+      parts.push(
+        <mark key={`h-${idx}`} className="bg-muted text-foreground rounded px-0.5">
+          {t.slice(s, e + 1)}
+        </mark>
+      );
+      cursor = e + 1;
+    });
+    if (cursor < t.length) {
+      parts.push(<React.Fragment key="tail">{t.slice(cursor)}</React.Fragment>);
+    }
+    return <>{parts}</>;
+  }
+
+  // Fallback: simple token-based highlight using the raw query
   if (!qq) return <>{t}</>;
   const tokens = qq.split(/\s+/).filter(Boolean);
   if (tokens.length === 0) return <>{t}</>;

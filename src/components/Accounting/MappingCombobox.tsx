@@ -44,6 +44,7 @@ const MappingCombobox: React.FC<MappingComboboxProps> = ({
     selected,
     filtered,
     listboxId,
+    matchesById,
     setQuery,
     onOpenChange,
     selectOption,
@@ -205,6 +206,8 @@ const MappingCombobox: React.FC<MappingComboboxProps> = ({
                         onSelect={() => selectOption(opt)}
                         listboxId={listboxId}
                         effectiveQuery={effectiveQuery}
+                        numberRanges={matchesById[opt.id]?.numberRanges}
+                        nameRanges={matchesById[opt.id]?.nameRanges}
                       />
                     </div>
                   );

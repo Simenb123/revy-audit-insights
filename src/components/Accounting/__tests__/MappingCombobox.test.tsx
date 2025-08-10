@@ -128,6 +128,8 @@ describe('MappingCombobox', () => {
     const combobox = screen.getByRole('combobox');
     await userEvent.type(combobox, 'bnk');
 
-    expect(screen.getByRole('option', { name: /1920.*Bankinnskudd/i })).toBeTruthy();
+    const opt = screen.getByRole('option', { name: /1920.*Bankinnskudd/i });
+    expect(opt).toBeTruthy();
+    expect(opt.querySelectorAll('mark').length).toBeGreaterThan(0);
   });
 });
