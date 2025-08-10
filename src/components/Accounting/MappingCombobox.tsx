@@ -37,6 +37,7 @@ const MappingCombobox: React.FC<MappingComboboxProps> = ({
     return () => clearTimeout(t);
   }, [query]);
   const effectiveQuery = useDeferredValue(debouncedQuery);
+  const [ariaMessage, setAriaMessage] = useState('');
 
   const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const highlight = (text: string, q: string) => {
@@ -118,21 +119,31 @@ const MappingCombobox: React.FC<MappingComboboxProps> = ({
             className="h-9"
             autoFocus
             aria-controls={listboxId}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                const first = filtered[0];
-                if (first) {
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  const first = filtered[0];
+                  if (first) {
+                    e.preventDefault();
+                    onChange(first.standard_number);
+                    setAriaMessage(`Valgt ${first.standard_number} - ${first.standard_name}`);
+                    setOpen(false);
+                  }
+                }
+                if (e.key === 'Backspace' && query === '' && allowClear && value) {
                   e.preventDefault();
-                  onChange(first.standard_number);
+                  onChange('');
+                  setAriaMessage('Valg fjernet');
                   setOpen(false);
                 }
-              }
-              if (e.key === 'Backspace' && query === '' && allowClear && value) {
-                e.preventDefault();
-                onChange('');
-                setOpen(false);
-              }
-            }}
+                if (e.key === 'Escape') {
+                  if (query) {
+                    e.preventDefault();
+                    setQuery('');
+                  } else {
+                    setOpen(false);
+                  }
+                }
+              }}
           />
           <CommandList id={listboxId} role="listbox" aria-label="Regnskapslinjer" className="max-h-[min(60vh,480px)] overflow-auto bg-popover">
             <CommandEmpty>Ingen treff</CommandEmpty>
@@ -141,6 +152,7 @@ const MappingCombobox: React.FC<MappingComboboxProps> = ({
                 value="__clear__"
                 onSelect={() => {
                   onChange('');
+                  setAriaMessage('Valg fjernet');
                   setOpen(false);
                 }}
                 className="text-sm text-destructive"
@@ -157,6 +169,7 @@ const MappingCombobox: React.FC<MappingComboboxProps> = ({
                 value={`${opt.standard_number} ${opt.standard_name}`}
                 onSelect={() => {
                   onChange(opt.standard_number);
+                  setAriaMessage(`Valgt ${opt.standard_number} - ${opt.standard_name}`);
                   setOpen(false);
                 }}
                 className="text-sm"
@@ -176,6 +189,7 @@ const MappingCombobox: React.FC<MappingComboboxProps> = ({
             ))}
           </CommandList>
         </Command>
+        <div aria-live="polite" role="status" className="sr-only">{ariaMessage}</div>
       </PopoverContent>
     </Popover>
   );
