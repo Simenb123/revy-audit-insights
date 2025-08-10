@@ -42,7 +42,7 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
   const [liveMessage, setLiveMessage] = React.useState<string>('');
   const [panelOpen, setPanelOpen] = React.useState(false);
   const [panelContext, setPanelContext] = React.useState<{ standardNumber: string; accounts: string[] } | null>(null);
-
+  const lastFocusedRef = React.useRef<HTMLElement | null>(null);
   const handleTitleChange = (newTitle: string) => updateWidget(widget.id, { title: newTitle });
 
   const updateConfig = React.useCallback((patch: Record<string, any>) => {
@@ -84,6 +84,7 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
     const accounts = getAccountsForLine(standardNumber);
     if (accounts.length === 0) return;
     if (drilldownPanel) {
+      lastFocusedRef.current = document.activeElement as HTMLElement;
       setPanelContext({ standardNumber, accounts });
       setPanelOpen(true);
       return;
@@ -96,6 +97,12 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
     const params = new URLSearchParams({ accounts: accountNumber });
     navigate(`/clients/${clientId}/trial-balance?${params.toString()}`);
   };
+
+  React.useEffect(() => {
+    if (!panelOpen && lastFocusedRef.current) {
+      lastFocusedRef.current.focus();
+    }
+  }, [panelOpen]);
 
   // Helper: filter tree to only include lines with changes (or descendants with changes)
   const hasChange = React.useCallback((node: any): boolean => {
@@ -237,6 +244,7 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
     a.download = `rapport-${periodInfo?.currentYear ?? ''}.csv`;
     a.click();
     URL.revokeObjectURL(url);
+    setLiveMessage('CSV eksportert');
   }, [filteredIncome, filteredBalance, flattenVisible, periodInfo, showPrevious, showDifference, showPercent]);
 
   return (
@@ -394,7 +402,7 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
                           )}
                           <TableCell className="text-right tabular-nums whitespace-nowrap">{formatCurrency(diff)}</TableCell>
                           <TableCell className="text-right">
-                            <Button variant="ghost" size="sm" onClick={() => openAccountTB(acc)}>Vis i TB</Button>
+                            <Button variant="ghost" size="sm" aria-label={`Vis konto ${acc} i TB`} onClick={() => openAccountTB(acc)}>Vis i TB</Button>
                           </TableCell>
                         </TableRow>
                       );
