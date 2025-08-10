@@ -51,6 +51,7 @@ const MappingCombobox: React.FC<MappingComboboxProps> = ({
   }, [query]);
   const effectiveQuery = useDeferredValue(debouncedQuery);
   const [ariaMessage, setAriaMessage] = useState('');
+  const [activeIndex, setActiveIndex] = useState<number>(-1);
 
   const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const highlight = (text: string, q: string) => {
@@ -111,6 +112,14 @@ const MappingCombobox: React.FC<MappingComboboxProps> = ({
     }
   }, [effectiveQuery, filtered, options, open]);
 
+  useEffect(() => {
+    if (!open) {
+      setActiveIndex(-1);
+      return;
+    }
+    setActiveIndex(filtered.length ? 0 : -1);
+  }, [open, effectiveQuery, filtered]);
+
   return (
     <Popover open={open} onOpenChange={(o) => { setOpen(o); if (!o) setQuery(''); }}>
       <PopoverTrigger asChild>
@@ -155,13 +164,28 @@ const MappingCombobox: React.FC<MappingComboboxProps> = ({
             className="h-9"
             autoFocus
             aria-controls={listboxId}
+            aria-activedescendant={activeIndex >= 0 ? `${listboxId}-opt-${filtered[activeIndex].id}` : undefined}
               onKeyDown={(e) => {
+                if (e.key === 'ArrowDown') {
+                  e.preventDefault();
+                  if (filtered.length > 0) {
+                    setActiveIndex((i) => Math.min(i + 1, filtered.length - 1));
+                  }
+                  return;
+                }
+                if (e.key === 'ArrowUp') {
+                  e.preventDefault();
+                  if (filtered.length > 0) {
+                    setActiveIndex((i) => Math.max(i - 1, 0));
+                  }
+                  return;
+                }
                 if (e.key === 'Enter') {
-                  const first = filtered[0];
-                  if (first) {
+                  const chosen = activeIndex >= 0 ? filtered[activeIndex] : filtered[0];
+                  if (chosen) {
                     e.preventDefault();
-                    onChange(first.standard_number);
-                    setAriaMessage(labels?.selectedAnnouncement ? labels.selectedAnnouncement({ number: first.standard_number, name: first.standard_name }) : `Valgt ${first.standard_number} - ${first.standard_name}`);
+                    onChange(chosen.standard_number);
+                    setAriaMessage(labels?.selectedAnnouncement ? labels.selectedAnnouncement({ number: chosen.standard_number, name: chosen.standard_name }) : `Valgt ${chosen.standard_number} - ${chosen.standard_name}`);
                     setOpen(false);
                   }
                 }
@@ -202,6 +226,7 @@ const MappingCombobox: React.FC<MappingComboboxProps> = ({
             {filtered.map((opt) => (
               <CommandItem
                 key={opt.id}
+                id={`${listboxId}-opt-${opt.id}`}
                 value={`${opt.standard_number} ${opt.standard_name}`}
                 onSelect={() => {
                   onChange(opt.standard_number);
