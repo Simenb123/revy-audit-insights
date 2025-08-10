@@ -7,7 +7,7 @@ interface StatementLineRowProps {
   line: any;
   level?: number;
   expandedMap: Record<string, boolean>;
-  toggle: (id: string) => void;
+  toggle: (id: string, details?: { name?: string; opening?: boolean; delta?: number }) => void;
   showPrevious: boolean;
   showDifference: boolean;
   showPercent: boolean;
@@ -49,6 +49,15 @@ export const StatementLineRow = React.memo(function StatementLineRow({
     }
     return total;
   }, [expandedMap]);
+
+  // Count how many rows would be visible if this node were opened (self + descendants respecting current expanded flags on deeper levels)
+  const countIfOpened = React.useCallback((node: any): number => {
+    let total = 1;
+    if (node.children && node.children.length) {
+      for (const c of node.children) total += countVisible(c);
+    }
+    return total;
+  }, [countVisible]);
 
   return (
     <>
@@ -98,7 +107,8 @@ export const StatementLineRow = React.memo(function StatementLineRow({
             if (!hasChildren) return;
             e.preventDefault();
             if (!isOpen) {
-              toggle(line.id);
+              const delta = Math.max(0, countIfOpened(line) - 1);
+              toggle(line.id, { name: line.standard_name, opening: true, delta });
             } else {
               focusRowAt(1); // move to first child (next visible row)
             }
@@ -107,7 +117,8 @@ export const StatementLineRow = React.memo(function StatementLineRow({
           if (e.key === 'ArrowLeft') {
             e.preventDefault();
             if (hasChildren && isOpen) {
-              toggle(line.id); // collapse
+              const delta = Math.max(0, countVisible(line) - 1);
+              toggle(line.id, { name: line.standard_name, opening: false, delta }); // collapse
               return;
             }
             if (level > 0) {
@@ -144,7 +155,12 @@ export const StatementLineRow = React.memo(function StatementLineRow({
           <button
             type="button"
             className="mr-2 text-muted-foreground hover:text-foreground"
-            onClick={(e) => { e.stopPropagation(); toggle(line.id); }}
+            onClick={(e) => { 
+              e.stopPropagation(); 
+              const opening = !isOpen;
+              const delta = Math.max(0, (opening ? countIfOpened(line) : countVisible(line)) - 1);
+              toggle(line.id, { name: line.standard_name, opening, delta }); 
+            }}
             aria-label={(isOpen ? 'Lukk' : 'Åpne') + ' ' + line.standard_name}
             title={(isOpen ? 'Lukk' : 'Åpne') + ' ' + line.standard_name}
             aria-expanded={isOpen}

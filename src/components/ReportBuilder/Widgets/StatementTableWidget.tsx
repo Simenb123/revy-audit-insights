@@ -49,12 +49,16 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
     updateWidget(widget.id, { config: { ...(widget.config || {}), ...patch } });
   }, [updateWidget, widget.id, widget.config]);
 
-  const toggle = (id: string) => {
+  const toggle = (id: string, details?: { name?: string; opening?: boolean; delta?: number }) => {
     setExpanded((prev) => {
-      const opening = !prev[id];
+      const opening = details?.opening ?? !prev[id];
       const next = { ...prev, [id]: opening };
       updateConfig({ expanded: next });
-      setLiveMessage(opening ? 'Rad åpnet' : 'Rad lukket');
+      const base = details?.name ? `Rad ${opening ? 'åpnet' : 'lukket'}: ${details.name}` : (opening ? 'Rad åpnet' : 'Rad lukket');
+      const withDelta = typeof details?.delta === 'number' && details.delta > 0
+        ? `${base}. ${opening ? details.delta + ' nye rader' : details.delta + ' rader skjult'}`
+        : base;
+      setLiveMessage(withDelta);
       return next;
     });
   };
