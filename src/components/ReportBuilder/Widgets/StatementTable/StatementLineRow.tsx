@@ -33,7 +33,17 @@ export const StatementLineRow = React.memo(function StatementLineRow({
 
   return (
     <>
-      <TableRow className="cursor-pointer hover:bg-muted/40" onClick={() => onDrilldown(line.standard_number)}>
+      <TableRow
+        className="cursor-pointer hover:bg-muted/40"
+        onClick={() => onDrilldown(line.standard_number)}
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onDrilldown(line.standard_number);
+          }
+        }}
+      >
         <TableCell className="text-xs sticky left-0 bg-background z-10">
           <div className="flex items-center" style={{ paddingLeft: level * 12 }}>
             {hasChildren && (
