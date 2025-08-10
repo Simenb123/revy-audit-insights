@@ -7,6 +7,9 @@ import { useDetailedFinancialStatement } from '@/hooks/useDetailedFinancialState
 import { useTrialBalanceMappings } from '@/hooks/useTrialBalanceMappings';
 import { useNavigate } from 'react-router-dom';
 import { formatCurrency } from '@/lib/formatters';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
 
 interface StatementTableWidgetProps { widget: Widget }
 
@@ -37,7 +40,21 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
 
   const handleTitleChange = (newTitle: string) => updateWidget(widget.id, { title: newTitle });
 
-  const toggle = (id: string) => setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
+const toggle = (id: string) => setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
+
+  const updateConfig = React.useCallback((patch: Record<string, any>) => {
+    updateWidget(widget.id, { config: { ...(widget.config || {}), ...patch } });
+  }, [updateWidget, widget.id, widget.config]);
+
+  const collectIds = (nodes: any[]): string[] =>
+    nodes.flatMap((n) => [n.id, ...(n.children ? collectIds(n.children) : [])]);
+
+  const expandAll = () => {
+    const all = [...collectIds(incomeStatement || []), ...collectIds(balanceStatement || [])];
+    setExpanded(Object.fromEntries(all.map((id) => [id, true])));
+  };
+
+  const collapseAll = () => setExpanded({});
 
   const getAccountsForLine = React.useCallback((standardNumber: string) => {
     return mappings.filter(m => m.statement_line_number === standardNumber).map(m => m.account_number);
@@ -112,8 +129,27 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
   return (
     <Card className="h-full">
       <CardHeader className="pb-3">
-        <InlineEditableTitle title={widget.title} onTitleChange={handleTitleChange} size="sm" />
-        {/* Optional: could add small toggles here later */}
+        <div className="flex items-center justify-between gap-2">
+          <InlineEditableTitle title={widget.title} onTitleChange={handleTitleChange} size="sm" />
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Label htmlFor={`prev-${widget.id}`} className="text-xs text-muted-foreground">Fjorår</Label>
+              <Switch id={`prev-${widget.id}`} checked={showPrevious} onCheckedChange={(v) => updateConfig({ showPrevious: v })} />
+            </div>
+            <div className="flex items-center gap-2">
+              <Label htmlFor={`diff-${widget.id}`} className="text-xs text-muted-foreground">Endring</Label>
+              <Switch id={`diff-${widget.id}`} checked={showDifference} onCheckedChange={(v) => updateConfig({ showDifference: v })} />
+            </div>
+            <div className="flex items-center gap-2">
+              <Label htmlFor={`pct-${widget.id}`} className="text-xs text-muted-foreground">% Endring</Label>
+              <Switch id={`pct-${widget.id}`} checked={showPercent} onCheckedChange={(v) => updateConfig({ showPercent: v })} />
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="sm" onClick={expandAll}>Utvid alle</Button>
+              <Button variant="ghost" size="sm" onClick={collapseAll}>Lukk alle</Button>
+            </div>
+          </div>
+        </div>
       </CardHeader>
       <CardContent className="p-0">
         {!hasData ? (
