@@ -88,6 +88,16 @@ const MappingCombobox: React.FC<MappingComboboxProps> = ({
     return ranked;
   }, [options, effectiveQuery]);
 
+  useEffect(() => {
+    if (!open) return;
+    const q = effectiveQuery.trim();
+    if (q) {
+      setAriaMessage(`${filtered.length} treff`);
+    } else {
+      setAriaMessage(`${options.length} tilgjengelige`);
+    }
+  }, [effectiveQuery, filtered, options, open]);
+
   return (
     <Popover open={open} onOpenChange={(o) => { setOpen(o); if (!o) setQuery(''); }}>
       <PopoverTrigger asChild>
