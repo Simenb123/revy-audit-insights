@@ -73,6 +73,8 @@ const MappingCombobox: React.FC<MappingComboboxProps> = ({
           aria-label={selected ? `Valgt regnskapslinje: ${selected.standard_number} - ${selected.standard_name}` : placeholder}
           aria-haspopup="listbox"
           aria-expanded={open}
+          disabled={loading}
+          aria-busy={loading}
         >
           <span className="truncate text-xs">
             {selected ? `${selected.standard_number} - ${selected.standard_name}` : placeholder}
@@ -95,7 +97,14 @@ const MappingCombobox: React.FC<MappingComboboxProps> = ({
                 <X className="h-3.5 w-3.5 opacity-70" />
               </span>
             )}
-            <ChevronsUpDown className="h-3.5 w-3.5 opacity-50" />
+            {loading ? (
+              <span
+                className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-border border-t-primary"
+                aria-hidden="true"
+              />
+            ) : (
+              <ChevronsUpDown className="h-3.5 w-3.5 opacity-50" />
+            )}
           </span>
         </Button>
       </PopoverTrigger>
