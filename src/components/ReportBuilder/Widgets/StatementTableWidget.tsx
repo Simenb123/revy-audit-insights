@@ -108,7 +108,8 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
         {!hasData ? (
           <div className="p-4 text-sm text-muted-foreground">Ingen data å vise.</div>
         ) : (
-          <Table>
+            <div className="overflow-x-auto">
+              <Table>
             <TableHeader>
               <TableRow className="[&_th]:sticky [&_th]:top-0 bg-background z-10">
                 <TableHead className="text-xs sticky left-0 z-20 bg-background">Linje</TableHead>
@@ -162,7 +163,8 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
                 </>
               )}
             </TableBody>
-          </Table>
+              </Table>
+            </div>
         )}
       </CardContent>
     </Card>

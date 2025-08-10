@@ -42,6 +42,14 @@ export const StatementLineRow = React.memo(function StatementLineRow({
             e.preventDefault();
             onDrilldown(line.standard_number);
           }
+          if (e.key === 'ArrowRight' && hasChildren && !isOpen) {
+            e.preventDefault();
+            toggle(line.id);
+          }
+          if (e.key === 'ArrowLeft' && hasChildren && isOpen) {
+            e.preventDefault();
+            toggle(line.id);
+          }
         }}
       >
         <TableCell className="text-xs sticky left-0 bg-background z-10">
@@ -54,7 +62,7 @@ export const StatementLineRow = React.memo(function StatementLineRow({
             aria-label={isOpen ? 'Lukk' : 'Åpne'}
             aria-expanded={isOpen}
           >
-                {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                {isOpen ? <ChevronDown className="h-4 w-4" aria-hidden="true" /> : <ChevronRight className="h-4 w-4" aria-hidden="true" />}
               </button>
             )}
             <span className="font-mono mr-2 text-muted-foreground">{line.standard_number}</span>
