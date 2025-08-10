@@ -22,7 +22,8 @@ export interface Widget {
     | 'filter'
     | 'pivot'
     | 'gauge'
-    | 'accountLines';
+    | 'accountLines'
+    | 'statementTable';
   title: string;
   config?: Record<string, any>;
 }

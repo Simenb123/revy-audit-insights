@@ -122,6 +122,17 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
         showShareOf: false,
         shareBaseExpr: '[10]'
       }
+    },
+    {
+      type: 'statementTable' as const,
+      title: 'Regnskapsoppstilling',
+      description: 'Resultat og balanse med YoY',
+      icon: Table,
+      defaultConfig: {
+        showPrevious: true,
+        showDifference: true,
+        showPercent: true,
+      }
     }
   ];
 
@@ -170,6 +181,8 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
           ? 3
           : template.type === 'gauge'
           ? 3
+          : template.type === 'statementTable'
+          ? 8
           : 6,
       h:
         template.type === 'filter'
@@ -182,6 +195,8 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
           ? 4
           : template.type === 'gauge'
           ? 3
+          : template.type === 'statementTable'
+          ? 4
           : 3,
       widgetId: widgetId,
     };
