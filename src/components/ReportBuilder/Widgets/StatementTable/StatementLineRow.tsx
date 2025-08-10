@@ -51,7 +51,7 @@ export const StatementLineRow = React.memo(function StatementLineRow({
     <>
       <TableRow
         role="row"
-        className="cursor-pointer hover:bg-muted/40 focus-visible:bg-muted/50 focus-visible:outline-none"
+        className="cursor-pointer hover:bg-muted/40 focus-visible:bg-muted/50 focus-visible:outline-none print:break-inside-avoid"
         onClick={() => onDrilldown(line.standard_number)}
         tabIndex={tabIndex ?? -1}
         aria-label={`Drilldown for ${line.standard_number} ${line.standard_name}`}

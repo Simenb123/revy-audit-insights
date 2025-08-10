@@ -285,19 +285,22 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
             <div className="p-4 text-sm text-muted-foreground">Ingen data å vise.</div>
           ) : (
               <div className="overflow-x-auto">
-                <Table role="treegrid" aria-label="Finansoppstilling" aria-colcount={colCount} aria-rowcount={rowCount}>
-                <TableHeader>
+                <Table role="treegrid" aria-label="Finansoppstilling" aria-colcount={colCount} aria-rowcount={rowCount} aria-describedby={`caption-${widget.id}`}>
+                  <caption className="sr-only" id={`caption-${widget.id}`}>
+                    Hierarkisk tabell for {periodInfo?.currentYear ?? 'inneværende år'}. Kolonner: inneværende år{showPrevious ? ', fjorår' : ''}{showDifference ? ', endring' : ''}{showPercent ? ', prosent' : ''}.
+                  </caption>
+                  <TableHeader>
                   <TableRow role="row" aria-rowindex={headerRowIndex} className="bg-background z-10">
-                    <TableHead role="columnheader" aria-colindex={1} className="text-xs sticky top-0 left-0 z-20 bg-background print:static">Linje</TableHead>
-                    <TableHead role="columnheader" aria-colindex={2} className="text-xs sticky top-0 z-10 bg-background print:static text-right whitespace-nowrap">{periodInfo?.currentYear ?? 'År'}</TableHead>
+                    <TableHead role="columnheader" scope="col" aria-colindex={1} className="text-xs sticky top-0 left-0 z-20 bg-background print:static">Linje</TableHead>
+                    <TableHead role="columnheader" scope="col" aria-colindex={2} className="text-xs sticky top-0 z-10 bg-background print:static text-right whitespace-nowrap">{periodInfo?.currentYear ?? 'År'}</TableHead>
                     {showPrevious && (
-                      <TableHead role="columnheader" aria-colindex={3} className="text-xs sticky top-0 z-10 bg-background print:static text-right whitespace-nowrap">{periodInfo?.previousYear ?? 'I fjor'}</TableHead>
+                      <TableHead role="columnheader" scope="col" aria-colindex={3} className="text-xs sticky top-0 z-10 bg-background print:static text-right whitespace-nowrap">{periodInfo?.previousYear ?? 'I fjor'}</TableHead>
                     )}
                     {showDifference && (
-                      <TableHead role="columnheader" aria-colindex={2 + (showPrevious ? 1 : 0) + 1} className="text-xs sticky top-0 z-10 bg-background print:static text-right whitespace-nowrap">Endring</TableHead>
+                      <TableHead role="columnheader" scope="col" aria-colindex={2 + (showPrevious ? 1 : 0) + 1} className="text-xs sticky top-0 z-10 bg-background print:static text-right whitespace-nowrap">Endring</TableHead>
                     )}
                     {showPercent && (
-                      <TableHead role="columnheader" aria-colindex={2 + (showPrevious ? 1 : 0) + (showDifference ? 1 : 0) + 1} className="text-xs sticky top-0 z-10 bg-background print:static text-right whitespace-nowrap">Endring %</TableHead>
+                      <TableHead role="columnheader" scope="col" aria-colindex={2 + (showPrevious ? 1 : 0) + (showDifference ? 1 : 0) + 1} className="text-xs sticky top-0 z-10 bg-background print:static text-right whitespace-nowrap">Endring %</TableHead>
                     )}
                   </TableRow>
                 </TableHeader>
@@ -365,13 +368,13 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Konto</TableHead>
-                      <TableHead className="text-right">{periodInfo?.currentYear ?? 'År'}</TableHead>
+                      <TableHead scope="col">Konto</TableHead>
+                      <TableHead scope="col" className="text-right">{periodInfo?.currentYear ?? 'År'}</TableHead>
                       {showPrevious && (
-                        <TableHead className="text-right">{periodInfo?.previousYear ?? 'I fjor'}</TableHead>
+                        <TableHead scope="col" className="text-right">{periodInfo?.previousYear ?? 'I fjor'}</TableHead>
                       )}
-                      <TableHead className="text-right">Endring</TableHead>
-                      <TableHead className="text-right">Lenke</TableHead>
+                      <TableHead scope="col" className="text-right">Endring</TableHead>
+                      <TableHead scope="col" className="text-right">Lenke</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
