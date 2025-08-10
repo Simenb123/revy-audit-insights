@@ -64,7 +64,14 @@ export const StatementLineRow = React.memo(function StatementLineRow({
       <TableRow
         role="row"
         className={`${isDrillable ? 'cursor-pointer' : 'cursor-default'} hover:bg-muted/40 focus-visible:bg-muted/50 focus-visible:outline-none print:break-inside-avoid`}
-        onClick={() => { if (isDrillable) onDrilldown(line.standard_number); }}
+        onClick={() => { 
+          if (isDrillable) onDrilldown(line.standard_number); 
+          else if (hasChildren) { 
+            const opening = !isOpen; 
+            const delta = Math.max(0, (opening ? countIfOpened(line) : countVisible(line)) - 1);
+            toggle(line.id, { name: line.standard_name, opening, delta }); 
+          }
+        }}
         tabIndex={tabIndex ?? -1}
         aria-label={`Drilldown for ${line.standard_number} ${line.standard_name}`}
         aria-level={level + 1}
