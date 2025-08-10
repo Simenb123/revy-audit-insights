@@ -11,11 +11,14 @@ export function HighlightedText({ text, query }: HighlightedTextProps) {
   const t = String(text ?? '');
   const qq = String(query ?? '').trim();
   if (!qq) return <>{t}</>;
-  const parts = t.split(new RegExp(`(${escapeRegExp(qq)})`, 'ig'));
+  const tokens = qq.split(/\s+/).filter(Boolean);
+  if (tokens.length === 0) return <>{t}</>;
+  const regex = new RegExp(`(${tokens.map(escapeRegExp).join('|')})`, 'ig');
+  const parts = t.split(regex);
   return (
     <>
       {parts.map((part, i) =>
-        part.toLowerCase() === qq.toLowerCase() ? (
+        tokens.some((tok) => part.toLowerCase() === tok.toLowerCase()) ? (
           <mark key={i} className="bg-muted text-foreground rounded px-0.5">
             {part}
           </mark>

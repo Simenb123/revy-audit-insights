@@ -91,10 +91,17 @@ const MappingCombobox: React.FC<MappingComboboxProps> = ({
             placeholder={labels?.searchPlaceholder ?? 'Søk etter linje...'}
             className="h-9"
             autoFocus
+            role="combobox"
+            aria-autocomplete="list"
             aria-controls={listboxId}
+            aria-expanded={open}
+            aria-describedby={`${listboxId}-desc`}
             aria-activedescendant={activeIndex >= 0 ? `${listboxId}-opt-${filtered[activeIndex].id}` : undefined}
             onKeyDown={handleInputKeyDown}
           />
+          <div id={`${listboxId}-desc`} className="sr-only">
+            Bruk piltastene for å navigere, Enter for å velge, Esc for å lukke. Backspace fjerner valget når søkefeltet er tomt.
+          </div>
           <CommandList id={listboxId} role="listbox" aria-label={labels?.listAriaLabel ?? 'Regnskapslinjer'} className="max-h-[min(60vh,480px)] overflow-auto bg-popover">
             <CommandEmpty>{labels?.noResults ?? 'Ingen treff'}</CommandEmpty>
             {allowClear && value && (

@@ -31,37 +31,39 @@ export function useMappingCombobox({ value, onChange, options, labels, allowClea
 
   const listboxId = useId();
 
+  const normalize = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
+  const normalizedOptions = useMemo(() => (
+    options.map((o) => {
+      const numN = normalize(o.standard_number);
+      const nameN = normalize(o.standard_name);
+      return { o, numN, nameN, combined: `${numN} ${nameN}` };
+    })
+  ), [options]);
+
   const filtered = useMemo(() => {
     const raw = effectiveQuery.trim();
-    const normalize = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
     const nq = normalize(raw);
     if (!nq) return options;
 
     const tokens = nq.split(/\s+/).filter(Boolean);
 
-    const ranked = options
-      .filter((o) => {
-        const numN = normalize(o.standard_number);
-        const nameN = normalize(o.standard_name);
-        const combined = `${numN} ${nameN}`;
-        return tokens.every((t) => combined.includes(t));
-      })
-      .map((o) => {
-        const numN = normalize(o.standard_number);
-        const nameN = normalize(o.standard_name);
+    const ranked = normalizedOptions
+      .filter((x) => tokens.every((t) => x.combined.includes(t)))
+      .map((x) => {
         const score =
-          (numN === nq ? 1000 : 0) +
-          (nameN === nq ? 900 : 0) +
-          (numN.startsWith(nq) ? 800 : 0) +
-          (nameN.startsWith(nq) ? 700 : 0) +
-          tokens.reduce((acc, t) => acc + (numN.includes(t) ? 200 : 0) + (nameN.includes(t) ? 100 : 0), 0);
-        return { o, score };
+          (x.numN === nq ? 1000 : 0) +
+          (x.nameN === nq ? 900 : 0) +
+          (x.numN.startsWith(nq) ? 800 : 0) +
+          (x.nameN.startsWith(nq) ? 700 : 0) +
+          tokens.reduce((acc, t) => acc + (x.numN.includes(t) ? 200 : 0) + (x.nameN.includes(t) ? 100 : 0), 0);
+        return { o: x.o, score };
       })
       .sort((a, b) => b.score - a.score)
       .map(({ o }) => o);
 
     return ranked;
-  }, [options, effectiveQuery]);
+  }, [options, effectiveQuery, normalizedOptions]);
 
   useEffect(() => {
     if (!open) return;
