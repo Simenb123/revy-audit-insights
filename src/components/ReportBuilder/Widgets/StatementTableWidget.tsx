@@ -295,7 +295,7 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
               <div className="overflow-x-auto">
                 <Table role="treegrid" aria-label="Finansoppstilling" aria-colcount={colCount} aria-rowcount={rowCount} aria-describedby={`caption-${widget.id}`}>
                   <caption className="sr-only" id={`caption-${widget.id}`}>
-                    Hierarkisk tabell for {periodInfo?.currentYear ?? 'inneværende år'}. Kolonner: inneværende år{showPrevious ? ', fjorår' : ''}{showDifference ? ', endring' : ''}{showPercent ? ', prosent' : ''}.
+                    Hierarkisk tabell for {periodInfo?.currentYear ?? 'inneværende år'}. Kolonner: inneværende år{showPrevious ? ', fjorår' : ''}{showDifference ? ', endring' : ''}{showPercent ? ', prosent' : ''}. Bruk piltaster for å navigere, venstre/høyre for å lukke/åpne, og Enter/Space for drilldown.
                   </caption>
                   <TableHeader>
                   <TableRow role="row" aria-rowindex={headerRowIndex} className="bg-background z-10">

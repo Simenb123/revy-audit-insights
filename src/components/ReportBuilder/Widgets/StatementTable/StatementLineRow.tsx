@@ -60,6 +60,7 @@ export const StatementLineRow = React.memo(function StatementLineRow({
         aria-posinset={siblingIndex}
         aria-setsize={siblingCount}
         aria-rowindex={rowIndex}
+        aria-keyshortcuts="ArrowUp,ArrowDown,ArrowLeft,ArrowRight,Home,End,PageUp,PageDown,Enter,Space"
         onKeyDown={(e) => {
           const focusRowAt = (targetIndexDelta: number | 'home' | 'end') => {
             const tbody = e.currentTarget.parentElement as HTMLElement | null;
@@ -71,7 +72,11 @@ export const StatementLineRow = React.memo(function StatementLineRow({
             if (targetIndexDelta === 'home') nextIndex = 0;
             else if (targetIndexDelta === 'end') nextIndex = rows.length - 1;
             else nextIndex = Math.max(0, Math.min(rows.length - 1, currentIndex + (targetIndexDelta as number)));
-            rows[nextIndex]?.focus();
+            const nextEl = rows[nextIndex];
+            if (nextEl) {
+              nextEl.focus();
+              nextEl.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+            }
           };
 
           if (e.key === 'ArrowDown') { e.preventDefault(); focusRowAt(1); return; }
