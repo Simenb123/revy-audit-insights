@@ -387,7 +387,7 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
             <div className="p-4 text-sm text-muted-foreground">Ingen data å vise.</div>
           ) : (
               <div className="overflow-x-auto">
-                <Table role="treegrid" aria-label="Finansoppstilling" aria-colcount={colCount} aria-rowcount={rowCount} aria-describedby={`caption-${widget.id}`}>
+                <Table role="treegrid" aria-label="Finansoppstilling" aria-colcount={colCount} aria-rowcount={rowCount} aria-describedby={`caption-${widget.id}`} aria-busy={isLoading}>
                   <caption className="sr-only" id={`caption-${widget.id}`}>
                     Hierarkisk tabell for {periodInfo?.currentYear ?? 'inneværende år'}. Kolonner: inneværende år{showPrevious ? ', fjorår' : ''}{showDifference ? ', endring' : ''}{showPercent ? ', prosent' : ''}. Bruk piltaster for å navigere, venstre/høyre for å lukke/åpne, og Enter/Space for drilldown.
                   </caption>
