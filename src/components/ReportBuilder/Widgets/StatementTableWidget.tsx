@@ -363,8 +363,8 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
-              <Button variant="ghost" size="sm" onClick={handleExportCSV} className="ml-1">Eksporter CSV</Button>
-              <Button variant="ghost" size="sm" onClick={() => window.print()} className="ml-1">Skriv ut</Button>
+              <Button variant="ghost" size="sm" onClick={handleExportCSV} className="ml-1" disabled={isLoading || !hasData}>Eksporter CSV</Button>
+              <Button variant="ghost" size="sm" onClick={() => window.print()} className="ml-1" disabled={isLoading || !hasData}>Skriv ut</Button>
             </div>
           </div>
         </CardHeader>
