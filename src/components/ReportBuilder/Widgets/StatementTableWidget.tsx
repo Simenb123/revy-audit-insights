@@ -142,7 +142,7 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
               {incomeStatement.length > 0 && (
                 <>
                   <SectionHeading title="Resultat" colSpan={2 + (showPrevious ? 1 : 0) + (showDifference ? 1 : 0) + (showPercent ? 1 : 0)} />
-                  {incomeStatement.map((line) => (
+                  {incomeStatement.map((line, idx, arr) => (
                     <StatementLineRow
                       key={line.id}
                       line={line}
@@ -153,6 +153,8 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
                       showDifference={showDifference}
                       showPercent={showPercent}
                       onDrilldown={handleDrilldown}
+                      siblingIndex={idx + 1}
+                      siblingCount={arr.length}
                     />
                   ))}
                 </>
@@ -160,7 +162,7 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
               {balanceStatement.length > 0 && (
                 <>
                   <SectionHeading title="Balanse" colSpan={2 + (showPrevious ? 1 : 0) + (showDifference ? 1 : 0) + (showPercent ? 1 : 0)} />
-                  {balanceStatement.map((line) => (
+                  {balanceStatement.map((line, idx, arr) => (
                     <StatementLineRow
                       key={line.id}
                       line={line}
@@ -171,6 +173,8 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
                       showDifference={showDifference}
                       showPercent={showPercent}
                       onDrilldown={handleDrilldown}
+                      siblingIndex={idx + 1}
+                      siblingCount={arr.length}
                     />
                   ))}
                 </>

@@ -12,6 +12,8 @@ interface StatementLineRowProps {
   showDifference: boolean;
   showPercent: boolean;
   onDrilldown: (standardNumber: string) => void;
+  siblingIndex?: number;
+  siblingCount?: number;
 }
 
 export const StatementLineRow = React.memo(function StatementLineRow({
@@ -22,7 +24,9 @@ export const StatementLineRow = React.memo(function StatementLineRow({
   showPrevious,
   showDifference,
   showPercent,
-  onDrilldown
+  onDrilldown,
+  siblingIndex,
+  siblingCount
 }: StatementLineRowProps) {
   const hasChildren = !!(line.children && line.children.length > 0);
   const isOpen = !!expandedMap[line.id];
@@ -41,6 +45,8 @@ export const StatementLineRow = React.memo(function StatementLineRow({
         aria-label={`Drilldown for ${line.standard_number} ${line.standard_name}`}
         aria-level={level + 1}
         aria-expanded={hasChildren ? isOpen : undefined}
+        aria-posinset={siblingIndex}
+        aria-setsize={siblingCount}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
@@ -93,7 +99,7 @@ export const StatementLineRow = React.memo(function StatementLineRow({
           <TableCell role="gridcell" className="text-right text-xs tabular-nums whitespace-nowrap">{(pct >= 0 ? '+' : '') + pct.toFixed(1)}%</TableCell>
         )}
       </TableRow>
-      {hasChildren && isOpen && line.children.map((child: any) => (
+      {hasChildren && isOpen && line.children.map((child: any, idx: number, arr: any[]) => (
         <StatementLineRow
           key={child.id}
           line={child}
@@ -104,6 +110,8 @@ export const StatementLineRow = React.memo(function StatementLineRow({
           showDifference={showDifference}
           showPercent={showPercent}
           onDrilldown={onDrilldown}
+          siblingIndex={idx + 1}
+          siblingCount={arr.length}
         />
       ))}
     </>
