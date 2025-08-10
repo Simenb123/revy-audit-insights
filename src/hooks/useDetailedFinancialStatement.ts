@@ -77,17 +77,18 @@ export function useDetailedFinancialStatement(clientId: string, selectedVersion?
       arr.sort((a, b) => {
         const aName = String(a.standard_name || '').toLowerCase();
         const bName = String(b.standard_name || '').toLowerCase();
-        const aIsTotal = !!a.is_total_line || a.line_type === 'subtotal' || aName.startsWith('sum');
-        const bIsTotal = !!b.is_total_line || b.line_type === 'subtotal' || bName.startsWith('sum');
+        const aIsTotal = !!a.is_total_line || a.line_type === 'subtotal' || a.line_type === 'calculation' || aName.startsWith('sum');
+        const bIsTotal = !!b.is_total_line || b.line_type === 'subtotal' || b.line_type === 'calculation' || bName.startsWith('sum');
         // Non-total lines first, then totals
         if (aIsTotal !== bIsTotal) return aIsTotal ? 1 : -1;
-        // Primary sort: numeric standard_number when possible
+        // Primary sort: display_order when present
+        const byOrder = (a.display_order ?? 0) - (b.display_order ?? 0);
+        if (byOrder !== 0) return byOrder;
+        // Tie-breaker: numeric standard_number when possible
         const aNum = parseInt(String(a.standard_number), 10);
         const bNum = parseInt(String(b.standard_number), 10);
         if (!Number.isNaN(aNum) && !Number.isNaN(bNum) && aNum !== bNum) return aNum - bNum;
-        // Tie-breakers: display_order then alphanumeric standard_number
-        const byOrder = (a.display_order ?? 0) - (b.display_order ?? 0);
-        if (byOrder !== 0) return byOrder;
+        // Final tie-breaker: alphanumeric standard_number
         return String(a.standard_number).localeCompare(String(b.standard_number));
       });
 
@@ -100,9 +101,18 @@ export function useDetailedFinancialStatement(clientId: string, selectedVersion?
 
     sortTree(roots);
 
-    // Dev-only check for presence/order of key lines like 20 Varekostnad
+    // Dev-only check for presence and order of key lines
     if (import.meta.env?.DEV) {
       try {
+        const flatRoots = roots.map(r => ({
+          num: String(r.standard_number),
+          name: r.standard_name,
+          order: r.display_order,
+          type: r.line_type,
+          total: r.is_total_line
+        }));
+        // eslint-disable-next-line no-console
+        console.debug('[useDetailedFinancialStatement] root order (first 20):', flatRoots.slice(0, 20));
         const findByNum = (nodes: DetailedStatementLine[], target: string): DetailedStatementLine | undefined => {
           for (const n of nodes) {
             if (String(n.standard_number) === target) return n;

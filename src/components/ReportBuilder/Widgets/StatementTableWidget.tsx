@@ -334,6 +334,15 @@ const collectIds = (nodes: any[]): string[] =>
 
   const rawIncome = incomeStatement || [];
   const rawBalance = balanceStatement || [];
+
+  // Dev-only: log root order to verify sorting
+  if (import.meta.env?.DEV) {
+    try {
+      // eslint-disable-next-line no-console
+      console.debug('[StatementTableWidget] income roots order (first 20):', (rawIncome || []).slice(0, 20).map((n: any) => ({ num: n.standard_number, name: n.standard_name, order: n.display_order, type: n.line_type, total: n.is_total_line })));
+    } catch {}
+  }
+
   const filteredIncome = filterLines(rawIncome);
   const filteredBalance = filterLines(rawBalance);
 
