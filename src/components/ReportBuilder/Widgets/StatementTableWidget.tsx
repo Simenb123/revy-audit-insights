@@ -339,6 +339,7 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
                         siblingIndex={idx + 1}
                         siblingCount={arr.length}
                         rowIndex={(balanceStartIndex ?? 0) + countVisibleLines(filteredBalance.slice(0, idx))}
+                        tabIndex={(filteredIncome.length === 0 && idx === 0) ? 0 : -1}
                       />
                     ))}
                   </>
