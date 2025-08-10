@@ -86,6 +86,19 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
 
   const hasData = (incomeStatement?.length ?? 0) > 0 || (balanceStatement?.length ?? 0) > 0;
 
+  const colCount = 1 + 1 + (showPrevious ? 1 : 0) + (showDifference ? 1 : 0) + (showPercent ? 1 : 0);
+  const countVisibleLines = React.useCallback(function countVisibleLines(nodes: any[]): number {
+    return nodes.reduce((sum: number, n: any) => {
+      const self = 1;
+      const children = n.children && n.children.length && expanded[n.id] ? countVisibleLines(n.children) : 0;
+      return sum + self + children;
+    }, 0);
+  }, [expanded]);
+
+  const rowCount =
+    (incomeStatement.length > 0 ? 1 + countVisibleLines(incomeStatement) : 0) +
+    (balanceStatement.length > 0 ? 1 + countVisibleLines(balanceStatement) : 0);
+
   return (
     <Card className="h-full">
       <CardHeader className="pb-3">
@@ -109,7 +122,7 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
           <div className="p-4 text-sm text-muted-foreground">Ingen data å vise.</div>
         ) : (
             <div className="overflow-x-auto">
-              <Table role="treegrid" aria-label="Finansoppstilling">
+              <Table role="treegrid" aria-label="Finansoppstilling" aria-colcount={colCount} aria-rowcount={rowCount}>
             <TableHeader>
               <TableRow className="[&_th]:sticky [&_th]:top-0 bg-background z-10">
                 <TableHead className="text-xs sticky left-0 z-20 bg-background">Linje</TableHead>
