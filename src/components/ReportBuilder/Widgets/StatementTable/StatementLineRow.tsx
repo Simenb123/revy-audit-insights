@@ -90,13 +90,39 @@ export const StatementLineRow = React.memo(function StatementLineRow({
             e.preventDefault();
             onDrilldown(line.standard_number);
           }
-          if (e.key === 'ArrowRight' && hasChildren && !isOpen) {
+          if (e.key === 'ArrowRight') {
+            if (!hasChildren) return;
             e.preventDefault();
-            toggle(line.id);
+            if (!isOpen) {
+              toggle(line.id);
+            } else {
+              focusRowAt(1); // move to first child (next visible row)
+            }
+            return;
           }
-          if (e.key === 'ArrowLeft' && hasChildren && isOpen) {
+          if (e.key === 'ArrowLeft') {
             e.preventDefault();
-            toggle(line.id);
+            if (hasChildren && isOpen) {
+              toggle(line.id); // collapse
+              return;
+            }
+            if (level > 0) {
+              const tbody = e.currentTarget.parentElement as HTMLElement | null;
+              if (!tbody) return;
+              const rows = Array.from(tbody.querySelectorAll('[role="row"]')) as HTMLElement[];
+              const currentIndex = rows.indexOf(e.currentTarget as HTMLElement);
+              const currentLevel = level + 1;
+              for (let i = currentIndex - 1; i >= 0; i--) {
+                const lvlAttr = rows[i].getAttribute('aria-level');
+                const lvl = lvlAttr ? parseInt(lvlAttr, 10) : NaN;
+                if (!Number.isNaN(lvl) && lvl < currentLevel) {
+                  rows[i].focus();
+                  rows[i].scrollIntoView({ block: 'nearest', inline: 'nearest' });
+                  break;
+                }
+              }
+            }
+            return;
           }
         }}
       >
