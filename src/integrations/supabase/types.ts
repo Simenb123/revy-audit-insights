@@ -4604,6 +4604,56 @@ export type Database = {
         }
         Relationships: []
       }
+      materiality_settings: {
+        Row: {
+          clearly_trivial: number
+          client_id: string
+          created_at: string
+          created_by: string | null
+          currency: string
+          fiscal_year: number
+          id: string
+          materiality: number
+          updated_at: string
+          updated_by: string | null
+          working_materiality: number
+        }
+        Insert: {
+          clearly_trivial: number
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          fiscal_year: number
+          id?: string
+          materiality: number
+          updated_at?: string
+          updated_by?: string | null
+          working_materiality: number
+        }
+        Update: {
+          clearly_trivial?: number
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          fiscal_year?: number
+          id?: string
+          materiality?: number
+          updated_at?: string
+          updated_by?: string | null
+          working_materiality?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "materiality_settings_client_fk"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           content: string
