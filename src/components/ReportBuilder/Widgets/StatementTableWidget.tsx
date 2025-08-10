@@ -193,18 +193,6 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
     return recurse(nodes);
   }, [showOnlyChanges, hasChange]);
 
-  if (isLoading) {
-    return (
-      <Card className="h-full">
-        <CardHeader className="pb-3">
-          <InlineEditableTitle title={widget.title} onTitleChange={handleTitleChange} size="sm" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-sm text-muted-foreground">Laster regnskapsoppstilling…</div>
-        </CardContent>
-      </Card>
-    );
-  }
 
   const rawIncome = incomeStatement || [];
   const rawBalance = balanceStatement || [];
