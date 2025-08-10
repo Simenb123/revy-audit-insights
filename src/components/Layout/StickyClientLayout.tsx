@@ -1,6 +1,7 @@
 import React from 'react';
 import ClientSubHeader from './ClientSubHeader';
 import FiscalYearSelector from './FiscalYearSelector';
+import MaterialitySummary from './MaterialitySummary';
 import { useSubHeader } from './SubHeaderContext';
 
 interface StickyClientLayoutProps {
@@ -41,10 +42,13 @@ const StickyClientLayout: React.FC<StickyClientLayoutProps> = ({
           </div>
         }
         rightContent={
-          <FiscalYearSelector 
-            clientName={clientName}
-            showClientName={false}
-          />
+          <div className="flex items-center gap-3">
+            <FiscalYearSelector 
+              clientName={clientName}
+              showClientName={false}
+            />
+            <MaterialitySummary />
+          </div>
         }
       />
     );

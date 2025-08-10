@@ -62,11 +62,6 @@ const AnalysisPage = () => {
         
         <div className="flex-1 overflow-auto">
           <div className="space-y-6 p-6">
-            <div>
-              <p className="text-muted-foreground">
-                Utforsk hovedbok, saldobalanse og regnskapstransaksjoner for {client.name}
-              </p>
-            </div>
             
             <Tabs defaultValue="data" className="w-full">
               <TabsList className="grid w-full grid-cols-2">

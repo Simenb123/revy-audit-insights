@@ -4,12 +4,12 @@ import { useTBVersionOptions } from '@/hooks/useTrialBalanceVersions';
 import { useAccountingData } from '@/hooks/useAccountingData';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+
 import { TrendingUp, Activity, BarChart2, FileText, Layers, LineChart, GitBranch } from 'lucide-react';
 import DrillDownTable from './DrillDownTable';
 import GeneralLedgerTable from '@/components/Accounting/GeneralLedgerTable';
 import TrialBalanceTable from '@/components/Accounting/TrialBalanceTable';
-import MaterialityBanner from './MaterialityBanner';
+
 import GLVersionSelector from './GLVersionSelector';
 import TBVersionSelector from './TBVersionSelector';
 import VersionHistory from './VersionHistory';
@@ -19,11 +19,6 @@ import TrialBalanceMappingTable from '../Accounting/TrialBalanceMappingTable';
 import { GLVersionOption, TBVersionOption } from '@/types/accounting';
 import ResponsiveTabs from '@/components/ui/responsive-tabs';
 
-const materialityThresholds = {
-  materiality: 2000000,
-  workingMateriality: 1500000,
-  clearlyTrivial: 150000
-};
 
 interface AccountingExplorerProps {
   clientId: string;
@@ -117,7 +112,6 @@ const AccountingExplorer: React.FC<AccountingExplorerProps> = ({ clientId }) => 
   if (isLoadingGL || isLoadingTB || isLoadingAccounting) {
     return (
       <div className="space-y-6">
-        <MaterialityBanner thresholds={materialityThresholds} />
         <Card>
           <CardHeader>
             <CardTitle>Laster regnskapsdata...</CardTitle>
@@ -130,7 +124,6 @@ const AccountingExplorer: React.FC<AccountingExplorerProps> = ({ clientId }) => 
   if (!hasGLData && !hasTBData) {
     return (
       <div className="space-y-6">
-        <MaterialityBanner thresholds={materialityThresholds} />
         <Card>
           <CardHeader>
             <CardTitle>Ingen regnskapsdata funnet</CardTitle>
@@ -145,7 +138,7 @@ const AccountingExplorer: React.FC<AccountingExplorerProps> = ({ clientId }) => 
 
   return (
     <div className="space-y-6">
-      <MaterialityBanner thresholds={materialityThresholds} />
+      
       
       <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4">
         {showBothVersions && (
