@@ -118,6 +118,7 @@ const IncomeStatement: React.FC<IncomeStatementProps> = ({
     const isMainResult = isSum && isKeyResult;
     const accountNumbers = lineAccountMappings[line.standard_number] || [];
     const hasAccounts = accountNumbers.length > 0;
+    const canDrill = (line.line_type === 'detail' && !line.is_total_line && hasAccounts);
     
     const lineContent = (
       <div 
@@ -134,9 +135,9 @@ const IncomeStatement: React.FC<IncomeStatementProps> = ({
           !isSum && level === 0 && "pl-6",
           !isSum && level >= 1 && "pl-8",
           // Clickable styling when has accounts
-          hasAccounts && "cursor-pointer hover:bg-muted/40 hover:shadow-sm"
+          canDrill && "cursor-pointer hover:bg-muted/40 hover:shadow-sm"
         )}
-        onClick={hasAccounts ? () => handleLineClick(line.standard_number) : undefined}
+        onClick={canDrill ? () => handleLineClick(line.standard_number) : undefined}
       >
         <div className="flex items-center gap-2 col-span-1 min-w-0">
           <span className={cn(
@@ -150,11 +151,11 @@ const IncomeStatement: React.FC<IncomeStatementProps> = ({
             isMainResult && "font-bold text-blue-900",
             isSubTotal && "font-medium",
             !isSum && "text-foreground",
-            hasAccounts && "hover:text-primary hover:underline"
+            canDrill && "hover:text-primary hover:underline"
           )}>
             {line.standard_name}
           </span>
-          {hasAccounts && (
+          {canDrill && (
             <Badge variant="secondary" className="text-xs ml-1">
               {accountNumbers.length}
             </Badge>
@@ -190,7 +191,7 @@ const IncomeStatement: React.FC<IncomeStatementProps> = ({
 
     return (
       <React.Fragment key={line.id}>
-        {hasAccounts ? (
+        {canDrill ? (
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
