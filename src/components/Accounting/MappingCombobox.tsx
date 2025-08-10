@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Command, CommandInput, CommandList, CommandEmpty, CommandItem } from '@/components/ui/command';
 import { ChevronsUpDown, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { OptionItem } from './mapping/OptionItem';
 import { AriaAnnouncer } from './mapping/AriaAnnouncer';
 import { useMappingCombobox } from './mapping/useMappingCombobox';
@@ -43,6 +44,17 @@ const MappingCombobox: React.FC<MappingComboboxProps> = ({
     clearSelection,
     handleInputKeyDown,
   } = useMappingCombobox({ value, onChange, options, labels, allowClear });
+
+  // Virtualization setup
+  const parentRef = React.useRef<HTMLDivElement | null>(null);
+  const hasClear = !!(allowClear && value);
+  const itemCount = filtered.length + (hasClear ? 1 : 0);
+  const rowVirtualizer = useVirtualizer({
+    count: itemCount,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 36,
+    overscan: 8,
+  });
 
   return (
     <Popover open={open} onOpenChange={onOpenChange}>
@@ -102,31 +114,78 @@ const MappingCombobox: React.FC<MappingComboboxProps> = ({
           <div id={`${listboxId}-desc`} className="sr-only">
             Bruk piltastene for å navigere, Enter for å velge, Esc for å lukke. Backspace fjerner valget når søkefeltet er tomt.
           </div>
-          <CommandList id={listboxId} role="listbox" aria-label={labels?.listAriaLabel ?? 'Regnskapslinjer'} className="max-h-[min(60vh,480px)] overflow-auto bg-popover">
-            <CommandEmpty>{labels?.noResults ?? 'Ingen treff'}</CommandEmpty>
-            {allowClear && value && (
-              <CommandItem
-                value="__clear__"
-                onSelect={clearSelection}
-                className="text-sm text-destructive"
-                role="option"
-                aria-selected={false}
-              >
-                <X className="mr-2 h-4 w-4 opacity-70" />
-                {labels?.clearSelection ?? 'Fjern valg'}
-              </CommandItem>
+          <CommandList
+            id={listboxId}
+            role="listbox"
+            aria-label={labels?.listAriaLabel ?? 'Regnskapslinjer'}
+            className="max-h-[min(60vh,480px)] overflow-auto bg-popover"
+            ref={parentRef}
+          >
+            {filtered.length === 0 ? (
+              <>
+                <CommandEmpty>{labels?.noResults ?? 'Ingen treff'}</CommandEmpty>
+                {hasClear && (
+                  <CommandItem
+                    id={`${listboxId}-opt-clear`}
+                    value="__clear__"
+                    onSelect={clearSelection}
+                    className="text-sm text-destructive"
+                    role="option"
+                    aria-selected={false}
+                  >
+                    <X className="mr-2 h-4 w-4 opacity-70" />
+                    {labels?.clearSelection ?? 'Fjern valg'}
+                  </CommandItem>
+                )}
+              </>
+            ) : (
+              <div style={{ height: rowVirtualizer.getTotalSize(), position: 'relative' }}>
+                {rowVirtualizer.getVirtualItems().map((v) => {
+                  const isClear = hasClear && v.index === 0;
+                  const style: React.CSSProperties = {
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    transform: `translateY(${v.start}px)`,
+                  };
+
+                  if (isClear) {
+                    return (
+                      <div key="__clear__" style={style}>
+                        <CommandItem
+                          id={`${listboxId}-opt-clear`}
+                          value="__clear__"
+                          onSelect={clearSelection}
+                          className="text-sm text-destructive"
+                          role="option"
+                          aria-selected={false}
+                        >
+                          <X className="mr-2 h-4 w-4 opacity-70" />
+                          {labels?.clearSelection ?? 'Fjern valg'}
+                        </CommandItem>
+                      </div>
+                    );
+                  }
+
+                  const optIndex = hasClear ? v.index - 1 : v.index;
+                  const opt = filtered[optIndex];
+
+                  return (
+                    <div key={opt.id} style={style}>
+                      <OptionItem
+                        opt={opt}
+                        isActive={optIndex === activeIndex}
+                        isSelected={value === opt.standard_number}
+                        onSelect={() => selectOption(opt)}
+                        listboxId={listboxId}
+                        effectiveQuery={effectiveQuery}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
             )}
-            {filtered.map((opt, idx) => (
-              <OptionItem
-                key={opt.id}
-                opt={opt}
-                isActive={idx === activeIndex}
-                isSelected={value === opt.standard_number}
-                onSelect={() => selectOption(opt)}
-                listboxId={listboxId}
-                effectiveQuery={effectiveQuery}
-              />
-            ))}
           </CommandList>
         </Command>
         <AriaAnnouncer message={ariaMessage} />
