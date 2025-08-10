@@ -2,7 +2,7 @@ import React, { useMemo, useState, useDeferredValue, useId, useEffect } from 're
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { Command, CommandInput, CommandList, CommandEmpty, CommandItem } from '@/components/ui/command';
-import { ChevronsUpDown, Check } from 'lucide-react';
+import { ChevronsUpDown, Check, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface StandardAccountOption {
@@ -17,6 +17,7 @@ interface MappingComboboxProps {
   options: StandardAccountOption[];
   placeholder?: string;
   className?: string;
+  allowClear?: boolean;
 }
 
 const MappingCombobox: React.FC<MappingComboboxProps> = ({
@@ -25,6 +26,7 @@ const MappingCombobox: React.FC<MappingComboboxProps> = ({
   options,
   placeholder = 'Velg regnskapslinje',
   className,
+  allowClear = true,
 }) => {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -125,10 +127,30 @@ const MappingCombobox: React.FC<MappingComboboxProps> = ({
                   setOpen(false);
                 }
               }
+              if (e.key === 'Backspace' && query === '' && allowClear && value) {
+                e.preventDefault();
+                onChange('');
+                setOpen(false);
+              }
             }}
           />
           <CommandList id={listboxId} role="listbox" aria-label="Regnskapslinjer" className="max-h-[min(60vh,480px)] overflow-auto bg-popover">
             <CommandEmpty>Ingen treff</CommandEmpty>
+            {allowClear && value && (
+              <CommandItem
+                value="__clear__"
+                onSelect={() => {
+                  onChange('');
+                  setOpen(false);
+                }}
+                className="text-sm text-destructive"
+                role="option"
+                aria-selected={false}
+              >
+                <X className="mr-2 h-4 w-4 opacity-70" />
+                Fjern valg
+              </CommandItem>
+            )}
             {filtered.map((opt) => (
               <CommandItem
                 key={opt.id}
