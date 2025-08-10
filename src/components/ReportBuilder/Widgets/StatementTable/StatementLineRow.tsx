@@ -95,7 +95,7 @@ export const StatementLineRow = React.memo(function StatementLineRow({
           }
         }}
       >
-        <TableCell role="rowheader" aria-colindex={1} className="text-xs sticky left-0 bg-background z-10">
+        <TableCell role="rowheader" aria-colindex={1} className="text-xs sticky left-0 bg-background z-10 print:static">
           <div
             className="flex items-center"
             style={{

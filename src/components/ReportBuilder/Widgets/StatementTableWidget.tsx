@@ -287,17 +287,17 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
               <div className="overflow-x-auto">
                 <Table role="treegrid" aria-label="Finansoppstilling" aria-colcount={colCount} aria-rowcount={rowCount}>
                 <TableHeader>
-                  <TableRow role="row" aria-rowindex={headerRowIndex} className="[&_th]:sticky [&_th]:top-0 bg-background z-10">
-                    <TableHead role="columnheader" aria-colindex={1} className="text-xs sticky left-0 z-20 bg-background">Linje</TableHead>
-                    <TableHead role="columnheader" aria-colindex={2} className="text-xs text-right whitespace-nowrap">{periodInfo?.currentYear ?? 'År'}</TableHead>
+                  <TableRow role="row" aria-rowindex={headerRowIndex} className="bg-background z-10">
+                    <TableHead role="columnheader" aria-colindex={1} className="text-xs sticky top-0 left-0 z-20 bg-background print:static">Linje</TableHead>
+                    <TableHead role="columnheader" aria-colindex={2} className="text-xs sticky top-0 z-10 bg-background print:static text-right whitespace-nowrap">{periodInfo?.currentYear ?? 'År'}</TableHead>
                     {showPrevious && (
-                      <TableHead role="columnheader" aria-colindex={3} className="text-xs text-right whitespace-nowrap">{periodInfo?.previousYear ?? 'I fjor'}</TableHead>
+                      <TableHead role="columnheader" aria-colindex={3} className="text-xs sticky top-0 z-10 bg-background print:static text-right whitespace-nowrap">{periodInfo?.previousYear ?? 'I fjor'}</TableHead>
                     )}
                     {showDifference && (
-                      <TableHead role="columnheader" aria-colindex={2 + (showPrevious ? 1 : 0) + 1} className="text-xs text-right whitespace-nowrap">Endring</TableHead>
+                      <TableHead role="columnheader" aria-colindex={2 + (showPrevious ? 1 : 0) + 1} className="text-xs sticky top-0 z-10 bg-background print:static text-right whitespace-nowrap">Endring</TableHead>
                     )}
                     {showPercent && (
-                      <TableHead role="columnheader" aria-colindex={2 + (showPrevious ? 1 : 0) + (showDifference ? 1 : 0) + 1} className="text-xs text-right whitespace-nowrap">Endring %</TableHead>
+                      <TableHead role="columnheader" aria-colindex={2 + (showPrevious ? 1 : 0) + (showDifference ? 1 : 0) + 1} className="text-xs sticky top-0 z-10 bg-background print:static text-right whitespace-nowrap">Endring %</TableHead>
                     )}
                   </TableRow>
                 </TableHeader>
