@@ -20,6 +20,12 @@ interface StatementLineRowProps {
   tabIndex?: number;
   canDrilldown?: (standardNumber: string) => boolean;
   getAccountsForLine?: (standardNumber: string) => string[];
+  inlineAccounts?: boolean;
+  accountsExpandedMap?: Record<string, boolean>;
+  toggleAccounts?: (standardNumber: string, details?: { opening?: boolean; delta?: number }) => void;
+  currentByAcc?: Map<string, any>;
+  prevByAcc?: Map<string, any>;
+  openAccountTB?: (accountNumber: string) => void;
 }
 
 export const StatementLineRow = React.memo(function StatementLineRow({
@@ -36,23 +42,31 @@ export const StatementLineRow = React.memo(function StatementLineRow({
   rowIndex,
   tabIndex,
   canDrilldown,
-  getAccountsForLine
+  getAccountsForLine,
+  inlineAccounts,
+  accountsExpandedMap,
+  toggleAccounts,
+  currentByAcc,
+  prevByAcc,
+  openAccountTB
 }: StatementLineRowProps) {
-  const hasChildren = !!(line.children && line.children.length > 0);
-  const isOpen = !!expandedMap[line.id];
-  const current = line.amount || 0;
-  const prev = line.previous_amount || 0;
-  const diff = current - prev;
-  const pct = prev !== 0 ? (diff / Math.abs(prev)) * 100 : 0;
-  const isDrillable = canDrilldown ? canDrilldown(line.standard_number) : false;
-  // Counts visible rows for a node (self + visible descendants)
-  const countVisible = React.useCallback((node: any): number => {
-    let total = 1; // self
-    if (node.children && node.children.length && expandedMap[node.id]) {
-      for (const c of node.children) total += countVisible(c);
-    }
-    return total;
-  }, [expandedMap]);
+const hasChildren = !!(line.children && line.children.length > 0);
+const isOpen = !!expandedMap[line.id];
+const current = line.amount || 0;
+const prev = line.previous_amount || 0;
+const diff = current - prev;
+const pct = prev !== 0 ? (diff / Math.abs(prev)) * 100 : 0;
+const isDrillable = canDrilldown ? canDrilldown(line.standard_number) : false;
+const accounts = getAccountsForLine ? (getAccountsForLine(line.standard_number) || []) : [];
+const accountsOpen = !!(inlineAccounts && accountsExpandedMap && accountsExpandedMap[line.standard_number]);
+// Counts visible rows for a node (self + visible descendants)
+const countVisible = React.useCallback((node: any): number => {
+  let total = 1; // self
+  if (node.children && node.children.length && expandedMap[node.id]) {
+    for (const c of node.children) total += countVisible(c);
+  }
+  return total;
+}, [expandedMap]);
 
   // Count how many rows would be visible if this node were opened (self + descendants respecting current expanded flags on deeper levels)
   const countIfOpened = React.useCallback((node: any): number => {
@@ -68,14 +82,21 @@ export const StatementLineRow = React.memo(function StatementLineRow({
       <TableRow
         role="row"
         className={`${isDrillable ? 'cursor-pointer' : 'cursor-default'} hover:bg-muted/40 focus-visible:bg-muted/50 focus-visible:outline-none print:break-inside-avoid`}
-        onClick={() => { 
-          if (isDrillable) onDrilldown(line.standard_number); 
-          else if (hasChildren) { 
-            const opening = !isOpen; 
-            const delta = Math.max(0, (opening ? countIfOpened(line) : countVisible(line)) - 1);
-            toggle(line.id, { name: line.standard_name, opening, delta }); 
-          }
-        }}
+onClick={() => { 
+  if (isDrillable) {
+    if (inlineAccounts && toggleAccounts) {
+      const opening = !accountsOpen;
+      const delta = accounts.length;
+      toggleAccounts(line.standard_number, { opening, delta });
+    } else {
+      onDrilldown(line.standard_number);
+    }
+  } else if (hasChildren) { 
+    const opening = !isOpen; 
+    const delta = Math.max(0, (opening ? countIfOpened(line) : countVisible(line)) - 1);
+    toggle(line.id, { name: line.standard_name, opening, delta }); 
+  }
+}}
         tabIndex={tabIndex ?? -1}
         aria-label={isDrillable ? `Drilldown for ${line.standard_number} ${line.standard_name}` : (hasChildren ? `${isOpen ? 'Lukk' : 'Åpne'} ${line.standard_name}` : line.standard_name)}
         aria-level={level + 1}
@@ -110,16 +131,23 @@ export const StatementLineRow = React.memo(function StatementLineRow({
           if (e.key === 'Home') { e.preventDefault(); focusRowAt('home'); return; }
           if (e.key === 'End') { e.preventDefault(); focusRowAt('end'); return; }
 
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            if (isDrillable) onDrilldown(line.standard_number);
-            else if (hasChildren) {
-              const opening = !isOpen;
-              const delta = Math.max(0, (opening ? countIfOpened(line) : countVisible(line)) - 1);
-              toggle(line.id, { name: line.standard_name, opening, delta });
-            }
-            return;
-          }
+if (e.key === 'Enter' || e.key === ' ') {
+  e.preventDefault();
+  if (isDrillable) {
+    if (inlineAccounts && toggleAccounts) {
+      const opening = !accountsOpen;
+      const delta = accounts.length;
+      toggleAccounts(line.standard_number, { opening, delta });
+    } else {
+      onDrilldown(line.standard_number);
+    }
+  } else if (hasChildren) {
+    const opening = !isOpen;
+    const delta = Math.max(0, (opening ? countIfOpened(line) : countVisible(line)) - 1);
+    toggle(line.id, { name: line.standard_name, opening, delta });
+  }
+  return;
+}
           if (e.key === 'ArrowRight') {
             if (!hasChildren) return;
             e.preventDefault();
@@ -198,15 +226,24 @@ export const StatementLineRow = React.memo(function StatementLineRow({
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        className="ml-2 h-6 px-2 text-[11px]"
-                        onClick={(e) => { e.stopPropagation(); onDrilldown(line.standard_number); }}
-                        aria-label={`Vis kontoer for ${line.standard_number}`}
-                      >
-                        Kontoer ({count})
-                      </Button>
+<Button
+  variant="secondary"
+  size="sm"
+  className="ml-2 h-6 px-2 text-[11px]"
+  onClick={(e) => { 
+    e.stopPropagation(); 
+    if (inlineAccounts && toggleAccounts) {
+      const opening = !accountsOpen;
+      const delta = accounts.length;
+      toggleAccounts(line.standard_number, { opening, delta });
+    } else {
+      onDrilldown(line.standard_number);
+    }
+  }}
+  aria-label={`Vis kontoer for ${line.standard_number}`}
+>
+  Kontoer ({count})
+</Button>
                     </TooltipTrigger>
                     <TooltipContent side="top" className="max-w-xs">
                       <div className="text-xs">

@@ -13,6 +13,8 @@ interface StatementTableToolbarProps {
   onShowPercentChange: (v: boolean) => void;
   showOnlyChanges?: boolean;
   onShowOnlyChangesChange?: (v: boolean) => void;
+  inlineAccounts?: boolean;
+  onInlineAccountsChange?: (v: boolean) => void;
   drilldownPanel?: boolean;
   onDrilldownPanelChange?: (v: boolean) => void;
   onExpandAll: () => void;
@@ -31,6 +33,8 @@ export function StatementTableToolbar({
   onShowPercentChange,
   showOnlyChanges,
   onShowOnlyChangesChange,
+  inlineAccounts,
+  onInlineAccountsChange,
   drilldownPanel,
   onDrilldownPanelChange,
   onExpandAll,
@@ -58,12 +62,18 @@ export function StatementTableToolbar({
           <Switch id={`changes-${widgetId}`} checked={!!showOnlyChanges} onCheckedChange={onShowOnlyChangesChange} disabled={disabled} />
         </div>
       )}
-      {onDrilldownPanelChange && (
-        <div className="flex items-center gap-2">
-          <Label htmlFor={`panel-${widgetId}`} className="text-xs text-muted-foreground">Drilldown i panel</Label>
-          <Switch id={`panel-${widgetId}`} checked={!!drilldownPanel} onCheckedChange={onDrilldownPanelChange} disabled={disabled} />
-        </div>
-      )}
+{onInlineAccountsChange && (
+  <div className="flex items-center gap-2">
+    <Label htmlFor={`inline-${widgetId}`} className="text-xs text-muted-foreground">Kontoer i tabell</Label>
+    <Switch id={`inline-${widgetId}`} checked={!!inlineAccounts} onCheckedChange={onInlineAccountsChange} disabled={disabled} />
+  </div>
+)}
+{onDrilldownPanelChange && (
+  <div className="flex items-center gap-2">
+    <Label htmlFor={`panel-${widgetId}`} className="text-xs text-muted-foreground">Drilldown i panel</Label>
+    <Switch id={`panel-${widgetId}`} checked={!!drilldownPanel} onCheckedChange={onDrilldownPanelChange} disabled={disabled} />
+  </div>
+)}
       <div className="flex items-center gap-2">
         <Button variant="ghost" size="sm" onClick={onExpandAll} disabled={disabled}>Utvid alle</Button>
         <Button variant="ghost" size="sm" onClick={onCollapseAll} disabled={disabled}>Lukk alle</Button>

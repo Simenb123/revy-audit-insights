@@ -28,9 +28,10 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
   const selectedVersion: string | undefined = widget.config?.selectedVersion;
   const showPrevious: boolean = widget.config?.showPrevious !== false;
   const showDifference: boolean = widget.config?.showDifference !== false;
-  const showPercent: boolean = widget.config?.showPercent !== false;
-  const showOnlyChanges: boolean = widget.config?.showOnlyChanges === true;
-  const drilldownPanel: boolean = widget.config?.drilldownPanel !== false;
+const showPercent: boolean = widget.config?.showPercent !== false;
+const showOnlyChanges: boolean = widget.config?.showOnlyChanges === true;
+const drilldownPanel: boolean = widget.config?.drilldownPanel !== false;
+const inlineAccounts: boolean = widget.config?.inlineAccounts !== false;
 
   const { incomeStatement, balanceStatement, periodInfo, isLoading } = useDetailedFinancialStatement(
     clientId || '',
@@ -40,13 +41,14 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
   const { data: classifications = [] } = useAccountClassifications(clientId || '', selectedVersion);
   const navigate = useNavigate();
 
-  const [expanded, setExpanded] = React.useState<Record<string, boolean>>(() => (widget.config?.expanded ?? {}));
-  const [liveMessage, setLiveMessage] = React.useState<string>('');
-  const [panelOpen, setPanelOpen] = React.useState(false);
-  const [panelContext, setPanelContext] = React.useState<{ standardNumber: string; accounts: string[] } | null>(null);
-  const lastFocusedRef = React.useRef<HTMLElement | null>(null);
-  const prevExpandedRef = React.useRef<Record<string, boolean> | null>(null);
-  const handleTitleChange = (newTitle: string) => updateWidget(widget.id, { title: newTitle });
+const [expanded, setExpanded] = React.useState<Record<string, boolean>>(() => (widget.config?.expanded ?? {}));
+const [liveMessage, setLiveMessage] = React.useState<string>('');
+const [panelOpen, setPanelOpen] = React.useState(false);
+const [panelContext, setPanelContext] = React.useState<{ standardNumber: string; accounts: string[] } | null>(null);
+const [accountsExpanded, setAccountsExpanded] = React.useState<Record<string, boolean>>(() => (widget.config?.accountsExpanded ?? {}));
+const lastFocusedRef = React.useRef<HTMLElement | null>(null);
+const prevExpandedRef = React.useRef<Record<string, boolean> | null>(null);
+const handleTitleChange = (newTitle: string) => updateWidget(widget.id, { title: newTitle });
 
   const updateConfig = React.useCallback((patch: Record<string, any>) => {
     updateWidget(widget.id, { config: { ...(widget.config || {}), ...patch } });
@@ -65,8 +67,8 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
       return next;
     });
   };
-  const collectIds = (nodes: any[]): string[] =>
-    nodes.flatMap((n) => [n.id, ...(n.children ? collectIds(n.children) : [])]);
+const collectIds = (nodes: any[]): string[] =>
+  nodes.flatMap((n) => [n.id, ...(n.children ? collectIds(n.children) : [])]);
 
   const expandAll = () => {
     const all = [...collectIds(incomeStatement || []), ...collectIds(balanceStatement || [])];
@@ -104,6 +106,19 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
     updateConfig({ expanded: map });
     setLiveMessage(`Utvidet til nivå ${level}`);
   };
+
+  // Toggle inline accounts for a standard line number
+  const toggleAccounts = (standardNumber: string, details?: { opening?: boolean; delta?: number }) => {
+    setAccountsExpanded((prev) => {
+      const opening = details?.opening ?? !prev[standardNumber];
+      const next = { ...prev, [standardNumber]: opening };
+      updateConfig({ accountsExpanded: next });
+      const count = getAccountsForLine(standardNumber).length;
+      setLiveMessage(`${opening ? 'Viser' : 'Skjuler'} ${count} kontoer for linje ${standardNumber}`);
+      return next;
+    });
+  };
+
   const lineToAccounts = React.useMemo(() => {
     const map = new Map<string, string[]>();
     // 1) Explicit mappings from trial_balance_mappings
@@ -311,14 +326,15 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
 
   const hasData = (filteredIncome?.length ?? 0) > 0 || (filteredBalance?.length ?? 0) > 0;
 
-  const colCount = 1 + 1 + (showPrevious ? 1 : 0) + (showDifference ? 1 : 0) + (showPercent ? 1 : 0);
-  const countVisibleLines = React.useCallback(function countVisibleLines(nodes: any[]): number {
-    return nodes.reduce((sum: number, n: any) => {
-      const self = 1;
-      const children = n.children && n.children.length && expanded[n.id] ? countVisibleLines(n.children) : 0;
-      return sum + self + children;
-    }, 0);
-  }, [expanded]);
+const colCount = 1 + 1 + (showPrevious ? 1 : 0) + (showDifference ? 1 : 0) + (showPercent ? 1 : 0);
+const countVisibleLines = React.useCallback(function countVisibleLines(nodes: any[]): number {
+  return nodes.reduce((sum: number, n: any) => {
+    const self = 1;
+    const accounts = inlineAccounts && accountsExpanded[n.standard_number] ? getAccountsForLine(n.standard_number).length : 0;
+    const children = n.children && n.children.length && expanded[n.id] ? countVisibleLines(n.children) : 0;
+    return sum + self + accounts + children;
+  }, 0);
+}, [expanded, inlineAccounts, accountsExpanded, getAccountsForLine]);
 
   const rowCount =
     (filteredIncome.length > 0 ? 1 + countVisibleLines(filteredIncome) : 0) +
@@ -421,23 +437,25 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
           <div className="flex items-center justify-between gap-2">
             <InlineEditableTitle title={widget.title} onTitleChange={handleTitleChange} size="sm" />
             <div className="flex items-center gap-1 print:hidden">
-              <StatementTableToolbar
-                widgetId={widget.id}
-                showPrevious={showPrevious}
-                onShowPreviousChange={(v) => { updateConfig({ showPrevious: v }); setLiveMessage(v ? 'Kolonne fjorår på' : 'Kolonne fjorår av'); }}
-                showDifference={showDifference}
-                onShowDifferenceChange={(v) => { updateConfig({ showDifference: v }); setLiveMessage(v ? 'Kolonne endring på' : 'Kolonne endring av'); }}
-                showPercent={showPercent}
-                onShowPercentChange={(v) => { updateConfig({ showPercent: v }); setLiveMessage(v ? 'Kolonne endring % på' : 'Kolonne endring % av'); }}
-                showOnlyChanges={showOnlyChanges}
-                onShowOnlyChangesChange={(v: boolean) => { updateConfig({ showOnlyChanges: v }); setLiveMessage(v ? 'Filter aktivert: kun endringer' : 'Filter av: alle linjer'); }}
-                drilldownPanel={drilldownPanel}
-                onDrilldownPanelChange={(v: boolean) => { updateConfig({ drilldownPanel: v }); setLiveMessage(v ? 'Drilldown i panel på' : 'Drilldown i panel av'); }}
-                onExpandAll={expandAll}
-                onCollapseAll={collapseAll}
-                onExpandToLevel={(lvl: number) => expandToLevel(lvl)}
-                disabled={isLoading}
-              />
+<StatementTableToolbar
+  widgetId={widget.id}
+  showPrevious={showPrevious}
+  onShowPreviousChange={(v) => { updateConfig({ showPrevious: v }); setLiveMessage(v ? 'Kolonne fjorår på' : 'Kolonne fjorår av'); }}
+  showDifference={showDifference}
+  onShowDifferenceChange={(v) => { updateConfig({ showDifference: v }); setLiveMessage(v ? 'Kolonne endring på' : 'Kolonne endring av'); }}
+  showPercent={showPercent}
+  onShowPercentChange={(v) => { updateConfig({ showPercent: v }); setLiveMessage(v ? 'Kolonne endring % på' : 'Kolonne endring % av'); }}
+  showOnlyChanges={showOnlyChanges}
+  onShowOnlyChangesChange={(v: boolean) => { updateConfig({ showOnlyChanges: v }); setLiveMessage(v ? 'Filter aktivert: kun endringer' : 'Filter av: alle linjer'); }}
+  inlineAccounts={inlineAccounts}
+  onInlineAccountsChange={(v: boolean) => { updateConfig({ inlineAccounts: v }); setLiveMessage(v ? 'Kontoer vises i tabell' : 'Kontoer vises ikke i tabell'); }}
+  drilldownPanel={drilldownPanel}
+  onDrilldownPanelChange={(v: boolean) => { updateConfig({ drilldownPanel: v }); setLiveMessage(v ? 'Drilldown i panel på' : 'Drilldown i panel av'); }}
+  onExpandAll={expandAll}
+  onCollapseAll={collapseAll}
+  onExpandToLevel={(lvl: number) => expandToLevel(lvl)}
+  disabled={isLoading}
+/>
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -488,23 +506,29 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
                   <>
                     <SectionHeading title="Resultat" rowIndex={incomeHeadingIndex} colSpan={2 + (showPrevious ? 1 : 0) + (showDifference ? 1 : 0) + (showPercent ? 1 : 0)} />
                     {filteredIncome.map((line, idx, arr) => (
-                      <StatementLineRow
-                        key={line.id}
-                        line={line}
-                        level={0}
-                        expandedMap={expanded}
-                        toggle={toggle}
-                        showPrevious={showPrevious}
-                        showDifference={showDifference}
-                        showPercent={showPercent}
-                        onDrilldown={handleDrilldown}
-                        canDrilldown={(n: string) => getAccountsForLine(n).length > 0}
-                        getAccountsForLine={getAccountsForLine}
-                        siblingIndex={idx + 1}
-                        siblingCount={arr.length}
-                        rowIndex={(incomeStartIndex ?? 0) + countVisibleLines(filteredIncome.slice(0, idx))}
-                        tabIndex={idx === 0 ? 0 : -1}
-                      />
+<StatementLineRow
+  key={line.id}
+  line={line}
+  level={0}
+  expandedMap={expanded}
+  toggle={toggle}
+  showPrevious={showPrevious}
+  showDifference={showDifference}
+  showPercent={showPercent}
+  onDrilldown={handleDrilldown}
+  canDrilldown={(n: string) => getAccountsForLine(n).length > 0}
+  getAccountsForLine={getAccountsForLine}
+  inlineAccounts={inlineAccounts}
+  accountsExpandedMap={accountsExpanded}
+  toggleAccounts={toggleAccounts}
+  currentByAcc={currentByAcc}
+  prevByAcc={prevByAcc}
+  openAccountTB={openAccountTB}
+  siblingIndex={idx + 1}
+  siblingCount={arr.length}
+  rowIndex={(incomeStartIndex ?? 0) + countVisibleLines(filteredIncome.slice(0, idx))}
+  tabIndex={idx === 0 ? 0 : -1}
+/>
                     ))}
                   </>
                 )}
@@ -512,23 +536,29 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
                   <>
                     <SectionHeading title="Balanse" rowIndex={balanceHeadingIndex} colSpan={2 + (showPrevious ? 1 : 0) + (showDifference ? 1 : 0) + (showPercent ? 1 : 0)} />
                     {filteredBalance.map((line, idx, arr) => (
-                      <StatementLineRow
-                        key={line.id}
-                        line={line}
-                        level={0}
-                        expandedMap={expanded}
-                        toggle={toggle}
-                        showPrevious={showPrevious}
-                        showDifference={showDifference}
-                        showPercent={showPercent}
-                        onDrilldown={handleDrilldown}
-                        canDrilldown={(n: string) => getAccountsForLine(n).length > 0}
-                        getAccountsForLine={getAccountsForLine}
-                        siblingIndex={idx + 1}
-                        siblingCount={arr.length}
-                        rowIndex={(balanceStartIndex ?? 0) + countVisibleLines(filteredBalance.slice(0, idx))}
-                        tabIndex={(filteredIncome.length === 0 && idx === 0) ? 0 : -1}
-                      />
+<StatementLineRow
+  key={line.id}
+  line={line}
+  level={0}
+  expandedMap={expanded}
+  toggle={toggle}
+  showPrevious={showPrevious}
+  showDifference={showDifference}
+  showPercent={showPercent}
+  onDrilldown={handleDrilldown}
+  canDrilldown={(n: string) => getAccountsForLine(n).length > 0}
+  getAccountsForLine={getAccountsForLine}
+  inlineAccounts={inlineAccounts}
+  accountsExpandedMap={accountsExpanded}
+  toggleAccounts={toggleAccounts}
+  currentByAcc={currentByAcc}
+  prevByAcc={prevByAcc}
+  openAccountTB={openAccountTB}
+  siblingIndex={idx + 1}
+  siblingCount={arr.length}
+  rowIndex={(balanceStartIndex ?? 0) + countVisibleLines(filteredBalance.slice(0, idx))}
+  tabIndex={(filteredIncome.length === 0 && idx === 0) ? 0 : -1}
+/>
                     ))}
                   </>
                 )}
