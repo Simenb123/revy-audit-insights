@@ -8,7 +8,7 @@ import { useAutoMapping } from '@/hooks/useAutoMapping';
 import DataTable, { DataTableColumn } from '@/components/ui/data-table';
 import { TableRow, TableCell } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import MappingCombobox from './MappingCombobox';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import ColumnSelector, { ColumnConfig } from './ColumnSelector';
@@ -116,15 +116,7 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
   const filteredEntries = useMemo(() => {
     if (!trialBalanceData?.trialBalanceEntries) return [];
     
-    console.log('🔍 TrialBalanceTable filtering:', { 
-      actualAccountingYear, 
-      filteredAccountNumbers,
-      selectedAccountingLine,
-      selectedSummaryLine,
-      selectedAccountType,
-      selectedAnalysisGroup,
-      totalEntries: trialBalanceData.trialBalanceEntries.length 
-    });
+    
     
     const filtered = trialBalanceData.trialBalanceEntries.filter(entry => {
       if (actualAccountingYear && entry.period_year !== actualAccountingYear) return false;
@@ -154,7 +146,7 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
       return true;
     });
     
-    console.log('✅ Filtered result:', filtered.length, 'entries');
+    
     return filtered;
   }, [trialBalanceData, actualAccountingYear, filteredAccountNumbers, selectedAccountingLine, selectedSummaryLine, selectedAccountType, selectedAnalysisGroup]);
 
@@ -294,23 +286,13 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
 
           return (
             <div className="flex items-center gap-2 min-w-[260px]">
-              <Select
+              <MappingCombobox
                 value={entry.standard_number || ''}
-                onValueChange={(val) => {
-                  if (val) handleMappingChange(entry.account_number, val);
-                }}
-              >
-                <SelectTrigger className="h-8 text-xs bg-background">
-                  <SelectValue placeholder={suggestion ? `Foreslås: ${suggestion.suggestedMapping}` : 'Velg regnskapslinje'} />
-                </SelectTrigger>
-                <SelectContent className="z-50 bg-background max-h-60 shadow-md border">
-                  {standardAccounts.map((account) => (
-                    <SelectItem key={account.id} value={account.standard_number}>
-                      {account.standard_number} - {account.standard_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                onChange={(val) => val && handleMappingChange(entry.account_number, val)}
+                options={standardAccounts}
+                placeholder={suggestion ? `Foreslås: ${suggestion.suggestedMapping}` : 'Velg regnskapslinje'}
+                className="h-8 text-xs"
+              />
 
               {!entry.standard_number && suggestion && (
                 <Badge variant="outline" className="text-xs">
@@ -450,6 +432,10 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
         showTotals={true}
         totalRow={totalRow}
         emptyMessage={`Ingen saldobalanse data for ${actualAccountingYear}`}
+        virtualizeRows
+        maxBodyHeight="70vh"
+        rowHeight={48}
+        overscan={8}
       />
     </div>
   );

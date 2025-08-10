@@ -107,6 +107,9 @@ export function useStandardAccounts() {
         audit_significance: a.audit_significance as StandardAccount['audit_significance'],
       }));
     },
+    staleTime: 30 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 }
 

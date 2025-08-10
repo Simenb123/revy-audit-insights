@@ -256,7 +256,7 @@ const DataTable = <T extends Record<string, any>>({
           Visninger
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-64">
+      <DropdownMenuContent align="end" className="w-64 z-[60] bg-popover">
         <DropdownMenuItem onClick={saveCurrentView}>
           <Plus className="h-4 w-4 mr-2" />
           Lagre ny visning
