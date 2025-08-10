@@ -102,9 +102,20 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
     updateConfig({ expanded: map });
     setLiveMessage(`Utvidet til nivå ${level}`);
   };
-  const getAccountsForLine = React.useCallback((standardNumber: string) => {
-    return mappings.filter(m => m.statement_line_number === standardNumber).map(m => m.account_number);
+  const lineToAccounts = React.useMemo(() => {
+    const map = new Map<string, string[]>();
+    for (const m of mappings) {
+      const key = m.statement_line_number as string;
+      const acc = m.account_number as string;
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(acc);
+    }
+    return map;
   }, [mappings]);
+
+  const getAccountsForLine = React.useCallback((standardNumber: string) => {
+    return lineToAccounts.get(standardNumber) ?? [];
+  }, [lineToAccounts]);
 
   const handleDrilldown = (standardNumber: string) => {
     if (!clientId) return;
