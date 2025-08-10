@@ -109,6 +109,12 @@ export const StatementLineRow = React.memo(function StatementLineRow({
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
             if (isDrillable) onDrilldown(line.standard_number);
+            else if (hasChildren) {
+              const opening = !isOpen;
+              const delta = Math.max(0, (opening ? countIfOpened(line) : countVisible(line)) - 1);
+              toggle(line.id, { name: line.standard_name, opening, delta });
+            }
+            return;
           }
           if (e.key === 'ArrowRight') {
             if (!hasChildren) return;
