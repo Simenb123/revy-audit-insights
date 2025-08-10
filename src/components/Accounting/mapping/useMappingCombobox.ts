@@ -9,13 +9,16 @@ interface UseMappingComboboxParams {
   labels?: MappingComboboxLabels;
   allowClear: boolean;
   fuzzy?: boolean;
+  maxResults?: number;
+  minFuzzyQueryLength?: number;
 }
 
-export function useMappingCombobox({ value, onChange, options, labels, allowClear, fuzzy }: UseMappingComboboxParams) {
+export function useMappingCombobox({ value, onChange, options, labels, allowClear, fuzzy, maxResults, minFuzzyQueryLength }: UseMappingComboboxParams) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const DEBOUNCE_MS = 160;
+  const MIN_FUZZY_LEN = Math.max(1, minFuzzyQueryLength ?? 2);
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedQuery(query), DEBOUNCE_MS);
@@ -62,10 +65,10 @@ const { filtered, matchesById } = useMemo(() => {
   const raw = effectiveQuery.trim();
   const nq = normalize(raw);
   if (!nq) {
-    return { filtered: options, matchesById: {} as Record<string, { numberRanges: Array<[number, number]>; nameRanges: Array<[number, number]> }> };
+    return { filtered: options.slice(0, maxResults ?? options.length), matchesById: {} as Record<string, { numberRanges: Array<[number, number]>; nameRanges: Array<[number, number]> }> };
   }
 
-  if (fuzzy && fuseIndex && raw) {
+  if (fuzzy && fuseIndex && raw && raw.length >= MIN_FUZZY_LEN) {
     const results = fuseIndex.search(raw);
     const byId: Record<string, { numberRanges: Array<[number, number]>; nameRanges: Array<[number, number]> }> = {};
     results.forEach((r) => {
@@ -79,7 +82,9 @@ const { filtered, matchesById } = useMemo(() => {
         byId[(r.item as StandardAccountOption).id] = entry;
       }
     });
-    return { filtered: results.map((r) => r.item as StandardAccountOption), matchesById: byId };
+    const items = results.map((r) => r.item as StandardAccountOption);
+    const limited = typeof maxResults === 'number' ? items.slice(0, maxResults) : items;
+    return { filtered: limited, matchesById: byId };
   }
 
   const tokens = nq.split(/\s+/).filter(Boolean);
@@ -98,8 +103,9 @@ const { filtered, matchesById } = useMemo(() => {
     .sort((a, b) => b.score - a.score)
     .map(({ o }) => o);
 
-  return { filtered: ranked, matchesById: {} as Record<string, { numberRanges: Array<[number, number]>; nameRanges: Array<[number, number]> }> };
-}, [options, effectiveQuery, normalizedOptions, fuzzy, fuseIndex]);
+  const limited = typeof maxResults === 'number' ? ranked.slice(0, maxResults) : ranked;
+  return { filtered: limited, matchesById: {} as Record<string, { numberRanges: Array<[number, number]>; nameRanges: Array<[number, number]> }> };
+}, [options, effectiveQuery, normalizedOptions, fuzzy, fuseIndex, maxResults, MIN_FUZZY_LEN]);
 
   useEffect(() => {
     if (!open) return;

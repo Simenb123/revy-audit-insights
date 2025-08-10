@@ -132,4 +132,38 @@ describe('MappingCombobox', () => {
     expect(opt).toBeTruthy();
     expect(opt.querySelectorAll('mark').length).toBeGreaterThan(0);
   });
+
+  it('limits results when maxResults is set and announces the count', async () => {
+    const manyOptions = [
+      { id: '1', standard_number: '1920', standard_name: 'Bankinnskudd' },
+      { id: '2', standard_number: '1921', standard_name: 'Bank driftskonto' },
+      { id: '3', standard_number: '1922', standard_name: 'Bank skattetrekkskonto' },
+      { id: '4', standard_number: '1923', standard_name: 'Valutakonto' },
+      { id: '5', standard_number: '1924', standard_name: 'Sparekonto' },
+      { id: '6', standard_number: '1925', standard_name: 'Andre bankinnskudd' },
+      { id: '7', standard_number: '1926', standard_name: 'Bankinnskudd prosjekt' },
+    ];
+
+    const labels = {
+      resultsCountAnnouncement: (count: number) => `${count}`,
+    } as any;
+
+    render(
+      <MappingCombobox
+        value={undefined}
+        onChange={() => {}}
+        options={manyOptions}
+        fuzzy
+        maxResults={3}
+        labels={labels}
+      />
+    );
+
+    await userEvent.click(screen.getByRole('button'));
+    const combobox = screen.getByRole('combobox');
+    await userEvent.type(combobox, 'bank');
+
+    const status = screen.getByRole('status');
+    expect(status.textContent).toBe('3');
+  });
 });
