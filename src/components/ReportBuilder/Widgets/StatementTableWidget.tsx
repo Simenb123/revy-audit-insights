@@ -323,12 +323,38 @@ const collectIds = (nodes: any[]): string[] =>
     return false;
   }, []);
 
+  // Stable sibling comparator: non-totals first, then display_order, then numeric standard_number, then alphanumeric
+  const isTotal = (n: any) => {
+    const name = String(n.standard_name || '').toLowerCase();
+    return !!n.is_total_line || n.line_type === 'subtotal' || n.line_type === 'calculation' || name.startsWith('sum');
+  };
+  const sortSiblings = (arr: any[]) =>
+    arr.sort((a, b) => {
+      const aIsTotal = isTotal(a);
+      const bIsTotal = isTotal(b);
+      if (aIsTotal !== bIsTotal) return aIsTotal ? 1 : -1;
+      const byOrder = (a.display_order ?? 0) - (b.display_order ?? 0);
+      if (byOrder !== 0) return byOrder;
+      const aNum = parseInt(String(a.standard_number), 10);
+      const bNum = parseInt(String(b.standard_number), 10);
+      if (!Number.isNaN(aNum) && !Number.isNaN(bNum) && aNum !== bNum) return aNum - bNum;
+      return String(a.standard_number).localeCompare(String(b.standard_number));
+    });
+  const deepSort = (nodes: any[]): any[] => {
+    const clone = nodes.map((n) => ({
+      ...n,
+      children: n.children && n.children.length ? deepSort(n.children) : [],
+    }));
+    sortSiblings(clone);
+    return clone;
+  };
+
   const filterLines = React.useCallback((nodes: any[]): any[] => {
-    if (!showOnlyChanges) return nodes;
+    if (!showOnlyChanges) return deepSort(nodes);
     const recurse = (arr: any[]): any[] => arr
       .map((n) => ({ ...n, children: n.children ? recurse(n.children) : [] }))
       .filter((n) => hasChange(n) || (n.children && n.children.length > 0));
-    return recurse(nodes);
+    return deepSort(recurse(nodes));
   }, [showOnlyChanges, hasChange]);
 
 
