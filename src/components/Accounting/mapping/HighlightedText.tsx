@@ -1,5 +1,10 @@
 import React from 'react';
 
+/**
+ * HighlightedText
+ * - ranges: valgfrie [start, end]-indekser (inklusive) fra fuzzy-søk for presis markering
+ * - query: brukes som fallback til enkel token-basert markering når ranges ikke finnes
+ */
 interface HighlightedTextProps {
   text: string;
   query: string;

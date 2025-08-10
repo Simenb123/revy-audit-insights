@@ -12,6 +12,14 @@ import { MappingComboboxLabels, StandardAccountOption } from './mapping/types';
 import { LoadingState } from './mapping/LoadingState';
 import { EmptyState } from './mapping/EmptyState';
 
+/**
+ * MappingCombobox
+ * - fuzzy: Aktiver feiltolerant søk (Fuse.js) med markering av treff
+ * - maxResults: Begrens antall viste resultater (for ytelse)
+ * - minFuzzyQueryLength: Minste lengde før fuzzy-søk brukes (default 2)
+ * - debounceMs: Debounce for søk (default 120ms)
+ * - fuzzyThreshold: Fuse-threshold 0–1, lavere = mer presis (default 0.3)
+ */
 interface MappingComboboxProps {
   value?: string;
   onChange: (standardNumber: string) => void;

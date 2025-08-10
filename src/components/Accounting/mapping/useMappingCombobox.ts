@@ -2,6 +2,11 @@ import React, { useState, useMemo, useEffect, useDeferredValue, useId } from 're
 import { MappingComboboxLabels, StandardAccountOption } from './types';
 import Fuse from 'fuse.js';
 
+/**
+ * Parametre for useMappingCombobox
+ * - fuzzy/maxResults/minFuzzyQueryLength/debounceMs/fuzzyThreshold styrer søkeopplevelsen
+ * - Se MappingComboboxProps for samme defaults
+ */
 interface UseMappingComboboxParams {
   value?: string;
   onChange: (standardNumber: string) => void;
@@ -15,6 +20,9 @@ interface UseMappingComboboxParams {
   fuzzyThreshold?: number;
 }
 
+/**
+ * Hook som driver MappingCombobox. Bruker Fuse.js når fuzzy er aktivert og returnerer match-ranges for highlighting.
+ */
 export function useMappingCombobox({ value, onChange, options, labels, allowClear, fuzzy, maxResults, minFuzzyQueryLength, debounceMs, fuzzyThreshold }: UseMappingComboboxParams) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
