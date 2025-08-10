@@ -21,6 +21,7 @@ interface MappingComboboxProps {
   allowClear?: boolean;
   loading?: boolean;
   labels?: MappingComboboxLabels;
+  fuzzy?: boolean;
 }
 
 const MappingCombobox: React.FC<MappingComboboxProps> = ({
@@ -32,6 +33,7 @@ const MappingCombobox: React.FC<MappingComboboxProps> = ({
   allowClear = true,
   loading = false,
   labels,
+  fuzzy = false,
 }) => {
   const {
     open,
@@ -47,7 +49,7 @@ const MappingCombobox: React.FC<MappingComboboxProps> = ({
     selectOption,
     clearSelection,
     handleInputKeyDown,
-  } = useMappingCombobox({ value, onChange, options, labels, allowClear });
+  } = useMappingCombobox({ value, onChange, options, labels, allowClear, fuzzy });
 
   // Virtualization setup
   const parentRef = React.useRef<HTMLDivElement | null>(null);
@@ -225,6 +227,7 @@ export default React.memo(MappingCombobox, (prev, next) => {
     prev.options === next.options &&
     prev.allowClear === next.allowClear &&
     prev.labels === next.labels &&
-    prev.loading === next.loading
+    prev.loading === next.loading &&
+    prev.fuzzy === next.fuzzy
   );
 });

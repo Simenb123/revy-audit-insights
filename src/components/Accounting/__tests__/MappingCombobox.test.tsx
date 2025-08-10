@@ -116,4 +116,18 @@ describe('MappingCombobox', () => {
     expect(within(listbox).getByRole('status')).toBeTruthy();
     expect(screen.getByText(/Laster\.\.\./i)).toBeTruthy();
   });
+  it('supports fuzzy search when enabled', async () => {
+    const fuzzyOptions = [
+      { id: '1', standard_number: '1920', standard_name: 'Bankinnskudd' },
+      { id: '2', standard_number: '2400', standard_name: 'Leverandørgjeld' },
+      { id: '3', standard_number: '1500', standard_name: 'Kundefordringer' },
+    ];
+    render(<MappingCombobox value={undefined} onChange={() => {}} options={fuzzyOptions} fuzzy />);
+
+    await userEvent.click(screen.getByRole('button'));
+    const combobox = screen.getByRole('combobox');
+    await userEvent.type(combobox, 'bnk');
+
+    expect(screen.getByRole('option', { name: /1920.*Bankinnskudd/i })).toBeTruthy();
+  });
 });

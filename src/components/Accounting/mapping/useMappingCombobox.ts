@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect, useDeferredValue, useId } from 'react';
 import { MappingComboboxLabels, StandardAccountOption } from './types';
+import Fuse from 'fuse.js';
 
 interface UseMappingComboboxParams {
   value?: string;
@@ -7,9 +8,10 @@ interface UseMappingComboboxParams {
   options: StandardAccountOption[];
   labels?: MappingComboboxLabels;
   allowClear: boolean;
+  fuzzy?: boolean;
 }
 
-export function useMappingCombobox({ value, onChange, options, labels, allowClear }: UseMappingComboboxParams) {
+export function useMappingCombobox({ value, onChange, options, labels, allowClear, fuzzy }: UseMappingComboboxParams) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
@@ -33,37 +35,55 @@ export function useMappingCombobox({ value, onChange, options, labels, allowClea
 
   const normalize = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
-  const normalizedOptions = useMemo(() => (
-    options.map((o) => {
-      const numN = normalize(o.standard_number);
-      const nameN = normalize(o.standard_name);
-      return { o, numN, nameN, combined: `${numN} ${nameN}` };
+const normalizedOptions = useMemo(() => (
+  options.map((o) => {
+    const numN = normalize(o.standard_number);
+    const nameN = normalize(o.standard_name);
+    return { o, numN, nameN, combined: `${numN} ${nameN}` };
+  })
+), [options]);
+
+const fuseIndex = useMemo(() => {
+  if (!fuzzy) return null;
+  return new Fuse(options, {
+    includeScore: true,
+    threshold: 0.35,
+    ignoreLocation: true,
+    minMatchCharLength: 1,
+    keys: [
+      { name: 'standard_number', weight: 0.7 },
+      { name: 'standard_name', weight: 0.3 },
+    ],
+  });
+}, [options, fuzzy]);
+
+const filtered = useMemo(() => {
+  const raw = effectiveQuery.trim();
+  const nq = normalize(raw);
+  if (!nq) return options;
+
+  if (fuzzy && fuseIndex && raw) {
+    return fuseIndex.search(raw).map((r) => r.item as StandardAccountOption);
+  }
+
+  const tokens = nq.split(/\s+/).filter(Boolean);
+
+  const ranked = normalizedOptions
+    .filter((x) => tokens.every((t) => x.combined.includes(t)))
+    .map((x) => {
+      const score =
+        (x.numN === nq ? 1000 : 0) +
+        (x.nameN === nq ? 900 : 0) +
+        (x.numN.startsWith(nq) ? 800 : 0) +
+        (x.nameN.startsWith(nq) ? 700 : 0) +
+        tokens.reduce((acc, t) => acc + (x.numN.includes(t) ? 200 : 0) + (x.nameN.includes(t) ? 100 : 0), 0);
+      return { o: x.o, score };
     })
-  ), [options]);
+    .sort((a, b) => b.score - a.score)
+    .map(({ o }) => o);
 
-  const filtered = useMemo(() => {
-    const raw = effectiveQuery.trim();
-    const nq = normalize(raw);
-    if (!nq) return options;
-
-    const tokens = nq.split(/\s+/).filter(Boolean);
-
-    const ranked = normalizedOptions
-      .filter((x) => tokens.every((t) => x.combined.includes(t)))
-      .map((x) => {
-        const score =
-          (x.numN === nq ? 1000 : 0) +
-          (x.nameN === nq ? 900 : 0) +
-          (x.numN.startsWith(nq) ? 800 : 0) +
-          (x.nameN.startsWith(nq) ? 700 : 0) +
-          tokens.reduce((acc, t) => acc + (x.numN.includes(t) ? 200 : 0) + (x.nameN.includes(t) ? 100 : 0), 0);
-        return { o: x.o, score };
-      })
-      .sort((a, b) => b.score - a.score)
-      .map(({ o }) => o);
-
-    return ranked;
-  }, [options, effectiveQuery, normalizedOptions]);
+  return ranked;
+}, [options, effectiveQuery, normalizedOptions, fuzzy, fuseIndex]);
 
   useEffect(() => {
     if (!open) return;
