@@ -123,21 +123,21 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
         ) : (
             <div className="overflow-x-auto">
               <Table role="treegrid" aria-label="Finansoppstilling" aria-colcount={colCount} aria-rowcount={rowCount}>
-            <TableHeader>
-              <TableRow className="[&_th]:sticky [&_th]:top-0 bg-background z-10">
-                <TableHead className="text-xs sticky left-0 z-20 bg-background">Linje</TableHead>
-                <TableHead className="text-xs text-right whitespace-nowrap">{periodInfo?.currentYear ?? 'År'}</TableHead>
-                {showPrevious && (
-                  <TableHead className="text-xs text-right whitespace-nowrap">{periodInfo?.previousYear ?? 'I fjor'}</TableHead>
-                )}
-                {showDifference && (
-                  <TableHead className="text-xs text-right whitespace-nowrap">Endring</TableHead>
-                )}
-                {showPercent && (
-                  <TableHead className="text-xs text-right whitespace-nowrap">Endring %</TableHead>
-                )}
-              </TableRow>
-            </TableHeader>
+              <TableHeader>
+                <TableRow role="row" className="[&_th]:sticky [&_th]:top-0 bg-background z-10">
+                  <TableHead role="columnheader" aria-colindex={1} className="text-xs sticky left-0 z-20 bg-background">Linje</TableHead>
+                  <TableHead role="columnheader" aria-colindex={2} className="text-xs text-right whitespace-nowrap">{periodInfo?.currentYear ?? 'År'}</TableHead>
+                  {showPrevious && (
+                    <TableHead role="columnheader" aria-colindex={3} className="text-xs text-right whitespace-nowrap">{periodInfo?.previousYear ?? 'I fjor'}</TableHead>
+                  )}
+                  {showDifference && (
+                    <TableHead role="columnheader" aria-colindex={2 + (showPrevious ? 1 : 0) + 1} className="text-xs text-right whitespace-nowrap">Endring</TableHead>
+                  )}
+                  {showPercent && (
+                    <TableHead role="columnheader" aria-colindex={2 + (showPrevious ? 1 : 0) + (showDifference ? 1 : 0) + 1} className="text-xs text-right whitespace-nowrap">Endring %</TableHead>
+                  )}
+                </TableRow>
+              </TableHeader>
             <TableBody>
               {incomeStatement.length > 0 && (
                 <>

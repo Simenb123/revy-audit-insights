@@ -62,7 +62,7 @@ export const StatementLineRow = React.memo(function StatementLineRow({
           }
         }}
       >
-        <TableCell role="rowheader" className="text-xs sticky left-0 bg-background z-10">
+        <TableCell role="rowheader" aria-colindex={1} className="text-xs sticky left-0 bg-background z-10">
           <div
             className="flex items-center"
             style={{
@@ -88,15 +88,15 @@ export const StatementLineRow = React.memo(function StatementLineRow({
             <span>{line.standard_name}</span>
           </div>
         </TableCell>
-        <TableCell role="gridcell" className="text-right text-xs tabular-nums whitespace-nowrap">{formatCurrency(current)}</TableCell>
+        <TableCell role="gridcell" aria-colindex={2} className="text-right text-xs tabular-nums whitespace-nowrap">{formatCurrency(current)}</TableCell>
         {showPrevious && (
-          <TableCell role="gridcell" className="text-right text-xs tabular-nums whitespace-nowrap">{formatCurrency(prev)}</TableCell>
+          <TableCell role="gridcell" aria-colindex={3} className="text-right text-xs tabular-nums whitespace-nowrap">{formatCurrency(prev)}</TableCell>
         )}
         {showDifference && (
-          <TableCell role="gridcell" className="text-right text-xs tabular-nums whitespace-nowrap">{formatCurrency(diff)}</TableCell>
+          <TableCell role="gridcell" aria-colindex={2 + (showPrevious ? 1 : 0) + 1} className="text-right text-xs tabular-nums whitespace-nowrap">{formatCurrency(diff)}</TableCell>
         )}
         {showPercent && (
-          <TableCell role="gridcell" className="text-right text-xs tabular-nums whitespace-nowrap">{(pct >= 0 ? '+' : '') + pct.toFixed(1)}%</TableCell>
+          <TableCell role="gridcell" aria-colindex={2 + (showPrevious ? 1 : 0) + (showDifference ? 1 : 0) + 1} className="text-right text-xs tabular-nums whitespace-nowrap">{(pct >= 0 ? '+' : '') + pct.toFixed(1)}%</TableCell>
         )}
       </TableRow>
       {hasChildren && isOpen && line.children.map((child: any, idx: number, arr: any[]) => (
