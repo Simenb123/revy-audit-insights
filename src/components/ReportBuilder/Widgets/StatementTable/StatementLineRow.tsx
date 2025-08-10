@@ -44,9 +44,7 @@ export const StatementLineRow = React.memo(function StatementLineRow({
   const prev = line.previous_amount || 0;
   const diff = current - prev;
   const pct = prev !== 0 ? (diff / Math.abs(prev)) * 100 : 0;
-  const isDrillable =
-    (line.line_type === 'detail' && !line.is_total_line) &&
-    (canDrilldown ? canDrilldown(line.standard_number) : false);
+  const isDrillable = canDrilldown ? canDrilldown(line.standard_number) : false;
   // Counts visible rows for a node (self + visible descendants)
   const countVisible = React.useCallback((node: any): number => {
     let total = 1; // self

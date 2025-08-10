@@ -164,9 +164,35 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
     return map;
   }, [mappings, classifications, incomeStatement, balanceStatement]);
 
+  const childrenByNumber = React.useMemo(() => {
+    const map = new Map<string, string[]>();
+    const walk = (nodes: any[]) => {
+      for (const n of nodes || []) {
+        const num = String(n.standard_number);
+        const childNums = (n.children || []).map((c: any) => String(c.standard_number));
+        map.set(num, childNums);
+        if (n.children && n.children.length) walk(n.children);
+      }
+    };
+    walk(incomeStatement || []);
+    walk(balanceStatement || []);
+    return map;
+  }, [incomeStatement, balanceStatement]);
+
   const getAccountsForLine = React.useCallback((standardNumber: string) => {
-    return lineToAccounts.get(standardNumber) ?? [];
-  }, [lineToAccounts]);
+    const visited = new Set<string>();
+    const result = new Set<string>();
+    const dfs = (num: string) => {
+      if (visited.has(num)) return;
+      visited.add(num);
+      const direct = lineToAccounts.get(num) || [];
+      for (const acc of direct) result.add(acc);
+      const children = childrenByNumber.get(num) || [];
+      for (const child of children) dfs(child);
+    };
+    dfs(String(standardNumber));
+    return Array.from(result);
+  }, [lineToAccounts, childrenByNumber]);
 
   const handleDrilldown = (standardNumber: string) => {
     if (!clientId) return;
