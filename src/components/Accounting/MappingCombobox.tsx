@@ -9,6 +9,8 @@ import { OptionItem } from './mapping/OptionItem';
 import { AriaAnnouncer } from './mapping/AriaAnnouncer';
 import { useMappingCombobox } from './mapping/useMappingCombobox';
 import { MappingComboboxLabels, StandardAccountOption } from './mapping/types';
+import { LoadingState } from './mapping/LoadingState';
+import { EmptyState } from './mapping/EmptyState';
 
 interface MappingComboboxProps {
   value?: string;
@@ -17,6 +19,7 @@ interface MappingComboboxProps {
   placeholder?: string;
   className?: string;
   allowClear?: boolean;
+  loading?: boolean;
   labels?: MappingComboboxLabels;
 }
 
@@ -27,6 +30,7 @@ const MappingCombobox: React.FC<MappingComboboxProps> = ({
   placeholder = 'Velg regnskapslinje',
   className,
   allowClear = true,
+  loading = false,
   labels,
 }) => {
   const {
@@ -120,10 +124,20 @@ const MappingCombobox: React.FC<MappingComboboxProps> = ({
             aria-label={labels?.listAriaLabel ?? 'Regnskapslinjer'}
             className="max-h-[min(60vh,480px)] overflow-auto bg-popover"
             ref={parentRef}
+            aria-busy={loading}
           >
-            {filtered.length === 0 ? (
+            {loading ? (
+              <LoadingState text={labels?.loadingText ?? 'Laster...'} />
+            ) : filtered.length === 0 ? (
               <>
-                <CommandEmpty>{labels?.noResults ?? 'Ingen treff'}</CommandEmpty>
+                <CommandEmpty>
+                  <EmptyState
+                    text={labels?.noResults ?? 'Ingen treff'}
+                    query={query}
+                    onClearSearch={query ? () => setQuery('') : undefined}
+                    clearLabel={labels?.clearSearch ?? 'Tøm søk'}
+                  />
+                </CommandEmpty>
                 {hasClear && (
                   <CommandItem
                     id={`${listboxId}-opt-clear`}
@@ -201,7 +215,7 @@ export default React.memo(MappingCombobox, (prev, next) => {
     prev.className === next.className &&
     prev.options === next.options &&
     prev.allowClear === next.allowClear &&
-    prev.labels === next.labels
+    prev.labels === next.labels &&
+    prev.loading === next.loading
   );
 });
-

@@ -13,4 +13,6 @@ export interface MappingComboboxLabels {
   clearedAnnouncement?: string;
   resultsCountAnnouncement?: (count: number, query: string) => string;
   availableCountAnnouncement?: (count: number) => string;
+  loadingText?: string;
+  clearSearch?: string;
 }
