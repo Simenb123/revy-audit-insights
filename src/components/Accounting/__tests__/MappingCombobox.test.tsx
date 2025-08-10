@@ -92,4 +92,28 @@ describe('MappingCombobox', () => {
     expect(optionEls.length).toBeGreaterThan(0);
     expect(optionEls.length).toBeLessThan(bigOptions.length);
   });
+  it('shows loading state and ARIA when loading is true', async () => {
+    const { rerender } = render(
+      <MappingCombobox value={undefined} onChange={() => {}} options={options} loading={false} />
+    );
+
+    // Open the popover first
+    await userEvent.click(screen.getByRole('button'));
+
+    // Toggle loading on
+    rerender(
+      <MappingCombobox value={undefined} onChange={() => {}} options={options} loading={true} />
+    );
+
+    // Trigger should be disabled and busy
+    const trigger = screen.getByRole('button');
+    expect(trigger).toBeDisabled();
+    expect(trigger).toHaveAttribute('aria-busy', 'true');
+
+    // Listbox reflects loading state and shows a polite status
+    const listbox = screen.getByRole('listbox');
+    expect(listbox).toHaveAttribute('aria-busy', 'true');
+    expect(within(listbox).getByRole('status')).toBeTruthy();
+    expect(screen.getByText(/Laster\.\.\./i)).toBeTruthy();
+  });
 });
