@@ -153,7 +153,7 @@ const collectIds = (nodes: any[]): string[] =>
 
     // Debug sample lines
     try {
-      const sample = ['10', '15', '19'];
+      const sample = ['10', '15', '19', '20'];
       const findLine = (nodes: any[], num: string): any | undefined => {
         for (const n of nodes || []) {
           if (String(n.standard_number) === num) return n;
@@ -186,6 +186,19 @@ const collectIds = (nodes: any[]): string[] =>
         const num = String(n.standard_number);
         const childNums = (n.children || []).map((c: any) => String(c.standard_number));
         map.set(num, childNums);
+        if (n.children && n.children.length) walk(n.children);
+      }
+    };
+    walk(incomeStatement || []);
+    walk(balanceStatement || []);
+    return map;
+  }, [incomeStatement, balanceStatement]);
+
+  const nodeByNumber = React.useMemo(() => {
+    const map = new Map<string, any>();
+    const walk = (nodes: any[]) => {
+      for (const n of nodes || []) {
+        map.set(String(n.standard_number), n);
         if (n.children && n.children.length) walk(n.children);
       }
     };
@@ -516,7 +529,12 @@ const countVisibleLines = React.useCallback(function countVisibleLines(nodes: an
   showDifference={showDifference}
   showPercent={showPercent}
   onDrilldown={handleDrilldown}
-  canDrilldown={(n: string) => getAccountsForLine(n).length > 0}
+  canDrilldown={(n: string) => {
+    const node = nodeByNumber.get(String(n));
+    const hasChildren = !!(node?.children && node.children.length);
+    const isTotal = !!node?.is_total_line;
+    return getAccountsForLine(n).length > 0 && !hasChildren && !isTotal;
+  }}
   getAccountsForLine={getAccountsForLine}
   inlineAccounts={inlineAccounts}
   accountsExpandedMap={accountsExpanded}
@@ -546,7 +564,12 @@ const countVisibleLines = React.useCallback(function countVisibleLines(nodes: an
   showDifference={showDifference}
   showPercent={showPercent}
   onDrilldown={handleDrilldown}
-  canDrilldown={(n: string) => getAccountsForLine(n).length > 0}
+  canDrilldown={(n: string) => {
+    const node = nodeByNumber.get(String(n));
+    const hasChildren = !!(node?.children && node.children.length);
+    const isTotal = !!node?.is_total_line;
+    return getAccountsForLine(n).length > 0 && !hasChildren && !isTotal;
+  }}
   getAccountsForLine={getAccountsForLine}
   inlineAccounts={inlineAccounts}
   accountsExpandedMap={accountsExpanded}

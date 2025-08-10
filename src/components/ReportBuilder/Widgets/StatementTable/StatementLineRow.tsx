@@ -56,9 +56,11 @@ const current = line.amount || 0;
 const prev = line.previous_amount || 0;
 const diff = current - prev;
 const pct = prev !== 0 ? (diff / Math.abs(prev)) * 100 : 0;
-const isDrillable = canDrilldown ? canDrilldown(line.standard_number) : false;
-const accounts = getAccountsForLine ? (getAccountsForLine(line.standard_number) || []) : [];
-const accountsOpen = !!(inlineAccounts && accountsExpandedMap && accountsExpandedMap[line.standard_number]);
+  const isDrillable = canDrilldown ? canDrilldown(line.standard_number) : false;
+  const accounts = getAccountsForLine ? (getAccountsForLine(line.standard_number) || []) : [];
+  const accountsOpen = !!(inlineAccounts && accountsExpandedMap && accountsExpandedMap[line.standard_number]);
+  const canToggleAccounts = !!(inlineAccounts && accounts.length > 0);
+  const showChevron = hasChildren || canToggleAccounts;
 // Counts visible rows for a node (self + visible descendants)
 const countVisible = React.useCallback((node: any): number => {
   let total = 1; // self
@@ -103,11 +105,11 @@ onClick={() => {
         tabIndex={tabIndex ?? -1}
         aria-label={isDrillable ? `Drilldown for ${line.standard_number} ${line.standard_name}` : (hasChildren ? `${isOpen ? 'Lukk' : 'Åpne'} ${line.standard_name}` : line.standard_name)}
         aria-level={level + 1}
-        aria-expanded={hasChildren ? isOpen : undefined}
+        aria-expanded={hasChildren ? isOpen : (canToggleAccounts ? accountsOpen : undefined)}
         aria-posinset={siblingIndex}
         aria-setsize={siblingCount}
         aria-rowindex={rowIndex}
-        aria-disabled={!isDrillable && !hasChildren}
+        aria-disabled={!isDrillable && !hasChildren && !canToggleAccounts}
         aria-keyshortcuts="ArrowUp,ArrowDown,ArrowLeft,ArrowRight,Home,End,PageUp,PageDown,Enter,Space"
         onKeyDown={(e) => {
           const focusRowAt = (targetIndexDelta: number | 'home' | 'end') => {
@@ -199,23 +201,28 @@ if (e.key === 'Enter' || e.key === ' ') {
               paddingLeft: 'calc(var(--statement-indent-step, 12px) * var(--indent-level))',
             }}
           >
-            {hasChildren && (
+            {showChevron && (
           <button
             type="button"
             className="mr-2 text-muted-foreground hover:text-foreground"
             onClick={(e) => { 
-              e.stopPropagation(); 
-              const opening = !isOpen;
-              const delta = Math.max(0, (opening ? countIfOpened(line) : countVisible(line)) - 1);
-              toggle(line.id, { name: line.standard_name, opening, delta }); 
+              if (hasChildren) {
+                const opening = !isOpen;
+                const delta = Math.max(0, (opening ? countIfOpened(line) : countVisible(line)) - 1);
+                toggle(line.id, { name: line.standard_name, opening, delta }); 
+              } else if (canToggleAccounts && toggleAccounts) {
+                const opening = !accountsOpen;
+                const delta = accounts.length;
+                toggleAccounts(line.standard_number, { opening, delta });
+              }
             }}
-            aria-label={(isOpen ? 'Lukk' : 'Åpne') + ' ' + line.standard_name}
-            title={(isOpen ? 'Lukk' : 'Åpne') + ' ' + line.standard_name}
-            aria-expanded={isOpen}
+            aria-label={((hasChildren ? isOpen : accountsOpen) ? 'Lukk' : 'Åpne') + ' ' + line.standard_name}
+            title={((hasChildren ? isOpen : accountsOpen) ? 'Lukk' : 'Åpne') + ' ' + line.standard_name}
+            aria-expanded={hasChildren ? isOpen : accountsOpen}
             tabIndex={-1}
             aria-hidden="true"
           >
-                {isOpen ? <ChevronDown className="h-4 w-4" aria-hidden="true" /> : <ChevronRight className="h-4 w-4" aria-hidden="true" />}
+                {(hasChildren ? isOpen : accountsOpen) ? <ChevronDown className="h-4 w-4" aria-hidden="true" /> : <ChevronRight className="h-4 w-4" aria-hidden="true" />}
               </button>
             )}
             <span className="font-mono mr-2 text-muted-foreground">{line.standard_number}</span>

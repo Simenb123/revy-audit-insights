@@ -71,6 +71,23 @@ export function useDetailedFinancialStatement(clientId: string, selectedVersion?
         roots.push(l);
       }
     });
+
+    // Ensure totals appear after detail lines within each group
+    const sortSiblings = (arr: DetailedStatementLine[]) =>
+      arr.sort((a, b) => {
+        // Non-total lines first, then totals; within each group by display_order
+        if (a.is_total_line !== b.is_total_line) return a.is_total_line ? 1 : -1;
+        return (a.display_order ?? 0) - (b.display_order ?? 0);
+      });
+
+    const sortTree = (nodes: DetailedStatementLine[]) => {
+      sortSiblings(nodes);
+      for (const n of nodes) {
+        if (n.children && n.children.length) sortTree(n.children);
+      }
+    };
+
+    sortTree(roots);
     return roots;
   };
 
