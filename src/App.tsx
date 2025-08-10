@@ -49,7 +49,7 @@ import ClientDocuments from "./pages/ClientDocuments";
 import NotFound from "./pages/NotFound";
 import ClientRedirect from "./components/Layout/ClientRedirect";
 import { ClientHistoryTracker } from "./components/Layout/ClientHistoryTracker";
-
+import Sandbox from "./pages/Sandbox";
 const queryClient = new QueryClient();
 
 function App() {
@@ -105,6 +105,7 @@ function App() {
                   <Route path="academy" element={<Academy />} />
                   <Route path="ai-revy-admin" element={<AIRevyAdmin />} />
                   <Route path="performance" element={<PerformanceMonitoring />} />
+                  <Route path="sandbox" element={<ProtectedRoute><Sandbox /></ProtectedRoute>} />
                 </Route>
                 <Route path="*" element={<NotFound />} />
               </Routes>
