@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useDeferredValue } from 'react';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { Command, CommandInput, CommandList, CommandEmpty, CommandItem } from '@/components/ui/command';
@@ -28,6 +28,22 @@ const MappingCombobox: React.FC<MappingComboboxProps> = ({
 }) => {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
+  const deferredQuery = useDeferredValue(query);
+
+  const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const highlight = (text: string, q: string) => {
+    const t = String(text);
+    const qq = q.trim();
+    if (!qq) return t;
+    const parts = t.split(new RegExp(`(${escapeRegExp(qq)})`, 'ig'));
+    return parts.map((part, i) =>
+      part.toLowerCase() === qq.toLowerCase() ? (
+        <mark key={i} className="bg-muted text-foreground rounded px-0.5">{part}</mark>
+      ) : (
+        <React.Fragment key={i}>{part}</React.Fragment>
+      )
+    );
+  };
 
   const selected = useMemo(
     () => options.find((o) => o.standard_number === value),
@@ -35,7 +51,7 @@ const MappingCombobox: React.FC<MappingComboboxProps> = ({
   );
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const q = deferredQuery.trim().toLowerCase();
     if (!q) return options;
 
     const ranked = options
@@ -60,7 +76,7 @@ const MappingCombobox: React.FC<MappingComboboxProps> = ({
       .map(({ o }) => o);
 
     return ranked;
-  }, [options, query]);
+  }, [options, deferredQuery]);
 
   return (
     <Popover open={open} onOpenChange={(o) => { setOpen(o); if (!o) setQuery(''); }}>
@@ -111,7 +127,9 @@ const MappingCombobox: React.FC<MappingComboboxProps> = ({
                     value === opt.standard_number ? 'opacity-100' : 'opacity-0'
                   )}
                 />
-                {opt.standard_number} - {opt.standard_name}
+                <span className="mr-1">{highlight(opt.standard_number, query)}</span>
+                <span className="text-muted-foreground">-</span>
+                <span className="ml-1">{highlight(opt.standard_name, query)}</span>
               </CommandItem>
             ))}
           </CommandList>
