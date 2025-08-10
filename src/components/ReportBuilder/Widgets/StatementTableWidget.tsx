@@ -10,6 +10,7 @@ import { formatCurrency } from '@/lib/formatters';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 
 interface StatementTableWidgetProps { widget: Widget }
 
@@ -88,7 +89,7 @@ const toggle = (id: string) => setExpanded((prev) => ({ ...prev, [id]: !prev[id]
                   onClick={(e) => { e.stopPropagation(); toggle(line.id); }}
                   aria-label={isOpen ? 'Lukk' : 'Åpne'}
                 >
-                  {isOpen ? '−' : '+'}
+                  {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                 </button>
               )}
               <span className="font-mono mr-2 text-muted-foreground">{line.standard_number}</span>
