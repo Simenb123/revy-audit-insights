@@ -34,7 +34,7 @@ export const StatementLineRow = React.memo(function StatementLineRow({
   return (
     <>
       <TableRow
-        className="cursor-pointer hover:bg-muted/40"
+        className="cursor-pointer hover:bg-muted/40 focus-visible:bg-muted/50 focus-visible:outline-none"
         onClick={() => onDrilldown(line.standard_number)}
         tabIndex={0}
         onKeyDown={(e) => {
