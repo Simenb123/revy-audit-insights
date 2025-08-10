@@ -412,6 +412,9 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
                         <TableHead scope="col" className="text-right">{periodInfo?.previousYear ?? 'I fjor'}</TableHead>
                       )}
                       <TableHead scope="col" className="text-right">Endring</TableHead>
+                      {showPercent && (
+                        <TableHead scope="col" className="text-right">Endring %</TableHead>
+                      )}
                       <TableHead scope="col" className="text-right">Lenke</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -422,6 +425,7 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
                       const currentVal = cur?.closing_balance || 0;
                       const prevVal = prev?.closing_balance || 0;
                       const diff = currentVal - prevVal;
+                      const pct = prevVal !== 0 ? (diff / Math.abs(prevVal)) * 100 : 0;
                       const name = cur?.account_name || prev?.account_name || '';
                       return (
                         <TableRow key={acc}>
@@ -431,12 +435,40 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
                             <TableCell className="text-right tabular-nums whitespace-nowrap">{formatCurrency(prevVal)}</TableCell>
                           )}
                           <TableCell className="text-right tabular-nums whitespace-nowrap">{formatCurrency(diff)}</TableCell>
+                          {showPercent && (
+                            <TableCell className="text-right tabular-nums whitespace-nowrap">{(pct >= 0 ? '+' : '') + pct.toFixed(1)}%</TableCell>
+                          )}
                           <TableCell className="text-right">
                             <Button variant="ghost" size="sm" aria-label={`Vis konto ${acc} i TB`} onClick={() => openAccountTB(acc)}>Vis i TB</Button>
                           </TableCell>
                         </TableRow>
                       );
                     })}
+                    {(() => {
+                      const totals = panelContext.accounts.reduce((accum, acc) => {
+                        const cur = currentByAcc.get(acc);
+                        const prev = prevByAcc.get(acc);
+                        const currentVal = cur?.closing_balance || 0;
+                        const prevVal = prev?.closing_balance || 0;
+                        return { cur: accum.cur + currentVal, prev: accum.prev + prevVal };
+                      }, { cur: 0, prev: 0 });
+                      const totalDiff = totals.cur - totals.prev;
+                      const totalPct = totals.prev !== 0 ? (totalDiff / Math.abs(totals.prev)) * 100 : 0;
+                      return (
+                        <TableRow>
+                          <TableCell className="font-medium">Sum</TableCell>
+                          <TableCell className="text-right tabular-nums font-medium whitespace-nowrap">{formatCurrency(totals.cur)}</TableCell>
+                          {showPrevious && (
+                            <TableCell className="text-right tabular-nums font-medium whitespace-nowrap">{formatCurrency(totals.prev)}</TableCell>
+                          )}
+                          <TableCell className="text-right tabular-nums font-medium whitespace-nowrap">{formatCurrency(totalDiff)}</TableCell>
+                          {showPercent && (
+                            <TableCell className="text-right tabular-nums font-medium whitespace-nowrap">{(totalPct >= 0 ? '+' : '') + totalPct.toFixed(1)}%</TableCell>
+                          )}
+                          <TableCell />
+                        </TableRow>
+                      );
+                    })()}
                   </TableBody>
                 </Table>
               </div>
