@@ -75,25 +75,33 @@ const MappingCombobox: React.FC<MappingComboboxProps> = ({
   const listboxId = useId();
 
   const filtered = useMemo(() => {
-    const q = effectiveQuery.trim().toLowerCase();
-    if (!q) return options;
+    const raw = effectiveQuery.trim();
+    const normalize = (s: string) =>
+      s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    const nq = normalize(raw);
+    if (!nq) return options;
+
+    const tokens = nq.split(/\s+/).filter(Boolean);
 
     const ranked = options
-      .filter(
-        (o) =>
-          o.standard_number.toLowerCase().includes(q) ||
-          o.standard_name.toLowerCase().includes(q)
-      )
+      .filter((o) => {
+        const numN = normalize(o.standard_number);
+        const nameN = normalize(o.standard_name);
+        const combined = `${numN} ${nameN}`;
+        return tokens.every((t) => combined.includes(t));
+      })
       .map((o) => {
-        const num = o.standard_number.toLowerCase();
-        const name = o.standard_name.toLowerCase();
+        const numN = normalize(o.standard_number);
+        const nameN = normalize(o.standard_name);
         const score =
-          (num === q ? 1000 : 0) +
-          (name === q ? 900 : 0) +
-          (num.startsWith(q) ? 800 : 0) +
-          (name.startsWith(q) ? 700 : 0) +
-          (num.includes(q) ? 200 : 0) +
-          (name.includes(q) ? 100 : 0);
+          (numN === nq ? 1000 : 0) +
+          (nameN === nq ? 900 : 0) +
+          (numN.startsWith(nq) ? 800 : 0) +
+          (nameN.startsWith(nq) ? 700 : 0) +
+          tokens.reduce(
+            (acc, t) => acc + (numN.includes(t) ? 200 : 0) + (nameN.includes(t) ? 100 : 0),
+            0
+          );
         return { o, score };
       })
       .sort((a, b) => b.score - a.score)
@@ -121,7 +129,7 @@ const MappingCombobox: React.FC<MappingComboboxProps> = ({
   }, [open, effectiveQuery, filtered]);
 
   return (
-    <Popover open={open} onOpenChange={(o) => { setOpen(o); if (!o) setQuery(''); }}>
+    <Popover open={open} onOpenChange={(o) => { setOpen(o); if (!o) { setQuery(''); setActiveIndex(-1); } else { const idx = filtered.findIndex((x) => x.standard_number === value); setActiveIndex(idx >= 0 ? idx : (filtered.length ? 0 : -1)); } }}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
@@ -223,7 +231,7 @@ const MappingCombobox: React.FC<MappingComboboxProps> = ({
                 {labels?.clearSelection ?? 'Fjern valg'}
               </CommandItem>
             )}
-            {filtered.map((opt) => (
+            {filtered.map((opt, idx) => (
               <CommandItem
                 key={opt.id}
                 id={`${listboxId}-opt-${opt.id}`}
@@ -233,7 +241,7 @@ const MappingCombobox: React.FC<MappingComboboxProps> = ({
                   setAriaMessage(labels?.selectedAnnouncement ? labels.selectedAnnouncement({ number: opt.standard_number, name: opt.standard_name }) : `Valgt ${opt.standard_number} - ${opt.standard_name}`);
                   setOpen(false);
                 }}
-                className="text-sm"
+                className={cn('text-sm', idx === activeIndex && 'bg-accent text-accent-foreground')}
                 role="option"
                 aria-selected={value === opt.standard_number}
               >
