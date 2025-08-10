@@ -326,15 +326,15 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
               <StatementTableToolbar
                 widgetId={widget.id}
                 showPrevious={showPrevious}
-                onShowPreviousChange={(v) => updateConfig({ showPrevious: v })}
+                onShowPreviousChange={(v) => { updateConfig({ showPrevious: v }); setLiveMessage(v ? 'Kolonne fjorår på' : 'Kolonne fjorår av'); }}
                 showDifference={showDifference}
-                onShowDifferenceChange={(v) => updateConfig({ showDifference: v })}
+                onShowDifferenceChange={(v) => { updateConfig({ showDifference: v }); setLiveMessage(v ? 'Kolonne endring på' : 'Kolonne endring av'); }}
                 showPercent={showPercent}
-                onShowPercentChange={(v) => updateConfig({ showPercent: v })}
+                onShowPercentChange={(v) => { updateConfig({ showPercent: v }); setLiveMessage(v ? 'Kolonne endring % på' : 'Kolonne endring % av'); }}
                 showOnlyChanges={showOnlyChanges}
-                onShowOnlyChangesChange={(v: boolean) => updateConfig({ showOnlyChanges: v })}
+                onShowOnlyChangesChange={(v: boolean) => { updateConfig({ showOnlyChanges: v }); setLiveMessage(v ? 'Filter aktivert: kun endringer' : 'Filter av: alle linjer'); }}
                 drilldownPanel={drilldownPanel}
-                onDrilldownPanelChange={(v: boolean) => updateConfig({ drilldownPanel: v })}
+                onDrilldownPanelChange={(v: boolean) => { updateConfig({ drilldownPanel: v }); setLiveMessage(v ? 'Drilldown i panel på' : 'Drilldown i panel av'); }}
                 onExpandAll={expandAll}
                 onCollapseAll={collapseAll}
               />
