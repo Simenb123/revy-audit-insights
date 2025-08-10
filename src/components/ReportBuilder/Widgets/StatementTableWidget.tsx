@@ -532,7 +532,7 @@ const countVisibleLines = React.useCallback(function countVisibleLines(nodes: an
   canDrilldown={(n: string) => {
     const node = nodeByNumber.get(String(n));
     const hasChildren = !!(node?.children && node.children.length);
-    const isTotal = !!node?.is_total_line;
+    const isTotal = !!node?.is_total_line || node?.line_type === 'subtotal' || String(node?.standard_name || '').toLowerCase().startsWith('sum');
     return getAccountsForLine(n).length > 0 && !hasChildren && !isTotal;
   }}
   getAccountsForLine={getAccountsForLine}
@@ -567,7 +567,7 @@ const countVisibleLines = React.useCallback(function countVisibleLines(nodes: an
   canDrilldown={(n: string) => {
     const node = nodeByNumber.get(String(n));
     const hasChildren = !!(node?.children && node.children.length);
-    const isTotal = !!node?.is_total_line;
+    const isTotal = !!node?.is_total_line || node?.line_type === 'subtotal' || String(node?.standard_name || '').toLowerCase().startsWith('sum');
     return getAccountsForLine(n).length > 0 && !hasChildren && !isTotal;
   }}
   getAccountsForLine={getAccountsForLine}

@@ -75,13 +75,19 @@ export function useDetailedFinancialStatement(clientId: string, selectedVersion?
     // Ensure totals appear after detail lines within each group
     const sortSiblings = (arr: DetailedStatementLine[]) =>
       arr.sort((a, b) => {
-        // Non-total lines first, then totals; then by display_order, then by standard_number as stable fallback
-        if (a.is_total_line !== b.is_total_line) return a.is_total_line ? 1 : -1;
+        const aName = String(a.standard_name || '').toLowerCase();
+        const bName = String(b.standard_name || '').toLowerCase();
+        const aIsTotal = !!a.is_total_line || a.line_type === 'subtotal' || aName.startsWith('sum');
+        const bIsTotal = !!b.is_total_line || b.line_type === 'subtotal' || bName.startsWith('sum');
+        // Non-total lines first, then totals
+        if (aIsTotal !== bIsTotal) return aIsTotal ? 1 : -1;
+        // Primary sort: numeric standard_number when possible
+        const aNum = parseInt(String(a.standard_number), 10);
+        const bNum = parseInt(String(b.standard_number), 10);
+        if (!Number.isNaN(aNum) && !Number.isNaN(bNum) && aNum !== bNum) return aNum - bNum;
+        // Tie-breakers: display_order then alphanumeric standard_number
         const byOrder = (a.display_order ?? 0) - (b.display_order ?? 0);
         if (byOrder !== 0) return byOrder;
-        const anum = parseInt(String(a.standard_number), 10);
-        const bnum = parseInt(String(b.standard_number), 10);
-        if (!Number.isNaN(anum) && !Number.isNaN(bnum)) return anum - bnum;
         return String(a.standard_number).localeCompare(String(b.standard_number));
       });
 
@@ -93,6 +99,29 @@ export function useDetailedFinancialStatement(clientId: string, selectedVersion?
     };
 
     sortTree(roots);
+
+    // Dev-only check for presence/order of key lines like 20 Varekostnad
+    if (import.meta.env?.DEV) {
+      try {
+        const findByNum = (nodes: DetailedStatementLine[], target: string): DetailedStatementLine | undefined => {
+          for (const n of nodes) {
+            if (String(n.standard_number) === target) return n;
+            const found = n.children ? findByNum(n.children, target) : undefined;
+            if (found) return found;
+          }
+          return undefined;
+        };
+        const l20 = findByNum(roots, '20');
+        // eslint-disable-next-line no-console
+        console.debug('[useDetailedFinancialStatement] check line 20', {
+          exists: !!l20,
+          name: l20?.standard_name,
+          is_total: l20?.is_total_line,
+          line_type: l20?.line_type,
+        });
+      } catch {}
+    }
+
     return roots;
   };
 
