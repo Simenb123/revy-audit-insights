@@ -62,11 +62,14 @@ const accountsOpen = !!(inlineAccounts && accountsExpandedMap && accountsExpande
 // Counts visible rows for a node (self + visible descendants)
 const countVisible = React.useCallback((node: any): number => {
   let total = 1; // self
+  if (inlineAccounts && accountsExpandedMap && getAccountsForLine && accountsExpandedMap[node.standard_number]) {
+    total += (getAccountsForLine(node.standard_number) || []).length;
+  }
   if (node.children && node.children.length && expandedMap[node.id]) {
     for (const c of node.children) total += countVisible(c);
   }
   return total;
-}, [expandedMap]);
+}, [expandedMap, inlineAccounts, accountsExpandedMap, getAccountsForLine]);
 
   // Count how many rows would be visible if this node were opened (self + descendants respecting current expanded flags on deeper levels)
   const countIfOpened = React.useCallback((node: any): number => {
@@ -267,8 +270,63 @@ if (e.key === 'Enter' || e.key === ' ') {
           <TableCell role="gridcell" aria-colindex={2 + (showPrevious ? 1 : 0) + (showDifference ? 1 : 0) + 1} className="text-right text-xs tabular-nums whitespace-nowrap">{(pct >= 0 ? '+' : '') + pct.toFixed(1)}%</TableCell>
         )}
       </TableRow>
+      {accountsOpen && accounts.length > 0 && accounts.map((acc: string, i: number) => {
+        const cur = currentByAcc?.get(acc);
+        const prev = prevByAcc?.get(acc);
+        const currentVal = cur?.closing_balance || 0;
+        const prevVal = prev?.closing_balance || 0;
+        const diffVal = currentVal - prevVal;
+        const pctVal = prevVal !== 0 ? (diffVal / Math.abs(prevVal)) * 100 : 0;
+        const name = cur?.account_name || prev?.account_name || '';
+        const rIndex = rowIndex + i + 1;
+        return (
+          <TableRow
+            key={`acc-${line.standard_number}-${acc}`}
+            role="row"
+            aria-rowindex={rIndex}
+            aria-level={level + 2}
+            className="hover:bg-muted/30 print:break-inside-avoid"
+          >
+            <TableCell role="rowheader" aria-colindex={1} className="text-xs sticky left-0 bg-background z-10 print:static">
+              <div
+                className="flex items-center"
+                style={{
+                  // @ts-expect-error -- custom property
+                  ['--indent-level']: level + 1,
+                  paddingLeft: 'calc(var(--statement-indent-step, 12px) * var(--indent-level))',
+                }}
+              >
+                <span className="font-mono mr-2 text-muted-foreground">{acc}</span>
+                <span className="text-muted-foreground">-</span>
+                <span className="ml-1">{name}</span>
+                {openAccountTB && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="ml-2 h-6 px-2"
+                    onClick={(e) => { e.stopPropagation(); openAccountTB(acc); }}
+                    aria-label={`Vis konto ${acc} i TB`}
+                  >
+                    Vis i TB
+                  </Button>
+                )}
+              </div>
+            </TableCell>
+            <TableCell role="gridcell" aria-colindex={2} className="text-right text-xs tabular-nums whitespace-nowrap">{formatCurrency(currentVal)}</TableCell>
+            {showPrevious && (
+              <TableCell role="gridcell" aria-colindex={3} className="text-right text-xs tabular-nums whitespace-nowrap">{formatCurrency(prevVal)}</TableCell>
+            )}
+            {showDifference && (
+              <TableCell role="gridcell" aria-colindex={2 + (showPrevious ? 1 : 0) + 1} className="text-right text-xs tabular-nums whitespace-nowrap">{formatCurrency(diffVal)}</TableCell>
+            )}
+            {showPercent && (
+              <TableCell role="gridcell" aria-colindex={2 + (showPrevious ? 1 : 0) + (showDifference ? 1 : 0) + 1} className="text-right text-xs tabular-nums whitespace-nowrap">{(pctVal >= 0 ? '+' : '') + pctVal.toFixed(1)}%</TableCell>
+            )}
+          </TableRow>
+        );
+      })}
       {hasChildren && isOpen && (() => {
-        let next = rowIndex + 1;
+        let next = rowIndex + 1 + (accountsOpen ? accounts.length : 0);
         return line.children.map((child: any, idx: number, arr: any[]) => {
           const start = next;
           next += countVisible(child);
@@ -283,11 +341,17 @@ if (e.key === 'Enter' || e.key === ' ') {
               showDifference={showDifference}
               showPercent={showPercent}
               onDrilldown={onDrilldown}
+              canDrilldown={canDrilldown}
+              getAccountsForLine={getAccountsForLine}
+              inlineAccounts={inlineAccounts}
+              accountsExpandedMap={accountsExpandedMap}
+              toggleAccounts={toggleAccounts}
+              currentByAcc={currentByAcc}
+              prevByAcc={prevByAcc}
+              openAccountTB={openAccountTB}
               siblingIndex={idx + 1}
               siblingCount={arr.length}
               rowIndex={start}
-              canDrilldown={canDrilldown}
-              getAccountsForLine={getAccountsForLine}
             />
           );
         });

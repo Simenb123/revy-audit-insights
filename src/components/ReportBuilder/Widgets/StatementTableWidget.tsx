@@ -30,7 +30,7 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
   const showDifference: boolean = widget.config?.showDifference !== false;
 const showPercent: boolean = widget.config?.showPercent !== false;
 const showOnlyChanges: boolean = widget.config?.showOnlyChanges === true;
-const drilldownPanel: boolean = widget.config?.drilldownPanel !== false;
+const drilldownPanel: boolean = widget.config?.drilldownPanel === true;
 const inlineAccounts: boolean = widget.config?.inlineAccounts !== false;
 
   const { incomeStatement, balanceStatement, periodInfo, isLoading } = useDetailedFinancialStatement(
@@ -448,9 +448,9 @@ const countVisibleLines = React.useCallback(function countVisibleLines(nodes: an
   showOnlyChanges={showOnlyChanges}
   onShowOnlyChangesChange={(v: boolean) => { updateConfig({ showOnlyChanges: v }); setLiveMessage(v ? 'Filter aktivert: kun endringer' : 'Filter av: alle linjer'); }}
   inlineAccounts={inlineAccounts}
-  onInlineAccountsChange={(v: boolean) => { updateConfig({ inlineAccounts: v }); setLiveMessage(v ? 'Kontoer vises i tabell' : 'Kontoer vises ikke i tabell'); }}
+  onInlineAccountsChange={(v: boolean) => { updateConfig({ inlineAccounts: v, ...(v ? { drilldownPanel: false } : {}) }); setLiveMessage(v ? 'Kontoer vises i tabell' : 'Kontoer vises ikke i tabell'); }}
   drilldownPanel={drilldownPanel}
-  onDrilldownPanelChange={(v: boolean) => { updateConfig({ drilldownPanel: v }); setLiveMessage(v ? 'Drilldown i panel på' : 'Drilldown i panel av'); }}
+  onDrilldownPanelChange={(v: boolean) => { updateConfig({ drilldownPanel: v, ...(v ? { inlineAccounts: false } : {}) }); setLiveMessage(v ? 'Drilldown i panel på' : 'Drilldown i panel av'); }}
   onExpandAll={expandAll}
   onCollapseAll={collapseAll}
   onExpandToLevel={(lvl: number) => expandToLevel(lvl)}

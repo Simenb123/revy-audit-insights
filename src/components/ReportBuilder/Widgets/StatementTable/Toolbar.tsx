@@ -65,13 +65,13 @@ export function StatementTableToolbar({
 {onInlineAccountsChange && (
   <div className="flex items-center gap-2">
     <Label htmlFor={`inline-${widgetId}`} className="text-xs text-muted-foreground">Kontoer i tabell</Label>
-    <Switch id={`inline-${widgetId}`} checked={!!inlineAccounts} onCheckedChange={onInlineAccountsChange} disabled={disabled} />
+    <Switch id={`inline-${widgetId}`} checked={!!inlineAccounts} onCheckedChange={onInlineAccountsChange} disabled={disabled || !!drilldownPanel} />
   </div>
 )}
 {onDrilldownPanelChange && (
   <div className="flex items-center gap-2">
     <Label htmlFor={`panel-${widgetId}`} className="text-xs text-muted-foreground">Drilldown i panel</Label>
-    <Switch id={`panel-${widgetId}`} checked={!!drilldownPanel} onCheckedChange={onDrilldownPanelChange} disabled={disabled} />
+    <Switch id={`panel-${widgetId}`} checked={!!drilldownPanel} onCheckedChange={onDrilldownPanelChange} disabled={disabled || !!inlineAccounts} />
   </div>
 )}
       <div className="flex items-center gap-2">
