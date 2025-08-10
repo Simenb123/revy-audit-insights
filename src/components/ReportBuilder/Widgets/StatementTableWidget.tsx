@@ -346,7 +346,9 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
         </CardHeader>
         <CardContent className="p-0">
           <span aria-live="polite" className="sr-only" role="status">{liveMessage}</span>
-          {!hasData ? (
+          {isLoading ? (
+            <div className="p-4 text-sm text-muted-foreground">Laster regnskapsoppstilling…</div>
+          ) : !hasData ? (
             <div className="p-4 text-sm text-muted-foreground">Ingen data å vise.</div>
           ) : (
               <div className="overflow-x-auto">
