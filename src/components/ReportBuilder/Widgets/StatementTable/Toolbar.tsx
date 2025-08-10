@@ -17,6 +17,7 @@ interface StatementTableToolbarProps {
   onDrilldownPanelChange?: (v: boolean) => void;
   onExpandAll: () => void;
   onCollapseAll: () => void;
+  onExpandToLevel?: (level: number) => void;
 }
 
 export function StatementTableToolbar({
@@ -32,7 +33,8 @@ export function StatementTableToolbar({
   drilldownPanel,
   onDrilldownPanelChange,
   onExpandAll,
-  onCollapseAll
+  onCollapseAll,
+  onExpandToLevel
 }: StatementTableToolbarProps) {
   return (
     <div className="flex items-center gap-4">
@@ -63,6 +65,14 @@ export function StatementTableToolbar({
       <div className="flex items-center gap-2">
         <Button variant="ghost" size="sm" onClick={onExpandAll}>Utvid alle</Button>
         <Button variant="ghost" size="sm" onClick={onCollapseAll}>Lukk alle</Button>
+        {onExpandToLevel && (
+          <div className="flex items-center gap-1">
+            <Label className="text-xs text-muted-foreground">Nivå</Label>
+            <Button variant="ghost" size="sm" onClick={() => onExpandToLevel(1)} aria-label="Utvid til nivå 1">1</Button>
+            <Button variant="ghost" size="sm" onClick={() => onExpandToLevel(2)} aria-label="Utvid til nivå 2">2</Button>
+            <Button variant="ghost" size="sm" onClick={() => onExpandToLevel(3)} aria-label="Utvid til nivå 3">3</Button>
+          </div>
+        )}
       </div>
     </div>
   );

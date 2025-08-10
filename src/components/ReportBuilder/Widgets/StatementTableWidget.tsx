@@ -80,6 +80,28 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
     setLiveMessage('Alle rader lukket');
   };
 
+  const expandToLevel = (level: number) => {
+    const collect = (nodes: any[], depth: number): [string, boolean][] => {
+      let entries: [string, boolean][] = [];
+      for (const n of nodes) {
+        const hasChildren = !!(n.children && n.children.length);
+        const shouldOpen = hasChildren && depth < (level - 1);
+        if (shouldOpen) {
+          entries.push([n.id, true]);
+          entries = entries.concat(collect(n.children, depth + 1));
+        }
+      }
+      return entries;
+    };
+    const entries = [
+      ...collect(incomeStatement || [], 0),
+      ...collect(balanceStatement || [], 0),
+    ];
+    const map = Object.fromEntries(entries);
+    setExpanded(map);
+    updateConfig({ expanded: map });
+    setLiveMessage(`Utvidet til nivå ${level}`);
+  };
   const getAccountsForLine = React.useCallback((standardNumber: string) => {
     return mappings.filter(m => m.statement_line_number === standardNumber).map(m => m.account_number);
   }, [mappings]);
@@ -322,9 +344,10 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
                 showOnlyChanges={showOnlyChanges}
                 onShowOnlyChangesChange={(v: boolean) => { updateConfig({ showOnlyChanges: v }); setLiveMessage(v ? 'Filter aktivert: kun endringer' : 'Filter av: alle linjer'); }}
                 drilldownPanel={drilldownPanel}
-                onDrilldownPanelChange={(v: boolean) => { updateConfig({ drilldownPanel: v }); setLiveMessage(v ? 'Drilldown i panel på' : 'Drilldown i panel av'); }}
-                onExpandAll={expandAll}
-                onCollapseAll={collapseAll}
+                 onDrilldownPanelChange={(v: boolean) => { updateConfig({ drilldownPanel: v }); setLiveMessage(v ? 'Drilldown i panel på' : 'Drilldown i panel av'); }}
+                 onExpandAll={expandAll}
+                 onCollapseAll={collapseAll}
+                 onExpandToLevel={(lvl: number) => expandToLevel(lvl)}
               />
               <TooltipProvider>
                 <Tooltip>
