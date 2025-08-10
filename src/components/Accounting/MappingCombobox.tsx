@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useDeferredValue } from 'react';
+import React, { useMemo, useState, useDeferredValue, useId } from 'react';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { Command, CommandInput, CommandList, CommandEmpty, CommandItem } from '@/components/ui/command';
@@ -49,6 +49,7 @@ const MappingCombobox: React.FC<MappingComboboxProps> = ({
     () => options.find((o) => o.standard_number === value),
     [options, value]
   );
+  const listboxId = useId();
 
   const filtered = useMemo(() => {
     const q = deferredQuery.trim().toLowerCase();
@@ -108,8 +109,19 @@ const MappingCombobox: React.FC<MappingComboboxProps> = ({
             placeholder="Søk etter linje..."
             className="h-9"
             autoFocus
+            aria-controls={listboxId}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                const first = filtered[0];
+                if (first) {
+                  e.preventDefault();
+                  onChange(first.standard_number);
+                  setOpen(false);
+                }
+              }
+            }}
           />
-          <CommandList className="max-h-[min(60vh,480px)] overflow-auto bg-popover">
+          <CommandList id={listboxId} role="listbox" aria-label="Regnskapslinjer" className="max-h-[min(60vh,480px)] overflow-auto bg-popover">
             <CommandEmpty>Ingen treff</CommandEmpty>
             {filtered.map((opt) => (
               <CommandItem
@@ -120,6 +132,8 @@ const MappingCombobox: React.FC<MappingComboboxProps> = ({
                   setOpen(false);
                 }}
                 className="text-sm"
+                role="option"
+                aria-selected={value === opt.standard_number}
               >
                 <Check
                   className={cn(
