@@ -1,16 +1,20 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
-export const useGeneralLedgerCount = (clientId: string, versionId?: string) => {
+export const useGeneralLedgerCount = (clientId: string, versionId?: string, filters?: { accountNumber?: string }) => {
   return useQuery({
-    queryKey: ['general-ledger-count-v6', clientId, versionId],
+    queryKey: ['general-ledger-count-v6', clientId, versionId, filters?.accountNumber],
     queryFn: async () => {
       console.log('🔍 Fetching general ledger count for client:', clientId, 'version:', versionId);
       
       let query = supabase
         .from('general_ledger_transactions')
-        .select('id', { count: 'exact', head: true })
+        .select(filters?.accountNumber ? 'id, client_chart_of_accounts!inner(account_number)' : 'id', { count: 'exact', head: true })
         .eq('client_id', clientId);
+
+      if (filters?.accountNumber) {
+        query = query.eq('client_chart_of_accounts.account_number', filters.accountNumber);
+      }
 
       // Filter by version if specified
       if (versionId) {

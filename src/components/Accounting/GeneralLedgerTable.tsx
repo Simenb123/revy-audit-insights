@@ -12,9 +12,10 @@ import { logger } from '@/utils/logger';
 interface GeneralLedgerTableProps {
   clientId: string;
   versionId?: string;
+  accountNumberFilter?: string;
 }
 
-const GeneralLedgerTable = ({ clientId, versionId }: GeneralLedgerTableProps) => {
+const GeneralLedgerTable = ({ clientId, versionId, accountNumberFilter }: GeneralLedgerTableProps) => {
   const [currentPage, setCurrentPage] = React.useState(1);
   const pageSize = 100;
   const isDebug = process.env.NODE_ENV !== 'production';
@@ -23,9 +24,9 @@ const GeneralLedgerTable = ({ clientId, versionId }: GeneralLedgerTableProps) =>
     logger.log('🔍 GeneralLedgerTable rendering for client:', clientId, 'version:', versionId);
   }
   
-  const { data: transactions, isLoading, error } = useGeneralLedgerData(clientId, versionId, { page: currentPage, pageSize });
-  const { data: totalCount, isLoading: isCountLoading } = useGeneralLedgerCount(clientId, versionId);
-  const { data: allTransactions, isLoading: isExportLoading } = useGeneralLedgerData(clientId, versionId, undefined);
+  const { data: transactions, isLoading, error } = useGeneralLedgerData(clientId, versionId, { page: currentPage, pageSize }, { accountNumber: accountNumberFilter });
+  const { data: totalCount, isLoading: isCountLoading } = useGeneralLedgerCount(clientId, versionId, { accountNumber: accountNumberFilter });
+  const { data: allTransactions, isLoading: isExportLoading } = useGeneralLedgerData(clientId, versionId, undefined, { accountNumber: accountNumberFilter });
 
   if (isDebug) {
     logger.log('📊 GeneralLedgerTable data:', {
@@ -211,9 +212,9 @@ const GeneralLedgerTable = ({ clientId, versionId }: GeneralLedgerTableProps) =>
 
   const totalPages = Math.ceil((totalCount || 0) / pageSize);
   
-  // Create description text
+// Create description text
   const description = !isCountLoading ? 
-    `Viser ${((currentPage - 1) * pageSize) + 1}-${Math.min(currentPage * pageSize, totalCount || 0)} av ${totalCount || 0} transaksjoner${transactions && transactions.length > 0 ? ` • Side ${currentPage} av ${totalPages}` : ''}` :
+    `Viser ${((currentPage - 1) * pageSize) + 1}-${Math.min(currentPage * pageSize, totalCount || 0)} av ${totalCount || 0} transaksjoner${transactions && transactions.length > 0 ? ` • Side ${currentPage} av ${totalPages}` : ''}${accountNumberFilter ? ` • Filtrert på konto ${accountNumberFilter}` : ''}` :
     undefined;
 
   return (

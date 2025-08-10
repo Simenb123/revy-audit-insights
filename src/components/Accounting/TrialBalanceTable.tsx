@@ -112,6 +112,14 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
     return totalAccounts > 0 ? (mappedAccounts / totalAccounts) * 100 : 0;
   }, [trialBalanceData]);
 
+  const handleRowClick = useCallback((entry: TrialBalanceEntryWithMapping) => {
+    if (!entry?.account_number) return;
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set('tab', 'ledger');
+    newParams.set('gl_account', entry.account_number);
+    setSearchParams(newParams);
+  }, [searchParams, setSearchParams]);
+
   // Filter entries by accounting year and advanced filters
   const filteredEntries = useMemo(() => {
     if (!trialBalanceData?.trialBalanceEntries) return [];
@@ -285,7 +293,7 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
           const suggestion = getAutoSuggestion(entry.account_number);
 
           return (
-            <div className="flex items-center gap-2 min-w-[260px]">
+            <div className="flex items-center gap-2 min-w-[260px]" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
               <MappingCombobox
                 value={entry.standard_number || ''}
                 onChange={(val) => val && handleMappingChange(entry.account_number, val)}
@@ -436,6 +444,7 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
         maxBodyHeight="70vh"
         rowHeight={48}
         overscan={12}
+        onRowClick={handleRowClick}
       />
     </div>
   );

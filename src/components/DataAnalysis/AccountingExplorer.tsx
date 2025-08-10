@@ -4,8 +4,8 @@ import { useTBVersionOptions } from '@/hooks/useTrialBalanceVersions';
 import { useAccountingData } from '@/hooks/useAccountingData';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-
-import { TrendingUp, Activity, BarChart2, FileText, Layers, LineChart, GitBranch } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
+import { TrendingUp, Activity, BarChart2, FileText, Layers, LineChart, GitBranch, Filter, X } from 'lucide-react';
 import DrillDownTable from './DrillDownTable';
 import GeneralLedgerTable from '@/components/Accounting/GeneralLedgerTable';
 import TrialBalanceTable from '@/components/Accounting/TrialBalanceTable';
@@ -18,6 +18,7 @@ import ClientFinancialStatementGenerator from './ClientFinancialStatementGenerat
 import TrialBalanceMappingTable from '../Accounting/TrialBalanceMappingTable';
 import { GLVersionOption, TBVersionOption } from '@/types/accounting';
 import ResponsiveTabs from '@/components/ui/responsive-tabs';
+import { Button } from '@/components/ui/button';
 
 
 interface AccountingExplorerProps {
@@ -55,6 +56,7 @@ const AccountingExplorer: React.FC<AccountingExplorerProps> = ({ clientId }) => 
   // State for selected versions with safe initialization
   const [selectedGLVersion, setSelectedGLVersion] = useState<GLVersionOption | null>(null);
   const [selectedTBVersion, setSelectedTBVersion] = useState<TBVersionOption | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   // Update state when defaults change - always set to latest active/default version
   React.useEffect(() => {
@@ -103,6 +105,20 @@ const AccountingExplorer: React.FC<AccountingExplorerProps> = ({ clientId }) => 
     { id: 'statement', label: 'Regnskapsoppstilling', icon: BarChart2 },
     { id: 'journal', label: 'Bilag', icon: FileText },
   ];
+
+  React.useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam && tabParam !== activeTab && tabItems.some(t => t.id === tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [searchParams, activeTab]);
+
+  const glAccount = searchParams.get('gl_account') || undefined;
+  const clearGLAccountFilter = React.useCallback(() => {
+    const p = new URLSearchParams(searchParams);
+    p.delete('gl_account');
+    setSearchParams(p);
+  }, [searchParams, setSearchParams]);
 
   // Determine which version selector to show based on active tab
   const showGLVersions = activeTab === 'ledger' || activeTab === 'journal';

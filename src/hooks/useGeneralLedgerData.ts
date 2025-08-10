@@ -17,9 +17,9 @@ export interface GeneralLedgerTransaction {
   period_month: number;
 }
 
-export const useGeneralLedgerData = (clientId: string, versionId?: string, pagination?: { page: number; pageSize: number }) => {
+export const useGeneralLedgerData = (clientId: string, versionId?: string, pagination?: { page: number; pageSize: number }, filters?: { accountNumber?: string }) => {
   return useQuery({
-    queryKey: ['general-ledger-v6', clientId, versionId, pagination],
+    queryKey: ['general-ledger-v6', clientId, versionId, pagination, filters?.accountNumber],
     queryFn: async () => {
       console.log('🔍 Fetching general ledger data for client:', clientId, 'version:', versionId);
       console.log('🔐 Auth user ID:', (await supabase.auth.getUser()).data.user?.id);
@@ -52,6 +52,11 @@ export const useGeneralLedgerData = (clientId: string, versionId?: string, pagin
             )
           `)
           .eq('client_id', clientId);
+
+        // Optional filter by account number
+        if (filters?.accountNumber) {
+          query = query.eq('client_chart_of_accounts.account_number', filters.accountNumber);
+        }
 
         // Filter by version if specified
         if (versionId) {
@@ -189,6 +194,11 @@ export const useGeneralLedgerData = (clientId: string, versionId?: string, pagin
             )
           `)
           .eq('client_id', clientId);
+
+        // Optional filter by account number
+        if (filters?.accountNumber) {
+          query = query.eq('client_chart_of_accounts.account_number', filters.accountNumber);
+        }
 
         // Filter by version if we have one
         if (targetVersionId) {
