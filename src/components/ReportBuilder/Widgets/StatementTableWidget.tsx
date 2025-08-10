@@ -1,26 +1,17 @@
 import React from 'react';
 import { Widget, useWidgetManager } from '@/contexts/WidgetManagerContext';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { InlineEditableTitle } from '../InlineEditableTitle';
 import { useDetailedFinancialStatement } from '@/hooks/useDetailedFinancialStatement';
 import { useTrialBalanceMappings } from '@/hooks/useTrialBalanceMappings';
 import { useNavigate } from 'react-router-dom';
-import { formatCurrency } from '@/lib/formatters';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { StatementLineRow } from './StatementTable/StatementLineRow';
+import { SectionHeading } from './StatementTable/SectionHeading';
+import { StatementTableToolbar } from './StatementTable/Toolbar';
 
 interface StatementTableWidgetProps { widget: Widget }
 
-function SectionHeading({ title }: { title: string }) {
-  return (
-    <TableRow>
-      <TableCell colSpan={6} className="font-medium text-muted-foreground">{title}</TableCell>
-    </TableRow>
-  );
-}
 
 export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
   const { updateWidget } = useWidgetManager();
@@ -79,48 +70,6 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
     navigate(`/clients/${clientId}/trial-balance?${params.toString()}`);
   };
 
-  const renderLine = (line: any, level = 0): React.ReactNode => {
-    const hasChildren = line.children && line.children.length > 0;
-    const isOpen = !!expanded[line.id];
-    const current = line.amount || 0;
-    const prev = line.previous_amount || 0;
-    const diff = current - prev;
-    const pct = prev !== 0 ? (diff / Math.abs(prev)) * 100 : 0;
-
-    return (
-      <React.Fragment key={line.id}>
-        <TableRow className="cursor-pointer hover:bg-muted/40" onClick={() => handleDrilldown(line.standard_number)}>
-          <TableCell className="text-xs">
-            <div className="flex items-center" style={{ paddingLeft: level * 12 }}>
-              {hasChildren && (
-                <button
-                  type="button"
-                  className="mr-2 text-muted-foreground hover:text-foreground"
-                  onClick={(e) => { e.stopPropagation(); toggle(line.id); }}
-                  aria-label={isOpen ? 'Lukk' : 'Åpne'}
-                >
-                  {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                </button>
-              )}
-              <span className="font-mono mr-2 text-muted-foreground">{line.standard_number}</span>
-              <span>{line.standard_name}</span>
-            </div>
-          </TableCell>
-          <TableCell className="text-right text-xs">{formatCurrency(current)}</TableCell>
-          {showPrevious && (
-            <TableCell className="text-right text-xs">{formatCurrency(prev)}</TableCell>
-          )}
-          {showDifference && (
-            <TableCell className="text-right text-xs">{formatCurrency(diff)}</TableCell>
-          )}
-          {showPercent && (
-            <TableCell className="text-right text-xs">{(pct >= 0 ? '+' : '') + pct.toFixed(1)}%</TableCell>
-          )}
-        </TableRow>
-        {hasChildren && isOpen && line.children.map((child: any) => renderLine(child, level + 1))}
-      </React.Fragment>
-    );
-  };
 
   if (isLoading) {
     return (
@@ -142,24 +91,17 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between gap-2">
           <InlineEditableTitle title={widget.title} onTitleChange={handleTitleChange} size="sm" />
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <Label htmlFor={`prev-${widget.id}`} className="text-xs text-muted-foreground">Fjorår</Label>
-              <Switch id={`prev-${widget.id}`} checked={showPrevious} onCheckedChange={(v) => updateConfig({ showPrevious: v })} />
-            </div>
-            <div className="flex items-center gap-2">
-              <Label htmlFor={`diff-${widget.id}`} className="text-xs text-muted-foreground">Endring</Label>
-              <Switch id={`diff-${widget.id}`} checked={showDifference} onCheckedChange={(v) => updateConfig({ showDifference: v })} />
-            </div>
-            <div className="flex items-center gap-2">
-              <Label htmlFor={`pct-${widget.id}`} className="text-xs text-muted-foreground">% Endring</Label>
-              <Switch id={`pct-${widget.id}`} checked={showPercent} onCheckedChange={(v) => updateConfig({ showPercent: v })} />
-            </div>
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="sm" onClick={expandAll}>Utvid alle</Button>
-              <Button variant="ghost" size="sm" onClick={collapseAll}>Lukk alle</Button>
-            </div>
-          </div>
+            <StatementTableToolbar
+              widgetId={widget.id}
+              showPrevious={showPrevious}
+              onShowPreviousChange={(v) => updateConfig({ showPrevious: v })}
+              showDifference={showDifference}
+              onShowDifferenceChange={(v) => updateConfig({ showDifference: v })}
+              showPercent={showPercent}
+              onShowPercentChange={(v) => updateConfig({ showPercent: v })}
+              onExpandAll={expandAll}
+              onCollapseAll={collapseAll}
+            />
         </div>
       </CardHeader>
       <CardContent className="p-0">
@@ -186,13 +128,37 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
               {incomeStatement.length > 0 && (
                 <>
                   <SectionHeading title="Resultat" />
-                  {incomeStatement.map((line) => renderLine(line))}
+                  {incomeStatement.map((line) => (
+                    <StatementLineRow
+                      key={line.id}
+                      line={line}
+                      level={0}
+                      expandedMap={expanded}
+                      toggle={toggle}
+                      showPrevious={showPrevious}
+                      showDifference={showDifference}
+                      showPercent={showPercent}
+                      onDrilldown={handleDrilldown}
+                    />
+                  ))}
                 </>
               )}
               {balanceStatement.length > 0 && (
                 <>
                   <SectionHeading title="Balanse" />
-                  {balanceStatement.map((line) => renderLine(line))}
+                  {balanceStatement.map((line) => (
+                    <StatementLineRow
+                      key={line.id}
+                      line={line}
+                      level={0}
+                      expandedMap={expanded}
+                      toggle={toggle}
+                      showPrevious={showPrevious}
+                      showDifference={showDifference}
+                      showPercent={showPercent}
+                      onDrilldown={handleDrilldown}
+                    />
+                  ))}
                 </>
               )}
             </TableBody>
