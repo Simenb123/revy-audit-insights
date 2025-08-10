@@ -110,8 +110,8 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
         ) : (
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead className="text-xs">Linje</TableHead>
+              <TableRow className="[&_th]:sticky [&_th]:top-0 bg-background z-10">
+                <TableHead className="text-xs sticky left-0 z-20 bg-background">Linje</TableHead>
                 <TableHead className="text-xs text-right">{periodInfo?.currentYear ?? 'År'}</TableHead>
                 {showPrevious && (
                   <TableHead className="text-xs text-right">{periodInfo?.previousYear ?? 'I fjor'}</TableHead>

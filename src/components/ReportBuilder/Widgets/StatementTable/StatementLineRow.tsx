@@ -34,15 +34,16 @@ export const StatementLineRow = React.memo(function StatementLineRow({
   return (
     <>
       <TableRow className="cursor-pointer hover:bg-muted/40" onClick={() => onDrilldown(line.standard_number)}>
-        <TableCell className="text-xs">
+        <TableCell className="text-xs sticky left-0 bg-background z-10">
           <div className="flex items-center" style={{ paddingLeft: level * 12 }}>
             {hasChildren && (
-              <button
-                type="button"
-                className="mr-2 text-muted-foreground hover:text-foreground"
-                onClick={(e) => { e.stopPropagation(); toggle(line.id); }}
-                aria-label={isOpen ? 'Lukk' : 'Åpne'}
-              >
+          <button
+            type="button"
+            className="mr-2 text-muted-foreground hover:text-foreground"
+            onClick={(e) => { e.stopPropagation(); toggle(line.id); }}
+            aria-label={isOpen ? 'Lukk' : 'Åpne'}
+            aria-expanded={isOpen}
+          >
                 {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
               </button>
             )}
