@@ -37,25 +37,35 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
   const { data: mappings = [] } = useTrialBalanceMappings(clientId || '');
   const navigate = useNavigate();
 
-  const [expanded, setExpanded] = React.useState<Record<string, boolean>>({});
+  const [expanded, setExpanded] = React.useState<Record<string, boolean>>(() => (widget.config?.expanded ?? {}));
 
   const handleTitleChange = (newTitle: string) => updateWidget(widget.id, { title: newTitle });
-
-const toggle = (id: string) => setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
 
   const updateConfig = React.useCallback((patch: Record<string, any>) => {
     updateWidget(widget.id, { config: { ...(widget.config || {}), ...patch } });
   }, [updateWidget, widget.id, widget.config]);
 
+  const toggle = (id: string) => {
+    setExpanded((prev) => {
+      const next = { ...prev, [id]: !prev[id] };
+      updateConfig({ expanded: next });
+      return next;
+    });
+  };
   const collectIds = (nodes: any[]): string[] =>
     nodes.flatMap((n) => [n.id, ...(n.children ? collectIds(n.children) : [])]);
 
   const expandAll = () => {
     const all = [...collectIds(incomeStatement || []), ...collectIds(balanceStatement || [])];
-    setExpanded(Object.fromEntries(all.map((id) => [id, true])));
+    const map = Object.fromEntries(all.map((id) => [id, true] as const));
+    setExpanded(map);
+    updateConfig({ expanded: map });
   };
 
-  const collapseAll = () => setExpanded({});
+  const collapseAll = () => {
+    setExpanded({});
+    updateConfig({ expanded: {} });
+  };
 
   const getAccountsForLine = React.useCallback((standardNumber: string) => {
     return mappings.filter(m => m.statement_line_number === standardNumber).map(m => m.account_number);
