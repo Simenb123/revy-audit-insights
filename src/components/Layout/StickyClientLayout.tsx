@@ -24,9 +24,6 @@ const StickyClientLayout: React.FC<StickyClientLayoutProps> = ({
   React.useEffect(() => {
     setSubHeader(
       <ClientSubHeader
-        leftContent={
-          <span className="text-xs font-medium text-muted-foreground">Navigation</span>
-        }
         centerContent={
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
