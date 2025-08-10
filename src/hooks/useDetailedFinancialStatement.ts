@@ -72,23 +72,17 @@ export function useDetailedFinancialStatement(clientId: string, selectedVersion?
       }
     });
 
-    // Ensure totals appear after detail lines within each group
+    // Stable sibling sort: display_order, then numeric standard_number, then alphanumeric
     const sortSiblings = (arr: DetailedStatementLine[]) =>
       arr.sort((a, b) => {
-        const aName = String(a.standard_name || '').toLowerCase();
-        const bName = String(b.standard_name || '').toLowerCase();
-        const aIsTotal = !!a.is_total_line || a.line_type === 'subtotal' || a.line_type === 'calculation' || aName.startsWith('sum');
-        const bIsTotal = !!b.is_total_line || b.line_type === 'subtotal' || b.line_type === 'calculation' || bName.startsWith('sum');
-        // Non-total lines first, then totals
-        if (aIsTotal !== bIsTotal) return aIsTotal ? 1 : -1;
-        // Primary sort: display_order when present
+        // Primary: display order (undefined treated as 0)
         const byOrder = (a.display_order ?? 0) - (b.display_order ?? 0);
         if (byOrder !== 0) return byOrder;
-        // Tie-breaker: numeric standard_number when possible
-        const aNum = parseInt(String(a.standard_number), 10);
-        const bNum = parseInt(String(b.standard_number), 10);
+        // Secondary: numeric standard number when possible (supports decimals)
+        const aNum = parseFloat(String(a.standard_number));
+        const bNum = parseFloat(String(b.standard_number));
         if (!Number.isNaN(aNum) && !Number.isNaN(bNum) && aNum !== bNum) return aNum - bNum;
-        // Final tie-breaker: alphanumeric standard_number
+        // Tertiary: alphanumeric compare
         return String(a.standard_number).localeCompare(String(b.standard_number));
       });
 
