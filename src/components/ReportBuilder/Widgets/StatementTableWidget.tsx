@@ -43,6 +43,7 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
   const [panelOpen, setPanelOpen] = React.useState(false);
   const [panelContext, setPanelContext] = React.useState<{ standardNumber: string; accounts: string[] } | null>(null);
   const lastFocusedRef = React.useRef<HTMLElement | null>(null);
+  const prevExpandedRef = React.useRef<Record<string, boolean> | null>(null);
   const handleTitleChange = (newTitle: string) => updateWidget(widget.id, { title: newTitle });
 
   const updateConfig = React.useCallback((patch: Record<string, any>) => {
@@ -107,6 +108,29 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
       lastFocusedRef.current.focus();
     }
   }, [panelOpen]);
+
+  React.useEffect(() => {
+    const handleBeforePrint = () => {
+      prevExpandedRef.current = expanded;
+      const all = [...collectIds(incomeStatement || []), ...collectIds(balanceStatement || [])];
+      const map = Object.fromEntries(all.map((id) => [id, true] as const));
+      setExpanded(map);
+      updateConfig({ expanded: map });
+    };
+    const handleAfterPrint = () => {
+      if (prevExpandedRef.current) {
+        setExpanded(prevExpandedRef.current);
+        updateConfig({ expanded: prevExpandedRef.current });
+        prevExpandedRef.current = null;
+      }
+    };
+    window.addEventListener('beforeprint', handleBeforePrint);
+    window.addEventListener('afterprint', handleAfterPrint);
+    return () => {
+      window.removeEventListener('beforeprint', handleBeforePrint);
+      window.removeEventListener('afterprint', handleAfterPrint);
+    };
+  }, [expanded, updateConfig, incomeStatement, balanceStatement, collectIds]);
 
   // Helper: filter tree to only include lines with changes (or descendants with changes)
   const hasChange = React.useCallback((node: any): boolean => {
