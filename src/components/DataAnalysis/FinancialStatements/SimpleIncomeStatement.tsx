@@ -32,27 +32,10 @@ const SimpleIncomeStatement: React.FC<SimpleIncomeStatementProps> = ({
   // Get mappings for drill-down
   const { data: mappings = [] } = useTrialBalanceMappings(actualClientId || '');
   
-  // Filter lines with zero values (but keep subtotals and calculations)
+  // Keep all lines to preserve structure (even zero amounts)
   const filteredLines = useMemo(() => {
-    const filtered = incomeStatementLines.filter(line => {
-      // Always keep subtotal and calculation lines for structure
-      if (line.line_type === 'subtotal' || line.line_type === 'calculation') {
-        return true;
-      }
-      // Keep lines that have any non-zero amount
-      return line.amount !== 0 || line.previous_amount !== 0;
-    });
-    
-    console.log('📊 Component data:', { 
-      originalLines: incomeStatementLines.length,
-      filteredLines: filtered.length,
-      hiddenLines: incomeStatementLines.length - filtered.length,
-      mappingsCount: mappings.length,
-      isLoading 
-    });
-    
-    return filtered;
-  }, [incomeStatementLines, mappings.length, isLoading]);
+    return incomeStatementLines;
+  }, [incomeStatementLines]);
 
   console.log('📊 Component data:', { 
     linesCount: incomeStatementLines.length, 

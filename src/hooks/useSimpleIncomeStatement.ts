@@ -10,6 +10,7 @@ interface SimpleIncomeStatementLine {
   standard_name: string;
   display_order: number;
   line_type: string;
+  is_total_line: boolean;
   amount: number;
   previous_amount: number;
   account_count: number;
@@ -115,21 +116,44 @@ export function useSimpleIncomeStatement(clientId: string, selectedVersion?: str
         standard_name: account.standard_name,
         display_order: account.display_order || 0,
         line_type: account.line_type,
+        is_total_line: Boolean(account.is_total_line),
         amount,
         previous_amount,
         account_count: mappedAccounts.length
       };
     });
 
-    console.log('✅ Final income statement lines with calculations:', lines.map(l => ({
-      number: l.standard_number,
-      name: l.standard_name,
-      amount: l.amount,
-      type: l.line_type,
-      order: l.display_order
-    })));
+    // Sort: non-total lines first, then totals; within groups by display_order, then numeric/alphanumeric standard_number
+    const sorted = [...lines].sort((a, b) => {
+      const aName = String(a.standard_name || '').toLowerCase();
+      const bName = String(b.standard_name || '').toLowerCase();
+      const aIsTotal = !!a.is_total_line || a.line_type === 'subtotal' || a.line_type === 'calculation' || aName.startsWith('sum');
+      const bIsTotal = !!b.is_total_line || b.line_type === 'subtotal' || b.line_type === 'calculation' || bName.startsWith('sum');
+      if (aIsTotal !== bIsTotal) return aIsTotal ? 1 : -1;
+      const byOrder = (a.display_order || 0) - (b.display_order || 0);
+      if (byOrder !== 0) return byOrder;
+      const aNum = parseInt(String(a.standard_number), 10);
+      const bNum = parseInt(String(b.standard_number), 10);
+      if (!Number.isNaN(aNum) && !Number.isNaN(bNum) && aNum !== bNum) return aNum - bNum;
+      return String(a.standard_number).localeCompare(String(b.standard_number));
+    });
 
-    return lines;
+    if (import.meta.env?.DEV) {
+      try {
+        // eslint-disable-next-line no-console
+        console.debug('[useSimpleIncomeStatement] order check', sorted.map(l => l.standard_number).slice(0, 20));
+        const l20 = sorted.find(l => String(l.standard_number) === '20');
+        // eslint-disable-next-line no-console
+        console.debug('[useSimpleIncomeStatement] has 20 Varekostnad?', {
+          exists: !!l20,
+          name: l20?.standard_name,
+          is_total_line: l20?.is_total_line,
+          line_type: l20?.line_type,
+        });
+      } catch {}
+    }
+
+    return sorted;
   }, [standardAccounts, trialBalance, mappings]);
 
   const periodInfo = useMemo(() => {
