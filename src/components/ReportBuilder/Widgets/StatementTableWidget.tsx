@@ -102,6 +102,11 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
     const params = new URLSearchParams({ accounts: accountNumber });
     navigate(`/clients/${clientId}/trial-balance?${params.toString()}`);
   };
+  const openAccountsTB = (accountNumbers: string[]) => {
+    if (!clientId || accountNumbers.length === 0) return;
+    const params = new URLSearchParams({ accounts: accountNumbers.join(',') });
+    navigate(`/clients/${clientId}/trial-balance?${params.toString()}`);
+  };
 
   React.useEffect(() => {
     if (!panelOpen && lastFocusedRef.current) {
@@ -398,9 +403,16 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
         <Sheet open={panelOpen} onOpenChange={setPanelOpen}>
           <SheetContent side="right" aria-label={`Drilldown for ${findLineTitle(panelContext.standardNumber)}`} className="w-[min(480px,100vw)] sm:max-w-lg focus:outline-none">
             <div className="space-y-3">
-              <div>
-                <h2 className="text-base font-medium">{findLineTitle(panelContext.standardNumber)}</h2>
-                <p className="text-xs text-muted-foreground">{panelContext.standardNumber}</p>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h2 className="text-base font-medium">{findLineTitle(panelContext.standardNumber)}</h2>
+                  <p className="text-xs text-muted-foreground">{panelContext.standardNumber}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" onClick={() => openAccountsTB(panelContext.accounts)} aria-label="Åpne alle kontoer i TB">
+                    Åpne alle i TB
+                  </Button>
+                </div>
               </div>
               <div className="border rounded-md overflow-hidden">
                 <Table>
