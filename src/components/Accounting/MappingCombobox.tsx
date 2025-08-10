@@ -11,6 +11,17 @@ interface StandardAccountOption {
   standard_name: string;
 }
 
+interface MappingComboboxLabels {
+  searchPlaceholder?: string;
+  noResults?: string;
+  clearSelection?: string;
+  listAriaLabel?: string;
+  selectedAnnouncement?: (opt: { number: string; name: string }) => string;
+  clearedAnnouncement?: string;
+  resultsCountAnnouncement?: (count: number, query: string) => string;
+  availableCountAnnouncement?: (count: number) => string;
+}
+
 interface MappingComboboxProps {
   value?: string;
   onChange: (standardNumber: string) => void;
@@ -18,6 +29,7 @@ interface MappingComboboxProps {
   placeholder?: string;
   className?: string;
   allowClear?: boolean;
+  labels?: MappingComboboxLabels;
 }
 
 const MappingCombobox: React.FC<MappingComboboxProps> = ({
@@ -27,6 +39,7 @@ const MappingCombobox: React.FC<MappingComboboxProps> = ({
   placeholder = 'Velg regnskapslinje',
   className,
   allowClear = true,
+  labels,
 }) => {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -92,9 +105,9 @@ const MappingCombobox: React.FC<MappingComboboxProps> = ({
     if (!open) return;
     const q = effectiveQuery.trim();
     if (q) {
-      setAriaMessage(`${filtered.length} treff`);
+      setAriaMessage(labels?.resultsCountAnnouncement?.(filtered.length, q) ?? `${filtered.length} treff`);
     } else {
-      setAriaMessage(`${options.length} tilgjengelige`);
+      setAriaMessage(labels?.availableCountAnnouncement?.(options.length) ?? `${options.length} tilgjengelige`);
     }
   }, [effectiveQuery, filtered, options, open]);
 
@@ -117,7 +130,20 @@ const MappingCombobox: React.FC<MappingComboboxProps> = ({
               ? `${selected.standard_number} - ${selected.standard_name}`
               : placeholder}
           </span>
-          <ChevronsUpDown className="ml-2 h-3.5 w-3.5 opacity-50" />
+          <span className="ml-2 flex items-center gap-1">
+            {allowClear && value && (
+              <span
+                role="button"
+                aria-label={labels?.clearSelection ?? "Fjern valg"}
+                className="inline-flex rounded p-0.5 hover:bg-accent hover:text-accent-foreground"
+                onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                onClick={(e) => { e.stopPropagation(); onChange(""); setAriaMessage(labels?.clearedAnnouncement ?? "Valg fjernet"); setOpen(false); }}
+              >
+                <X className="h-3.5 w-3.5 opacity-70" />
+              </span>
+            )}
+            <ChevronsUpDown className="h-3.5 w-3.5 opacity-50" />
+          </span>
         </Button>
       </PopoverTrigger>
       <PopoverContent className="z-[70] p-0 w-[min(var(--mapping-popover-width,520px),90vw)] bg-popover border border-border shadow-lg" align="start">
@@ -125,7 +151,7 @@ const MappingCombobox: React.FC<MappingComboboxProps> = ({
           <CommandInput
             value={query}
             onValueChange={setQuery}
-            placeholder="Søk etter linje..."
+            placeholder={labels?.searchPlaceholder ?? "Søk etter linje..."}
             className="h-9"
             autoFocus
             aria-controls={listboxId}
@@ -135,14 +161,14 @@ const MappingCombobox: React.FC<MappingComboboxProps> = ({
                   if (first) {
                     e.preventDefault();
                     onChange(first.standard_number);
-                    setAriaMessage(`Valgt ${first.standard_number} - ${first.standard_name}`);
+                    setAriaMessage(labels?.selectedAnnouncement ? labels.selectedAnnouncement({ number: first.standard_number, name: first.standard_name }) : `Valgt ${first.standard_number} - ${first.standard_name}`);
                     setOpen(false);
                   }
                 }
                 if (e.key === 'Backspace' && query === '' && allowClear && value) {
                   e.preventDefault();
                   onChange('');
-                  setAriaMessage('Valg fjernet');
+                  setAriaMessage(labels?.clearedAnnouncement ?? 'Valg fjernet');
                   setOpen(false);
                 }
                 if (e.key === 'Escape') {
@@ -155,14 +181,14 @@ const MappingCombobox: React.FC<MappingComboboxProps> = ({
                 }
               }}
           />
-          <CommandList id={listboxId} role="listbox" aria-label="Regnskapslinjer" className="max-h-[min(60vh,480px)] overflow-auto bg-popover">
-            <CommandEmpty>Ingen treff</CommandEmpty>
+          <CommandList id={listboxId} role="listbox" aria-label={labels?.listAriaLabel ?? "Regnskapslinjer"} className="max-h-[min(60vh,480px)] overflow-auto bg-popover">
+            <CommandEmpty>{labels?.noResults ?? "Ingen treff"}</CommandEmpty>
             {allowClear && value && (
               <CommandItem
                 value="__clear__"
                 onSelect={() => {
                   onChange('');
-                  setAriaMessage('Valg fjernet');
+                  setAriaMessage(labels?.clearedAnnouncement ?? 'Valg fjernet');
                   setOpen(false);
                 }}
                 className="text-sm text-destructive"
@@ -170,7 +196,7 @@ const MappingCombobox: React.FC<MappingComboboxProps> = ({
                 aria-selected={false}
               >
                 <X className="mr-2 h-4 w-4 opacity-70" />
-                Fjern valg
+                {labels?.clearSelection ?? 'Fjern valg'}
               </CommandItem>
             )}
             {filtered.map((opt) => (
@@ -179,7 +205,7 @@ const MappingCombobox: React.FC<MappingComboboxProps> = ({
                 value={`${opt.standard_number} ${opt.standard_name}`}
                 onSelect={() => {
                   onChange(opt.standard_number);
-                  setAriaMessage(`Valgt ${opt.standard_number} - ${opt.standard_name}`);
+                  setAriaMessage(labels?.selectedAnnouncement ? labels.selectedAnnouncement({ number: opt.standard_number, name: opt.standard_name }) : `Valgt ${opt.standard_number} - ${opt.standard_name}`);
                   setOpen(false);
                 }}
                 className="text-sm"
@@ -210,6 +236,8 @@ export default React.memo(MappingCombobox, (prev, next) => {
     prev.value === next.value &&
     prev.placeholder === next.placeholder &&
     prev.className === next.className &&
-    prev.options === next.options
+    prev.options === next.options &&
+    prev.allowClear === next.allowClear &&
+    prev.labels === next.labels
   );
 });
