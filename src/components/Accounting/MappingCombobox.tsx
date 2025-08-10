@@ -51,7 +51,7 @@ const MappingCombobox: React.FC<MappingComboboxProps> = ({
           variant="outline"
           size="sm"
           className={cn(
-            'h-8 w-[280px] justify-between border-input bg-background text-foreground',
+            'h-8 w-[var(--mapping-combobox-width,280px)] justify-between border-input bg-background text-foreground',
             className
           )}
         >
@@ -63,7 +63,7 @@ const MappingCombobox: React.FC<MappingComboboxProps> = ({
           <ChevronsUpDown className="ml-2 h-3.5 w-3.5 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="z-[70] p-0 w-[520px]" align="start">
+      <PopoverContent className="z-[70] p-0 w-[min(var(--mapping-popover-width,520px),90vw)] bg-popover border border-border shadow-lg" align="start">
         <Command loop>
           <CommandInput
             value={query}
@@ -71,7 +71,7 @@ const MappingCombobox: React.FC<MappingComboboxProps> = ({
             placeholder="Søk etter linje..."
             className="h-9"
           />
-          <CommandList>
+          <CommandList className="max-h-[min(60vh,480px)] overflow-auto bg-popover">
             <CommandEmpty>Ingen treff</CommandEmpty>
             {filtered.map((opt) => (
               <CommandItem

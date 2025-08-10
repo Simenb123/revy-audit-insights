@@ -310,7 +310,7 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
       const config = columnConfig.find(c => c.key === col.key);
       return config?.visible === true;
     });
-  }, [columnConfig, formatCurrency]);
+  }, [columnConfig, formatCurrency, actualAccountingYear, standardAccounts, handleMappingChange, getAutoSuggestion]);
 
   // Calculate totals
   const totals = useMemo(() => {
