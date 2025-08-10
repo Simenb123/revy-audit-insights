@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useDebounce } from '@/hooks/useDebounce';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -53,6 +54,9 @@ export interface DataTableProps<T = any> {
   showSearch?: boolean; // default true
   stickyHeader?: boolean; // make header stick to top while scrolling
   maxBodyHeight?: string | number; // e.g., '70vh' or 480
+  virtualizeRows?: boolean; // window rows for performance
+  rowHeight?: number; // approximate row height for virtualization
+  overscan?: number; // extra rows above/below viewport
 }
 
 const DataTable = <T extends Record<string, any>>({
@@ -83,8 +87,12 @@ const DataTable = <T extends Record<string, any>>({
   showSearch = true,
   stickyHeader = true,
   maxBodyHeight,
+  virtualizeRows = false,
+  rowHeight = 48,
+  overscan = 5,
 }: DataTableProps<T>) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearch = useDebounce(searchTerm, 250);
   const [sortBy, setSortBy] = useState<string>('');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
@@ -170,6 +178,27 @@ const DataTable = <T extends Record<string, any>>({
     return filtered;
   }, [cmState, columns]);
 
+  // Virtualization state
+  const [scrollTopY, setScrollTopY] = useState(0);
+  const [containerH, setContainerH] = useState(0);
+  useEffect(() => {
+    if (!virtualizeRows) return;
+    const el = bodyScrollRef.current;
+    if (!el) return;
+    const onScroll = () => setScrollTopY(el.scrollTop);
+    el.addEventListener('scroll', onScroll, { passive: true });
+    const measure = () => setContainerH(el.clientHeight);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    window.addEventListener('resize', measure);
+    return () => {
+      el.removeEventListener('scroll', onScroll);
+      ro.disconnect();
+      window.removeEventListener('resize', measure);
+    };
+  }, [virtualizeRows]);
+
   type TableView = {
     id: string;
     name: string;
@@ -178,7 +207,6 @@ const DataTable = <T extends Record<string, any>>({
     sortOrder?: 'asc' | 'desc';
     searchTerm?: string;
   };
-
   const [views, setViews] = useLocalStorage<TableView[]>(preferencesKey ? `${preferencesKey}:views` : undefined, []);
   const [colWidths, setColWidths] = useLocalStorage<Record<string, number>>(preferencesKey ? `${preferencesKey}:widths` : undefined, {});
 
@@ -282,12 +310,12 @@ const DataTable = <T extends Record<string, any>>({
 
     // Filter first
     let filtered = data;
-    if (searchTerm && showSearch) {
+    if (debouncedSearch && showSearch) {
       const searchableColumns = columns.filter((col) => col.searchable !== false);
       filtered = data.filter((item) => {
         return searchableColumns.some((column) => {
           const v = typeof column.accessor === 'function' ? column.accessor(item) : item[column.accessor as keyof T];
-          return String(v ?? '').toLowerCase().includes(searchTerm.toLowerCase());
+          return String(v ?? '').toLowerCase().includes(debouncedSearch.toLowerCase());
         });
       });
     }
@@ -326,8 +354,26 @@ const DataTable = <T extends Record<string, any>>({
     }
 
     return filtered;
-  }, [data, searchTerm, sortBy, sortOrder, columns, showSearch]);
-
+  }, [data, debouncedSearch, sortBy, sortOrder, columns, showSearch]);
+  
+  // Virtualization calculations
+  const virtualization = useMemo(() => {
+    if (!virtualizeRows || !maxBodyHeight) return null as null | {
+      startIndex: number; endIndex: number; topPad: number; bottomPad: number; items: T[];
+    };
+    const total = filteredAndSortedData.length;
+    const vh = containerH || (typeof maxBodyHeight === 'number' ? maxBodyHeight : 0);
+    const startIndex = Math.max(0, Math.floor(scrollTopY / rowHeight) - overscan);
+    const endIndex = Math.min(
+      total - 1,
+      Math.ceil((scrollTopY + vh) / rowHeight) + overscan
+    );
+    const items = filteredAndSortedData.slice(startIndex, endIndex + 1);
+    const topPad = startIndex * rowHeight;
+    const bottomPad = Math.max(0, total * rowHeight - topPad - items.length * rowHeight);
+    return { startIndex, endIndex, topPad, bottomPad, items };
+  }, [virtualizeRows, maxBodyHeight, filteredAndSortedData, scrollTopY, containerH, rowHeight, overscan]);
+  
   const handleSort = (columnKey: string) => {
     const column = columns.find((col) => col.key === columnKey);
     if (!column?.sortable) return;
