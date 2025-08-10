@@ -16,6 +16,7 @@ interface StatementLineRowProps {
   siblingCount?: number;
   rowIndex: number;
   tabIndex?: number;
+  canDrilldown?: (standardNumber: string) => boolean;
 }
 
 export const StatementLineRow = React.memo(function StatementLineRow({
@@ -30,7 +31,8 @@ export const StatementLineRow = React.memo(function StatementLineRow({
   siblingIndex,
   siblingCount,
   rowIndex,
-  tabIndex
+  tabIndex,
+  canDrilldown
 }: StatementLineRowProps) {
   const hasChildren = !!(line.children && line.children.length > 0);
   const isOpen = !!expandedMap[line.id];
@@ -38,6 +40,7 @@ export const StatementLineRow = React.memo(function StatementLineRow({
   const prev = line.previous_amount || 0;
   const diff = current - prev;
   const pct = prev !== 0 ? (diff / Math.abs(prev)) * 100 : 0;
+  const isDrillable = canDrilldown ? canDrilldown(line.standard_number) : true;
   // Counts visible rows for a node (self + visible descendants)
   const countVisible = React.useCallback((node: any): number => {
     let total = 1; // self
@@ -51,8 +54,8 @@ export const StatementLineRow = React.memo(function StatementLineRow({
     <>
       <TableRow
         role="row"
-        className="cursor-pointer hover:bg-muted/40 focus-visible:bg-muted/50 focus-visible:outline-none print:break-inside-avoid"
-        onClick={() => onDrilldown(line.standard_number)}
+        className={`${isDrillable ? 'cursor-pointer' : 'cursor-default'} hover:bg-muted/40 focus-visible:bg-muted/50 focus-visible:outline-none print:break-inside-avoid`}
+        onClick={() => { if (isDrillable) onDrilldown(line.standard_number); }}
         tabIndex={tabIndex ?? -1}
         aria-label={`Drilldown for ${line.standard_number} ${line.standard_name}`}
         aria-level={level + 1}
@@ -60,6 +63,7 @@ export const StatementLineRow = React.memo(function StatementLineRow({
         aria-posinset={siblingIndex}
         aria-setsize={siblingCount}
         aria-rowindex={rowIndex}
+        aria-disabled={!isDrillable}
         aria-keyshortcuts="ArrowUp,ArrowDown,ArrowLeft,ArrowRight,Home,End,PageUp,PageDown,Enter,Space"
         onKeyDown={(e) => {
           const focusRowAt = (targetIndexDelta: number | 'home' | 'end') => {
@@ -88,7 +92,7 @@ export const StatementLineRow = React.memo(function StatementLineRow({
 
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
-            onDrilldown(line.standard_number);
+            if (isDrillable) onDrilldown(line.standard_number);
           }
           if (e.key === 'ArrowRight') {
             if (!hasChildren) return;
@@ -184,6 +188,7 @@ export const StatementLineRow = React.memo(function StatementLineRow({
               siblingIndex={idx + 1}
               siblingCount={arr.length}
               rowIndex={start}
+              canDrilldown={canDrilldown}
             />
           );
         });

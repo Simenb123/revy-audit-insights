@@ -327,6 +327,7 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
                         showDifference={showDifference}
                         showPercent={showPercent}
                         onDrilldown={handleDrilldown}
+                        canDrilldown={(n: string) => getAccountsForLine(n).length > 0}
                         siblingIndex={idx + 1}
                         siblingCount={arr.length}
                         rowIndex={(incomeStartIndex ?? 0) + countVisibleLines(filteredIncome.slice(0, idx))}
@@ -349,6 +350,7 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
                         showDifference={showDifference}
                         showPercent={showPercent}
                         onDrilldown={handleDrilldown}
+                        canDrilldown={(n: string) => getAccountsForLine(n).length > 0}
                         siblingIndex={idx + 1}
                         siblingCount={arr.length}
                         rowIndex={(balanceStartIndex ?? 0) + countVisibleLines(filteredBalance.slice(0, idx))}
