@@ -37,6 +37,7 @@ export const StatementLineRow = React.memo(function StatementLineRow({
         className="cursor-pointer hover:bg-muted/40 focus-visible:bg-muted/50 focus-visible:outline-none"
         onClick={() => onDrilldown(line.standard_number)}
         tabIndex={0}
+        aria-label={`Drilldown for ${line.standard_number} ${line.standard_name}`}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
@@ -53,7 +54,15 @@ export const StatementLineRow = React.memo(function StatementLineRow({
         }}
       >
         <TableCell className="text-xs sticky left-0 bg-background z-10">
-          <div className="flex items-center" style={{ paddingLeft: level * 12 }}>
+          <div
+            className="flex items-center"
+            style={{
+              // Use CSS variables to avoid hardcoded spacing
+              // @ts-expect-error -- custom property
+              ['--indent-level']: level,
+              paddingLeft: 'calc(var(--statement-indent-step, 12px) * var(--indent-level))',
+            }}
+          >
             {hasChildren && (
           <button
             type="button"
