@@ -107,6 +107,42 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
     const params = new URLSearchParams({ accounts: accountNumbers.join(',') });
     navigate(`/clients/${clientId}/trial-balance?${params.toString()}`);
   };
+  const exportPanelCSV = (accountNumbers: string[]) => {
+    if (accountNumbers.length === 0) return;
+    const headers = [
+      'Konto', 'Navn',
+      periodInfo?.currentYear ?? 'År',
+      ...(showPrevious ? [periodInfo?.previousYear ?? 'I fjor'] : []),
+      'Endring',
+      ...(showPercent ? ['Endring %'] : []),
+    ];
+    const rows = accountNumbers.map((acc) => {
+      const cur = currentByAcc.get(acc);
+      const prev = prevByAcc.get(acc);
+      const currentVal = cur?.closing_balance || 0;
+      const prevVal = prev?.closing_balance || 0;
+      const diff = currentVal - prevVal;
+      const pct = prevVal !== 0 ? (diff / Math.abs(prevVal)) * 100 : 0;
+      const name = cur?.account_name || prev?.account_name || '';
+      return [
+        acc,
+        name,
+        String(currentVal),
+        ...(showPrevious ? [String(prevVal)] : []),
+        String(diff),
+        ...(showPercent ? [pct.toFixed(1)] : []),
+      ];
+    });
+    const csv = [headers.join(';'), ...rows.map(r => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(';'))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `drilldown-${panelContext?.standardNumber ?? ''}-${periodInfo?.currentYear ?? ''}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    setLiveMessage('CSV eksportert for panel');
+  };
 
   React.useEffect(() => {
     if (!panelOpen && lastFocusedRef.current) {
@@ -411,6 +447,9 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
                 <div className="flex items-center gap-2">
                   <Button variant="outline" size="sm" onClick={() => openAccountsTB(panelContext.accounts)} aria-label="Åpne alle kontoer i TB">
                     Åpne alle i TB
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => exportPanelCSV(panelContext.accounts)} aria-label="Eksporter kontoliste til CSV">
+                    Eksporter CSV
                   </Button>
                 </div>
               </div>
