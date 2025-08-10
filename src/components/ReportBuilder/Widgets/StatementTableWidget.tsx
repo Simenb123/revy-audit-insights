@@ -8,6 +8,7 @@ import { InlineEditableTitle } from '../InlineEditableTitle';
 import { useDetailedFinancialStatement } from '@/hooks/useDetailedFinancialStatement';
 import { useTrialBalanceMappings } from '@/hooks/useTrialBalanceMappings';
 import { useTrialBalanceData } from '@/hooks/useTrialBalanceData';
+import { useAccountClassifications } from '@/hooks/useAccountClassifications';
 import { useNavigate } from 'react-router-dom';
 import { StatementLineRow } from './StatementTable/StatementLineRow';
 import { SectionHeading } from './StatementTable/SectionHeading';
@@ -36,6 +37,7 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
     selectedVersion
   );
   const { data: mappings = [] } = useTrialBalanceMappings(clientId || '');
+  const { data: classifications = [] } = useAccountClassifications(clientId || '', selectedVersion);
   const navigate = useNavigate();
 
   const [expanded, setExpanded] = React.useState<Record<string, boolean>>(() => (widget.config?.expanded ?? {}));
@@ -104,14 +106,63 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
   };
   const lineToAccounts = React.useMemo(() => {
     const map = new Map<string, string[]>();
+    // 1) Explicit mappings from trial_balance_mappings
     for (const m of mappings) {
       const key = m.statement_line_number as string;
       const acc = m.account_number as string;
       if (!map.has(key)) map.set(key, []);
-      map.get(key)!.push(acc);
+      if (!map.get(key)!.includes(acc)) map.get(key)!.push(acc);
     }
+
+    // 2) Build name -> number map from statements
+    const nameToNumber = new Map<string, string>();
+    const walk = (nodes: any[]) => {
+      for (const n of nodes || []) {
+        if (n.standard_name && n.standard_number) {
+          nameToNumber.set(String(n.standard_name).toLowerCase(), String(n.standard_number));
+        }
+        if (n.children && n.children.length) walk(n.children);
+      }
+    };
+    walk(incomeStatement || []);
+    walk(balanceStatement || []);
+
+    // 3) Fallback: active account_classifications
+    for (const c of classifications || []) {
+      const target = nameToNumber.get(String(c.new_category || '').toLowerCase());
+      if (!target) continue;
+      const acc = c.account_number as string;
+      if (!map.has(target)) map.set(target, []);
+      if (!map.get(target)!.includes(acc)) map.get(target)!.push(acc);
+    }
+
+    // Debug sample lines
+    try {
+      const sample = ['10', '15', '19'];
+      const findLine = (nodes: any[], num: string): any | undefined => {
+        for (const n of nodes || []) {
+          if (String(n.standard_number) === num) return n;
+          if (n.children) {
+            const found = findLine(n.children, num);
+            if (found) return found;
+          }
+        }
+        return undefined;
+      };
+      sample.forEach((num) => {
+        const node = findLine(incomeStatement || [], num) || findLine(balanceStatement || [], num);
+        // eslint-disable-next-line no-console
+        console.debug('[StatementTableWidget] Drillcheck', {
+          num,
+          line_type: node?.line_type,
+          is_total_line: node?.is_total_line,
+          mapped_accounts: map.get(num)?.length ?? 0,
+        });
+      });
+    } catch {}
+
     return map;
-  }, [mappings]);
+  }, [mappings, classifications, incomeStatement, balanceStatement]);
 
   const getAccountsForLine = React.useCallback((standardNumber: string) => {
     return lineToAccounts.get(standardNumber) ?? [];

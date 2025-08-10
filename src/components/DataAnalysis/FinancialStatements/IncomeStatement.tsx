@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { useTrialBalanceMappings } from '@/hooks/useTrialBalanceMappings';
+import { useAccountClassifications } from '@/hooks/useAccountClassifications';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
 
 interface IncomeStatementProps {
@@ -26,24 +27,76 @@ const IncomeStatement: React.FC<IncomeStatementProps> = ({
   
   // Fetch trial balance mappings for drill-down functionality
   const { data: mappings = [] } = useTrialBalanceMappings(actualClientId || '');
+  // Fallback classifications (active)
+  const { data: classifications = [] } = useAccountClassifications(actualClientId || '');
   
   // State for mapped accounts per line
   const [lineAccountMappings, setLineAccountMappings] = useState<Record<string, string[]>>({});
   
-  // Build mapping from statement line numbers to account numbers
+  // Build mapping from statement line numbers to account numbers (with fallback)
   useEffect(() => {
-    if (mappings.length > 0) {
-      const lineToAccounts: Record<string, string[]> = {};
-      mappings.forEach(mapping => {
-        const lineNumber = mapping.statement_line_number;
-        if (!lineToAccounts[lineNumber]) {
-          lineToAccounts[lineNumber] = [];
-        }
+    const lineToAccounts: Record<string, string[]> = {};
+
+    // 1) Explicit mappings
+    mappings.forEach(mapping => {
+      const lineNumber = mapping.statement_line_number;
+      if (!lineToAccounts[lineNumber]) {
+        lineToAccounts[lineNumber] = [];
+      }
+      if (!lineToAccounts[lineNumber].includes(mapping.account_number)) {
         lineToAccounts[lineNumber].push(mapping.account_number);
+      }
+    });
+
+    // 2) Build name -> number from provided data
+    const nameToNumber = new Map<string, string>();
+    const walk = (nodes: any[]) => {
+      for (const n of nodes || []) {
+        if (n.standard_name && n.standard_number) {
+          nameToNumber.set(String(n.standard_name).toLowerCase(), String(n.standard_number));
+        }
+        if (n.children && n.children.length) walk(n.children);
+      }
+    };
+    walk(data);
+
+    // 3) Fallback classifications
+    classifications.forEach(c => {
+      const target = nameToNumber.get(String(c.new_category || '').toLowerCase());
+      if (!target) return;
+      if (!lineToAccounts[target]) lineToAccounts[target] = [];
+      if (!lineToAccounts[target].includes(c.account_number)) {
+        lineToAccounts[target].push(c.account_number);
+      }
+    });
+
+    setLineAccountMappings(lineToAccounts);
+
+    // Debug sample lines
+    try {
+      const sample = ['10','15','19'];
+      const findLine = (nodes: any[], num: string): any | undefined => {
+        for (const n of nodes || []) {
+          if (String(n.standard_number) === num) return n;
+          if (n.children) {
+            const found = findLine(n.children, num);
+            if (found) return found;
+          }
+        }
+        return undefined;
+      };
+      sample.forEach(num => {
+        const node = findLine(data, num);
+        // eslint-disable-next-line no-console
+        console.debug('[IncomeStatement] Drillcheck', {
+          num,
+          line_type: node?.line_type,
+          is_total_line: node?.is_total_line,
+          mapped_accounts: lineToAccounts[num]?.length ?? 0,
+        });
       });
-      setLineAccountMappings(lineToAccounts);
-    }
-  }, [mappings]);
+    } catch {}
+  }, [mappings, classifications, data]);
   const hasContent = (line: any): boolean => {
     const currentAmount = line.amount || 0;
     const previousAmount = line.previous_amount || 0;
