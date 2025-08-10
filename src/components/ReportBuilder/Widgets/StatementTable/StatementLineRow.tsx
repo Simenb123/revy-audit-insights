@@ -15,6 +15,7 @@ interface StatementLineRowProps {
   siblingIndex?: number;
   siblingCount?: number;
   rowIndex: number;
+  tabIndex?: number;
 }
 
 export const StatementLineRow = React.memo(function StatementLineRow({
@@ -28,7 +29,8 @@ export const StatementLineRow = React.memo(function StatementLineRow({
   onDrilldown,
   siblingIndex,
   siblingCount,
-  rowIndex
+  rowIndex,
+  tabIndex
 }: StatementLineRowProps) {
   const hasChildren = !!(line.children && line.children.length > 0);
   const isOpen = !!expandedMap[line.id];
@@ -51,7 +53,7 @@ export const StatementLineRow = React.memo(function StatementLineRow({
         role="row"
         className="cursor-pointer hover:bg-muted/40 focus-visible:bg-muted/50 focus-visible:outline-none"
         onClick={() => onDrilldown(line.standard_number)}
-        tabIndex={0}
+        tabIndex={tabIndex ?? -1}
         aria-label={`Drilldown for ${line.standard_number} ${line.standard_name}`}
         aria-level={level + 1}
         aria-expanded={hasChildren ? isOpen : undefined}
@@ -59,6 +61,18 @@ export const StatementLineRow = React.memo(function StatementLineRow({
         aria-setsize={siblingCount}
         aria-rowindex={rowIndex}
         onKeyDown={(e) => {
+          if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            const next = (e.currentTarget.nextElementSibling as HTMLElement | null);
+            next?.focus();
+            return;
+          }
+          if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            const prev = (e.currentTarget.previousElementSibling as HTMLElement | null);
+            prev?.focus();
+            return;
+          }
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
             onDrilldown(line.standard_number);

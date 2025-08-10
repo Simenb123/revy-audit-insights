@@ -26,6 +26,7 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
   const showDifference: boolean = widget.config?.showDifference !== false;
   const showPercent: boolean = widget.config?.showPercent !== false;
   const showOnlyChanges: boolean = widget.config?.showOnlyChanges === true;
+  const drilldownPanel: boolean = widget.config?.drilldownPanel === true;
 
   const { incomeStatement, balanceStatement, periodInfo, isLoading } = useDetailedFinancialStatement(
     clientId || '',
@@ -36,6 +37,8 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
 
   const [expanded, setExpanded] = React.useState<Record<string, boolean>>(() => (widget.config?.expanded ?? {}));
   const [liveMessage, setLiveMessage] = React.useState<string>('');
+  const [panelOpen, setPanelOpen] = React.useState(false);
+  const [panelContext, setPanelContext] = React.useState<{ standardNumber: string; accounts: string[] } | null>(null);
 
   const handleTitleChange = (newTitle: string) => updateWidget(widget.id, { title: newTitle });
 
@@ -75,10 +78,14 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
     if (!clientId) return;
     const accounts = getAccountsForLine(standardNumber);
     if (accounts.length === 0) return;
+    if (drilldownPanel) {
+      setPanelContext({ standardNumber, accounts });
+      setPanelOpen(true);
+      return;
+    }
     const params = new URLSearchParams({ accounts: accounts.join(',') });
     navigate(`/clients/${clientId}/trial-balance?${params.toString()}`);
   };
-
   // Helper: filter tree to only include lines with changes (or descendants with changes)
   const hasChange = React.useCallback((node: any): boolean => {
     const current = node.amount || 0;
@@ -204,7 +211,7 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between gap-2">
           <InlineEditableTitle title={widget.title} onTitleChange={handleTitleChange} size="sm" />
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 print:hidden">
             <StatementTableToolbar
               widgetId={widget.id}
               showPrevious={showPrevious}
@@ -214,7 +221,9 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
               showPercent={showPercent}
               onShowPercentChange={(v) => updateConfig({ showPercent: v })}
               showOnlyChanges={showOnlyChanges}
-              onShowOnlyChangesChange={(v) => updateConfig({ showOnlyChanges: v })}
+              onShowOnlyChangesChange={(v: boolean) => updateConfig({ showOnlyChanges: v })}
+              drilldownPanel={drilldownPanel}
+              onDrilldownPanelChange={(v: boolean) => updateConfig({ drilldownPanel: v })}
               onExpandAll={expandAll}
               onCollapseAll={collapseAll}
             />
@@ -232,6 +241,7 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
               </Tooltip>
             </TooltipProvider>
             <Button variant="ghost" size="sm" onClick={handleExportCSV} className="ml-1">Eksporter CSV</Button>
+            <Button variant="ghost" size="sm" onClick={() => window.print()} className="ml-1">Skriv ut</Button>
           </div>
         </div>
       </CardHeader>
@@ -275,6 +285,7 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
                       siblingIndex={idx + 1}
                       siblingCount={arr.length}
                       rowIndex={(incomeStartIndex ?? 0) + countVisibleLines(filteredIncome.slice(0, idx))}
+                      tabIndex={idx === 0 ? 0 : -1}
                     />
                   ))}
                 </>

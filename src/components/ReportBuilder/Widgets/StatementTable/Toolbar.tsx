@@ -13,6 +13,8 @@ interface StatementTableToolbarProps {
   onShowPercentChange: (v: boolean) => void;
   showOnlyChanges?: boolean;
   onShowOnlyChangesChange?: (v: boolean) => void;
+  drilldownPanel?: boolean;
+  onDrilldownPanelChange?: (v: boolean) => void;
   onExpandAll: () => void;
   onCollapseAll: () => void;
 }
@@ -27,6 +29,8 @@ export function StatementTableToolbar({
   onShowPercentChange,
   showOnlyChanges,
   onShowOnlyChangesChange,
+  drilldownPanel,
+  onDrilldownPanelChange,
   onExpandAll,
   onCollapseAll
 }: StatementTableToolbarProps) {
@@ -48,6 +52,12 @@ export function StatementTableToolbar({
         <div className="flex items-center gap-2">
           <Label htmlFor={`changes-${widgetId}`} className="text-xs text-muted-foreground">Kun endringer</Label>
           <Switch id={`changes-${widgetId}`} checked={!!showOnlyChanges} onCheckedChange={onShowOnlyChangesChange} />
+        </div>
+      )}
+      {onDrilldownPanelChange && (
+        <div className="flex items-center gap-2">
+          <Label htmlFor={`panel-${widgetId}`} className="text-xs text-muted-foreground">Drilldown i panel</Label>
+          <Switch id={`panel-${widgetId}`} checked={!!drilldownPanel} onCheckedChange={onDrilldownPanelChange} />
         </div>
       )}
       <div className="flex items-center gap-2">
