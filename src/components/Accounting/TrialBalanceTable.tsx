@@ -435,7 +435,7 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
         virtualizeRows
         maxBodyHeight="70vh"
         rowHeight={48}
-        overscan={8}
+        overscan={12}
       />
     </div>
   );

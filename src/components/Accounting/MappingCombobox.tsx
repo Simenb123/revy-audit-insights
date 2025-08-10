@@ -45,7 +45,7 @@ const MappingCombobox: React.FC<MappingComboboxProps> = ({
   }, [options, query]);
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={(o) => { setOpen(o); if (!o) setQuery(''); }}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
@@ -54,6 +54,7 @@ const MappingCombobox: React.FC<MappingComboboxProps> = ({
             'h-8 w-[var(--mapping-combobox-width,280px)] justify-between border-input bg-background text-foreground',
             className
           )}
+          aria-label={selected ? `Valgt regnskapslinje: ${selected.standard_number} - ${selected.standard_name}` : placeholder}
         >
           <span className="truncate text-xs">
             {selected
@@ -99,4 +100,11 @@ const MappingCombobox: React.FC<MappingComboboxProps> = ({
   );
 };
 
-export default MappingCombobox;
+export default React.memo(MappingCombobox, (prev, next) => {
+  return (
+    prev.value === next.value &&
+    prev.placeholder === next.placeholder &&
+    prev.className === next.className &&
+    prev.options === next.options
+  );
+});
