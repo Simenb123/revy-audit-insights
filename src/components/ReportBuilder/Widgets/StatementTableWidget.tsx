@@ -2,6 +2,8 @@ import React from 'react';
 import { Widget, useWidgetManager } from '@/contexts/WidgetManagerContext';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { InlineEditableTitle } from '../InlineEditableTitle';
 import { useDetailedFinancialStatement } from '@/hooks/useDetailedFinancialStatement';
 import { useTrialBalanceMappings } from '@/hooks/useTrialBalanceMappings';
@@ -9,9 +11,12 @@ import { useNavigate } from 'react-router-dom';
 import { StatementLineRow } from './StatementTable/StatementLineRow';
 import { SectionHeading } from './StatementTable/SectionHeading';
 import { StatementTableToolbar } from './StatementTable/Toolbar';
+import { HelpCircle } from 'lucide-react';
 
 interface StatementTableWidgetProps { widget: Widget }
 
+const ARIA_HELP_TITLE = 'Tilgjengelighet (ARIA)';
+const ARIA_HELP_TEXT = 'Tabellen er et hierarki (treegrid). Bruk piltaster for å åpne/lukke rader og Enter/Space for drilldown. Skjermlesere mottar nivå, posisjon og kolonne-/radantall.';
 
 export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
   const { updateWidget } = useWidgetManager();
@@ -113,6 +118,7 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between gap-2">
           <InlineEditableTitle title={widget.title} onTitleChange={handleTitleChange} size="sm" />
+          <div className="flex items-center gap-1">
             <StatementTableToolbar
               widgetId={widget.id}
               showPrevious={showPrevious}
@@ -124,6 +130,20 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
               onExpandAll={expandAll}
               onCollapseAll={collapseAll}
             />
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" aria-label={ARIA_HELP_TITLE} className="h-7 w-7">
+                    <HelpCircle className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs text-xs" side="bottom">
+                  <p className="font-medium">{ARIA_HELP_TITLE}</p>
+                  <p className="text-muted-foreground">{ARIA_HELP_TEXT}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="p-0">
