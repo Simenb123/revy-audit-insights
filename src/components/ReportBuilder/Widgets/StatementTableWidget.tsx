@@ -109,7 +109,7 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
           <div className="p-4 text-sm text-muted-foreground">Ingen data å vise.</div>
         ) : (
             <div className="overflow-x-auto">
-              <Table>
+              <Table role="treegrid" aria-label="Finansoppstilling">
             <TableHeader>
               <TableRow className="[&_th]:sticky [&_th]:top-0 bg-background z-10">
                 <TableHead className="text-xs sticky left-0 z-20 bg-background">Linje</TableHead>

@@ -34,6 +34,7 @@ export const StatementLineRow = React.memo(function StatementLineRow({
   return (
     <>
       <TableRow
+        role="row"
         className="cursor-pointer hover:bg-muted/40 focus-visible:bg-muted/50 focus-visible:outline-none"
         onClick={() => onDrilldown(line.standard_number)}
         tabIndex={0}
@@ -55,7 +56,7 @@ export const StatementLineRow = React.memo(function StatementLineRow({
           }
         }}
       >
-        <TableCell className="text-xs sticky left-0 bg-background z-10">
+        <TableCell role="rowheader" className="text-xs sticky left-0 bg-background z-10">
           <div
             className="flex items-center"
             style={{
@@ -81,15 +82,15 @@ export const StatementLineRow = React.memo(function StatementLineRow({
             <span>{line.standard_name}</span>
           </div>
         </TableCell>
-        <TableCell className="text-right text-xs tabular-nums whitespace-nowrap">{formatCurrency(current)}</TableCell>
+        <TableCell role="gridcell" className="text-right text-xs tabular-nums whitespace-nowrap">{formatCurrency(current)}</TableCell>
         {showPrevious && (
-          <TableCell className="text-right text-xs tabular-nums whitespace-nowrap">{formatCurrency(prev)}</TableCell>
+          <TableCell role="gridcell" className="text-right text-xs tabular-nums whitespace-nowrap">{formatCurrency(prev)}</TableCell>
         )}
         {showDifference && (
-          <TableCell className="text-right text-xs tabular-nums whitespace-nowrap">{formatCurrency(diff)}</TableCell>
+          <TableCell role="gridcell" className="text-right text-xs tabular-nums whitespace-nowrap">{formatCurrency(diff)}</TableCell>
         )}
         {showPercent && (
-          <TableCell className="text-right text-xs tabular-nums whitespace-nowrap">{(pct >= 0 ? '+' : '') + pct.toFixed(1)}%</TableCell>
+          <TableCell role="gridcell" className="text-right text-xs tabular-nums whitespace-nowrap">{(pct >= 0 ? '+' : '') + pct.toFixed(1)}%</TableCell>
         )}
       </TableRow>
       {hasChildren && isOpen && line.children.map((child: any) => (
