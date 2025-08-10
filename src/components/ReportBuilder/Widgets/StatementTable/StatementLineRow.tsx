@@ -2,6 +2,8 @@ import React from 'react';
 import { TableRow, TableCell } from '@/components/ui/table';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { formatCurrency } from '@/lib/formatters';
+import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface StatementLineRowProps {
   line: any;
@@ -17,6 +19,7 @@ interface StatementLineRowProps {
   rowIndex: number;
   tabIndex?: number;
   canDrilldown?: (standardNumber: string) => boolean;
+  getAccountsForLine?: (standardNumber: string) => string[];
 }
 
 export const StatementLineRow = React.memo(function StatementLineRow({
@@ -32,7 +35,8 @@ export const StatementLineRow = React.memo(function StatementLineRow({
   siblingCount,
   rowIndex,
   tabIndex,
-  canDrilldown
+  canDrilldown,
+  getAccountsForLine
 }: StatementLineRowProps) {
   const hasChildren = !!(line.children && line.children.length > 0);
   const isOpen = !!expandedMap[line.id];
@@ -187,6 +191,34 @@ export const StatementLineRow = React.memo(function StatementLineRow({
             )}
             <span className="font-mono mr-2 text-muted-foreground">{line.standard_number}</span>
             <span>{line.standard_name}</span>
+            {isDrillable && getAccountsForLine && (() => {
+              const accounts = getAccountsForLine(line.standard_number) || [];
+              const count = accounts.length;
+              if (count === 0) return null;
+              const preview = accounts.slice(0, 10).join(', ');
+              return (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className="ml-2 h-6 px-2 text-[11px]"
+                        onClick={(e) => { e.stopPropagation(); onDrilldown(line.standard_number); }}
+                        aria-label={`Vis kontoer for ${line.standard_number}`}
+                      >
+                        Kontoer ({count})
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-xs">
+                      <div className="text-xs">
+                        {preview}{count > 10 ? ' …' : ''}
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              );
+            })()}
           </div>
         </TableCell>
         <TableCell role="gridcell" aria-colindex={2} className="text-right text-xs tabular-nums whitespace-nowrap">{formatCurrency(current)}</TableCell>
@@ -220,6 +252,7 @@ export const StatementLineRow = React.memo(function StatementLineRow({
               siblingCount={arr.length}
               rowIndex={start}
               canDrilldown={canDrilldown}
+              getAccountsForLine={getAccountsForLine}
             />
           );
         });

@@ -30,7 +30,7 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
   const showDifference: boolean = widget.config?.showDifference !== false;
   const showPercent: boolean = widget.config?.showPercent !== false;
   const showOnlyChanges: boolean = widget.config?.showOnlyChanges === true;
-  const drilldownPanel: boolean = widget.config?.drilldownPanel === true;
+  const drilldownPanel: boolean = widget.config?.drilldownPanel !== false;
 
   const { incomeStatement, balanceStatement, periodInfo, isLoading } = useDetailedFinancialStatement(
     clientId || '',
@@ -473,6 +473,7 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
                         showPercent={showPercent}
                         onDrilldown={handleDrilldown}
                         canDrilldown={(n: string) => getAccountsForLine(n).length > 0}
+                        getAccountsForLine={getAccountsForLine}
                         siblingIndex={idx + 1}
                         siblingCount={arr.length}
                         rowIndex={(incomeStartIndex ?? 0) + countVisibleLines(filteredIncome.slice(0, idx))}
@@ -496,6 +497,7 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
                         showPercent={showPercent}
                         onDrilldown={handleDrilldown}
                         canDrilldown={(n: string) => getAccountsForLine(n).length > 0}
+                        getAccountsForLine={getAccountsForLine}
                         siblingIndex={idx + 1}
                         siblingCount={arr.length}
                         rowIndex={(balanceStartIndex ?? 0) + countVisibleLines(filteredBalance.slice(0, idx))}
