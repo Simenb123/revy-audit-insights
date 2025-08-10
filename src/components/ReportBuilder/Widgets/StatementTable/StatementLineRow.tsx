@@ -59,7 +59,8 @@ export const StatementLineRow = React.memo(function StatementLineRow({
             type="button"
             className="mr-2 text-muted-foreground hover:text-foreground"
             onClick={(e) => { e.stopPropagation(); toggle(line.id); }}
-            aria-label={isOpen ? 'Lukk' : 'Åpne'}
+            aria-label={(isOpen ? 'Lukk' : 'Åpne') + ' ' + line.standard_name}
+            title={(isOpen ? 'Lukk' : 'Åpne') + ' ' + line.standard_name}
             aria-expanded={isOpen}
           >
                 {isOpen ? <ChevronDown className="h-4 w-4" aria-hidden="true" /> : <ChevronRight className="h-4 w-4" aria-hidden="true" />}
