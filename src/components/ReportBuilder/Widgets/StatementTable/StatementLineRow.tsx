@@ -69,15 +69,15 @@ export const StatementLineRow = React.memo(function StatementLineRow({
             <span>{line.standard_name}</span>
           </div>
         </TableCell>
-        <TableCell className="text-right text-xs">{formatCurrency(current)}</TableCell>
+        <TableCell className="text-right text-xs tabular-nums whitespace-nowrap">{formatCurrency(current)}</TableCell>
         {showPrevious && (
-          <TableCell className="text-right text-xs">{formatCurrency(prev)}</TableCell>
+          <TableCell className="text-right text-xs tabular-nums whitespace-nowrap">{formatCurrency(prev)}</TableCell>
         )}
         {showDifference && (
-          <TableCell className="text-right text-xs">{formatCurrency(diff)}</TableCell>
+          <TableCell className="text-right text-xs tabular-nums whitespace-nowrap">{formatCurrency(diff)}</TableCell>
         )}
         {showPercent && (
-          <TableCell className="text-right text-xs">{(pct >= 0 ? '+' : '') + pct.toFixed(1)}%</TableCell>
+          <TableCell className="text-right text-xs tabular-nums whitespace-nowrap">{(pct >= 0 ? '+' : '') + pct.toFixed(1)}%</TableCell>
         )}
       </TableRow>
       {hasChildren && isOpen && line.children.map((child: any) => (

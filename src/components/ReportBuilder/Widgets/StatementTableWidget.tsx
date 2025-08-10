@@ -113,15 +113,15 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
             <TableHeader>
               <TableRow className="[&_th]:sticky [&_th]:top-0 bg-background z-10">
                 <TableHead className="text-xs sticky left-0 z-20 bg-background">Linje</TableHead>
-                <TableHead className="text-xs text-right">{periodInfo?.currentYear ?? 'År'}</TableHead>
+                <TableHead className="text-xs text-right whitespace-nowrap">{periodInfo?.currentYear ?? 'År'}</TableHead>
                 {showPrevious && (
-                  <TableHead className="text-xs text-right">{periodInfo?.previousYear ?? 'I fjor'}</TableHead>
+                  <TableHead className="text-xs text-right whitespace-nowrap">{periodInfo?.previousYear ?? 'I fjor'}</TableHead>
                 )}
                 {showDifference && (
-                  <TableHead className="text-xs text-right">Endring</TableHead>
+                  <TableHead className="text-xs text-right whitespace-nowrap">Endring</TableHead>
                 )}
                 {showPercent && (
-                  <TableHead className="text-xs text-right">Endring %</TableHead>
+                  <TableHead className="text-xs text-right whitespace-nowrap">Endring %</TableHead>
                 )}
               </TableRow>
             </TableHeader>
