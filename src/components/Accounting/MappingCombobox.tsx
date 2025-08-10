@@ -37,11 +37,29 @@ const MappingCombobox: React.FC<MappingComboboxProps> = ({
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return options;
-    return options.filter(
-      (o) =>
-        o.standard_number.toLowerCase().includes(q) ||
-        o.standard_name.toLowerCase().includes(q)
-    );
+
+    const ranked = options
+      .filter(
+        (o) =>
+          o.standard_number.toLowerCase().includes(q) ||
+          o.standard_name.toLowerCase().includes(q)
+      )
+      .map((o) => {
+        const num = o.standard_number.toLowerCase();
+        const name = o.standard_name.toLowerCase();
+        const score =
+          (num === q ? 1000 : 0) +
+          (name === q ? 900 : 0) +
+          (num.startsWith(q) ? 800 : 0) +
+          (name.startsWith(q) ? 700 : 0) +
+          (num.includes(q) ? 200 : 0) +
+          (name.includes(q) ? 100 : 0);
+        return { o, score };
+      })
+      .sort((a, b) => b.score - a.score)
+      .map(({ o }) => o);
+
+    return ranked;
   }, [options, query]);
 
   return (
@@ -55,6 +73,8 @@ const MappingCombobox: React.FC<MappingComboboxProps> = ({
             className
           )}
           aria-label={selected ? `Valgt regnskapslinje: ${selected.standard_number} - ${selected.standard_name}` : placeholder}
+          aria-haspopup="listbox"
+          aria-expanded={open}
         >
           <span className="truncate text-xs">
             {selected
@@ -71,6 +91,7 @@ const MappingCombobox: React.FC<MappingComboboxProps> = ({
             onValueChange={setQuery}
             placeholder="Søk etter linje..."
             className="h-9"
+            autoFocus
           />
           <CommandList className="max-h-[min(60vh,480px)] overflow-auto bg-popover">
             <CommandEmpty>Ingen treff</CommandEmpty>
