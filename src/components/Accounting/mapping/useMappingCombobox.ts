@@ -19,7 +19,7 @@ export function useMappingCombobox({ value, onChange, options, labels, allowClea
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
-  const DEBOUNCE_MS = Math.max(0, debounceMs ?? 160);
+  const DEBOUNCE_MS = Math.max(0, debounceMs ?? 120);
   const MIN_FUZZY_LEN = Math.max(1, minFuzzyQueryLength ?? 2);
 
   useEffect(() => {
@@ -53,7 +53,7 @@ const fuseIndex = useMemo(() => {
   return new Fuse(options, {
     includeScore: true,
     includeMatches: true,
-    threshold: fuzzyThreshold ?? 0.35,
+    threshold: fuzzyThreshold ?? 0.3,
     ignoreLocation: true,
     minMatchCharLength: 1,
     keys: [
