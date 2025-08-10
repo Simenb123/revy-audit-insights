@@ -144,6 +144,8 @@ export const StatementLineRow = React.memo(function StatementLineRow({
             aria-label={(isOpen ? 'Lukk' : 'Åpne') + ' ' + line.standard_name}
             title={(isOpen ? 'Lukk' : 'Åpne') + ' ' + line.standard_name}
             aria-expanded={isOpen}
+            tabIndex={-1}
+            aria-hidden="true"
           >
                 {isOpen ? <ChevronDown className="h-4 w-4" aria-hidden="true" /> : <ChevronRight className="h-4 w-4" aria-hidden="true" />}
               </button>
