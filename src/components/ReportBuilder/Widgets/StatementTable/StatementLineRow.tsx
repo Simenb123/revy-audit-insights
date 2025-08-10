@@ -61,18 +61,26 @@ export const StatementLineRow = React.memo(function StatementLineRow({
         aria-setsize={siblingCount}
         aria-rowindex={rowIndex}
         onKeyDown={(e) => {
-          if (e.key === 'ArrowDown') {
-            e.preventDefault();
-            const next = (e.currentTarget.nextElementSibling as HTMLElement | null);
-            next?.focus();
-            return;
-          }
-          if (e.key === 'ArrowUp') {
-            e.preventDefault();
-            const prev = (e.currentTarget.previousElementSibling as HTMLElement | null);
-            prev?.focus();
-            return;
-          }
+          const focusRowAt = (targetIndexDelta: number | 'home' | 'end') => {
+            const tbody = e.currentTarget.parentElement as HTMLElement | null;
+            if (!tbody) return;
+            const rows = Array.from(tbody.querySelectorAll('[role="row"]')) as HTMLElement[];
+            const currentIndex = rows.indexOf(e.currentTarget as HTMLElement);
+            if (currentIndex === -1) return;
+            let nextIndex = currentIndex;
+            if (targetIndexDelta === 'home') nextIndex = 0;
+            else if (targetIndexDelta === 'end') nextIndex = rows.length - 1;
+            else nextIndex = Math.max(0, Math.min(rows.length - 1, currentIndex + (targetIndexDelta as number)));
+            rows[nextIndex]?.focus();
+          };
+
+          if (e.key === 'ArrowDown') { e.preventDefault(); focusRowAt(1); return; }
+          if (e.key === 'ArrowUp') { e.preventDefault(); focusRowAt(-1); return; }
+          if (e.key === 'PageDown') { e.preventDefault(); focusRowAt(10); return; }
+          if (e.key === 'PageUp') { e.preventDefault(); focusRowAt(-10); return; }
+          if (e.key === 'Home') { e.preventDefault(); focusRowAt('home'); return; }
+          if (e.key === 'End') { e.preventDefault(); focusRowAt('end'); return; }
+
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
             onDrilldown(line.standard_number);
