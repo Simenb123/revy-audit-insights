@@ -166,4 +166,35 @@ describe('MappingCombobox', () => {
     const status = screen.getByRole('status');
     expect(status.textContent).toBe('3');
   });
+  it('respects minFuzzyQueryLength before applying fuzzy', async () => {
+    const fuzzyOptions = [
+      { id: '1', standard_number: '1920', standard_name: 'Bankinnskudd' },
+      { id: '2', standard_number: '2400', standard_name: 'Leverandørgjeld' },
+    ];
+
+    render(
+      <MappingCombobox
+        value={undefined}
+        onChange={() => {}}
+        options={fuzzyOptions}
+        fuzzy
+        minFuzzyQueryLength={3}
+      />
+    );
+
+    await userEvent.click(screen.getByRole('button'));
+    const combobox = screen.getByRole('combobox');
+
+    // Below threshold: should not find fuzzy match yet
+    await userEvent.type(combobox, 'bn');
+    expect(
+      screen.queryByRole('option', { name: /1920.*Bankinnskudd/i })
+    ).toBeNull();
+
+    // Reaches threshold: fuzzy kicks in
+    await userEvent.type(combobox, 'k'); // now 'bnk'
+    expect(
+      screen.getByRole('option', { name: /1920.*Bankinnskudd/i })
+    ).toBeTruthy();
+  });
 });

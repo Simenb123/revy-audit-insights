@@ -34,6 +34,25 @@ import MappingCombobox from './MappingCombobox';
 - debounceMs: Debounce på søk (default 120ms)
 - fuzzyThreshold: 0–1, lavere = mer presis (default 0.3)
 
+## Tekster og labels (lokalisering)
+```tsx
+<MappingCombobox
+  value={value}
+  onChange={setValue}
+  options={options}
+  labels={{
+    placeholder: "Velg regnskapslinje",
+    searchPlaceholder: "Søk etter kontonummer eller navn…",
+    clearSelection: "Fjern valg",
+    loading: "Laster…",
+    empty: "Ingen treff",
+    resultsCountAnnouncement: (count: number) => `${count} treff`,
+  }}
+/>
+```
+
+- labels: Overstyr alle tekster. Bruk funksjon for dynamiske meldinger (f.eks. antall treff).
+
 ## Tilgjengelighet
 - Full ARIA-støtte (combobox, listbox, announcements)
 - Tastaturnavigasjon (pil opp/ned, Enter, Esc, Backspace for å fjerne når tomt søk)

@@ -2,7 +2,7 @@
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
 import ScrollToTop from "@/components/Layout/ScrollToTop";
 import { AuthProvider } from "@/components/Auth/AuthProvider";
 import { RevyContextProvider } from "@/components/RevyContext/RevyContextProvider";
@@ -109,6 +109,15 @@ function App() {
                 </Route>
                 <Route path="*" element={<NotFound />} />
               </Routes>
+              {import.meta.env.DEV && (
+                <Link
+                  to="/sandbox"
+                  className="fixed bottom-3 right-3 z-50 rounded-md border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-sm hover:text-foreground hover:shadow-md transition-colors"
+                  aria-label="Åpne Sandbox for MappingCombobox"
+                >
+                  Sandbox
+                </Link>
+              )}
                 <Toaster />
               </RevyContextProvider>
             </BrowserRouter>
