@@ -344,10 +344,11 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
                 showOnlyChanges={showOnlyChanges}
                 onShowOnlyChangesChange={(v: boolean) => { updateConfig({ showOnlyChanges: v }); setLiveMessage(v ? 'Filter aktivert: kun endringer' : 'Filter av: alle linjer'); }}
                 drilldownPanel={drilldownPanel}
-                 onDrilldownPanelChange={(v: boolean) => { updateConfig({ drilldownPanel: v }); setLiveMessage(v ? 'Drilldown i panel på' : 'Drilldown i panel av'); }}
-                 onExpandAll={expandAll}
-                 onCollapseAll={collapseAll}
-                 onExpandToLevel={(lvl: number) => expandToLevel(lvl)}
+                onDrilldownPanelChange={(v: boolean) => { updateConfig({ drilldownPanel: v }); setLiveMessage(v ? 'Drilldown i panel på' : 'Drilldown i panel av'); }}
+                onExpandAll={expandAll}
+                onCollapseAll={collapseAll}
+                onExpandToLevel={(lvl: number) => expandToLevel(lvl)}
+                disabled={isLoading}
               />
               <TooltipProvider>
                 <Tooltip>
