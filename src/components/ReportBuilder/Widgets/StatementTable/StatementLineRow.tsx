@@ -73,13 +73,13 @@ export const StatementLineRow = React.memo(function StatementLineRow({
           }
         }}
         tabIndex={tabIndex ?? -1}
-        aria-label={`Drilldown for ${line.standard_number} ${line.standard_name}`}
+        aria-label={isDrillable ? `Drilldown for ${line.standard_number} ${line.standard_name}` : (hasChildren ? `${isOpen ? 'Lukk' : 'Åpne'} ${line.standard_name}` : line.standard_name)}
         aria-level={level + 1}
         aria-expanded={hasChildren ? isOpen : undefined}
         aria-posinset={siblingIndex}
         aria-setsize={siblingCount}
         aria-rowindex={rowIndex}
-        aria-disabled={!isDrillable}
+        aria-disabled={!isDrillable && !hasChildren}
         aria-keyshortcuts="ArrowUp,ArrowDown,ArrowLeft,ArrowRight,Home,End,PageUp,PageDown,Enter,Space"
         onKeyDown={(e) => {
           const focusRowAt = (targetIndexDelta: number | 'home' | 'end') => {
