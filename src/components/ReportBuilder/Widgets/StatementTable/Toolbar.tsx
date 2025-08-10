@@ -11,6 +11,8 @@ interface StatementTableToolbarProps {
   onShowDifferenceChange: (v: boolean) => void;
   showPercent: boolean;
   onShowPercentChange: (v: boolean) => void;
+  showOnlyChanges?: boolean;
+  onShowOnlyChangesChange?: (v: boolean) => void;
   onExpandAll: () => void;
   onCollapseAll: () => void;
 }
@@ -23,6 +25,8 @@ export function StatementTableToolbar({
   onShowDifferenceChange,
   showPercent,
   onShowPercentChange,
+  showOnlyChanges,
+  onShowOnlyChangesChange,
   onExpandAll,
   onCollapseAll
 }: StatementTableToolbarProps) {
@@ -37,9 +41,15 @@ export function StatementTableToolbar({
         <Switch id={`diff-${widgetId}`} checked={showDifference} onCheckedChange={onShowDifferenceChange} />
       </div>
       <div className="flex items-center gap-2">
-        <Label htmlFor={`pct-${widgetId}`} className="text-xs text-muted-foreground">% Endring</Label>
+        <Label htmlFor={`pct-${widgetId}`} className="text-xs text-muted-foreground">%</Label>
         <Switch id={`pct-${widgetId}`} checked={showPercent} onCheckedChange={onShowPercentChange} />
       </div>
+      {onShowOnlyChangesChange && (
+        <div className="flex items-center gap-2">
+          <Label htmlFor={`changes-${widgetId}`} className="text-xs text-muted-foreground">Kun endringer</Label>
+          <Switch id={`changes-${widgetId}`} checked={!!showOnlyChanges} onCheckedChange={onShowOnlyChangesChange} />
+        </div>
+      )}
       <div className="flex items-center gap-2">
         <Button variant="ghost" size="sm" onClick={onExpandAll}>Utvid alle</Button>
         <Button variant="ghost" size="sm" onClick={onCollapseAll}>Lukk alle</Button>

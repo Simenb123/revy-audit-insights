@@ -25,6 +25,7 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
   const showPrevious: boolean = widget.config?.showPrevious !== false;
   const showDifference: boolean = widget.config?.showDifference !== false;
   const showPercent: boolean = widget.config?.showPercent !== false;
+  const showOnlyChanges: boolean = widget.config?.showOnlyChanges === true;
 
   const { incomeStatement, balanceStatement, periodInfo, isLoading } = useDetailedFinancialStatement(
     clientId || '',
@@ -34,6 +35,7 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
   const navigate = useNavigate();
 
   const [expanded, setExpanded] = React.useState<Record<string, boolean>>(() => (widget.config?.expanded ?? {}));
+  const [liveMessage, setLiveMessage] = React.useState<string>('');
 
   const handleTitleChange = (newTitle: string) => updateWidget(widget.id, { title: newTitle });
 
@@ -56,11 +58,13 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
     const map = Object.fromEntries(all.map((id) => [id, true] as const));
     setExpanded(map);
     updateConfig({ expanded: map });
+    setLiveMessage('Alle rader utvidet');
   };
 
   const collapseAll = () => {
     setExpanded({});
     updateConfig({ expanded: {} });
+    setLiveMessage('Alle rader lukket');
   };
 
   const getAccountsForLine = React.useCallback((standardNumber: string) => {
@@ -75,6 +79,25 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
     navigate(`/clients/${clientId}/trial-balance?${params.toString()}`);
   };
 
+  // Helper: filter tree to only include lines with changes (or descendants with changes)
+  const hasChange = React.useCallback((node: any): boolean => {
+    const current = node.amount || 0;
+    const prev = node.previous_amount || 0;
+    const changed = current !== prev;
+    if (changed) return true;
+    if (node.children && node.children.length) {
+      return node.children.some((c: any) => hasChange(c));
+    }
+    return false;
+  }, []);
+
+  const filterLines = React.useCallback((nodes: any[]): any[] => {
+    if (!showOnlyChanges) return nodes;
+    const recurse = (arr: any[]): any[] => arr
+      .map((n) => ({ ...n, children: n.children ? recurse(n.children) : [] }))
+      .filter((n) => hasChange(n) || (n.children && n.children.length > 0));
+    return recurse(nodes);
+  }, [showOnlyChanges, hasChange]);
 
   if (isLoading) {
     return (
@@ -89,7 +112,12 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
     );
   }
 
-  const hasData = (incomeStatement?.length ?? 0) > 0 || (balanceStatement?.length ?? 0) > 0;
+  const rawIncome = incomeStatement || [];
+  const rawBalance = balanceStatement || [];
+  const filteredIncome = filterLines(rawIncome);
+  const filteredBalance = filterLines(rawBalance);
+
+  const hasData = (filteredIncome?.length ?? 0) > 0 || (filteredBalance?.length ?? 0) > 0;
 
   const colCount = 1 + 1 + (showPrevious ? 1 : 0) + (showDifference ? 1 : 0) + (showPercent ? 1 : 0);
   const countVisibleLines = React.useCallback(function countVisibleLines(nodes: any[]): number {
@@ -101,17 +129,75 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
   }, [expanded]);
 
   const rowCount =
-    (incomeStatement.length > 0 ? 1 + countVisibleLines(incomeStatement) : 0) +
-    (balanceStatement.length > 0 ? 1 + countVisibleLines(balanceStatement) : 0);
+    (filteredIncome.length > 0 ? 1 + countVisibleLines(filteredIncome) : 0) +
+    (filteredBalance.length > 0 ? 1 + countVisibleLines(filteredBalance) : 0);
 
   const headerRowIndex = 1;
-  const incomeHeadingIndex = incomeStatement.length > 0 ? headerRowIndex + 1 : undefined;
+  const incomeHeadingIndex = filteredIncome.length > 0 ? headerRowIndex + 1 : undefined;
   const incomeStartIndex = incomeHeadingIndex ? incomeHeadingIndex + 1 : undefined;
-  const incomeRowsCount = incomeStatement.length > 0 ? countVisibleLines(incomeStatement) : 0;
-  const balanceHeadingIndex = balanceStatement.length > 0
-    ? headerRowIndex + (incomeStatement.length > 0 ? 1 + incomeRowsCount : 0) + 1
+  const incomeRowsCount = filteredIncome.length > 0 ? countVisibleLines(filteredIncome) : 0;
+  const balanceHeadingIndex = filteredBalance.length > 0
+    ? headerRowIndex + (filteredIncome.length > 0 ? 1 + incomeRowsCount : 0) + 1
     : undefined;
   const balanceStartIndex = balanceHeadingIndex ? balanceHeadingIndex + 1 : undefined;
+
+  // CSV export of currently visible rows
+  const flattenVisible = React.useCallback((nodes: any[]): any[] => {
+    const out: any[] = [];
+    const walk = (arr: any[]) => {
+      for (const n of arr) {
+        out.push(n);
+        if (n.children && n.children.length && expanded[n.id]) walk(n.children);
+      }
+    };
+    walk(nodes);
+    return out;
+  }, [expanded]);
+
+  const handleExportCSV = React.useCallback(() => {
+    const visibleIncome = flattenVisible(filteredIncome);
+    const visibleBalance = flattenVisible(filteredBalance);
+    const rows = [
+      ...visibleIncome.map((n) => ({ section: 'Resultat', ...n })),
+      ...visibleBalance.map((n) => ({ section: 'Balanse', ...n })),
+    ];
+    const headers = [
+      'Seksjon',
+      'Nummer',
+      'Navn',
+      periodInfo?.currentYear ?? 'År',
+      ...(showPrevious ? [periodInfo?.previousYear ?? 'I fjor'] : []),
+      ...(showDifference ? ['Endring'] : []),
+      ...(showPercent ? ['Endring %'] : []),
+    ];
+    const csv = [
+      headers.join(';'),
+      ...rows.map((r) => {
+        const current = r.amount || 0;
+        const prev = r.previous_amount || 0;
+        const diff = current - prev;
+        const pct = prev !== 0 ? (diff / Math.abs(prev)) * 100 : 0;
+        const cols = [
+          r.section,
+          r.standard_number,
+          r.standard_name,
+          String(current),
+          ...(showPrevious ? [String(prev)] : []),
+          ...(showDifference ? [String(diff)] : []),
+          ...(showPercent ? [pct.toFixed(1)] : []),
+        ];
+        return cols.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(';');
+      })
+    ].join('\n');
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `rapport-${periodInfo?.currentYear ?? ''}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [filteredIncome, filteredBalance, flattenVisible, periodInfo, showPrevious, showDifference, showPercent]);
 
   return (
     <Card className="h-full">
@@ -127,6 +213,8 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
               onShowDifferenceChange={(v) => updateConfig({ showDifference: v })}
               showPercent={showPercent}
               onShowPercentChange={(v) => updateConfig({ showPercent: v })}
+              showOnlyChanges={showOnlyChanges}
+              onShowOnlyChangesChange={(v) => updateConfig({ showOnlyChanges: v })}
               onExpandAll={expandAll}
               onCollapseAll={collapseAll}
             />
@@ -143,10 +231,12 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
+            <Button variant="ghost" size="sm" onClick={handleExportCSV} className="ml-1">Eksporter CSV</Button>
           </div>
         </div>
       </CardHeader>
       <CardContent className="p-0">
+        <span aria-live="polite" className="sr-only" role="status">{liveMessage}</span>
         {!hasData ? (
           <div className="p-4 text-sm text-muted-foreground">Ingen data å vise.</div>
         ) : (
@@ -168,10 +258,10 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
                 </TableRow>
               </TableHeader>
             <TableBody>
-              {incomeStatement.length > 0 && (
+              {filteredIncome.length > 0 && (
                 <>
                   <SectionHeading title="Resultat" rowIndex={incomeHeadingIndex} colSpan={2 + (showPrevious ? 1 : 0) + (showDifference ? 1 : 0) + (showPercent ? 1 : 0)} />
-                  {incomeStatement.map((line, idx, arr) => (
+                  {filteredIncome.map((line, idx, arr) => (
                     <StatementLineRow
                       key={line.id}
                       line={line}
@@ -184,15 +274,15 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
                       onDrilldown={handleDrilldown}
                       siblingIndex={idx + 1}
                       siblingCount={arr.length}
-                      rowIndex={(incomeStartIndex ?? 0) + countVisibleLines(incomeStatement.slice(0, idx))}
+                      rowIndex={(incomeStartIndex ?? 0) + countVisibleLines(filteredIncome.slice(0, idx))}
                     />
                   ))}
                 </>
               )}
-              {balanceStatement.length > 0 && (
+              {filteredBalance.length > 0 && (
                 <>
                   <SectionHeading title="Balanse" rowIndex={balanceHeadingIndex} colSpan={2 + (showPrevious ? 1 : 0) + (showDifference ? 1 : 0) + (showPercent ? 1 : 0)} />
-                  {balanceStatement.map((line, idx, arr) => (
+                  {filteredBalance.map((line, idx, arr) => (
                     <StatementLineRow
                       key={line.id}
                       line={line}
@@ -205,7 +295,7 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
                       onDrilldown={handleDrilldown}
                       siblingIndex={idx + 1}
                       siblingCount={arr.length}
-                      rowIndex={(balanceStartIndex ?? 0) + countVisibleLines(balanceStatement.slice(0, idx))}
+                      rowIndex={(balanceStartIndex ?? 0) + countVisibleLines(filteredBalance.slice(0, idx))}
                     />
                   ))}
                 </>
