@@ -28,10 +28,11 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
   const selectedVersion: string | undefined = widget.config?.selectedVersion;
   const showPrevious: boolean = widget.config?.showPrevious !== false;
   const showDifference: boolean = widget.config?.showDifference !== false;
-const showPercent: boolean = widget.config?.showPercent !== false;
-const showOnlyChanges: boolean = widget.config?.showOnlyChanges === true;
-const drilldownPanel: boolean = widget.config?.drilldownPanel === true;
-const inlineAccounts: boolean = widget.config?.inlineAccounts !== false;
+  const showPercent: boolean = widget.config?.showPercent !== false;
+  const showOnlyChanges: boolean = widget.config?.showOnlyChanges === true;
+  const drilldownPanel: boolean = widget.config?.drilldownPanel === true;
+  const inlineAccounts: boolean = widget.config?.inlineAccounts !== false;
+  const alwaysShowTopHeaders: boolean = widget.config?.alwaysShowTopHeaders === true;
 
   const { incomeStatement, balanceStatement, periodInfo, isLoading } = useDetailedFinancialStatement(
     clientId || '',
@@ -42,17 +43,34 @@ const inlineAccounts: boolean = widget.config?.inlineAccounts !== false;
   const navigate = useNavigate();
 
 const [expanded, setExpanded] = React.useState<Record<string, boolean>>(() => (widget.config?.expanded ?? {}));
+const [accountsExpanded, setAccountsExpanded] = React.useState<Record<string, boolean>>(() => (widget.config?.accountsExpanded ?? {}));
 const [liveMessage, setLiveMessage] = React.useState<string>('');
 const [panelOpen, setPanelOpen] = React.useState(false);
 const [panelContext, setPanelContext] = React.useState<{ standardNumber: string; accounts: string[] } | null>(null);
-const [accountsExpanded, setAccountsExpanded] = React.useState<Record<string, boolean>>(() => (widget.config?.accountsExpanded ?? {}));
 const lastFocusedRef = React.useRef<HTMLElement | null>(null);
 const prevExpandedRef = React.useRef<Record<string, boolean> | null>(null);
+const [debugOpen, setDebugOpen] = React.useState(false);
 const handleTitleChange = (newTitle: string) => updateWidget(widget.id, { title: newTitle });
 
   const updateConfig = React.useCallback((patch: Record<string, any>) => {
-    updateWidget(widget.id, { config: { ...(widget.config || {}), ...patch } });
+    queueMicrotask(() => {
+      updateWidget(widget.id, { config: { ...(widget.config || {}), ...patch } });
+    });
   }, [updateWidget, widget.id, widget.config]);
+
+  // Sync from widget.config to local state to avoid updates during render
+  React.useEffect(() => {
+    const cfg = widget.config?.expanded ?? {};
+    setExpanded((prev) => {
+      try { return JSON.stringify(prev) === JSON.stringify(cfg) ? prev : cfg; } catch { return cfg; }
+    });
+  }, [widget.config?.expanded]);
+  React.useEffect(() => {
+    const cfg = widget.config?.accountsExpanded ?? {};
+    setAccountsExpanded((prev) => {
+      try { return JSON.stringify(prev) === JSON.stringify(cfg) ? prev : cfg; } catch { return cfg; }
+    });
+  }, [widget.config?.accountsExpanded]);
 
   const toggle = (id: string, details?: { name?: string; opening?: boolean; delta?: number }) => {
     setExpanded((prev) => {
@@ -350,12 +368,12 @@ const collectIds = (nodes: any[]): string[] =>
   };
 
   const filterLines = React.useCallback((nodes: any[]): any[] => {
-    if (!showOnlyChanges) return deepSort(nodes);
-    const recurse = (arr: any[]): any[] => arr
-      .map((n) => ({ ...n, children: n.children ? recurse(n.children) : [] }))
-      .filter((n) => hasChange(n) || (n.children && n.children.length > 0));
-    return deepSort(recurse(nodes));
-  }, [showOnlyChanges, hasChange]);
+    if (!showOnlyChanges) return nodes;
+    const recurse = (arr: any[], depth = 0): any[] => arr
+      .map((n) => ({ ...n, children: n.children ? recurse(n.children, depth + 1) : [] }))
+      .filter((n) => hasChange(n) || (n.children && n.children.length > 0) || (alwaysShowTopHeaders && depth === 0));
+    return recurse(nodes, 0);
+  }, [showOnlyChanges, hasChange, alwaysShowTopHeaders]);
 
 
   const rawIncome = incomeStatement || [];
@@ -519,6 +537,9 @@ const countVisibleLines = React.useCallback(function countVisibleLines(nodes: an
               </TooltipProvider>
               <Button variant="ghost" size="sm" onClick={handleExportCSV} className="ml-1" disabled={isLoading || !hasData}>Eksporter CSV</Button>
               <Button variant="ghost" size="sm" onClick={() => window.print()} className="ml-1" disabled={isLoading || !hasData}>Skriv ut</Button>
+              {import.meta.env?.DEV && (
+                <Button variant="ghost" size="sm" onClick={() => setDebugOpen((v) => !v)} className="ml-1">Debug</Button>
+              )}
             </div>
           </div>
         </CardHeader>
@@ -718,6 +739,32 @@ const countVisibleLines = React.useCallback(function countVisibleLines(nodes: an
             </div>
           </SheetContent>
         </Sheet>
+      )}
+      {import.meta.env?.DEV && debugOpen && (
+        <div className="fixed bottom-4 right-4 z-50 w-80 max-h-[60vh] overflow-auto border rounded-md bg-background shadow p-3 text-xs">
+          <div className="flex items-center justify-between mb-2">
+            <span className="font-medium">Order audit</span>
+            <Button variant="ghost" size="sm" onClick={() => setDebugOpen(false)}>Lukk</Button>
+          </div>
+          <div className="space-y-3">
+            <div>
+              <div className="font-medium">Resultat (røtter)</div>
+              <ol className="list-decimal list-inside">
+                {(rawIncome || []).slice(0, 20).map((n: any) => (
+                  <li key={n.id}>{String(n.standard_number)} — {n.standard_name}</li>
+                ))}
+              </ol>
+            </div>
+            <div>
+              <div className="font-medium">Balanse (røtter)</div>
+              <ol className="list-decimal list-inside">
+                {(rawBalance || []).slice(0, 20).map((n: any) => (
+                  <li key={n.id}>{String(n.standard_number)} — {n.standard_name}</li>
+                ))}
+              </ol>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );
