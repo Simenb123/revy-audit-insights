@@ -563,13 +563,22 @@ const TableBlock = (
                   </>
                 ) : (
                   <>
-                    {filteredAndSortedData.map((item, index) => (
+                    {virtualization && (
+                      <TableRow>
+                        <TableCell
+                          colSpan={effectiveColumns.list.length}
+                          style={{ height: virtualization.topPad, padding: 0, border: 0 }}
+                        />
+                      </TableRow>
+                    )}
+                    {(virtualization ? virtualization.items : filteredAndSortedData).map((item, index) => (
                       <TableRow
                         key={(item as any).id ?? index}
                         className={`${onRowClick ? 'cursor-pointer hover:bg-muted/50' : ''} ${
                           getRowClassName?.(item) || ''
                         }`}
                         onClick={() => onRowClick?.(item)}
+                        style={virtualization ? { height: rowHeight } : undefined}
                       >
                         {effectiveColumns.list.map(({ def }) => {
                           const value =
@@ -593,6 +602,14 @@ const TableBlock = (
                         })}
                       </TableRow>
                     ))}
+                    {virtualization && (
+                      <TableRow>
+                        <TableCell
+                          colSpan={effectiveColumns.list.length}
+                          style={{ height: virtualization.bottomPad, padding: 0, border: 0 }}
+                        />
+                      </TableRow>
+                    )}
                     {showTotals && totalRow && totalRow}
                   </>
                 )}

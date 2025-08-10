@@ -29,6 +29,9 @@ export function useTrialBalanceMappings(clientId: string) {
       return data || [];
     },
     enabled: !!clientId,
+    staleTime: 10 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 }
 
@@ -60,18 +63,80 @@ export function useSaveTrialBalanceMapping() {
       if (error) throw error;
       return data;
     },
+    onMutate: async (variables) => {
+      const { clientId, accountNumber, statementLineNumber } = variables;
+
+      // Cancel outgoing refetches for this client's mappings
+      await queryClient.cancelQueries({ queryKey: ['trial-balance-mappings', clientId] });
+
+      // Snapshot previous mappings
+      const prevMappings = queryClient.getQueryData<TrialBalanceMapping[]>(['trial-balance-mappings', clientId]);
+
+      // Optimistically update mappings cache
+      if (prevMappings) {
+        const exists = prevMappings.find(m => m.account_number === accountNumber);
+        const next: TrialBalanceMapping[] = exists
+          ? prevMappings.map(m => m.account_number === accountNumber ? { ...m, statement_line_number: statementLineNumber, updated_at: new Date().toISOString() } as any : m)
+          : [
+              ...prevMappings,
+              {
+                id: crypto.randomUUID?.() || `${clientId}-${accountNumber}`,
+                client_id: clientId,
+                account_number: accountNumber,
+                statement_line_number: statementLineNumber,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              } as any,
+            ];
+        queryClient.setQueryData(['trial-balance-mappings', clientId], next);
+      }
+
+      // Optimistically update any aggregated TB queries
+      const affectedTB = queryClient.getQueriesData<any>({
+        predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0] === 'trial-balance-with-mappings' && q.queryKey[1] === clientId,
+      });
+      const tbPrev: Array<{ key: any[]; data: any }> = [];
+      affectedTB.forEach(([key, data]) => {
+        tbPrev.push({ key: key as any[], data });
+        if (!data?.trialBalanceEntries) return;
+        const updated = {
+          ...data,
+          trialBalanceEntries: data.trialBalanceEntries.map((e: any) =>
+            e.account_number === accountNumber
+              ? { ...e, standard_number: statementLineNumber, is_mapped: true }
+              : e
+          ),
+        };
+        queryClient.setQueryData(key as any, updated);
+      });
+
+      return { prevMappings, tbPrev };
+    },
+    onError: (error: any, variables, context) => {
+      // Rollback
+      if (context?.prevMappings) {
+        queryClient.setQueryData(['trial-balance-mappings', variables.clientId], context.prevMappings);
+      }
+      if (context?.tbPrev) {
+        context.tbPrev.forEach(({ key, data }: any) => queryClient.setQueryData(key, data));
+      }
+      toast({
+        title: "Feil ved lagring av mapping",
+        description: error.message,
+        variant: "destructive"
+      });
+    },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['trial-balance-mappings', data.client_id] });
       toast({
         title: "Mapping lagret",
         description: `Konto ${data.account_number} mapped til regnskapslinje ${data.statement_line_number}`,
       });
     },
-    onError: (error: any) => {
-      toast({
-        title: "Feil ved lagring av mapping",
-        description: error.message,
-        variant: "destructive"
+    onSettled: (_data, _err, variables) => {
+      // Ensure caches are in sync
+      queryClient.invalidateQueries({ queryKey: ['trial-balance-mappings', variables.clientId] });
+      queryClient.invalidateQueries({
+        predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0] === 'trial-balance-with-mappings' && q.queryKey[1] === variables.clientId,
       });
     },
   });

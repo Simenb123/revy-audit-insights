@@ -246,6 +246,9 @@ export const useTrialBalanceWithMappings = (clientId: string, fiscalYear?: numbe
       };
     },
     enabled: !!clientId,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 };
 

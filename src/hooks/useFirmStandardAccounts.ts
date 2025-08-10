@@ -55,6 +55,9 @@ export function useFirmStandardAccounts() {
         updated_at: account.updated_at,
       }));
     },
+    staleTime: 30 * 60 * 1000, // 30 min - these change rarely
+    gcTime: 60 * 60 * 1000, // 60 min cache retention
+    refetchOnWindowFocus: false,
   });
 }
 
