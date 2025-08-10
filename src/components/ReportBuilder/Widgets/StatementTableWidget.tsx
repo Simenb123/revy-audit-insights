@@ -51,8 +51,10 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
 
   const toggle = (id: string) => {
     setExpanded((prev) => {
-      const next = { ...prev, [id]: !prev[id] };
+      const opening = !prev[id];
+      const next = { ...prev, [id]: opening };
       updateConfig({ expanded: next });
+      setLiveMessage(opening ? 'Rad åpnet' : 'Rad lukket');
       return next;
     });
   };
@@ -353,7 +355,7 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
 
       {drilldownPanel && panelContext && (
         <Sheet open={panelOpen} onOpenChange={setPanelOpen}>
-          <SheetContent side="right" className="w-[min(480px,100vw)]">
+          <SheetContent side="right" aria-label={`Drilldown for ${findLineTitle(panelContext.standardNumber)}`} className="w-[min(480px,100vw)] sm:max-w-lg focus:outline-none">
             <div className="space-y-3">
               <div>
                 <h2 className="text-base font-medium">{findLineTitle(panelContext.standardNumber)}</h2>
