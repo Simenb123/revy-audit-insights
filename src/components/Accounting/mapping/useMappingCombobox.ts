@@ -11,19 +11,21 @@ interface UseMappingComboboxParams {
   fuzzy?: boolean;
   maxResults?: number;
   minFuzzyQueryLength?: number;
+  debounceMs?: number;
+  fuzzyThreshold?: number;
 }
 
-export function useMappingCombobox({ value, onChange, options, labels, allowClear, fuzzy, maxResults, minFuzzyQueryLength }: UseMappingComboboxParams) {
+export function useMappingCombobox({ value, onChange, options, labels, allowClear, fuzzy, maxResults, minFuzzyQueryLength, debounceMs, fuzzyThreshold }: UseMappingComboboxParams) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
-  const DEBOUNCE_MS = 160;
+  const DEBOUNCE_MS = Math.max(0, debounceMs ?? 160);
   const MIN_FUZZY_LEN = Math.max(1, minFuzzyQueryLength ?? 2);
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedQuery(query), DEBOUNCE_MS);
     return () => clearTimeout(t);
-  }, [query]);
+  }, [query, debounceMs]);
 
   const effectiveQuery = useDeferredValue(debouncedQuery);
   const [ariaMessage, setAriaMessage] = useState('');
@@ -51,7 +53,7 @@ const fuseIndex = useMemo(() => {
   return new Fuse(options, {
     includeScore: true,
     includeMatches: true,
-    threshold: 0.35,
+    threshold: fuzzyThreshold ?? 0.35,
     ignoreLocation: true,
     minMatchCharLength: 1,
     keys: [
@@ -59,7 +61,7 @@ const fuseIndex = useMemo(() => {
       { name: 'standard_name', weight: 0.3 },
     ],
   });
-}, [options, fuzzy]);
+}, [options, fuzzy, fuzzyThreshold]);
 
 const { filtered, matchesById } = useMemo(() => {
   const raw = effectiveQuery.trim();

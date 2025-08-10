@@ -24,6 +24,8 @@ interface MappingComboboxProps {
   fuzzy?: boolean;
   maxResults?: number;
   minFuzzyQueryLength?: number;
+  debounceMs?: number;
+  fuzzyThreshold?: number;
 }
 
 const MappingCombobox: React.FC<MappingComboboxProps> = ({
@@ -38,6 +40,8 @@ const MappingCombobox: React.FC<MappingComboboxProps> = ({
   fuzzy = false,
   maxResults,
   minFuzzyQueryLength,
+  debounceMs,
+  fuzzyThreshold,
 }) => {
   const {
     open,
@@ -54,7 +58,7 @@ const MappingCombobox: React.FC<MappingComboboxProps> = ({
     selectOption,
     clearSelection,
     handleInputKeyDown,
-  } = useMappingCombobox({ value, onChange, options, labels, allowClear, fuzzy, maxResults, minFuzzyQueryLength });
+  } = useMappingCombobox({ value, onChange, options, labels, allowClear, fuzzy, maxResults, minFuzzyQueryLength, debounceMs, fuzzyThreshold });
 
   // Virtualization setup
   const parentRef = React.useRef<HTMLDivElement | null>(null);
@@ -237,6 +241,8 @@ export default React.memo(MappingCombobox, (prev, next) => {
     prev.loading === next.loading &&
     prev.fuzzy === next.fuzzy &&
     prev.maxResults === next.maxResults &&
-    prev.minFuzzyQueryLength === next.minFuzzyQueryLength
+    prev.minFuzzyQueryLength === next.minFuzzyQueryLength &&
+    prev.debounceMs === next.debounceMs &&
+    prev.fuzzyThreshold === next.fuzzyThreshold
   );
 });
