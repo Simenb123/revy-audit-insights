@@ -38,6 +38,8 @@ export const StatementLineRow = React.memo(function StatementLineRow({
         onClick={() => onDrilldown(line.standard_number)}
         tabIndex={0}
         aria-label={`Drilldown for ${line.standard_number} ${line.standard_name}`}
+        aria-level={level + 1}
+        aria-expanded={hasChildren ? isOpen : undefined}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
