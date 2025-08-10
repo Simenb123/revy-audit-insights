@@ -127,7 +127,7 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
             <TableBody>
               {incomeStatement.length > 0 && (
                 <>
-                  <SectionHeading title="Resultat" />
+                  <SectionHeading title="Resultat" colSpan={2 + (showPrevious ? 1 : 0) + (showDifference ? 1 : 0) + (showPercent ? 1 : 0)} />
                   {incomeStatement.map((line) => (
                     <StatementLineRow
                       key={line.id}
@@ -145,7 +145,7 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
               )}
               {balanceStatement.length > 0 && (
                 <>
-                  <SectionHeading title="Balanse" />
+                  <SectionHeading title="Balanse" colSpan={2 + (showPrevious ? 1 : 0) + (showDifference ? 1 : 0) + (showPercent ? 1 : 0)} />
                   {balanceStatement.map((line) => (
                     <StatementLineRow
                       key={line.id}
