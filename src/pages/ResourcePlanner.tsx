@@ -15,6 +15,8 @@ import { useEmployeeCapacityForTeam, useUpsertEmployeeCapacity } from '@/hooks/u
 import { useTeamAllocations } from '@/hooks/useTeamAllocations';
 import { useSaveTeamAllocations } from '@/hooks/useSaveTeamAllocations';
 import { useClientList } from '@/hooks/useClientList';
+import KPICards from '@/components/ResourcePlanner/KPICards';
+import TaskBoard from '@/components/ResourcePlanner/TaskBoard';
 
 const months = [
   { value: '1', label: 'Jan' },
@@ -100,7 +102,11 @@ React.useEffect(() => {
           </header>
         }
       >
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <section className="grid grid-cols-1 gap-4 md:gap-6">
+          {/* KPI-kort */}
+          <KPICards totals={data?.totals} />
+
+          <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card>
             <CardHeader>
               <CardTitle>Filter</CardTitle>
@@ -136,8 +142,11 @@ React.useEffect(() => {
             </CardContent>
           </Card>
 
-          <Card className="md:col-span-2">
-            <CardHeader>
+          {/* Oppgaveboard */}
+          <TaskBoard teamId={selectedTeamId} year={selectedFiscalYear} month={monthNum} />
+
+          <Card className="md:col-span-3">
+            <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Utnyttelse {selectedFiscalYear} – {months.find(m => m.value === selectedMonth)?.label}</CardTitle>
             </CardHeader>
             <CardContent>
@@ -312,7 +321,9 @@ React.useEffect(() => {
           </Card>
         
         </section>
-      </StandardPageLayout>
+        </section>
+      </StandardPageLayout
+      >
     </ConstrainedWidth>
   );
 };
