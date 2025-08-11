@@ -19,8 +19,9 @@ export const useTeamAllocations = (teamId: string | undefined, year: number) => 
     queryKey: ['team-allocations', teamId, year],
     queryFn: async (): Promise<TeamAllocation[]> => {
       if (!teamId) return [];
-      const { data, error } = await supabase
-        .from('team_member_allocations')
+      // any-cast for å omgå typing frem til tabellen finnes i genererte typer
+      const { data, error } = await (supabase as any)
+        .from('team_member_allocations' as any)
         .select('*')
         .eq('team_id', teamId)
         .eq('period_year', year)

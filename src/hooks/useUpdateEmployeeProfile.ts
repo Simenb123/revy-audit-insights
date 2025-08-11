@@ -15,12 +15,13 @@ export const useUpdateEmployeeProfile = () => {
 
   return useMutation({
     mutationFn: async (input: UpdateEmployeeInput) => {
-      const { error } = await supabase
-        .from('profiles')
+      // any-cast for å omgå streng typing til profiler-kolonner som ennå ikke finnes i genererte typer
+      const { error } = await (supabase as any)
+        .from('profiles' as any)
         .update({
           initials: input.initials ?? null,
           initials_color: input.initials_color ?? null,
-        })
+        } as any)
         .eq('id', input.id);
       if (error) throw error;
     },
