@@ -32,6 +32,12 @@ interface StatementTableToolbarProps {
   disabled?: boolean;
   sectionMode?: 'both' | 'income' | 'balance';
   onSectionModeChange?: (mode: 'both' | 'income' | 'balance') => void;
+  visualGuides?: boolean;
+  onVisualGuidesChange?: (v: boolean) => void;
+  compactMode?: boolean;
+  onCompactModeChange?: (v: boolean) => void;
+  zebraStriping?: boolean;
+  onZebraStripingChange?: (v: boolean) => void;
 }
 
 export function StatementTableToolbar({
@@ -61,6 +67,12 @@ export function StatementTableToolbar({
   unmappedCount,
   sectionMode,
   onSectionModeChange,
+  visualGuides,
+  onVisualGuidesChange,
+  compactMode,
+  onCompactModeChange,
+  zebraStriping,
+  onZebraStripingChange,
 }: StatementTableToolbarProps & { unmappedCount?: number }) {
   return (
     <div className="w-full space-y-2">
@@ -154,6 +166,24 @@ export function StatementTableToolbar({
               <div className="flex items-center justify-between px-2 py-1.5">
                 <span className="text-xs text-muted-foreground">Toppnivå</span>
                 <Switch id={`top-${widgetId}`} checked={!!alwaysShowTopHeaders} onCheckedChange={onAlwaysShowTopHeadersChange} disabled={disabled} />
+              </div>
+            )}
+            {onVisualGuidesChange && (
+              <div className="flex items-center justify-between px-2 py-1.5">
+                <span className="text-xs text-muted-foreground">Visuelle guider</span>
+                <Switch id={`guides-${widgetId}`} checked={!!visualGuides} onCheckedChange={onVisualGuidesChange} disabled={disabled} />
+              </div>
+            )}
+            {onCompactModeChange && (
+              <div className="flex items-center justify-between px-2 py-1.5">
+                <span className="text-xs text-muted-foreground">Kompakt</span>
+                <Switch id={`compact-${widgetId}`} checked={!!compactMode} onCheckedChange={onCompactModeChange} disabled={disabled} />
+              </div>
+            )}
+            {onZebraStripingChange && (
+              <div className="flex items-center justify-between px-2 py-1.5">
+                <span className="text-xs text-muted-foreground">Striping</span>
+                <Switch id={`zebra-${widgetId}`} checked={!!zebraStriping} onCheckedChange={onZebraStripingChange} disabled={disabled} />
               </div>
             )}
           </DropdownMenuContent>

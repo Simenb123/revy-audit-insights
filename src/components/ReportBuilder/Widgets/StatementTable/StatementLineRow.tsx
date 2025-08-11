@@ -256,7 +256,7 @@ if (e.key === 'ArrowLeft') {
             >
               <TableCell role="rowheader" aria-colindex={1} className="text-xs sticky left-0 bg-background z-10 print:static">
                 <div
-                  className="flex items-center"
+                  className={`flex items-center ${visualGuides && level > 0 ? 'border-l border-dashed border-border' : ''}`}
                   style={{
                     // Use CSS variables to avoid hardcoded spacing
                     // @ts-expect-error -- custom property
@@ -357,11 +357,11 @@ onClick={(e) => {
                   role="row"
                   aria-rowindex={rIndex}
                   aria-level={level + 2}
-                  className="hover:bg-muted/30 print:break-inside-avoid"
+                  className={`${(() => { const zebra = zebraStriping ? ((rIndex % 2 === 1) ? 'bg-muted/20' : '') : ''; const compactCls = compactMode ? '[&>td]:py-1 [&>th]:py-1' : ''; return `${zebra} ${compactCls}`; })()} hover:bg-muted/30 print:break-inside-avoid`}
                 >
                   <TableCell role="rowheader" aria-colindex={1} className="text-xs sticky left-0 bg-background z-10 print:static">
                     <div
-                      className="flex items-center"
+                      className={`flex items-center ${visualGuides ? 'border-l border-dashed border-border' : ''}`}
                       style={{
                         // @ts-expect-error -- custom property
                         ['--indent-level']: level + 1,

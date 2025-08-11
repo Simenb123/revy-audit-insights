@@ -36,6 +36,9 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
   const showOnlyUnmapped: boolean = widget.config?.showOnlyUnmapped === true;
   const searchQuery: string = widget.config?.searchQuery || '';
   const sectionMode: 'both' | 'income' | 'balance' = (widget.config?.sectionMode as any) ?? 'both';
+  const visualGuides: boolean = widget.config?.visualGuides === true;
+  const compactMode: boolean = widget.config?.compactMode === true;
+  const zebraStriping: boolean = widget.config?.zebraStriping === true;
   const { incomeStatement, balanceStatement, periodInfo, isLoading } = useDetailedFinancialStatement(
     clientId || '',
     selectedVersion
@@ -569,6 +572,12 @@ const flattenVisible = React.useCallback((nodes: any[]): any[] => {
   onExpandToLevel={(lvl: number) => expandToLevel(lvl)}
   disabled={isLoading}
   unmappedCount={unmappedCount}
+  visualGuides={visualGuides}
+  onVisualGuidesChange={(v: boolean) => { updateConfig({ visualGuides: v }); setLiveMessage(v ? 'Visuelle guider på' : 'Visuelle guider av'); }}
+  compactMode={compactMode}
+  onCompactModeChange={(v: boolean) => { updateConfig({ compactMode: v }); setLiveMessage(v ? 'Kompakt modus på' : 'Kompakt modus av'); }}
+  zebraStriping={zebraStriping}
+  onZebraStripingChange={(v: boolean) => { updateConfig({ zebraStriping: v }); setLiveMessage(v ? 'Striping på' : 'Striping av'); }}
 />
               <TooltipProvider>
                 <Tooltip>
@@ -650,6 +659,9 @@ const flattenVisible = React.useCallback((nodes: any[]): any[] => {
   siblingCount={arr.length}
   rowIndex={(incomeStartIndex ?? 0) + countVisibleLines(fi.slice(0, idx))}
   tabIndex={idx === 0 ? 0 : -1}
+  visualGuides={visualGuides}
+  compactMode={compactMode}
+  zebraStriping={zebraStriping}
 />
                     ))}
                   </>
@@ -685,6 +697,9 @@ const flattenVisible = React.useCallback((nodes: any[]): any[] => {
   siblingCount={arr.length}
   rowIndex={(balanceStartIndex ?? 0) + countVisibleLines(fb.slice(0, idx))}
   tabIndex={(fi.length === 0 && idx === 0) ? 0 : -1}
+  visualGuides={visualGuides}
+  compactMode={compactMode}
+  zebraStriping={zebraStriping}
 />
                     ))}
                   </>
