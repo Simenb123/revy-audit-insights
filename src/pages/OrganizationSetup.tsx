@@ -180,7 +180,7 @@ const OrganizationSetup = () => {
       if (firmData.orgNumber) {
         await claimFirmMutation.mutateAsync({
           orgNumber: firmData.orgNumber,
-          firmName: existingFirm.name ?? firmData.name || undefined,
+          firmName: (existingFirm.name ?? firmData.name) || undefined,
         });
         setShowExistingFirmDialog(false);
         navigate('/organisasjon');
@@ -463,7 +463,10 @@ const OrganizationSetup = () => {
                       variant="secondary"
                       onClick={() =>
                         claimFirmMutation.mutate(
-                          { orgNumber: firmData.orgNumber, firmName: existingFirm.name ?? firmData.name || undefined },
+                          { 
+                            orgNumber: firmData.orgNumber, 
+                            firmName: (existingFirm.name ?? firmData.name) || undefined 
+                          },
                           {
                             onSuccess: () => navigate('/organisasjon')
                           }
