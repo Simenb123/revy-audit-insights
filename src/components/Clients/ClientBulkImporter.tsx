@@ -271,10 +271,8 @@ const ClientBulkImporter = ({ onImportComplete, onCancel }: ClientBulkImporterPr
             company_name: baseName,
             name: baseName,
             is_active: true,
-            phase: 'overview',
             progress: 0,
           };
-
           if (row.client_group) insertData.client_group = row.client_group.toString().trim();
           if (row.accounting_system) insertData.accounting_system = row.accounting_system.toString().trim();
           if (row.partner) insertData.partner = row.partner.toString().trim();
