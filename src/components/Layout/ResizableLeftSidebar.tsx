@@ -74,6 +74,11 @@ const resourceItems = [
     icon: Users,
   },
   {
+    title: 'Ressursplanlegger',
+    url: '/resource-planner',
+    icon: BarChart3,
+  },
+  {
     title: 'Kunnskapsbase',
     url: '/fag',
     icon: BookOpen,

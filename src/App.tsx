@@ -106,6 +106,7 @@ function App() {
                   <Route path="academy" element={<Academy />} />
                   <Route path="ai-revy-admin" element={<AIRevyAdmin />} />
                   <Route path="performance" element={<PerformanceMonitoring />} />
+                  <Route path="resource-planner" element={<ProtectedRoute><ResourcePlanner /></ProtectedRoute>} />
                   <Route path="sandbox" element={<ProtectedRoute><Sandbox /></ProtectedRoute>} />
                 </Route>
                 <Route path="*" element={<NotFound />} />
