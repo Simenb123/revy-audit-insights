@@ -52,6 +52,7 @@ import { ClientHistoryTracker } from "./components/Layout/ClientHistoryTracker";
 import Sandbox from "./pages/Sandbox";
 import ResourcePlanner from "./pages/ResourcePlanner";
 import AllocationImport from "./pages/AllocationImport";
+import Superadmin from "./pages/Superadmin";
 const queryClient = new QueryClient();
 
 function App() {
@@ -106,6 +107,7 @@ function App() {
                   <Route path="fag/*" element={<KnowledgeBase />} />
                   <Route path="academy" element={<Academy />} />
                   <Route path="ai-revy-admin" element={<AIRevyAdmin />} />
+                  <Route path="superadmin" element={<ProtectedRoute><Superadmin /></ProtectedRoute>} />
                   <Route path="performance" element={<PerformanceMonitoring />} />
                   <Route path="resource-planner" element={<ProtectedRoute><ResourcePlanner /></ProtectedRoute>} />
                   <Route path="allocation-import" element={<ProtectedRoute><AllocationImport /></ProtectedRoute>} />
