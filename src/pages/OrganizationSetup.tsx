@@ -17,6 +17,8 @@ import { useJoinFirm } from '@/hooks/useJoinFirm';
 import ExistingFirmDialog from '@/components/Organization/ExistingFirmDialog';
 import { useClaimFirm } from '@/hooks/useClaimFirm';
 import { useRequestFirmAccess } from '@/hooks/useRequestFirmAccess';
+import { useFirmAccessRequests } from '@/hooks/useFirmAccessRequests';
+import { useCancelFirmAccess } from '@/hooks/useCancelFirmAccess';
 
 const OrganizationSetup = () => {
   const navigate = useNavigate();
@@ -26,6 +28,8 @@ const OrganizationSetup = () => {
   const joinFirmMutation = useJoinFirm();
   const claimFirmMutation = useClaimFirm();
   const requestAccessMutation = useRequestFirmAccess();
+  const { data: accessRequests, isLoading: accessLoading } = useFirmAccessRequests('pending');
+  const cancelRequestMutation = useCancelFirmAccess();
   
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1);
@@ -46,6 +50,9 @@ const OrganizationSetup = () => {
   });
 
   const { data: existingFirm } = useExistingFirm(firmData.orgNumber);
+  const myPending = accessRequests?.find(
+    (r) => r.audit_firm_id === existingFirm?.id && r.requester_profile_id === session?.user?.id
+  );
 
   // Redirect if user already has a firm
   useEffect(() => {
@@ -326,12 +333,27 @@ const OrganizationSetup = () => {
           </CardHeader>
           <CardContent className="space-y-6">
             {existingFirm && (
-              <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                <AlertCircle className="h-4 w-4 text-amber-600" />
-                <p className="text-sm text-amber-800">
-                  Et firma med dette org.nummeret eksisterer allerede. {existingFirm.claimed_by ? 'Firmaet er allerede claimet. Du kan be om tilgang.' : 'Ingen har claimet firmaet ennå. Du kan claime det nå.'}
-                </p>
-              </div>
+              <>
+                <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                  <AlertCircle className="h-4 w-4 text-amber-600" />
+                  <p className="text-sm text-amber-800">
+                    Et firma med dette org.nummeret eksisterer allerede. {existingFirm.claimed_by ? 'Firmaet er allerede claimet. Du kan be om tilgang.' : 'Ingen har claimet firmaet ennå. Du kan claime det nå.'}
+                  </p>
+                </div>
+                {myPending && (
+                  <div className="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-sm text-blue-800">Du har allerede en ventende forespørsel til dette firmaet.</p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => cancelRequestMutation.mutate({ requestId: myPending.id })}
+                      disabled={cancelRequestMutation.isPending}
+                    >
+                      {cancelRequestMutation.isPending ? 'Kansellerer...' : 'Kanseller forespørsel'}
+                    </Button>
+                  </div>
+                )}
+              </>
             )}
 
             <div className="grid gap-4 md:grid-cols-2">
@@ -478,6 +500,7 @@ const OrganizationSetup = () => {
                   ) : (
                     <Button
                       variant="secondary"
+                      disabled={!!myPending || requestAccessMutation.isPending}
                       onClick={() =>
                         requestAccessMutation.mutate(
                           { firmId: existingFirm.id, roleRequested: 'employee', message: 'Ønsker tilgang til firma' },
