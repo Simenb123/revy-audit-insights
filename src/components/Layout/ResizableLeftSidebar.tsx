@@ -54,6 +54,12 @@ const adminItems = [
     roles: ['admin', 'partner', 'manager'] as const,
   },
   {
+    title: 'Brukeradministrasjon',
+    url: '/user-admin',
+    icon: Users,
+    roles: ['admin', 'partner', 'employee'] as const,
+  },
+  {
     title: 'AI Revy Admin',
     url: '/ai-revy-admin',
     icon: Brain,

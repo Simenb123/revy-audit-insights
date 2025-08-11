@@ -10,6 +10,10 @@ import TeamOverview from '@/components/Teams/TeamOverview';
 import ConstrainedWidth from '@/components/Layout/ConstrainedWidth';
 import StandardPageLayout from '@/components/Layout/StandardPageLayout';
 import BillingRatesManager from '@/components/Billing/BillingRatesManager';
+import { useFirmEmployees } from '@/hooks/useFirmEmployees';
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
 const TeamManagement = () => {
   const {
@@ -23,6 +27,7 @@ const TeamManagement = () => {
     canCreateTeams,
     refetchTeams,
   } = useTeamManagement();
+  const { data: firmEmployees = [] } = useFirmEmployees();
 
   if (isLoading) {
     return (
@@ -45,6 +50,19 @@ const TeamManagement = () => {
           />
         }
       >
+        {firmEmployees.length === 0 && (
+          <Alert variant="warning" className="mb-4">
+            <AlertTitle>Ingen registrerte ansatte</AlertTitle>
+            <AlertDescription>
+              For å administrere team og tilganger, legg til ansatte i Brukeradministrasjon.
+              <div className="mt-3">
+                <Button variant="secondary" size="sm" asChild>
+                  <Link to="/user-admin">Gå til brukeradministrasjon</Link>
+                </Button>
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
 
       <Tabs defaultValue="teams" className="space-y-6">
         <TabsList>
