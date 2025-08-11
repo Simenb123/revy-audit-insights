@@ -51,6 +51,7 @@ import ClientRedirect from "./components/Layout/ClientRedirect";
 import { ClientHistoryTracker } from "./components/Layout/ClientHistoryTracker";
 import Sandbox from "./pages/Sandbox";
 import ResourcePlanner from "./pages/ResourcePlanner";
+import AllocationImport from "./pages/AllocationImport";
 const queryClient = new QueryClient();
 
 function App() {
@@ -107,6 +108,7 @@ function App() {
                   <Route path="ai-revy-admin" element={<AIRevyAdmin />} />
                   <Route path="performance" element={<PerformanceMonitoring />} />
                   <Route path="resource-planner" element={<ProtectedRoute><ResourcePlanner /></ProtectedRoute>} />
+                  <Route path="allocation-import" element={<ProtectedRoute><AllocationImport /></ProtectedRoute>} />
                   <Route path="sandbox" element={<ProtectedRoute><Sandbox /></ProtectedRoute>} />
                 </Route>
                 <Route path="*" element={<NotFound />} />
