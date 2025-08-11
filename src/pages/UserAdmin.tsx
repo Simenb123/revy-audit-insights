@@ -1,4 +1,3 @@
-
 import { logger } from '@/utils/logger';
 
 import React, { useState } from 'react';
@@ -19,6 +18,7 @@ import { Link } from 'react-router-dom';
 import type { UserRole } from '@/types/organization';
 import EmployeesList from '@/components/Admin/EmployeesList';
 import FirmEmployeesManager from '@/components/Admin/FirmEmployeesManager';
+import FirmAccessRequests from '@/components/Admin/FirmAccessRequests';
 
 const UserAdmin = () => {
   const { data: userProfile } = useUserProfile();
@@ -383,6 +383,8 @@ const UserAdmin = () => {
           </div>
         </CardContent>
       </Card>
+
+      <FirmAccessRequests />
 
       <FirmEmployeesManager />
 

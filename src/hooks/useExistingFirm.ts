@@ -1,3 +1,4 @@
+
 import { logger } from '@/utils/logger';
 
 import { useQuery } from '@tanstack/react-query';
@@ -11,7 +12,7 @@ export function useExistingFirm(orgNumber: string) {
       
       const { data, error } = await supabase
         .from('audit_firms')
-        .select('id, name, org_number')
+        .select('id, name, org_number, claimed_by, claimed_at')
         .eq('org_number', orgNumber)
         .maybeSingle();
 

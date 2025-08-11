@@ -15,6 +15,8 @@ import { useUserProfile } from '@/hooks/useUserProfile';
 import { useExistingFirm } from '@/hooks/useExistingFirm';
 import { useJoinFirm } from '@/hooks/useJoinFirm';
 import ExistingFirmDialog from '@/components/Organization/ExistingFirmDialog';
+import { useClaimFirm } from '@/hooks/useClaimFirm';
+import { useRequestFirmAccess } from '@/hooks/useRequestFirmAccess';
 
 const OrganizationSetup = () => {
   const navigate = useNavigate();
@@ -22,6 +24,8 @@ const OrganizationSetup = () => {
   const { toast } = useToast();
   const { data: userProfile, isLoading: profileLoading } = useUserProfile();
   const joinFirmMutation = useJoinFirm();
+  const claimFirmMutation = useClaimFirm();
+  const requestAccessMutation = useRequestFirmAccess();
   
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1);
@@ -155,10 +159,35 @@ const OrganizationSetup = () => {
     }
   };
 
+  // Intercept the dialog's "join" action to enforce claim/access request logic
   const handleJoinExistingFirm = async () => {
     if (!existingFirm) return;
 
     try {
+      // If firm is already claimed -> send access request (default role: employee)
+      if (existingFirm.claimed_by) {
+        await requestAccessMutation.mutateAsync({
+          firmId: existingFirm.id,
+          roleRequested: 'employee',
+          message: 'Ønsker tilgang til firma',
+        });
+        setShowExistingFirmDialog(false);
+        navigate('/organisasjon');
+        return;
+      }
+
+      // If firm is not claimed -> claim it (first admin)
+      if (firmData.orgNumber) {
+        await claimFirmMutation.mutateAsync({
+          orgNumber: firmData.orgNumber,
+          firmName: existingFirm.name ?? firmData.name || undefined,
+        });
+        setShowExistingFirmDialog(false);
+        navigate('/organisasjon');
+        return;
+      }
+
+      // Fallback: (should not happen) join as before
       // Get the main department for this firm
       const { data: departments } = await supabase
         .from('departments')
@@ -176,7 +205,12 @@ const OrganizationSetup = () => {
       setShowExistingFirmDialog(false);
       navigate('/organisasjon');
     } catch (error) {
-      logger.error('Error joining firm:', error);
+      logger.error('Error handling firm join/claim/request:', error);
+      toast({
+        title: "Feil",
+        description: (error as any)?.message ?? "En uventet feil oppstod",
+        variant: "destructive"
+      });
     }
   };
 
@@ -295,7 +329,7 @@ const OrganizationSetup = () => {
               <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
                 <AlertCircle className="h-4 w-4 text-amber-600" />
                 <p className="text-sm text-amber-800">
-                  Et firma med dette org.nummeret eksisterer allerede. Vil du koble deg til det?
+                  Et firma med dette org.nummeret eksisterer allerede. {existingFirm.claimed_by ? 'Firmaet er allerede claimet. Du kan be om tilgang.' : 'Ingen har claimet firmaet ennå. Du kan claime det nå.'}
                 </p>
               </div>
             )}
@@ -409,7 +443,8 @@ const OrganizationSetup = () => {
               </div>
             </div>
 
-            <div className="flex gap-4">
+            {/* Navigasjon og handlinger */}
+            <div className="flex flex-wrap gap-3">
               <Button variant="outline" onClick={() => setStep(1)}>
                 Tilbake
               </Button>
@@ -420,6 +455,40 @@ const OrganizationSetup = () => {
               >
                 {loading ? 'Oppretter...' : 'Opprett firma'}
               </Button>
+
+              {existingFirm && (
+                <>
+                  {!existingFirm.claimed_by ? (
+                    <Button
+                      variant="secondary"
+                      onClick={() =>
+                        claimFirmMutation.mutate(
+                          { orgNumber: firmData.orgNumber, firmName: existingFirm.name ?? firmData.name || undefined },
+                          {
+                            onSuccess: () => navigate('/organisasjon')
+                          }
+                        )
+                      }
+                    >
+                      Claime firma
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="secondary"
+                      onClick={() =>
+                        requestAccessMutation.mutate(
+                          { firmId: existingFirm.id, roleRequested: 'employee', message: 'Ønsker tilgang til firma' },
+                          {
+                            onSuccess: () => navigate('/organisasjon')
+                          }
+                        )
+                      }
+                    >
+                      Be om tilgang
+                    </Button>
+                  )}
+                </>
+              )}
             </div>
           </CardContent>
         </Card>

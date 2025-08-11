@@ -1,0 +1,145 @@
+
+import React, { useMemo, useState } from 'react';
+import { useFirmAccessRequests } from '@/hooks/useFirmAccessRequests';
+import { useApproveFirmAccess } from '@/hooks/useApproveFirmAccess';
+import { useRejectFirmAccess } from '@/hooks/useRejectFirmAccess';
+import type { UserRole } from '@/types/organization';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
+import { ShieldCheck, UserX } from 'lucide-react';
+
+const roleOptions: UserRole[] = ['employee', 'manager', 'partner', 'admin'];
+
+const StatusBadge = ({ status }: { status: 'pending' | 'approved' | 'rejected' | 'cancelled' }) => {
+  const map: Record<string, string> = {
+    pending: 'warning',
+    approved: 'success',
+    rejected: 'destructive',
+    cancelled: 'secondary',
+  };
+  return <Badge variant={map[status] as any}>{status}</Badge>;
+};
+
+const FirmAccessRequests = () => {
+  const { data: requests = [], isLoading } = useFirmAccessRequests();
+  const approve = useApproveFirmAccess();
+  const reject = useRejectFirmAccess();
+
+  const [roleByRequest, setRoleByRequest] = useState<Record<string, UserRole>>({});
+
+  const pending = useMemo(() => requests.filter((r) => r.status === 'pending'), [requests]);
+  const decided = useMemo(() => requests.filter((r) => r.status !== 'pending'), [requests]);
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Tilgangsforespørsler</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-sm text-muted-foreground">Laster forespørsler...</div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Tilgangsforespørsler</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {pending.length === 0 ? (
+          <div className="text-sm text-muted-foreground">Ingen åpne forespørsler.</div>
+        ) : (
+          <div className="space-y-3">
+            {pending.map((req) => {
+              const selectedRole = roleByRequest[req.id] ?? (req.role_requested as UserRole);
+              return (
+                <div key={req.id} className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 p-3 border rounded-md">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <StatusBadge status={req.status} />
+                      <div className="font-medium">{req.email ?? 'Ukjent e-post'}</div>
+                    </div>
+                    {req.message && (
+                      <div className="text-sm text-muted-foreground">{req.message}</div>
+                    )}
+                    <div className="text-xs text-muted-foreground">
+                      Sendt: {new Date(req.created_at).toLocaleString()}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Select
+                      value={selectedRole}
+                      onValueChange={(v: UserRole) => setRoleByRequest((s) => ({ ...s, [req.id]: v }))}
+                    >
+                      <SelectTrigger className="w-[160px]">
+                        <SelectValue placeholder="Velg rolle" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {roleOptions.map((r) => (
+                          <SelectItem key={r} value={r}>
+                            {r}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      size="sm"
+                      onClick={() => approve.mutate({ requestId: req.id, assignRole: selectedRole })}
+                      disabled={approve.isPending}
+                      className="gap-1"
+                    >
+                      <ShieldCheck className="h-4 w-4" />
+                      Godkjenn
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => reject.mutate({ requestId: req.id })}
+                      disabled={reject.isPending}
+                      className="gap-1"
+                    >
+                      <UserX className="h-4 w-4" />
+                      Avslå
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {decided.length > 0 && (
+          <>
+            <Separator />
+            <div className="space-y-2">
+              <div className="text-sm font-medium">Historikk</div>
+              <div className="space-y-2">
+                {decided.map((req) => (
+                  <div key={req.id} className="flex items-center justify-between p-3 border rounded-md">
+                    <div className="flex items-center gap-2">
+                      <StatusBadge status={req.status} />
+                      <div>{req.email ?? req.requester_profile_id}</div>
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {req.decided_at
+                        ? `Besluttet: ${new Date(req.decided_at).toLocaleString()}`
+                        : `Opprettet: ${new Date(req.created_at).toLocaleString()}`}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
+export default FirmAccessRequests;

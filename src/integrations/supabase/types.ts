@@ -985,6 +985,24 @@ export type Database = {
           },
         ]
       }
+      app_super_admins: {
+        Row: {
+          created_at: string
+          note: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          note?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          note?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       article_media: {
         Row: {
           alt_text: string | null
@@ -1576,6 +1594,8 @@ export type Database = {
         Row: {
           address: string | null
           city: string | null
+          claimed_at: string | null
+          claimed_by: string | null
           created_at: string
           email: string | null
           id: string
@@ -1589,6 +1609,8 @@ export type Database = {
         Insert: {
           address?: string | null
           city?: string | null
+          claimed_at?: string | null
+          claimed_by?: string | null
           created_at?: string
           email?: string | null
           id?: string
@@ -1602,6 +1624,8 @@ export type Database = {
         Update: {
           address?: string | null
           city?: string | null
+          claimed_at?: string | null
+          claimed_by?: string | null
           created_at?: string
           email?: string | null
           id?: string
@@ -1612,7 +1636,15 @@ export type Database = {
           updated_at?: string
           website?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "audit_firms_claimed_by_fkey"
+            columns: ["claimed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       audit_logs: {
         Row: {
@@ -3408,6 +3440,70 @@ export type Database = {
             columns: ["data_version_id"]
             isOneToOne: false
             referencedRelation: "accounting_data_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      firm_access_requests: {
+        Row: {
+          audit_firm_id: string
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          email: string | null
+          id: string
+          message: string | null
+          requester_profile_id: string
+          role_requested: Database["public"]["Enums"]["user_role_type"]
+          status: Database["public"]["Enums"]["access_request_status"]
+          updated_at: string
+        }
+        Insert: {
+          audit_firm_id: string
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          email?: string | null
+          id?: string
+          message?: string | null
+          requester_profile_id: string
+          role_requested?: Database["public"]["Enums"]["user_role_type"]
+          status?: Database["public"]["Enums"]["access_request_status"]
+          updated_at?: string
+        }
+        Update: {
+          audit_firm_id?: string
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          email?: string | null
+          id?: string
+          message?: string | null
+          requester_profile_id?: string
+          role_requested?: Database["public"]["Enums"]["user_role_type"]
+          status?: Database["public"]["Enums"]["access_request_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "firm_access_requests_audit_firm_id_fkey"
+            columns: ["audit_firm_id"]
+            isOneToOne: false
+            referencedRelation: "audit_firms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "firm_access_requests_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "firm_access_requests_requester_profile_id_fkey"
+            columns: ["requester_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -6547,6 +6643,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      approve_firm_access_request: {
+        Args: {
+          p_request_id: string
+          p_assign_role?: Database["public"]["Enums"]["user_role_type"]
+        }
+        Returns: boolean
+      }
       calculate_ai_cost: {
         Args: {
           model_name: string
@@ -6554,6 +6657,14 @@ export type Database = {
           completion_tokens: number
         }
         Returns: number
+      }
+      cancel_my_firm_access_request: {
+        Args: { p_request_id: string }
+        Returns: boolean
+      }
+      claim_audit_firm_by_org: {
+        Args: { p_org_number: string; p_firm_name?: string }
+        Returns: string
       }
       cleanup_expired_cache: {
         Args: Record<PropertyKey, never>
@@ -6612,6 +6723,10 @@ export type Database = {
         Args: { hash_to_update: string }
         Returns: undefined
       }
+      is_super_admin: {
+        Args: { user_uuid: string }
+        Returns: boolean
+      }
       match_knowledge_articles: {
         Args: {
           p_query_embedding: string
@@ -6655,6 +6770,19 @@ export type Database = {
           content: string
         }[]
       }
+      reject_firm_access_request: {
+        Args: { p_request_id: string }
+        Returns: boolean
+      }
+      request_firm_access: {
+        Args: {
+          p_audit_firm_id: string
+          p_role_requested?: Database["public"]["Enums"]["user_role_type"]
+          p_message?: string
+          p_email?: string
+        }
+        Returns: string
+      }
       set_active_version: {
         Args: { p_version_id: string }
         Returns: undefined
@@ -6673,6 +6801,7 @@ export type Database = {
       }
     }
     Enums: {
+      access_request_status: "pending" | "approved" | "rejected" | "cancelled"
       account_type_enum: "eiendeler" | "gjeld" | "egenkapital" | "resultat"
       action_status:
         | "not_started"
@@ -6866,6 +6995,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      access_request_status: ["pending", "approved", "rejected", "cancelled"],
       account_type_enum: ["eiendeler", "gjeld", "egenkapital", "resultat"],
       action_status: [
         "not_started",
