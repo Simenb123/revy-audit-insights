@@ -279,16 +279,17 @@ export function parseCSV(text: string, delimiter?: string): { headers: string[];
 }
 
 // Fuzzy detection of CSV header row using string similarity
-export function detectCSVHeaderRow(rows: string[][]): number {
+export function detectCSVHeaderRow(rows: string[][], extraAliases: string[] = []): number {
   const aliasTerms = [
     ...TRIAL_BALANCE_FIELDS,
     ...CHART_OF_ACCOUNTS_FIELDS,
     ...GENERAL_LEDGER_FIELDS
-  ].flatMap(f => [f.label, ...f.aliases]).map(a => normalizeNorwegianText(a));
-
+  ].flatMap(f => [f.label, ...f.aliases]).map(a => normalizeNorwegianText(a))
+   .concat((extraAliases || []).map(a => normalizeNorwegianText(a)));
+  
   let bestIndex = 0;
   let bestScore = 0;
-
+  
   for (let i = 0; i < Math.min(15, rows.length); i++) {
     const row = rows[i];
     if (!row) continue;
@@ -333,7 +334,7 @@ export function detectCSVHeaderRow(rows: string[][]): number {
 }
 
 // Detect header row in Excel data
-function detectHeaderRow(jsonData: unknown[]): number {
+function detectHeaderRow(jsonData: unknown[], extraTerms: string[] = []): number {
   console.log('=== DETECTING HEADER ROW ===');
   
   // Enhanced Norwegian accounting terms that commonly appear in headers
@@ -360,7 +361,7 @@ function detectHeaderRow(jsonData: unknown[]): number {
     // Additional Norwegian terms
     'dimensjon', 'dimension', 'koststed', 'cost center', 'prosjekt', 'project',
     'forfallsdato', 'due date', 'kunde', 'customer', 'leverandør', 'supplier'
-  ];
+  ].concat(extraTerms || []);
 
   let bestHeaderIndex = 0;
   let bestScore = 0;
@@ -464,7 +465,7 @@ function detectHeaderRow(jsonData: unknown[]): number {
 }
 
 // Process Excel file with preview
-export async function processExcelFile(file: File): Promise<FilePreview> {
+export async function processExcelFile(file: File, options?: { extraTerms?: string[] }): Promise<FilePreview> {
   try {
     console.log('=== PROCESSING EXCEL FILE ===');
     console.log('File name:', file.name);
@@ -481,7 +482,7 @@ export async function processExcelFile(file: File): Promise<FilePreview> {
     }
 
     // Detect the header row
-    const headerRowIndex = detectHeaderRow(jsonData);
+    const headerRowIndex = detectHeaderRow(jsonData, options?.extraTerms);
     
     // Extract headers from detected row
     const headers = (jsonData[headerRowIndex] as any[]).map(h => h?.toString() || '');
@@ -539,17 +540,17 @@ export async function processExcelFile(file: File): Promise<FilePreview> {
 }
 
 // Process CSV file with preview
-export async function processCSVFile(file: File): Promise<FilePreview> {
+export async function processCSVFile(file: File, options?: { extraAliasHeaders?: string[] }): Promise<FilePreview> {
   try {
     const text = await file.text();
     const delimiter = detectCSVDelimiter(text);
     const lines = text.split('\n').filter(line => line.trim());
     const allRows = lines.map(line => parseCSVLine(line, delimiter));
 
-    console.log(`CSV file processed: ${Math.max(allRows.length - 1, 0)} total rows`);
+  console.log(`CSV file processed: ${Math.max(allRows.length - 1, 0)} total rows`);
 
-    const headerRowIndex = detectCSVHeaderRow(allRows);
-    const headers = allRows[headerRowIndex] || [];
+  const headerRowIndex = detectCSVHeaderRow(allRows, options?.extraAliasHeaders);
+  const headers = allRows[headerRowIndex] || [];
     const dataRows = allRows.slice(headerRowIndex + 1);
 
     const skippedRows = allRows.slice(0, headerRowIndex).map((row, index) => ({
@@ -1163,7 +1164,8 @@ export const convertPreviewDataForDisplay = (
 export function convertDataWithMapping(
   preview: FilePreview,
   mappings: Record<string, string>,
-  headerRowIndex?: number
+  headerRowIndex?: number,
+  overrideHeaders?: string[]
 ): any[] {
   console.log('=== CONVERTDATAWITHMAPPING DEBUG START ===');
   console.log('Preview object:', {
@@ -1174,21 +1176,34 @@ export function convertDataWithMapping(
     hasAllRows: !!preview.allRows
   });
   
-  const headerIndexMap = preview.headers.reduce((acc, header, index) => {
+  // Determine which headers to use (respect manual override)
+  const headersUsed = (overrideHeaders && overrideHeaders.length) ? overrideHeaders : preview.headers;
+
+  // Use provided headerRowIndex or fall back to preview's headerRowIndex
+  const actualHeaderRowIndex = headerRowIndex ?? preview.headerRowIndex ?? 0;
+
+  // Reconstruct full raw data so we can slice after the selected header row
+  const allRawData: any[][] = [
+    ...preview.skippedRows.map(r => r.content),
+    preview.headers,
+    ...preview.allRows
+  ];
+
+  // Slice data rows after the effective header row
+  const dataRows = allRawData.slice(actualHeaderRowIndex + 1).map(row => {
+    const maxCols = headersUsed.length;
+    const out: any[] = [];
+    for (let i = 0; i < maxCols; i++) out.push(row?.[i] ?? '');
+    return out;
+  });
+
+  const headerIndexMap = headersUsed.reduce((acc, header, index) => {
     acc[header] = index;
     return acc;
   }, {} as Record<string, number>);
-  
-  // Use provided headerRowIndex or fall back to preview's headerRowIndex
-  const actualHeaderRowIndex = headerRowIndex ?? preview.headerRowIndex ?? 0;
-  
-  // CRITICAL: Always use allRows for full dataset, fallback to rows only if allRows is not available
-  const dataRows = preview.allRows || preview.rows;
-  
+
   console.log('Using header row index:', actualHeaderRowIndex);
-  
-  console.log('=== DATA ROWS SELECTION ===');
-  console.log('Using allRows:', !!preview.allRows);
+  console.log('Headers used:', headersUsed);
   console.log('Selected dataRows length:', dataRows.length);
   console.log('First 3 data rows:', dataRows.slice(0, 3));
   console.log('Last 3 data rows:', dataRows.slice(-3));
@@ -1197,23 +1212,17 @@ export function convertDataWithMapping(
   console.log('Mappings to apply:', mappings);
   console.log('Header index map:', headerIndexMap);
   
-  // Helper function to merge regnskapsnr values from multiple sources
   const mergeRegnskapsnrValues = (row: any[], mappings: Record<string, string>): string | null => {
     const sources = ['regnskapsnr_resultat', 'regnskapsnr_balanse', 'regnskapsnr'];
-    
     for (const source of sources) {
       const sourceColumns = Object.entries(mappings)
         .filter(([_, targetField]) => targetField === source)
         .map(([sourceColumn, _]) => sourceColumn);
-      
       for (const sourceColumn of sourceColumns) {
         const columnIndex = headerIndexMap[sourceColumn];
         if (columnIndex !== undefined && row[columnIndex] !== undefined) {
           const value = row[columnIndex];
-          if (value && value.toString().trim()) {
-            console.log(`Found regnskapsnr value "${value}" from ${source} column "${sourceColumn}"`);
-            return value.toString().trim();
-          }
+          if (value && value.toString().trim()) return value.toString().trim();
         }
       }
     }
@@ -1222,65 +1231,36 @@ export function convertDataWithMapping(
 
   const convertedData = dataRows.map((row, index) => {
     const convertedRow: any = {};
-    
     for (const [sourceColumn, targetField] of Object.entries(mappings)) {
       const columnIndex = headerIndexMap[sourceColumn];
       if (columnIndex !== undefined && row[columnIndex] !== undefined) {
         let value = row[columnIndex];
-        
-        // Enhanced data conversion for different field types
-        if (targetField.includes('amount') || targetField === 'balance_amount' || 
-            targetField === 'debet' || targetField === 'kredit' || targetField === 'saldo' ||
-            targetField === 'beløp' || targetField === 'beløp_valuta' || targetField === 'amount') {
-          // Handle Norwegian number format and convert to number
+        if (
+          targetField.includes('amount') || targetField === 'balance_amount' ||
+          targetField === 'debet' || targetField === 'kredit' || targetField === 'saldo' ||
+          targetField === 'beløp' || targetField === 'beløp_valuta' || targetField === 'amount'
+        ) {
           if (value !== null && value !== undefined && value !== '') {
             const originalValue = value;
             value = convertNorwegianNumber(value.toString());
-            if (value === null) {
-              console.warn(`Failed to convert amount value: "${originalValue}" in column ${sourceColumn} (target: ${targetField})`);
-              value = 0;
-            } else {
-              console.log(`Successfully converted: "${originalValue}" -> ${value} (${targetField})`);
-            }
+            if (value === null) value = 0;
           } else {
             value = 0;
           }
         } else if (targetField === 'date') {
-          // Handle date conversion
           if (value && !isNaN(Date.parse(value))) {
             value = new Date(value).toISOString().split('T')[0];
           }
         }
-        
         convertedRow[targetField] = value;
       }
     }
-    
-    // Merge regnskapsnr values with priority: resultat > balanse > regnskapsnr
     const mergedRegnskapsnr = mergeRegnskapsnrValues(row, mappings);
-    if (mergedRegnskapsnr) {
-      convertedRow.regnskapsnr = mergedRegnskapsnr;
-    }
-    
-    // Handle primary amount field mapping - if user mapped to 'amount', use it as the primary source
-    if (convertedRow.amount !== undefined) {
-      // If there's a primary amount field, derive debit/credit from it
-      const amountValue = convertedRow.amount || 0;
-      if (amountValue >= 0) {
-        convertedRow.debit_amount = amountValue;
-        convertedRow.credit_amount = 0;
-      } else {
-        convertedRow.debit_amount = 0;
-        convertedRow.credit_amount = Math.abs(amountValue);
-      }
-      convertedRow.balance_amount = amountValue;
-    }
-    
-    // Log progress for large datasets
+    if (mergedRegnskapsnr) convertedRow.regnskapsnr = mergedRegnskapsnr;
+
     if (index === 0 || index === dataRows.length - 1 || index % 50 === 0) {
       console.log(`Converting row ${index + 1}/${dataRows.length}:`, convertedRow);
     }
-    
     return convertedRow;
   });
   

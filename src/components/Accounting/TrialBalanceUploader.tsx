@@ -138,7 +138,7 @@ const handleMappingComplete = async (mapping: Record<string, string>, headerRowI
       const convertedData = convertDataWithMapping(filePreview, mapping, headerRowIndex);
       console.log('=== CONVERSION RESULT ===');
       console.log(`Converted ${convertedData.length} rows from original ${filePreview.totalRows} total rows`);
-      console.log(`Header row index: ${headerRowIndex}, Headers: ${headers?.join(', ')}`);
+      console.log(`Header row index: ${headerRowIndex}, Headers: ${(filePreview.headers || []).join(', ')}`);
       
       setConvertedData(convertedData);
       await uploadTrialBalance(convertedData, selectedFile);

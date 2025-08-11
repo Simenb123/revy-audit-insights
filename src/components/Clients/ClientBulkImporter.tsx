@@ -68,10 +68,28 @@ const ClientBulkImporter = ({ onImportComplete, onCancel }: ClientBulkImporterPr
 
     setSelectedFile(file);
     
+    // Header detection hints for client bulk files
+    const csvOptions = {
+      extraAliasHeaders: [
+        'orgnr','org nr','organisasjonsnummer','orgnummer','org-nr','org no',
+        'partner','ansv','kundeansvarlig','klientgruppe','kundegruppe','gruppe','client group',
+        'regnskapssystem','økonomisystem','accounting system','erp',
+        'budsjett','budsjett i kr','budsjett kroner','budsjett timer','timebudsjett',
+        'faktisk bransje','overordnet bransje','kundenavn','navn','company name','company'
+      ]
+    } as const;
+    const excelOptions = {
+      extraTerms: [
+        'organisasjonsnummer','orgnr','org nr','orgnummer',
+        'partner','ansv','kundeansvarlig','klientgruppe','regnskapssystem',
+        'budsjett','budsjett i kr','budsjett timer','faktisk bransje','kundenavn','navn'
+      ]
+    } as const;
+    
     try {
       // Hvis CSV, beholder vi eksisterende løype
       if (extension === 'csv') {
-        const preview = await processCSVFile(file);
+        const preview = await processCSVFile(file, csvOptions);
         setFilePreview(preview);
         setShowMapping(true);
         setStep('mapping');
@@ -85,7 +103,7 @@ const ClientBulkImporter = ({ onImportComplete, onCancel }: ClientBulkImporterPr
         setSelectedSheet(names[0]);
         // Bytt til mapping-visning med forhåndsvisning av første fane
         const csvFile = await buildCsvFileFromSheet(file, names[0]);
-        const preview = await processCSVFile(csvFile);
+        const preview = await processCSVFile(csvFile, csvOptions);
         setFilePreview(preview);
         setShowMapping(true);
         setStep('mapping');
@@ -93,7 +111,7 @@ const ClientBulkImporter = ({ onImportComplete, onCancel }: ClientBulkImporterPr
       }
 
       // Kun én fane – kjør som før
-      const preview = await processExcelFile(file);
+      const preview = await processExcelFile(file, excelOptions);
       setFilePreview(preview);
       setShowMapping(true);
       setStep('mapping');
@@ -128,7 +146,13 @@ const ClientBulkImporter = ({ onImportComplete, onCancel }: ClientBulkImporterPr
     try {
       // Konverter valgt fane til CSV og gjenbruk CSV-prosessoren
       const csvFile = await buildCsvFileFromSheet(selectedFile, selectedSheet);
-      const preview = await processCSVFile(csvFile);
+      const preview = await processCSVFile(csvFile, { extraAliasHeaders: [
+        'orgnr','org nr','organisasjonsnummer','orgnummer','org-nr','org no',
+        'partner','ansv','kundeansvarlig','klientgruppe','kundegruppe','gruppe','client group',
+        'regnskapssystem','økonomisystem','accounting system','erp',
+        'budsjett','budsjett i kr','budsjett kroner','budsjett timer','timebudsjett',
+        'faktisk bransje','overordnet bransje','kundenavn','navn','company name','company'
+      ]});
       setFilePreview(preview);
       setShowMapping(true);
       setStep('mapping');
@@ -144,7 +168,13 @@ const ClientBulkImporter = ({ onImportComplete, onCancel }: ClientBulkImporterPr
     if (!selectedFile) return;
     try {
       const csvFile = await buildCsvFileFromSheet(selectedFile, name);
-      const preview = await processCSVFile(csvFile);
+      const preview = await processCSVFile(csvFile, { extraAliasHeaders: [
+        'orgnr','org nr','organisasjonsnummer','orgnummer','org-nr','org no',
+        'partner','ansv','kundeansvarlig','klientgruppe','kundegruppe','gruppe','client group',
+        'regnskapssystem','økonomisystem','accounting system','erp',
+        'budsjett','budsjett i kr','budsjett kroner','budsjett timer','timebudsjett',
+        'faktisk bransje','overordnet bransje','kundenavn','navn','company name','company'
+      ]});
       setSelectedSheet(name);
       setFilePreview(preview);
     } catch (error) {
@@ -153,14 +183,14 @@ const ClientBulkImporter = ({ onImportComplete, onCancel }: ClientBulkImporterPr
     }
   };
 
-  const handleMappingComplete = async (mapping: Record<string, string>, headerRowIndex?: number) => {
+  const handleMappingComplete = async (mapping: Record<string, string>, headerRowIndex?: number, headers?: string[]) => {
     if (!filePreview || !selectedFile) return;
     
     setShowMapping(false);
     setStep('processing');
     
     try {
-      const convertedData = convertDataWithMapping(filePreview, mapping, headerRowIndex);
+      const convertedData = convertDataWithMapping(filePreview, mapping, headerRowIndex, headers);
       await processBulkImport(convertedData);
     } catch (error) {
       console.error('Conversion error:', error);
@@ -284,9 +314,8 @@ const ClientBulkImporter = ({ onImportComplete, onCancel }: ClientBulkImporterPr
             if (normalized) insertData.engagement_type = normalized;
           }
           if (row.budget_amount !== undefined && row.budget_amount !== '') {
-            let amount = parseCurrency(row.budget_amount);
+            const amount = parseCurrency(row.budget_amount);
             if (amount !== null) {
-              if (amount < 1000) amount = amount * 1000; // tolkes ofte i tusen
               insertData.budget_amount = amount;
             }
           }
@@ -306,7 +335,13 @@ const ClientBulkImporter = ({ onImportComplete, onCancel }: ClientBulkImporterPr
               .maybeSingle();
 
             if (insertError) {
-              errors.push(`Rad ${i + 1}: Feil ved opprettelse av ${orgNumber}: ${insertError.message}`);
+              // Håndter duplikat: unikhetsbrudd behandles som "allerede eksisterer"
+              const code = (insertError as any).code || (insertError as any).details || '';
+              if (typeof code === 'string' && code.includes('23505')) {
+                warnings.push(`Rad ${i + 1}: ${orgNumber} finnes allerede – hoppet over`);
+              } else {
+                errors.push(`Rad ${i + 1}: Feil ved opprettelse av ${orgNumber}: ${insertError.message}`);
+              }
               continue;
             }
 
@@ -363,9 +398,8 @@ const ClientBulkImporter = ({ onImportComplete, onCancel }: ClientBulkImporterPr
 
         // NYTT: Budsjett (kr), Budsjett timer og Faktisk bransje
         if (row.budget_amount !== undefined && row.budget_amount !== '') {
-          let amount = parseCurrency(row.budget_amount);
+          const amount = parseCurrency(row.budget_amount);
           if (amount !== null) {
-            if (amount < 1000) amount = amount * 1000; // tolkes ofte i tusen
             updateData.budget_amount = amount;
           } else {
             warnings.push(`Rad ${i + 1}: Kunne ikke tolke 'Budsjett i kr' (${row.budget_amount})`);
