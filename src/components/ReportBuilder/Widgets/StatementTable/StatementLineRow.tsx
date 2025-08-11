@@ -26,6 +26,9 @@ interface StatementLineRowProps {
   currentByAcc?: Map<string, any>;
   prevByAcc?: Map<string, any>;
   openAccountTB?: (accountNumber: string) => void;
+  visualGuides?: boolean;
+  compactMode?: boolean;
+  zebraStriping?: boolean;
 }
 
 export const StatementLineRow = React.memo(function StatementLineRow({
@@ -48,7 +51,10 @@ export const StatementLineRow = React.memo(function StatementLineRow({
   toggleAccounts,
   currentByAcc,
   prevByAcc,
-  openAccountTB
+  openAccountTB,
+  visualGuides,
+  compactMode,
+  zebraStriping
 }: StatementLineRowProps) {
 const hasChildren = !!(line.children && line.children.length > 0);
 const isTotal = !!line.is_total_line || line.line_type === 'subtotal' || line.line_type === 'calculation' || String(line.standard_name || '').toLowerCase().startsWith('sum');
@@ -113,6 +119,9 @@ const countVisible = React.useCallback((node: any): number => {
               siblingIndex={idx + 1}
               siblingCount={arr.length}
               rowIndex={start}
+              visualGuides={visualGuides}
+              compactMode={compactMode}
+              zebraStriping={zebraStriping}
             />
           );
         });
@@ -132,8 +141,16 @@ const countVisible = React.useCallback((node: any): number => {
           <>
             <TableRow
               role="row"
-              className={`${isDrillable ? 'cursor-pointer' : 'cursor-default'} hover:bg-muted/40 focus-visible:bg-muted/50 focus-visible:outline-none print:break-inside-avoid`}
-onClick={() => { 
+              className={`${isDrillable ? 'cursor-pointer' : 'cursor-default'} hover:bg-muted/40 focus-visible:bg-muted/50 focus-visible:outline-none print:break-inside-avoid ${(() => {
+                const name = String(line.standard_name || '').toLowerCase();
+                const isGrandTotal = !!line.is_total_line;
+                const isSub = !isGrandTotal && (line.line_type === 'subtotal' || line.line_type === 'calculation' || name.startsWith('sum'));
+                const zebra = zebraStriping && !isGrandTotal && !isSub && (baseRowIndex % 2 === 1) ? 'bg-muted/20' : '';
+                const typeCls = isGrandTotal ? 'bg-muted/60 font-semibold border-t-2 border-border' : (isSub ? 'bg-muted/30 font-medium border-t border-border' : '');
+                const compactCls = compactMode ? '[&>td]:py-1 [&>th]:py-1' : '';
+                return `${typeCls} ${zebra} ${compactCls}`;
+              })()}`}
+ onClick={() => { 
                 if (isDrillable) {
                   if (inlineAccounts && toggleAccounts) {
                     const opening = !accountsOpen;
@@ -413,6 +430,9 @@ onClick={(e) => {
               siblingIndex={idx + 1}
               siblingCount={arr.length}
               rowIndex={start}
+              visualGuides={visualGuides}
+              compactMode={compactMode}
+              zebraStriping={zebraStriping}
             />
           );
         });
