@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Building2, Users, ArrowRight, AlertCircle, MessageSquare } from 'lucide-react';
+import { Building2, Users, ArrowRight, AlertCircle, MessageSquare, Loader2 } from 'lucide-react';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { useExistingFirm } from '@/hooks/useExistingFirm';
 import { useJoinFirm } from '@/hooks/useJoinFirm';
@@ -53,6 +53,7 @@ const OrganizationSetup = () => {
   const myPending = accessRequests?.find(
     (r) => r.audit_firm_id === existingFirm?.id && r.requester_profile_id === session?.user?.id
   );
+  const [brregLoading, setBrregLoading] = useState(false);
 
   // Redirect if user already has a firm
   useEffect(() => {
@@ -67,6 +68,43 @@ const OrganizationSetup = () => {
       setShowExistingFirmDialog(true);
     }
   }, [existingFirm, step, firmData.orgNumber]);
+
+  const handleBrregLookup = async () => {
+    const digits = (firmData.orgNumber || '').replace(/\D/g, '');
+    if (!digits || digits.length < 9) {
+      toast({
+        title: 'Ugyldig org.nr',
+        description: 'Skriv inn minst 9 sifre for å slå opp i BRREG',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      setBrregLoading(true);
+      const { data, error } = await supabase.functions.invoke('brreg', {
+        body: { query: digits },
+      });
+      if (error) throw error;
+
+      const basis: any = (data as any)?.basis;
+      if (basis) {
+        setFirmData((prev) => ({
+          ...prev,
+          name: prev.name || basis.navn || prev.name,
+          website: prev.website || basis.homepage || prev.website,
+        }));
+        toast({ title: 'BRREG funnet', description: basis.navn || 'Oppslag vellykket' });
+      } else {
+        toast({ title: 'Ikke funnet', description: 'Fant ikke firma i BRREG', variant: 'destructive' });
+      }
+    } catch (e: any) {
+      logger.error('BRREG lookup failed', e);
+      toast({ title: 'Feil ved BRREG-oppslag', description: e?.message ?? 'Ukjent feil', variant: 'destructive' });
+    } finally {
+      setBrregLoading(false);
+    }
+  };
 
   const handleCreateFirm = async () => {
     if (!session?.user?.id) return;
@@ -369,12 +407,17 @@ const OrganizationSetup = () => {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="orgNumber">Organisasjonsnummer</Label>
-                <Input
-                  id="orgNumber"
-                  value={firmData.orgNumber}
-                  onChange={(e) => setFirmData({ ...firmData, orgNumber: e.target.value })}
-                  placeholder="123456789"
-                />
+                <div className="flex gap-2">
+                  <Input
+                    id="orgNumber"
+                    value={firmData.orgNumber}
+                    onChange={(e) => setFirmData({ ...firmData, orgNumber: e.target.value })}
+                    placeholder="123456789"
+                  />
+                  <Button type="button" variant="outline" onClick={handleBrregLookup} disabled={!firmData.orgNumber || brregLoading}>
+                    {brregLoading ? (<><Loader2 className="h-4 w-4 animate-spin mr-2" /> Henter…</>) : 'Hent fra BRREG'}
+                  </Button>
+                </div>
               </div>
             </div>
 
