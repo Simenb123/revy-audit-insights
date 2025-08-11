@@ -5042,6 +5042,8 @@ export type Database = {
           first_name: string | null
           hire_date: string | null
           id: string
+          initials: string | null
+          initials_color: string | null
           is_active: boolean | null
           last_name: string | null
           updated_at: string
@@ -5056,6 +5058,8 @@ export type Database = {
           first_name?: string | null
           hire_date?: string | null
           id: string
+          initials?: string | null
+          initials_color?: string | null
           is_active?: boolean | null
           last_name?: string | null
           updated_at?: string
@@ -5070,6 +5074,8 @@ export type Database = {
           first_name?: string | null
           hire_date?: string | null
           id?: string
+          initials?: string | null
+          initials_color?: string | null
           is_active?: boolean | null
           last_name?: string | null
           updated_at?: string
@@ -5751,6 +5757,64 @@ export type Database = {
             columns: ["parent_message_id"]
             isOneToOne: false
             referencedRelation: "team_communications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_member_allocations: {
+        Row: {
+          budget_hours: number
+          client_id: string
+          created_at: string
+          id: string
+          notes: string | null
+          period_year: number
+          team_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          budget_hours?: number
+          client_id: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          period_year: number
+          team_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          budget_hours?: number
+          client_id?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          period_year?: number
+          team_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_member_allocations_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_member_allocations_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "client_teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_member_allocations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
