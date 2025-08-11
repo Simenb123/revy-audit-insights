@@ -22,7 +22,8 @@ export const useEffectiveBillingRates = (params: {
       if (!dateISO || !userIds.length) return {};
       const entries = await Promise.all(
         userIds.map(async (uid) => {
-          const { data, error } = await supabase.rpc("get_effective_billing_rate", {
+          // Cast supabase to any to bypass type mismatch until types include this RPC
+          const { data, error } = await (supabase as any).rpc("get_effective_billing_rate", {
             p_user_id: uid,
             p_date: dateISO,
             p_client_id: clientId ?? null,
