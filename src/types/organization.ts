@@ -90,3 +90,21 @@ export interface AuditLog {
   metadata?: any;
   createdAt: string;
 }
+
+// Ansattstatus i firma
+export type EmployeeStatus = 'pre_registered' | 'active' | 'inactive' | 'student' | 'test';
+
+// Ansatt registrert på revisjonsfirma (kan mangle faktisk brukerprofil ennå)
+export interface FirmEmployee {
+  id: string;
+  auditFirmId: string;
+  departmentId?: string | null;
+  profileId?: string | null;
+  email?: string | null;
+  firstName: string;
+  lastName: string;
+  role: UserRole;
+  status: EmployeeStatus;
+  createdAt: string;
+  updatedAt: string;
+}

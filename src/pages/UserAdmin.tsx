@@ -18,6 +18,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Link } from 'react-router-dom';
 import type { UserRole } from '@/types/organization';
 import EmployeesList from '@/components/Admin/EmployeesList';
+import FirmEmployeesManager from '@/components/Admin/FirmEmployeesManager';
 
 const UserAdmin = () => {
   const { data: userProfile } = useUserProfile();
@@ -382,6 +383,8 @@ const UserAdmin = () => {
           </div>
         </CardContent>
       </Card>
+
+      <FirmEmployeesManager />
 
       <EmployeesList />
 

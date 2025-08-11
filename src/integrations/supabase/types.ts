@@ -3475,6 +3475,70 @@ export type Database = {
           },
         ]
       }
+      firm_employees: {
+        Row: {
+          audit_firm_id: string
+          created_at: string
+          department_id: string | null
+          email: string | null
+          first_name: string
+          id: string
+          last_name: string
+          profile_id: string | null
+          role: Database["public"]["Enums"]["user_role_type"]
+          status: Database["public"]["Enums"]["employee_status_type"]
+          updated_at: string
+        }
+        Insert: {
+          audit_firm_id: string
+          created_at?: string
+          department_id?: string | null
+          email?: string | null
+          first_name: string
+          id?: string
+          last_name: string
+          profile_id?: string | null
+          role?: Database["public"]["Enums"]["user_role_type"]
+          status?: Database["public"]["Enums"]["employee_status_type"]
+          updated_at?: string
+        }
+        Update: {
+          audit_firm_id?: string
+          created_at?: string
+          department_id?: string | null
+          email?: string | null
+          first_name?: string
+          id?: string
+          last_name?: string
+          profile_id?: string | null
+          role?: Database["public"]["Enums"]["user_role_type"]
+          status?: Database["public"]["Enums"]["employee_status_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "firm_employees_audit_firm_id_fkey"
+            columns: ["audit_firm_id"]
+            isOneToOne: false
+            referencedRelation: "audit_firms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "firm_employees_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "firm_employees_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       firm_formula_definitions: {
         Row: {
           audit_firm_id: string | null
@@ -6655,6 +6719,12 @@ export type Database = {
       communication_type: "team" | "department" | "firm"
       document_status: "pending" | "submitted" | "accepted" | "rejected"
       document_type: "shareholder_report" | "tax_return" | "annual_report"
+      employee_status_type:
+        | "pre_registered"
+        | "active"
+        | "inactive"
+        | "student"
+        | "test"
       engagement_type: "revisjon" | "regnskap" | "annet"
       planning_module_key:
         | "ANALYTICAL_REVIEW"
@@ -6847,6 +6917,13 @@ export const Constants = {
       communication_type: ["team", "department", "firm"],
       document_status: ["pending", "submitted", "accepted", "rejected"],
       document_type: ["shareholder_report", "tax_return", "annual_report"],
+      employee_status_type: [
+        "pre_registered",
+        "active",
+        "inactive",
+        "student",
+        "test",
+      ],
       engagement_type: ["revisjon", "regnskap", "annet"],
       planning_module_key: [
         "ANALYTICAL_REVIEW",
