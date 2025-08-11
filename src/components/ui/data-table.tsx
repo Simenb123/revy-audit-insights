@@ -99,6 +99,7 @@ const DataTable = <T extends Record<string, any>>({
   // Synchronized horizontal scrollbar (top) and body scroll container
   const topScrollRef = useRef<HTMLDivElement | null>(null);
   const bodyScrollRef = useRef<HTMLDivElement | null>(null);
+  const scrollRestoreRef = useRef<{ left: number; top: number } | null>(null);
   const [topScrollWidth, setTopScrollWidth] = useState(0);
 
   useEffect(() => {
@@ -378,6 +379,12 @@ const DataTable = <T extends Record<string, any>>({
     const column = columns.find((col) => col.key === columnKey);
     if (!column?.sortable) return;
 
+    // Bevar scrollposisjon i tabellkroppen før vi endrer sortering
+    const el = bodyScrollRef.current;
+    if (el) {
+      scrollRestoreRef.current = { left: el.scrollLeft, top: el.scrollTop };
+    }
+
     if (sortBy === columnKey) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
     } else {
@@ -385,6 +392,22 @@ const DataTable = <T extends Record<string, any>>({
       setSortOrder('asc');
     }
   };
+
+  // Gjenopprett scrollposisjon etter at sortering har endret datasettet
+  useEffect(() => {
+    const pos = scrollRestoreRef.current;
+    if (!pos) return;
+    const el = bodyScrollRef.current;
+    if (!el) {
+      scrollRestoreRef.current = null;
+      return;
+    }
+    requestAnimationFrame(() => {
+      el.scrollLeft = pos.left;
+      el.scrollTop = pos.top;
+      scrollRestoreRef.current = null;
+    });
+  }, [sortBy, sortOrder, filteredAndSortedData.length]);
 
   const getSortIcon = (columnKey: string) => {
     const column = columns.find((col) => col.key === columnKey);
