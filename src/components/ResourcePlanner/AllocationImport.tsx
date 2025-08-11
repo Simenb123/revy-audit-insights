@@ -168,11 +168,13 @@ export default function AllocationImport() {
         return;
       }
 
-      // Chunked insert to avoid payload limits
+      // Chunked upsert to avoid payload limits and overwrite existing rows on unique key
       const chunkSize = 500;
       for (let i = 0; i < records.length; i += chunkSize) {
         const chunk = records.slice(i, i + chunkSize);
-        const { error } = await (supabase as any).from('team_member_allocations' as any).insert(chunk);
+        const { error } = await (supabase as any)
+          .from('team_member_allocations' as any)
+          .upsert(chunk, { onConflict: 'team_id,client_id,user_id,period_year,period_month' });
         if (error) throw error;
       }
 
