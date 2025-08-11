@@ -369,6 +369,29 @@ const collectIds = (nodes: any[]): string[] =>
     return clone;
   };
 
+// Trial balance data for drilldown panel og unmapped-beregning
+const { data: tbCurrent } = useTrialBalanceData(clientId || '', selectedVersion, periodInfo?.currentYear);
+const { data: tbPrev } = useTrialBalanceData(clientId || '', selectedVersion, periodInfo?.previousYear);
+
+const currentByAcc = React.useMemo(() => new Map((tbCurrent || []).map((e: any) => [e.account_number, e])), [tbCurrent]);
+const prevByAcc = React.useMemo(() => new Map((tbPrev || []).map((e: any) => [e.account_number, e])), [tbPrev]);
+
+// Unmapped: konti i TB som ikke finnes i noen mapping/klassifisering som inngår i rapporten
+const mappedAccountsSet = React.useMemo(() => {
+  const s = new Set<string>();
+  for (const [, accs] of lineToAccounts.entries()) {
+    accs.forEach((a) => s.add(String(a)));
+  }
+  return s;
+}, [lineToAccounts]);
+const allCurrentAccountsSet = React.useMemo(() => new Set<string>(Array.from(currentByAcc.keys()).map(String)), [currentByAcc]);
+const unmappedSet = React.useMemo(() => {
+  const s = new Set<string>();
+  allCurrentAccountsSet.forEach((a) => { if (!mappedAccountsSet.has(a)) s.add(a); });
+  return s;
+}, [allCurrentAccountsSet, mappedAccountsSet]);
+const unmappedCount = unmappedSet.size;
+
 const filterLines = React.useCallback((nodes: any[]): any[] => {
   const q = (searchQuery || '').trim().toLowerCase();
   const matchesSearch = (n: any) => {
@@ -430,28 +453,7 @@ const countVisibleLines = React.useCallback(function countVisibleLines(nodes: an
     : undefined;
   const balanceStartIndex = balanceHeadingIndex ? balanceHeadingIndex + 1 : undefined;
 
-// Trial balance data for drilldown panel og unmapped-beregning
-const { data: tbCurrent } = useTrialBalanceData(clientId || '', selectedVersion, periodInfo?.currentYear);
-const { data: tbPrev } = useTrialBalanceData(clientId || '', selectedVersion, periodInfo?.previousYear);
-
-const currentByAcc = React.useMemo(() => new Map((tbCurrent || []).map((e: any) => [e.account_number, e])), [tbCurrent]);
-const prevByAcc = React.useMemo(() => new Map((tbPrev || []).map((e: any) => [e.account_number, e])), [tbPrev]);
-
-// Unmapped: konti i TB som ikke finnes i noen mapping/klassifisering som inngår i rapporten
-const mappedAccountsSet = React.useMemo(() => {
-  const s = new Set<string>();
-  for (const [, accs] of lineToAccounts.entries()) {
-    accs.forEach((a) => s.add(String(a)));
-  }
-  return s;
-}, [lineToAccounts]);
-const allCurrentAccountsSet = React.useMemo(() => new Set<string>(Array.from(currentByAcc.keys()).map(String)), [currentByAcc]);
-const unmappedSet = React.useMemo(() => {
-  const s = new Set<string>();
-  allCurrentAccountsSet.forEach((a) => { if (!mappedAccountsSet.has(a)) s.add(a); });
-  return s;
-}, [allCurrentAccountsSet, mappedAccountsSet]);
-const unmappedCount = unmappedSet.size;
+// moved: unmapped/calculation block placed above filterLines
 
   const findLineTitle = React.useCallback((standardNumber: string): string => {
     const findIn = (nodes: any[]): any | undefined => {
