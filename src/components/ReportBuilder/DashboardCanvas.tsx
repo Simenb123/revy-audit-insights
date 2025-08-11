@@ -7,6 +7,7 @@ import { useViewMode } from './ViewModeContext';
 import { cn } from '@/lib/utils';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
+import { GRID_ROW_HEIGHT, GRID_MARGIN } from '@/components/ReportBuilder/gridConfig';
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
 
@@ -56,8 +57,8 @@ export function DashboardCanvas({ clientId, selectedVersion }: DashboardCanvasPr
         layouts={{ lg: gridLayouts }}
         onLayoutChange={handleLayoutChange}
         cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
-        rowHeight={60}
-        margin={[16, 16]}
+        rowHeight={GRID_ROW_HEIGHT}
+        margin={GRID_MARGIN}
         containerPadding={[0, 0]}
         isDraggable={!isViewMode}
         isResizable={!isViewMode}

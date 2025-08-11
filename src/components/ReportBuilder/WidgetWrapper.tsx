@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { Widget, useWidgetManager } from '@/contexts/WidgetManagerContext';
 import { WidgetConfiguration } from './WidgetConfiguration';
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
 import { useViewMode } from './ViewModeContext';
+import { useAutoGridItemHeight } from '@/hooks/useAutoGridItemHeight';
 
 interface WidgetWrapperProps {
   widget: Widget;
@@ -13,6 +14,10 @@ interface WidgetWrapperProps {
 export function WidgetWrapper({ widget, children }: WidgetWrapperProps) {
   const { updateWidget, removeWidget } = useWidgetManager();
   const { isViewMode } = useViewMode();
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+// Auto-adjust height to content
+  useAutoGridItemHeight(widget.id, containerRef, { minRows: 2, enabled: true });
 
   const handleUpdateWidget = (updates: Partial<Widget>) => {
     updateWidget(widget.id, updates);
@@ -21,9 +26,8 @@ export function WidgetWrapper({ widget, children }: WidgetWrapperProps) {
   const handleRemoveWidget = () => {
     removeWidget(widget.id);
   };
-
   return (
-    <div className="relative group h-full">
+    <div ref={containerRef} className="relative group h-full">
       {children}
       {!isViewMode && (
         <div className="widget-controls absolute top-2 right-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
