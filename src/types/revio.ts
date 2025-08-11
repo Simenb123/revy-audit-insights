@@ -116,6 +116,11 @@ export interface Client {
   // NEW: Support for engagement type and auditor name
   engagement_type?: 'revisjon' | 'regnskap' | 'annet';
   current_auditor_name?: string;
+
+  // NEW: Budget and industry fields
+  budget_amount?: number | null;
+  budget_hours?: number | null;
+  actual_industry?: string | null;
 }
 
 export type AuditPhase = 'engagement' | 'planning' | 'execution' | 'completion' | 'risk_assessment' | 'reporting' | 'overview';

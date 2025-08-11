@@ -129,6 +129,10 @@ export function useClientData() {
           audit_fee: client.audit_fee != null ? Number(client.audit_fee) : null,
           board_meetings_per_year: client.board_meetings_per_year != null ? Number(client.board_meetings_per_year) : null,
           is_test_data: Boolean(client.is_test_data),
+          // New fields coercion
+          budget_amount: (client as any).budget_amount != null ? Number((client as any).budget_amount) : null,
+          budget_hours: (client as any).budget_hours != null ? Number((client as any).budget_hours) : null,
+          actual_industry: (client as any).actual_industry ?? null,
         };
 
         return transformedClient;

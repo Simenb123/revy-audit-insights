@@ -82,7 +82,12 @@ const ClientBulkImporter = ({ onImportComplete, onCancel }: ClientBulkImporterPr
       if (names.length > 1) {
         setSheetNames(names);
         setSelectedSheet(names[0]);
-        setStep('sheet');
+        // Bytt til mapping-visning med forhåndsvisning av første fane
+        const csvFile = await buildCsvFileFromSheet(file, names[0]);
+        const preview = await processCSVFile(csvFile);
+        setFilePreview(preview);
+        setShowMapping(true);
+        setStep('mapping');
         return;
       }
 
@@ -130,6 +135,20 @@ const ClientBulkImporter = ({ onImportComplete, onCancel }: ClientBulkImporterPr
       console.error('Feil ved prosessering av valgt fane:', error);
       toast.error('Kunne ikke prosessere valgt fane');
       setStep('select');
+    }
+  };
+
+  // Bytte fane direkte i forhåndsvisningen
+  const handleSheetChange = async (name: string) => {
+    if (!selectedFile) return;
+    try {
+      const csvFile = await buildCsvFileFromSheet(selectedFile, name);
+      const preview = await processCSVFile(csvFile);
+      setSelectedSheet(name);
+      setFilePreview(preview);
+    } catch (error) {
+      console.error('Feil ved bytte av fane:', error);
+      toast.error('Kunne ikke bytte fane');
     }
   };
 
@@ -354,42 +373,45 @@ const ClientBulkImporter = ({ onImportComplete, onCancel }: ClientBulkImporterPr
     setSelectedSheet('');
   };
 
-  if (step === 'sheet' && selectedFile && sheetNames.length > 1) {
-    return (
-      <Card className="w-full max-w-none mx-auto">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileSpreadsheet className="w-5 h-5" />
-            Velg fane i Excel-filen
-          </CardTitle>
-          <CardDescription>
-            Filen har flere faner. Velg hvilken fane som skal brukes til import og mapping.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="max-w-md">
-            <Label>Fane</Label>
-            <Select value={selectedSheet} onValueChange={setSelectedSheet}>
-              <SelectTrigger className="mt-1">
-                <SelectValue placeholder="Velg fane" />
-              </SelectTrigger>
-              <SelectContent>
-                {sheetNames.map((name) => (
-                  <SelectItem key={name} value={name}>
-                    {name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex gap-2">
-            <Button onClick={handleConfirmSheet}>Fortsett</Button>
-            <Button variant="outline" onClick={resetImport}>Avbryt</Button>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
+  // Trinnet for manuell fanevelger er ikke lenger nødvendig, da vi viser forhåndsvisning av første fane
+  // og lar brukeren bytte fane i selve forhåndsvisningen. Beholder blokk kommentert for evt. gjenbruk.
+  // if (step === 'sheet' && selectedFile && sheetNames.length > 1) {
+  //   return (
+  //     <Card className="w-full max-w-none mx-auto">
+  //       <CardHeader>
+  //         <CardTitle className="flex items-center gap-2">
+  //           <FileSpreadsheet className="w-5 h-5" />
+  //           Velg fane i Excel-filen
+  //         </CardTitle>
+  //         <CardDescription>
+  //           Filen har flere faner. Velg hvilken fane som skal brukes til import og mapping.
+  //         </CardDescription>
+  //       </CardHeader>
+  //       <CardContent className="space-y-4">
+  //         <div className="max-w-md">
+  //           <Label>Fane</Label>
+  //           <Select value={selectedSheet} onValueChange={setSelectedSheet}>
+  //             <SelectTrigger className="mt-1">
+  //               <SelectValue placeholder="Velg fane" />
+  //             </SelectTrigger>
+  //             <SelectContent>
+  //               {sheetNames.map((name) => (
+  //                 <SelectItem key={name} value={name}>
+  //                   {name}
+  //                 </SelectItem>
+  //               ))}
+  //             </SelectContent>
+  //           </Select>
+  //         </div>
+  //         <div className="flex gap-2">
+  //           <Button onClick={handleConfirmSheet}>Fortsett</Button>
+  //           <Button variant="outline" onClick={resetImport}>Avbryt</Button>
+  //         </div>
+  //       </CardContent>
+  //     </Card>
+  //   );
+  // }
+
 
   if (showMapping && filePreview) {
     return (
@@ -409,6 +431,9 @@ const ClientBulkImporter = ({ onImportComplete, onCancel }: ClientBulkImporterPr
             fileName={selectedFile?.name || ''}
             clientId="bulk"
             fileType="client_bulk"
+            sheetNames={sheetNames}
+            selectedSheet={selectedSheet}
+            onSelectSheet={handleSheetChange}
             customFieldDefinitions={[
               {
                 field_key: 'org_number',

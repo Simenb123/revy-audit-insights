@@ -166,6 +166,32 @@ const ClientsTable = ({ clients, onRowSelect, selectedClientId }: ClientsTablePr
     { key: "department", header: "Avdeling", accessor: (row) => row.department?.trim() || "—", sortable: true },
     { key: "group", header: "Gruppe", accessor: (row) => row.client_group?.trim() || "—", sortable: true },
 
+    // Ekstra kolonner: Budsjett og bransje (valgbare via kolonnemanager)
+    {
+      key: "budget_amount",
+      header: "Budsjett (kr)",
+      accessor: (row) => (row.budget_amount ?? null) as any,
+      sortAccessor: (row) => Number(row.budget_amount ?? 0),
+      sortable: true,
+      format: (v) =>
+        v == null ? "—" : new Intl.NumberFormat('nb-NO', { style: 'currency', currency: 'NOK', maximumFractionDigits: 0 }).format(Number(v)),
+    },
+    {
+      key: "budget_hours",
+      header: "Budsjett timer",
+      accessor: (row) => (row.budget_hours ?? null) as any,
+      sortAccessor: (row) => Number(row.budget_hours ?? 0),
+      sortable: true,
+      format: (v) =>
+        v == null ? "—" : new Intl.NumberFormat('nb-NO', { maximumFractionDigits: 1 }).format(Number(v)),
+    },
+    {
+      key: "actual_industry",
+      header: "Faktisk bransje",
+      accessor: (row) => row.actual_industry?.trim() || "—",
+      sortable: true,
+    },
+
     // New "Aktiv" column
     {
       key: "is_active",
@@ -208,6 +234,9 @@ const ClientsTable = ({ clients, onRowSelect, selectedClientId }: ClientsTablePr
          { key: "capital", visible: true },
          { key: "department", visible: true },
          { key: "group", visible: true },
+         { key: "budget_amount", visible: false },
+         { key: "budget_hours", visible: false },
+         { key: "actual_industry", visible: false },
          { key: "is_active", visible: true }, // New default visibility
       ]}
       onRowClick={(row) => {
