@@ -22,6 +22,7 @@ import * as XLSX from 'xlsx';
 
 interface ClientBulkImportData {
   org_number: string;
+  company_name?: string; // Nytt: navn på klienten
   client_group?: string;
   accounting_system?: string;
   partner?: string;
@@ -260,7 +261,66 @@ const ClientBulkImporter = ({ onImportComplete, onCancel }: ClientBulkImporterPr
 
         const client = clientMap.get(orgNumber);
         if (!client) {
-          warnings.push(`Rad ${i + 1}: Klient med org.nr ${orgNumber} ikke funnet i din klientliste`);
+          // Opprett ny klient automatisk når org.nr ikke finnes
+          const baseName = (row.company_name?.toString().trim() || orgNumber);
+
+          // Bygg insert-data med påkrevde felter + valgfelt dersom tilgjengelig
+          const insertData: any = {
+            user_id: user.id,
+            org_number: orgNumber,
+            company_name: baseName,
+            name: baseName,
+            is_active: true,
+            phase: 'overview',
+            progress: 0,
+          };
+
+          if (row.client_group) insertData.client_group = row.client_group.toString().trim();
+          if (row.accounting_system) insertData.accounting_system = row.accounting_system.toString().trim();
+          if (row.partner) insertData.partner = row.partner.toString().trim();
+          if (row.ansv) insertData.ansv = row.ansv.toString().trim();
+          if (row.current_auditor_name) insertData.current_auditor_name = row.current_auditor_name.toString().trim();
+          if (row.accountant_name) insertData.accountant_name = row.accountant_name.toString().trim();
+          if (row.engagement_type) {
+            const normalized = normalizeEngagementType(row.engagement_type.toString());
+            if (normalized) insertData.engagement_type = normalized;
+          }
+          if (row.budget_amount !== undefined && row.budget_amount !== '') {
+            let amount = parseCurrency(row.budget_amount);
+            if (amount !== null) {
+              if (amount < 1000) amount = amount * 1000; // tolkes ofte i tusen
+              insertData.budget_amount = amount;
+            }
+          }
+          if (row.budget_hours !== undefined && row.budget_hours !== '') {
+            const hours = parseNumber(row.budget_hours);
+            if (hours !== null) insertData.budget_hours = hours;
+          }
+          if (row.actual_industry !== undefined && row.actual_industry !== '') {
+            insertData.actual_industry = row.actual_industry.toString().trim();
+          }
+
+          try {
+            const { data: created, error: insertError } = await supabase
+              .from('clients')
+              .insert(insertData)
+              .select('id, org_number, company_name, client_group, accounting_system')
+              .maybeSingle();
+
+            if (insertError) {
+              errors.push(`Rad ${i + 1}: Feil ved opprettelse av ${orgNumber}: ${insertError.message}`);
+              continue;
+            }
+
+            if (created) {
+              clientMap.set(orgNumber, created);
+              updated++; // teller som en endring
+            }
+          } catch (e: any) {
+            errors.push(`Rad ${i + 1}: Ukjent feil ved opprettelse av ${orgNumber}`);
+          }
+          // Fortsett til neste rad etter opprettelse
+          setUploadProgress(40 + ((i + 1) / data.length) * 50);
           continue;
         }
 
@@ -305,8 +365,9 @@ const ClientBulkImporter = ({ onImportComplete, onCancel }: ClientBulkImporterPr
 
         // NYTT: Budsjett (kr), Budsjett timer og Faktisk bransje
         if (row.budget_amount !== undefined && row.budget_amount !== '') {
-          const amount = parseCurrency(row.budget_amount);
+          let amount = parseCurrency(row.budget_amount);
           if (amount !== null) {
+            if (amount < 1000) amount = amount * 1000; // tolkes ofte i tusen
             updateData.budget_amount = amount;
           } else {
             warnings.push(`Rad ${i + 1}: Kunne ikke tolke 'Budsjett i kr' (${row.budget_amount})`);
