@@ -3,6 +3,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 interface StatementTableToolbarProps {
   widgetId: string;
   showPrevious: boolean;
@@ -27,6 +28,8 @@ interface StatementTableToolbarProps {
   onCollapseAll: () => void;
   onExpandToLevel?: (level: number) => void;
   disabled?: boolean;
+  sectionMode?: 'both' | 'income' | 'balance';
+  onSectionModeChange?: (mode: 'both' | 'income' | 'balance') => void;
 }
 
 export function StatementTableToolbar({
@@ -54,6 +57,8 @@ export function StatementTableToolbar({
   onExpandToLevel,
   disabled,
   unmappedCount,
+  sectionMode,
+  onSectionModeChange,
 }: StatementTableToolbarProps & { unmappedCount?: number }) {
   return (
     <div className="flex items-center gap-4">
@@ -69,6 +74,21 @@ export function StatementTableToolbar({
         <Label htmlFor={`pct-${widgetId}`} className="text-xs text-muted-foreground">%</Label>
         <Switch id={`pct-${widgetId}`} checked={showPercent} onCheckedChange={onShowPercentChange} disabled={disabled} />
       </div>
+      {onSectionModeChange && (
+        <div className="flex items-center gap-2">
+          <Label className="text-xs text-muted-foreground">Seksjon</Label>
+          <Select value={sectionMode || 'both'} onValueChange={(v) => onSectionModeChange(v as 'both' | 'income' | 'balance')} disabled={disabled}>
+            <SelectTrigger className="h-7 w-36">
+              <SelectValue placeholder="Seksjon" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="both">Begge</SelectItem>
+              <SelectItem value="income">Resultat</SelectItem>
+              <SelectItem value="balance">Balanse</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      )}
       {onShowOnlyChangesChange && (
         <div className="flex items-center gap-2">
           <Label htmlFor={`changes-${widgetId}`} className="text-xs text-muted-foreground">Kun endringer</Label>

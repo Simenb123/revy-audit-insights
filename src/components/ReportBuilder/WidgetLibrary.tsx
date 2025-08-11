@@ -132,6 +132,31 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
         showPrevious: true,
         showDifference: true,
         showPercent: true,
+        sectionMode: 'both' as const,
+      }
+    },
+    {
+      type: 'statementTable' as const,
+      title: 'Resultatoppstilling',
+      description: 'Kun resultatregnskap',
+      icon: Table,
+      defaultConfig: {
+        showPrevious: true,
+        showDifference: true,
+        showPercent: true,
+        sectionMode: 'income' as const,
+      }
+    },
+    {
+      type: 'statementTable' as const,
+      title: 'Balanseoppstilling',
+      description: 'Kun balanse',
+      icon: Table,
+      defaultConfig: {
+        showPrevious: true,
+        showDifference: true,
+        showPercent: true,
+        sectionMode: 'balance' as const,
       }
     }
   ];
@@ -216,11 +241,11 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {templates.map((template) => (
-          <Card 
-            key={template.type} 
-            className="cursor-pointer hover:shadow-md transition-shadow"
-            onClick={() => handleAddWidget(template)}
-          >
+            <Card 
+              key={`${template.type}-${template.title}`} 
+              className="cursor-pointer hover:shadow-md transition-shadow"
+              onClick={() => handleAddWidget(template)}
+            >
             <CardHeader className="pb-3">
               <div className="flex items-center gap-2">
                 <template.icon className="h-5 w-5 text-primary" />

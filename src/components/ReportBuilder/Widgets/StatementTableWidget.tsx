@@ -35,7 +35,7 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
   const alwaysShowTopHeaders: boolean = widget.config?.alwaysShowTopHeaders === true;
   const showOnlyUnmapped: boolean = widget.config?.showOnlyUnmapped === true;
   const searchQuery: string = widget.config?.searchQuery || '';
-
+  const sectionMode: 'both' | 'income' | 'balance' = (widget.config?.sectionMode as any) ?? 'both';
   const { incomeStatement, balanceStatement, periodInfo, isLoading } = useDetailedFinancialStatement(
     clientId || '',
     selectedVersion
@@ -91,7 +91,10 @@ const collectIds = (nodes: any[]): string[] =>
   nodes.flatMap((n) => [n.id, ...(n.children ? collectIds(n.children) : [])]);
 
   const expandAll = () => {
-    const all = [...collectIds(incomeStatement || []), ...collectIds(balanceStatement || [])];
+    const all = [
+      ...(sectionMode !== 'balance' ? collectIds(incomeStatement || []) : []),
+      ...(sectionMode !== 'income' ? collectIds(balanceStatement || []) : []),
+    ];
     const map = Object.fromEntries(all.map((id) => [id, true] as const));
     setExpanded(map);
     updateConfig({ expanded: map });
@@ -118,8 +121,8 @@ const collectIds = (nodes: any[]): string[] =>
       return entries;
     };
     const entries = [
-      ...collect(incomeStatement || [], 0),
-      ...collect(balanceStatement || [], 0),
+      ...(sectionMode !== 'balance' ? collect(incomeStatement || [], 0) : []),
+      ...(sectionMode !== 'income' ? collect(balanceStatement || [], 0) : []),
     ];
     const map = Object.fromEntries(entries);
     setExpanded(map);
@@ -428,7 +431,10 @@ const filterLines = React.useCallback((nodes: any[]): any[] => {
   const filteredIncome = filterLines(rawIncome);
   const filteredBalance = filterLines(rawBalance);
 
-  const hasData = (filteredIncome?.length ?? 0) > 0 || (filteredBalance?.length ?? 0) > 0;
+  const fi = sectionMode === 'balance' ? [] : filteredIncome;
+  const fb = sectionMode === 'income' ? [] : filteredBalance;
+
+  const hasData = (fi?.length ?? 0) > 0 || (fb?.length ?? 0) > 0;
 
 const colCount = 1 + 1 + (showPrevious ? 1 : 0) + (showDifference ? 1 : 0) + (showPercent ? 1 : 0);
 const countVisibleLines = React.useCallback(function countVisibleLines(nodes: any[]): number {
@@ -441,15 +447,15 @@ const countVisibleLines = React.useCallback(function countVisibleLines(nodes: an
 }, [expanded, inlineAccounts, accountsExpanded, getAccountsForLine]);
 
   const rowCount =
-    (filteredIncome.length > 0 ? 1 + countVisibleLines(filteredIncome) : 0) +
-    (filteredBalance.length > 0 ? 1 + countVisibleLines(filteredBalance) : 0);
+    (fi.length > 0 ? 1 + countVisibleLines(fi) : 0) +
+    (fb.length > 0 ? 1 + countVisibleLines(fb) : 0);
 
   const headerRowIndex = 1;
-  const incomeHeadingIndex = filteredIncome.length > 0 ? headerRowIndex + 1 : undefined;
+  const incomeHeadingIndex = fi.length > 0 ? headerRowIndex + 1 : undefined;
   const incomeStartIndex = incomeHeadingIndex ? incomeHeadingIndex + 1 : undefined;
-  const incomeRowsCount = filteredIncome.length > 0 ? countVisibleLines(filteredIncome) : 0;
-  const balanceHeadingIndex = filteredBalance.length > 0
-    ? headerRowIndex + (filteredIncome.length > 0 ? 1 + incomeRowsCount : 0) + 1
+  const incomeRowsCount = fi.length > 0 ? countVisibleLines(fi) : 0;
+  const balanceHeadingIndex = fb.length > 0
+    ? headerRowIndex + (fi.length > 0 ? 1 + incomeRowsCount : 0) + 1
     : undefined;
   const balanceStartIndex = balanceHeadingIndex ? balanceHeadingIndex + 1 : undefined;
 
@@ -484,8 +490,8 @@ const flattenVisible = React.useCallback((nodes: any[]): any[] => {
   }, [expanded]);
 
   const handleExportCSV = React.useCallback(() => {
-    const visibleIncome = flattenVisible(filteredIncome);
-    const visibleBalance = flattenVisible(filteredBalance);
+    const visibleIncome = flattenVisible(fi);
+    const visibleBalance = flattenVisible(fb);
     const rows = [
       ...visibleIncome.map((n) => ({ section: 'Resultat', ...n })),
       ...visibleBalance.map((n) => ({ section: 'Balanse', ...n })),
@@ -556,6 +562,8 @@ const flattenVisible = React.useCallback((nodes: any[]): any[] => {
   onShowOnlyUnmappedChange={(v: boolean) => { updateConfig({ showOnlyUnmapped: v }); setLiveMessage(v ? 'Filter: kun umappede' : 'Filter: alle'); }}
   searchQuery={searchQuery}
   onSearchQueryChange={(q: string) => { updateConfig({ searchQuery: q }); }}
+  sectionMode={sectionMode}
+  onSectionModeChange={(mode) => { updateConfig({ sectionMode: mode }); setLiveMessage(mode === 'both' ? 'Seksjon: begge' : mode === 'income' ? 'Seksjon: resultat' : 'Seksjon: balanse'); }}
   onExpandAll={expandAll}
   onCollapseAll={collapseAll}
   onExpandToLevel={(lvl: number) => expandToLevel(lvl)}
@@ -611,10 +619,10 @@ const flattenVisible = React.useCallback((nodes: any[]): any[] => {
                   </TableRow>
                 </TableHeader>
               <TableBody>
-                {filteredIncome.length > 0 && (
+                {fi.length > 0 && (
                   <>
                     <SectionHeading title="Resultat" rowIndex={incomeHeadingIndex} colSpan={2 + (showPrevious ? 1 : 0) + (showDifference ? 1 : 0) + (showPercent ? 1 : 0)} />
-                    {filteredIncome.map((line, idx, arr) => (
+                    {fi.map((line, idx, arr) => (
 <StatementLineRow
   key={line.id}
   line={line}
@@ -640,16 +648,16 @@ const flattenVisible = React.useCallback((nodes: any[]): any[] => {
   openAccountTB={openAccountTB}
   siblingIndex={idx + 1}
   siblingCount={arr.length}
-  rowIndex={(incomeStartIndex ?? 0) + countVisibleLines(filteredIncome.slice(0, idx))}
+  rowIndex={(incomeStartIndex ?? 0) + countVisibleLines(fi.slice(0, idx))}
   tabIndex={idx === 0 ? 0 : -1}
 />
                     ))}
                   </>
                 )}
-                {filteredBalance.length > 0 && (
+                {fb.length > 0 && (
                   <>
                     <SectionHeading title="Balanse" rowIndex={balanceHeadingIndex} colSpan={2 + (showPrevious ? 1 : 0) + (showDifference ? 1 : 0) + (showPercent ? 1 : 0)} />
-                    {filteredBalance.map((line, idx, arr) => (
+                    {fb.map((line, idx, arr) => (
 <StatementLineRow
   key={line.id}
   line={line}
@@ -675,8 +683,8 @@ const flattenVisible = React.useCallback((nodes: any[]): any[] => {
   openAccountTB={openAccountTB}
   siblingIndex={idx + 1}
   siblingCount={arr.length}
-  rowIndex={(balanceStartIndex ?? 0) + countVisibleLines(filteredBalance.slice(0, idx))}
-  tabIndex={(filteredIncome.length === 0 && idx === 0) ? 0 : -1}
+  rowIndex={(balanceStartIndex ?? 0) + countVisibleLines(fb.slice(0, idx))}
+  tabIndex={(fi.length === 0 && idx === 0) ? 0 : -1}
 />
                     ))}
                   </>
