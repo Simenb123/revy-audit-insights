@@ -17,7 +17,7 @@ import { useSaveTeamAllocations } from '@/hooks/useSaveTeamAllocations';
 import { useClientList } from '@/hooks/useClientList';
 import KPICards from '@/components/ResourcePlanner/KPICards';
 import TaskBoard from '@/components/ResourcePlanner/TaskBoard';
-
+import CapacityCalculator from '@/components/ResourcePlanner/CapacityCalculator';
 const months = [
   { value: '1', label: 'Jan' },
   { value: '2', label: 'Feb' },
@@ -57,7 +57,7 @@ const upsertCapacity = useUpsertEmployeeCapacity();
 const [capacityByUser, setCapacityByUser] = React.useState<Record<string, { cap: number; abs: number }>>({});
 
 // Allokering hooks og state
-const { data: allocations = [] } = useTeamAllocations(selectedTeamId, selectedFiscalYear);
+const { data: allocations = [] } = useTeamAllocations(selectedTeamId, selectedFiscalYear, monthNum);
 const saveAllocations = useSaveTeamAllocations();
 const { data: clients = [] } = useClientList();
 const [selectedClient, setSelectedClient] = React.useState<string | undefined>(undefined);
@@ -106,6 +106,25 @@ React.useEffect(() => {
           {/* KPI-kort */}
           <KPICards totals={data?.totals} />
 
+          {/* Kapasitetskalkulator */}
+          <CapacityCalculator />
+
+          {/* Varsel for over/under utnyttelse */}
+          {data?.totals?.utilizationPct !== null && data?.totals?.utilizationPct !== undefined && (
+            <Card>
+              <CardContent className="py-3">
+                <div className={`text-sm ${data!.totals!.utilizationPct! > 1 ? 'text-destructive' : 'text-muted-foreground'}`}>
+                  {data!.totals!.utilizationPct! > 1
+                    ? 'Advarsel: Teamet er overbooket denne måneden.'
+                    : data!.totals!.utilizationPct! < 0.8
+                      ? 'Merk: Lav utnyttelse – det er ledig kapasitet.'
+                      : null}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Planleggingsseksjoner */}
           <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card>
             <CardHeader>
@@ -275,11 +294,12 @@ React.useEffect(() => {
                   variant="default"
                   onClick={() => {
                     if (!selectedClient || !selectedTeamId) return;
-                    const rows = Object.entries(budgetByUser).map(([userId, hours]) => ({
+const rows = Object.entries(budgetByUser).map(([userId, hours]) => ({
                       client_id: selectedClient,
                       team_id: selectedTeamId,
                       user_id: userId,
                       period_year: selectedFiscalYear,
+                      period_month: monthNum,
                       budget_hours: Number(isNaN(Number(hours)) ? 0 : hours),
                     }));
                     (saveAllocations as any).mutate(rows as any);

@@ -22,21 +22,29 @@ export interface BudgetAnalytics {
   rows: BudgetAllocationRow[];
 }
 
-export const useBudgetAnalytics = (clientId: string | undefined, year: number | undefined) => {
+export const useBudgetAnalytics = (clientId: string | undefined, year: number | undefined, month?: number) => {
   const { data: employees = [] } = useEmployees();
   const { data: teams = [] } = useClientTeams(clientId);
 
   return useQuery({
-    queryKey: ['budget-analytics', clientId, year],
+    queryKey: ['budget-analytics', clientId, year, month],
     queryFn: async (): Promise<BudgetAnalytics> => {
       if (!clientId || !year) return { totalHours: 0, byTeam: [], byUser: [], rows: [] };
 
       // any-cast until generated types include the table
-      const { data, error } = await (supabase as any)
+      let query = (supabase as any)
         .from('team_member_allocations' as any)
         .select('*')
         .eq('client_id', clientId)
         .eq('period_year', year);
+
+      if (typeof month === 'number') {
+        query = query.eq('period_month', month);
+      } else {
+        query = query.is('period_month', null);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
 

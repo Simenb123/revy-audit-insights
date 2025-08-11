@@ -14,18 +14,25 @@ export interface TeamAllocation {
   updated_at: string;
 }
 
-export const useTeamAllocations = (teamId: string | undefined, year: number) => {
+export const useTeamAllocations = (teamId: string | undefined, year: number, month?: number) => {
   return useQuery({
-    queryKey: ['team-allocations', teamId, year],
+    queryKey: ['team-allocations', teamId, year, month],
     queryFn: async (): Promise<TeamAllocation[]> => {
       if (!teamId) return [];
       // any-cast for å omgå typing frem til tabellen finnes i genererte typer
-      const { data, error } = await (supabase as any)
+      let query = (supabase as any)
         .from('team_member_allocations' as any)
         .select('*')
         .eq('team_id', teamId)
-        .eq('period_year', year)
-        .order('updated_at', { ascending: false });
+        .eq('period_year', year);
+
+      if (typeof month === 'number') {
+        query = query.eq('period_month', month);
+      } else {
+        query = query.is('period_month', null);
+      }
+
+      const { data, error } = await query.order('updated_at', { ascending: false });
 
       if (error) throw error;
       return (data || []) as TeamAllocation[];

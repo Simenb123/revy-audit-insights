@@ -4,6 +4,9 @@ import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useTasks, Task } from '@/hooks/useTasks';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { useQueryClient } from '@tanstack/react-query';
 
 const STATUSES: Array<Task['status']> = ['todo', 'in_progress', 'blocked', 'on_hold', 'done'];
 
@@ -15,6 +18,8 @@ interface TaskBoardProps {
 
 const TaskBoard: React.FC<TaskBoardProps> = ({ teamId, year, month }) => {
   const { data: tasks = [] } = useTasks({ teamId });
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   // Optional: filter tasks by selected period if due_date is set
   const filtered = useMemo(() => {
@@ -35,9 +40,27 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ teamId, year, month }) => {
     return map;
   }, [filtered]);
 
-  const handleDragEnd = (result: DropResult) => {
-    // Drag-and-drop oppdatering av status kommer i neste steg
-    return;
+const handleDragEnd = async (result: DropResult) => {
+    const { destination, source, draggableId } = result;
+    if (!destination) return;
+    const from = source.droppableId as Task['status'];
+    const to = destination.droppableId as Task['status'];
+    if (from === to) return;
+
+    const movedTask = (tasks || []).find((t) => t.id === draggableId);
+    if (!movedTask) return;
+
+    const { error } = await (supabase as any)
+      .from('tasks' as any)
+      .update({ status: to, completed_at: to === 'done' ? new Date().toISOString() : null })
+      .eq('id', draggableId);
+
+    if (error) {
+      toast({ title: 'Kunne ikke oppdatere status', description: error.message, variant: 'destructive' });
+    } else {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      toast({ title: 'Status oppdatert', description: `Oppgave flyttet til ${String(to).replace(/_/g, ' ')}` });
+    }
   };
 
   return (
