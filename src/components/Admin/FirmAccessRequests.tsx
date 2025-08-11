@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { ShieldCheck, UserX } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 const roleOptions: UserRole[] = ['employee', 'manager', 'partner', 'admin'];
 
@@ -88,25 +89,60 @@ const FirmAccessRequests = () => {
                         ))}
                       </SelectContent>
                     </Select>
-                    <Button
-                      size="sm"
-                      onClick={() => approve.mutate({ requestId: req.id, assignRole: selectedRole })}
-                      disabled={approve.isPending}
-                      className="gap-1"
-                    >
-                      <ShieldCheck className="h-4 w-4" />
-                      Godkjenn
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => reject.mutate({ requestId: req.id })}
-                      disabled={reject.isPending}
-                      className="gap-1"
-                    >
-                      <UserX className="h-4 w-4" />
-                      Avslå
-                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          size="sm"
+                          disabled={approve.isPending}
+                          className="gap-1"
+                        >
+                          <ShieldCheck className="h-4 w-4" />
+                          Godkjenn
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Godkjenn tilgang?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Brukeren vil legges til i firmaet med rollen "{selectedRole}". Du kan endre rollen senere.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Avbryt</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => approve.mutate({ requestId: req.id, assignRole: selectedRole })}>
+                            Bekreft
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          disabled={reject.isPending}
+                          className="gap-1"
+                        >
+                          <UserX className="h-4 w-4" />
+                          Avslå
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Avslå forespørsel?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Dette vil markere forespørselen som avslått. Brukeren kan sende ny forespørsel senere.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Avbryt</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => reject.mutate({ requestId: req.id })}>
+                            Bekreft
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </div>
               );
