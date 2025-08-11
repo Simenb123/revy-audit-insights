@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -10,6 +9,7 @@ import TeamManagementHeader from '@/components/Teams/TeamManagementHeader';
 import TeamOverview from '@/components/Teams/TeamOverview';
 import ConstrainedWidth from '@/components/Layout/ConstrainedWidth';
 import StandardPageLayout from '@/components/Layout/StandardPageLayout';
+import BillingRatesManager from '@/components/Billing/BillingRatesManager';
 
 const TeamManagement = () => {
   const {
@@ -50,6 +50,7 @@ const TeamManagement = () => {
         <TabsList>
           <TabsTrigger value="teams">Mine team</TabsTrigger>
           <TabsTrigger value="overview">Oversikt</TabsTrigger>
+          <TabsTrigger value="rates">Satser</TabsTrigger>
         </TabsList>
 
         <TabsContent value="teams" className="space-y-6">
@@ -85,6 +86,10 @@ const TeamManagement = () => {
 
         <TabsContent value="overview">
           <TeamOverview teams={teams} departments={departments} />
+        </TabsContent>
+
+        <TabsContent value="rates">
+          <BillingRatesManager />
         </TabsContent>
       </Tabs>
 

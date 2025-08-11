@@ -1,4 +1,3 @@
-
 import React from 'react';
 import ConstrainedWidth from '@/components/Layout/ConstrainedWidth';
 import StandardPageLayout from '@/components/Layout/StandardPageLayout';
@@ -18,6 +17,8 @@ import { useClientList } from '@/hooks/useClientList';
 import KPICards from '@/components/ResourcePlanner/KPICards';
 import TaskBoard from '@/components/ResourcePlanner/TaskBoard';
 import CapacityCalculator from '@/components/ResourcePlanner/CapacityCalculator';
+import { useEffectiveBillingRates } from '@/hooks/useEffectiveBillingRates';
+
 const months = [
   { value: '1', label: 'Jan' },
   { value: '2', label: 'Feb' },
@@ -48,49 +49,66 @@ const ResourcePlanner: React.FC = () => {
     if (!selectedTeamId && teams.length > 0) setSelectedTeamId(teams[0].id);
   }, [teams, selectedTeamId]);
 
-const monthNum = Number(selectedMonth);
-const { data } = useUtilizationAnalytics(selectedTeamId, selectedFiscalYear, monthNum);
+  const monthNum = Number(selectedMonth);
+  const { data } = useUtilizationAnalytics(selectedTeamId, selectedFiscalYear, monthNum);
 
-// Kapasitet hooks og state
-const { data: capRows = [] } = useEmployeeCapacityForTeam(selectedTeamId, selectedFiscalYear, monthNum);
-const upsertCapacity = useUpsertEmployeeCapacity();
-const [capacityByUser, setCapacityByUser] = React.useState<Record<string, { cap: number; abs: number }>>({});
+  // Kapasitet hooks og state
+  const { data: capRows = [] } = useEmployeeCapacityForTeam(selectedTeamId, selectedFiscalYear, monthNum);
+  const upsertCapacity = useUpsertEmployeeCapacity();
+  const [capacityByUser, setCapacityByUser] = React.useState<Record<string, { cap: number; abs: number }>>({});
 
-// Allokering hooks og state
-const { data: allocations = [] } = useTeamAllocations(selectedTeamId, selectedFiscalYear, monthNum);
-const saveAllocations = useSaveTeamAllocations();
-const { data: clients = [] } = useClientList();
-const [selectedClient, setSelectedClient] = React.useState<string | undefined>(undefined);
-const [budgetByUser, setBudgetByUser] = React.useState<Record<string, number>>({});
+  // Allokering hooks og state
+  const { data: allocations = [] } = useTeamAllocations(selectedTeamId, selectedFiscalYear, monthNum);
+  const saveAllocations = useSaveTeamAllocations();
+  const { data: clients = [] } = useClientList();
+  const [selectedClient, setSelectedClient] = React.useState<string | undefined>(undefined);
+  const [budgetByUser, setBudgetByUser] = React.useState<Record<string, number>>({});
 
-// Sync selected client once clients are loaded
-React.useEffect(() => {
-  if (!selectedClient && clients.length > 0) setSelectedClient(clients[0].id);
-}, [clients, selectedClient]);
+  // Sync selected client once clients are loaded
+  React.useEffect(() => {
+    if (!selectedClient && clients.length > 0) setSelectedClient(clients[0].id);
+  }, [clients, selectedClient]);
 
-// Init capacity state from fetched data and analytics fallback
-React.useEffect(() => {
-  const map: Record<string, { cap: number; abs: number }> = {};
-  (data?.rows || []).forEach((r) => {
-    const cap = (capRows as any[]).find((c: any) => c.user_id === r.userId);
-    map[r.userId] = {
-      cap: typeof cap?.capacity_hours === 'number' ? cap.capacity_hours : (r.capacityHours ?? 0),
-      abs: typeof cap?.absence_hours === 'number' ? cap.absence_hours : 0,
-    };
+  // Init capacity state from fetched data and analytics fallback
+  React.useEffect(() => {
+    const map: Record<string, { cap: number; abs: number }> = {};
+    (data?.rows || []).forEach((r) => {
+      const cap = (capRows as any[]).find((c: any) => c.user_id === r.userId);
+      map[r.userId] = {
+        cap: typeof cap?.capacity_hours === 'number' ? cap.capacity_hours : (r.capacityHours ?? 0),
+        abs: typeof cap?.absence_hours === 'number' ? cap.absence_hours : 0,
+      };
+    });
+    setCapacityByUser(map);
+  }, [capRows, data]);
+
+  // Init budget state for selected client
+  React.useEffect(() => {
+    if (!selectedClient) return;
+    const map: Record<string, number> = {};
+    (data?.rows || []).forEach((r) => {
+      const row = (allocations as any[]).find((a: any) => a.client_id === selectedClient && a.user_id === r.userId);
+      map[r.userId] = typeof row?.budget_hours === 'number' ? row.budget_hours : 0;
+    });
+    setBudgetByUser(map);
+  }, [allocations, selectedClient, data]);
+
+  // Effective billing rates for selected client and month (first day of month)
+  const firstDayISO = React.useMemo(() => {
+    if (!selectedFiscalYear || !monthNum) return null;
+    const d = new Date(Number(selectedFiscalYear), monthNum - 1, 1);
+    return d.toISOString().slice(0, 10);
+  }, [selectedFiscalYear, monthNum]);
+
+  const userIds = React.useMemo(() => (data?.rows || []).map((r) => r.userId), [data?.rows]);
+  const { data: effectiveRates = {} } = useEffectiveBillingRates({
+    userIds,
+    dateISO: firstDayISO,
+    clientId: selectedClient,
   });
-  setCapacityByUser(map);
-}, [capRows, data]);
 
-// Init budget state for selected client
-React.useEffect(() => {
-  if (!selectedClient) return;
-  const map: Record<string, number> = {};
-  (data?.rows || []).forEach((r) => {
-    const row = (allocations as any[]).find((a: any) => a.client_id === selectedClient && a.user_id === r.userId);
-    map[r.userId] = typeof row?.budget_hours === 'number' ? row.budget_hours : 0;
-  });
-  setBudgetByUser(map);
-}, [allocations, selectedClient, data]);
+  const formatNOK = (n?: number | null) =>
+    typeof n === 'number' && !isNaN(n) ? n.toLocaleString('nb-NO', { maximumFractionDigits: 0 }) + ' kr' : '—';
 
   return (
     <ConstrainedWidth width="full">
@@ -294,7 +312,7 @@ React.useEffect(() => {
                   variant="default"
                   onClick={() => {
                     if (!selectedClient || !selectedTeamId) return;
-const rows = Object.entries(budgetByUser).map(([userId, hours]) => ({
+                    const rows = Object.entries(budgetByUser).map(([userId, hours]) => ({
                       client_id: selectedClient,
                       team_id: selectedTeamId,
                       user_id: userId,
@@ -314,26 +332,50 @@ const rows = Object.entries(budgetByUser).map(([userId, hours]) => ({
                     <TableRow>
                       <TableHead>Medarbeider</TableHead>
                       <TableHead className="text-right">Budsjett (t)</TableHead>
+                      <TableHead className="text-right">Estimert inntekt (NOK)</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {(data?.rows || []).map((r) => (
-                      <TableRow key={r.userId}>
-                        <TableCell>{r.name}</TableCell>
-                        <TableCell className="text-right">
-                          <Input
-                            inputMode="decimal"
-                            value={budgetByUser[r.userId] ?? ''}
-                            onChange={(e) => {
-                              const val = parseFloat(e.target.value);
-                              setBudgetByUser((prev) => ({ ...prev, [r.userId]: isNaN(val) ? 0 : val }));
-                            }}
-                            className="w-24 ml-auto text-right"
-                            aria-label={`Budsjett timer for ${r.name}`}
-                          />
+                    {(data?.rows || []).map((r) => {
+                      const hours = budgetByUser[r.userId] ?? 0;
+                      const rate = effectiveRates[r.userId] ?? null;
+                      const revenue = typeof rate === 'number' ? rate * (isNaN(hours) ? 0 : hours) : null;
+                      return (
+                        <TableRow key={r.userId}>
+                          <TableCell>{r.name}</TableCell>
+                          <TableCell className="text-right">
+                            <Input
+                              inputMode="decimal"
+                              value={budgetByUser[r.userId] ?? ''}
+                              onChange={(e) => {
+                                const val = parseFloat(e.target.value);
+                                setBudgetByUser((prev) => ({ ...prev, [r.userId]: isNaN(val) ? 0 : val }));
+                              }}
+                              className="w-24 ml-auto text-right"
+                              aria-label={`Budsjett timer for ${r.name}`}
+                            />
+                          </TableCell>
+                          <TableCell className="text-right">{formatNOK(revenue)}</TableCell>
+                        </TableRow>
+                      );
+                    })}
+                    {data?.rows && data.rows.length > 0 && (
+                      <TableRow>
+                        <TableCell className="font-medium">Totalt</TableCell>
+                        <TableCell className="text-right font-medium">
+                          {Object.values(budgetByUser).reduce((a, b) => a + (isNaN(b as number) ? 0 : (b as number)), 0).toFixed(1)}
+                        </TableCell>
+                        <TableCell className="text-right font-medium">
+                          {formatNOK(
+                            (data?.rows || []).reduce((sum, r) => {
+                              const h = budgetByUser[r.userId] ?? 0;
+                              const rate = effectiveRates[r.userId] ?? null;
+                              return sum + (typeof rate === 'number' ? rate * (isNaN(h) ? 0 : h) : 0);
+                            }, 0)
+                          )}
                         </TableCell>
                       </TableRow>
-                    ))}
+                    )}
                   </TableBody>
                 </Table>
               </div>
