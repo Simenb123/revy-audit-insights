@@ -1,3 +1,4 @@
+
 import { logger } from '@/utils/logger';
 
 import React, { useState } from 'react';
@@ -16,6 +17,7 @@ import { UserPlus, Mail, Users, Shield, UserCog } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Link } from 'react-router-dom';
 import type { UserRole } from '@/types/organization';
+import EmployeesList from '@/components/Admin/EmployeesList';
 
 const UserAdmin = () => {
   const { data: userProfile } = useUserProfile();
@@ -380,6 +382,9 @@ const UserAdmin = () => {
           </div>
         </CardContent>
       </Card>
+
+      <EmployeesList />
+
     </div>
   );
 };

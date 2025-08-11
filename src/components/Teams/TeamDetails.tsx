@@ -9,6 +9,7 @@ import { Calendar, Users, Settings, UserPlus } from 'lucide-react';
 import TeamMembers from './TeamMembers';
 import AddMemberDialog from './AddMemberDialog';
 import { useTeamMembers } from '@/hooks/useTeamMembers';
+import TeamBudget from './TeamBudget';
 
 interface TeamDetailsProps {
   team: ClientTeam;
@@ -49,6 +50,7 @@ const TeamDetails = ({ team, onUpdate }: TeamDetailsProps) => {
         <Tabs defaultValue="members" className="space-y-4">
           <TabsList>
             <TabsTrigger value="members">Medlemmer</TabsTrigger>
+            <TabsTrigger value="budget">Budsjett</TabsTrigger>
             <TabsTrigger value="details">Detaljer</TabsTrigger>
           </TabsList>
 
@@ -57,6 +59,14 @@ const TeamDetails = ({ team, onUpdate }: TeamDetailsProps) => {
               teamId={team.id}
               members={members}
               onUpdate={refetchMembers}
+            />
+          </TabsContent>
+
+          <TabsContent value="budget">
+            <TeamBudget
+              teamId={team.id}
+              clientId={team.clientId}
+              members={members}
             />
           </TabsContent>
 
