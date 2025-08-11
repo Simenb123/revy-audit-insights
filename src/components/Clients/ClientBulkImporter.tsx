@@ -69,7 +69,7 @@ const ClientBulkImporter = ({ onImportComplete, onCancel }: ClientBulkImporterPr
     setSelectedFile(file);
     
     // Header detection hints for client bulk files
-    const csvOptions = {
+    const csvOptions: { extraAliasHeaders?: string[] } = {
       extraAliasHeaders: [
         'orgnr','org nr','organisasjonsnummer','orgnummer','org-nr','org no',
         'partner','ansv','kundeansvarlig','klientgruppe','kundegruppe','gruppe','client group',
@@ -77,14 +77,14 @@ const ClientBulkImporter = ({ onImportComplete, onCancel }: ClientBulkImporterPr
         'budsjett','budsjett i kr','budsjett kroner','budsjett timer','timebudsjett',
         'faktisk bransje','overordnet bransje','kundenavn','navn','company name','company'
       ]
-    } as const;
-    const excelOptions = {
+    };
+    const excelOptions: { extraTerms?: string[] } = {
       extraTerms: [
         'organisasjonsnummer','orgnr','org nr','orgnummer',
         'partner','ansv','kundeansvarlig','klientgruppe','regnskapssystem',
         'budsjett','budsjett i kr','budsjett timer','faktisk bransje','kundenavn','navn'
       ]
-    } as const;
+    };
     
     try {
       // Hvis CSV, beholder vi eksisterende løype
