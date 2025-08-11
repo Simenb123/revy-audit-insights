@@ -8,14 +8,24 @@ import { useToast } from '@/hooks/use-toast';
 import ClientForm from '@/components/Clients/ClientAdmin/ClientForm';
 import ClientList from '@/components/Clients/ClientAdmin/ClientList';
 import BrregSearch from '@/components/Clients/ClientAdmin/BrregSearch';
-import { mockClients } from '@/components/Clients/ClientAdmin/mockData';
+import { useClientList } from '@/hooks/useClientList';
 import StandardPageLayout from '@/components/Layout/StandardPageLayout';
 import { usePageTitle } from '@/components/Layout/PageTitleContext';
+import { useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 const ClientAdmin = () => {
   const { setContext } = useRevyContext();
   const { toast } = useToast();
-  const [clients, setClients] = useState<Client[]>(mockClients);
+const { data: clientList = [], isLoading } = useClientList();
+const queryClient = useQueryClient();
+const clients: Client[] = (clientList || []).map((c: any) => ({
+  id: c.id,
+  company_name: c.company_name,
+  name: c.name,
+  org_number: c.org_number,
+  client_group: c.client_group,
+}));
   const [activeTab, setActiveTab] = useState('list');
   const [isSearching, setIsSearching] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Partial<Client> | null>(null);
@@ -72,16 +82,24 @@ const ClientAdmin = () => {
     });
   };
 
-  const handleAddClient = (client: Client) => {
-    const updatedClients = [...clients, client];
-    setClients(updatedClients);
+  const handleAddClient = async (client: Partial<Client>) => {
+    const { error } = await supabase.from('clients').insert({
+      name: client.name ?? client.company_name ?? '',
+      company_name: client.company_name ?? client.name ?? '',
+      org_number: client.org_number ?? null,
+      client_group: client.client_group ?? null,
+    });
+
+    if (error) {
+      toast({ title: 'Kunne ikke legge til klient', description: error.message, variant: 'destructive' });
+      return;
+    }
+
+    await queryClient.invalidateQueries({ queryKey: ['client-list'] });
     setSelectedClient(null);
     setActiveTab('list');
 
-    toast({
-      title: "Klient lagt til",
-      description: `${client.name} er lagt til i klientdatabasen.`,
-    });
+    toast({ title: 'Klient lagt til', description: `${client.name || client.company_name} er lagt til i klientdatabasen.` });
   };
 
   const handleEditClient = (client: Client) => {
@@ -89,30 +107,43 @@ const ClientAdmin = () => {
     setActiveTab('edit');
   };
 
-  const handleUpdateClient = (updatedClient: Client) => {
-    const updatedClients = clients.map(c => 
-      c.id === updatedClient.id ? updatedClient : c
-    );
-    setClients(updatedClients);
+  const handleUpdateClient = async (updatedClient: Client) => {
+    const { error } = await (supabase as any)
+      .from('clients')
+      .update({
+        name: updatedClient.name ?? updatedClient.company_name ?? '',
+        company_name: updatedClient.company_name ?? updatedClient.name ?? '',
+        org_number: updatedClient.org_number ?? null,
+        client_group: (updatedClient as any).client_group ?? null,
+      })
+      .eq('id', updatedClient.id);
+
+    if (error) {
+      toast({ title: 'Kunne ikke oppdatere', description: error.message, variant: 'destructive' });
+      return;
+    }
+
+    await queryClient.invalidateQueries({ queryKey: ['client-list'] });
     setSelectedClient(null);
     setActiveTab('list');
 
-    toast({
-      title: "Klient oppdatert",
-      description: `${updatedClient.name} er oppdatert.`,
-    });
+    toast({ title: 'Klient oppdatert', description: `${updatedClient.name || updatedClient.company_name} er oppdatert.` });
   };
 
-  const handleDeleteClient = (id: string) => {
-    const updatedClients = clients.filter(c => c.id !== id);
-    setClients(updatedClients);
+  const handleDeleteClient = async (id: string) => {
+    const { error } = await (supabase as any)
+      .from('clients')
+      .delete()
+      .eq('id', id);
 
-    toast({
-      title: "Klient slettet",
-      description: "Klienten er fjernet fra databasen.",
-    });
-  };
+    if (error) {
+      toast({ title: 'Kunne ikke slette', description: error.message, variant: 'destructive' });
+      return;
+    }
 
+    await queryClient.invalidateQueries({ queryKey: ['client-list'] });
+
+    toast({ title: 'Klient slettet', description: 'Klienten er fjernet fra databasen.' });
   return (
     <StandardPageLayout className="w-full px-4 py-6 md:px-6 lg:px-8">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">

@@ -48,6 +48,12 @@ const adminItems = [
     icon: FileText,
   },
   {
+    title: 'Klientadministrasjon',
+    url: '/client-admin',
+    icon: Building,
+    roles: ['admin', 'partner', 'manager'] as const,
+  },
+  {
     title: 'AI Revy Admin',
     url: '/ai-revy-admin',
     icon: Brain,
@@ -71,6 +77,11 @@ const resourceItems = [
   {
     title: 'Klienter',
     url: '/clients',
+    icon: Users,
+  },
+  {
+    title: 'Team',
+    url: '/teams',
     icon: Users,
   },
   {
