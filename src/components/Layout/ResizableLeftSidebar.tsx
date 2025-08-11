@@ -27,9 +27,11 @@ import {
   Brain,
   UserCog,
   GraduationCap,
-  Info
+  Info,
+  Shield
 } from 'lucide-react'
 import { useUserProfile } from '@/hooks/useUserProfile'
+import { useIsSuperAdmin } from '@/hooks/useIsSuperAdmin'
 
 // Static non-client specific items
 const generalWorkItems = [
@@ -122,6 +124,7 @@ const ResizableLeftSidebar = () => {
   const location = useLocation()
   const { data: userProfile } = useUserProfile()
   const { clientId } = useParams<{ clientId: string }>()
+  const { data: isSuperAdmin } = useIsSuperAdmin()
   const isCollapsed = state === 'collapsed'
 
   // Dynamic client-specific items
@@ -255,6 +258,21 @@ const ResizableLeftSidebar = () => {
                     </SidebarMenuItem>
                   )
                 })}
+                {isSuperAdmin && (
+                  <SidebarMenuItem key="Superadmin">
+                    <SidebarMenuButton 
+                      asChild 
+                      isActive={isActive('/superadmin')}
+                      className={isCollapsed ? "justify-center p-2" : "justify-start pl-2 pr-2"}
+                      tooltip={isCollapsed ? 'Superadmin' : undefined}
+                    >
+                      <Link to="/superadmin" className={isCollapsed ? "flex items-center justify-center w-full h-full" : "flex items-center gap-2 w-full"}>
+                        <Shield className="h-4 w-4 flex-shrink-0" />
+                        {!isCollapsed && <span className="text-xs truncate">Superadmin</span>}
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>

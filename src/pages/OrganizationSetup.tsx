@@ -58,7 +58,7 @@ const OrganizationSetup = () => {
   // Redirect if user already has a firm
   useEffect(() => {
     if (!profileLoading && userProfile?.auditFirmId) {
-      navigate('/organisasjon');
+      navigate('/organization');
     }
   }, [userProfile, profileLoading, navigate]);
 
@@ -191,7 +191,7 @@ const OrganizationSetup = () => {
         description: `${firmData.name} er nå registrert og du har administratortilgang.`,
       });
 
-      navigate('/organisasjon');
+      navigate('/organization');
     } catch (error: any) {
       logger.error('Error creating firm:', error);
       toast({
@@ -217,7 +217,7 @@ const OrganizationSetup = () => {
           message: 'Ønsker tilgang til firma',
         });
         setShowExistingFirmDialog(false);
-        navigate('/organisasjon');
+        navigate('/organization');
         return;
       }
 
@@ -228,7 +228,7 @@ const OrganizationSetup = () => {
           firmName: (existingFirm.name ?? firmData.name) || undefined,
         });
         setShowExistingFirmDialog(false);
-        navigate('/organisasjon');
+         navigate('/organization');
         return;
       }
 
@@ -248,7 +248,7 @@ const OrganizationSetup = () => {
       });
 
       setShowExistingFirmDialog(false);
-      navigate('/organisasjon');
+      navigate('/organization');
     } catch (error) {
       logger.error('Error handling firm join/claim/request:', error);
       toast({
@@ -346,7 +346,7 @@ const OrganizationSetup = () => {
               <p className="text-sm text-muted-foreground">
                 Vil du teste kommunikasjonssystemet uten å opprette et firma først?
               </p>
-              <Link to="/kommunikasjon">
+              <Link to="/communication">
                 <Button variant="outline" className="gap-2">
                   <MessageSquare className="h-4 w-4" />
                   Gå til kommunikasjon
@@ -532,9 +532,9 @@ const OrganizationSetup = () => {
                             orgNumber: firmData.orgNumber, 
                             firmName: (existingFirm.name ?? firmData.name) || undefined 
                           },
-                          {
-                            onSuccess: () => navigate('/organisasjon')
-                          }
+                           {
+                             onSuccess: () => navigate('/organization')
+                           }
                         )
                       }
                     >
@@ -548,7 +548,7 @@ const OrganizationSetup = () => {
                         requestAccessMutation.mutate(
                           { firmId: existingFirm.id, roleRequested: 'employee', message: 'Ønsker tilgang til firma' },
                           {
-                            onSuccess: () => navigate('/organisasjon')
+                            onSuccess: () => navigate('/organization')
                           }
                         )
                       }

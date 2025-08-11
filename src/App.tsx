@@ -86,7 +86,7 @@ function App() {
                   <Route path="klienter" element={<ProtectedRoute><ClientsOverview /></ProtectedRoute>} />
                   <Route path="klienter/:orgNumber" element={<ClientRedirect />} />
                   <Route path="client-admin" element={<ClientAdmin />} />
-                  <Route path="user-admin" element={<UserAdmin />} />
+                  <Route path="user-admin" element={<ProtectedRoute><UserAdmin /></ProtectedRoute>} />
                   <Route path="profile" element={<UserProfile />} />
                   <Route path="organization/settings" element={<OrganizationSettings />} />
                   <Route path="organization/roles" element={<RoleAccessAdmin />} />
