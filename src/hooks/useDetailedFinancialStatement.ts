@@ -33,15 +33,15 @@ export interface DetailedFinancialStatementResult {
 }
 
 export function useDetailedFinancialStatement(clientId: string, selectedVersion?: string): DetailedFinancialStatementResult {
-  const { data: firmAccounts = [] } = useFirmStandardAccounts();
-  const { data: trialBalance } = useTrialBalanceData(clientId, selectedVersion);
-  const { data: mappings = [] } = useTrialBalanceMappings(clientId);
+  const { data: firmAccounts = [], isPending: firmPending } = useFirmStandardAccounts();
+  const { data: trialBalance, isPending: tbPending } = useTrialBalanceData(clientId, selectedVersion);
+  const { data: mappings = [], isPending: mappingsPending } = useTrialBalanceMappings(clientId);
 
   // Derive current year from TB and fetch previous year TB
   const currentYear = trialBalance?.[0]?.period_year as number | undefined;
-  const { data: previousTrialBalance } = useTrialBalanceData(
+  const { data: previousTrialBalance, isPending: prevPending } = useTrialBalanceData(
     clientId,
-    undefined,
+    selectedVersion,
     currentYear ? currentYear - 1 : undefined
   );
 
@@ -207,6 +207,6 @@ export function useDetailedFinancialStatement(clientId: string, selectedVersion?
     incomeStatement,
     balanceStatement,
     periodInfo,
-    isLoading: !firmAccounts || !trialBalance || !mappings,
+    isLoading: !!(firmPending || tbPending || mappingsPending || (currentYear ? prevPending : false)),
   };
 }

@@ -33,6 +33,8 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
   const drilldownPanel: boolean = widget.config?.drilldownPanel === true;
   const inlineAccounts: boolean = widget.config?.inlineAccounts !== false;
   const alwaysShowTopHeaders: boolean = widget.config?.alwaysShowTopHeaders === true;
+  const showOnlyUnmapped: boolean = widget.config?.showOnlyUnmapped === true;
+  const searchQuery: string = widget.config?.searchQuery || '';
 
   const { incomeStatement, balanceStatement, periodInfo, isLoading } = useDetailedFinancialStatement(
     clientId || '',
@@ -367,13 +369,26 @@ const collectIds = (nodes: any[]): string[] =>
     return clone;
   };
 
-  const filterLines = React.useCallback((nodes: any[]): any[] => {
-    if (!showOnlyChanges) return nodes;
-    const recurse = (arr: any[], depth = 0): any[] => arr
-      .map((n) => ({ ...n, children: n.children ? recurse(n.children, depth + 1) : [] }))
-      .filter((n) => hasChange(n) || (n.children && n.children.length > 0) || (alwaysShowTopHeaders && depth === 0));
-    return recurse(nodes, 0);
-  }, [showOnlyChanges, hasChange, alwaysShowTopHeaders]);
+const filterLines = React.useCallback((nodes: any[]): any[] => {
+  const q = (searchQuery || '').trim().toLowerCase();
+  const matchesSearch = (n: any) => {
+    if (!q) return true;
+    return String(n.standard_name || '').toLowerCase().includes(q) || String(n.standard_number || '').toLowerCase().includes(q);
+  };
+  const hasUnmapped = (n: any): boolean => {
+    const accs = getAccountsForLine(String(n.standard_number));
+    return accs.some((a) => unmappedSet.has(a));
+  };
+  if (!showOnlyChanges && !showOnlyUnmapped && !q) return nodes;
+  const recurse = (arr: any[], depth = 0): any[] => arr
+    .map((n) => ({ ...n, children: n.children ? recurse(n.children, depth + 1) : [] }))
+    .filter((n) => {
+      const selfMatches = (!showOnlyChanges || hasChange(n)) && (!showOnlyUnmapped || hasUnmapped(n)) && matchesSearch(n);
+      const keep = selfMatches || (n.children && n.children.length > 0) || (alwaysShowTopHeaders && depth === 0);
+      return keep;
+    });
+  return recurse(nodes, 0);
+}, [showOnlyChanges, hasChange, alwaysShowTopHeaders, showOnlyUnmapped, searchQuery, getAccountsForLine, unmappedSet]);
 
 
   const rawIncome = incomeStatement || [];
@@ -415,12 +430,28 @@ const countVisibleLines = React.useCallback(function countVisibleLines(nodes: an
     : undefined;
   const balanceStartIndex = balanceHeadingIndex ? balanceHeadingIndex + 1 : undefined;
 
-  // Trial balance data for drilldown panel
-  const { data: tbCurrent } = useTrialBalanceData(clientId || '', selectedVersion, periodInfo?.currentYear);
-  const { data: tbPrev } = useTrialBalanceData(clientId || '', selectedVersion, periodInfo?.previousYear);
+// Trial balance data for drilldown panel og unmapped-beregning
+const { data: tbCurrent } = useTrialBalanceData(clientId || '', selectedVersion, periodInfo?.currentYear);
+const { data: tbPrev } = useTrialBalanceData(clientId || '', selectedVersion, periodInfo?.previousYear);
 
-  const currentByAcc = React.useMemo(() => new Map((tbCurrent || []).map((e: any) => [e.account_number, e])), [tbCurrent]);
-  const prevByAcc = React.useMemo(() => new Map((tbPrev || []).map((e: any) => [e.account_number, e])), [tbPrev]);
+const currentByAcc = React.useMemo(() => new Map((tbCurrent || []).map((e: any) => [e.account_number, e])), [tbCurrent]);
+const prevByAcc = React.useMemo(() => new Map((tbPrev || []).map((e: any) => [e.account_number, e])), [tbPrev]);
+
+// Unmapped: konti i TB som ikke finnes i noen mapping/klassifisering som inngår i rapporten
+const mappedAccountsSet = React.useMemo(() => {
+  const s = new Set<string>();
+  for (const [, accs] of lineToAccounts.entries()) {
+    accs.forEach((a) => s.add(String(a)));
+  }
+  return s;
+}, [lineToAccounts]);
+const allCurrentAccountsSet = React.useMemo(() => new Set<string>(Array.from(currentByAcc.keys()).map(String)), [currentByAcc]);
+const unmappedSet = React.useMemo(() => {
+  const s = new Set<string>();
+  allCurrentAccountsSet.forEach((a) => { if (!mappedAccountsSet.has(a)) s.add(a); });
+  return s;
+}, [allCurrentAccountsSet, mappedAccountsSet]);
+const unmappedCount = unmappedSet.size;
 
   const findLineTitle = React.useCallback((standardNumber: string): string => {
     const findIn = (nodes: any[]): any | undefined => {
@@ -517,10 +548,17 @@ const countVisibleLines = React.useCallback(function countVisibleLines(nodes: an
   onInlineAccountsChange={(v: boolean) => { updateConfig({ inlineAccounts: v, ...(v ? { drilldownPanel: false } : {}) }); setLiveMessage(v ? 'Kontoer vises i tabell' : 'Kontoer vises ikke i tabell'); }}
   drilldownPanel={drilldownPanel}
   onDrilldownPanelChange={(v: boolean) => { updateConfig({ drilldownPanel: v, ...(v ? { inlineAccounts: false } : {}) }); setLiveMessage(v ? 'Drilldown i panel på' : 'Drilldown i panel av'); }}
+  alwaysShowTopHeaders={alwaysShowTopHeaders}
+  onAlwaysShowTopHeadersChange={(v: boolean) => { updateConfig({ alwaysShowTopHeaders: v }); setLiveMessage(v ? 'Viser alltid toppnivå' : 'Skjuler tomme toppnivå'); }}
+  showOnlyUnmapped={showOnlyUnmapped}
+  onShowOnlyUnmappedChange={(v: boolean) => { updateConfig({ showOnlyUnmapped: v }); setLiveMessage(v ? 'Filter: kun umappede' : 'Filter: alle'); }}
+  searchQuery={searchQuery}
+  onSearchQueryChange={(q: string) => { updateConfig({ searchQuery: q }); }}
   onExpandAll={expandAll}
   onCollapseAll={collapseAll}
   onExpandToLevel={(lvl: number) => expandToLevel(lvl)}
   disabled={isLoading}
+  unmappedCount={unmappedCount}
 />
               <TooltipProvider>
                 <Tooltip>

@@ -2,7 +2,7 @@ import React from 'react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-
+import { Input } from '@/components/ui/input';
 interface StatementTableToolbarProps {
   widgetId: string;
   showPrevious: boolean;
@@ -17,6 +17,12 @@ interface StatementTableToolbarProps {
   onInlineAccountsChange?: (v: boolean) => void;
   drilldownPanel?: boolean;
   onDrilldownPanelChange?: (v: boolean) => void;
+  alwaysShowTopHeaders?: boolean;
+  onAlwaysShowTopHeadersChange?: (v: boolean) => void;
+  searchQuery?: string;
+  onSearchQueryChange?: (v: string) => void;
+  showOnlyUnmapped?: boolean;
+  onShowOnlyUnmappedChange?: (v: boolean) => void;
   onExpandAll: () => void;
   onCollapseAll: () => void;
   onExpandToLevel?: (level: number) => void;
@@ -37,11 +43,18 @@ export function StatementTableToolbar({
   onInlineAccountsChange,
   drilldownPanel,
   onDrilldownPanelChange,
+  alwaysShowTopHeaders,
+  onAlwaysShowTopHeadersChange,
+  searchQuery,
+  onSearchQueryChange,
+  showOnlyUnmapped,
+  onShowOnlyUnmappedChange,
   onExpandAll,
   onCollapseAll,
   onExpandToLevel,
-  disabled
-}: StatementTableToolbarProps) {
+  disabled,
+  unmappedCount,
+}: StatementTableToolbarProps & { unmappedCount?: number }) {
   return (
     <div className="flex items-center gap-4">
       <div className="flex items-center gap-2">
@@ -72,6 +85,24 @@ export function StatementTableToolbar({
   <div className="flex items-center gap-2">
     <Label htmlFor={`panel-${widgetId}`} className="text-xs text-muted-foreground">Drilldown i panel</Label>
     <Switch id={`panel-${widgetId}`} checked={!!drilldownPanel} onCheckedChange={onDrilldownPanelChange} disabled={disabled || !!inlineAccounts} />
+  </div>
+)}
+{onAlwaysShowTopHeadersChange && (
+  <div className="flex items-center gap-2">
+    <Label htmlFor={`top-${widgetId}`} className="text-xs text-muted-foreground">Toppnivå</Label>
+    <Switch id={`top-${widgetId}`} checked={!!alwaysShowTopHeaders} onCheckedChange={onAlwaysShowTopHeadersChange} disabled={disabled} />
+  </div>
+)}
+{onShowOnlyUnmappedChange && (
+  <div className="flex items-center gap-2">
+    <Label htmlFor={`unmapped-${widgetId}`} className="text-xs text-muted-foreground">Kun umappede{typeof unmappedCount === 'number' ? ` (${unmappedCount})` : ''}</Label>
+    <Switch id={`unmapped-${widgetId}`} checked={!!showOnlyUnmapped} onCheckedChange={onShowOnlyUnmappedChange} disabled={disabled} />
+  </div>
+)}
+{onSearchQueryChange && (
+  <div className="flex items-center gap-2">
+    <Label htmlFor={`search-${widgetId}`} className="text-xs text-muted-foreground">Søk</Label>
+    <Input id={`search-${widgetId}`} value={searchQuery || ''} onChange={(e) => onSearchQueryChange?.(e.target.value)} placeholder="Søk linjer…" className="h-7 w-40" disabled={disabled} />
   </div>
 )}
       <div className="flex items-center gap-2">
