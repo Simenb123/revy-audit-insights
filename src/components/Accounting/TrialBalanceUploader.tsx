@@ -18,6 +18,7 @@ import {
   FilePreview, 
   convertDataWithMapping
 } from '@/utils/fileProcessing';
+import * as XLSX from 'xlsx';
 
 interface AccountRow {
   account_number: string;
@@ -37,42 +38,88 @@ const TrialBalanceUploader = ({ clientId, onUploadComplete }: TrialBalanceUpload
   const { accountingYear, isLoading: yearLoading } = useAccountingYear(clientId || '');
   const { selectedFiscalYear } = useFiscalYear();
   
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [filePreview, setFilePreview] = useState<FilePreview | null>(null);
-  const [showMapping, setShowMapping] = useState(false);
-  const [convertedData, setConvertedData] = useState<any[]>([]);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [step, setStep] = useState<'select' | 'upload' | 'mapping' | 'success'>('select');
-  // Manual version and period inputs removed - now auto-generated
+const [selectedFile, setSelectedFile] = useState<File | null>(null);
+const [filePreview, setFilePreview] = useState<FilePreview | null>(null);
+const [showMapping, setShowMapping] = useState(false);
+const [convertedData, setConvertedData] = useState<any[]>([]);
+const [uploadProgress, setUploadProgress] = useState(0);
+const [step, setStep] = useState<'select' | 'upload' | 'mapping' | 'success'>('select');
+// Excel sheet support
+const [sheetNames, setSheetNames] = useState<string[]>([]);
+const [selectedSheet, setSelectedSheet] = useState<string>('');
+// Manual version and period inputs removed - now auto-generated
 
   // Period dates automatically derived from accounting year
 
-  const handleFileSelect = async (file: File) => {
-    const extension = file.name.toLowerCase().split('.').pop();
-    
-    if (!['xlsx', 'xls', 'csv'].includes(extension || '')) {
-      toast.error('Kun Excel (.xlsx, .xls) og CSV-filer er støttet');
-      return;
-    }
+// Helpers for Excel sheet handling
+const getExcelSheetNames = async (file: File): Promise<string[]> => {
+  const buf = await file.arrayBuffer();
+  const wb = XLSX.read(buf, { type: 'array' });
+  return wb.SheetNames || [];
+};
 
-    setSelectedFile(file);
-    
-    try {
-      let preview: FilePreview;
-      if (extension === 'csv') {
-        preview = await processCSVFile(file);
+const buildCsvFileFromSheet = async (file: File, sheetName: string): Promise<File> => {
+  const buf = await file.arrayBuffer();
+  const wb = XLSX.read(buf, { type: 'array' });
+  const ws = wb.Sheets[sheetName];
+  if (!ws) throw new Error(`Fane "${sheetName}" ble ikke funnet i filen`);
+  const csv = XLSX.utils.sheet_to_csv(ws);
+  const newName = `${file.name.replace(/\.(xlsx|xls)$/i, '')} - ${sheetName}.csv`;
+  return new File([csv], newName, { type: 'text/csv' });
+};
+
+const handleFileSelect = async (file: File) => {
+  const extension = file.name.toLowerCase().split('.').pop();
+  
+  if (!['xlsx', 'xls', 'csv'].includes(extension || '')) {
+    toast.error('Kun Excel (.xlsx, .xls) og CSV-filer er støttet');
+    return;
+  }
+
+  setSelectedFile(file);
+  
+  try {
+    let preview: FilePreview;
+    if (extension === 'csv') {
+      preview = await processCSVFile(file);
+      setSheetNames([]);
+      setSelectedSheet('');
+    } else {
+      const names = await getExcelSheetNames(file);
+      if (names.length > 1) {
+        setSheetNames(names);
+        const defaultSheet = names[0];
+        setSelectedSheet(defaultSheet);
+        const csvFile = await buildCsvFileFromSheet(file, defaultSheet);
+        preview = await processCSVFile(csvFile);
       } else {
         preview = await processExcelFile(file);
+        setSheetNames([]);
+        setSelectedSheet('');
       }
-      setFilePreview(preview);
-      setShowMapping(true);
-    } catch (error) {
-      toast.error('Feil ved lesing av fil');
-      console.error(error);
     }
-  };
+    setFilePreview(preview);
+    setShowMapping(true);
+  } catch (error) {
+    toast.error('Feil ved lesing av fil');
+    console.error(error);
+  }
+};
 
-  const handleMappingComplete = async (mapping: Record<string, string>, headerRowIndex?: number, headers?: string[]) => {
+const handleSheetChange = async (name: string) => {
+  if (!selectedFile) return;
+  try {
+    const csvFile = await buildCsvFileFromSheet(selectedFile, name);
+    const preview = await processCSVFile(csvFile);
+    setSelectedSheet(name);
+    setFilePreview(preview);
+  } catch (error) {
+    console.error('Feil ved bytte av fane:', error);
+    toast.error('Kunne ikke bytte fane');
+  }
+};
+
+const handleMappingComplete = async (mapping: Record<string, string>, headerRowIndex?: number, headers?: string[]) => {
     if (!filePreview || !selectedFile) return;
     
     console.log('=== TRIAL BALANCE MAPPING COMPLETE ===');
@@ -490,6 +537,9 @@ const TrialBalanceUploader = ({ clientId, onUploadComplete }: TrialBalanceUpload
           fileType="trial_balance"
           onMappingComplete={handleMappingComplete}
           onCancel={() => setShowMapping(false)}
+          sheetNames={sheetNames}
+          selectedSheet={selectedSheet}
+          onSelectSheet={handleSheetChange}
         />
       )}
 
