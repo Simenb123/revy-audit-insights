@@ -50,6 +50,7 @@ import NotFound from "./pages/NotFound";
 import ClientRedirect from "./components/Layout/ClientRedirect";
 import { ClientHistoryTracker } from "./components/Layout/ClientHistoryTracker";
 import Sandbox from "./pages/Sandbox";
+import ResourcePlanner from "./pages/ResourcePlanner";
 const queryClient = new QueryClient();
 
 function App() {
