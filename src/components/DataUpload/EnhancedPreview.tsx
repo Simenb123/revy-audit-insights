@@ -63,6 +63,10 @@ interface EnhancedPreviewProps {
     is_required: boolean;
     aliases?: string[];
   }[];
+  // Optional: Excel sheet selection inside preview
+  sheetNames?: string[];
+  selectedSheet?: string;
+  onSelectSheet?: (name: string) => void;
 }
 
 const EnhancedPreview: React.FC<EnhancedPreviewProps> = ({
@@ -72,7 +76,10 @@ const EnhancedPreview: React.FC<EnhancedPreviewProps> = ({
   fileType,
   onMappingComplete,
   onCancel,
-  customFieldDefinitions
+  customFieldDefinitions,
+  sheetNames,
+  selectedSheet,
+  onSelectSheet
 }) => {
   const { selectedFiscalYear } = useFiscalYear();
   const [fieldDefinitions, setFieldDefinitions] = useState<any[]>([]);
@@ -84,6 +91,12 @@ const EnhancedPreview: React.FC<EnhancedPreviewProps> = ({
   const [currentHeaders, setCurrentHeaders] = useState<string[]>(preview.headers);
   const [showAllRows, setShowAllRows] = useState(false);
   const [isSourcePreviewOpen, setIsSourcePreviewOpen] = useState(false);
+  // Reset when preview changes (e.g., switching Excel sheet)
+  useEffect(() => {
+    setCurrentHeaderRowIndex(preview.headerRowIndex);
+    setCurrentHeaders(preview.headers);
+    setMapping({});
+  }, [preview]);
 
   useEffect(() => {
     const initializeMapping = async () => {
@@ -399,6 +412,21 @@ const EnhancedPreview: React.FC<EnhancedPreviewProps> = ({
             </span>
           </div>
           <div className="flex items-center gap-2">
+            {sheetNames && sheetNames.length > 1 && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm">Fane:</span>
+                <Select value={selectedSheet} onValueChange={(v) => onSelectSheet?.(v)}>
+                  <SelectTrigger className="w-44">
+                    <SelectValue placeholder="Velg fane" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sheetNames.map((name) => (
+                      <SelectItem key={name} value={name}>{name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <span className="text-sm">Velg header rad:</span>
             <Select value={currentHeaderRowIndex.toString()} onValueChange={handleHeaderRowChange}>
               <SelectTrigger className="w-44">
