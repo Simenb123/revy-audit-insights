@@ -2403,6 +2403,7 @@ export type Database = {
         Row: {
           accountant_name: string | null
           accounting_system: string | null
+          actual_industry: string | null
           address: string | null
           address_line: string | null
           ansv: string | null
@@ -2411,6 +2412,8 @@ export type Database = {
           bank_account: string | null
           board_meetings_per_year: number | null
           brreg_sync_version: number | null
+          budget_amount: number | null
+          budget_hours: number | null
           ceo: string | null
           chair: string | null
           city: string | null
@@ -2460,6 +2463,7 @@ export type Database = {
         Insert: {
           accountant_name?: string | null
           accounting_system?: string | null
+          actual_industry?: string | null
           address?: string | null
           address_line?: string | null
           ansv?: string | null
@@ -2468,6 +2472,8 @@ export type Database = {
           bank_account?: string | null
           board_meetings_per_year?: number | null
           brreg_sync_version?: number | null
+          budget_amount?: number | null
+          budget_hours?: number | null
           ceo?: string | null
           chair?: string | null
           city?: string | null
@@ -2519,6 +2525,7 @@ export type Database = {
         Update: {
           accountant_name?: string | null
           accounting_system?: string | null
+          actual_industry?: string | null
           address?: string | null
           address_line?: string | null
           ansv?: string | null
@@ -2527,6 +2534,8 @@ export type Database = {
           bank_account?: string | null
           board_meetings_per_year?: number | null
           brreg_sync_version?: number | null
+          budget_amount?: number | null
+          budget_hours?: number | null
           ceo?: string | null
           chair?: string | null
           city?: string | null

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,6 +14,11 @@ import {
   FilePreview, 
   convertDataWithMapping
 } from '@/utils/fileProcessing';
+// Nytt: vi trenger Select for fanen velger og Label for litt tydelighet
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+// Nytt: les Excel-filer for å hente fanenavn og evt. konvertere valgt fane til CSV
+import * as XLSX from 'xlsx';
 
 interface ClientBulkImportData {
   org_number: string;
@@ -24,6 +30,10 @@ interface ClientBulkImportData {
   current_auditor_name?: string;
   accountant_name?: string;
   engagement_type?: string;
+  // Nytt for budsjett/industri
+  budget_amount?: string | number;
+  budget_hours?: string | number;
+  actual_industry?: string;
 }
 
 interface ClientBulkImporterProps {
@@ -36,12 +46,16 @@ const ClientBulkImporter = ({ onImportComplete, onCancel }: ClientBulkImporterPr
   const [filePreview, setFilePreview] = useState<FilePreview | null>(null);
   const [showMapping, setShowMapping] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [step, setStep] = useState<'select' | 'mapping' | 'processing' | 'success'>('select');
+  const [step, setStep] = useState<'select' | 'sheet' | 'mapping' | 'processing' | 'success'>('select');
   const [results, setResults] = useState<{
     updated: number;
     errors: string[];
     warnings: string[];
   }>({ updated: 0, errors: [], warnings: [] });
+
+  // Nytt: støtte for flere faner i Excel
+  const [sheetNames, setSheetNames] = useState<string[]>([]);
+  const [selectedSheet, setSelectedSheet] = useState<string>('');
 
   const handleFileSelect = async (file: File) => {
     const extension = file.name.toLowerCase().split('.').pop();
@@ -54,18 +68,68 @@ const ClientBulkImporter = ({ onImportComplete, onCancel }: ClientBulkImporterPr
     setSelectedFile(file);
     
     try {
-      let preview: FilePreview;
+      // Hvis CSV, beholder vi eksisterende løype
       if (extension === 'csv') {
-        preview = await processCSVFile(file);
-      } else {
-        preview = await processExcelFile(file);
+        const preview = await processCSVFile(file);
+        setFilePreview(preview);
+        setShowMapping(true);
+        setStep('mapping');
+        return;
       }
+
+      // Excel: hent fanenavn først
+      const names = await getExcelSheetNames(file);
+      if (names.length > 1) {
+        setSheetNames(names);
+        setSelectedSheet(names[0]);
+        setStep('sheet');
+        return;
+      }
+
+      // Kun én fane – kjør som før
+      const preview = await processExcelFile(file);
       setFilePreview(preview);
       setShowMapping(true);
       setStep('mapping');
     } catch (error) {
       toast.error('Feil ved lesing av fil');
       console.error(error);
+      setStep('select');
+    }
+  };
+
+  // Hent fanenavn fra Excel
+  const getExcelSheetNames = async (file: File): Promise<string[]> => {
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, { type: 'array' });
+    return wb.SheetNames || [];
+  };
+
+  // Konverter valgt fane til CSV og bruk eksisterende CSV-parser for forhåndsvisning/mapping
+  const buildCsvFileFromSheet = async (file: File, sheetName: string): Promise<File> => {
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, { type: 'array' });
+    const ws = wb.Sheets[sheetName];
+    if (!ws) throw new Error(`Fane "${sheetName}" ble ikke funnet i filen`);
+
+    const csv = XLSX.utils.sheet_to_csv(ws);
+    const newName = `${file.name.replace(/\.(xlsx|xls)$/i, '')} - ${sheetName}.csv`;
+    return new File([csv], newName, { type: 'text/csv' });
+  };
+
+  const handleConfirmSheet = async () => {
+    if (!selectedFile || !selectedSheet) return;
+    try {
+      // Konverter valgt fane til CSV og gjenbruk CSV-prosessoren
+      const csvFile = await buildCsvFileFromSheet(selectedFile, selectedSheet);
+      const preview = await processCSVFile(csvFile);
+      setFilePreview(preview);
+      setShowMapping(true);
+      setStep('mapping');
+    } catch (error) {
+      console.error('Feil ved prosessering av valgt fane:', error);
+      toast.error('Kunne ikke prosessere valgt fane');
+      setStep('select');
     }
   };
 
@@ -106,6 +170,36 @@ const ClientBulkImporter = ({ onImportComplete, onCancel }: ClientBulkImporterPr
     if (v.startsWith('regn') || v.startsWith('acc') || v.startsWith('øk')) return 'regnskap';
     if (v.startsWith('ann') || v.startsWith('oth')) return 'annet';
     return map[v] || null;
+  };
+
+  // Parsing helpers for budsjett og timer
+  const parseCurrency = (input: any): number | null => {
+    if (input === null || input === undefined) return null;
+    const raw = String(input).trim();
+    if (!raw) return null;
+
+    // Fjern valuta-symboler og mellomrom
+    let s = raw.replace(/[^\d.,-]/g, '').replace(/\s+/g, '');
+
+    // Hvis både . og , finnes, anta at komma er desimal (norsk format)
+    if (s.includes('.') && s.includes(',')) {
+      s = s.replace(/\./g, '').replace(',', '.');
+    } else if (s.includes(',')) {
+      // Kun komma – bruk som desimal
+      s = s.replace(',', '.');
+    } else {
+      // Kun punktum – antas som desimal eller tusenskiller; la stå
+    }
+
+    const val = Number.parseFloat(s);
+    return Number.isFinite(val) ? val : null;
+  };
+
+  const parseNumber = (input: any): number | null => {
+    if (input === null || input === undefined) return null;
+    const s = String(input).trim().replace(/[^\d.,-]/g, '').replace(',', '.');
+    const val = Number.parseFloat(s);
+    return Number.isFinite(val) ? val : null;
   };
 
   const processBulkImport = async (data: any[]) => {
@@ -190,6 +284,29 @@ const ClientBulkImporter = ({ onImportComplete, onCancel }: ClientBulkImporterPr
           }
         }
 
+        // NYTT: Budsjett (kr), Budsjett timer og Faktisk bransje
+        if (row.budget_amount !== undefined && row.budget_amount !== '') {
+          const amount = parseCurrency(row.budget_amount);
+          if (amount !== null) {
+            updateData.budget_amount = amount;
+          } else {
+            warnings.push(`Rad ${i + 1}: Kunne ikke tolke 'Budsjett i kr' (${row.budget_amount})`);
+          }
+        }
+
+        if (row.budget_hours !== undefined && row.budget_hours !== '') {
+          const hours = parseNumber(row.budget_hours);
+          if (hours !== null) {
+            updateData.budget_hours = hours;
+          } else {
+            warnings.push(`Rad ${i + 1}: Kunne ikke tolke 'Budsjett timer' (${row.budget_hours})`);
+          }
+        }
+
+        if (row.actual_industry !== undefined && row.actual_industry !== '') {
+          updateData.actual_industry = row.actual_industry.toString().trim();
+        }
+
         try {
           const { error: updateError } = await supabase
             .from('clients')
@@ -232,7 +349,47 @@ const ClientBulkImporter = ({ onImportComplete, onCancel }: ClientBulkImporterPr
     setUploadProgress(0);
     setStep('select');
     setResults({ updated: 0, errors: [], warnings: [] });
+    // Rydd opp sheet state
+    setSheetNames([]);
+    setSelectedSheet('');
   };
+
+  if (step === 'sheet' && selectedFile && sheetNames.length > 1) {
+    return (
+      <Card className="w-full max-w-none mx-auto">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileSpreadsheet className="w-5 h-5" />
+            Velg fane i Excel-filen
+          </CardTitle>
+          <CardDescription>
+            Filen har flere faner. Velg hvilken fane som skal brukes til import og mapping.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="max-w-md">
+            <Label>Fane</Label>
+            <Select value={selectedSheet} onValueChange={setSelectedSheet}>
+              <SelectTrigger className="mt-1">
+                <SelectValue placeholder="Velg fane" />
+              </SelectTrigger>
+              <SelectContent>
+                {sheetNames.map((name) => (
+                  <SelectItem key={name} value={name}>
+                    {name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex gap-2">
+            <Button onClick={handleConfirmSheet}>Fortsett</Button>
+            <Button variant="outline" onClick={resetImport}>Avbryt</Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (showMapping && filePreview) {
     return (
@@ -272,7 +429,8 @@ const ClientBulkImporter = ({ onImportComplete, onCancel }: ClientBulkImporterPr
                 field_label: 'Kundeansvarlig',
                 data_type: 'text',
                 is_required: false,
-                aliases: ['kundeansvarlig','kunde ansvarlig','kundansvarlig','client manager','account manager','engagement manager','oppdragsleder']
+                // Viktig: inkluder "ansv" som nøyaktig alias (både store/små)
+                aliases: ['ansv','ANSV','kundeansvarlig','kunde ansvarlig','kundansvarlig','client manager','account manager','engagement manager','oppdragsleder']
               },
               {
                 field_key: 'client_group',
@@ -309,6 +467,30 @@ const ClientBulkImporter = ({ onImportComplete, onCancel }: ClientBulkImporterPr
                 data_type: 'text',
                 is_required: false,
                 aliases: ['oppdragstype','type','engagement type','oppdrag']
+              },
+              // NYTT: Budsjett (kr)
+              {
+                field_key: 'budget_amount',
+                field_label: 'Budsjett i kr',
+                data_type: 'number',
+                is_required: false,
+                aliases: ['budsjett','budsjett beløp','budsjett i kr','budsjett kroner','budget amount','budget (kr)','budget nok']
+              },
+              // NYTT: Budsjett timer
+              {
+                field_key: 'budget_hours',
+                field_label: 'Budsjett timer',
+                data_type: 'number',
+                is_required: false,
+                aliases: ['budsjett timer','timer budsjett','timebudsjett','budget hours','hrs','hours']
+              },
+              // NYTT: Faktisk bransje
+              {
+                field_key: 'actual_industry',
+                field_label: 'Faktisk bransje',
+                data_type: 'text',
+                is_required: false,
+                aliases: ['faktisk bransje','overordnet bransje','manual industry','industry (manual)','næring (overordnet)']
               }
             ]}
             onMappingComplete={handleMappingComplete}
@@ -357,6 +539,12 @@ const ClientBulkImporter = ({ onImportComplete, onCancel }: ClientBulkImporterPr
                   • Registrert regnskapsfører (valgfri) - oppgitt regnskapsfører for klienten
                   <br />
                   • Type oppdrag (valgfri) - Revisjon, Regnskap eller Annet
+                  <br />
+                  • Budsjett i kr (valgfri) - tall eller tekst som tolkes til beløp
+                  <br />
+                  • Budsjett timer (valgfri) - tall eller tekst som tolkes til antall timer
+                  <br />
+                  • Faktisk bransje (valgfri) - manuelt overordnet bransjekategori
                   <br />
                   <br />
                   <strong>Viktig:</strong> Kun eksisterende klienter i din klientliste kan oppdateres.
