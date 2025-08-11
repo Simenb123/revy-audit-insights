@@ -49,6 +49,36 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
       }
     },
     {
+      type: 'budgetKpi' as const,
+      title: 'Budsjett KPI',
+      description: 'Totalt budsjetterte timer for valgt år',
+      icon: TrendingUp,
+      defaultConfig: {
+        period_year: undefined as unknown as number,
+      }
+    },
+    {
+      type: 'budgetTable' as const,
+      title: 'Budsjett tabell',
+      description: 'Timer per medlem eller team',
+      icon: Table,
+      defaultConfig: {
+        dimension: 'member' as const,
+        maxRows: 10,
+      }
+    },
+    {
+      type: 'budgetChart' as const,
+      title: 'Budsjett graf',
+      description: 'Visualiser budsjetterte timer',
+      icon: BarChart3,
+      defaultConfig: {
+        chartType: 'bar',
+        dimension: 'team' as const,
+        maxDataPoints: 6,
+      }
+    },
+    {
       type: 'table' as const,
       title: 'Saldobalanse tabell',
       description: 'Vis kontosaldoer i tabellformat',

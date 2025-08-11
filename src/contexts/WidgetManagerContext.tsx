@@ -23,7 +23,10 @@ export interface Widget {
     | 'pivot'
     | 'gauge'
     | 'accountLines'
-    | 'statementTable';
+    | 'statementTable'
+    | 'budgetKpi'
+    | 'budgetTable'
+    | 'budgetChart';
   title: string;
   config?: Record<string, any>;
 }
