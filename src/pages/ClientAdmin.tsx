@@ -83,7 +83,7 @@ const clients: Client[] = (clientList || []).map((c: any) => ({
   };
 
   const handleAddClient = async (client: Partial<Client>) => {
-    const { error } = await supabase.from('clients').insert({
+    const { error } = await (supabase as any).from('clients').insert({
       name: client.name ?? client.company_name ?? '',
       company_name: client.company_name ?? client.name ?? '',
       org_number: client.org_number ?? null,
@@ -144,6 +144,8 @@ const clients: Client[] = (clientList || []).map((c: any) => ({
     await queryClient.invalidateQueries({ queryKey: ['client-list'] });
 
     toast({ title: 'Klient slettet', description: 'Klienten er fjernet fra databasen.' });
+  };
+
   return (
     <StandardPageLayout className="w-full px-4 py-6 md:px-6 lg:px-8">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
