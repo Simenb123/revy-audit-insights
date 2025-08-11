@@ -51,24 +51,24 @@ export const StatementLineRow = React.memo(function StatementLineRow({
   openAccountTB
 }: StatementLineRowProps) {
 const hasChildren = !!(line.children && line.children.length > 0);
-const isOpen = !!expandedMap[line.id];
+const isTotal = !!line.is_total_line || line.line_type === 'subtotal' || line.line_type === 'calculation' || String(line.standard_name || '').toLowerCase().startsWith('sum');
+const isOpen = isTotal ? true : !!expandedMap[line.id];
 const current = line.amount || 0;
 const prev = line.previous_amount || 0;
 const diff = current - prev;
 const pct = prev !== 0 ? (diff / Math.abs(prev)) * 100 : 0;
-  const isDrillable = canDrilldown ? canDrilldown(line.standard_number) : false;
+  const isDrillable = !isTotal && (canDrilldown ? canDrilldown(line.standard_number) : false);
   const accounts = getAccountsForLine ? (getAccountsForLine(line.standard_number) || []) : [];
   const accountsOpen = !!(inlineAccounts && accountsExpandedMap && accountsExpandedMap[line.standard_number]);
   const canToggleAccounts = !!(inlineAccounts && accounts.length > 0);
-const showChevron = hasChildren || canToggleAccounts;
-const isTotal = !!line.is_total_line || line.line_type === 'subtotal';
+const showChevron = (hasChildren && !isTotal) || canToggleAccounts;
 // Counts visible rows for a node (self + visible descendants)
 const countVisible = React.useCallback((node: any): number => {
   let total = 1; // self
   if (inlineAccounts && accountsExpandedMap && getAccountsForLine && accountsExpandedMap[node.standard_number]) {
     total += (getAccountsForLine(node.standard_number) || []).length;
   }
-  if (node.children && node.children.length && expandedMap[node.id]) {
+  if (node.children && node.children.length && (node.is_total_line || node.line_type === 'subtotal' || node.line_type === 'calculation' || String(node.standard_name || '').toLowerCase().startsWith('sum') || expandedMap[node.id])) {
     for (const c of node.children) total += countVisible(c);
   }
   return total;
@@ -133,7 +133,7 @@ const countVisible = React.useCallback((node: any): number => {
             <TableRow
               role="row"
               className={`${isDrillable ? 'cursor-pointer' : 'cursor-default'} hover:bg-muted/40 focus-visible:bg-muted/50 focus-visible:outline-none print:break-inside-avoid`}
-              onClick={() => { 
+onClick={() => { 
                 if (isDrillable) {
                   if (inlineAccounts && toggleAccounts) {
                     const opening = !accountsOpen;
@@ -142,7 +142,7 @@ const countVisible = React.useCallback((node: any): number => {
                   } else {
                     onDrilldown(line.standard_number);
                   }
-                } else if (hasChildren) { 
+                } else if (hasChildren && !isTotal) { 
                   const opening = !isOpen; 
                   const delta = Math.max(0, (opening ? countIfOpened(line) : countVisible(line)) - 1);
                   toggle(line.id, { name: line.standard_name, opening, delta }); 
@@ -182,7 +182,7 @@ const countVisible = React.useCallback((node: any): number => {
                 if (e.key === 'Home') { e.preventDefault(); focusRowAt('home'); return; }
                 if (e.key === 'End') { e.preventDefault(); focusRowAt('end'); return; }
 
-                if (e.key === 'Enter' || e.key === ' ') {
+if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault();
                   if (isDrillable) {
                     if (inlineAccounts && toggleAccounts) {
@@ -192,15 +192,15 @@ const countVisible = React.useCallback((node: any): number => {
                     } else {
                       onDrilldown(line.standard_number);
                     }
-                  } else if (hasChildren) {
+                  } else if (hasChildren && !isTotal) {
                     const opening = !isOpen;
                     const delta = Math.max(0, (opening ? countIfOpened(line) : countVisible(line)) - 1);
                     toggle(line.id, { name: line.standard_name, opening, delta });
                   }
                   return;
                 }
-                if (e.key === 'ArrowRight') {
-                  if (!hasChildren) return;
+if (e.key === 'ArrowRight') {
+                  if (!hasChildren || isTotal) return;
                   e.preventDefault();
                   if (!isOpen) {
                     const delta = Math.max(0, countIfOpened(line) - 1);
@@ -210,9 +210,9 @@ const countVisible = React.useCallback((node: any): number => {
                   }
                   return;
                 }
-                if (e.key === 'ArrowLeft') {
+if (e.key === 'ArrowLeft') {
                   e.preventDefault();
-                  if (hasChildren && isOpen) {
+                  if (hasChildren && isOpen && !isTotal) {
                     const delta = Math.max(0, countVisible(line) - 1);
                     toggle(line.id, { name: line.standard_name, opening: false, delta }); // collapse
                     return;
@@ -251,8 +251,8 @@ const countVisible = React.useCallback((node: any): number => {
                     <button
                       type="button"
                       className="mr-2 text-muted-foreground hover:text-foreground"
-                      onClick={(e) => { 
-                        if (hasChildren) {
+onClick={(e) => { 
+                        if (hasChildren && !isTotal) {
                           const opening = !isOpen;
                           const delta = Math.max(0, (opening ? countIfOpened(line) : countVisible(line)) - 1);
                           toggle(line.id, { name: line.standard_name, opening, delta }); 

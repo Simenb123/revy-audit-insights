@@ -435,7 +435,7 @@ const countVisibleLines = React.useCallback(function countVisibleLines(nodes: an
   return nodes.reduce((sum: number, n: any) => {
     const self = 1;
     const accounts = inlineAccounts && accountsExpanded[n.standard_number] ? getAccountsForLine(n.standard_number).length : 0;
-    const children = n.children && n.children.length && expanded[n.id] ? countVisibleLines(n.children) : 0;
+    const children = n.children && n.children.length && (expanded[n.id] || isTotal(n)) ? countVisibleLines(n.children) : 0;
     return sum + self + accounts + children;
   }, 0);
 }, [expanded, inlineAccounts, accountsExpanded, getAccountsForLine]);
@@ -471,12 +471,12 @@ const countVisibleLines = React.useCallback(function countVisibleLines(nodes: an
   }, [filteredIncome, filteredBalance]);
 
   // CSV export of currently visible rows
-  const flattenVisible = React.useCallback((nodes: any[]): any[] => {
+const flattenVisible = React.useCallback((nodes: any[]): any[] => {
     const out: any[] = [];
     const walk = (arr: any[]) => {
       for (const n of arr) {
         out.push(n);
-        if (n.children && n.children.length && expanded[n.id]) walk(n.children);
+        if (n.children && n.children.length && (expanded[n.id] || isTotal(n))) walk(n.children);
       }
     };
     walk(nodes);
