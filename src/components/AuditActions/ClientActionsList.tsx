@@ -13,21 +13,11 @@ import NewActionDialog from './NewActionDialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import { Checkbox } from '@/components/ui/checkbox';
-import {
-  AlertDialog,
-  AlertDialogTrigger,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogCancel,
-  AlertDialogAction
-} from '@/components/ui/alert-dialog';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useReorderClientAuditActions, useBulkUpdateClientActionsStatus, useBulkDeleteClientActions } from '@/hooks/audit-actions/useClientActionBulk';
+import BulkActionsToolbar from '@/components/AuditActions/BulkActionsToolbar';
 
 // Sorterbar rad for dra-og-slipp
 const SortableRow = ({ action, selected, onToggle, onEdit }: {
@@ -238,48 +228,15 @@ const ClientActionsList = ({ actions, selectedArea, clientId, phase, onOpenTempl
             </div>
 
             {selectedIds.length > 0 && (
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-sm text-muted-foreground">{selectedIds.length} valgt</span>
-                <Button size="sm" variant="secondary" disabled={bulkStatus.isPending || bulkDelete.isPending} onClick={() => bulkStatus.mutate({ clientId, ids: selectedIds, status: 'not_started' }, { onSuccess: () => setSelectedIds([]) })} className="gap-1" title="Sett status til Ikke startet (1)" aria-label="Sett status til Ikke startet">
-                  <Circle size={14} /> Ikke startet
-                </Button>
-                <Button size="sm" variant="secondary" disabled={bulkStatus.isPending || bulkDelete.isPending} onClick={() => bulkStatus.mutate({ clientId, ids: selectedIds, status: 'in_progress' }, { onSuccess: () => setSelectedIds([]) })} className="gap-1" title="Sett status til Pågår (2)" aria-label="Sett status til Pågår">
-                  <Clock size={14} /> Pågår
-                </Button>
-                <Button size="sm" variant="secondary" disabled={bulkStatus.isPending || bulkDelete.isPending} onClick={() => bulkStatus.mutate({ clientId, ids: selectedIds, status: 'completed' }, { onSuccess: () => setSelectedIds([]) })} className="gap-1" title="Sett status til Fullført (3)" aria-label="Sett status til Fullført">
-                  <CheckCircle size={14} /> Fullført
-                </Button>
-                <Button size="sm" variant="secondary" disabled={bulkStatus.isPending || bulkDelete.isPending} onClick={() => bulkStatus.mutate({ clientId, ids: selectedIds, status: 'reviewed' }, { onSuccess: () => setSelectedIds([]) })} title="Markér som gjennomgått (R)" aria-label="Markér som gjennomgått">
-                  Markér som gjennomgått
-                </Button>
-                <Button size="sm" variant="secondary" disabled={bulkStatus.isPending || bulkDelete.isPending} onClick={() => bulkStatus.mutate({ clientId, ids: selectedIds, status: 'approved' }, { onSuccess: () => setSelectedIds([]) })} title="Markér som godkjent (G)" aria-label="Markér som godkjent">
-                  Markér som godkjent
-                </Button>
-                <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-                  <AlertDialogTrigger asChild>
-                    <Button size="sm" variant="destructive" disabled={bulkDelete.isPending || bulkStatus.isPending} className="gap-1" title="Slett valgte (Delete)" aria-label="Slett valgte">
-                      <Trash2 size={14} /> Slett
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Slette {selectedIds.length} handling(er)?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Dette kan ikke angres. Valgte handlinger blir permanent fjernet.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Avbryt</AlertDialogCancel>
-                      <AlertDialogAction onClick={() => bulkDelete.mutate({ clientId, ids: selectedIds }, { onSuccess: () => { setSelectedIds([]); setConfirmOpen(false); } })}>
-                        Bekreft sletting
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-                <Button size="sm" variant="outline" onClick={() => setSelectedIds([])} disabled={bulkStatus.isPending || bulkDelete.isPending} title="Fjern valg (Esc)" aria-label="Fjern valg">
-                  Fjern valg
-                </Button>
-              </div>
+              <BulkActionsToolbar
+                selectedCount={selectedIds.length}
+                disabled={bulkStatus.isPending || bulkDelete.isPending}
+                onStatus={(status) => bulkStatus.mutate({ clientId, ids: selectedIds, status } as any, { onSuccess: () => setSelectedIds([]) })}
+                onDeleteConfirm={() => bulkDelete.mutate({ clientId, ids: selectedIds }, { onSuccess: () => { setSelectedIds([]); setConfirmOpen(false); } })}
+                onClear={() => setSelectedIds([])}
+                confirmOpen={confirmOpen}
+                setConfirmOpen={setConfirmOpen}
+              />
             )}
           </div>
         </CardHeader>
