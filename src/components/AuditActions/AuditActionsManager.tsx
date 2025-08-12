@@ -4,11 +4,12 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Copy, BarChart3 } from 'lucide-react';
+import { Copy, BarChart3, Plus } from 'lucide-react';
 import {
   useAuditActionTemplates,
   useClientAuditActions,
-  useCopyActionsFromTemplate
+  useCopyActionsFromTemplate,
+  useApplyStandardPackage
 } from '@/hooks/useAuditActions';
 import SubjectAreaNav from './SubjectAreaNav';
 import ActionTemplateList from './ActionTemplateList';
@@ -29,6 +30,7 @@ const AuditActionsManager = ({ clientId, phase = 'execution' }: AuditActionsMana
   const { data: templates = [], isLoading: templatesLoading } = useAuditActionTemplates();
   const { data: clientActions = [], isLoading: actionsLoading } = useClientAuditActions(clientId);
   const copyActionsMutation = useCopyActionsFromTemplate();
+  const applyStandardMutation = useApplyStandardPackage();
 
   // Calculate action counts per subject area
   const actionCounts = clientActions.reduce((acc, action) => {
@@ -129,10 +131,28 @@ const AuditActionsManager = ({ clientId, phase = 'execution' }: AuditActionsMana
         </TabsList>
         
         <TabsContent value="client-actions" className="space-y-4">
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-2">
+            {['engagement', 'planning'].includes(phase as string) && (
+              <Button
+                onClick={async () => {
+                  try {
+                    await applyStandardMutation.mutateAsync({ clientId, phase: phase as any });
+                  } catch (e) {
+                    logger.error('Failed to apply standard package', e);
+                  }
+                }}
+                size="sm"
+                className="gap-2"
+                disabled={applyStandardMutation.isPending}
+              >
+                <Plus size={16} />
+                Legg til standardpakke
+              </Button>
+            )}
             <Button
               onClick={() => setCopyFromClientOpen(true)}
               variant="outline"
+              size="sm"
               className="gap-2"
             >
               <Copy size={16} />
