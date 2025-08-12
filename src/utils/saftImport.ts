@@ -2,6 +2,7 @@ import JSZip from 'jszip';
 import * as XLSX from 'xlsx';
 import { supabase } from '@/integrations/supabase/client';
 import type { SaftResult } from './saftParser';
+import { convertToNorwegian } from './accountTypeMapping';
 
 function jsonToCsv(rows: any[]): string {
   if (!rows.length) return '';
@@ -34,13 +35,16 @@ export async function createZipFromParsed(parsed: SaftResult): Promise<Blob> {
 
 export async function persistParsed(clientId: string, parsed: SaftResult): Promise<void> {
   // Upsert accounts into client_chart_of_accounts
-  const accountRows = parsed.accounts.map(a => ({
-    client_id: clientId,
-    account_number: a.account_id,
-    account_name: a.description || a.account_id,
-    account_type: 'other',
-    is_active: true
-  }));
+  const accountRows = parsed.accounts.map(a => {
+    const derivedType = convertToNorwegian(String((a as any).account_type ?? (a as any).type ?? ''));
+    return {
+      client_id: clientId,
+      account_number: a.account_id,
+      account_name: a.description || a.account_id,
+      account_type: derivedType,
+      is_active: true
+    };
+  });
 
   const { data: inserted, error: accError } = await supabase
     .from('client_chart_of_accounts')
