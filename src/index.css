@@ -49,7 +49,7 @@
     --sidebar-ring: 174 57% 80%;
 
     /* Sub-header surface */
-    --sub-header-bg: 220 4% 90%; /* Cooler neutral gray for sub-header */
+    --sub-header-bg: 213 4% 90%; /* Cooler neutral gray for sub-header */
     --sub-header-foreground: var(--foreground);
 
     --revio-100: 174 57% 95%;
