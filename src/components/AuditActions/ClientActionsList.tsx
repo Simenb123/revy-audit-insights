@@ -14,43 +14,13 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { toast } from 'sonner';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
+import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
+
 import { useReorderClientAuditActions, useBulkUpdateClientActionsStatus, useBulkDeleteClientActions } from '@/hooks/audit-actions/useClientActionBulk';
 import BulkActionsToolbar from '@/components/AuditActions/BulkActionsToolbar';
 import ActionRowBody from './ActionRowBody';
+import SortableActionRow from './SortableActionRow';
 
-// Sorterbar rad for dra-og-slipp
-const SortableRow = ({ action, selected, onToggle, onEdit }: {
-  action: ClientAuditAction;
-  selected: boolean;
-  onToggle: (id: string) => void;
-  onEdit: (action: ClientAuditAction) => void;
-}) => {
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: action.id });
-  const style = { transform: CSS.Transform.toString(transform), transition } as React.CSSProperties;
-  return (
-    <div ref={setNodeRef} style={style}>
-      <ActionRowBody
-        action={action}
-        selected={selected}
-        onToggle={onToggle}
-        onEdit={onEdit}
-        dragHandle={
-          <button
-            className="p-1 text-muted-foreground hover:text-foreground cursor-grab"
-            {...attributes}
-            {...listeners}
-            aria-label="Dra for å sortere"
-            title="Dra for å sortere"
-          >
-            <GripVertical size={16} />
-          </button>
-        }
-      />
-    </div>
-  );
-};
 
 interface ClientActionsListProps {
   actions: ClientAuditAction[];
@@ -239,7 +209,7 @@ const ClientActionsList = ({ actions, selectedArea, clientId, phase, onOpenTempl
               <SortableContext items={areaActions.map(a => a.id)} strategy={verticalListSortingStrategy}>
                 <div className="space-y-3">
                   {areaActions.map((action) => (
-                    <SortableRow
+                    <SortableActionRow
                       key={action.id}
                       action={action}
                       selected={selectedIds.includes(action.id)}
