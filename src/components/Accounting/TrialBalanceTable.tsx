@@ -18,6 +18,8 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 
 
 interface TrialBalanceTableProps {
@@ -41,6 +43,11 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
   const [editingMapping, setEditingMapping] = useState<string | null>(null);
   const [autoSuggestions, setAutoSuggestions] = useState<any[]>([]);
   const [hideZeroAccounts, setHideZeroAccounts] = useState<boolean>(true);
+  const [isLocked, setIsLocked] = useState<boolean>(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editEntry, setEditEntry] = useState<TrialBalanceEntryWithMapping | null>(null);
+  const [openingInput, setOpeningInput] = useState<string>('');
+  const [closingInput, setClosingInput] = useState<string>('');
 
   // Get filter parameters from URL
   const filteredAccountsParam = searchParams.get('filtered_accounts');
@@ -68,6 +75,28 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
       { key: 'mapping', label: 'Regnskapslinje', visible: true },
     ]);
   }, [actualAccountingYear]);
+
+  // Fetch lock status for selected version/year
+  useEffect(() => {
+    let query = supabase
+      .from('trial_balances')
+      .select('is_locked, created_at, version')
+      .eq('client_id', clientId)
+      .eq('period_year', actualAccountingYear)
+      .order('created_at', { ascending: false })
+      .limit(1);
+    if (selectedVersion) {
+      query = query.eq('version', selectedVersion);
+    }
+    query.then(({ data, error }) => {
+      if (error) {
+        console.warn('Kunne ikke hente låsestatus', error);
+        setIsLocked(false);
+      } else {
+        setIsLocked(!!data?.[0]?.is_locked);
+      }
+    });
+  }, [clientId, actualAccountingYear, selectedVersion]);
 
   const handleColumnChange = useCallback((key: string, visible: boolean) => {
     setColumnConfig(prev => prev.map(col => 
@@ -220,29 +249,43 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
     return negative ? -Math.abs(n || 0) : (n || 0);
   };
 
-  const handleEditEntry = useCallback(async (entry: TrialBalanceEntryWithMapping) => {
+  const handleEditEntry = useCallback((entry: TrialBalanceEntryWithMapping) => {
+    if (isLocked) {
+      toast.error('Denne versjonen er låst. Lås opp for å redigere.');
+      return;
+    }
+    setEditEntry(entry);
+    setOpeningInput(entry.opening_balance.toString());
+    setClosingInput(entry.closing_balance.toString());
+    setEditOpen(true);
+  }, [isLocked]);
+
+  const handleSaveEdit = useCallback(async () => {
+    if (!editEntry) return;
     try {
-      const openingStr = window.prompt('Rediger inngående balanse', entry.opening_balance.toLocaleString('nb-NO'));
-      if (openingStr === null) return;
-      const closingStr = window.prompt('Rediger saldo', entry.closing_balance.toLocaleString('nb-NO'));
-      if (closingStr === null) return;
-      const opening_balance = parseNumber(openingStr);
-      const closing_balance = parseNumber(closingStr);
+      const opening_balance = parseNumber(openingInput);
+      const closing_balance = parseNumber(closingInput);
       const { error } = await supabase
         .from('trial_balances')
         .update({ opening_balance, closing_balance })
-        .eq('id', entry.id);
+        .eq('id', editEntry.id);
       if (error) throw error;
-      toast.success(`Konto ${entry.account_number} oppdatert`);
+      toast.success(`Konto ${editEntry.account_number} oppdatert`);
+      setEditOpen(false);
+      setEditEntry(null);
       refetch();
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
       toast.error('Kunne ikke oppdatere kontoen');
     }
-  }, [refetch]);
+  }, [editEntry, openingInput, closingInput, refetch]);
 
   const handleDeleteEntry = useCallback(async (entry: TrialBalanceEntryWithMapping) => {
     try {
+      if (isLocked) {
+        toast.error('Denne versjonen er låst. Lås opp for å slette.');
+        return;
+      }
       if (!window.confirm(`Slette konto ${entry.account_number}?`)) return;
       const { error } = await supabase
         .from('trial_balances')
@@ -255,7 +298,7 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
       console.error(err);
       toast.error('Kunne ikke slette kontoen');
     }
-  }, [refetch]);
+  }, [refetch, isLocked]);
 
   const handleDeleteAll = useCallback(async () => {
     if (!selectedVersion) {
@@ -426,10 +469,10 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
           if (!entry) return null;
           return (
             <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
-              <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleEditEntry(entry)} title="Rediger beløp">
+              <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleEditEntry(entry)} title="Rediger beløp" disabled={isLocked}>
                 <Edit className="h-4 w-4" />
               </Button>
-              <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleDeleteEntry(entry)} title="Slett konto">
+              <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleDeleteEntry(entry)} title="Slett konto" disabled={isLocked}>
                 <Trash className="h-4 w-4" />
               </Button>
             </div>
@@ -556,7 +599,7 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
             columns={columnConfig}
             onColumnChange={handleColumnChange}
           />
-          <Button variant="destructive" size="sm" onClick={handleDeleteAll} disabled={!selectedVersion}>
+          <Button variant="destructive" size="sm" onClick={handleDeleteAll} disabled={!selectedVersion || isLocked}>
             <Trash className="h-4 w-4 mr-2" />
             Slett hele saldobalansen
           </Button>
