@@ -216,16 +216,22 @@ const ClientActionsList = ({ actions, selectedArea, clientId, phase, onOpenTempl
             </div>
 
             {selectedIds.length > 0 && (
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <span className="text-sm text-muted-foreground">{selectedIds.length} valgt</span>
-                <Button size="sm" variant="secondary" disabled={bulkStatus.isPending || bulkDelete.isPending} onClick={() => bulkStatus.mutate({ clientId, ids: selectedIds, status: 'not_started' })} className="gap-1">
+                <Button size="sm" variant="secondary" disabled={bulkStatus.isPending || bulkDelete.isPending} onClick={() => bulkStatus.mutate({ clientId, ids: selectedIds, status: 'not_started' }, { onSuccess: () => setSelectedIds([]) })} className="gap-1">
                   <Circle size={14} /> Ikke startet
                 </Button>
-                <Button size="sm" variant="secondary" disabled={bulkStatus.isPending || bulkDelete.isPending} onClick={() => bulkStatus.mutate({ clientId, ids: selectedIds, status: 'in_progress' })} className="gap-1">
+                <Button size="sm" variant="secondary" disabled={bulkStatus.isPending || bulkDelete.isPending} onClick={() => bulkStatus.mutate({ clientId, ids: selectedIds, status: 'in_progress' }, { onSuccess: () => setSelectedIds([]) })} className="gap-1">
                   <Clock size={14} /> Pågår
                 </Button>
-                <Button size="sm" variant="secondary" disabled={bulkStatus.isPending || bulkDelete.isPending} onClick={() => bulkStatus.mutate({ clientId, ids: selectedIds, status: 'completed' })} className="gap-1">
+                <Button size="sm" variant="secondary" disabled={bulkStatus.isPending || bulkDelete.isPending} onClick={() => bulkStatus.mutate({ clientId, ids: selectedIds, status: 'completed' }, { onSuccess: () => setSelectedIds([]) })} className="gap-1">
                   <CheckCircle size={14} /> Fullført
+                </Button>
+                <Button size="sm" variant="secondary" disabled={bulkStatus.isPending || bulkDelete.isPending} onClick={() => bulkStatus.mutate({ clientId, ids: selectedIds, status: 'reviewed' }, { onSuccess: () => setSelectedIds([]) })}>
+                  Markér som gjennomgått
+                </Button>
+                <Button size="sm" variant="secondary" disabled={bulkStatus.isPending || bulkDelete.isPending} onClick={() => bulkStatus.mutate({ clientId, ids: selectedIds, status: 'approved' }, { onSuccess: () => setSelectedIds([]) })}>
+                  Markér som godkjent
                 </Button>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
@@ -248,6 +254,9 @@ const ClientActionsList = ({ actions, selectedArea, clientId, phase, onOpenTempl
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
+                <Button size="sm" variant="outline" onClick={() => setSelectedIds([])} disabled={bulkStatus.isPending || bulkDelete.isPending}>
+                  Fjern valg
+                </Button>
               </div>
             )}
           </div>
