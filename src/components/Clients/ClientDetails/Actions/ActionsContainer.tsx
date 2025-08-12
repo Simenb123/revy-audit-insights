@@ -216,6 +216,8 @@ const ActionsContainer = ({ clientId, phase }: ActionsContainerProps) => {
                 <ClientActionsList
                   actions={phaseActions}
                   selectedArea={selectedArea}
+                  clientId={clientId}
+                  phase={phase}
                 />
               )}
             </TabsContent>

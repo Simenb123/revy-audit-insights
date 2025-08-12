@@ -142,6 +142,8 @@ const AuditActionsManager = ({ clientId, phase = 'execution' }: AuditActionsMana
           <ClientActionsList
             actions={clientActions}
             selectedArea={selectedArea}
+            clientId={clientId}
+            phase={phase as any}
           />
         </TabsContent>
         

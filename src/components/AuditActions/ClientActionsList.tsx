@@ -9,17 +9,21 @@ import ActionStatusBadge from './ActionStatusBadge';
 import ActionQuickActions from './ActionQuickActions';
 import ActionProgressIndicator from './ActionProgressIndicator';
 import ActionDetailDrawer from './ActionDetailDrawer';
+import NewActionDialog from './NewActionDialog';
 
 interface ClientActionsListProps {
   actions: ClientAuditAction[];
   selectedArea: string;
+  clientId: string;
+  phase: import('@/types/revio').AuditPhase;
 }
 
-const ClientActionsList = ({ actions, selectedArea }: ClientActionsListProps) => {
+const ClientActionsList = ({ actions, selectedArea, clientId, phase }: ClientActionsListProps) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedAction, setSelectedAction] = useState<ClientAuditAction | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [newOpen, setNewOpen] = useState(false);
 
   const handleEdit = (action: ClientAuditAction) => {
     setSelectedAction(action);
@@ -53,7 +57,7 @@ const ClientActionsList = ({ actions, selectedArea }: ClientActionsListProps) =>
         <CardHeader>
           <div className="flex justify-between items-center">
             <CardTitle className="text-lg">Klienthandlinger</CardTitle>
-            <Button size="sm" className="gap-2">
+            <Button size="sm" className="gap-2" onClick={() => setNewOpen(true)}>
               <Plus size={16} />
               Ny handling
             </Button>
@@ -169,6 +173,22 @@ const ClientActionsList = ({ actions, selectedArea }: ClientActionsListProps) =>
         onOpenChange={setDrawerOpen}
         action={selectedAction}
       />
+
+      {(() => {
+        const areaActions = actions.filter(a => a.subject_area === selectedArea);
+        const maxSort = areaActions.length ? Math.max(...areaActions.map(a => a.sort_order || 0)) : 0;
+        const nextSortOrder = maxSort + 1;
+        return (
+          <NewActionDialog
+            open={newOpen}
+            onOpenChange={setNewOpen}
+            clientId={clientId}
+            selectedArea={selectedArea}
+            phase={phase}
+            nextSortOrder={nextSortOrder}
+          />
+        );
+      })()}
     </div>
   );
 };

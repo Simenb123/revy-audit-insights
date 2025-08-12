@@ -1,4 +1,5 @@
 import '@testing-library/jest-dom/vitest';
+import { beforeAll, afterAll, afterEach } from 'vitest';
 
 // JSDOM polyfills and stubs commonly needed by Radix and others
 Object.defineProperty(window, 'matchMedia', {
@@ -12,7 +13,7 @@ Object.defineProperty(window, 'matchMedia', {
     addListener: () => {}, // deprecated
     removeListener: () => {}, // deprecated
     dispatchEvent: () => false,
-  }),
+  } as any),
 });
 
 // Optional: MSW setup (no handlers by default)
