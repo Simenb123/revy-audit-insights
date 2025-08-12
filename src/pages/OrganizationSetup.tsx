@@ -1,11 +1,12 @@
 import { logger } from '@/utils/logger';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/components/Auth/AuthProvider';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { ToastAction } from '@/components/ui/toast';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -32,6 +33,7 @@ const OrganizationSetup = () => {
   const cancelRequestMutation = useCancelFirmAccess();
   
   const [loading, setLoading] = useState(false);
+  const handledRedirect = useRef(false);
   const [step, setStep] = useState(1);
   const [showExistingFirmDialog, setShowExistingFirmDialog] = useState(false);
   const [firmData, setFirmData] = useState({
@@ -57,10 +59,20 @@ const OrganizationSetup = () => {
 
   // Redirect if user already has a firm
   useEffect(() => {
-    if (!profileLoading && userProfile?.auditFirmId) {
+    if (!profileLoading && userProfile?.auditFirmId && !handledRedirect.current) {
+      handledRedirect.current = true;
+      toast({
+        title: 'Allerede tilknyttet firma',
+        description: 'Du har allerede et revisjonsfirma. Gå til innstillinger for å gjøre endringer.',
+        action: (
+          <ToastAction altText="Åpne innstillinger" onClick={() => navigate('/organization/settings')}>
+            Åpne innstillinger
+          </ToastAction>
+        ),
+      });
       navigate('/organization');
     }
-  }, [userProfile, profileLoading, navigate]);
+  }, [userProfile, profileLoading, navigate, toast]);
 
   // Show existing firm dialog when firm is found
   useEffect(() => {
