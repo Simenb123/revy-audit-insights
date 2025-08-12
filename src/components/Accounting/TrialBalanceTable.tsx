@@ -665,6 +665,9 @@ const [reconcileOpen, setReconcileOpen] = useState(false);
             onColumnChange={handleColumnChange}
           />
           {selectedVersion && (
+            <Badge variant="outline" className="ml-1">Versjon: {selectedVersion}</Badge>
+          )}
+          {selectedVersion && (
             <Button variant="outline" size="sm" onClick={onToggleLock} className="gap-2">
               {isLocked ? <Unlock className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
               {isLocked ? 'Lås opp' : 'Lås versjon'}
