@@ -20,6 +20,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import ReconciliationDialog from '@/components/Accounting/ReconciliationDialog';
 
 
 interface TrialBalanceTableProps {
@@ -55,6 +56,7 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
   const [editEntry, setEditEntry] = useState<TrialBalanceEntryWithMapping | null>(null);
   const [openingInput, setOpeningInput] = useState<string>('');
   const [closingInput, setClosingInput] = useState<string>('');
+  const [reconcileOpen, setReconcileOpen] = useState(false);
 
   // Get filter parameters from URL
   const filteredAccountsParam = searchParams.get('filtered_accounts');
@@ -610,6 +612,9 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="secondary" size="sm" onClick={() => setReconcileOpen(true)} disabled={!selectedVersion}>
+            Avstem inngående vs fjorår
+          </Button>
           <ColumnSelector 
             columns={columnConfig}
             onColumnChange={handleColumnChange}
@@ -639,6 +644,13 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
         rowHeight={48}
         overscan={12}
         onRowClick={handleRowClick}
+      />
+      <ReconciliationDialog
+        clientId={clientId}
+        currentYear={actualAccountingYear}
+        currentVersion={selectedVersion || null}
+        open={reconcileOpen}
+        onOpenChange={setReconcileOpen}
       />
     </div>
   );
