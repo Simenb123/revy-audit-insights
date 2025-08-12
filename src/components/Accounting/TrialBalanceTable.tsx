@@ -14,6 +14,7 @@ import { Progress } from '@/components/ui/progress';
 import ColumnSelector, { ColumnConfig } from './ColumnSelector';
 import FilterPanel from './FilterPanel';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
+import { useToggleTrialBalanceLock } from '@/hooks/useTrialBalanceVersions';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
@@ -56,7 +57,24 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
   const [editEntry, setEditEntry] = useState<TrialBalanceEntryWithMapping | null>(null);
   const [openingInput, setOpeningInput] = useState<string>('');
   const [closingInput, setClosingInput] = useState<string>('');
-  const [reconcileOpen, setReconcileOpen] = useState(false);
+const [reconcileOpen, setReconcileOpen] = useState(false);
+
+  // Toggle lock mutation
+  const toggleLock = useToggleTrialBalanceLock();
+  const onToggleLock = useCallback(async () => {
+    if (!selectedVersion) {
+      toast.error('Ingen versjon valgt');
+      return;
+    }
+    try {
+      await toggleLock.mutateAsync({ clientId, periodYear: actualAccountingYear, isLocked: !isLocked });
+      setIsLocked(!isLocked);
+      toast.success(!isLocked ? 'Versjon låst' : 'Versjon låst opp');
+    } catch (e) {
+      console.error(e);
+      toast.error('Kunne ikke oppdatere låsestatus');
+    }
+  }, [toggleLock, clientId, actualAccountingYear, isLocked, selectedVersion]);
 
   // Get filter parameters from URL
   const filteredAccountsParam = searchParams.get('filtered_accounts');
@@ -72,7 +90,7 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
     setColumnConfig([
       { key: 'account_number', label: 'Kontonr', visible: true, required: true },
       { key: 'account_name', label: 'Kontonavn', visible: true, required: true },
-      { key: 'previous_year_balance', label: `Saldo ${previousYear} (Inngående ${actualAccountingYear})`, visible: false },
+      { key: 'previous_year_balance', label: `Forrige år (${previousYear})`, visible: false },
       { key: 'opening_balance', label: `Saldo ${previousYear} (Inngående ${actualAccountingYear})`, visible: true },
       { key: 'closing_balance', label: `Saldo ${actualAccountingYear} (Utgående ${actualAccountingYear})`, visible: true },
       { key: 'debit_turnover', label: 'Debet', visible: false },
@@ -355,8 +373,8 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
       },
       {
         key: 'previous_year_balance',
-        header: `Saldo ${actualAccountingYear - 1} (Inngående ${actualAccountingYear})`,
-        headerTooltip: `Inngående per 1.1.${actualAccountingYear} = utgående 31.12.${actualAccountingYear - 1}`,
+        header: `Forrige år (${actualAccountingYear - 1})`,
+        headerTooltip: `Utgående 31.12.${actualAccountingYear - 1}`,
         accessor: (entry: TrialBalanceEntryWithMapping) => entry.previous_year_balance || 0,
         sortable: true,
         align: 'right' as const,
@@ -627,10 +645,31 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
           <Button variant="secondary" size="sm" onClick={() => setReconcileOpen(true)} disabled={!selectedVersion}>
             Avstem inngående vs fjorår
           </Button>
+          <Badge
+            variant={Math.abs(reconciliationDiffTotal) < 0.005 ? 'secondary' : 'destructive'}
+            className="ml-1 flex items-center gap-1"
+            aria-live="polite"
+          >
+            {Math.abs(reconciliationDiffTotal) < 0.005 ? (
+              <>
+                <Check className="h-3 w-3" /> Avstemt
+              </>
+            ) : (
+              <>
+                <X className="h-3 w-3" /> Avvik: {formatNumber(Math.abs(reconciliationDiffTotal))}
+              </>
+            )}
+          </Badge>
           <ColumnSelector 
             columns={columnConfig}
             onColumnChange={handleColumnChange}
           />
+          {selectedVersion && (
+            <Button variant="outline" size="sm" onClick={onToggleLock} className="gap-2">
+              {isLocked ? <Unlock className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
+              {isLocked ? 'Lås opp' : 'Lås versjon'}
+            </Button>
+          )}
           <Button variant="destructive" size="sm" onClick={handleDeleteAll} disabled={!selectedVersion || isLocked}>
             <Trash className="h-4 w-4 mr-2" />
             Slett hele saldobalansen
