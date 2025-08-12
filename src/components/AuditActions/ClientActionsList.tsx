@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -102,6 +102,8 @@ const ClientActionsList = ({ actions, selectedArea, clientId, phase, onOpenTempl
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [newOpen, setNewOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const listRef = useRef<HTMLDivElement>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const reorderMutation = useReorderClientAuditActions();
   const bulkStatus = useBulkUpdateClientActionsStatus();
@@ -158,7 +160,27 @@ const ClientActionsList = ({ actions, selectedArea, clientId, phase, onOpenTempl
   ];
 
   return (
-    <div className="space-y-4">
+    <div
+      className="space-y-4"
+      ref={listRef}
+      tabIndex={0}
+      onKeyDown={(e) => {
+        const target = e.target as HTMLElement;
+        if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT' || (target as HTMLElement).isContentEditable)) return;
+        const key = e.key.toLowerCase();
+        if ((e.ctrlKey || e.metaKey) && key === 'a') { e.preventDefault(); toggleSelectAllVisible(); return; }
+        if (selectedIds.length === 0) return;
+        if (key === 'escape') { setSelectedIds([]); return; }
+        if (key === 'delete' || key === 'backspace') { setConfirmOpen(true); return; }
+        const doStatus = (status: any) => bulkStatus.mutate({ clientId, ids: selectedIds, status }, { onSuccess: () => setSelectedIds([]) });
+        if (key === '1') doStatus('not_started');
+        else if (key === '2') doStatus('in_progress');
+        else if (key === '3') doStatus('completed');
+        else if (key === 'r') doStatus('reviewed');
+        else if (key === 'g') doStatus('approved');
+      }}
+      aria-label="Liste over revisjonshandlinger. Bruk Ctrl/Cmd+A for å velge synlige, Delete for å slette, 1/2/3 for status, R for gjennomgått, G for godkjent."
+    >
       <ActionProgressIndicator actions={filteredActions} />
       
       <Card>
@@ -210,7 +232,7 @@ const ClientActionsList = ({ actions, selectedArea, clientId, phase, onOpenTempl
                 ))}
               </select>
               <div className="flex items-center gap-2">
-                <Checkbox checked={allVisibleSelected} onCheckedChange={() => toggleSelectAllVisible()} />
+                <Checkbox checked={allVisibleSelected} onCheckedChange={() => toggleSelectAllVisible()} aria-label="Velg alle synlige" />
                 <span className="text-sm text-muted-foreground">Velg synlige</span>
               </div>
             </div>
@@ -218,24 +240,24 @@ const ClientActionsList = ({ actions, selectedArea, clientId, phase, onOpenTempl
             {selectedIds.length > 0 && (
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-sm text-muted-foreground">{selectedIds.length} valgt</span>
-                <Button size="sm" variant="secondary" disabled={bulkStatus.isPending || bulkDelete.isPending} onClick={() => bulkStatus.mutate({ clientId, ids: selectedIds, status: 'not_started' }, { onSuccess: () => setSelectedIds([]) })} className="gap-1">
+                <Button size="sm" variant="secondary" disabled={bulkStatus.isPending || bulkDelete.isPending} onClick={() => bulkStatus.mutate({ clientId, ids: selectedIds, status: 'not_started' }, { onSuccess: () => setSelectedIds([]) })} className="gap-1" title="Sett status til Ikke startet (1)" aria-label="Sett status til Ikke startet">
                   <Circle size={14} /> Ikke startet
                 </Button>
-                <Button size="sm" variant="secondary" disabled={bulkStatus.isPending || bulkDelete.isPending} onClick={() => bulkStatus.mutate({ clientId, ids: selectedIds, status: 'in_progress' }, { onSuccess: () => setSelectedIds([]) })} className="gap-1">
+                <Button size="sm" variant="secondary" disabled={bulkStatus.isPending || bulkDelete.isPending} onClick={() => bulkStatus.mutate({ clientId, ids: selectedIds, status: 'in_progress' }, { onSuccess: () => setSelectedIds([]) })} className="gap-1" title="Sett status til Pågår (2)" aria-label="Sett status til Pågår">
                   <Clock size={14} /> Pågår
                 </Button>
-                <Button size="sm" variant="secondary" disabled={bulkStatus.isPending || bulkDelete.isPending} onClick={() => bulkStatus.mutate({ clientId, ids: selectedIds, status: 'completed' }, { onSuccess: () => setSelectedIds([]) })} className="gap-1">
+                <Button size="sm" variant="secondary" disabled={bulkStatus.isPending || bulkDelete.isPending} onClick={() => bulkStatus.mutate({ clientId, ids: selectedIds, status: 'completed' }, { onSuccess: () => setSelectedIds([]) })} className="gap-1" title="Sett status til Fullført (3)" aria-label="Sett status til Fullført">
                   <CheckCircle size={14} /> Fullført
                 </Button>
-                <Button size="sm" variant="secondary" disabled={bulkStatus.isPending || bulkDelete.isPending} onClick={() => bulkStatus.mutate({ clientId, ids: selectedIds, status: 'reviewed' }, { onSuccess: () => setSelectedIds([]) })}>
+                <Button size="sm" variant="secondary" disabled={bulkStatus.isPending || bulkDelete.isPending} onClick={() => bulkStatus.mutate({ clientId, ids: selectedIds, status: 'reviewed' }, { onSuccess: () => setSelectedIds([]) })} title="Markér som gjennomgått (R)" aria-label="Markér som gjennomgått">
                   Markér som gjennomgått
                 </Button>
-                <Button size="sm" variant="secondary" disabled={bulkStatus.isPending || bulkDelete.isPending} onClick={() => bulkStatus.mutate({ clientId, ids: selectedIds, status: 'approved' }, { onSuccess: () => setSelectedIds([]) })}>
+                <Button size="sm" variant="secondary" disabled={bulkStatus.isPending || bulkDelete.isPending} onClick={() => bulkStatus.mutate({ clientId, ids: selectedIds, status: 'approved' }, { onSuccess: () => setSelectedIds([]) })} title="Markér som godkjent (G)" aria-label="Markér som godkjent">
                   Markér som godkjent
                 </Button>
-                <AlertDialog>
+                <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
                   <AlertDialogTrigger asChild>
-                    <Button size="sm" variant="destructive" disabled={bulkDelete.isPending || bulkStatus.isPending} className="gap-1">
+                    <Button size="sm" variant="destructive" disabled={bulkDelete.isPending || bulkStatus.isPending} className="gap-1" title="Slett valgte (Delete)" aria-label="Slett valgte">
                       <Trash2 size={14} /> Slett
                     </Button>
                   </AlertDialogTrigger>
@@ -248,13 +270,13 @@ const ClientActionsList = ({ actions, selectedArea, clientId, phase, onOpenTempl
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>Avbryt</AlertDialogCancel>
-                      <AlertDialogAction onClick={() => bulkDelete.mutate({ clientId, ids: selectedIds }, { onSuccess: () => setSelectedIds([]) })}>
+                      <AlertDialogAction onClick={() => bulkDelete.mutate({ clientId, ids: selectedIds }, { onSuccess: () => { setSelectedIds([]); setConfirmOpen(false); } })}>
                         Bekreft sletting
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
-                <Button size="sm" variant="outline" onClick={() => setSelectedIds([])} disabled={bulkStatus.isPending || bulkDelete.isPending}>
+                <Button size="sm" variant="outline" onClick={() => setSelectedIds([])} disabled={bulkStatus.isPending || bulkDelete.isPending} title="Fjern valg (Esc)" aria-label="Fjern valg">
                   Fjern valg
                 </Button>
               </div>
