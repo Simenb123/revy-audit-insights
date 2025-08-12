@@ -1,5 +1,4 @@
 import React from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import RevyAvatar from '@/components/Revy/RevyAvatar'
 import SmartReviAssistant from '@/components/Revy/SmartReviAssistant'
 import { cn } from '@/lib/utils'
@@ -57,7 +56,7 @@ const AiRevyCard: React.FC<AiRevyCardProps> = ({
 
   return (
     <div className={cn('h-full w-full flex flex-col', className)}>
-      <div className="p-2 border-b flex-shrink-0">
+      <div className="p-2 flex-shrink-0">
         <div className="flex items-center gap-2">
           <RevyAvatar size="sm" />
           <div>
