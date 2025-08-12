@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { useUpdateClientAuditAction } from '@/hooks/useAuditActions';
-import { useWorkingPaperTemplates } from '@/hooks/useEnhancedAuditActions';
+import { useWorkingPaperTemplates, useActionISAMappings, useActionDocumentMappings, useActionAIMetadata } from '@/hooks/useEnhancedAuditActions';
 import type { ClientAuditAction } from '@/types/audit-actions';
 import TemplateSelector from './TemplateSelector';
 import JsonEditor from './JsonEditor';
@@ -15,6 +15,8 @@ import ActionDrawerFooter from './ActionDrawerFooter';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { phaseLabels } from '@/constants/phaseLabels';
 import type { AuditPhase } from '@/types/revio';
+import { Badge } from '@/components/ui/badge';
+import { BookOpen, FileText, Brain } from 'lucide-react';
 
 interface ActionDetailDrawerProps {
   open: boolean;
@@ -33,6 +35,11 @@ const ActionDetailDrawer: React.FC<ActionDetailDrawerProps> = ({ open, onOpenCha
   const [wpJson, setWpJson] = useState<string>('{}');
   const [jsonError, setJsonError] = useState<string | null>(null);
   const [showJson, setShowJson] = useState(false);
+
+  const templateId = (action?.template_id as string | undefined) || undefined;
+  const { data: isaMappings = [] } = useActionISAMappings(templateId);
+  const { data: documentMappings = [] } = useActionDocumentMappings(templateId);
+  const { data: aiMetadata } = useActionAIMetadata(templateId);
 
   const { data: templates = [] } = useWorkingPaperTemplates(
     action?.subject_area as any,
@@ -172,6 +179,51 @@ const ActionDetailDrawer: React.FC<ActionDetailDrawerProps> = ({ open, onOpenCha
                   <Separator />
 
                   <AutoMetricsViewer metrics={autoMetrics} />
+
+                  {templateId && (
+                    <div className="space-y-2">
+                      <Separator />
+                      <div className="text-sm font-medium">Knyttet mal</div>
+                      <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                        {(isaMappings?.length || 0) > 0 && (
+                          <span className="flex items-center gap-1"><BookOpen size={12} /> {isaMappings.length} ISA</span>
+                        )}
+                        {(documentMappings?.length || 0) > 0 && (
+                          <span className="flex items-center gap-1"><FileText size={12} /> {documentMappings.length} dokumentkrav</span>
+                        )}
+                        {aiMetadata && (
+                          <span className="flex items-center gap-1"><Brain size={12} /> AI‑assistert</span>
+                        )}
+                      </div>
+
+                      {(isaMappings?.length || 0) > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {isaMappings.slice(0, 3).map((m) => (
+                            <Badge key={m.id} variant="outline" className="text-xs">
+                              {m.isa_standard?.isa_number || 'ISA'} {m.isa_standard?.title || ''}
+                            </Badge>
+                          ))}
+                          {isaMappings.length > 3 && (
+                            <Badge variant="secondary" className="text-xs">+{isaMappings.length - 3} flere</Badge>
+                          )}
+                        </div>
+                      )}
+
+                      {(documentMappings?.length || 0) > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {documentMappings.slice(0, 3).map((m) => (
+                            <Badge key={m.id} variant="outline" className="text-xs">
+                              {m.document_requirement?.name || 'Dokument'}
+                            </Badge>
+                          ))}
+                          {documentMappings.length > 3 && (
+                            <Badge variant="secondary" className="text-xs">+{documentMappings.length - 3} flere</Badge>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                 </div>
               </div>
             </div>
