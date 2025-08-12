@@ -1,5 +1,5 @@
 import React from 'react';
-import { Responsive, WidthProvider, Layout } from 'react-grid-layout';
+import { Responsive, WidthProvider, Layout, ItemCallback } from 'react-grid-layout';
 import { useWidgetManager, WidgetLayout } from '@/contexts/WidgetManagerContext';
 import { WidgetRenderer } from './WidgetRenderer';
 import { WidgetWrapper } from './WidgetWrapper';
@@ -25,15 +25,19 @@ export function DashboardCanvas({ clientId, selectedVersion }: DashboardCanvasPr
       const existingWidget = layouts.find(l => l.i === item.i);
       return {
         i: item.i,
-        x: item.x,
-        y: item.y,
-        w: item.w,
-        h: item.h,
+        x: Math.round(item.x),
+        y: Math.round(item.y),
+        w: Math.round(item.w),
+        h: Math.round(item.h),
         widgetId: existingWidget?.widgetId || item.i,
         dataSourceId: existingWidget?.dataSourceId,
       };
     });
     updateLayout(updatedLayouts);
+  };
+
+  const handleDragOrResizeStop: ItemCallback = layout => {
+    handleLayoutChange(layout);
   };
 
   const gridLayouts = layouts.map(layout => ({
@@ -44,18 +48,29 @@ export function DashboardCanvas({ clientId, selectedVersion }: DashboardCanvasPr
     h: layout.h,
   }));
 
+  const gridStyle = !isViewMode
+    ? {
+        backgroundImage:
+          `linear-gradient(to right, rgba(0,0,0,0.05) 1px, transparent 1px),
+           linear-gradient(to bottom, rgba(0,0,0,0.05) 1px, transparent 1px)`,
+        backgroundSize: `calc(100% / 12) ${GRID_ROW_HEIGHT + GRID_MARGIN[1]}px`,
+      }
+    : undefined;
+
   return (
-    <div className={cn(
-      "p-4 min-h-screen bg-background",
-      isViewMode && "print:p-0 print:min-h-0 print:bg-white"
-    )}>
+    <div
+      className={cn(
+        "p-4 min-h-screen bg-background",
+        isViewMode && "print:p-0 print:min-h-0 print:bg-white"
+      )}
+    >
       <ResponsiveGridLayout
-        className={cn(
-          "layout",
-          isViewMode && "print:static"
-        )}
+        className={cn("layout", isViewMode && "print:static")}
+        style={gridStyle}
         layouts={{ lg: gridLayouts }}
         onLayoutChange={handleLayoutChange}
+        onDragStop={handleDragOrResizeStop}
+        onResizeStop={handleDragOrResizeStop}
         cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
         rowHeight={GRID_ROW_HEIGHT}
         margin={GRID_MARGIN}
@@ -68,14 +83,14 @@ export function DashboardCanvas({ clientId, selectedVersion }: DashboardCanvasPr
         draggableCancel=".widget-controls"
       >
         {widgets.map(widget => (
-          <div key={widget.id} className={cn(
-            "bg-card border rounded-lg shadow-sm",
-            isViewMode && "print:shadow-none print:border-gray-300"
-          )}>
-            <WidgetWrapper widget={widget}>
-              <WidgetRenderer widget={{ ...widget, config: { ...widget.config, clientId, selectedVersion } }} />
-            </WidgetWrapper>
-          </div>
+          <WidgetWrapper key={widget.id} widget={widget}>
+            <WidgetRenderer
+              widget={{
+                ...widget,
+                config: { ...widget.config, clientId, selectedVersion },
+              }}
+            />
+          </WidgetWrapper>
         ))}
       </ResponsiveGridLayout>
     </div>
