@@ -13,7 +13,8 @@ import { useClientLookup } from '@/hooks/useClientLookup';
 
 const SaftImport = () => {
   const [file, setFile] = useState<File | null>(null);
-  const [generateXlsx, setGenerateXlsx] = useState(false);
+  const [generateXlsx, setGenerateXlsx] = useState(true);
+  const [generateCsv, setGenerateCsv] = useState(false);
   const [uploadToSupabase, setUploadToSupabase] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const { clientId: clientIdParam, orgNumber } = useParams<{ clientId?: string; orgNumber?: string }>();
@@ -64,9 +65,11 @@ const SaftImport = () => {
         zip = await createZipFromParsed(parsed);
       }
 
-      // Lokal nedlasting av CSV-filer
-      const csvFiles = toCsvFiles(parsed);
-      csvFiles.forEach(f => downloadBlob(f, f.name));
+      // Lokal nedlasting av CSV-filer (valgfri)
+      if (generateCsv) {
+        const csvFiles = toCsvFiles(parsed);
+        csvFiles.forEach(f => downloadBlob(f, f.name));
+      }
 
       // Valgfri lokal XLSX-eksport
       if (generateXlsx) {
@@ -105,6 +108,10 @@ const SaftImport = () => {
         <div className="flex items-center space-x-2">
           <Checkbox id="generate-xlsx" checked={generateXlsx} onCheckedChange={(v) => setGenerateXlsx(!!v)} />
           <Label htmlFor="generate-xlsx">Generér XLSX</Label>
+        </div>
+        <div className="flex items-center space-x-2">
+          <Checkbox id="generate-csv" checked={generateCsv} onCheckedChange={(v) => setGenerateCsv(!!v)} />
+          <Label htmlFor="generate-csv">Last ned CSV (ett ark per datasett)</Label>
         </div>
         <div className="flex items-center space-x-2">
           <Checkbox
