@@ -11,6 +11,7 @@ export interface TrialBalanceEntryWithMapping {
   opening_balance: number;
   period_end_date: string;
   period_year: number;
+  previous_year_balance?: number;
   standard_account_id?: string;
   standard_number?: string;
   standard_name?: string;
@@ -159,12 +160,44 @@ export const useTrialBalanceWithMappings = (clientId: string, fiscalYear?: numbe
         .from('standard_accounts')
         .select('id, standard_number, standard_name, category, account_type, analysis_group');
 
-      if (standardError) {
-        console.error('Error fetching standard accounts:', standardError);
-        throw standardError;
+      // Prepare previous year balance lookup (latest version of previous year)
+      const previousYear = finalYear - 1;
+      let prevVersion: string | null = null;
+      try {
+        const { data: prevLatest } = await supabase
+          .from('trial_balances')
+          .select('version, created_at')
+          .eq('client_id', clientId)
+          .eq('period_year', previousYear)
+          .order('created_at', { ascending: false })
+          .limit(1);
+        if (prevLatest && prevLatest.length > 0) {
+          prevVersion = (prevLatest[0] as any).version as string;
+        }
+      } catch (e) {
+        console.warn('Could not determine previous year version', e);
       }
 
-      // Create a mapping lookup by account number - prioritize trial_balance_mappings
+      let prevQuery = supabase
+        .from('trial_balances')
+        .select(`
+          closing_balance,
+          client_chart_of_accounts!inner(account_number)
+        `)
+        .eq('client_id', clientId)
+        .eq('period_year', previousYear);
+      if (prevVersion) {
+        prevQuery = prevQuery.eq('version', prevVersion);
+      }
+      const { data: prevData, error: prevErr } = await prevQuery;
+      if (prevErr) {
+        console.warn('Previous year fetch error (non-fatal):', prevErr);
+      }
+      const prevMap = new Map<string, number>();
+      prevData?.forEach((row: any) => {
+        const accNo = row?.client_chart_of_accounts?.account_number;
+        if (accNo) prevMap.set(accNo, row.closing_balance || 0);
+      });
       const mappingLookup = new Map();
       mappingsData?.forEach(mapping => {
         // Find standard account by matching statement_line_number with standard_number
@@ -207,21 +240,23 @@ export const useTrialBalanceWithMappings = (clientId: string, fiscalYear?: numbe
 
       // Transform the data
       const trialBalanceEntries: TrialBalanceEntryWithMapping[] = trialBalanceData.map(tb => {
-        const account = tb.client_chart_of_accounts;
+        const account = (tb as any).client_chart_of_accounts;
+        const accNo = account?.account_number;
         
         // Use mapping first, then fallback to classification
-        const mapping = mappingLookup.get(account?.account_number) || classificationLookup.get(account?.account_number);
+        const mapping = mappingLookup.get(accNo) || classificationLookup.get(accNo);
 
         return {
-          id: tb.id,
-          account_number: account?.account_number || 'Ukjent',
+          id: (tb as any).id,
+          account_number: accNo || 'Ukjent',
           account_name: account?.account_name || 'Ukjent konto',
-          closing_balance: tb.closing_balance || 0,
-          credit_turnover: tb.credit_turnover || 0,
-          debit_turnover: tb.debit_turnover || 0,
-          opening_balance: tb.opening_balance || 0,
-          period_end_date: tb.period_end_date,
-          period_year: tb.period_year,
+          closing_balance: (tb as any).closing_balance || 0,
+          credit_turnover: (tb as any).credit_turnover || 0,
+          debit_turnover: (tb as any).debit_turnover || 0,
+          opening_balance: (tb as any).opening_balance || 0,
+          period_end_date: (tb as any).period_end_date,
+          period_year: (tb as any).period_year,
+          previous_year_balance: prevMap.get(accNo) || 0,
           standard_account_id: mapping?.standard_account_id,
           standard_number: mapping?.standard_number,
           standard_name: mapping?.standard_name,
@@ -229,7 +264,7 @@ export const useTrialBalanceWithMappings = (clientId: string, fiscalYear?: numbe
           standard_account_type: mapping?.standard_account_type,
           standard_analysis_group: mapping?.standard_analysis_group,
           is_mapped: !!mapping?.standard_account_id,
-        };
+        } as TrialBalanceEntryWithMapping;
       });
 
       // Group by standard accounts and calculate totals

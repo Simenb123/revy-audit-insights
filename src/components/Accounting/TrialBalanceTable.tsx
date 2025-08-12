@@ -159,11 +159,11 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
       if (hideZeroAccounts) {
         const visibleKeys = new Set(columnConfig.filter(c => c.visible).map(c => c.key));
         const values: number[] = [];
+        if (visibleKeys.has('previous_year_balance')) values.push(entry.previous_year_balance || 0);
         if (visibleKeys.has('opening_balance')) values.push(entry.opening_balance || 0);
         if (visibleKeys.has('closing_balance')) values.push(entry.closing_balance || 0);
         if (visibleKeys.has('debit_turnover')) values.push(entry.debit_turnover || 0);
         if (visibleKeys.has('credit_turnover')) values.push(entry.credit_turnover || 0);
-        // Note: previous_year_balance not yet implemented in data source
         const hasAnyAmount = values.some(v => Math.abs(v) > 0.0049);
         if (!hasAnyAmount) return false;
       }
@@ -304,7 +304,7 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
       {
         key: 'previous_year_balance',
         header: `Saldo ${actualAccountingYear - 1}`,
-        accessor: (entry: TrialBalanceEntryWithMapping) => 0, // Placeholder for now
+        accessor: (entry: TrialBalanceEntryWithMapping) => entry.previous_year_balance || 0,
         sortable: true,
         align: 'right' as const,
         format: (value: number) => formatNumber(value),
@@ -450,6 +450,7 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
     if (!filteredEntries) return null;
     
     return {
+      previous_year_balance: filteredEntries.reduce((sum, entry) => sum + (entry.previous_year_balance || 0), 0),
       opening_balance: filteredEntries.reduce((sum, entry) => sum + entry.opening_balance, 0),
       debit_turnover: filteredEntries.reduce((sum, entry) => sum + entry.debit_turnover, 0),
       credit_turnover: filteredEntries.reduce((sum, entry) => sum + entry.credit_turnover, 0),
@@ -464,7 +465,7 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
         Sum
       </TableCell>
       {columnConfig.find(c => c.key === 'previous_year_balance' && c.visible) && (
-        <TableCell className="text-right font-mono">{formatNumber(0)}</TableCell>
+        <TableCell className="text-right font-mono">{formatNumber(totals?.previous_year_balance || 0)}</TableCell>
       )}
       {columnConfig.find(c => c.key === 'opening_balance' && c.visible) && (
         <TableCell className="text-right font-mono">{formatNumber(totals?.opening_balance || 0)}</TableCell>
