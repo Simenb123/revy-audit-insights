@@ -11,6 +11,7 @@ import { useWorkingPaperTemplates } from '@/hooks/useEnhancedAuditActions';
 import type { ClientAuditAction } from '@/types/audit-actions';
 import TemplateSelector from './TemplateSelector';
 import JsonEditor from './JsonEditor';
+import AutoMetricsViewer from './AutoMetricsViewer';
 
 interface ActionDetailDrawerProps {
   open: boolean;
@@ -166,12 +167,7 @@ const ActionDetailDrawer: React.FC<ActionDetailDrawerProps> = ({ open, onOpenCha
 
                   <Separator />
 
-                  <div className="space-y-2">
-                    <Label>Auto-metrics (lesevisning)</Label>
-                    <pre className="bg-muted rounded-md p-3 text-xs overflow-auto max-h-48">
-                      {JSON.stringify(autoMetrics, null, 2)}
-                    </pre>
-                  </div>
+                  <AutoMetricsViewer metrics={autoMetrics} />
                 </div>
               </div>
             </div>
