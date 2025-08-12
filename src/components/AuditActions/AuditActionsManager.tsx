@@ -24,6 +24,7 @@ interface AuditActionsManagerProps {
 const AuditActionsManager = ({ clientId, phase = 'execution' }: AuditActionsManagerProps) => {
   const [selectedArea, setSelectedArea] = useState<string>('sales');
   const [copyFromClientOpen, setCopyFromClientOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>('client-actions');
   
   const { data: templates = [], isLoading: templatesLoading } = useAuditActionTemplates();
   const { data: clientActions = [], isLoading: actionsLoading } = useClientAuditActions(clientId);
@@ -117,7 +118,7 @@ const AuditActionsManager = ({ clientId, phase = 'execution' }: AuditActionsMana
         </CardContent>
       </Card>
 
-      <Tabs defaultValue="client-actions" className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="client-actions">
             Klienthandlinger ({getSelectedAreaLabel(selectedArea)})
@@ -144,6 +145,7 @@ const AuditActionsManager = ({ clientId, phase = 'execution' }: AuditActionsMana
             selectedArea={selectedArea}
             clientId={clientId}
             phase={phase as any}
+            onOpenTemplates={() => setActiveTab('templates')}
           />
         </TabsContent>
         

@@ -3,22 +3,25 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Search, Plus } from 'lucide-react';
+import { Search, Plus, ChevronDown } from 'lucide-react';
 import { ClientAuditAction } from '@/types/audit-actions';
 import ActionStatusBadge from './ActionStatusBadge';
 import ActionQuickActions from './ActionQuickActions';
 import ActionProgressIndicator from './ActionProgressIndicator';
 import ActionDetailDrawer from './ActionDetailDrawer';
 import NewActionDialog from './NewActionDialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { toast } from 'sonner';
 
 interface ClientActionsListProps {
   actions: ClientAuditAction[];
   selectedArea: string;
   clientId: string;
   phase: import('@/types/revio').AuditPhase;
+  onOpenTemplates?: () => void;
 }
 
-const ClientActionsList = ({ actions, selectedArea, clientId, phase }: ClientActionsListProps) => {
+const ClientActionsList = ({ actions, selectedArea, clientId, phase, onOpenTemplates }: ClientActionsListProps) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedAction, setSelectedAction] = useState<ClientAuditAction | null>(null);
@@ -56,11 +59,26 @@ const ClientActionsList = ({ actions, selectedArea, clientId, phase }: ClientAct
       <Card>
         <CardHeader>
           <div className="flex justify-between items-center">
-            <CardTitle className="text-lg">Klienthandlinger</CardTitle>
-            <Button size="sm" className="gap-2" onClick={() => setNewOpen(true)}>
-              <Plus size={16} />
-              Ny handling
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button size="sm" className="gap-2" onClick={() => setNewOpen(true)}>
+                <Plus size={16} />
+                Ny handling
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="sm" variant="outline" aria-label="Flere måter å legge til">
+                    <ChevronDown size={16} />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setNewOpen(true)}>Fra blank</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => {
+                    if (onOpenTemplates) onOpenTemplates();
+                    else toast('Bytt til fanen Handlingsmaler for å velge maler.');
+                  }}>Fra mal</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
           
           {/* Search and Filter Controls */}

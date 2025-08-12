@@ -33,6 +33,7 @@ interface ActionsContainerProps {
 const ActionsContainer = ({ clientId, phase }: ActionsContainerProps) => {
   const [copyFromClientOpen, setCopyFromClientOpen] = useState(false);
   const [selectedArea, setSelectedArea] = useState<string>('sales');
+  const [activeTab, setActiveTab] = useState<string>('actions');
   
   const { data: clientActions = [], isLoading: actionsLoading } = useClientAuditActions(clientId);
   const { data: templates = [], isLoading: templatesLoading } = useAuditActionTemplates();
@@ -151,7 +152,7 @@ const ActionsContainer = ({ clientId, phase }: ActionsContainerProps) => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="actions" className="w-full">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="actions" className="gap-2">
                 <Target className="w-4 h-4" />
@@ -218,6 +219,7 @@ const ActionsContainer = ({ clientId, phase }: ActionsContainerProps) => {
                   selectedArea={selectedArea}
                   clientId={clientId}
                   phase={phase}
+                  onOpenTemplates={() => setActiveTab('templates')}
                 />
               )}
             </TabsContent>
