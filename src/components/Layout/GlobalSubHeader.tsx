@@ -19,7 +19,7 @@ const GlobalSubHeader: React.FC<GlobalSubHeaderProps> = ({
   className
 }) => {
   return (
-    <div data-sub-header className={cn('sticky top-[var(--global-header-current-height)] z-40 bg-background border-b', className)}>
+    <div data-sub-header className={cn('sticky top-[var(--global-header-current-height)] z-40 border-b shadow-sm', className)}>
       {/* Main subheader line */}
       <div className="flex items-center justify-between px-6 py-3">
         <div className="flex items-center gap-4 min-w-0 flex-1">

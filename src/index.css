@@ -48,6 +48,10 @@
     --sidebar-border: 175 20% 50%;
     --sidebar-ring: 174 57% 80%;
 
+    /* Sub-header surface */
+    --sub-header-bg: var(--sidebar-background);
+    --sub-header-foreground: var(--sidebar-foreground);
+
     --revio-100: 174 57% 95%;
     --revio-500: 173 49% 39%;
     --revio-600: 173 49% 35%;
@@ -240,6 +244,12 @@
 
   .revy-message-bubble {
     position: relative;
+  }
+
+  /* Sub-header surface styling */
+  [data-sub-header] {
+    background-color: hsl(var(--sub-header-bg));
+    color: hsl(var(--sub-header-foreground));
   }
 }
 
