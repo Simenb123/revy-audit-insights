@@ -92,8 +92,17 @@ const ClientActionsList = ({ actions, selectedArea, clientId, phase }: ClientAct
           {filteredActions.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               {actions.filter(a => a.subject_area === selectedArea).length === 0 
-                ? "Ingen handlinger funnet for dette fagområdet"
-                : "Ingen handlinger matcher søkekriteriene"
+                ? (
+                  <div className="space-y-3">
+                    <div>Ingen handlinger funnet for dette fagområdet</div>
+                    <Button size="sm" className="gap-2" onClick={() => setNewOpen(true)}>
+                      <Plus size={16} />
+                      Ny handling
+                    </Button>
+                  </div>
+                ) : (
+                  <div>Ingen handlinger matcher søkekriteriene</div>
+                )
               }
             </div>
           ) : (
