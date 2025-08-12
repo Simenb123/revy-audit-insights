@@ -24,7 +24,8 @@ const EnhancedActionTemplateList = ({
   selectedArea,
   onCopyToClient,
   onEditTemplate,
-  enableAI = true
+  enableAI = true,
+  phase
 }: EnhancedActionTemplateListProps) => {
   const { data: templates = [], isLoading } = useEnhancedAuditActionTemplates();
   const {
