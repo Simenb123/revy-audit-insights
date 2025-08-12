@@ -58,7 +58,7 @@ const AiRevyCard: React.FC<AiRevyCardProps> = ({
     <div className={cn('h-full w-full flex flex-col', className)}>
       <div className="p-2 flex-shrink-0">
         <div className="flex items-center gap-2">
-          <RevyAvatar size="sm" />
+          <RevyAvatar size="md" />
           <div>
             <div className="text-sm font-medium">AI-Revy</div>
             <div className="text-xs text-muted-foreground">{systemPrompt}</div>
