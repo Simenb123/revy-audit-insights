@@ -16,6 +16,7 @@ import {
   Settings,
   TestTube2 
 } from 'lucide-react';
+import SeoHead from '@/components/SEO/SeoHead';
 
 interface AuditActionsTabProps {
   clientId: string;
@@ -27,6 +28,7 @@ const AuditActionsTab = ({ clientId, phase }: AuditActionsTabProps) => {
 
   return (
     <div className="space-y-6">
+      <SeoHead title="Revisjonshandlinger – AI-verktøy og maler" description="Administrer revisjonshandlinger, AI-forslag, dokumentkobling og testing for klient." />
       <h1 className="sr-only">Revisjonshandlinger</h1>
       {/* Header med fase-info */}
       <Card>
