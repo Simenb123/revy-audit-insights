@@ -6,7 +6,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useUpdateClientAuditAction } from '@/hooks/useAuditActions';
+import { useWorkingPaperTemplates } from '@/hooks/useEnhancedAuditActions';
 import type { ClientAuditAction } from '@/types/audit-actions';
 import { AlertTriangle, CheckCircle2 } from 'lucide-react';
 
@@ -27,6 +29,12 @@ const ActionDetailDrawer: React.FC<ActionDetailDrawerProps> = ({ open, onOpenCha
   const [wpJson, setWpJson] = useState<string>('{}');
   const [jsonError, setJsonError] = useState<string | null>(null);
 
+  const { data: templates = [] } = useWorkingPaperTemplates(
+    action?.subject_area as any,
+    action?.action_type as any
+  );
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | undefined>(undefined);
+
   useEffect(() => {
     if (action) {
       setName(action.name || '');
@@ -42,6 +50,7 @@ const ActionDetailDrawer: React.FC<ActionDetailDrawerProps> = ({ open, onOpenCha
         setWpJson('{}');
         setJsonError(null);
       }
+      setSelectedTemplateId((action as any).working_paper_template_id || undefined);
     }
   }, [action]);
 
@@ -74,6 +83,7 @@ const ActionDetailDrawer: React.FC<ActionDetailDrawerProps> = ({ open, onOpenCha
         work_notes: workNotes,
         // new columns
         working_paper_data: parsed,
+        working_paper_template_id: selectedTemplateId ?? null,
       } as any,
     });
 
@@ -125,6 +135,34 @@ const ActionDetailDrawer: React.FC<ActionDetailDrawerProps> = ({ open, onOpenCha
                 </div>
 
                 <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Arbeidspapir-mal</Label>
+                    <Select
+                      value={selectedTemplateId}
+                      onValueChange={(val) => {
+                        setSelectedTemplateId(val);
+                        const tpl = templates.find((t: any) => t.id === val);
+                        if (tpl && tpl.template_structure) {
+                          try {
+                            setWpJson(JSON.stringify(tpl.template_structure, null, 2));
+                            setJsonError(null);
+                          } catch {
+                            // ignore
+                          }
+                        }
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Velg mal (filtrert på fagområde og type)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {templates.map((t: any) => (
+                          <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <Label htmlFor="wp">Arbeidsnotat-data (JSON)</Label>
