@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,12 +10,14 @@ import { useTemplateFilters } from '@/hooks/audit-actions/useTemplateFilters';
 import { useSubjectAreas } from '@/hooks/knowledge/useSubjectAreas';
 import EnhancedActionTemplateView from './EnhancedActionTemplateView';
 import { EnhancedAuditActionTemplate } from '@/types/enhanced-audit-actions';
+import { phaseLabels } from '@/constants/phaseLabels';
 
 interface EnhancedActionTemplateListProps {
   selectedArea?: string;
   onCopyToClient?: (templateIds: string[]) => void;
   onEditTemplate?: (template: EnhancedAuditActionTemplate) => void;
   enableAI?: boolean;
+  phase?: string;
 }
 
 const EnhancedActionTemplateList = ({
@@ -36,7 +37,7 @@ const EnhancedActionTemplateList = ({
     aiFilter,
     setAiFilter,
     filteredTemplates
-  } = useTemplateFilters(templates, { selectedArea, includeAI: enableAI });
+  } = useTemplateFilters(templates, { selectedArea, includeAI: enableAI, initialPhase: phase });
   const { data: subjectAreas } = useSubjectAreas();
 
   const getSubjectAreaName = (areaKey: string) => {
@@ -99,10 +100,11 @@ const EnhancedActionTemplateList = ({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Alle faser</SelectItem>
-                <SelectItem value="engagement">Engasjement</SelectItem>
-                <SelectItem value="planning">Planlegging</SelectItem>
-                <SelectItem value="execution">Utførelse</SelectItem>
-                <SelectItem value="completion">Avslutning</SelectItem>
+                {Object.entries(phaseLabels).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
 

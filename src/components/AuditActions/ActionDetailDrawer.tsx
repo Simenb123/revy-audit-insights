@@ -12,6 +12,9 @@ import AutoMetricsViewer from './AutoMetricsViewer';
 import ActionDetailsForm from './ActionDetailsForm';
 import ActionDrawerHeader from './ActionDrawerHeader';
 import ActionDrawerFooter from './ActionDrawerFooter';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { phaseLabels } from '@/constants/phaseLabels';
+import type { AuditPhase } from '@/types/revio';
 
 interface ActionDetailDrawerProps {
   open: boolean;
@@ -36,6 +39,7 @@ const ActionDetailDrawer: React.FC<ActionDetailDrawerProps> = ({ open, onOpenCha
     action?.action_type as any
   );
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | undefined>(undefined);
+  const [phase, setPhase] = useState<AuditPhase | ''>('');
 
   useEffect(() => {
     if (action) {
@@ -53,6 +57,7 @@ const ActionDetailDrawer: React.FC<ActionDetailDrawerProps> = ({ open, onOpenCha
         setJsonError(null);
       }
       setSelectedTemplateId((action as any).working_paper_template_id || undefined);
+      setPhase((action?.phase as AuditPhase) || '');
     }
   }, [action]);
 
@@ -86,6 +91,7 @@ const ActionDetailDrawer: React.FC<ActionDetailDrawerProps> = ({ open, onOpenCha
         // new columns
         working_paper_data: parsed,
         working_paper_template_id: selectedTemplateId ?? null,
+        ...(phase ? { phase } : {}),
       } as any,
     });
 
@@ -119,25 +125,41 @@ const ActionDetailDrawer: React.FC<ActionDetailDrawerProps> = ({ open, onOpenCha
                 />
 
                 <div className="space-y-4">
-                  <div className="space-y-2">
-                    <TemplateSelector
-                      templates={templates as any}
-                      value={selectedTemplateId}
-                      onChange={(val) => setSelectedTemplateId(val)}
-                      onTemplateSelected={(tpl) => {
-                        if (tpl && tpl.template_structure) {
-                          try {
-                            setWpJson(JSON.stringify(tpl.template_structure, null, 2));
-                            setJsonError(null);
-                          } catch {
-                            // ignore
-                          }
+                <div className="space-y-2">
+                  <TemplateSelector
+                    templates={templates as any}
+                    value={selectedTemplateId}
+                    onChange={(val) => setSelectedTemplateId(val)}
+                    onTemplateSelected={(tpl) => {
+                      if (tpl && tpl.template_structure) {
+                        try {
+                          setWpJson(JSON.stringify(tpl.template_structure, null, 2));
+                          setJsonError(null);
+                        } catch {
+                          // ignore
                         }
-                      }}
-                    />
-                  </div>
+                      }
+                    }}
+                  />
+                </div>
 
-                  <div className="space-y-2">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Fase</label>
+                  <Select value={phase || ''} onValueChange={(v) => setPhase(v as AuditPhase)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Velg fase" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(phaseLabels).map(([value, label]) => (
+                        <SelectItem key={value} value={value}>
+                          {label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
                     <JsonEditor
                       value={wpJson}
                       error={jsonError}

@@ -14,13 +14,14 @@ interface TemplateBase {
 interface Options {
   selectedArea?: string;
   includeAI?: boolean;
+  initialPhase?: string;
 }
 
 export function useTemplateFilters<T extends TemplateBase>(templates: T[], options: Options = {}) {
   const { selectedArea, includeAI } = options;
   const [searchTerm, setSearchTerm] = useState('');
   const [riskFilter, setRiskFilter] = useState<string>('all');
-  const [phaseFilter, setPhaseFilter] = useState<string>('all');
+  const [phaseFilter, setPhaseFilter] = useState<string>(options.initialPhase ?? 'all');
   const [aiFilter, setAiFilter] = useState<string>('all');
 
   const filteredTemplates = useMemo(() => {

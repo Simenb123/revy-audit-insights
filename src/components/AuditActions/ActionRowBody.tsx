@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import ActionStatusBadge from './ActionStatusBadge';
 import ActionQuickActions from './ActionQuickActions';
 import { ClientAuditAction } from '@/types/audit-actions';
+import { phaseLabels } from '@/constants/phaseLabels';
 
 interface ActionRowBodyProps {
   action: ClientAuditAction;
@@ -40,6 +41,7 @@ const ActionRowBody: React.FC<ActionRowBodyProps> = ({ action, selected, onToggl
             <span className="flex items-center gap-1">
               <Badge variant="outline" className="text-xs">{action.action_type}</Badge>
             </span>
+            <Badge variant="secondary" className="text-xs">{phaseLabels[action.phase as keyof typeof phaseLabels] || action.phase}</Badge>
             {action.estimated_hours && (<span>Estimat: {action.estimated_hours}t</span>)}
             {action.actual_hours && (<span>Faktisk: {action.actual_hours}t</span>)}
           </div>

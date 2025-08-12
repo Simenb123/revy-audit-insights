@@ -292,6 +292,7 @@ React.useEffect(() => {
                 <ActionTemplateList
                   templates={phaseTemplates}
                   selectedArea={selectedArea}
+                  phase={phase}
                   onCopyToClient={handleCopyTemplates}
                 />
               )}

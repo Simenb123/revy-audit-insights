@@ -14,10 +14,12 @@ import { useTags } from '@/hooks/knowledge/useTags';
 import CreateActionTemplateDialog from './CreateActionTemplateDialog';
 import EnhancedActionTemplateList from './EnhancedActionTemplateList';
 import { useTemplateFilters } from '@/hooks/audit-actions/useTemplateFilters';
+import { phaseLabels } from '@/constants/phaseLabels';
 
 interface FlexibleActionTemplateListProps {
   templates: AuditActionTemplate[];
   selectedArea?: string;
+  phase?: string;
   onCopyToClient?: (templateIds: string[]) => void;
   onEditTemplate?: (template: AuditActionTemplate) => void;
 }
@@ -25,6 +27,7 @@ interface FlexibleActionTemplateListProps {
 const FlexibleActionTemplateList = ({ 
   templates, 
   selectedArea, 
+  phase,
   onCopyToClient, 
   onEditTemplate
 }: FlexibleActionTemplateListProps) => {
@@ -41,7 +44,7 @@ const FlexibleActionTemplateList = ({
     phaseFilter,
     setPhaseFilter,
     filteredTemplates
-  } = useTemplateFilters(templates, { selectedArea });
+  } = useTemplateFilters(templates, { selectedArea, initialPhase: phase });
 
   const handleTemplateSelect = (templateId: string, checked: boolean) => {
     if (checked) {
@@ -146,10 +149,11 @@ const FlexibleActionTemplateList = ({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Alle faser</SelectItem>
-                    <SelectItem value="engagement">Engasjement</SelectItem>
-                    <SelectItem value="planning">Planlegging</SelectItem>
-                    <SelectItem value="execution">Utførelse</SelectItem>
-                    <SelectItem value="completion">Avslutning</SelectItem>
+                    {Object.entries(phaseLabels).map(([value, label]) => (
+                      <SelectItem key={value} value={value}>
+                        {label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -167,6 +171,7 @@ const FlexibleActionTemplateList = ({
           selectedArea={selectedArea}
           onCopyToClient={onCopyToClient}
           onEditTemplate={onEditTemplate}
+          phase={phase}
         />
       ) : (
         // Basic template list (existing implementation)

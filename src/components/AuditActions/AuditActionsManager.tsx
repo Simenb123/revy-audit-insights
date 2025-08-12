@@ -147,7 +147,7 @@ const AuditActionsManager = ({ clientId, phase = 'execution' }: AuditActionsMana
           <TabsTrigger value="client-actions">
             Klienthandlinger ({getSelectedAreaLabel(selectedArea)})
           </TabsTrigger>
-          <TabsTrigger value="templates">
+          <TabsTrigger value="templates" onClick={() => setActiveTab('templates')}>
             Handlingsmaler ({getSelectedAreaLabel(selectedArea)})
           </TabsTrigger>
         </TabsList>
@@ -195,6 +195,7 @@ const AuditActionsManager = ({ clientId, phase = 'execution' }: AuditActionsMana
           <ActionTemplateList
             templates={templates}
             selectedArea={selectedArea}
+            phase={phase as string}
             onCopyToClient={handleCopyToClient}
           />
         </TabsContent>
