@@ -1,4 +1,5 @@
 import * as XLSX from 'xlsx';
+import { validateFile } from './fileValidation';
 
 /**
  * Secure wrapper for XLSX parsing to mitigate CVE vulnerabilities
@@ -9,17 +10,7 @@ const MAX_FILE_SIZE = 5_000_000; // 5MB limit
 const ALLOWED_EXTENSIONS = ['.xlsx', '.xls'];
 
 export function validateXlsxFile(file: File): void {
-  if (file.size > MAX_FILE_SIZE) {
-    throw new Error(`File too large. Maximum size is ${MAX_FILE_SIZE / 1_000_000}MB`);
-  }
-
-  const hasValidExtension = ALLOWED_EXTENSIONS.some(ext => 
-    file.name.toLowerCase().endsWith(ext)
-  );
-  
-  if (!hasValidExtension) {
-    throw new Error(`Invalid file type. Only ${ALLOWED_EXTENSIONS.join(', ')} files are allowed`);
-  }
+  validateFile(file, ALLOWED_EXTENSIONS, MAX_FILE_SIZE);
 }
 
 export async function parseXlsxSafely(file: File): Promise<XLSX.WorkBook> {
