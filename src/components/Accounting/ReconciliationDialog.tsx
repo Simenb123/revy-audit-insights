@@ -25,6 +25,19 @@ const ReconciliationDialog: React.FC<ReconciliationDialogProps> = ({ clientId, c
   const [currYearData, setCurrYearData] = useState<TBRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [showOnlyDiffs, setShowOnlyDiffs] = useState(true);
+  const storageKey = React.useMemo(() => `recon_show_only_diffs_${clientId}_${currentYear}`, [clientId, currentYear]);
+
+  useEffect(() => {
+    if (!open) return;
+    try {
+      const v = localStorage.getItem(storageKey);
+      if (v !== null) setShowOnlyDiffs(v === '1');
+    } catch {}
+  }, [open, storageKey]);
+
+  useEffect(() => {
+    try { localStorage.setItem(storageKey, showOnlyDiffs ? '1' : '0'); } catch {}
+  }, [showOnlyDiffs, storageKey]);
 
   useEffect(() => {
     if (!open) return;
@@ -84,6 +97,7 @@ const ReconciliationDialog: React.FC<ReconciliationDialogProps> = ({ clientId, c
     };
     fetchData();
   }, [open, clientId, currentYear, currentVersion]);
+
 
   const rows = useMemo(() => {
     // Join by account_number and filter 1000-2999

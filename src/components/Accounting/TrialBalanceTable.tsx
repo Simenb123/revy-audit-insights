@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Layers, Bot, Edit, Check, X, Filter, Trash } from 'lucide-react';
+import { Layers, Bot, Edit, Check, X, Filter, Trash, Lock, Unlock } from 'lucide-react';
 import { useTrialBalanceWithMappings, TrialBalanceEntryWithMapping } from '@/hooks/useTrialBalanceWithMappings';
 import { useStandardAccounts } from '@/hooks/useChartOfAccounts';
 import { useSaveTrialBalanceMapping } from '@/hooks/useTrialBalanceMappings';
@@ -514,6 +514,15 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
       closing_balance: filteredEntries.reduce((sum, entry) => sum + entry.closing_balance, 0),
     };
   }, [filteredEntries]);
+
+  const reconciliationDiffTotal = useMemo(() => {
+    const all = trialBalanceData?.trialBalanceEntries?.filter(e => e.period_year === actualAccountingYear) || [];
+    const inRange = all.filter(e => {
+      const n = parseInt(String(e.account_number), 10);
+      return !isNaN(n) && n >= 1000 && n <= 2999;
+    });
+    return inRange.reduce((sum, e) => sum + (e.opening_balance - (e.previous_year_balance || 0)), 0);
+  }, [trialBalanceData, actualAccountingYear]);
 
   // Create total row dynamically based on visible columns - show even when no data
   const totalRow = (
