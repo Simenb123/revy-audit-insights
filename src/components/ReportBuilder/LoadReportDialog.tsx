@@ -73,83 +73,84 @@ export function LoadReportDialog({
           ) : (
             <div className="space-y-2">
               {reports.map((report) => (
-                <div
-                  key={report.id}
-                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors"
-                >
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                      <h3 className="font-medium truncate">{report.report_name}</h3>
-                    </div>
-                    {report.report_description && (
-                      <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
-                        {report.report_description}
-                      </p>
-                    )}
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                      <div className="flex items-center gap-1">
-                        <Calendar className="h-3 w-3" />
-                        {format(new Date(report.updated_at), 'dd. MMM yyyy, HH:mm', { locale: nb })}
+                <React.Fragment key={report.id}>
+                  <div
+                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                        <h3 className="font-medium truncate">{report.report_name}</h3>
                       </div>
-                      <div>
-                        {report.widgets_config.length} widget{report.widgets_config.length !== 1 ? 'er' : ''}
+                      {report.report_description && (
+                        <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
+                          {report.report_description}
+                        </p>
+                      )}
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3" />
+                          {format(new Date(report.updated_at), 'dd. MMM yyyy, HH:mm', { locale: nb })}
+                        </div>
+                        <div>
+                          {report.widgets_config.length} widget{report.widgets_config.length !== 1 ? 'er' : ''}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2 ml-4">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleLoadReport(report)}
-                      disabled={loading}
-                    >
-                      Last
-                    </Button>
-                    {onListVersions && onRestoreVersion && (
+                    <div className="flex items-center gap-2 ml-4">
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => toggleVersions(report.id)}
+                        onClick={() => handleLoadReport(report)}
                         disabled={loading}
-                        className="flex items-center gap-1"
                       >
-                        <History className="h-4 w-4" />
-                        Versjoner
+                        Last
                       </Button>
-                    )}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onDeleteReport(report.id)}
-                      disabled={loading}
-                      className="text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                      {onListVersions && onRestoreVersion && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => toggleVersions(report.id)}
+                          disabled={loading}
+                          className="flex items-center gap-1"
+                        >
+                          <History className="h-4 w-4" />
+                          Versjoner
+                        </Button>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onDeleteReport(report.id)}
+                        disabled={loading}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
-                </div>
-                {openReportId === report.id && (
-                  <div className="mt-2 ml-6 space-y-1">
-                    {(versions[report.id] || []).length === 0 ? (
-                      <p className="text-sm text-muted-foreground">Ingen versjoner</p>
-                    ) : (
-                      versions[report.id].map(v => (
-                        <div key={v.id} className="flex items-center justify-between p-2 border rounded">
-                          <span className="text-sm truncate">{v.version_name}</span>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleRestoreVersion(v.id)}
-                            disabled={loading}
-                          >
-                            Gjenopprett
-                          </Button>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                )}
+                  {openReportId === report.id && (
+                    <div className="mt-2 ml-6 space-y-1">
+                      {(versions[report.id] || []).length === 0 ? (
+                        <p className="text-sm text-muted-foreground">Ingen versjoner</p>
+                      ) : (
+                        versions[report.id].map(v => (
+                          <div key={v.id} className="flex items-center justify-between p-2 border rounded">
+                            <span className="text-sm truncate">{v.version_name}</span>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleRestoreVersion(v.id)}
+                              disabled={loading}
+                            >
+                              Gjenopprett
+                            </Button>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </React.Fragment>
               ))}
             </div>
           )}

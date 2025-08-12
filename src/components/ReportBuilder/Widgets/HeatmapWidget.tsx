@@ -16,9 +16,9 @@ export function HeatmapWidget({ widget }: HeatmapWidgetProps) {
     { x: 'B', y: '2', value: 40 }
   ];
 
-  const xValues = Array.from(new Set(data.map(d => d.x)));
-  const yValues = Array.from(new Set(data.map(d => d.y)));
-  const max = Math.max(...data.map(d => d.value), 0);
+  const xValues = Array.from(new Set(data.map((d: any) => d.x)));
+  const yValues = Array.from(new Set(data.map((d: any) => d.y)));
+  const max = Math.max(...data.map((d: any) => d.value), 0);
 
   const getColor = (value: number) => {
     const scale = widget.config?.colorScale || 'blue';
@@ -44,7 +44,7 @@ export function HeatmapWidget({ widget }: HeatmapWidgetProps) {
         <div className="grid" style={{ gridTemplateColumns: `repeat(${xValues.length}, minmax(20px,1fr))` }}>
           {yValues.map(y =>
             xValues.map(x => {
-              const cell = data.find(d => d.x === x && d.y === y);
+              const cell = data.find((d: any) => d.x === x && d.y === y);
               const value = cell ? cell.value : 0;
               return (
                 <div

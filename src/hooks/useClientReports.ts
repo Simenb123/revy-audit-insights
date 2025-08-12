@@ -195,7 +195,7 @@ export function useClientReports(clientId: string) {
     setError(null);
 
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('client_report_versions')
         .insert({
           report_id: reportId,
@@ -221,7 +221,7 @@ export function useClientReports(clientId: string) {
 
   const listVersions = async (reportId: string) => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('client_report_versions')
         .select('*')
         .eq('report_id', reportId)
@@ -241,7 +241,7 @@ export function useClientReports(clientId: string) {
     setError(null);
 
     try {
-      const { data: versionData, error: versionError } = await supabase
+      const { data: versionData, error: versionError } = await (supabase as any)
         .from('client_report_versions')
         .select('*')
         .eq('id', versionId)
