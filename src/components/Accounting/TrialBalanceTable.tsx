@@ -72,9 +72,9 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
     setColumnConfig([
       { key: 'account_number', label: 'Kontonr', visible: true, required: true },
       { key: 'account_name', label: 'Kontonavn', visible: true, required: true },
-      { key: 'previous_year_balance', label: `Saldo ${previousYear}`, visible: false },
-      { key: 'opening_balance', label: `Inngående balanse ${actualAccountingYear}`, visible: true },
-      { key: 'closing_balance', label: `Saldo ${actualAccountingYear}`, visible: true },
+      { key: 'previous_year_balance', label: `Saldo ${previousYear} (Inngående ${actualAccountingYear})`, visible: false },
+      { key: 'opening_balance', label: `Saldo ${previousYear} (Inngående ${actualAccountingYear})`, visible: true },
+      { key: 'closing_balance', label: `Saldo ${actualAccountingYear} (Utgående ${actualAccountingYear})`, visible: true },
       { key: 'debit_turnover', label: 'Debet', visible: false },
       { key: 'credit_turnover', label: 'Kredit', visible: false },
       { key: 'standard_number', label: 'Regnskapsnr', visible: false },
@@ -355,7 +355,7 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
       },
       {
         key: 'previous_year_balance',
-        header: `Saldo ${actualAccountingYear - 1}`,
+        header: `Saldo ${actualAccountingYear - 1} (Inngående ${actualAccountingYear})`,
         accessor: (entry: TrialBalanceEntryWithMapping) => entry.previous_year_balance || 0,
         sortable: true,
         align: 'right' as const,
@@ -364,7 +364,7 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
       },
       {
         key: 'opening_balance',
-        header: `Inngående balanse ${actualAccountingYear}`,
+        header: `Saldo ${actualAccountingYear - 1} (Inngående ${actualAccountingYear})`,
         accessor: (entry: TrialBalanceEntryWithMapping) => entry.opening_balance,
         sortable: true,
         align: 'right' as const,
@@ -373,7 +373,7 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
       },
       {
         key: 'closing_balance',
-        header: `Saldo ${actualAccountingYear}`,
+        header: `Saldo ${actualAccountingYear} (Utgående ${actualAccountingYear})`,
         accessor: (entry: TrialBalanceEntryWithMapping) => entry.closing_balance,
         sortable: true,
         align: 'right' as const,
