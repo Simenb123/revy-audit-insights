@@ -139,7 +139,7 @@ useEffect(() => {
         ) : (
           <AiRevyCard
             variant={variant}
-            className="w-full h-full border-0"
+            className="flex-1"
             context={clientId ? 'client-detail' : 'general'}
             clientData={clientId ? { id: clientId } : undefined}
             activeTab={activeTab === 'chat' ? 'chat' : 'ai'}
@@ -159,15 +159,14 @@ useEffect(() => {
           <Button
             variant="default"
             size="icon"
-            className="fixed bottom-4 right-4 z-50 h-12 w-12 max-h-12 max-w-12 rounded-full shadow-lg"
-            style={{ maxWidth: '48px', maxHeight: '48px' }}
+            className="fixed bottom-4 right-4 z-50 h-12 w-12 rounded-full shadow-lg"
           >
             <MessageSquare className="h-5 w-5" />
           </Button>
         </DrawerTrigger>
         <DrawerContent className="h-[85vh] p-0">
           <div className="flex flex-col h-full">
-            <div className="flex items-center justify-between p-4 border-b">
+            <div className="flex items-center justify-between p-4">
               <h3 className="text-lg font-semibold">{getPageTitle()}</h3>
               <DrawerClose asChild>
                 <Button
@@ -190,7 +189,7 @@ useEffect(() => {
   return (
     <motion.div
       data-testid="right-sidebar"
-      className="fixed bg-background border-l flex flex-col z-10 overflow-hidden"
+      className="fixed bg-background flex flex-col h-full z-10 overflow-hidden"
       style={{
         top: 'calc(var(--global-header-current-height) + var(--sub-header-current-height))',
         height: 'calc(100dvh - (var(--global-header-current-height) + var(--sub-header-current-height)))',
@@ -212,7 +211,7 @@ useEffect(() => {
       )}
 
       {/* Sticky Header */}
-      <div className="sticky top-0 z-50 bg-background border-b">
+      <div className="sticky top-0 z-50 bg-background">
         <TooltipProvider>
           {isCollapsed ? (
             <div 
