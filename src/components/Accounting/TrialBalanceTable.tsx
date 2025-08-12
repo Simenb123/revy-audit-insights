@@ -356,6 +356,7 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
       {
         key: 'previous_year_balance',
         header: `Saldo ${actualAccountingYear - 1} (Inngående ${actualAccountingYear})`,
+        headerTooltip: `Inngående per 1.1.${actualAccountingYear} = utgående 31.12.${actualAccountingYear - 1}`,
         accessor: (entry: TrialBalanceEntryWithMapping) => entry.previous_year_balance || 0,
         sortable: true,
         align: 'right' as const,
@@ -365,6 +366,7 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
       {
         key: 'opening_balance',
         header: `Saldo ${actualAccountingYear - 1} (Inngående ${actualAccountingYear})`,
+        headerTooltip: `Inngående per 1.1.${actualAccountingYear} = utgående 31.12.${actualAccountingYear - 1}`,
         accessor: (entry: TrialBalanceEntryWithMapping) => entry.opening_balance,
         sortable: true,
         align: 'right' as const,
@@ -374,6 +376,7 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
       {
         key: 'closing_balance',
         header: `Saldo ${actualAccountingYear} (Utgående ${actualAccountingYear})`,
+        headerTooltip: `Utgående per 31.12.${actualAccountingYear}`,
         accessor: (entry: TrialBalanceEntryWithMapping) => entry.closing_balance,
         sortable: true,
         align: 'right' as const,

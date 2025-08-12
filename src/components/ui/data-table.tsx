@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Search, Download, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, Settings2, Bookmark, Plus, RotateCcw, Pencil, Trash, GripHorizontal } from 'lucide-react';
+import { Search, Download, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, Settings2, Bookmark, Plus, RotateCcw, Pencil, Trash, GripHorizontal, Info } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import ColumnManager, { ColumnState as CMState } from '@/components/ui/column-manager';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
@@ -12,6 +12,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { DndContext, PointerSensor, useSensor, useSensors, DragEndEvent, closestCenter } from '@dnd-kit/core';
 import { SortableContext, useSortable, arrayMove, horizontalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 export interface DataTableColumn<T = any> {
   key: string;
   header: string;
@@ -23,6 +24,7 @@ export interface DataTableColumn<T = any> {
   align?: 'left' | 'right' | 'center';
   className?: string;
   required?: boolean;
+  headerTooltip?: string;
 }
 
 export interface DataTableProps<T = any> {
@@ -520,6 +522,22 @@ const SortableHeader: React.FC<{ def: DataTableColumn<T>; pinned: boolean; stick
           <GripHorizontal className="h-3.5 w-3.5 text-muted-foreground" />
         </button>
         <span>{def.header}</span>
+        {def.headerTooltip && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                className="ml-1 text-muted-foreground hover:text-foreground"
+                onClick={(e) => e.stopPropagation()}
+                aria-label="Info"
+              >
+                <Info className="h-3.5 w-3.5" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>
+              {def.headerTooltip}
+            </TooltipContent>
+          </Tooltip>
+        )}
         {getSortIcon(def.key)}
       </div>
       <span
