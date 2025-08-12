@@ -40,7 +40,8 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
   const [columnConfig, setColumnConfig] = useState<ColumnConfig[]>([]);
   const [editingMapping, setEditingMapping] = useState<string | null>(null);
   const [autoSuggestions, setAutoSuggestions] = useState<any[]>([]);
-  
+  const [hideZeroAccounts, setHideZeroAccounts] = useState<boolean>(true);
+
   // Get filter parameters from URL
   const filteredAccountsParam = searchParams.get('filtered_accounts');
   const filteredAccountNumbers = filteredAccountsParam ? filteredAccountsParam.split(',') : null;
@@ -128,40 +129,57 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
   // Filter entries by accounting year and advanced filters
   const filteredEntries = useMemo(() => {
     if (!trialBalanceData?.trialBalanceEntries) return [];
-    
-    
-    
+
     const filtered = trialBalanceData.trialBalanceEntries.filter(entry => {
       if (actualAccountingYear && entry.period_year !== actualAccountingYear) return false;
-      
+
       // If filtered accounts are specified (from report builder), only show those
       if (filteredAccountNumbers && filteredAccountNumbers.length > 0) {
         return filteredAccountNumbers.includes(entry.account_number);
       }
-      
+
       // Advanced filters
       if (selectedAccountingLine && entry.standard_number !== selectedAccountingLine) {
         return false;
       }
-      
+
       if (selectedSummaryLine && entry.standard_category !== selectedSummaryLine) {
         return false;
       }
-      
+
       if (selectedAccountType && entry.standard_account_type !== selectedAccountType) {
         return false;
       }
-      
+
       if (selectedAnalysisGroup && entry.standard_analysis_group !== selectedAnalysisGroup) {
         return false;
       }
-      
+
+      // Hide zero accounts based on visible numeric columns
+      if (hideZeroAccounts) {
+        const visibleKeys = new Set(columnConfig.filter(c => c.visible).map(c => c.key));
+        const values: number[] = [];
+        if (visibleKeys.has('opening_balance')) values.push(entry.opening_balance || 0);
+        if (visibleKeys.has('closing_balance')) values.push(entry.closing_balance || 0);
+        if (visibleKeys.has('debit_turnover')) values.push(entry.debit_turnover || 0);
+        if (visibleKeys.has('credit_turnover')) values.push(entry.credit_turnover || 0);
+        // Note: previous_year_balance not yet implemented in data source
+        const hasAnyAmount = values.some(v => Math.abs(v) > 0.0049);
+        if (!hasAnyAmount) return false;
+      }
+
       return true;
     });
-    
-    
+
     return filtered;
-  }, [trialBalanceData, actualAccountingYear, filteredAccountNumbers, selectedAccountingLine, selectedSummaryLine, selectedAccountType, selectedAnalysisGroup]);
+  }, [trialBalanceData, actualAccountingYear, filteredAccountNumbers, selectedAccountingLine, selectedSummaryLine, selectedAccountType, selectedAnalysisGroup, hideZeroAccounts, columnConfig]);
+
+  // Natural sort by account number by default
+  const sortedEntries = useMemo(() => {
+    return [...filteredEntries].sort((a, b) =>
+      String(a.account_number || '').localeCompare(String(b.account_number || ''), undefined, { numeric: true, sensitivity: 'base' })
+    );
+  }, [filteredEntries]);
 
   // Function to clear account filter
   const clearAccountFilter = useCallback(() => {
@@ -179,6 +197,91 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
       maximumFractionDigits: 2,
     }).format(amount || 0);
   };
+
+  const parseNumber = (value: any): number => {
+    if (value === null || value === undefined || value === '') return 0;
+    if (typeof value === 'number' && !isNaN(value)) return value;
+    let s = String(value).trim().replace(/\s+/g, '');
+    s = s.replace(/[^\d,.-]/g, '');
+    let negative = false;
+    if (s.startsWith('-')) { negative = true; s = s.slice(1); }
+    if (s.includes(',') && s.includes('.')) {
+      const lastComma = s.lastIndexOf(',');
+      const lastDot = s.lastIndexOf('.');
+      if (lastComma > lastDot) {
+        s = s.replace(/\./g, '').replace(',', '.');
+      } else {
+        s = s.replace(/,/g, '');
+      }
+    } else if (s.includes(',')) {
+      s = s.replace(/\./g, '').replace(',', '.');
+    }
+    const n = parseFloat(s);
+    return negative ? -Math.abs(n || 0) : (n || 0);
+  };
+
+  const handleEditEntry = useCallback(async (entry: TrialBalanceEntryWithMapping) => {
+    try {
+      const openingStr = window.prompt('Rediger inngående balanse', entry.opening_balance.toLocaleString('nb-NO'));
+      if (openingStr === null) return;
+      const closingStr = window.prompt('Rediger saldo', entry.closing_balance.toLocaleString('nb-NO'));
+      if (closingStr === null) return;
+      const opening_balance = parseNumber(openingStr);
+      const closing_balance = parseNumber(closingStr);
+      const { error } = await supabase
+        .from('trial_balances')
+        .update({ opening_balance, closing_balance })
+        .eq('id', entry.id);
+      if (error) throw error;
+      toast.success(`Konto ${entry.account_number} oppdatert`);
+      refetch();
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Kunne ikke oppdatere kontoen');
+    }
+  }, [refetch]);
+
+  const handleDeleteEntry = useCallback(async (entry: TrialBalanceEntryWithMapping) => {
+    try {
+      if (!window.confirm(`Slette konto ${entry.account_number}?`)) return;
+      const { error } = await supabase
+        .from('trial_balances')
+        .delete()
+        .eq('id', entry.id);
+      if (error) throw error;
+      toast.success(`Konto ${entry.account_number} slettet`);
+      refetch();
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Kunne ikke slette kontoen');
+    }
+  }, [refetch]);
+
+  const handleDeleteAll = useCallback(async () => {
+    if (!selectedVersion) {
+      toast.error('Ingen versjon valgt for sletting');
+      return;
+    }
+    const first = window.confirm(`Slette hele saldobalansen for ${actualAccountingYear} (${selectedVersion})?`);
+    if (!first) return;
+    const second = window.confirm('Er du sikker? Dette kan ikke angres.');
+    if (!second) return;
+    try {
+      const { error } = await supabase
+        .from('trial_balances')
+        .delete()
+        .eq('client_id', clientId)
+        .eq('period_year', actualAccountingYear)
+        .eq('version', selectedVersion);
+      if (error) throw error;
+      toast.success('Saldobalanse slettet');
+      refetch();
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Kunne ikke slette saldobalansen');
+    }
+  }, [clientId, actualAccountingYear, selectedVersion, refetch]);
+
   // Define columns based on configuration
   const columns: DataTableColumn<TrialBalanceEntryWithMapping>[] = useMemo(() => {
     const allColumns: DataTableColumn<TrialBalanceEntryWithMapping>[] = [
@@ -314,6 +417,25 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
           );
         },
       },
+      {
+        key: 'actions',
+        header: 'Handlinger',
+        accessor: (entry: TrialBalanceEntryWithMapping) => '',
+        sortable: false,
+        format: (_: any, entry?: TrialBalanceEntryWithMapping) => {
+          if (!entry) return null;
+          return (
+            <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+              <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleEditEntry(entry)} title="Rediger beløp">
+                <Edit className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleDeleteEntry(entry)} title="Slett konto">
+                <Trash className="h-4 w-4" />
+              </Button>
+            </div>
+          );
+        },
+      },
     ];
 
     // Filter columns based on visibility settings
@@ -423,17 +545,27 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
         </div>
       )}
       
-      <div className="flex justify-end">
-        <ColumnSelector 
-          columns={columnConfig}
-          onColumnChange={handleColumnChange}
-        />
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Switch id="hide-zero" checked={hideZeroAccounts} onCheckedChange={setHideZeroAccounts} />
+          <Label htmlFor="hide-zero">Skjul kontoer med 0 i viste kolonner</Label>
+        </div>
+        <div className="flex items-center gap-2">
+          <ColumnSelector 
+            columns={columnConfig}
+            onColumnChange={handleColumnChange}
+          />
+          <Button variant="destructive" size="sm" onClick={handleDeleteAll} disabled={!selectedVersion}>
+            <Trash className="h-4 w-4 mr-2" />
+            Slett hele saldobalansen
+          </Button>
+        </div>
       </div>
       <DataTable
         title="Saldobalanse"
         description={description}
         icon={<Layers className="h-5 w-5" />}
-        data={filteredEntries}
+        data={sortedEntries}
         columns={columns}
         isLoading={isLoading}
         error={error}
