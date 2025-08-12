@@ -49,8 +49,8 @@
     --sidebar-ring: 174 57% 80%;
 
     /* Sub-header surface */
-    --sub-header-bg: var(--sidebar-background);
-    --sub-header-foreground: var(--sidebar-foreground);
+    --sub-header-bg: 220 10% 86%; /* Neutral dark gray for sub-header */
+    --sub-header-foreground: var(--foreground);
 
     --revio-100: 174 57% 95%;
     --revio-500: 173 49% 39%;
