@@ -157,8 +157,8 @@ export class AnalysisService {
   }
 
   private calculateAmountStatistics(transactions: any[]) {
-    const amounts = transactions.map(tx => 
-      tx.debit_amount || -(tx.credit_amount || 0)
+    const amounts = transactions.map(tx =>
+      tx.debit_amount ?? -(tx.credit_amount ?? 0)
     );
 
     return {
@@ -178,7 +178,7 @@ export class AnalysisService {
     transactions.forEach(tx => {
       const date = new Date(tx.transaction_date);
       const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      const amount = tx.debit_amount || -(tx.credit_amount || 0);
+      const amount = tx.debit_amount ?? -(tx.credit_amount ?? 0);
 
       if (!monthlyData[monthKey]) {
         monthlyData[monthKey] = { count: 0, sum: 0 };
