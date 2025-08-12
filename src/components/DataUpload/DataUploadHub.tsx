@@ -61,7 +61,11 @@ const DataUploadHub = () => {
   ];
 
   const handleCategoryClick = (categoryId: string) => {
-    navigate(`/klienter/${orgNumber}/${categoryId}`);
+    if (categoryId === 'saft') {
+      navigate(`/klienter/${orgNumber}/saft`);
+    } else {
+      navigate(`/klienter/${orgNumber}/${categoryId}`);
+    }
   };
 
   return (
@@ -75,10 +79,9 @@ const DataUploadHub = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {dataCategories.map((category) => (
-          <Card 
-            key={category.id} 
+          <Card
+            key={category.id}
             className={`cursor-pointer hover:shadow-md transition-shadow ${category.color}`}
-            onClick={() => handleCategoryClick(category.id)}
           >
             <CardHeader>
               <CardTitle className="flex items-center gap-3">
@@ -98,7 +101,11 @@ const DataUploadHub = () => {
                   </li>
                 ))}
               </ul>
-              <Button variant="outline" className="w-full mt-4">
+              <Button
+                variant="outline"
+                className="w-full mt-4"
+                onClick={() => handleCategoryClick(category.id)}
+              >
                 Last opp {category.title.toLowerCase()}
               </Button>
             </CardContent>

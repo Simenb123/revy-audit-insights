@@ -53,6 +53,7 @@ import Sandbox from "./pages/Sandbox";
 import ResourcePlanner from "./pages/ResourcePlanner";
 import AllocationImport from "./pages/AllocationImport";
 import Superadmin from "./pages/Superadmin";
+import SaftImport from "@/components/SaftImport";
 const queryClient = new QueryClient();
 
 function App() {
@@ -85,6 +86,7 @@ function App() {
                   {/* Legacy routes for backward compatibility */}
                   <Route path="klienter" element={<ProtectedRoute><ClientsOverview /></ProtectedRoute>} />
                   <Route path="klienter/:orgNumber" element={<ClientRedirect />} />
+                  <Route path="klienter/:orgNumber/saft" element={<ProtectedRoute><SaftImport /></ProtectedRoute>} />
                   <Route path="client-admin" element={<ClientAdmin />} />
                   <Route path="user-admin" element={<ProtectedRoute><UserAdmin /></ProtectedRoute>} />
                   <Route path="profile" element={<UserProfile />} />
