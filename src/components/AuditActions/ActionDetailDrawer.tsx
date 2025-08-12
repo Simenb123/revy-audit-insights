@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { useUpdateClientAuditAction } from '@/hooks/useAuditActions';
-import { useWorkingPaperTemplates, useActionISAMappings, useActionDocumentMappings, useActionAIMetadata } from '@/hooks/useEnhancedAuditActions';
+import { useWorkingPaperTemplates, useActionISAMappings, useActionDocumentMappings, useActionAIMetadata, useEnhancedAuditActionTemplates } from '@/hooks/useEnhancedAuditActions';
 import type { ClientAuditAction } from '@/types/audit-actions';
 import TemplateSelector from './TemplateSelector';
 import JsonEditor from './JsonEditor';
@@ -17,6 +17,8 @@ import { phaseLabels } from '@/constants/phaseLabels';
 import type { AuditPhase } from '@/types/revio';
 import { Badge } from '@/components/ui/badge';
 import { BookOpen, FileText, Brain } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import EnhancedActionTemplateView from './EnhancedActionTemplateView';
 
 interface ActionDetailDrawerProps {
   open: boolean;
@@ -40,6 +42,9 @@ const ActionDetailDrawer: React.FC<ActionDetailDrawerProps> = ({ open, onOpenCha
   const { data: isaMappings = [] } = useActionISAMappings(templateId);
   const { data: documentMappings = [] } = useActionDocumentMappings(templateId);
   const { data: aiMetadata } = useActionAIMetadata(templateId);
+  const [showTemplate, setShowTemplate] = useState(false);
+  const { data: enhancedTemplates = [] } = useEnhancedAuditActionTemplates();
+  const linkedTemplate = useMemo(() => enhancedTemplates.find((t: any) => t.id === templateId), [enhancedTemplates, templateId]);
 
   const { data: templates = [] } = useWorkingPaperTemplates(
     action?.subject_area as any,
@@ -181,47 +186,65 @@ const ActionDetailDrawer: React.FC<ActionDetailDrawerProps> = ({ open, onOpenCha
                   <AutoMetricsViewer metrics={autoMetrics} />
 
                   {templateId && (
-                    <div className="space-y-2">
-                      <Separator />
-                      <div className="text-sm font-medium">Knyttet mal</div>
-                      <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                    <>
+                      <div className="space-y-2">
+                        <Separator />
+                        <div className="flex items-center justify-between">
+                          <div className="text-sm font-medium">Knyttet mal</div>
+                          <Button variant="link" size="sm" onClick={() => setShowTemplate(true)}>Åpne mal</Button>
+                        </div>
+                        <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                          {(isaMappings?.length || 0) > 0 && (
+                            <span className="flex items-center gap-1"><BookOpen size={12} /> {isaMappings.length} ISA</span>
+                          )}
+                          {(documentMappings?.length || 0) > 0 && (
+                            <span className="flex items-center gap-1"><FileText size={12} /> {documentMappings.length} dokumentkrav</span>
+                          )}
+                          {aiMetadata && (
+                            <span className="flex items-center gap-1"><Brain size={12} /> AI‑assistert</span>
+                          )}
+                        </div>
+
                         {(isaMappings?.length || 0) > 0 && (
-                          <span className="flex items-center gap-1"><BookOpen size={12} /> {isaMappings.length} ISA</span>
+                          <div className="flex flex-wrap gap-2">
+                            {isaMappings.slice(0, 3).map((m) => (
+                              <Badge key={m.id} variant="outline" className="text-xs">
+                                {m.isa_standard?.isa_number || 'ISA'} {m.isa_standard?.title || ''}
+                              </Badge>
+                            ))}
+                            {isaMappings.length > 3 && (
+                              <Badge variant="secondary" className="text-xs">+{isaMappings.length - 3} flere</Badge>
+                            )}
+                          </div>
                         )}
+
                         {(documentMappings?.length || 0) > 0 && (
-                          <span className="flex items-center gap-1"><FileText size={12} /> {documentMappings.length} dokumentkrav</span>
-                        )}
-                        {aiMetadata && (
-                          <span className="flex items-center gap-1"><Brain size={12} /> AI‑assistert</span>
+                          <div className="flex flex-wrap gap-2">
+                            {documentMappings.slice(0, 3).map((m) => (
+                              <Badge key={m.id} variant="outline" className="text-xs">
+                                {m.document_requirement?.name || 'Dokument'}
+                              </Badge>
+                            ))}
+                            {documentMappings.length > 3 && (
+                              <Badge variant="secondary" className="text-xs">+{documentMappings.length - 3} flere</Badge>
+                            )}
+                          </div>
                         )}
                       </div>
 
-                      {(isaMappings?.length || 0) > 0 && (
-                        <div className="flex flex-wrap gap-2">
-                          {isaMappings.slice(0, 3).map((m) => (
-                            <Badge key={m.id} variant="outline" className="text-xs">
-                              {m.isa_standard?.isa_number || 'ISA'} {m.isa_standard?.title || ''}
-                            </Badge>
-                          ))}
-                          {isaMappings.length > 3 && (
-                            <Badge variant="secondary" className="text-xs">+{isaMappings.length - 3} flere</Badge>
+                      <Dialog open={showTemplate} onOpenChange={setShowTemplate}>
+                        <DialogContent className="max-w-4xl">
+                          <DialogHeader>
+                            <DialogTitle>Mal</DialogTitle>
+                          </DialogHeader>
+                          {linkedTemplate ? (
+                            <EnhancedActionTemplateView template={linkedTemplate as any} />
+                          ) : (
+                            <div className="text-sm text-muted-foreground">Laster mal...</div>
                           )}
-                        </div>
-                      )}
-
-                      {(documentMappings?.length || 0) > 0 && (
-                        <div className="flex flex-wrap gap-2">
-                          {documentMappings.slice(0, 3).map((m) => (
-                            <Badge key={m.id} variant="outline" className="text-xs">
-                              {m.document_requirement?.name || 'Dokument'}
-                            </Badge>
-                          ))}
-                          {documentMappings.length > 3 && (
-                            <Badge variant="secondary" className="text-xs">+{documentMappings.length - 3} flere</Badge>
-                          )}
-                        </div>
-                      )}
-                    </div>
+                        </DialogContent>
+                      </Dialog>
+                    </>
                   )}
 
                 </div>
