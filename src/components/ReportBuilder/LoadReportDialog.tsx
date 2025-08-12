@@ -1,11 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { format } from 'date-fns';
 import { nb } from 'date-fns/locale';
-import { FileText, Trash2, Calendar } from 'lucide-react';
-import type { ClientReport } from '@/hooks/useClientReports';
+import { FileText, Trash2, Calendar, History } from 'lucide-react';
+import type { ClientReport, ClientReportVersion } from '@/hooks/useClientReports';
 
 interface LoadReportDialogProps {
   open: boolean;
@@ -13,6 +13,8 @@ interface LoadReportDialogProps {
   reports: ClientReport[];
   onLoadReport: (report: ClientReport) => void;
   onDeleteReport: (reportId: string) => void;
+  onListVersions?: (reportId: string) => Promise<ClientReportVersion[]>;
+  onRestoreVersion?: (versionId: string) => Promise<ClientReport | null>;
   loading?: boolean;
 }
 
@@ -22,11 +24,37 @@ export function LoadReportDialog({
   reports,
   onLoadReport,
   onDeleteReport,
+  onListVersions,
+  onRestoreVersion,
   loading
 }: LoadReportDialogProps) {
   const handleLoadReport = (report: ClientReport) => {
     onLoadReport(report);
     onOpenChange(false);
+  };
+
+  const [openReportId, setOpenReportId] = useState<string | null>(null);
+  const [versions, setVersions] = useState<Record<string, ClientReportVersion[]>>({});
+
+  const toggleVersions = async (reportId: string) => {
+    if (openReportId === reportId) {
+      setOpenReportId(null);
+      return;
+    }
+    setOpenReportId(reportId);
+    if (!versions[reportId] && onListVersions) {
+      const list = await onListVersions(reportId);
+      setVersions(prev => ({ ...prev, [reportId]: list }));
+    }
+  };
+
+  const handleRestoreVersion = async (versionId: string) => {
+    if (!onRestoreVersion) return;
+    const report = await onRestoreVersion(versionId);
+    if (report) {
+      onLoadReport(report);
+      onOpenChange(false);
+    }
   };
 
   return (
@@ -78,6 +106,18 @@ export function LoadReportDialog({
                     >
                       Last
                     </Button>
+                    {onListVersions && onRestoreVersion && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => toggleVersions(report.id)}
+                        disabled={loading}
+                        className="flex items-center gap-1"
+                      >
+                        <History className="h-4 w-4" />
+                        Versjoner
+                      </Button>
+                    )}
                     <Button
                       variant="ghost"
                       size="sm"
@@ -89,6 +129,27 @@ export function LoadReportDialog({
                     </Button>
                   </div>
                 </div>
+                {openReportId === report.id && (
+                  <div className="mt-2 ml-6 space-y-1">
+                    {(versions[report.id] || []).length === 0 ? (
+                      <p className="text-sm text-muted-foreground">Ingen versjoner</p>
+                    ) : (
+                      versions[report.id].map(v => (
+                        <div key={v.id} className="flex items-center justify-between p-2 border rounded">
+                          <span className="text-sm truncate">{v.version_name}</span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleRestoreVersion(v.id)}
+                            disabled={loading}
+                          >
+                            Gjenopprett
+                          </Button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
               ))}
             </div>
           )}
