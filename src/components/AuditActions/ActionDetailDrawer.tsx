@@ -17,8 +17,9 @@ import { phaseLabels } from '@/constants/phaseLabels';
 import type { AuditPhase } from '@/types/revio';
 import { Badge } from '@/components/ui/badge';
 import { BookOpen, FileText, Brain } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import EnhancedActionTemplateView from './EnhancedActionTemplateView';
+import { toast } from 'sonner';
 
 interface ActionDetailDrawerProps {
   open: boolean;
@@ -234,9 +235,29 @@ const ActionDetailDrawer: React.FC<ActionDetailDrawerProps> = ({ open, onOpenCha
 
                       <Dialog open={showTemplate} onOpenChange={setShowTemplate}>
                         <DialogContent className="max-w-4xl">
-                          <DialogHeader>
+                          <div className="flex items-center justify-between">
                             <DialogTitle>Mal</DialogTitle>
-                          </DialogHeader>
+                            <Button
+                              size="sm"
+                              onClick={() => {
+                                const tpl = (linkedTemplate as any)?.working_paper_template;
+                                if (tpl?.id) {
+                                  setSelectedTemplateId(tpl.id);
+                                  if (tpl.template_structure) {
+                                    try {
+                                      setWpJson(JSON.stringify(tpl.template_structure, null, 2));
+                                      setJsonError(null);
+                                    } catch {}
+                                  }
+                                  setShowTemplate(false);
+                                  toast.success('Mal anvendt på handlingen');
+                                }
+                              }}
+                              disabled={!linkedTemplate || !(linkedTemplate as any)?.working_paper_template}
+                            >
+                              Bruk på handling
+                            </Button>
+                          </div>
                           {linkedTemplate ? (
                             <EnhancedActionTemplateView template={linkedTemplate as any} />
                           ) : (
