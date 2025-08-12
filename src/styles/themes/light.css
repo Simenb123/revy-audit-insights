@@ -1,0 +1,11 @@
+/* Light theme for Report Builder */
+.report-builder-theme-light {
+  --rb-background: #ffffff;
+  --rb-foreground: #1f2937;
+  --rb-widget-bg: #ffffff;
+  --rb-widget-foreground: #1f2937;
+  --rb-widget-border: #e5e7eb;
+  /* Map to existing card variables */
+  --card: var(--rb-widget-bg);
+  --card-foreground: var(--rb-widget-foreground);
+}

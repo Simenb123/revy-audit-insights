@@ -27,7 +27,15 @@ export function WidgetWrapper({ widget, children }: WidgetWrapperProps) {
     removeWidget(widget.id);
   };
   return (
-    <div ref={containerRef} className="relative group h-full overflow-auto">
+    <div
+      ref={containerRef}
+      className="relative group h-full overflow-auto border rounded"
+      style={{
+        background: 'var(--rb-widget-bg)',
+        color: 'var(--rb-widget-foreground)',
+        borderColor: 'var(--rb-widget-border)'
+      }}
+    >
       {children}
       {!isViewMode && (
         <div className="widget-controls absolute top-2 right-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">

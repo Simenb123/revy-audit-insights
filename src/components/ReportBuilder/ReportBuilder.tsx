@@ -7,6 +7,7 @@ import { useFiscalYear } from '@/contexts/FiscalYearContext';
 import { ClassificationProvider } from '@/contexts/ClassificationContext';
 import { HistoryProvider, useHistory } from '@/contexts/HistoryContext';
 import { Button } from '@/components/ui/button';
+import { ThemeName, applyTheme } from '@/styles/theme';
 
 interface ReportBuilderProps {
   clientId: string;
@@ -56,9 +57,17 @@ interface HistoryWrapperProps {
 
 function HistoryWrapper({ clientId, hasData, selectedFiscalYear }: HistoryWrapperProps) {
   const { undo, redo, canUndo, canRedo } = useHistory();
+  const [theme, setTheme] = React.useState<ThemeName>('light');
+  const containerRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    if (containerRef.current) {
+      applyTheme(containerRef.current, theme);
+    }
+  }, [theme]);
 
   return (
-    <div className="space-y-4">
+    <div ref={containerRef} className="space-y-4">
       <div className="flex gap-2">
         <Button variant="outline" onClick={undo} disabled={!canUndo}>
           Angre
@@ -66,6 +75,14 @@ function HistoryWrapper({ clientId, hasData, selectedFiscalYear }: HistoryWrappe
         <Button variant="outline" onClick={redo} disabled={!canRedo}>
           Gjør om
         </Button>
+        <select
+          value={theme}
+          onChange={e => setTheme(e.target.value as ThemeName)}
+          className="border rounded px-2 text-sm"
+        >
+          <option value="light">Lyst tema</option>
+          <option value="dark">Mørkt tema</option>
+        </select>
       </div>
       <ReportBuilderContent
         clientId={clientId}
