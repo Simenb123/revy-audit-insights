@@ -6,11 +6,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useUpdateClientAuditAction } from '@/hooks/useAuditActions';
 import { useWorkingPaperTemplates } from '@/hooks/useEnhancedAuditActions';
 import type { ClientAuditAction } from '@/types/audit-actions';
-import { AlertTriangle, CheckCircle2 } from 'lucide-react';
+import TemplateSelector from './TemplateSelector';
+import JsonEditor from './JsonEditor';
 
 interface ActionDetailDrawerProps {
   open: boolean;
@@ -137,12 +137,11 @@ const ActionDetailDrawer: React.FC<ActionDetailDrawerProps> = ({ open, onOpenCha
 
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label>Arbeidspapir-mal</Label>
-                    <Select
+                    <TemplateSelector
+                      templates={templates as any}
                       value={selectedTemplateId}
-                      onValueChange={(val) => {
-                        setSelectedTemplateId(val);
-                        const tpl = templates.find((t: any) => t.id === val);
+                      onChange={(val) => setSelectedTemplateId(val)}
+                      onTemplateSelected={(tpl) => {
                         if (tpl && tpl.template_structure) {
                           try {
                             setWpJson(JSON.stringify(tpl.template_structure, null, 2));
@@ -152,35 +151,17 @@ const ActionDetailDrawer: React.FC<ActionDetailDrawerProps> = ({ open, onOpenCha
                           }
                         }
                       }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Velg mal (filtrert på fagområde og type)" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {templates.map((t: any) => (
-                          <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    />
                   </div>
 
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="wp">Arbeidsnotat-data (JSON)</Label>
-                      <div className="flex items-center gap-2">
-                        {jsonError ? (
-                          <span className="flex items-center gap-1 text-destructive text-xs"><AlertTriangle className="h-3 w-3" /> {jsonError}</span>
-                        ) : (
-                          <span className="flex items-center gap-1 text-muted-foreground text-xs"><CheckCircle2 className="h-3 w-3" /> Gyldig</span>
-                        )}
-                        <Button variant="outline" size="sm" onClick={() => setShowJson((v) => !v)}>
-                          {showJson ? 'Skjul JSON' : 'Vis JSON'}
-                        </Button>
-                      </div>
-                    </div>
-                    {showJson && (
-                      <Textarea id="wp" value={wpJson} onChange={(e) => setWpJson(e.target.value)} rows={16} className="font-mono text-xs" />
-                    )}
+                    <JsonEditor
+                      value={wpJson}
+                      error={jsonError}
+                      show={showJson}
+                      onToggleShow={() => setShowJson((v) => !v)}
+                      onChange={(val) => setWpJson(val)}
+                    />
                   </div>
 
                   <Separator />
