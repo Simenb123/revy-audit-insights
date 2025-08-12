@@ -9,6 +9,7 @@ export interface WidgetLayout {
   h: number;
   widgetId: string;
   dataSourceId?: string;
+  groupId?: string;
 }
 
 export interface Widget {
@@ -29,6 +30,7 @@ export interface Widget {
     | 'budgetChart';
   title: string;
   config?: Record<string, any>;
+  groupId?: string;
 }
 
 interface WidgetManagerContextType {
@@ -67,6 +69,9 @@ export function WidgetManagerProvider({ children }: { children: React.ReactNode 
 
   const updateWidget = useCallback((widgetId: string, updates: Partial<Widget>) => {
     setWidgets(prev => prev.map(w => w.id === widgetId ? { ...w, ...updates } : w));
+    if (Object.prototype.hasOwnProperty.call(updates, 'groupId')) {
+      setLayouts(prev => prev.map(l => l.widgetId === widgetId ? { ...l, groupId: updates.groupId } : l));
+    }
   }, []);
 
   const clearWidgets = useCallback(() => {
