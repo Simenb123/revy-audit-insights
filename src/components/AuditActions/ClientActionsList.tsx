@@ -35,7 +35,7 @@ const ClientActionsList = ({ actions, selectedArea, clientId, phase, onOpenTempl
 
   // Filter actions by selected area, search term, and status
   const filteredActions = actions.filter(action => {
-    const matchesArea = action.subject_area === selectedArea;
+    const matchesArea = selectedArea === 'all' || action.subject_area === selectedArea;
     const matchesSearch = action.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          action.description?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || action.status === statusFilter;
@@ -109,8 +109,9 @@ const ClientActionsList = ({ actions, selectedArea, clientId, phase, onOpenTempl
         <CardContent>
           {filteredActions.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              {actions.filter(a => a.subject_area === selectedArea).length === 0 
-                ? (
+              {(() => {
+                const areaSubset = selectedArea === 'all' ? actions : actions.filter(a => a.subject_area === selectedArea);
+                return areaSubset.length === 0 ? (
                   <div className="space-y-3">
                     <div>Ingen handlinger funnet for dette fagområdet</div>
                     <Button size="sm" className="gap-2" onClick={() => setNewOpen(true)}>
@@ -120,8 +121,8 @@ const ClientActionsList = ({ actions, selectedArea, clientId, phase, onOpenTempl
                   </div>
                 ) : (
                   <div>Ingen handlinger matcher søkekriteriene</div>
-                )
-              }
+                );
+              })()}
             </div>
           ) : (
             <div className="space-y-3">
@@ -202,7 +203,7 @@ const ClientActionsList = ({ actions, selectedArea, clientId, phase, onOpenTempl
       />
 
       {(() => {
-        const areaActions = actions.filter(a => a.subject_area === selectedArea);
+        const areaActions = selectedArea === 'all' ? actions : actions.filter(a => a.subject_area === selectedArea);
         const maxSort = areaActions.length ? Math.max(...areaActions.map(a => a.sort_order || 0)) : 0;
         const nextSortOrder = maxSort + 1;
         return (

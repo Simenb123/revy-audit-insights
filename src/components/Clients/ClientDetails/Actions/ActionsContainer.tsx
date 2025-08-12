@@ -24,6 +24,8 @@ import {
 import ClientActionsList from '@/components/AuditActions/ClientActionsList';
 import ActionTemplateList from '@/components/AuditActions/ActionTemplateList';
 import CopyFromClientDialog from '@/components/AuditActions/CopyFromClientDialog';
+import SubjectAreaNav from '@/components/AuditActions/SubjectAreaNav';
+import { toast } from 'sonner';
 
 interface ActionsContainerProps {
   clientId: string;
@@ -46,10 +48,24 @@ const ActionsContainer = ({ clientId, phase }: ActionsContainerProps) => {
     template.applicable_phases.includes(phase)
   );
 
-  // Calculate statistics
-  const completedActions = phaseActions.filter(action => action.status === 'completed');
-  const inProgressActions = phaseActions.filter(action => action.status === 'in_progress');
-  const notStartedActions = phaseActions.filter(action => action.status === 'not_started');
+// Derived data
+const actionCounts = phaseActions.reduce((acc, a) => {
+  acc[a.subject_area] = (acc[a.subject_area] || 0) + 1;
+  return acc;
+}, {} as Record<string, number>);
+
+const completedActions = phaseActions.filter(action => action.status === 'completed');
+const inProgressActions = phaseActions.filter(action => action.status === 'in_progress');
+const notStartedActions = phaseActions.filter(action => action.status === 'not_started');
+
+// Auto-select first area with actions if current area has none
+React.useEffect(() => {
+  if (!phaseActions.length) return;
+  if (!actionCounts[selectedArea]) {
+    const firstArea = Object.keys(actionCounts).find((k) => actionCounts[k] > 0);
+    if (firstArea) setSelectedArea(firstArea);
+  }
+}, [phaseActions, selectedArea]);
 
   const handleCopyTemplates = async (templateIds: string[]) => {
     try {
@@ -152,6 +168,13 @@ const ActionsContainer = ({ clientId, phase }: ActionsContainerProps) => {
           </CardTitle>
         </CardHeader>
         <CardContent>
+          <div className="mb-4">
+            <SubjectAreaNav
+              selectedArea={selectedArea}
+              onAreaSelect={setSelectedArea}
+              actionCounts={actionCounts}
+            />
+          </div>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="actions" className="gap-2">
@@ -171,8 +194,10 @@ const ActionsContainer = ({ clientId, phase }: ActionsContainerProps) => {
                     onClick={async () => {
                       try {
                         await applyStandardMutation.mutateAsync({ clientId, phase });
+                        toast.success('Standardpakke lagt til. Viser fagområde med nye handlinger.');
                       } catch (e) {
                         logger.error('Failed to apply standard package', e);
+                        toast.error('Kunne ikke legge til standardpakke');
                       }
                     }}
                     size="sm"
