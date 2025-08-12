@@ -18,6 +18,7 @@ import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } 
 import { CSS } from '@dnd-kit/utilities';
 import { useReorderClientAuditActions, useBulkUpdateClientActionsStatus, useBulkDeleteClientActions } from '@/hooks/audit-actions/useClientActionBulk';
 import BulkActionsToolbar from '@/components/AuditActions/BulkActionsToolbar';
+import ActionRowBody from './ActionRowBody';
 
 // Sorterbar rad for dra-og-slipp
 const SortableRow = ({ action, selected, onToggle, onEdit }: {
@@ -29,50 +30,24 @@ const SortableRow = ({ action, selected, onToggle, onEdit }: {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: action.id });
   const style = { transform: CSS.Transform.toString(transform), transition } as React.CSSProperties;
   return (
-    <div ref={setNodeRef} style={style} className="border rounded-lg p-4 hover:shadow-sm transition-shadow cursor-pointer">
-      <div className="flex items-start gap-3" onClick={() => onEdit(action)}>
-        <div onClick={(e) => e.stopPropagation()} className="pt-1">
-          <Checkbox checked={selected} onCheckedChange={() => onToggle(action.id)} />
-        </div>
-        <button
-          className="p-1 text-muted-foreground hover:text-foreground cursor-grab"
-          {...attributes}
-          {...listeners}
-          onClick={(e) => e.stopPropagation()}
-          aria-label="Dra for å sortere"
-        >
-          <GripVertical size={16} />
-        </button>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-2">
-            <h3 className="font-medium text-sm truncate">{action.name}</h3>
-            <ActionStatusBadge status={action.status} />
-          </div>
-          {action.description && (
-            <p className="text-xs text-muted-foreground mb-2 line-clamp-2">{action.description}</p>
-          )}
-          <div className="flex items-center gap-4 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1">
-              <Badge variant="outline" className="text-xs">{action.action_type}</Badge>
-            </span>
-            {action.estimated_hours && (<span>Estimat: {action.estimated_hours}t</span>)}
-            {action.actual_hours && (<span>Faktisk: {action.actual_hours}t</span>)}
-          </div>
-          {action.due_date && (
-            <div className="text-xs text-muted-foreground mt-1">
-              Forfaller: {new Date(action.due_date).toLocaleDateString('no-NO')}
-            </div>
-          )}
-          {action.completed_at && (
-            <div className="text-xs text-green-600 mt-1">
-              Fullført: {new Date(action.completed_at).toLocaleDateString('no-NO')}
-            </div>
-          )}
-        </div>
-        <div onClick={(e) => e.stopPropagation()}>
-          <ActionQuickActions action={action} onEdit={() => onEdit(action)} />
-        </div>
-      </div>
+    <div ref={setNodeRef} style={style}>
+      <ActionRowBody
+        action={action}
+        selected={selected}
+        onToggle={onToggle}
+        onEdit={onEdit}
+        dragHandle={
+          <button
+            className="p-1 text-muted-foreground hover:text-foreground cursor-grab"
+            {...attributes}
+            {...listeners}
+            aria-label="Dra for å sortere"
+            title="Dra for å sortere"
+          >
+            <GripVertical size={16} />
+          </button>
+        }
+      />
     </div>
   );
 };
@@ -278,42 +253,13 @@ const ClientActionsList = ({ actions, selectedArea, clientId, phase, onOpenTempl
           ) : (
             <div className="space-y-3">
               {filteredActions.map((action) => (
-                <div
+                <ActionRowBody
                   key={action.id}
-                  className="border rounded-lg p-4 hover:shadow-sm transition-shadow cursor-pointer"
-                  onClick={() => handleEdit(action)}
-                >
-                  <div className="flex items-start gap-3">
-                    <div onClick={(e) => e.stopPropagation()} className="pt-1">
-                      <Checkbox checked={selectedIds.includes(action.id)} onCheckedChange={() => toggleSelect(action.id)} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-2">
-                        <h3 className="font-medium text-sm truncate">{action.name}</h3>
-                        <ActionStatusBadge status={action.status} />
-                      </div>
-                      {action.description && (
-                        <p className="text-xs text-muted-foreground mb-2 line-clamp-2">{action.description}</p>
-                      )}
-                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Badge variant="outline" className="text-xs">{action.action_type}</Badge>
-                        </span>
-                        {action.estimated_hours && (<span>Estimat: {action.estimated_hours}t</span>)}
-                        {action.actual_hours && (<span>Faktisk: {action.actual_hours}t</span>)}
-                      </div>
-                      {action.due_date && (
-                        <div className="text-xs text-muted-foreground mt-1">Forfaller: {new Date(action.due_date).toLocaleDateString('no-NO')}</div>
-                      )}
-                      {action.completed_at && (
-                        <div className="text-xs text-green-600 mt-1">Fullført: {new Date(action.completed_at).toLocaleDateString('no-NO')}</div>
-                      )}
-                    </div>
-                    <div onClick={(e) => e.stopPropagation()}>
-                      <ActionQuickActions action={action} onEdit={() => handleEdit(action)} />
-                    </div>
-                  </div>
-                </div>
+                  action={action}
+                  selected={selectedIds.includes(action.id)}
+                  onToggle={toggleSelect}
+                  onEdit={handleEdit}
+                />
               ))}
             </div>
           )}
