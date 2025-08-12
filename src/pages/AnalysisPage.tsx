@@ -8,8 +8,9 @@ import ClientNavigation from '@/components/Clients/ClientDetails/ClientNavigatio
 import AccountingExplorer from '@/components/DataAnalysis/AccountingExplorer';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BarChart3, Database } from 'lucide-react';
+import { BarChart3, Database, Download } from 'lucide-react';
 import ReportBuilder from '@/components/ReportBuilder/ReportBuilder';
+import { Button } from '@/components/ui/button';
 
 const AnalysisPage = () => {
   const { clientId } = useParams<{ clientId: string }>();
@@ -62,7 +63,12 @@ const AnalysisPage = () => {
         
         <div className="flex-1 overflow-auto">
           <div className="space-y-6 p-6">
-            
+            <div className="flex items-center justify-end no-print">
+              <Button variant="outline" size="sm" onClick={() => window.print()}>
+                <Download className="h-4 w-4 mr-2" />
+                Eksporter PDF
+              </Button>
+            </div>
             <Tabs defaultValue="data" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="data" className="flex items-center gap-2">

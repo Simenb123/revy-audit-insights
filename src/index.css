@@ -150,20 +150,36 @@
   /* Print styles for report export */
   @media print {
     @page {
-      margin: 1cm;
-      size: A4;
+      margin: 1.5cm;
+      size: A4 portrait;
     }
 
-    body {
+    html, body {
+      background: white !important;
       -webkit-print-color-adjust: exact;
-      color-adjust: exact;
+      print-color-adjust: exact;
+      color: hsl(var(--foreground));
     }
 
-    .react-grid-item {
-      page-break-inside: avoid;
-      break-inside: avoid;
+    /* Hide chrome/navigation and non-essential UI */
+    header,
+    nav,
+    aside,
+    footer,
+    .no-print,
+    .print-hidden,
+    button,
+    .opacity-0 {
+      display: none !important;
     }
 
+    /* Ensure tables print well */
+    table { width: 100% !important; border-collapse: collapse; }
+    thead { display: table-header-group; }
+    tfoot { display: table-footer-group; }
+    tr, img, svg, canvas { page-break-inside: avoid; break-inside: avoid; }
+
+    /* React Grid Layout (Report Builder) */
     .react-grid-layout {
       position: static !important;
       height: auto !important;
@@ -176,19 +192,17 @@
       width: 100% !important;
       height: auto !important;
       margin-bottom: 1rem !important;
+      page-break-inside: avoid;
+      break-inside: avoid;
     }
 
-    /* Hide navigation and controls */
-    .no-print,
-    button,
-    .opacity-0 {
-      display: none !important;
-    }
+    /* Page-break helpers */
+    .print-break-before { break-before: page; page-break-before: always; }
+    .print-break-after { break-after: page; page-break-after: always; }
+    .break-inside-avoid { break-inside: avoid; page-break-inside: avoid; }
 
     /* Optimize spacing for print */
-    .p-4 {
-      padding: 0.5rem !important;
-    }
+    .p-4 { padding: 0.5rem !important; }
   }
 
   /* Existing utilities */
