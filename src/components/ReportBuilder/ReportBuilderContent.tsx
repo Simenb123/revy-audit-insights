@@ -19,6 +19,8 @@ import { ViewModeToggle } from './ViewModeToggle';
 import { FilterProvider } from '@/contexts/FilterContext';
 import { toast } from 'sonner';
 import { loadReportBuilderSettings, saveReportBuilderSettings } from '@/hooks/useReportBuilderSettings';
+import { ThemeProvider } from '@/contexts/ThemeContext';
+import type { ThemeConfig } from '@/styles/theme';
 interface ReportBuilderContentProps {
   clientId: string;
   hasData: boolean;
@@ -37,6 +39,12 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
   const { widgets, layouts, addWidget, removeWidget, updateLayout, clearWidgets, setWidgets, setLayouts, loadFromStorage } = useWidgetManager();
   const { reports, loading, saveReport, updateReport, deleteReport } = useClientReports(clientId);
   const savedSettings = loadReportBuilderSettings(clientId, selectedFiscalYear);
+  const initialTheme = savedSettings?.theme;
+
+  const handleThemeChange = (theme: ThemeConfig) => {
+    const prev = loadReportBuilderSettings(clientId, selectedFiscalYear) || {};
+    saveReportBuilderSettings(clientId, selectedFiscalYear, { ...prev, theme });
+  };
   // Fetch available trial balance versions
   const { data: versionOptions = [], isLoading: versionsLoading } = useTBVersionOptions(clientId, selectedFiscalYear);
   
@@ -143,8 +151,9 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
   }
 
   return (
-    <ViewModeProvider initialIsViewMode={!!savedSettings?.isViewMode}>
-      <FilterProvider>
+    <ThemeProvider initialTheme={initialTheme} onChange={handleThemeChange}>
+      <ViewModeProvider initialIsViewMode={!!savedSettings?.isViewMode}>
+        <FilterProvider>
         <div className="space-y-6">
         {/* Client Report Header */}
         <ClientReportHeader 
@@ -328,6 +337,7 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
         loading={loading}
       />
       </FilterProvider>
-    </ViewModeProvider>
+      </ViewModeProvider>
+    </ThemeProvider>
   );
 }

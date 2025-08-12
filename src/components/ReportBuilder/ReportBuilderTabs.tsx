@@ -1,8 +1,9 @@
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BarChart3, Settings2, Grid3X3 } from 'lucide-react';
+import { Settings2, Grid3X3, Palette } from 'lucide-react';
 import { DashboardCanvas } from './DashboardCanvas';
 import { AccountClassificationView } from './AccountClassification/AccountClassificationView';
+import { ThemePanel } from './ThemePanel';
 
 interface ReportBuilderTabsProps {
   clientId: string;
@@ -23,7 +24,7 @@ export function ReportBuilderTabs({
 
   return (
     <Tabs defaultValue="dashboard" className="w-full">
-      <TabsList className="grid w-full grid-cols-2">
+      <TabsList className="grid w-full grid-cols-3">
         <TabsTrigger value="dashboard" className="flex items-center gap-2">
           <Grid3X3 className="h-4 w-4" />
           Dashboard
@@ -32,20 +33,28 @@ export function ReportBuilderTabs({
           <Settings2 className="h-4 w-4" />
           Klassifisering
         </TabsTrigger>
+        <TabsTrigger value="theme" className="flex items-center gap-2">
+          <Palette className="h-4 w-4" />
+          Tema
+        </TabsTrigger>
       </TabsList>
-      
+
       <TabsContent value="dashboard" className="space-y-4">
         <div className="min-h-[600px]">
           <DashboardCanvas clientId={clientId} selectedVersion={selectedVersion} />
         </div>
       </TabsContent>
-      
+
       <TabsContent value="classification" className="space-y-4">
         <AccountClassificationView 
           clientId={clientId}
           selectedVersion={selectedVersion}
           selectedFiscalYear={selectedFiscalYear}
         />
+      </TabsContent>
+
+      <TabsContent value="theme" className="space-y-4">
+        <ThemePanel />
       </TabsContent>
     </Tabs>
   );

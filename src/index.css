@@ -27,6 +27,7 @@
     --input: 215 23% 92%;
     --ring: 175 80% 35%;
     --radius: 0.5rem;
+    --font-family: 'Inter', sans-serif;
 
     /* Layout heights */
     --global-header-height: 72px;
@@ -67,6 +68,7 @@
   html {
     @apply bg-background text-foreground;
     color-scheme: light;
+    font-family: var(--font-family);
   }
 
   body {
