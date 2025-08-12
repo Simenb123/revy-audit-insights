@@ -27,13 +27,13 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, compact = false }) =
     <div
       className={cn(
         "flex animate-fade-in items-start",
-        compact ? "gap-2 mb-1" : "gap-2 mb-1.5"
+        compact ? "gap-1.5 mb-1" : "gap-2 mb-1.5"
       )}
     >
       {/* Avatar for assistant messages */}
       {isAssistant && (
         <RevyAvatar
-          size="md"
+          size={compact ? "sm" : "md"}
           className="flex-shrink-0"
         />
       )}
