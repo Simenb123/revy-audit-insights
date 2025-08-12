@@ -202,3 +202,185 @@ export function useCopyActionsFromTemplate() {
     }
   });
 }
+
+export function useApplyStandardPackage() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ clientId, phase }: { clientId: string; phase: AuditPhase }) => {
+      const phaseDb = mapPhaseToDb(phase);
+
+      const engagementItems = [
+        {
+          name: 'Vurdering av finansielt rammeverk (NGAAP)',
+          description: 'Bekreft at valgt regnskapsprinsipp er akseptabelt for enheten. Terskelverdier kan beregnes fra saldobalanse.',
+          subject_area: 'finance' as const,
+          action_type: 'analytical' as const,
+          risk_level: 'high',
+          procedures: [
+            '- [ ] Identifiser valgt rammeverk (NGAAP/IFRS) og begrunnelse',
+            '- [ ] Hent nøkkeltall fra siste saldobalanse (omsetning, totalkapital)',
+            '- [ ] Sammenlign mot terskelverdier i NGAAP',
+            '- [ ] Vurder behov for avvikshåndtering',
+            '',
+            'Resultat: Dokumenter vurdering og konklusjon. '
+          ].join('\n')
+        },
+        {
+          name: 'Kompetanse, uavhengighet og ressurser i teamet',
+          description: 'Vurder teamets uavhengighet, kompetanse og kapasitet for oppdraget.',
+          subject_area: 'other' as const,
+          action_type: 'inquiry' as const,
+          risk_level: 'medium',
+          procedures: [
+            '- [ ] Uavhengighetserklæring fra alle teammedlemmer',
+            '- [ ] Kartlegg relevant erfaring og kompetanse',
+            '- [ ] Vurder ressursbehov vs. tilgjengelige ressurser',
+            '',
+            'Resultat: Oppsummer vurdering og eventuelle tiltak.'
+          ].join('\n')
+        },
+        {
+          name: 'Organisasjons- og eierstruktur (forberedelse)',
+          description: 'Innhent og dokumenter organisasjonskart og eierstruktur. Forbereder senere automatikk mot aksjonærregisteret.',
+          subject_area: 'other' as const,
+          action_type: 'inquiry' as const,
+          risk_level: 'medium',
+          procedures: [
+            '- [ ] Innhent organisasjonskart/eierstruktur',
+            '- [ ] Identifiser nøkkelpersoner og roller',
+            '- [ ] Vurder behov for videre innhenting',
+            '',
+            'Resultat: Last opp dokumentasjon og oppsummer.'
+          ].join('\n')
+        },
+        {
+          name: 'Engasjementsbrev – forhåndsbetingelser',
+          description: 'Sørg for at engasjementsbrev er utarbeidet og godkjent. Kan senere genereres fra mal og sendes til signering.',
+          subject_area: 'other' as const,
+          action_type: 'inspection' as const,
+          risk_level: 'high',
+          procedures: [
+            '- [ ] Gå gjennom mal for engasjementsbrev',
+            '- [ ] Tilpass til klientens forhold',
+            '- [ ] Innhent godkjenning fra ledelsen',
+            '',
+            'Resultat: Arkiver signert brev og dokumenter eventuelle forutsetninger.'
+          ].join('\n')
+        },
+        {
+          name: 'Oppstartsmøte/teammøte – agenda og referat',
+          description: 'Planlegg og gjennomfør oppstartsmøte. Agenda fra mal; referat arkiveres under handlingen.',
+          subject_area: 'other' as const,
+          action_type: 'observation' as const,
+          risk_level: 'medium',
+          procedures: [
+            '- [ ] Hent agendamal og tilpass',
+            '- [ ] Gjennomfør møte og dokumenter beslutninger',
+            '- [ ] Lagre referat og oppfølgingspunkter',
+            '',
+            'Resultat: Oppsummer hovedpunkter og ansvarlige.'
+          ].join('\n')
+        }
+      ];
+
+      const planningItems = [
+        {
+          name: 'Analytiske innledende handlinger',
+          description: 'Utfør overordnet analyse av regnskapsdata for å identifisere risikoområder.',
+          subject_area: 'finance' as const,
+          action_type: 'analytical' as const,
+          risk_level: 'medium',
+          procedures: [
+            '- [ ] Last inn saldobalanse og nøkkeltall',
+            '- [ ] Utfør trend- og forholdsanalyser',
+            '- [ ] Identifiser avvik og mulige risikoområder',
+            '',
+            'Resultat: Dokumenter funn og planlagt respons.'
+          ].join('\n')
+        },
+        {
+          name: 'Kontroll av inngående balanse (ISA 210)',
+          description: 'Avstem IB mot UB foregående år og vurder eventuelle differanser.',
+          subject_area: 'finance' as const,
+          action_type: 'recalculation' as const,
+          risk_level: 'high',
+          procedures: [
+            '- [ ] Hent UB foregående år',
+            '- [ ] Sammenlign mot IB inneværende år',
+            '- [ ] Undersøk og forklar differanser',
+            '',
+            'Resultat: Dokumenter konklusjon og behov for justeringer.'
+          ].join('\n')
+        },
+        {
+          name: 'Vurdering av fortsatt drift',
+          description: 'Vurder forutsetningen om fortsatt drift basert på tilgjengelig informasjon.',
+          subject_area: 'finance' as const,
+          action_type: 'analytical' as const,
+          risk_level: 'high',
+          procedures: [
+            '- [ ] Gå gjennom kontantstrøm og kapitalstruktur',
+            '- [ ] Vurder hendelser etter balansedagen',
+            '- [ ] Diskuter med ledelsen og vurder tiltak',
+            '',
+            'Resultat: Dokumenter vurdering, indikatorer og konklusjon.'
+          ].join('\n')
+        }
+      ];
+
+      const packageItems = phase === 'engagement' ? engagementItems : phase === 'planning' ? planningItems : [];
+
+      if (packageItems.length === 0) {
+        throw new Error('Standardpakke er foreløpig kun tilgjengelig for Oppdragsvurdering og Planlegging.');
+      }
+
+      const clientActions = packageItems.map((item, idx) => ({
+        client_id: clientId,
+        template_id: null,
+        assigned_to: null,
+        reviewed_by: null,
+        subject_area: item.subject_area,
+        action_type: item.action_type,
+        status: 'not_started' as const,
+        phase: phaseDb,
+        sort_order: idx,
+        name: item.name,
+        description: item.description,
+        objective: null,
+        procedures: item.procedures,
+        documentation_requirements: null,
+        estimated_hours: null,
+        risk_level: item.risk_level,
+        findings: null,
+        conclusion: null,
+        work_notes: null,
+        copied_from_client_id: null,
+        copied_from_action_id: null
+      }));
+
+      const { data, error } = await supabase
+        .from('client_audit_actions')
+        .insert(clientActions)
+        .select();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['client-audit-actions', variables.clientId] });
+      toast({
+        title: 'Standardpakke lagt til',
+        description: `${data.length} revisjonshandlinger ble lagt til for fasen.`,
+      });
+    },
+    onError: (error: any) => {
+      logger.error('Error applying standard package:', error);
+      toast({
+        title: 'Kunne ikke legge til standardpakke',
+        description: error?.message || 'Ukjent feil',
+        variant: 'destructive'
+      });
+    }
+  });
+}
+

@@ -18,7 +18,8 @@ import { AuditPhase } from '@/types/revio';
 import { 
   useClientAuditActions, 
   useAuditActionTemplates,
-  useCopyActionsFromTemplate 
+  useCopyActionsFromTemplate,
+  useApplyStandardPackage 
 } from '@/hooks/useAuditActions';
 import ClientActionsList from '@/components/AuditActions/ClientActionsList';
 import ActionTemplateList from '@/components/AuditActions/ActionTemplateList';
@@ -36,6 +37,7 @@ const ActionsContainer = ({ clientId, phase }: ActionsContainerProps) => {
   const { data: clientActions = [], isLoading: actionsLoading } = useClientAuditActions(clientId);
   const { data: templates = [], isLoading: templatesLoading } = useAuditActionTemplates();
   const copyActionsMutation = useCopyActionsFromTemplate();
+  const applyStandardMutation = useApplyStandardPackage();
 
   // Filter actions for current phase
   const phaseActions = clientActions.filter(action => action.phase === phase);
@@ -163,6 +165,23 @@ const ActionsContainer = ({ clientId, phase }: ActionsContainerProps) => {
 
             <TabsContent value="actions" className="space-y-4">
               <div className="flex justify-end gap-2">
+                {['engagement', 'planning'].includes(phase) && (
+                  <Button
+                    onClick={async () => {
+                      try {
+                        await applyStandardMutation.mutateAsync({ clientId, phase });
+                      } catch (e) {
+                        logger.error('Failed to apply standard package', e);
+                      }
+                    }}
+                    size="sm"
+                    className="gap-2"
+                    disabled={applyStandardMutation.isPending}
+                  >
+                    <Plus className="w-4 h-4" />
+                    Legg til standardpakke
+                  </Button>
+                )}
                 <Button
                   onClick={() => setCopyFromClientOpen(true)}
                   variant="outline"

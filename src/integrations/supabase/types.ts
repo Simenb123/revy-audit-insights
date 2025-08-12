@@ -1785,6 +1785,7 @@ export type Database = {
           action_type: Database["public"]["Enums"]["action_type"]
           actual_hours: number | null
           assigned_to: string | null
+          auto_metrics: Json
           client_id: string
           completed_at: string | null
           conclusion: string | null
@@ -1811,11 +1812,14 @@ export type Database = {
           template_id: string | null
           updated_at: string
           work_notes: string | null
+          working_paper_data: Json
+          working_paper_template_id: string | null
         }
         Insert: {
           action_type: Database["public"]["Enums"]["action_type"]
           actual_hours?: number | null
           assigned_to?: string | null
+          auto_metrics?: Json
           client_id: string
           completed_at?: string | null
           conclusion?: string | null
@@ -1842,11 +1846,14 @@ export type Database = {
           template_id?: string | null
           updated_at?: string
           work_notes?: string | null
+          working_paper_data?: Json
+          working_paper_template_id?: string | null
         }
         Update: {
           action_type?: Database["public"]["Enums"]["action_type"]
           actual_hours?: number | null
           assigned_to?: string | null
+          auto_metrics?: Json
           client_id?: string
           completed_at?: string | null
           conclusion?: string | null
@@ -1873,6 +1880,8 @@ export type Database = {
           template_id?: string | null
           updated_at?: string
           work_notes?: string | null
+          working_paper_data?: Json
+          working_paper_template_id?: string | null
         }
         Relationships: [
           {
