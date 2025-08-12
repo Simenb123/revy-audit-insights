@@ -13,6 +13,10 @@ import { StatementTableWidget } from './Widgets/StatementTableWidget';
 import { BudgetKpiWidget } from './Widgets/BudgetKpiWidget';
 import { BudgetTableWidget } from './Widgets/BudgetTableWidget';
 import { BudgetChartWidget } from './Widgets/BudgetChartWidget';
+import { HeatmapWidget } from './Widgets/HeatmapWidget';
+import { TreemapWidget } from './Widgets/TreemapWidget';
+import { BubbleChartWidget } from './Widgets/BubbleChartWidget';
+import { EnhancedKpiWidget } from './Widgets/EnhancedKpiWidget';
 
 interface WidgetRendererProps {
   widget: Widget;
@@ -46,6 +50,14 @@ export function WidgetRenderer({ widget }: WidgetRendererProps) {
       return <BudgetTableWidget widget={widget} />;
     case 'budgetChart':
       return <BudgetChartWidget widget={widget} />;
+    case 'heatmap':
+      return <HeatmapWidget widget={widget} />;
+    case 'treemap':
+      return <TreemapWidget widget={widget} />;
+    case 'bubble':
+      return <BubbleChartWidget widget={widget} />;
+    case 'enhancedKpi':
+      return <EnhancedKpiWidget widget={widget} />;
     default:
       return (
         <div className="p-4 text-center text-muted-foreground">

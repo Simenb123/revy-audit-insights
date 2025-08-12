@@ -1,8 +1,10 @@
 import { useCallback } from 'react';
+import type { ThemeConfig } from '@/styles/theme';
 
 export interface ReportBuilderSettings {
   selectedVersion?: string;
   isViewMode?: boolean;
+  theme?: ThemeConfig;
 }
 
 const STORAGE_PREFIX = 'report-builder-settings';

@@ -12,7 +12,7 @@ import { Plus, Save, FolderOpen, Database, LayoutTemplate, FileDown, FileSpreads
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { useClientReports, type ClientReport } from '@/hooks/useClientReports';
+import { useClientReports, type ClientReport, type ClientReportVersion } from '@/hooks/useClientReports';
 import { useTBVersionOptions } from '@/hooks/useTrialBalanceVersions';
 import { ViewModeProvider, useViewMode } from './ViewModeContext';
 import { ViewModeToggle } from './ViewModeToggle';
@@ -20,6 +20,8 @@ import { FilterProvider } from '@/contexts/FilterContext';
 import { toast } from 'sonner';
 import { loadReportBuilderSettings, saveReportBuilderSettings } from '@/hooks/useReportBuilderSettings';
 import { exportReportToPDF, exportReportToExcel } from '@/utils/exportReport';
+import { ThemeProvider } from '@/contexts/ThemeContext';
+import type { ThemeConfig } from '@/styles/theme';
 interface ReportBuilderContentProps {
   clientId: string;
   hasData: boolean;
@@ -36,8 +38,14 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
   const [hasUnsaved, setHasUnsaved] = useState(false);
   
   const { widgets, layouts, addWidget, removeWidget, updateLayout, clearWidgets, setWidgets, setLayouts, loadFromStorage } = useWidgetManager();
-  const { reports, loading, saveReport, updateReport, deleteReport } = useClientReports(clientId);
+  const { reports, loading, saveReport, updateReport, deleteReport, saveVersion, listVersions, restoreVersion } = useClientReports(clientId);
   const savedSettings = loadReportBuilderSettings(clientId, selectedFiscalYear);
+  const initialTheme = savedSettings?.theme;
+
+  const handleThemeChange = (theme: ThemeConfig) => {
+    const prev = loadReportBuilderSettings(clientId, selectedFiscalYear) || {};
+    saveReportBuilderSettings(clientId, selectedFiscalYear, { ...prev, theme });
+  };
   // Fetch available trial balance versions
   const { data: versionOptions = [], isLoading: versionsLoading } = useTBVersionOptions(clientId, selectedFiscalYear);
   
@@ -99,6 +107,38 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
     toast.success(`Rapport "${report.report_name}" lastet!`);
   };
 
+  const handleSaveVersion = async (versionName: string, description?: string) => {
+    if (!currentReport) return;
+    try {
+      await saveVersion(currentReport.id, versionName, widgets, layouts, description);
+      toast.success('Versjon lagret!');
+    } catch (error) {
+      toast.error('Kunne ikke lagre versjon');
+    }
+  };
+
+  const handleListVersions = async (reportId: string): Promise<ClientReportVersion[]> => {
+    try {
+      return await listVersions(reportId);
+    } catch (error) {
+      toast.error('Kunne ikke hente versjoner');
+      return [];
+    }
+  };
+
+  const handleRestoreVersion = async (versionId: string): Promise<ClientReport | null> => {
+    try {
+      const restored = await restoreVersion(versionId);
+      if (restored) {
+        handleLoadReport(restored);
+      }
+      return restored;
+    } catch (error) {
+      toast.error('Kunne ikke gjenopprette versjon');
+      return null;
+    }
+  };
+
   const handleDeleteReport = async (reportId: string) => {
     try {
       await deleteReport(reportId);
@@ -144,8 +184,9 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
   }
 
   return (
-    <ViewModeProvider initialIsViewMode={!!savedSettings?.isViewMode}>
-      <FilterProvider>
+    <ThemeProvider initialTheme={initialTheme} onChange={handleThemeChange}>
+      <ViewModeProvider initialIsViewMode={!!savedSettings?.isViewMode}>
+        <FilterProvider>
         <div className="space-y-6">
         {/* Client Report Header */}
         <ClientReportHeader 
@@ -337,6 +378,7 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
         open={showSaveDialog}
         onOpenChange={setShowSaveDialog}
         onSave={handleSaveReport}
+        onSaveVersion={currentReport ? handleSaveVersion : undefined}
         loading={loading}
       />
 
@@ -346,9 +388,12 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
         reports={reports}
         onLoadReport={handleLoadReport}
         onDeleteReport={handleDeleteReport}
+        onListVersions={handleListVersions}
+        onRestoreVersion={handleRestoreVersion}
         loading={loading}
       />
       </FilterProvider>
-    </ViewModeProvider>
+      </ViewModeProvider>
+    </ThemeProvider>
   );
 }

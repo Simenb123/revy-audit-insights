@@ -80,6 +80,7 @@ const { data: standardAccounts = [] } = useFirmStandardAccounts();
         );
 
       case 'kpi':
+      case 'enhancedKpi':
         return (
           <div className="space-y-4">
             <div>
@@ -205,6 +206,36 @@ const { data: standardAccounts = [] } = useFirmStandardAccounts();
               />
               <Label htmlFor="showCurrency">Vis valuta</Label>
             </div>
+
+            {widget.type === 'enhancedKpi' && (
+              <>
+                <div>
+                  <Label htmlFor="threshold">Terskel</Label>
+                  <Input
+                    id="threshold"
+                    type="number"
+                    value={config.threshold ?? 0}
+                    onChange={(e) => updateConfig('threshold', parseFloat(e.target.value))}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="positiveColor">Positiv farge</Label>
+                  <Input
+                    id="positiveColor"
+                    value={config.positiveColor || 'text-success'}
+                    onChange={(e) => updateConfig('positiveColor', e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="negativeColor">Negativ farge</Label>
+                  <Input
+                    id="negativeColor"
+                    value={config.negativeColor || 'text-destructive'}
+                    onChange={(e) => updateConfig('negativeColor', e.target.value)}
+                  />
+                </div>
+              </>
+            )}
           </div>
         );
 
@@ -436,6 +467,112 @@ const { data: standardAccounts = [] } = useFirmStandardAccounts();
                 disabled={config.chartDataSource === 'formulaSeries'}
               />
               <Label htmlFor="enableCrossFilter">Aktiver kryssfiltrering</Label>
+            </div>
+          </div>
+        );
+
+      case 'heatmap':
+        return (
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="xField">X-felt</Label>
+              <Input
+                id="xField"
+                value={config.xField || 'x'}
+                onChange={(e) => updateConfig('xField', e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="yField">Y-felt</Label>
+              <Input
+                id="yField"
+                value={config.yField || 'y'}
+                onChange={(e) => updateConfig('yField', e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="valueField">Verdifelt</Label>
+              <Input
+                id="valueField"
+                value={config.valueField || 'value'}
+                onChange={(e) => updateConfig('valueField', e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="colorScale">Fargeskala</Label>
+              <Select
+                value={config.colorScale || 'blue'}
+                onValueChange={(value) => updateConfig('colorScale', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="blue">Blå</SelectItem>
+                  <SelectItem value="red">Rød</SelectItem>
+                  <SelectItem value="green">Grønn</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        );
+
+      case 'treemap':
+        return (
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="valueFieldTree">Verdifelt</Label>
+              <Input
+                id="valueFieldTree"
+                value={config.valueField || 'size'}
+                onChange={(e) => updateConfig('valueField', e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="colorTree">Farge</Label>
+              <Input
+                id="colorTree"
+                value={config.color || '#3b82f6'}
+                onChange={(e) => updateConfig('color', e.target.value)}
+              />
+            </div>
+          </div>
+        );
+
+      case 'bubble':
+        return (
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="xFieldBubble">X-felt</Label>
+              <Input
+                id="xFieldBubble"
+                value={config.xField || 'x'}
+                onChange={(e) => updateConfig('xField', e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="yFieldBubble">Y-felt</Label>
+              <Input
+                id="yFieldBubble"
+                value={config.yField || 'y'}
+                onChange={(e) => updateConfig('yField', e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="sizeFieldBubble">Størrelsesfelt</Label>
+              <Input
+                id="sizeFieldBubble"
+                value={config.sizeField || 'z'}
+                onChange={(e) => updateConfig('sizeField', e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="colorBubble">Farge</Label>
+              <Input
+                id="colorBubble"
+                value={config.color || '#3b82f6'}
+                onChange={(e) => updateConfig('color', e.target.value)}
+              />
             </div>
           </div>
         );
