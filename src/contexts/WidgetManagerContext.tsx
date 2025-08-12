@@ -26,7 +26,11 @@ export interface Widget {
     | 'statementTable'
     | 'budgetKpi'
     | 'budgetTable'
-    | 'budgetChart';
+    | 'budgetChart'
+    | 'heatmap'
+    | 'treemap'
+    | 'bubble'
+    | 'enhancedKpi';
   title: string;
   config?: Record<string, any>;
 }
