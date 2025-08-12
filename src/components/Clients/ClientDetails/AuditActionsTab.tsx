@@ -27,15 +27,18 @@ const AuditActionsTab = ({ clientId, phase }: AuditActionsTabProps) => {
 
   return (
     <div className="space-y-6">
+      <h1 className="sr-only">Revisjonshandlinger</h1>
       {/* Header med fase-info */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Target className="w-5 h-5" />
             Revisjonshandlinger
-            <Badge variant="secondary" className="ml-auto">
-              Fase 5: Integrasjon og testing
-            </Badge>
+            {phase && (
+              <Badge variant="secondary" className="ml-auto">
+                Fase: {phase}
+              </Badge>
+            )}
           </CardTitle>
           <p className="text-muted-foreground">
             AI-drevet system for opprettelse, analyse og administrasjon av revisjonshandlinger
