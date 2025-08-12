@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from "@/components/ui/button";
 import { Upload, FileSpreadsheet, AlertCircle } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
+import { validateXlsxFile } from "@/utils/secureXlsx";
 
 interface TrialBalanceUploadDialogProps {
   open: boolean;
@@ -25,8 +26,20 @@ const TrialBalanceUploadDialog: React.FC<TrialBalanceUploadDialogProps> = ({
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
+    if (!file) return;
+
+    try {
+      if (file.name.toLowerCase().endsWith('.xlsx') || file.name.toLowerCase().endsWith('.xls')) {
+        validateXlsxFile(file);
+      }
       setSelectedFile(file);
+    } catch (error) {
+      toast({
+        title: "Ugyldig fil",
+        description: error instanceof Error ? error.message : 'Ugyldig fil',
+        variant: "destructive",
+      });
+      event.target.value = '';
     }
   };
 
