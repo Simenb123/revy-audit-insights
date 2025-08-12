@@ -880,12 +880,12 @@ const handleMappingComplete = async (mapping: Record<string, string>, headerRowI
                 Klikk for å velge fil eller dra og slipp her
               </p>
               <p className="text-muted-foreground mb-4">
-                Excel (.xlsx) eller CSV-filer opptil 100MB
+                Excel (.xlsx), CSV eller SAF-T (.xml, .zip) filer opptil 100MB
               </p>
               <input
                 id="file-input"
                 type="file"
-                accept=".xlsx,.xls,.csv"
+                accept=".xlsx,.xls,.csv,.xml,.zip"
                 onChange={(e) => e.target.files?.[0] && handleFileSelect(e.target.files[0])}
                 className="hidden"
               />
