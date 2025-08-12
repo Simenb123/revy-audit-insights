@@ -55,6 +55,8 @@ import AllocationImport from "./pages/AllocationImport";
 import Superadmin from "./pages/Superadmin";
 import SaftUpload from "./pages/SaftUpload";
 import SaftImport from "@/components/SaftImport";
+import UploadHistory from "./pages/UploadHistory";
+import LegacyUploadHistoryRedirect from "./pages/LegacyUploadHistoryRedirect";
 const queryClient = new QueryClient();
 
 function App() {
@@ -84,11 +86,13 @@ function App() {
                   <Route path="clients/:clientId/saft" element={<ProtectedRoute><SaftUpload /></ProtectedRoute>} />
                   <Route path="clients/:clientId/analysis" element={<ProtectedRoute><AnalysisPage /></ProtectedRoute>} />
                   <Route path="clients/:clientId/documents" element={<ProtectedRoute><ClientDocuments /></ProtectedRoute>} />
+                  <Route path="clients/:clientId/upload-history" element={<ProtectedRoute><UploadHistory /></ProtectedRoute>} />
                   
                   {/* Legacy routes for backward compatibility */}
                   <Route path="klienter" element={<ProtectedRoute><ClientsOverview /></ProtectedRoute>} />
                   <Route path="klienter/:orgNumber" element={<ClientRedirect />} />
                   <Route path="klienter/:orgNumber/saft" element={<ProtectedRoute><SaftImport /></ProtectedRoute>} />
+                  <Route path="klienter/:orgNumber/upload-historikk" element={<ProtectedRoute><LegacyUploadHistoryRedirect /></ProtectedRoute>} />
                   <Route path="client-admin" element={<ClientAdmin />} />
                   <Route path="user-admin" element={<ProtectedRoute><UserAdmin /></ProtectedRoute>} />
                   <Route path="profile" element={<UserProfile />} />
