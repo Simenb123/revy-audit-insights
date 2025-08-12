@@ -13,6 +13,9 @@ import {
   Gauge,
   Grid3x3,
   ListOrdered,
+  Grid2x2,
+  Boxes,
+  CircleDot,
 } from 'lucide-react';
 import { useWidgetTemplates } from '@/hooks/useWidgetTemplates';
 
@@ -96,6 +99,69 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
       defaultConfig: {
         chartType: 'bar',
         dataSource: 'trial_balance'
+      }
+    },
+    {
+      type: 'heatmap' as const,
+      title: 'Heatmap',
+      description: 'Vis intensitet i rutenett',
+      icon: Grid2x2,
+      defaultConfig: {
+        xField: 'x',
+        yField: 'y',
+        valueField: 'value',
+        colorScale: 'blue',
+        data: [
+          { x: 'A', y: '1', value: 10 },
+          { x: 'B', y: '1', value: 30 },
+          { x: 'A', y: '2', value: 20 },
+          { x: 'B', y: '2', value: 40 },
+        ]
+      }
+    },
+    {
+      type: 'treemap' as const,
+      title: 'Treemap',
+      description: 'Hierarkisk arealdiagram',
+      icon: Boxes,
+      defaultConfig: {
+        valueField: 'size',
+        color: '#3b82f6',
+        data: [
+          { name: 'A', size: 400 },
+          { name: 'B', size: 300 },
+          { name: 'C', size: 300 },
+          { name: 'D', size: 200 },
+        ]
+      }
+    },
+    {
+      type: 'bubble' as const,
+      title: 'Boblediagram',
+      description: 'Vis tre variabler',
+      icon: CircleDot,
+      defaultConfig: {
+        xField: 'x',
+        yField: 'y',
+        sizeField: 'z',
+        color: '#3b82f6',
+        data: [
+          { x: 10, y: 30, z: 200 },
+          { x: 20, y: 50, z: 100 },
+          { x: 30, y: 70, z: 300 },
+        ]
+      }
+    },
+    {
+      type: 'enhancedKpi' as const,
+      title: 'KPI kort',
+      description: 'Nøkkeltall med fargekoder',
+      icon: TrendingUp,
+      defaultConfig: {
+        metric: 'revenue',
+        threshold: 0,
+        positiveColor: 'text-success',
+        negativeColor: 'text-destructive'
       }
     },
     {
@@ -232,7 +298,7 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
           ? 4
           : template.type === 'text'
           ? 6
-          : template.type === 'kpi'
+          : template.type === 'kpi' || template.type === 'enhancedKpi'
           ? 3
           : template.type === 'gauge'
           ? 3
@@ -242,9 +308,9 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
       h:
         template.type === 'filter'
           ? 4
-          : template.type === 'kpi'
+          : template.type === 'kpi' || template.type === 'enhancedKpi'
           ? 2
-          : template.type === 'chart'
+          : template.type === 'chart' || template.type === 'heatmap' || template.type === 'treemap' || template.type === 'bubble'
           ? 4
           : template.type === 'pivot'
           ? 4
