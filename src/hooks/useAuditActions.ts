@@ -335,18 +335,18 @@ export function useApplyStandardPackage() {
         throw new Error('Standardpakke er foreløpig kun tilgjengelig for Oppdragsvurdering og Planlegging.');
       }
 
-      const clientActions = packageItems.map((item, idx) => ({
+      const clientActions = packageItems.map<Database['public']['Tables']['client_audit_actions']['Insert']>((item, idx) => ({
         client_id: clientId,
         template_id: null,
         assigned_to: null,
         reviewed_by: null,
-        subject_area: item.subject_area,
-        action_type: item.action_type,
-        status: 'not_started' as const,
+        subject_area: item.subject_area as Database['public']['Tables']['client_audit_actions']['Insert']['subject_area'],
+        action_type: item.action_type as Database['public']['Tables']['client_audit_actions']['Insert']['action_type'],
+        status: 'not_started' as Database['public']['Tables']['client_audit_actions']['Insert']['status'],
         phase: phaseDb,
         sort_order: idx,
         name: item.name,
-        description: item.description,
+        description: item.description ?? null,
         objective: null,
         procedures: item.procedures,
         documentation_requirements: null,

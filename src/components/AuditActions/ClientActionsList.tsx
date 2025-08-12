@@ -1,14 +1,14 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Search, Plus, Filter } from 'lucide-react';
+import { Search, Plus } from 'lucide-react';
 import { ClientAuditAction } from '@/types/audit-actions';
 import ActionStatusBadge from './ActionStatusBadge';
 import ActionQuickActions from './ActionQuickActions';
 import ActionProgressIndicator from './ActionProgressIndicator';
+import ActionDetailDrawer from './ActionDetailDrawer';
 
 interface ClientActionsListProps {
   actions: ClientAuditAction[];
@@ -18,6 +18,13 @@ interface ClientActionsListProps {
 const ClientActionsList = ({ actions, selectedArea }: ClientActionsListProps) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [selectedAction, setSelectedAction] = useState<ClientAuditAction | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  const handleEdit = (action: ClientAuditAction) => {
+    setSelectedAction(action);
+    setDrawerOpen(true);
+  };
 
   // Filter actions by selected area, search term, and status
   const filteredActions = actions.filter(action => {
@@ -145,7 +152,7 @@ const ClientActionsList = ({ actions, selectedArea }: ClientActionsListProps) =>
                       )}
                     </div>
                     
-                    <ActionQuickActions action={action} />
+                    <ActionQuickActions action={action} onEdit={() => handleEdit(action)} />
                   </div>
                 </div>
               ))}
@@ -153,6 +160,12 @@ const ClientActionsList = ({ actions, selectedArea }: ClientActionsListProps) =>
           )}
         </CardContent>
       </Card>
+
+      <ActionDetailDrawer
+        open={drawerOpen}
+        onOpenChange={setDrawerOpen}
+        action={selectedAction}
+      />
     </div>
   );
 };
