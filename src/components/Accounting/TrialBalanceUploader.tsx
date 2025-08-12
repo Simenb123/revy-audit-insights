@@ -796,6 +796,9 @@ setLastUploadedVersion(finalVersion);
                   <li><strong>Saldo i fjor:</strong> Inngående saldo (valgfri)</li>
                   <li><strong>Saldo i år:</strong> Utgående saldo (påkrevd)</li>
                 </ul>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Tips: «Saldo {accountingYear - 1} (Inngående {accountingYear})» = «Saldo i fjor», «Saldo {accountingYear} (Utgående {accountingYear})» = «Saldo i år».
+                </p>
                 <p className="mt-2 text-xs">
                   Kolonnenavn kan variere - AI-assistenten vil hjelpe deg med mapping.
                 </p>

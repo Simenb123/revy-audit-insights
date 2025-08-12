@@ -74,14 +74,33 @@ export async function getFieldDefinitions(fileType: string, fiscalYear?: number)
       aliases = expandedAliases;
     }
     
-    // Dynamic fiscal year labels for trial balance (keep existing logic)
+    // Dynamic fiscal year labels for trial balance (clarify opening vs closing)
     if (fileType === 'trial_balance' && fiscalYear) {
       if (item.field_key === 'opening_balance') {
-        field_label = `Saldo ${fiscalYear - 1}`;
-        aliases = [...aliases, `saldo ${fiscalYear - 1}`, `åpning ${fiscalYear - 1}`, `inngående ${fiscalYear - 1}`];
+        field_label = `Saldo ${fiscalYear - 1} (Inngående ${fiscalYear})`;
+        aliases = [
+          ...aliases,
+          `saldo ${fiscalYear - 1}`,
+          `åpning ${fiscalYear - 1}`,
+          `inngående ${fiscalYear - 1}`,
+          `inngående saldo ${fiscalYear}`,
+          `åpningssaldo ${fiscalYear}`,
+          `åpningsbalanse ${fiscalYear}`,
+          `ib ${fiscalYear}`,
+          'ib'
+        ];
       } else if (item.field_key === 'closing_balance') {
-        field_label = `Saldo ${fiscalYear}`;
-        aliases = [...aliases, `saldo ${fiscalYear}`, `slutt ${fiscalYear}`, `utgående ${fiscalYear}`];
+        field_label = `Saldo ${fiscalYear} (Utgående ${fiscalYear})`;
+        aliases = [
+          ...aliases,
+          `saldo ${fiscalYear}`,
+          `slutt ${fiscalYear}`,
+          `utgående ${fiscalYear}`,
+          `utgående saldo ${fiscalYear}`,
+          `avslutningssaldo ${fiscalYear}`,
+          `ub ${fiscalYear}`,
+          'ub'
+        ];
       }
     }
     
@@ -353,8 +372,8 @@ function applyNorwegianPatternsWithReasoning(
   const patterns: Record<string, { keywords: string[]; description: string }> = {
     'account_number': { keywords: ['konto', 'kontonr', 'kontonummer'], description: 'Norsk kontonummer-mønster' },
     'account_name': { keywords: ['navn', 'beskrivelse', 'tekst'], description: 'Norsk kontonavn-mønster' },
-    'opening_balance': { keywords: ['inngående', 'åpning', 'start'], description: 'Norsk åpningsbalanse-mønster' },
-    'closing_balance': { keywords: ['utgående', 'slutt', 'avslutning'], description: 'Norsk sluttbalanse-mønster' },
+    'opening_balance': { keywords: ['inngående', 'åpning', 'start', 'ib'], description: 'Norsk åpningsbalanse-mønster' },
+    'closing_balance': { keywords: ['utgående', 'slutt', 'avslutning', 'ub'], description: 'Norsk sluttbalanse-mønster' },
     'debit_amount': { keywords: ['debet', 'skal', 'dr'], description: 'Norsk debet-mønster' },
     'credit_amount': { keywords: ['kredit', 'have', 'cr'], description: 'Norsk kredit-mønster' },
     'transaction_date': { keywords: ['dato', 'bilagsdato'], description: 'Norsk dato-mønster' },

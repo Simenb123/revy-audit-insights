@@ -2,8 +2,10 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Info } from 'lucide-react';
 import { ColumnMapping } from '@/utils/fileProcessing';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { useFiscalYear } from '@/contexts/FiscalYearContext';
 
 interface ColumnMappingTableProps {
   fileName: string;
@@ -43,6 +45,11 @@ const ColumnMappingTable: React.FC<ColumnMappingTableProps> = ({
     return 'bg-red-100 text-red-800 border-red-200';
   };
 
+  const { selectedFiscalYear } = useFiscalYear();
+  const year = selectedFiscalYear || new Date().getFullYear();
+  const hasOpening = Array.isArray(fieldDefinitions) && fieldDefinitions.some((f: any) => f.field_key === 'opening_balance');
+  const hasClosing = Array.isArray(fieldDefinitions) && fieldDefinitions.some((f: any) => f.field_key === 'closing_balance');
+
   return (
     <Card>
       <CardHeader>
@@ -54,6 +61,21 @@ const ColumnMappingTable: React.FC<ColumnMappingTableProps> = ({
         </CardTitle>
       </CardHeader>
       <CardContent>
+        {hasOpening && hasClosing && (
+          <div className="mb-3 text-xs text-muted-foreground flex items-center gap-2">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="inline-flex items-center gap-1 cursor-help">
+                  <Info className="w-3.5 h-3.5" />
+                  Tips: Saldo {year - 1} = Inngående {year}, Saldo {year} = Utgående {year}
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>
+                Inngående per 1.1.{year} = utgående 31.12.{year - 1} for hver konto
+              </TooltipContent>
+            </Tooltip>
+          </div>
+        )}
         <div className="overflow-x-auto">
           <table className="w-full border-collapse border border-border">
             <thead>
