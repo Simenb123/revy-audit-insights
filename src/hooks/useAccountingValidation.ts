@@ -41,43 +41,40 @@ export const useAccountingValidation = (clientId: string, selectedGLVersion?: st
 
       const accountValidations: AccountValidation[] = [];
 
-      // Group general ledger transactions by account
+      // Group general ledger transactions by account_number (stable key across datasets)
       const glByAccount = generalLedgerData.reduce((acc, transaction) => {
-        const accountId = transaction.client_account_id;
-        if (!acc[accountId]) {
-          acc[accountId] = { debit: 0, credit: 0, balance: 0 };
+        const accountNumber = transaction.account_number;
+        if (!acc[accountNumber]) {
+          acc[accountNumber] = { debit: 0, credit: 0 };
         }
-        
-        if (transaction.debit_amount !== null) {
-          acc[accountId].debit += transaction.debit_amount;
+        if (transaction.debit_amount !== null && transaction.debit_amount !== undefined) {
+          acc[accountNumber].debit += transaction.debit_amount;
         }
-        if (transaction.credit_amount !== null) {
-          acc[accountId].credit += transaction.credit_amount;
+        if (transaction.credit_amount !== null && transaction.credit_amount !== undefined) {
+          acc[accountNumber].credit += transaction.credit_amount;
         }
-        if (transaction.balance_amount !== null) {
-          acc[accountId].balance += transaction.balance_amount;
-        }
-        
         return acc;
-      }, {} as Record<string, { debit: number; credit: number; balance: number }>);
+      }, {} as Record<string, { debit: number; credit: number }>);
 
-      // Compare with trial balance
+      // Compare GL movement with TB closing balance via expected closing (opening + movement)
       trialBalanceData.forEach(tbEntry => {
-        const glEntry = glByAccount[tbEntry.id];
-        const glTotal = glEntry ? (glEntry.debit - glEntry.credit + glEntry.balance) : 0;
-        const tbTotal = tbEntry.closing_balance;
-        const difference = Math.abs(glTotal - tbTotal);
+        const glEntry = glByAccount[tbEntry.account_number];
+        const glMovement = glEntry ? (glEntry.debit - glEntry.credit) : 0; // Movement from GL
+        const expectedClosing = (tbEntry.opening_balance || 0) + glMovement;
+        const tbClosing = tbEntry.closing_balance || 0;
+        const difference = Math.abs(expectedClosing - tbClosing);
 
         const validation: AccountValidation = {
           accountId: tbEntry.id,
           accountNumber: tbEntry.account_number,
           accountName: tbEntry.account_name,
-          generalLedgerTotal: glTotal,
-          trialBalanceTotal: tbTotal,
+          // Interpret as balances for display: expected (GL-derived) vs TB closing
+          generalLedgerTotal: expectedClosing,
+          trialBalanceTotal: tbClosing,
           difference,
           isValid: difference <= 1, // Allow 1 kr difference for rounding
-          message: difference <= 1 
-            ? 'Balanse stemmer' 
+          message: difference <= 1
+            ? 'Balanse stemmer'
             : `Differanse på ${difference.toFixed(2)} kr`,
           severity: difference <= 1 ? 'info' : (difference <= 100 ? 'warning' : 'error')
         };
