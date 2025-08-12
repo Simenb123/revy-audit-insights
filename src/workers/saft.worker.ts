@@ -21,7 +21,19 @@ self.onmessage = async (e: MessageEvent<SaftWorkerRequest>) => {
     (self as unknown as DedicatedWorkerGlobalScope).postMessage(response);
   } catch (err: any) {
     const response: SaftWorkerResponse = {
-      parsed: { accounts: [], journals: [], transactions: [] },
+      parsed: {
+        header: null,
+        company: null,
+        bank_accounts: [],
+        accounts: [],
+        customers: [],
+        suppliers: [],
+        tax_table: [],
+        analysis_types: [],
+        journals: [],
+        transactions: [],
+        analysis_lines: [],
+      },
       zip: new Blob(),
       error: err?.message || 'Unknown error'
     };
