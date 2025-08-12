@@ -12,12 +12,13 @@ import { useAccountingYear } from '@/hooks/useAccountingYear';
 import AccountingYearHeader from '@/components/AccountingYearHeader';
 import TrialBalanceMappingTable from './TrialBalanceMappingTable';
 // Removed useAvailableVersions since versions are now auto-generated
-import { 
-  processExcelFile, 
-  processCSVFile, 
-  FilePreview, 
+import {
+  processExcelFile,
+  processCSVFile,
+  FilePreview,
   convertDataWithMapping
 } from '@/utils/fileProcessing';
+import { parseSaftFile } from '@/utils/saftParser';
 import * as XLSX from 'xlsx';
 
 interface AccountRow {
@@ -71,13 +72,51 @@ const buildCsvFileFromSheet = async (file: File, sheetName: string): Promise<Fil
 const handleFileSelect = async (file: File) => {
   const extension = file.name.toLowerCase().split('.').pop();
   
+  if (['xml', 'zip'].includes(extension || '')) {
+    setSelectedFile(file);
+    try {
+      const { accounts } = await parseSaftFile(file);
+      const rows = accounts.map(a => [
+        a.account_id,
+        a.description || '',
+        a.opening_balance ?? '',
+        a.closing_balance ?? ''
+      ]);
+      const preview: FilePreview = {
+        headers: ['account_number', 'account_name', 'opening_balance', 'closing_balance'],
+        rows: rows.slice(0, 5),
+        allRows: rows,
+        hasHeaders: true,
+        totalRows: rows.length,
+        headerRowIndex: 0,
+        skippedRows: [],
+        originalRowNumbers: rows.map((_, i) => i + 1),
+      };
+      setFilePreview(preview);
+      const converted = accounts.map(a => ({
+        account_number: a.account_id,
+        account_name: a.description || '',
+        opening_balance: a.opening_balance ?? 0,
+        closing_balance: a.closing_balance ?? 0,
+      }));
+      setConvertedData(converted);
+      setStep('upload');
+      await uploadTrialBalance(converted, file);
+    } catch (err) {
+      console.error(err);
+      toast.error('Feil ved lesing av SAF-T fil');
+      setStep('select');
+    }
+    return;
+  }
+
   if (!['xlsx', 'xls', 'csv'].includes(extension || '')) {
-    toast.error('Kun Excel (.xlsx, .xls) og CSV-filer er støttet');
+    toast.error('Kun Excel (.xlsx, .xls), CSV eller SAF-T filer er støttet');
     return;
   }
 
   setSelectedFile(file);
-  
+
   try {
     let preview: FilePreview;
     if (extension === 'csv') {
