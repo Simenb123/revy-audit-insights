@@ -53,7 +53,7 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, compact = false }) =
       <div className="min-w-0 flex-1">
         <div
           className={cn(
-            "rounded-lg break-words",
+            "relative rounded-lg break-words before:content-[''] before:absolute before:-left-2 before:top-1/2 before:-translate-y-1/2 before:h-3 before:w-2 before:bg-inherit before:rounded-l-full",
             compact ? "text-xs px-2 py-1" : "text-sm px-3 py-1.5",
             isAssistant
               ? "bg-muted text-foreground"
