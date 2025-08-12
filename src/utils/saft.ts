@@ -128,18 +128,21 @@ export async function toXlsxBlob(data: SaftResult): Promise<Blob> {
     'journal_id','record_id','voucher_no','posting_date',
     'account_id','description','customer_id','supplier_id','document_no','reference_no','value_date','due_date','cid',
     'currency','amount_currency','exchange_rate','debit','credit',
-    'vat_code','vat_rate','vat_base','vat_debit','vat_credit'
+    'vat_code','vat_rate','vat_base','vat_debit','vat_credit','amount'
   ];
   const trxRows = (data.transactions || []).map(t => {
-    const debitRaw = t.debit ?? 0;
-    const creditRaw = t.credit ?? 0;
-    const vatDebitRaw = t.vat_debit ?? 0;
-    const vatCreditRaw = t.vat_credit ?? 0;
+    const debitRaw = t.debit;
+    const creditRaw = t.credit;
+    const vatDebitRaw = t.vat_debit;
+    const vatCreditRaw = t.vat_credit;
 
-    const debit = debitRaw ? Math.abs(debitRaw) : 0;
-    const credit = creditRaw ? -Math.abs(creditRaw) : 0;
-    const vat_debit = vatDebitRaw ? Math.abs(vatDebitRaw) : 0;
-    const vat_credit = vatCreditRaw ? -Math.abs(vatCreditRaw) : 0;
+    const debit = debitRaw !== undefined ? Math.abs(debitRaw) : undefined;
+    const credit = creditRaw !== undefined ? -Math.abs(creditRaw) : undefined;
+    const vat_debit = vatDebitRaw !== undefined ? Math.abs(vatDebitRaw) : undefined;
+    const vat_credit = vatCreditRaw !== undefined ? -Math.abs(vatCreditRaw) : undefined;
+
+    const amountSigned = (debit ?? 0) + (credit ?? 0);
+    const amount = (debit !== undefined || credit !== undefined) ? amountSigned : undefined;
 
     return {
       journal_id: t.journal_id ?? '',
@@ -156,15 +159,16 @@ export async function toXlsxBlob(data: SaftResult): Promise<Blob> {
       due_date: t.due_date ?? '',
       cid: t.cid ?? '',
       currency: t.currency ?? '',
-      amount_currency: t.amount_currency ?? '',
-      exchange_rate: t.exchange_rate ?? '',
+      amount_currency: t.amount_currency,
+      exchange_rate: t.exchange_rate,
       debit,
       credit,
       vat_code: t.vat_code ?? '',
       vat_rate: t.vat_rate ?? '',
-      vat_base: t.vat_base ?? '',
+      vat_base: t.vat_base,
       vat_debit,
-      vat_credit
+      vat_credit,
+      amount
     };
   });
 
@@ -200,6 +204,9 @@ export async function toXlsxBlob(data: SaftResult): Promise<Blob> {
     { metric: 'lines_total', value: trxRows.length },
     { metric: 'unique_voucher_no', value: new Set(trxRows.map(t => String(t.voucher_no || ''))).size },
     { metric: 'lines_with_tax_information', value: (data.transactions || []).filter(t => t.vat_info_source === 'line').length },
+    { metric: 'debit_rows_nonzero', value: trxRows.filter(r => (Number(r.debit) || 0) !== 0).length },
+    { metric: 'credit_rows_nonzero', value: trxRows.filter(r => (Number(r.credit) || 0) !== 0).length },
+    { metric: 'sum_signed_total', value: totalSigned },
     { metric: 'balance_ok', value: Math.abs(totalSigned) <= 0.01 && journalsOk ? 'true' : 'false' },
     { metric: 'balance_diff_total', value: totalSigned },
     { metric: 'mva_ok', value: mvaOk ? 'true' : 'false' },

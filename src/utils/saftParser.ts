@@ -158,6 +158,17 @@ function byLocal(obj: any, localName: string): any {
   return key ? (obj as any)[key] : undefined;
 }
 
+function parseAmountNode(value: any): number | undefined {
+  if (value === undefined || value === null) return undefined;
+  if (typeof value === 'number') return value;
+  if (typeof value === 'string') return parseDecimal(value);
+  if (typeof value === 'object') {
+    const inner = byLocal(value, 'Amount') ?? (value as any).Amount ?? (value as any).amount ?? (value as any)['#text'];
+    return parseAmountNode(inner);
+  }
+  return undefined;
+}
+
 async function readLargestXmlFromZip(buffer: ArrayBuffer): Promise<string> {
   const zip = await JSZip.loadAsync(buffer);
   const xmlNames = Object.keys(zip.files).filter((n) => n.toLowerCase().endsWith('.xml'));
@@ -243,18 +254,29 @@ export async function parseSaftFile(file: File | ArrayBuffer): Promise<SaftResul
   );
 
   // Accounts
-  const accounts: SaftAccount[] = arr(byLocal(byLocal(master, 'GeneralLedgerAccounts'), 'Account')).map((a: any) => ({
-    account_id: byLocal(a, 'AccountID') || byLocal(a, 'AccountNumber') || byLocal(a, 'Number'),
-    description: byLocal(a, 'AccountDescription') || byLocal(a, 'Description') || byLocal(a, 'Name'),
-    type: byLocal(a, 'AccountType') || byLocal(a, 'Type'),
-    opening_balance: parseDecimal(
-      byLocal(a, 'OpeningDebitBalance') || byLocal(a, 'OpeningCreditBalance') || byLocal(a, 'OpeningBalance')
-    ),
-    closing_balance: parseDecimal(
-      byLocal(a, 'ClosingDebitBalance') || byLocal(a, 'ClosingCreditBalance') || byLocal(a, 'ClosingBalance')
-    ),
-    vat_code: byLocal(a, 'VatCode') || byLocal(a, 'VATCode') || byLocal(a, 'TaxCode') || byLocal(a, 'StandardVatCode'),
-  }));
+  const accounts: SaftAccount[] = arr(byLocal(byLocal(master, 'GeneralLedgerAccounts'), 'Account')).map((a: any) => {
+    const openingDebit = parseAmountNode(byLocal(a, 'OpeningDebitBalance'));
+    const openingCredit = parseAmountNode(byLocal(a, 'OpeningCreditBalance'));
+    const closingDebit = parseAmountNode(byLocal(a, 'ClosingDebitBalance'));
+    const closingCredit = parseAmountNode(byLocal(a, 'ClosingCreditBalance'));
+
+    const opening_balance = (openingDebit !== undefined || openingCredit !== undefined)
+      ? (openingDebit || 0) - (openingCredit || 0)
+      : parseAmountNode(byLocal(a, 'OpeningBalance'));
+
+    const closing_balance = (closingDebit !== undefined || closingCredit !== undefined)
+      ? (closingDebit || 0) - (closingCredit || 0)
+      : parseAmountNode(byLocal(a, 'ClosingBalance'));
+
+    return {
+      account_id: byLocal(a, 'AccountID') || byLocal(a, 'AccountNumber') || byLocal(a, 'Number'),
+      description: byLocal(a, 'AccountDescription') || byLocal(a, 'Description') || byLocal(a, 'Name'),
+      type: byLocal(a, 'AccountType') || byLocal(a, 'Type'),
+      opening_balance,
+      closing_balance,
+      vat_code: byLocal(a, 'VatCode') || byLocal(a, 'VATCode') || byLocal(a, 'TaxCode') || byLocal(a, 'StandardVatCode'),
+    } as SaftAccount;
+  });
 
   // Customers
   const customersRaw =
@@ -354,23 +376,38 @@ export async function parseSaftFile(file: File | ArrayBuffer): Promise<SaftResul
       arr(byLocal(t, 'Line') || byLocal(t, 'TransactionLine') || byLocal(t, 'JournalLine')).forEach((l: any) => {
         const record_id = byLocal(l, 'RecordID') || byLocal(l, 'LineID') || byLocal(l, 'LineNumber');
         const dc = String(byLocal(l, 'DebitCredit') || '').toLowerCase();
-        const amt = parseDecimal(byLocal(l, 'Amount'));
-        const debit = parseDecimal(byLocal(l, 'DebitAmount')) ?? (dc.startsWith('d') ? amt : undefined);
-        const credit = parseDecimal(byLocal(l, 'CreditAmount')) ?? (dc.startsWith('c') ? amt : undefined);
+
+        // Amounts: support nested Amount-structure and fallback to Amount + DebitCredit
+        let debit = parseAmountNode(byLocal(l, 'DebitAmount'));
+        let credit = parseAmountNode(byLocal(l, 'CreditAmount'));
+        if (debit === undefined && credit === undefined) {
+          const amt = parseAmountNode(byLocal(l, 'Amount'));
+          if (amt !== undefined) {
+            if (dc.startsWith('d')) debit = Math.abs(amt);
+            if (dc.startsWith('c')) credit = Math.abs(amt);
+          }
+        }
 
         // Currency info (E)
         const currency = byLocal(l, 'CurrencyCode') || txnCurrencyCode;
         const amount_currency =
-          parseDecimal(byLocal(l, 'CurrencyAmount')) || parseDecimal(byLocal(l, 'AmountCurrency'));
+          parseAmountNode(byLocal(l, 'CurrencyAmount')) ?? parseAmountNode(byLocal(l, 'AmountCurrency'));
         const exchange_rate = parseDecimal(byLocal(l, 'ExchangeRate')) ?? txnExchangeRate;
 
         // VAT info (D)
         const taxInfo = byLocal(l, 'TaxInformation');
         let vat_code = byLocal(taxInfo, 'TaxCode') || byLocal(l, 'VatCode') || byLocal(l, 'VATCode') || byLocal(l, 'TaxCode');
         let vat_rate = byLocal(taxInfo, 'TaxPercentageDecimal') || byLocal(taxInfo, 'TaxPercentage') || byLocal(l, 'TaxPercentage');
-        const vat_base = parseDecimal(byLocal(taxInfo, 'TaxBase')) || parseDecimal(byLocal(l, 'TaxBase'));
-        const vat_debit = parseDecimal(byLocal(taxInfo, 'DebitTaxAmount')) || parseDecimal(byLocal(l, 'DebitTaxAmount'));
-        const vat_credit = parseDecimal(byLocal(taxInfo, 'CreditTaxAmount')) || parseDecimal(byLocal(l, 'CreditTaxAmount'));
+        const vat_base = parseAmountNode(byLocal(taxInfo, 'TaxBase')) || parseAmountNode(byLocal(l, 'TaxBase'));
+        let vat_debit = parseAmountNode(byLocal(taxInfo, 'DebitTaxAmount')) || parseAmountNode(byLocal(l, 'DebitTaxAmount'));
+        let vat_credit = parseAmountNode(byLocal(taxInfo, 'CreditTaxAmount')) || parseAmountNode(byLocal(l, 'CreditTaxAmount'));
+        if (vat_debit === undefined && vat_credit === undefined) {
+          const taxAmt = parseAmountNode(byLocal(taxInfo, 'TaxAmount')) || parseAmountNode(byLocal(l, 'TaxAmount'));
+          if (taxAmt !== undefined) {
+            if (dc.startsWith('d')) vat_debit = Math.abs(taxAmt);
+            if (dc.startsWith('c')) vat_credit = Math.abs(taxAmt);
+          }
+        }
         const vat_info_source: SaftTransaction['vat_info_source'] = taxInfo ? 'line' : vat_code ? 'fallback' : undefined;
 
         const document_no =
@@ -408,9 +445,15 @@ export async function parseSaftFile(file: File | ArrayBuffer): Promise<SaftResul
         const analyses = arr(byLocal(l, 'Analysis'));
         analyses.forEach((a: any) => {
           const adc = String(byLocal(a, 'DebitCredit') || '').toLowerCase();
-          const aAmt = parseDecimal(byLocal(a, 'Amount'));
-          const aDebit = parseDecimal(byLocal(a, 'DebitAmount')) ?? (adc.startsWith('d') ? aAmt : undefined);
-          const aCredit = parseDecimal(byLocal(a, 'CreditAmount')) ?? (adc.startsWith('c') ? aAmt : undefined);
+          let aDebit = parseAmountNode(byLocal(a, 'DebitAnalysisAmount')) ?? parseAmountNode(byLocal(a, 'DebitAmount'));
+          let aCredit = parseAmountNode(byLocal(a, 'CreditAnalysisAmount')) ?? parseAmountNode(byLocal(a, 'CreditAmount'));
+          if (aDebit === undefined && aCredit === undefined) {
+            const aAmt = parseAmountNode(byLocal(a, 'AnalysisAmount')) ?? parseAmountNode(byLocal(a, 'Amount'));
+            if (aAmt !== undefined) {
+              if (adc.startsWith('d')) aDebit = Math.abs(aAmt);
+              if (adc.startsWith('c')) aCredit = Math.abs(aAmt);
+            }
+          }
           analysis_lines.push({
             journal_id,
             record_id,
