@@ -14,6 +14,11 @@ import { Progress } from '@/components/ui/progress';
 import ColumnSelector, { ColumnConfig } from './ColumnSelector';
 import FilterPanel from './FilterPanel';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+
 
 interface TrialBalanceTableProps {
   clientId: string;
