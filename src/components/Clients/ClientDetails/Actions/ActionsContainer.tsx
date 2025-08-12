@@ -71,11 +71,21 @@ React.useEffect(() => {
 
   const handleCopyTemplates = async (templateIds: string[]) => {
     try {
-      await copyActionsMutation.mutateAsync({
+      const inserted = await copyActionsMutation.mutateAsync({
         clientId,
         templateIds,
         phase
       });
+      setActiveTab('actions');
+      if (Array.isArray(inserted) && inserted.length) {
+        const counts = inserted.reduce((acc: Record<string, number>, i: any) => {
+          acc[i.subject_area] = (acc[i.subject_area] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>);
+        const topArea = Object.entries(counts).sort((a,b) => b[1]-a[1])[0]?.[0];
+        if (topArea) setSelectedArea(topArea);
+      }
+      toast.success('Maler kopiert til klienten');
     } catch (error) {
       logger.error('Error copying templates:', error);
     }
@@ -285,6 +295,14 @@ React.useEffect(() => {
                   onCopyToClient={handleCopyTemplates}
                 />
               )}
+            </TabsContent>
+
+            <TabsContent value="recommendations" className="space-y-4">
+              <Card>
+                <CardContent className="p-6">
+                  <SmartActionRecommendations clientId={clientId} phase={phase} />
+                </CardContent>
+              </Card>
             </TabsContent>
           </Tabs>
         </CardContent>
