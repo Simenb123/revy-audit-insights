@@ -698,15 +698,25 @@ setLastUploadedVersion(finalVersion);
       )}
 
       {step === 'success' && (
-        <DataManagementPanel 
-          clientId={clientId}
-          lastUploadSummary={{
-            fileName: selectedFile?.name || '',
-            recordsImported: convertedData.length,
-            uploadDate: new Date().toLocaleDateString('nb-NO'),
-            dataType: "Saldobalanse"
-          }}
-        />
+        <>
+          <DataManagementPanel 
+            clientId={clientId}
+            lastUploadSummary={{
+              fileName: selectedFile?.name || '',
+              recordsImported: convertedData.length,
+              uploadDate: new Date().toLocaleDateString('nb-NO'),
+              dataType: "Saldobalanse"
+            }}
+          />
+          <div className="flex items-center justify-between rounded-md border bg-muted/40 px-3 py-2">
+            <div className="text-sm text-muted-foreground">
+              Valgfri kontroll: Avstem inngående {accountingYear} mot saldo {accountingYear - 1}
+            </div>
+            <Button size="sm" variant="secondary" onClick={() => setReconcileOpen(true)}>
+              Åpne avstemming
+            </Button>
+          </div>
+        </>
       )}
 
       {step === 'upload' && (
@@ -794,6 +804,14 @@ setLastUploadedVersion(finalVersion);
           </CardContent>
         </Card>
       )}
+
+      <ReconciliationDialog
+        clientId={clientId}
+        currentYear={accountingYear}
+        currentVersion={lastUploadedVersion}
+        open={reconcileOpen}
+        onOpenChange={setReconcileOpen}
+      />
     </div>
   );
 };
