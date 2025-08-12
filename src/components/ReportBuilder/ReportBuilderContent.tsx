@@ -8,7 +8,7 @@ import { SaveReportDialog } from './SaveReportDialog';
 import { LoadReportDialog } from './LoadReportDialog';
 import { ClientReportHeader } from './ClientReportHeader';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Save, FolderOpen, Database, LayoutTemplate } from 'lucide-react';
+import { Plus, Save, FolderOpen, Database, LayoutTemplate, History } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
@@ -19,6 +19,7 @@ import { ViewModeToggle } from './ViewModeToggle';
 import { FilterProvider } from '@/contexts/FilterContext';
 import { toast } from 'sonner';
 import { loadReportBuilderSettings, saveReportBuilderSettings } from '@/hooks/useReportBuilderSettings';
+import { useHistory } from '@/contexts/HistoryContext';
 interface ReportBuilderContentProps {
   clientId: string;
   hasData: boolean;
@@ -33,8 +34,9 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
   const [selectedVersion, setSelectedVersion] = useState<string>('');
   const [currentReport, setCurrentReport] = useState<ClientReport | null>(null);
   const [hasUnsaved, setHasUnsaved] = useState(false);
-  
+
   const { widgets, layouts, addWidget, removeWidget, updateLayout, clearWidgets, setWidgets, setLayouts, loadFromStorage } = useWidgetManager();
+  const { restore, hasHistory } = useHistory();
   const { reports, loading, saveReport, updateReport, deleteReport } = useClientReports(clientId);
   const savedSettings = loadReportBuilderSettings(clientId, selectedFiscalYear);
   // Fetch available trial balance versions
@@ -125,6 +127,15 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
     }
   };
 
+  const handleReopenLastSession = () => {
+    const restored = restore();
+    if (restored) {
+      toast.success('Forrige økt gjenåpnet');
+    } else {
+      toast.error('Ingen lagret økt');
+    }
+  };
+
   const handleApplyTemplate = (templateWidgets: any[], templateLayouts: any[]) => {
     clearWidgets();
     setWidgets(templateWidgets);
@@ -212,8 +223,8 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
                 Rapport maler
               </Button>
               
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 className="flex items-center gap-2"
                 onClick={() => setShowLoadDialog(true)}
                 disabled={!hasData || !selectedVersion}
@@ -221,6 +232,18 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
                 <FolderOpen className="h-4 w-4" />
                 Last rapport
               </Button>
+
+              {hasHistory && (
+                <Button
+                  variant="outline"
+                  className="flex items-center gap-2"
+                  onClick={handleReopenLastSession}
+                  disabled={!hasData || !selectedVersion}
+                >
+                  <History className="h-4 w-4" />
+                  Gjenåpne forrige økt
+                </Button>
+              )}
 
               {currentReport && hasUnsaved && (
                 <Button 
