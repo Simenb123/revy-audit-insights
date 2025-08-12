@@ -13,6 +13,17 @@ import NewActionDialog from './NewActionDialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction
+} from '@/components/ui/alert-dialog';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -207,18 +218,36 @@ const ClientActionsList = ({ actions, selectedArea, clientId, phase, onOpenTempl
             {selectedIds.length > 0 && (
               <div className="flex items-center gap-2">
                 <span className="text-sm text-muted-foreground">{selectedIds.length} valgt</span>
-                <Button size="sm" variant="secondary" onClick={() => bulkStatus.mutate({ clientId, ids: selectedIds, status: 'not_started' })} className="gap-1">
+                <Button size="sm" variant="secondary" disabled={bulkStatus.isPending || bulkDelete.isPending} onClick={() => bulkStatus.mutate({ clientId, ids: selectedIds, status: 'not_started' })} className="gap-1">
                   <Circle size={14} /> Ikke startet
                 </Button>
-                <Button size="sm" variant="secondary" onClick={() => bulkStatus.mutate({ clientId, ids: selectedIds, status: 'in_progress' })} className="gap-1">
+                <Button size="sm" variant="secondary" disabled={bulkStatus.isPending || bulkDelete.isPending} onClick={() => bulkStatus.mutate({ clientId, ids: selectedIds, status: 'in_progress' })} className="gap-1">
                   <Clock size={14} /> Pågår
                 </Button>
-                <Button size="sm" variant="secondary" onClick={() => bulkStatus.mutate({ clientId, ids: selectedIds, status: 'completed' })} className="gap-1">
+                <Button size="sm" variant="secondary" disabled={bulkStatus.isPending || bulkDelete.isPending} onClick={() => bulkStatus.mutate({ clientId, ids: selectedIds, status: 'completed' })} className="gap-1">
                   <CheckCircle size={14} /> Fullført
                 </Button>
-                <Button size="sm" variant="destructive" onClick={() => bulkDelete.mutate({ clientId, ids: selectedIds })} className="gap-1">
-                  <Trash2 size={14} /> Slett
-                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button size="sm" variant="destructive" disabled={bulkDelete.isPending || bulkStatus.isPending} className="gap-1">
+                      <Trash2 size={14} /> Slett
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Slette {selectedIds.length} handling(er)?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Dette kan ikke angres. Valgte handlinger blir permanent fjernet.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Avbryt</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => bulkDelete.mutate({ clientId, ids: selectedIds }, { onSuccess: () => setSelectedIds([]) })}>
+                        Bekreft sletting
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
             )}
           </div>
