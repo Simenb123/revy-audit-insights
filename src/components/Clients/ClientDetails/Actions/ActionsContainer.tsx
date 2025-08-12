@@ -199,7 +199,17 @@ React.useEffect(() => {
                   <Button
                     onClick={async () => {
                       try {
-                        await applyStandardMutation.mutateAsync({ clientId, phase });
+                        const inserted = await applyStandardMutation.mutateAsync({ clientId, phase });
+                        // Velg fanen "Mine handlinger" og sett fagområde med flest nye handlinger
+                        setActiveTab('actions');
+                        if (Array.isArray(inserted) && inserted.length) {
+                          const counts = inserted.reduce((acc: Record<string, number>, i: any) => {
+                            acc[i.subject_area] = (acc[i.subject_area] || 0) + 1;
+                            return acc;
+                          }, {});
+                          const topArea = Object.entries(counts).sort((a,b) => b[1]-a[1])[0]?.[0];
+                          if (topArea) setSelectedArea(topArea);
+                        }
                         toast.success('Standardpakke lagt til. Viser fagområde med nye handlinger.');
                       } catch (e) {
                         logger.error('Failed to apply standard package', e);
