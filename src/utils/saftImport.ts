@@ -134,31 +134,43 @@ export async function createZipFromParsed(parsed: SaftResult): Promise<Blob> {
     'currency','amount_currency','exchange_rate','debit','credit',
     'vat_code','vat_rate','vat_base','vat_debit','vat_credit'
   ];
-  const trxRows = (parsed.transactions || []).map(t => ({
-    journal_id: t.journal_id ?? '',
-    record_id: t.record_id ?? '',
-    voucher_no: t.voucher_no ?? '',
-    posting_date: t.posting_date ?? '',
-    account_id: t.account_id ?? '',
-    description: t.description ?? '',
-    customer_id: t.customer_id ?? '',
-    supplier_id: t.supplier_id ?? '',
-    document_no: t.document_no ?? '',
-    reference_no: t.reference_no ?? '',
-    value_date: t.value_date ?? '',
-    due_date: t.due_date ?? '',
-    cid: t.cid ?? '',
-    currency: t.currency ?? '',
-    amount_currency: t.amount_currency ?? '',
-    exchange_rate: t.exchange_rate ?? '',
-    debit: t.debit ?? '',
-    credit: t.credit ?? '',
-    vat_code: t.vat_code ?? '',
-    vat_rate: t.vat_rate ?? '',
-    vat_base: t.vat_base ?? '',
-    vat_debit: t.vat_debit ?? '',
-    vat_credit: t.vat_credit ?? ''
-  }));
+  const trxRows = (parsed.transactions || []).map(t => {
+    const debitRaw = t.debit ?? 0;
+    const creditRaw = t.credit ?? 0;
+    const vatDebitRaw = t.vat_debit ?? 0;
+    const vatCreditRaw = t.vat_credit ?? 0;
+
+    const debit = debitRaw ? Math.abs(debitRaw) : 0;
+    const credit = creditRaw ? -Math.abs(creditRaw) : 0;
+    const vat_debit = vatDebitRaw ? Math.abs(vatDebitRaw) : 0;
+    const vat_credit = vatCreditRaw ? -Math.abs(vatCreditRaw) : 0;
+
+    return {
+      journal_id: t.journal_id ?? '',
+      record_id: t.record_id ?? '',
+      voucher_no: t.voucher_no ?? '',
+      posting_date: t.posting_date ?? '',
+      account_id: t.account_id ?? '',
+      description: t.description ?? '',
+      customer_id: t.customer_id ?? '',
+      supplier_id: t.supplier_id ?? '',
+      document_no: t.document_no ?? '',
+      reference_no: t.reference_no ?? '',
+      value_date: t.value_date ?? '',
+      due_date: t.due_date ?? '',
+      cid: t.cid ?? '',
+      currency: t.currency ?? '',
+      amount_currency: t.amount_currency ?? '',
+      exchange_rate: t.exchange_rate ?? '',
+      debit,
+      credit,
+      vat_code: t.vat_code ?? '',
+      vat_rate: t.vat_rate ?? '',
+      vat_base: t.vat_base ?? '',
+      vat_debit,
+      vat_credit
+    };
+  });
 
   const analysisLineCols = ['journal_id','record_id','analysis_type','analysis_id','debit_amt','credit_amt'];
   const analysisLineRows = (parsed.analysis_lines || []).map(a => ({
@@ -170,40 +182,34 @@ export async function createZipFromParsed(parsed: SaftResult): Promise<Blob> {
     credit_amt: a.credit_amt ?? ''
   }));
 
-  // Data quality report
-  const sum = (ns: (number | undefined)[]) => ns.reduce((acc, v) => acc + (v ?? 0), 0);
-  const totalDebit = sum((parsed.transactions || []).map(t => t.debit));
-  const totalCredit = sum((parsed.transactions || []).map(t => t.credit));
-  const balanceDiff = round2((totalDebit || 0) - (totalCredit || 0));
-  const balanceOk = Math.abs(balanceDiff) <= 0.01;
+  // Data quality report (use signed amounts: debit positive, credit negative)
+  const sum = (ns: number[]) => ns.reduce((acc, v) => acc + (v ?? 0), 0);
+  const totalSigned = round2(sum(trxRows.map(r => (Number(r.debit) || 0) + (Number(r.credit) || 0))));
+  const balanceOk = Math.abs(totalSigned) <= 0.01;
 
-  const byJournal = new Map<string, { debit: number; credit: number }>();
-  (parsed.transactions || []).forEach(t => {
-    const key = t.journal_id || '';
-    const rec = byJournal.get(key) || { debit: 0, credit: 0 };
-    rec.debit += t.debit ?? 0;
-    rec.credit += t.credit ?? 0;
-    byJournal.set(key, rec);
+  const byJournal = new Map<string, number>();
+  trxRows.forEach(r => {
+    const key = String(r.journal_id || '');
+    const current = byJournal.get(key) || 0;
+    byJournal.set(key, current + (Number(r.debit) || 0) + (Number(r.credit) || 0));
   });
-  const journalsOk = Array.from(byJournal.values()).every(v => Math.abs(round2(v.debit - v.credit)) <= 0.01);
+  const journalsOk = Array.from(byJournal.values()).every(v => Math.abs(round2(v)) <= 0.01);
 
-  const byVat = new Map<string, { vat_debit: number; vat_credit: number }>();
-  (parsed.transactions || []).forEach(t => {
-    const key = t.vat_code || '';
-    const rec = byVat.get(key) || { vat_debit: 0, vat_credit: 0 };
-    rec.vat_debit += t.vat_debit ?? 0;
-    rec.vat_credit += t.vat_credit ?? 0;
-    byVat.set(key, rec);
+  const byVat = new Map<string, number>();
+  trxRows.forEach(r => {
+    const key = String(r.vat_code || '');
+    const current = byVat.get(key) || 0;
+    byVat.set(key, current + (Number(r.vat_debit) || 0) + (Number(r.vat_credit) || 0));
   });
-  const mvaOk = Array.from(byVat.values()).every(v => Math.abs(round2(v.vat_debit - v.vat_credit)) <= 0.01);
+  const mvaOk = Array.from(byVat.values()).every(v => Math.abs(round2(v)) <= 0.01);
 
   const qualityCols = ['metric','value'];
   const qualityRows = [
-    { metric: 'lines_total', value: (parsed.transactions || []).length },
-    { metric: 'unique_voucher_no', value: new Set((parsed.transactions || []).map(t => t.voucher_no || '')).size },
+    { metric: 'lines_total', value: trxRows.length },
+    { metric: 'unique_voucher_no', value: new Set(trxRows.map(t => String(t.voucher_no || ''))).size },
     { metric: 'lines_with_tax_information', value: (parsed.transactions || []).filter(t => t.vat_info_source === 'line').length },
     { metric: 'balance_ok', value: balanceOk && journalsOk ? 'true' : 'false' },
-    { metric: 'balance_diff_total', value: balanceDiff },
+    { metric: 'balance_diff_total', value: totalSigned },
     { metric: 'mva_ok', value: mvaOk ? 'true' : 'false' },
   ];
 
@@ -299,6 +305,18 @@ export async function uploadZipToStorage(clientId: string, zip: Blob, fileName: 
     .upload(path, zip, {
       upsert: true,
       contentType: 'application/zip'
+    });
+  if (error) throw error;
+  return path;
+}
+
+export async function uploadXlsxToStorage(clientId: string, xlsx: Blob, fileName: string): Promise<string> {
+  const path = `${clientId}/${fileName}`;
+  const { error } = await supabase.storage
+    .from('saft-imports')
+    .upload(path, xlsx, {
+      upsert: true,
+      contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     });
   if (error) throw error;
   return path;

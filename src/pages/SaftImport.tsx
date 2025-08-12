@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { parseSaftFile, type SaftResult } from '@/utils/saftParser';
 import SaftWorker from '@/workers/saft.worker?worker';
-import { createZipFromParsed, persistParsed, uploadZipToStorage } from '@/utils/saftImport';
+import { createZipFromParsed, persistParsed, uploadZipToStorage, uploadXlsxToStorage } from '@/utils/saftImport';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { toXlsxBlob } from '@/utils/saft';
 
 interface SaftImportProps {
   clientId: string;
@@ -37,6 +38,20 @@ const SaftImport: React.FC<SaftImportProps> = ({ clientId }) => {
 
     try {
       await persistParsed(clientId, parsed);
+
+      // Lag én samlet XLSX med alle faner og last både ned og opp til lagring
+      const xlsx = await toXlsxBlob(parsed);
+      await uploadXlsxToStorage(clientId, xlsx, `${file.name.replace(/\.[^.]+$/, '')}.xlsx`);
+      const url = URL.createObjectURL(xlsx);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${file.name.replace(/\.[^.]+$/, '')}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 0);
+
+      // Behold også ZIP for full eksport (CSV + XLSX)
       await uploadZipToStorage(clientId, zip, `${file.name.replace(/\.[^.]+$/, '')}.zip`);
       setStatus('Ferdig');
       toast.success('SAF-T fil importert');
