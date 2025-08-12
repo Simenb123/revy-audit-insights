@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { useWidgetManager } from '@/contexts/WidgetManagerContext';
+import { useWidgetManager, Breakpoint } from '@/contexts/WidgetManagerContext';
 import { GRID_ROW_HEIGHT, GRID_DEFAULT_MAX_ROWS } from '@/components/ReportBuilder/gridConfig';
 
 /**
@@ -14,6 +14,7 @@ export function useAutoGridItemHeight(
     minRows?: number;
     maxRows?: number; // optional clamp to prevent runaway sizes
     enabled?: boolean;
+    breakpoint?: Breakpoint;
   }
 ) {
   const { layouts, updateLayout } = useWidgetManager();
@@ -21,7 +22,7 @@ export function useAutoGridItemHeight(
   const debounceIdRef = useRef<number | null>(null);
   const shrinkTimerRef = useRef<number | null>(null);
   const pendingShrinkRowsRef = useRef<number | null>(null);
-  const opts = { minRows: 1, maxRows: GRID_DEFAULT_MAX_ROWS, enabled: true, ...options };
+  const opts = { minRows: 1, maxRows: GRID_DEFAULT_MAX_ROWS, enabled: true, breakpoint: 'lg' as Breakpoint, ...options };
 
   useEffect(() => {
     if (!opts.enabled) return;
@@ -47,14 +48,14 @@ export function useAutoGridItemHeight(
 
     const commitRows = (rows: number) => {
       if (lastRowsRef.current === rows) return;
-      const current = layouts.find(l => l.i === widgetId);
-      if (current && current.h === rows) {
+      const currentLayout = layouts[opts.breakpoint].find(l => l.i === widgetId);
+      if (currentLayout && currentLayout.h === rows) {
         lastRowsRef.current = rows;
         return;
       }
-      const next = layouts.map(l => (l.i === widgetId ? { ...l, h: rows } : l));
+      const next = layouts[opts.breakpoint].map(l => (l.i === widgetId ? { ...l, h: rows } : l));
       lastRowsRef.current = rows;
-      updateLayout(next);
+      updateLayout(opts.breakpoint, next);
     };
 
     const handleMeasure = () => {
@@ -139,5 +140,5 @@ export function useAutoGridItemHeight(
     };
     // Important: depend on layouts length but not the entire object to avoid loops
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [widgetId, containerRef, layouts.length, opts.enabled, opts.minRows, opts.maxRows]);
+  }, [widgetId, containerRef, layouts[opts.breakpoint].length, opts.enabled, opts.minRows, opts.maxRows, opts.breakpoint]);
 }

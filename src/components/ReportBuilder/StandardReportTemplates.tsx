@@ -2,7 +2,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart3, Calculator, TrendingUp, Building, X } from 'lucide-react';
-import { Widget, WidgetLayout } from '@/contexts/WidgetManagerContext';
+import { Widget, WidgetLayout, LayoutsByBreakpoint } from '@/contexts/WidgetManagerContext';
 import { useReportTemplates, ReportTemplate } from '@/hooks/useReportTemplates';
 
 const iconMap: Record<string, React.ComponentType<any>> = {
@@ -14,7 +14,7 @@ const iconMap: Record<string, React.ComponentType<any>> = {
 
 interface StandardReportTemplatesProps {
   clientId: string;
-  onApplyTemplate: (widgets: Widget[], layouts: WidgetLayout[]) => void;
+  onApplyTemplate: (widgets: Widget[], layouts: LayoutsByBreakpoint) => void;
   onClose: () => void;
 }
 
@@ -37,7 +37,14 @@ export function StandardReportTemplates({ clientId, onApplyTemplate, onClose }: 
       widgetId: widgets[index].id,
     }));
 
-    onApplyTemplate(widgets, layouts);
+    const layoutsByBreakpoint: LayoutsByBreakpoint = {
+      lg: layouts,
+      md: layouts,
+      sm: layouts,
+      xs: layouts,
+    };
+
+    onApplyTemplate(widgets, layoutsByBreakpoint);
     onClose();
   };
 

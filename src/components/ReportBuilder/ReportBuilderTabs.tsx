@@ -2,6 +2,7 @@ import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BarChart3, Settings2, Grid3X3 } from 'lucide-react';
 import { DashboardCanvas } from './DashboardCanvas';
+import type { Breakpoint } from '@/contexts/WidgetManagerContext';
 import { AccountClassificationView } from './AccountClassification/AccountClassificationView';
 
 interface ReportBuilderTabsProps {
@@ -9,13 +10,15 @@ interface ReportBuilderTabsProps {
   selectedVersion: string;
   selectedFiscalYear: number;
   hasData: boolean;
+  device: Breakpoint;
 }
 
-export function ReportBuilderTabs({ 
-  clientId, 
-  selectedVersion, 
-  selectedFiscalYear, 
-  hasData 
+export function ReportBuilderTabs({
+  clientId,
+  selectedVersion,
+  selectedFiscalYear,
+  hasData,
+  device,
 }: ReportBuilderTabsProps) {
   if (!hasData || !selectedVersion) {
     return null;
@@ -36,7 +39,7 @@ export function ReportBuilderTabs({
       
       <TabsContent value="dashboard" className="space-y-4">
         <div className="min-h-[600px]">
-          <DashboardCanvas clientId={clientId} selectedVersion={selectedVersion} />
+          <DashboardCanvas clientId={clientId} selectedVersion={selectedVersion} device={device} />
         </div>
       </TabsContent>
       

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useWidgetManager } from '@/contexts/WidgetManagerContext';
+import { useWidgetManager, LayoutsByBreakpoint, Breakpoint } from '@/contexts/WidgetManagerContext';
 import { DashboardCanvas } from './DashboardCanvas';
 import { WidgetLibrary } from './WidgetLibrary';
 import { StandardReportTemplates } from './StandardReportTemplates';
@@ -8,7 +8,7 @@ import { SaveReportDialog } from './SaveReportDialog';
 import { LoadReportDialog } from './LoadReportDialog';
 import { ClientReportHeader } from './ClientReportHeader';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Save, FolderOpen, Database, LayoutTemplate } from 'lucide-react';
+import { Plus, Save, FolderOpen, Database, LayoutTemplate, Monitor, Tablet, Smartphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
@@ -32,6 +32,7 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
   const [showLoadDialog, setShowLoadDialog] = useState(false);
   const [selectedVersion, setSelectedVersion] = useState<string>('');
   const [currentReport, setCurrentReport] = useState<ClientReport | null>(null);
+  const [device, setDevice] = useState<Breakpoint>('lg');
   const [hasUnsaved, setHasUnsaved] = useState(false);
   
   const { widgets, layouts, addWidget, removeWidget, updateLayout, clearWidgets, setWidgets, setLayouts, loadFromStorage } = useWidgetManager();
@@ -125,7 +126,7 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
     }
   };
 
-  const handleApplyTemplate = (templateWidgets: any[], templateLayouts: any[]) => {
+  const handleApplyTemplate = (templateWidgets: any[], templateLayouts: LayoutsByBreakpoint) => {
     clearWidgets();
     setWidgets(templateWidgets);
     setLayouts(templateLayouts);
@@ -188,10 +189,36 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
             )}
             
             <div className="flex flex-wrap gap-2">
-              <ViewModeToggle 
+              <div className="flex items-center gap-1">
+                <Button
+                  variant={device === 'lg' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setDevice('lg')}
+                  className="p-2"
+                >
+                  <Monitor className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={device === 'md' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setDevice('md')}
+                  className="p-2"
+                >
+                  <Tablet className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={device === 'sm' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setDevice('sm')}
+                  className="p-2"
+                >
+                  <Smartphone className="h-4 w-4" />
+                </Button>
+              </div>
+              <ViewModeToggle
                 disabled={!hasData || widgets.length === 0 || !selectedVersion}
               />
-              
+
               <Button
                 variant="outline"
                 onClick={() => setShowWidgetLibrary(!showWidgetLibrary)}
@@ -302,11 +329,12 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
 
         {/* Dashboard Canvas */}
         {hasData && selectedVersion && (
-          <ReportBuilderTabs 
-            clientId={clientId} 
+          <ReportBuilderTabs
+            clientId={clientId}
             selectedVersion={selectedVersion}
             selectedFiscalYear={selectedFiscalYear}
             hasData={hasData}
+            device={device}
           />
         )}
       </div>

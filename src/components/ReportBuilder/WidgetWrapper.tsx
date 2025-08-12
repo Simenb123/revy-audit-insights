@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { Widget, useWidgetManager } from '@/contexts/WidgetManagerContext';
+import { Widget, useWidgetManager, Breakpoint } from '@/contexts/WidgetManagerContext';
 import { WidgetConfiguration } from './WidgetConfiguration';
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
@@ -8,16 +8,17 @@ import { useAutoGridItemHeight } from '@/hooks/useAutoGridItemHeight';
 
 interface WidgetWrapperProps {
   widget: Widget;
+  breakpoint: Breakpoint;
   children: React.ReactNode;
 }
 
-export function WidgetWrapper({ widget, children }: WidgetWrapperProps) {
+export function WidgetWrapper({ widget, breakpoint, children }: WidgetWrapperProps) {
   const { updateWidget, removeWidget } = useWidgetManager();
   const { isViewMode } = useViewMode();
   const containerRef = useRef<HTMLDivElement | null>(null);
 
 // Auto-adjust height to content
-  useAutoGridItemHeight(widget.id, containerRef, { minRows: 2, enabled: true });
+  useAutoGridItemHeight(widget.id, containerRef, { minRows: 2, enabled: true, breakpoint });
 
   const handleUpdateWidget = (updates: Partial<Widget>) => {
     updateWidget(widget.id, updates);

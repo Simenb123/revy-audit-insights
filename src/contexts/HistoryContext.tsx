@@ -1,9 +1,9 @@
 import React, { createContext, useContext, useEffect, useRef, useState, ReactNode } from 'react';
-import { WidgetManagerContext, Widget, WidgetLayout } from '@/contexts/WidgetManagerContext';
+import { WidgetManagerContext, Widget, WidgetLayout, LayoutsByBreakpoint } from '@/contexts/WidgetManagerContext';
 
 interface HistoryState {
   widgets: Widget[];
-  layouts: WidgetLayout[];
+  layouts: LayoutsByBreakpoint;
 }
 
 interface HistoryContextType {

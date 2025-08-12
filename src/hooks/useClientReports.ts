@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import type { Widget, WidgetLayout } from '@/contexts/WidgetManagerContext';
+import type { Widget, WidgetLayout, LayoutsByBreakpoint } from '@/contexts/WidgetManagerContext';
 import type { Json } from '@/integrations/supabase/types';
 
 export interface ClientReport {
@@ -9,7 +9,7 @@ export interface ClientReport {
   report_name: string;
   report_description?: string;
   widgets_config: Widget[];
-  layout_config: WidgetLayout[];
+  layout_config: LayoutsByBreakpoint;
   created_by: string;
   created_at: string;
   updated_at: string;
@@ -36,7 +36,7 @@ export function useClientReports(clientId: string) {
     ...dbReport,
     report_description: dbReport.report_description || undefined,
     widgets_config: (dbReport.widgets_config as unknown) as Widget[],
-    layout_config: (dbReport.layout_config as unknown) as WidgetLayout[]
+    layout_config: (dbReport.layout_config as unknown) as LayoutsByBreakpoint
   });
 
   const fetchReports = async () => {
@@ -65,7 +65,7 @@ export function useClientReports(clientId: string) {
   const saveReport = async (
     reportName: string,
     widgets: Widget[],
-    layouts: WidgetLayout[],
+    layouts: LayoutsByBreakpoint,
     reportDescription?: string
   ) => {
     setLoading(true);
@@ -102,7 +102,7 @@ export function useClientReports(clientId: string) {
     reportId: string,
     reportName: string,
     widgets: Widget[],
-    layouts: WidgetLayout[],
+    layouts: LayoutsByBreakpoint,
     reportDescription?: string
   ) => {
     setLoading(true);

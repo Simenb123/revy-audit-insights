@@ -11,6 +11,10 @@ export interface WidgetLayout {
   dataSourceId?: string;
 }
 
+export type Breakpoint = 'lg' | 'md' | 'sm' | 'xs';
+
+export type LayoutsByBreakpoint = Record<Breakpoint, WidgetLayout[]>;
+
 export interface Widget {
   id: string;
   type:
@@ -33,14 +37,14 @@ export interface Widget {
 
 interface WidgetManagerContextType {
   widgets: Widget[];
-  layouts: WidgetLayout[];
+  layouts: LayoutsByBreakpoint;
   addWidget: (widget: Widget, layout: WidgetLayout) => void;
   removeWidget: (widgetId: string) => void;
-  updateLayout: (layouts: WidgetLayout[]) => void;
+  updateLayout: (breakpoint: Breakpoint, layouts: WidgetLayout[]) => void;
   updateWidget: (widgetId: string, updates: Partial<Widget>) => void;
   clearWidgets: () => void;
   setWidgets: (widgets: Widget[]) => void;
-  setLayouts: (layouts: WidgetLayout[]) => void;
+  setLayouts: (layouts: LayoutsByBreakpoint) => void;
   loadFromStorage: () => boolean;
 }
 
@@ -48,21 +52,36 @@ export const WidgetManagerContext = createContext<WidgetManagerContextType | und
 
 export function WidgetManagerProvider({ children }: { children: React.ReactNode }) {
   const [widgets, setWidgets] = useState<Widget[]>([]);
-  const [layouts, setLayouts] = useState<WidgetLayout[]>([]);
+  const [layouts, setLayouts] = useState<LayoutsByBreakpoint>({
+    lg: [],
+    md: [],
+    sm: [],
+    xs: [],
+  });
   const { load, save, clear } = useWidgetPersistence();
 
   const addWidget = useCallback((widget: Widget, layout: WidgetLayout) => {
     setWidgets(prev => [...prev, widget]);
-    setLayouts(prev => [...prev, layout]);
+    setLayouts(prev => ({
+      lg: [...prev.lg, layout],
+      md: [...prev.md, layout],
+      sm: [...prev.sm, layout],
+      xs: [...prev.xs, layout],
+    }));
   }, []);
 
   const removeWidget = useCallback((widgetId: string) => {
     setWidgets(prev => prev.filter(w => w.id !== widgetId));
-    setLayouts(prev => prev.filter(l => l.widgetId !== widgetId));
+    setLayouts(prev => ({
+      lg: prev.lg.filter(l => l.widgetId !== widgetId),
+      md: prev.md.filter(l => l.widgetId !== widgetId),
+      sm: prev.sm.filter(l => l.widgetId !== widgetId),
+      xs: prev.xs.filter(l => l.widgetId !== widgetId),
+    }));
   }, []);
 
-  const updateLayout = useCallback((newLayouts: WidgetLayout[]) => {
-    setLayouts(newLayouts);
+  const updateLayout = useCallback((breakpoint: Breakpoint, newLayouts: WidgetLayout[]) => {
+    setLayouts(prev => ({ ...prev, [breakpoint]: newLayouts }));
   }, []);
 
   const updateWidget = useCallback((widgetId: string, updates: Partial<Widget>) => {
@@ -71,7 +90,7 @@ export function WidgetManagerProvider({ children }: { children: React.ReactNode 
 
   const clearWidgets = useCallback(() => {
     setWidgets([]);
-    setLayouts([]);
+    setLayouts({ lg: [], md: [], sm: [], xs: [] });
     clear();
   }, [clear]);
 
@@ -79,7 +98,7 @@ export function WidgetManagerProvider({ children }: { children: React.ReactNode 
     const state = load();
     if (state) {
       setWidgets(state.widgets);
-      setLayouts(state.layouts);
+      setLayouts(state.layouts as LayoutsByBreakpoint);
       return true;
     }
     return false;

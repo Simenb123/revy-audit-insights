@@ -1,20 +1,20 @@
 import { useCallback } from 'react';
-import type { Widget, WidgetLayout } from '@/contexts/WidgetManagerContext';
+import type { Widget, WidgetLayout, LayoutsByBreakpoint } from '@/contexts/WidgetManagerContext';
 
 const STORAGE_KEY = 'widget-manager-state';
 
 export function useWidgetPersistence() {
-  const load = useCallback((): { widgets: Widget[]; layouts: WidgetLayout[] } | null => {
+  const load = useCallback((): { widgets: Widget[]; layouts: LayoutsByBreakpoint } | null => {
     try {
       const raw = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null;
       if (!raw) return null;
-      return JSON.parse(raw) as { widgets: Widget[]; layouts: WidgetLayout[] };
+      return JSON.parse(raw) as { widgets: Widget[]; layouts: LayoutsByBreakpoint };
     } catch {
       return null;
     }
   }, []);
 
-  const save = useCallback((widgets: Widget[], layouts: WidgetLayout[]) => {
+  const save = useCallback((widgets: Widget[], layouts: LayoutsByBreakpoint) => {
     try {
       if (typeof window !== 'undefined') {
         localStorage.setItem(STORAGE_KEY, JSON.stringify({ widgets, layouts }));
