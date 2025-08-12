@@ -97,7 +97,8 @@ const ClientActionsList = ({ actions, selectedArea }: ClientActionsListProps) =>
               {filteredActions.map((action) => (
                 <div
                   key={action.id}
-                  className="border rounded-lg p-4 hover:shadow-sm transition-shadow"
+                  className="border rounded-lg p-4 hover:shadow-sm transition-shadow cursor-pointer"
+                  onClick={() => handleEdit(action)}
                 >
                   <div className="flex justify-between items-start gap-4">
                     <div className="flex-1 min-w-0">
@@ -152,7 +153,9 @@ const ClientActionsList = ({ actions, selectedArea }: ClientActionsListProps) =>
                       )}
                     </div>
                     
-                    <ActionQuickActions action={action} onEdit={() => handleEdit(action)} />
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <ActionQuickActions action={action} onEdit={() => handleEdit(action)} />
+                    </div>
                   </div>
                 </div>
               ))}

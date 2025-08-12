@@ -28,6 +28,7 @@ const ActionDetailDrawer: React.FC<ActionDetailDrawerProps> = ({ open, onOpenCha
   const [workNotes, setWorkNotes] = useState('');
   const [wpJson, setWpJson] = useState<string>('{}');
   const [jsonError, setJsonError] = useState<string | null>(null);
+  const [showJson, setShowJson] = useState(false);
 
   const { data: templates = [] } = useWorkingPaperTemplates(
     action?.subject_area as any,
@@ -166,13 +167,20 @@ const ActionDetailDrawer: React.FC<ActionDetailDrawerProps> = ({ open, onOpenCha
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <Label htmlFor="wp">Arbeidsnotat-data (JSON)</Label>
-                      {jsonError ? (
-                        <span className="flex items-center gap-1 text-destructive text-xs"><AlertTriangle className="h-3 w-3" /> {jsonError}</span>
-                      ) : (
-                        <span className="flex items-center gap-1 text-muted-foreground text-xs"><CheckCircle2 className="h-3 w-3" /> Gyldig</span>
-                      )}
+                      <div className="flex items-center gap-2">
+                        {jsonError ? (
+                          <span className="flex items-center gap-1 text-destructive text-xs"><AlertTriangle className="h-3 w-3" /> {jsonError}</span>
+                        ) : (
+                          <span className="flex items-center gap-1 text-muted-foreground text-xs"><CheckCircle2 className="h-3 w-3" /> Gyldig</span>
+                        )}
+                        <Button variant="outline" size="sm" onClick={() => setShowJson((v) => !v)}>
+                          {showJson ? 'Skjul JSON' : 'Vis JSON'}
+                        </Button>
+                      </div>
                     </div>
-                    <Textarea id="wp" value={wpJson} onChange={(e) => setWpJson(e.target.value)} rows={16} className="font-mono text-xs" />
+                    {showJson && (
+                      <Textarea id="wp" value={wpJson} onChange={(e) => setWpJson(e.target.value)} rows={16} className="font-mono text-xs" />
+                    )}
                   </div>
 
                   <Separator />
