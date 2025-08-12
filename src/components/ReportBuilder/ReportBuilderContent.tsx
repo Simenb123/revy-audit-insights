@@ -8,7 +8,7 @@ import { SaveReportDialog } from './SaveReportDialog';
 import { LoadReportDialog } from './LoadReportDialog';
 import { ClientReportHeader } from './ClientReportHeader';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Save, FolderOpen, Database, LayoutTemplate } from 'lucide-react';
+import { Plus, Save, FolderOpen, Database, LayoutTemplate, FileDown, FileSpreadsheet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
@@ -19,6 +19,7 @@ import { ViewModeToggle } from './ViewModeToggle';
 import { FilterProvider } from '@/contexts/FilterContext';
 import { toast } from 'sonner';
 import { loadReportBuilderSettings, saveReportBuilderSettings } from '@/hooks/useReportBuilderSettings';
+import { exportReportToPDF, exportReportToExcel } from '@/utils/exportReport';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import type { ThemeConfig } from '@/styles/theme';
 interface ReportBuilderContentProps {
@@ -275,14 +276,34 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
                 </Button>
               )}
 
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 className="flex items-center gap-2"
                 onClick={() => setShowSaveDialog(true)}
                 disabled={!hasData || widgets.length === 0 || !selectedVersion}
               >
                 <Save className="h-4 w-4" />
                 {currentReport ? 'Lagre som ny' : 'Lagre rapport'}
+              </Button>
+
+              <Button
+                variant="outline"
+                className="flex items-center gap-2"
+                onClick={() => exportReportToPDF(widgets, layouts)}
+                disabled={!hasData || widgets.length === 0 || !selectedVersion}
+              >
+                <FileDown className="h-4 w-4" />
+                Eksporter til PDF
+              </Button>
+
+              <Button
+                variant="outline"
+                className="flex items-center gap-2"
+                onClick={() => exportReportToExcel(widgets, layouts)}
+                disabled={!hasData || widgets.length === 0 || !selectedVersion}
+              >
+                <FileSpreadsheet className="h-4 w-4" />
+                Eksporter til Excel
               </Button>
 
               {currentReport && hasUnsaved && (
