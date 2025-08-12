@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { useClientDetails } from '@/hooks/useClientDetails';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
 import StickyClientLayout from '@/components/Layout/StickyClientLayout';
@@ -7,6 +7,7 @@ import ClientNavigation from '@/components/Clients/ClientDetails/ClientNavigatio
 import GeneralLedgerUploader from '@/components/Accounting/GeneralLedgerUploader';
 import DataReimportUtil from '@/components/Accounting/DataReimportUtil';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from "@/components/ui/button";
 
 const GeneralLedgerUpload = () => {
   const { clientId } = useParams<{ clientId: string }>();
@@ -55,6 +56,11 @@ const GeneralLedgerUpload = () => {
         
         <div className="flex-1 overflow-auto">
           <div className="space-y-6 p-6">
+            <div className="flex justify-end">
+              <Button variant="secondary" asChild>
+                <Link to={`/clients/${client.id}/saft`}>Importer SAF-T</Link>
+              </Button>
+            </div>
             <DataReimportUtil 
               clientId={client.id}
               clientName={client.company_name || 'Ukjent klient'}

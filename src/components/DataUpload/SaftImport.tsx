@@ -9,16 +9,16 @@ import { parseSaftFile, toCsvFiles, toXlsxBlob } from '@/utils/saft';
 import { createZipFromParsed, persistParsed, uploadZipToStorage } from '@/utils/saftImport';
 import SaftWorker from '@/workers/saft.worker?worker';
 import { useParams } from 'react-router-dom';
-import { useClientDetails } from '@/hooks/useClientDetails';
+import { useClientLookup } from '@/hooks/useClientLookup';
 
 const SaftImport = () => {
   const [file, setFile] = useState<File | null>(null);
   const [generateXlsx, setGenerateXlsx] = useState(false);
   const [uploadToSupabase, setUploadToSupabase] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const { orgNumber } = useParams<{ orgNumber: string }>();
-  const { data: client } = useClientDetails(orgNumber || '');
-  const clientId = client?.id || '';
+  const { clientId: clientIdParam, orgNumber } = useParams<{ clientId?: string; orgNumber?: string }>();
+  const { data: lookup } = useClientLookup(orgNumber);
+  const clientId = clientIdParam || lookup?.id || '';
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
