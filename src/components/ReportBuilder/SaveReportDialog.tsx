@@ -10,10 +10,11 @@ interface SaveReportDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSave: (name: string, description?: string) => Promise<void>;
+  onSaveVersion?: (name: string, description?: string) => Promise<void>;
   loading?: boolean;
 }
 
-export function SaveReportDialog({ open, onOpenChange, onSave, loading }: SaveReportDialogProps) {
+export function SaveReportDialog({ open, onOpenChange, onSave, onSaveVersion, loading }: SaveReportDialogProps) {
   const [reportName, setReportName] = useState('');
   const [description, setDescription] = useState('');
 
@@ -27,6 +28,19 @@ export function SaveReportDialog({ open, onOpenChange, onSave, loading }: SaveRe
       onOpenChange(false);
     } catch (error) {
       // Error is handled by parent component
+    }
+  };
+
+  const handleSaveVersion = async () => {
+    if (!reportName.trim() || !onSaveVersion) return;
+
+    try {
+      await onSaveVersion(reportName.trim(), description.trim() || undefined);
+      setReportName('');
+      setDescription('');
+      onOpenChange(false);
+    } catch (error) {
+      // Error handled by parent
     }
   };
 
@@ -70,15 +84,25 @@ export function SaveReportDialog({ open, onOpenChange, onSave, loading }: SaveRe
           </div>
         </div>
         <div className="flex justify-end gap-2">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             onClick={() => handleOpenChange(false)}
             disabled={loading}
           >
             Avbryt
           </Button>
-          <Button 
-            onClick={handleSave} 
+          {onSaveVersion && (
+            <Button
+              variant="secondary"
+              onClick={handleSaveVersion}
+              disabled={!reportName.trim() || loading}
+            >
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Lagre versjon
+            </Button>
+          )}
+          <Button
+            onClick={handleSave}
             disabled={!reportName.trim() || loading}
           >
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
