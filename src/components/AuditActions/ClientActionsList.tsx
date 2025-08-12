@@ -180,13 +180,18 @@ const rowVirtualizer = useWindowVirtualizer({
               {(() => {
                 const areaSubset = selectedArea === 'all' ? actions : actions.filter(a => a.subject_area === selectedArea);
                 return areaSubset.length === 0 ? (
-                  <div className="space-y-3">
-                    <div>Ingen handlinger funnet for dette fagområdet</div>
-                    <Button size="sm" className="gap-2" onClick={() => setNewOpen(true)}>
-                      <Plus size={16} />
-                      Ny handling
-                    </Button>
-                  </div>
+                    <div className="space-y-3">
+                      <div>Ingen handlinger funnet for dette fagområdet</div>
+                      <div className="flex items-center gap-2 justify-center">
+                        <Button size="sm" className="gap-2" onClick={() => setNewOpen(true)}>
+                          <Plus size={16} />
+                          Ny handling
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => { if (onOpenTemplates) onOpenTemplates(); else toast('Bytt til fanen Handlingsmaler for å velge maler.'); }}>
+                          Fra mal
+                        </Button>
+                      </div>
+                    </div>
                 ) : (
                   <div>Ingen handlinger matcher søkekriteriene</div>
                 );

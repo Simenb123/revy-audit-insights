@@ -179,6 +179,38 @@ const EnhancedActionTemplateView = ({
                   </Badge>
                 ))}
               </div>
+
+              {(template.isa_mappings?.length || 0) > 0 && (
+                <div className="mt-3">
+                  <h4 className="font-medium text-sm mb-2">Relevante ISA‑standarder</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {template.isa_mappings!.slice(0, 3).map((m) => (
+                      <Badge key={m.id} variant="outline" className="text-xs">
+                        {m.isa_standard?.isa_number || 'ISA'} {m.isa_standard?.title || ''}
+                      </Badge>
+                    ))}
+                    {template.isa_mappings!.length > 3 && (
+                      <Badge variant="secondary" className="text-xs">+{template.isa_mappings!.length - 3} flere</Badge>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {(template.document_mappings?.length || 0) > 0 && (
+                <div className="mt-3">
+                  <h4 className="font-medium text-sm mb-2">Dokumentkrav</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {template.document_mappings!.slice(0, 3).map((m) => (
+                      <Badge key={m.id} variant="outline" className="text-xs">
+                        {m.document_requirement?.name || 'Dokument'}
+                      </Badge>
+                    ))}
+                    {template.document_mappings!.length > 3 && (
+                      <Badge variant="secondary" className="text-xs">+{template.document_mappings!.length - 3} flere</Badge>
+                    )}
+                  </div>
+                </div>
+              )}
             </TabsContent>
             
             <TabsContent value="standards">
