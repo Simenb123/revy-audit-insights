@@ -195,6 +195,7 @@ const ClientActionsList = ({ actions, selectedArea, clientId, phase }: ClientAct
             selectedArea={selectedArea}
             phase={phase}
             nextSortOrder={nextSortOrder}
+            onCreated={(created) => { setSelectedAction(created); setDrawerOpen(true); }}
           />
         );
       })()}
@@ -203,3 +204,4 @@ const ClientActionsList = ({ actions, selectedArea, clientId, phase }: ClientAct
 };
 
 export default ClientActionsList;
+

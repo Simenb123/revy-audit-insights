@@ -16,6 +16,7 @@ interface NewActionDialogProps {
   selectedArea: AuditSubjectArea | string;
   phase: AuditPhase | string;
   nextSortOrder: number;
+  onCreated?: (action: ClientAuditAction) => void;
 }
 
 interface FormValues {
@@ -35,6 +36,7 @@ const NewActionDialog: React.FC<NewActionDialogProps> = ({
   selectedArea,
   phase,
   nextSortOrder,
+  onCreated,
 }) => {
   const { register, handleSubmit, reset } = useForm<FormValues>({
     defaultValues: {
@@ -45,43 +47,59 @@ const NewActionDialog: React.FC<NewActionDialogProps> = ({
 
   const createMutation = useCreateClientAuditAction();
 
+  const buildPayload = (values: FormValues): Omit<ClientAuditAction, 'id' | 'created_at' | 'updated_at'> => ({
+    client_id: clientId,
+    template_id: null,
+    assigned_to: null,
+    reviewed_by: null,
+    subject_area: selectedArea as AuditSubjectArea,
+    action_type: values.action_type,
+    status: 'not_started',
+    phase: phase as AuditPhase,
+    sort_order: nextSortOrder,
+    due_date: values.due_date ? new Date(values.due_date).toISOString() : null,
+    completed_at: null,
+    reviewed_at: null,
+    actual_hours: null,
+    name: values.name,
+    description: values.description || null,
+    objective: null,
+    procedures: values.procedures,
+    documentation_requirements: null,
+    estimated_hours: values.estimated_hours ? Number(values.estimated_hours) : null,
+    risk_level: values.risk_level,
+    findings: null,
+    conclusion: null,
+    work_notes: null,
+    working_paper_template_id: null,
+    working_paper_data: null,
+    auto_metrics: null,
+    copied_from_client_id: null,
+    copied_from_action_id: null,
+  });
+
   const onSubmit = async (values: FormValues) => {
     try {
-      const payload: Omit<ClientAuditAction, 'id' | 'created_at' | 'updated_at'> = {
-        client_id: clientId,
-        template_id: null,
-        assigned_to: null,
-        reviewed_by: null,
-        subject_area: selectedArea as AuditSubjectArea,
-        action_type: values.action_type,
-        status: 'not_started',
-        phase: phase as AuditPhase,
-        sort_order: nextSortOrder,
-        due_date: values.due_date ? new Date(values.due_date).toISOString() : null,
-        completed_at: null,
-        reviewed_at: null,
-        actual_hours: null,
-        name: values.name,
-        description: values.description || null,
-        objective: null,
-        procedures: values.procedures,
-        documentation_requirements: null,
-        estimated_hours: values.estimated_hours ? Number(values.estimated_hours) : null,
-        risk_level: values.risk_level,
-        findings: null,
-        conclusion: null,
-        work_notes: null,
-        working_paper_template_id: null,
-        working_paper_data: null,
-        auto_metrics: null,
-        copied_from_client_id: null,
-        copied_from_action_id: null,
-      };
-
+      const payload = buildPayload(values);
       await createMutation.mutateAsync(payload);
       toast.success('Handling opprettet');
       reset();
       onOpenChange(false);
+    } catch (e) {
+      toast.error('Kunne ikke opprette handling');
+    }
+  };
+
+  const onSubmitAndOpen = async (values: FormValues) => {
+    try {
+      const payload = buildPayload(values);
+      const created = await createMutation.mutateAsync(payload);
+      toast.success('Handling opprettet');
+      reset();
+      onOpenChange(false);
+      if (created && typeof (onCreated) === 'function') {
+        onCreated(created as ClientAuditAction);
+      }
     } catch (e) {
       toast.error('Kunne ikke opprette handling');
     }
@@ -164,6 +182,9 @@ const NewActionDialog: React.FC<NewActionDialogProps> = ({
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={() => closeAndReset(false)}>
               Avbryt
+            </Button>
+            <Button type="button" variant="secondary" disabled={createMutation.isPending} onClick={handleSubmit(onSubmitAndOpen)}>
+              Opprett og åpne
             </Button>
             <Button type="submit" disabled={createMutation.isPending}>
               Opprett
