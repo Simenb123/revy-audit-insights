@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Copy, BarChart3, Plus } from 'lucide-react';
+import { Copy, BarChart3, Plus, Info } from 'lucide-react';
 import {
   useAuditActionTemplates,
   useClientAuditActions,
@@ -16,6 +16,8 @@ import ActionTemplateList from './ActionTemplateList';
 import ClientActionsList from './ClientActionsList';
 import CopyFromClientDialog from './CopyFromClientDialog';
 import ActionProgressIndicator from './ActionProgressIndicator';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 
 interface AuditActionsManagerProps {
   clientId: string;
@@ -26,6 +28,7 @@ const AuditActionsManager = ({ clientId, phase = 'execution' }: AuditActionsMana
   const [selectedArea, setSelectedArea] = useState<string>('sales');
   const [copyFromClientOpen, setCopyFromClientOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string>('client-actions');
+  const [helpDismissed, setHelpDismissed] = useLocalStorage<boolean>('audit-actions-help-dismissed', false);
   
   const { data: templates = [], isLoading: templatesLoading } = useAuditActionTemplates();
   const { data: clientActions = [], isLoading: actionsLoading } = useClientAuditActions(clientId);
@@ -87,6 +90,25 @@ const AuditActionsManager = ({ clientId, phase = 'execution' }: AuditActionsMana
 
   return (
     <div className="space-y-6">
+      {!helpDismissed && (
+        <Alert>
+          <Info className="h-4 w-4" />
+          <AlertTitle>Slik fungerer revisjonshandlinger</AlertTitle>
+          <AlertDescription>
+            <ul className="list-disc pl-4 space-y-1">
+              <li>Klienthandlinger er oppgavene som er kopiert inn for denne klienten.</li>
+              <li>Handlingsmaler er biblioteket der du velger hva som kopieres inn.</li>
+              <li>Hvilke maler du ser styres av applicable_phases og valgt fase.</li>
+            </ul>
+            <div className="mt-3 flex justify-end">
+              <Button size="sm" variant="outline" onClick={() => setHelpDismissed(true)}>
+                Skjul forklaring
+              </Button>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Overall Progress Card */}
       {totalActions > 0 && (
         <Card>
