@@ -12,7 +12,8 @@ import {
   Library,
   CheckCircle,
   Clock,
-  AlertCircle
+  AlertCircle,
+  Lightbulb
 } from 'lucide-react';
 import { AuditPhase } from '@/types/revio';
 import { 
@@ -25,6 +26,7 @@ import ClientActionsList from '@/components/AuditActions/ClientActionsList';
 import ActionTemplateList from '@/components/AuditActions/ActionTemplateList';
 import CopyFromClientDialog from '@/components/AuditActions/CopyFromClientDialog';
 import SubjectAreaNav from '@/components/AuditActions/SubjectAreaNav';
+import SmartActionRecommendations from '@/components/AuditActions/SmartActionRecommendations';
 import { toast } from 'sonner';
 
 interface ActionsContainerProps {
@@ -176,7 +178,7 @@ React.useEffect(() => {
             />
           </div>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="actions" className="gap-2">
                 <Target className="w-4 h-4" />
                 Mine handlinger ({phaseActions.length})
@@ -184,6 +186,10 @@ React.useEffect(() => {
               <TabsTrigger value="templates" className="gap-2">
                 <Library className="w-4 h-4" />
                 Tilgjengelige maler ({phaseTemplates.length})
+              </TabsTrigger>
+              <TabsTrigger value="recommendations" className="gap-2">
+                <Lightbulb className="w-4 h-4" />
+                Anbefalinger
               </TabsTrigger>
             </TabsList>
 

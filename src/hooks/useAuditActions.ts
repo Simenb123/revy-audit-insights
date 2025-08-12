@@ -23,6 +23,14 @@ export const mapPhaseToDb = (
   return phase as Database['public']['Enums']['audit_phase'];
 };
 
+// Map DB enum back to UI AuditPhase for consistent filtering in UI
+export const mapPhaseFromDb = (
+  phase: Database['public']['Enums']['audit_phase'] | string
+): AuditPhase => {
+  if (phase === 'conclusion') return 'completion';
+  // Keep other phases as-is
+  return (phase as AuditPhase);
+};
 
 export function useActionGroups() {
   return useQuery({
@@ -58,7 +66,13 @@ export function useClientAuditActions(clientId: string) {
         throw error;
       }
 
-      return data as ClientAuditAction[];
+      // Normalize phase naming for UI (e.g., 'conclusion' -> 'completion')
+      const normalized = (data || []).map((a: any) => ({
+        ...a,
+        phase: mapPhaseFromDb(a.phase)
+      }));
+
+      return normalized as ClientAuditAction[];
     },
     enabled: !!clientId
   });

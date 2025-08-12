@@ -6,6 +6,12 @@ import type { Database } from '@/integrations/supabase/types';
 import { toast } from 'sonner';
 import type { AuditActionTemplate, AuditSubjectArea } from '@/types/audit-actions';
 
+// Local mapper to normalize DB phases to UI phases
+const mapPhaseFromDb = (phase: Database['public']['Enums']['audit_phase'] | string): string => {
+  if (phase === 'conclusion') return 'completion';
+  return phase as string;
+};
+
 export function useAuditActionTemplates(subjectArea?: AuditSubjectArea) {
   return useQuery({
     queryKey: ['audit-action-templates', subjectArea],
@@ -24,7 +30,11 @@ export function useAuditActionTemplates(subjectArea?: AuditSubjectArea) {
       if (error) {
         throw error;
       }
-      return data as AuditActionTemplate[];
+      const normalized = (data || []).map((t: any) => ({
+        ...t,
+        applicable_phases: (t.applicable_phases || []).map((p: any) => mapPhaseFromDb(p))
+      }));
+      return normalized as AuditActionTemplate[];
     }
   });
 }
