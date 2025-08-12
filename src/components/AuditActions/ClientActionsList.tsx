@@ -10,6 +10,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { toast } from 'sonner';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
+import { useWindowVirtualizer } from '@tanstack/react-virtual';
 
 import { useReorderClientAuditActions, useBulkUpdateClientActionsStatus, useBulkDeleteClientActions } from '@/hooks/audit-actions/useClientActionBulk';
 import BulkActionsToolbar from '@/components/AuditActions/BulkActionsToolbar';
@@ -58,7 +59,15 @@ const ClientActionsList = ({ actions, selectedArea, clientId, phase, onOpenTempl
     return matchesArea && matchesSearch && matchesStatus;
   });
 
-  const dndEnabled = searchTerm === '' && statusFilter === 'all';
+const dndEnabled = searchTerm === '' && statusFilter === 'all';
+
+// Virtualizer for non-dnd list rendering
+const rowVirtualizer = useWindowVirtualizer({
+  count: filteredActions.length,
+  estimateSize: () => 72,
+  overscan: 8,
+});
+
 
   const onDragEnd = (event: any) => {
     if (!dndEnabled) return;
@@ -200,17 +209,32 @@ const ClientActionsList = ({ actions, selectedArea, clientId, phase, onOpenTempl
               </SortableContext>
             </DndContext>
           ) : (
-            <div className="space-y-3">
-              {filteredActions.map((action) => (
-                <ActionRowBody
-                  key={action.id}
-                  action={action}
-                  selected={selectedIds.includes(action.id)}
-                  onToggle={toggleSelect}
-                  onEdit={handleEdit}
-                />
-              ))}
-            </div>
+<div style={{ height: rowVirtualizer.getTotalSize(), position: 'relative' }}>
+  {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+    const action = filteredActions[virtualRow.index];
+    return (
+      <div
+        key={virtualRow.key}
+        data-index={virtualRow.index}
+        ref={(el) => el && rowVirtualizer.measureElement(el)}
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          transform: `translateY(${virtualRow.start}px)`,
+        }}
+      >
+        <ActionRowBody
+          action={action}
+          selected={selectedIds.includes(action.id)}
+          onToggle={toggleSelect}
+          onEdit={handleEdit}
+        />
+      </div>
+    );
+  })}
+</div>
           )}
 
         </CardContent>
