@@ -71,51 +71,59 @@ const fuseIndex = useMemo(() => {
   });
 }, [options, fuzzy, fuzzyThreshold]);
 
-const { filtered, matchesById } = useMemo(() => {
-  const raw = effectiveQuery.trim();
-  const nq = normalize(raw);
-  if (!nq) {
-    return { filtered: options.slice(0, maxResults ?? options.length), matchesById: {} as Record<string, { numberRanges: Array<[number, number]>; nameRanges: Array<[number, number]> }> };
-  }
-
-  if (fuzzy && fuseIndex && raw && raw.length >= MIN_FUZZY_LEN) {
-    const results = fuseIndex.search(raw);
+  const { filtered, matchesById } = useMemo(() => {
+    const raw = effectiveQuery.trim();
+    const nq = normalize(raw);
     const byId: Record<string, { numberRanges: Array<[number, number]>; nameRanges: Array<[number, number]> }> = {};
-    results.forEach((r) => {
-      const entry = { numberRanges: [] as Array<[number, number]>, nameRanges: [] as Array<[number, number]> };
-      (r.matches || []).forEach((m) => {
-        const indices = (m.indices || []) as Array<[number, number]>;
-        if (m.key === 'standard_number') entry.numberRanges.push(...indices);
-        if (m.key === 'standard_name') entry.nameRanges.push(...indices);
+
+    const toNum = (sn: string) => parseInt(String(sn).replace(/[^\d]/g, ''), 10) || 0;
+
+    if (!nq) {
+      const sorted = [...options].sort((a, b) => toNum(a.standard_number) - toNum(b.standard_number));
+      const limited = typeof maxResults === 'number' ? sorted.slice(0, maxResults) : sorted;
+      return { filtered: limited, matchesById: byId };
+    }
+
+    if (fuzzy && fuseIndex && raw && raw.length >= MIN_FUZZY_LEN) {
+      const results = fuseIndex.search(raw);
+      const sortedResults = results
+        .sort((a, b) => (a.score ?? 0) - (b.score ?? 0) || (toNum((a.item as StandardAccountOption).standard_number) - toNum((b.item as StandardAccountOption).standard_number)));
+
+      sortedResults.forEach((r) => {
+        const entry = { numberRanges: [] as Array<[number, number]>, nameRanges: [] as Array<[number, number]> };
+        (r.matches || []).forEach((m) => {
+          const indices = (m.indices || []) as Array<[number, number]>;
+          if (m.key === 'standard_number') entry.numberRanges.push(...indices);
+          if (m.key === 'standard_name') entry.nameRanges.push(...indices);
+        });
+        if (entry.numberRanges.length || entry.nameRanges.length) {
+          byId[(r.item as StandardAccountOption).id] = entry;
+        }
       });
-      if (entry.numberRanges.length || entry.nameRanges.length) {
-        byId[(r.item as StandardAccountOption).id] = entry;
-      }
-    });
-    const items = results.map((r) => r.item as StandardAccountOption);
-    const limited = typeof maxResults === 'number' ? items.slice(0, maxResults) : items;
+      const items = sortedResults.map((r) => r.item as StandardAccountOption);
+      const limited = typeof maxResults === 'number' ? items.slice(0, maxResults) : items;
+      return { filtered: limited, matchesById: byId };
+    }
+
+    const tokens = nq.split(/\s+/).filter(Boolean);
+
+    const ranked = normalizedOptions
+      .filter((x) => tokens.every((t) => x.combined.includes(t)))
+      .map((x) => {
+        const score =
+          (x.numN === nq ? 1000 : 0) +
+          (x.nameN === nq ? 900 : 0) +
+          (x.numN.startsWith(nq) ? 800 : 0) +
+          (x.nameN.startsWith(nq) ? 700 : 0) +
+          tokens.reduce((acc, t) => acc + (x.numN.includes(t) ? 200 : 0) + (x.nameN.includes(t) ? 100 : 0), 0);
+        return { o: x.o, score };
+      })
+      .sort((a, b) => (b.score - a.score) || (toNum(a.o.standard_number) - toNum(b.o.standard_number)))
+      .map(({ o }) => o);
+
+    const limited = typeof maxResults === 'number' ? ranked.slice(0, maxResults) : ranked;
     return { filtered: limited, matchesById: byId };
-  }
-
-  const tokens = nq.split(/\s+/).filter(Boolean);
-
-  const ranked = normalizedOptions
-    .filter((x) => tokens.every((t) => x.combined.includes(t)))
-    .map((x) => {
-      const score =
-        (x.numN === nq ? 1000 : 0) +
-        (x.nameN === nq ? 900 : 0) +
-        (x.numN.startsWith(nq) ? 800 : 0) +
-        (x.nameN.startsWith(nq) ? 700 : 0) +
-        tokens.reduce((acc, t) => acc + (x.numN.includes(t) ? 200 : 0) + (x.nameN.includes(t) ? 100 : 0), 0);
-      return { o: x.o, score };
-    })
-    .sort((a, b) => b.score - a.score)
-    .map(({ o }) => o);
-
-  const limited = typeof maxResults === 'number' ? ranked.slice(0, maxResults) : ranked;
-  return { filtered: limited, matchesById: {} as Record<string, { numberRanges: Array<[number, number]>; nameRanges: Array<[number, number]> }> };
-}, [options, effectiveQuery, normalizedOptions, fuzzy, fuseIndex, maxResults, MIN_FUZZY_LEN]);
+  }, [options, effectiveQuery, normalizedOptions, fuzzy, fuseIndex, maxResults, MIN_FUZZY_LEN]);
 
   useEffect(() => {
     if (!open) return;

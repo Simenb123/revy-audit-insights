@@ -11,6 +11,7 @@ import { useMappingCombobox } from './mapping/useMappingCombobox';
 import { MappingComboboxLabels, StandardAccountOption } from './mapping/types';
 import { LoadingState } from './mapping/LoadingState';
 import { EmptyState } from './mapping/EmptyState';
+import { useMappingSuggestions } from './mapping/useMappingSuggestions';
 
 /**
  * MappingCombobox
@@ -34,6 +35,8 @@ interface MappingComboboxProps {
   minFuzzyQueryLength?: number;
   debounceMs?: number;
   fuzzyThreshold?: number;
+  sourceAccountNumber?: string; // for suggestions
+  sourceAccountName?: string; // for suggestions
 }
 
 const MappingCombobox: React.FC<MappingComboboxProps> = ({
@@ -50,6 +53,8 @@ const MappingCombobox: React.FC<MappingComboboxProps> = ({
   minFuzzyQueryLength,
   debounceMs,
   fuzzyThreshold,
+  sourceAccountNumber,
+  sourceAccountName,
 }) => {
   const {
     open,
@@ -78,6 +83,8 @@ const MappingCombobox: React.FC<MappingComboboxProps> = ({
     estimateSize: () => 36,
     overscan: 8,
   });
+
+  const suggested = useMappingSuggestions({ accountNumber: sourceAccountNumber, accountName: sourceAccountName, options, limit: 5, query: effectiveQuery });
 
   return (
     <Popover open={open} onOpenChange={onOpenChange}>
@@ -146,6 +153,26 @@ const MappingCombobox: React.FC<MappingComboboxProps> = ({
           <div id={`${listboxId}-desc`} className="sr-only">
             Bruk piltastene for å navigere, Enter for å velge, Esc for å lukke. Backspace fjerner valget når søkefeltet er tomt.
           </div>
+
+          {suggested.length > 0 && (
+            <div className="px-2 pt-2 pb-1 border-b border-border bg-popover">
+              <div className="text-xs text-muted-foreground mb-1">Foreslåtte</div>
+              <div className="flex flex-wrap gap-2">
+                {suggested.map((opt) => (
+                  <Button
+                    key={opt.id}
+                    variant="secondary"
+                    size="sm"
+                    className="h-6 text-xs px-2 py-0"
+                    onClick={() => selectOption(opt)}
+                  >
+                    {opt.standard_number} - {opt.standard_name}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <CommandList
             id={listboxId}
             role="listbox"

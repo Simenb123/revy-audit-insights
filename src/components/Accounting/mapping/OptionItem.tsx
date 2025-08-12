@@ -4,6 +4,7 @@ import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { HighlightedText } from './HighlightedText';
 import { StandardAccountOption } from './types';
+import { getBalanceCategory, getBalanceCategoryLabel } from '@/utils/standardAccountCategory';
 
 interface OptionItemProps {
   opt: StandardAccountOption;
@@ -23,7 +24,7 @@ export function OptionItem({ opt, isActive, isSelected, onSelect, listboxId, eff
       id={`${listboxId}-opt-${opt.id}`}
       value={`${opt.standard_number} ${opt.standard_name}`}
       onSelect={onSelect}
-      className={cn('text-sm', isActive && 'bg-accent text-accent-foreground')}
+      className={cn('text-sm flex items-center gap-1', isActive && 'bg-accent text-accent-foreground')}
       role="option"
       aria-selected={isSelected}
     >
@@ -34,6 +35,10 @@ export function OptionItem({ opt, isActive, isSelected, onSelect, listboxId, eff
       <span className="text-muted-foreground">-</span>
       <span className="ml-1">
         <HighlightedText text={opt.standard_name} query={effectiveQuery} ranges={nameRanges} />
+      </span>
+      <span className="ml-auto inline-flex items-center rounded-sm border border-border bg-secondary text-secondary-foreground text-[10px] px-1.5 py-0.5">
+        {getBalanceCategory(opt.standard_number)}
+        <span className="sr-only"> {getBalanceCategoryLabel(getBalanceCategory(opt.standard_number))}</span>
       </span>
     </CommandItem>
   );

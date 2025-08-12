@@ -43,6 +43,13 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
   const [editingMapping, setEditingMapping] = useState<string | null>(null);
   const [autoSuggestions, setAutoSuggestions] = useState<any[]>([]);
   const [hideZeroAccounts, setHideZeroAccounts] = useState<boolean>(true);
+  const [showDecimals, setShowDecimals] = useState<boolean>(() => {
+    const raw = typeof window !== 'undefined' ? localStorage.getItem('tb_show_decimals') : null;
+    return raw ? raw === '1' : false;
+  });
+  useEffect(() => {
+    try { localStorage.setItem('tb_show_decimals', showDecimals ? '1' : '0'); } catch {}
+  }, [showDecimals]);
   const [isLocked, setIsLocked] = useState<boolean>(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editEntry, setEditEntry] = useState<TrialBalanceEntryWithMapping | null>(null);
@@ -222,8 +229,8 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
 
   const formatNumber = (amount: number) => {
     return new Intl.NumberFormat('nb-NO', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
+      minimumFractionDigits: showDecimals ? 2 : 0,
+      maximumFractionDigits: showDecimals ? 2 : 0,
     }).format(amount || 0);
   };
 
@@ -449,6 +456,8 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
                 options={standardAccounts}
                 placeholder={suggestion ? `Foreslås: ${suggestion.suggestedMapping}` : 'Velg regnskapslinje'}
                 className="h-8 text-xs"
+                sourceAccountNumber={entry.account_number}
+                sourceAccountName={entry.account_name}
               />
 
               {!entry.standard_number && suggestion && (
@@ -590,9 +599,15 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
       )}
       
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Switch id="hide-zero" checked={hideZeroAccounts} onCheckedChange={setHideZeroAccounts} />
-          <Label htmlFor="hide-zero">Skjul kontoer med 0 i viste kolonner</Label>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <Switch id="hide-zero" checked={hideZeroAccounts} onCheckedChange={setHideZeroAccounts} />
+            <Label htmlFor="hide-zero">Skjul kontoer med 0 i viste kolonner</Label>
+          </div>
+          <div className="flex items-center gap-2">
+            <Switch id="show-decimals" checked={showDecimals} onCheckedChange={setShowDecimals} />
+            <Label htmlFor="show-decimals">Vis desimaler</Label>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <ColumnSelector 
