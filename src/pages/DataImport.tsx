@@ -3,6 +3,7 @@ import React from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import DataUploadHub from '@/components/DataUpload/DataUploadHub';
 import AccountingDataUploader from '@/components/Accounting/AccountingDataUploader';
+import SaftImport from '@/components/DataUpload/SaftImport';
 import { useClientDetails } from '@/hooks/useClientDetails';
 import ResponsiveLayout from '@/components/Layout/ResponsiveLayout';
 
@@ -37,11 +38,19 @@ const DataImport = () => {
       </ResponsiveLayout>
     );
   }
-  
+
   if (location.pathname.includes('/import')) {
     return (
       <ResponsiveLayout maxWidth="full">
         <AccountingDataUploader clientId={clientId} clientName={clientName} />
+      </ResponsiveLayout>
+    );
+  }
+
+  if (location.pathname.includes('/saft')) {
+    return (
+      <ResponsiveLayout maxWidth="full">
+        <SaftImport />
       </ResponsiveLayout>
     );
   }
