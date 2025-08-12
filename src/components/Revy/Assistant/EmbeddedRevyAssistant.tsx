@@ -53,7 +53,7 @@ const EmbeddedRevyAssistant: React.FC<EmbeddedRevyAssistantProps> = ({
   }, [messages, isLoading]);
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
+    <div className="grid h-full min-h-0 grid-rows-[auto_1fr_auto]">
       {/* Context indicator */}
       <div className="mb-1 px-1 pt-1">
         <Badge variant="outline" className="text-xs">
@@ -91,7 +91,7 @@ const EmbeddedRevyAssistant: React.FC<EmbeddedRevyAssistantProps> = ({
       </div>
 
       {/* Input area - flex-shrink-0 and sticky bottom */}
-      <div className="sticky bottom-0 flex-none bg-background border-t p-1 flex gap-1">
+      <div className="flex-none bg-background border-t p-1 flex gap-1">
         <Input
           value={input}
           onChange={onInputChange}
