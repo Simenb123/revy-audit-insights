@@ -207,16 +207,16 @@ const ClientActionsList = ({ actions, selectedArea, clientId, phase, onOpenTempl
             {selectedIds.length > 0 && (
               <div className="flex items-center gap-2">
                 <span className="text-sm text-muted-foreground">{selectedIds.length} valgt</span>
-                <Button size="xs" variant="secondary" onClick={() => bulkStatus.mutate({ clientId, ids: selectedIds, status: 'not_started' })} className="gap-1">
+                <Button size="sm" variant="secondary" onClick={() => bulkStatus.mutate({ clientId, ids: selectedIds, status: 'not_started' })} className="gap-1">
                   <Circle size={14} /> Ikke startet
                 </Button>
-                <Button size="xs" variant="secondary" onClick={() => bulkStatus.mutate({ clientId, ids: selectedIds, status: 'in_progress' })} className="gap-1">
+                <Button size="sm" variant="secondary" onClick={() => bulkStatus.mutate({ clientId, ids: selectedIds, status: 'in_progress' })} className="gap-1">
                   <Clock size={14} /> Pågår
                 </Button>
-                <Button size="xs" variant="secondary" onClick={() => bulkStatus.mutate({ clientId, ids: selectedIds, status: 'completed' })} className="gap-1">
+                <Button size="sm" variant="secondary" onClick={() => bulkStatus.mutate({ clientId, ids: selectedIds, status: 'completed' })} className="gap-1">
                   <CheckCircle size={14} /> Fullført
                 </Button>
-                <Button size="xs" variant="destructive" onClick={() => bulkDelete.mutate({ clientId, ids: selectedIds })} className="gap-1">
+                <Button size="sm" variant="destructive" onClick={() => bulkDelete.mutate({ clientId, ids: selectedIds })} className="gap-1">
                   <Trash2 size={14} /> Slett
                 </Button>
               </div>
