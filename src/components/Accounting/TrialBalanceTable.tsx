@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Layers, Bot, Edit, Check, X, Filter } from 'lucide-react';
+import { Layers, Bot, Edit, Check, X, Filter, Trash } from 'lucide-react';
 import { useTrialBalanceWithMappings, TrialBalanceEntryWithMapping } from '@/hooks/useTrialBalanceWithMappings';
 import { useStandardAccounts } from '@/hooks/useChartOfAccounts';
 import { useSaveTrialBalanceMapping } from '@/hooks/useTrialBalanceMappings';
@@ -26,7 +26,7 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
   const actualAccountingYear = accountingYear || selectedFiscalYear;
   const [searchParams, setSearchParams] = useSearchParams();
   
-  const { data: trialBalanceData, isLoading, error } = useTrialBalanceWithMappings(clientId, actualAccountingYear, selectedVersion);
+  const { data: trialBalanceData, isLoading, error, refetch } = useTrialBalanceWithMappings(clientId, actualAccountingYear, selectedVersion);
   const { data: standardAccounts = [] } = useStandardAccounts();
   const saveMapping = useSaveTrialBalanceMapping();
   const { generateAutoMappingSuggestions, applyAutoMapping, isApplying } = useAutoMapping(clientId);
@@ -168,14 +168,12 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
   // Check if any advanced filters are active
   const hasAdvancedFilters = selectedAccountingLine || selectedSummaryLine || selectedAccountType || selectedAnalysisGroup;
 
-  const formatCurrency = (amount: number) => {
+  const formatNumber = (amount: number) => {
     return new Intl.NumberFormat('nb-NO', {
-      style: 'currency',
-      currency: 'NOK',
       minimumFractionDigits: 2,
-    }).format(amount);
+      maximumFractionDigits: 2,
+    }).format(amount || 0);
   };
-
   // Define columns based on configuration
   const columns: DataTableColumn<TrialBalanceEntryWithMapping>[] = useMemo(() => {
     const allColumns: DataTableColumn<TrialBalanceEntryWithMapping>[] = [
@@ -201,7 +199,7 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
         accessor: (entry: TrialBalanceEntryWithMapping) => 0, // Placeholder for now
         sortable: true,
         align: 'right' as const,
-        format: (value: number) => formatCurrency(value),
+        format: (value: number) => formatNumber(value),
         className: 'font-mono',
       },
       {
@@ -210,7 +208,7 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
         accessor: (entry: TrialBalanceEntryWithMapping) => entry.opening_balance,
         sortable: true,
         align: 'right' as const,
-        format: (value: number) => formatCurrency(value),
+        format: (value: number) => formatNumber(value),
         className: 'font-mono',
       },
       {
@@ -219,7 +217,7 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
         accessor: (entry: TrialBalanceEntryWithMapping) => entry.closing_balance,
         sortable: true,
         align: 'right' as const,
-        format: (value: number) => formatCurrency(value),
+        format: (value: number) => formatNumber(value),
         className: 'font-mono',
       },
       {
@@ -228,7 +226,7 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
         accessor: (entry: TrialBalanceEntryWithMapping) => entry.debit_turnover,
         sortable: true,
         align: 'right' as const,
-        format: (value: number) => formatCurrency(value),
+        format: (value: number) => formatNumber(value),
         className: 'font-mono',
       },
       {
@@ -237,7 +235,7 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
         accessor: (entry: TrialBalanceEntryWithMapping) => entry.credit_turnover,
         sortable: true,
         align: 'right' as const,
-        format: (value: number) => formatCurrency(value),
+        format: (value: number) => formatNumber(value),
         className: 'font-mono',
       },
       {
@@ -318,7 +316,7 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
       const config = columnConfig.find(c => c.key === col.key);
       return config?.visible === true;
     });
-  }, [columnConfig, formatCurrency, actualAccountingYear, standardAccounts, handleMappingChange, getAutoSuggestion]);
+  }, [columnConfig, formatNumber, actualAccountingYear, standardAccounts, handleMappingChange, getAutoSuggestion]);
 
   // Calculate totals
   const totals = useMemo(() => {
@@ -339,19 +337,19 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
         Sum
       </TableCell>
       {columnConfig.find(c => c.key === 'previous_year_balance' && c.visible) && (
-        <TableCell className="text-right font-mono">{formatCurrency(0)}</TableCell>
+        <TableCell className="text-right font-mono">{formatNumber(0)}</TableCell>
       )}
       {columnConfig.find(c => c.key === 'opening_balance' && c.visible) && (
-        <TableCell className="text-right font-mono">{formatCurrency(totals?.opening_balance || 0)}</TableCell>
+        <TableCell className="text-right font-mono">{formatNumber(totals?.opening_balance || 0)}</TableCell>
       )}
       {columnConfig.find(c => c.key === 'closing_balance' && c.visible) && (
-        <TableCell className="text-right font-mono">{formatCurrency(totals?.closing_balance || 0)}</TableCell>
+        <TableCell className="text-right font-mono">{formatNumber(totals?.closing_balance || 0)}</TableCell>
       )}
       {columnConfig.find(c => c.key === 'debit_turnover' && c.visible) && (
-        <TableCell className="text-right font-mono">{formatCurrency(totals?.debit_turnover || 0)}</TableCell>
+        <TableCell className="text-right font-mono">{formatNumber(totals?.debit_turnover || 0)}</TableCell>
       )}
       {columnConfig.find(c => c.key === 'credit_turnover' && c.visible) && (
-        <TableCell className="text-right font-mono">{formatCurrency(totals?.credit_turnover || 0)}</TableCell>
+        <TableCell className="text-right font-mono">{formatNumber(totals?.credit_turnover || 0)}</TableCell>
       )}
       {columnConfig.find(c => ['standard_number', 'standard_category', 'standard_account_type', 'standard_analysis_group', 'mapping'].includes(c.key) && c.visible) && (
         <TableCell colSpan={columnConfig.filter(c => ['standard_number', 'standard_category', 'standard_account_type', 'standard_analysis_group', 'mapping'].includes(c.key) && c.visible).length}>
