@@ -10,6 +10,8 @@ import TemplateSelector from './TemplateSelector';
 import JsonEditor from './JsonEditor';
 import AutoMetricsViewer from './AutoMetricsViewer';
 import ActionDetailsForm from './ActionDetailsForm';
+import ActionDrawerHeader from './ActionDrawerHeader';
+import ActionDrawerFooter from './ActionDrawerFooter';
 
 interface ActionDetailDrawerProps {
   open: boolean;
@@ -94,19 +96,11 @@ const ActionDetailDrawer: React.FC<ActionDetailDrawerProps> = ({ open, onOpenCha
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent className="h-[85vh]">
         <div className="flex flex-col h-full">
-          <div className="px-6 pt-6 pb-4 border-b">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-semibold">Rediger handling</h2>
-                <p className="text-sm text-muted-foreground">Oppdater detaljer og arbeidsnotat</p>
-              </div>
-              {action && (
-                <div className="text-xs text-muted-foreground">
-                  Fase: {action.phase} · Status: {action.status}
-                </div>
-              )}
-            </div>
-          </div>
+          <ActionDrawerHeader
+            action={action}
+            title="Rediger handling"
+            subtitle="Oppdater detaljer og arbeidsnotat"
+          />
 
           <ScrollArea className="flex-1">
             <div className="p-6 space-y-6">
@@ -161,12 +155,11 @@ const ActionDetailDrawer: React.FC<ActionDetailDrawerProps> = ({ open, onOpenCha
             </div>
           </ScrollArea>
 
-          <div className="px-6 py-4 border-t flex justify-end gap-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>Avbryt</Button>
-            <Button onClick={handleSave} disabled={updateMutation.isPending}>
-              {updateMutation.isPending ? 'Lagrer...' : 'Lagre endringer'}
-            </Button>
-          </div>
+          <ActionDrawerFooter
+            onCancel={() => onOpenChange(false)}
+            onSave={handleSave}
+            isSaving={updateMutation.isPending}
+          />
         </div>
       </DrawerContent>
     </Drawer>
