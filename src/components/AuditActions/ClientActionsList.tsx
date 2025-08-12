@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus, ChevronDown } from 'lucide-react';
@@ -8,7 +8,7 @@ import ActionDetailDrawer from './ActionDetailDrawer';
 import NewActionDialog from './NewActionDialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
-import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import { useWindowVirtualizer } from '@tanstack/react-virtual';
 
@@ -43,7 +43,7 @@ const ClientActionsList = ({ actions, selectedArea, clientId, phase, onOpenTempl
 
   const sensors = useSensors(useSensor(PointerSensor));
 
-  const areaActions = actions.filter(a => selectedArea === 'all' ? true : a.subject_area === selectedArea);
+  const areaActions = useMemo(() => actions.filter(a => selectedArea === 'all' ? true : a.subject_area === selectedArea), [actions, selectedArea]);
 
   const handleEdit = (action: ClientAuditAction) => {
     setSelectedAction(action);
@@ -51,13 +51,15 @@ const ClientActionsList = ({ actions, selectedArea, clientId, phase, onOpenTempl
   };
 
   // Filter actions by selected area, search term, and status
-  const filteredActions = actions.filter(action => {
-    const matchesArea = selectedArea === 'all' || action.subject_area === selectedArea;
-    const matchesSearch = action.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         action.description?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || action.status === statusFilter;
-    return matchesArea && matchesSearch && matchesStatus;
-  });
+  const filteredActions = useMemo(() => {
+    const term = searchTerm.toLowerCase();
+    return actions.filter(action => {
+      const matchesArea = selectedArea === 'all' || action.subject_area === selectedArea;
+      const matchesSearch = action.name.toLowerCase().includes(term) || action.description?.toLowerCase().includes(term);
+      const matchesStatus = statusFilter === 'all' || action.status === statusFilter;
+      return matchesArea && matchesSearch && matchesStatus;
+    });
+  }, [actions, selectedArea, searchTerm, statusFilter]);
 
 const dndEnabled = searchTerm === '' && statusFilter === 'all';
 
@@ -69,7 +71,7 @@ const rowVirtualizer = useWindowVirtualizer({
 });
 
 
-  const onDragEnd = (event: any) => {
+  const onDragEnd = (event: DragEndEvent) => {
     if (!dndEnabled) return;
     const { active, over } = event;
     if (!over || active.id === over.id) return;
@@ -80,16 +82,14 @@ const rowVirtualizer = useWindowVirtualizer({
     const updates = reordered.map((a, idx) => ({ id: a.id, sort_order: idx }));
     reorderMutation.mutate({ clientId, updates });
   };
-
-  const visibleIds = filteredActions.map(a => a.id);
-  const allVisibleSelected = visibleIds.length > 0 && visibleIds.every(id => selectedIds.includes(id));
-  const toggleSelect = (id: string) => {
+  const visibleIds = useMemo(() => filteredActions.map(a => a.id), [filteredActions]);
+  const allVisibleSelected = useMemo(() => visibleIds.length > 0 && visibleIds.every(id => selectedIds.includes(id)), [visibleIds, selectedIds]);
+  const toggleSelect = useCallback((id: string) => {
     setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
-  };
-  const toggleSelectAllVisible = () => {
-    setSelectedIds(allVisibleSelected ? selectedIds.filter(id => !visibleIds.includes(id)) : Array.from(new Set([...selectedIds, ...visibleIds])));
-  };
-
+  }, []);
+  const toggleSelectAllVisible = useCallback(() => {
+    setSelectedIds(prev => (allVisibleSelected ? prev.filter(id => !visibleIds.includes(id)) : Array.from(new Set([...prev, ...visibleIds]))));
+  }, [allVisibleSelected, visibleIds]);
   const statusOptions = [
     { value: 'all', label: 'Alle statuser' },
     { value: 'not_started', label: 'Ikke startet' },
