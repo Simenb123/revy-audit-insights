@@ -1,9 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Drawer, DrawerContent } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { useUpdateClientAuditAction } from '@/hooks/useAuditActions';
@@ -12,6 +9,7 @@ import type { ClientAuditAction } from '@/types/audit-actions';
 import TemplateSelector from './TemplateSelector';
 import JsonEditor from './JsonEditor';
 import AutoMetricsViewer from './AutoMetricsViewer';
+import ActionDetailsForm from './ActionDetailsForm';
 
 interface ActionDetailDrawerProps {
   open: boolean;
@@ -113,28 +111,18 @@ const ActionDetailDrawer: React.FC<ActionDetailDrawerProps> = ({ open, onOpenCha
           <ScrollArea className="flex-1">
             <div className="p-6 space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Tittel</Label>
-                    <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="desc">Beskrivelse</Label>
-                    <Textarea id="desc" value={description} onChange={(e) => setDescription(e.target.value)} rows={4} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="proc">Prosedyrer</Label>
-                    <Textarea id="proc" value={procedures} onChange={(e) => setProcedures(e.target.value)} rows={8} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="due">Forfallsdato</Label>
-                    <Input id="due" type="date" value={dueDate || ''} onChange={(e) => setDueDate(e.target.value)} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="notes">Arbeidsnotater</Label>
-                    <Textarea id="notes" value={workNotes} onChange={(e) => setWorkNotes(e.target.value)} rows={4} />
-                  </div>
-                </div>
+                <ActionDetailsForm
+                  name={name}
+                  description={description}
+                  procedures={procedures}
+                  dueDate={dueDate}
+                  workNotes={workNotes}
+                  onNameChange={setName}
+                  onDescriptionChange={setDescription}
+                  onProceduresChange={setProcedures}
+                  onDueDateChange={(v) => setDueDate(v)}
+                  onWorkNotesChange={setWorkNotes}
+                />
 
                 <div className="space-y-4">
                   <div className="space-y-2">
