@@ -20,6 +20,7 @@ import {
 } from '@/utils/fileProcessing';
 import { parseSaftFile } from '@/utils/saftParser';
 import * as XLSX from 'xlsx';
+import ReconciliationDialog from '@/components/Accounting/ReconciliationDialog';
 
 interface AccountRow {
   account_number: string;
@@ -49,6 +50,11 @@ const [step, setStep] = useState<'select' | 'upload' | 'mapping' | 'success'>('s
 const [sheetNames, setSheetNames] = useState<string[]>([]);
 const [selectedSheet, setSelectedSheet] = useState<string>('');
 // Manual version and period inputs removed - now auto-generated
+
+// Previous year and reconciliation state
+const [prevYearExists, setPrevYearExists] = useState(false);
+const [lastUploadedVersion, setLastUploadedVersion] = useState<string | null>(null);
+const [reconcileOpen, setReconcileOpen] = useState(false);
 
   // Period dates automatically derived from accounting year
 
@@ -212,7 +218,8 @@ const handleMappingComplete = async (mapping: Record<string, string>, headerRowI
       console.warn('Could not determine version, using v1:', error);
     }
 
-    console.log(`📄 Auto-generated version: ${finalVersion} for year ${accountingYear}`);
+console.log(`📄 Auto-generated version: ${finalVersion} for year ${accountingYear}`);
+setLastUploadedVersion(finalVersion);
 
     try {
       setUploadProgress(10);
@@ -310,10 +317,108 @@ const handleMappingComplete = async (mapping: Record<string, string>, headerRowI
 
       setUploadProgress(40);
 
+      // Previous year handling: detect existing and optionally import last year's balances
+      const previousYear = accountingYear - 1;
+      // Check if any last-year values present in uploaded data
+      const hasLastYearValues = accounts.some(a => a.balance_last_year !== undefined && a.balance_last_year !== null && String(a.balance_last_year).toString().trim() !== '');
+      try {
+        const { data: prevAny } = await supabase
+          .from('trial_balances')
+          .select('id')
+          .eq('client_id', clientId)
+          .eq('period_year', previousYear)
+          .limit(1);
+
+        const prevExists = !!(prevAny && prevAny.length > 0);
+        if (prevExists) {
+          setPrevYearExists(true);
+          toast.info(`Du har allerede saldo for ${previousYear}`);
+        } else if (hasLastYearValues) {
+          const shouldImportPrev = window.confirm(`Vi oppdaget fjorårets saldo i filen. Vil du importere disse som Saldo ${previousYear}?`);
+          if (shouldImportPrev) {
+            // Autogenerate prev year version
+            let prevVersion = 'v1';
+            try {
+              const { data: prevVersions } = await supabase
+                .from('trial_balances')
+                .select('version')
+                .eq('client_id', clientId)
+                .gte('period_start_date', `${previousYear}-01-01`)
+                .lt('period_start_date', `${previousYear + 1}-01-01`)
+                .order('version', { ascending: false })
+                .limit(1);
+              if (prevVersions && prevVersions.length > 0) {
+                const latestPrev = prevVersions[0].version as string;
+                const num = parseInt(latestPrev.replace('v', '')) + 1;
+                prevVersion = `v${num}`;
+              }
+            } catch (e) {
+              console.warn('Could not determine previous year version, using v1', e);
+            }
+
+            // Simple number parser (reuse logic)
+            const parsePrevNumber = (value: any): number => {
+              if (value === null || value === undefined || value === '') return 0;
+              let s = String(value).trim().replace(/\s+/g, '').replace(/[^\d,.-]/g, '');
+              if (!s || s === '-') return 0;
+              let negative = false;
+              if (s.startsWith('-')) { negative = true; s = s.slice(1); }
+              if (s.includes(',') && s.includes('.')) {
+                const lastComma = s.lastIndexOf(',');
+                const lastDot = s.lastIndexOf('.');
+                if (lastComma > lastDot) s = s.replace(/\./g, '').replace(',', '.');
+                else s = s.replace(/,/g, '');
+              } else if (s.includes(',')) {
+                const parts = s.split(',');
+                if (parts.length === 2 && parts[1].length <= 2) s = s.replace(',', '.');
+                else s = s.replace(/,/g, '');
+              } else if (s.includes('.') && !s.match(/\.\d{1,2}$/)) {
+                s = s.replace(/\./g, '');
+              }
+              let n = parseFloat(s);
+              return negative ? -Math.abs(n || 0) : (n || 0);
+            };
+
+            let importedCount = 0;
+            for (const account of accounts) {
+              const accountNumber = account.account_number?.toString();
+              if (!accountNumber) continue;
+              const accountId = accountMapping.get(accountNumber);
+              if (!accountId) continue;
+              const lastYear = parsePrevNumber(account.balance_last_year);
+              // Insert previous year TB row
+              const { error: prevInsErr } = await supabase
+                .from('trial_balances')
+                .upsert({
+                  client_id: clientId,
+                  client_account_id: accountId,
+                  opening_balance: 0,
+                  closing_balance: lastYear,
+                  debit_turnover: 0,
+                  credit_turnover: 0,
+                  period_start_date: `${previousYear}-01-01`,
+                  period_end_date: `${previousYear}-12-31`,
+                  period_year: previousYear,
+                  version: prevVersion,
+                  upload_batch_id: batch.id
+                }, {
+                  onConflict: 'client_id,client_account_id,period_start_date,period_end_date,version',
+                  ignoreDuplicates: false
+                });
+              if (!prevInsErr) importedCount++;
+            }
+            setPrevYearExists(true);
+            toast.success(`Importerte ${importedCount} fjorårstall til ${previousYear}`);
+          }
+        }
+      } catch (e) {
+        console.warn('Kunne ikke sjekke/importe fjorårstall:', e);
+      }
+
       // Auto-mapping phase using imported regnskapsnr if available
       console.log('=== AUTO-MAPPING PHASE ===');
       let autoMappingResults = { mapped: 0, failed: 0, skipped: 0 };
-      
+
       for (const account of accounts) {
         const accountNumber = account.account_number?.toString();
         const accountId = accountMapping.get(accountNumber);
