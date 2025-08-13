@@ -212,9 +212,9 @@ export async function parseSaftFile(file: File | ArrayBuffer): Promise<SaftResul
           byLocal(headerNode, 'Version'),
         software: softwareCombined || byLocal(headerNode, 'Software') || undefined,
         software_ver: byLocal(headerNode, 'SoftwareVersion') || byLocal(headerNode, 'ProductVersion'),
-        created: byLocal(headerNode, 'DateCreated') || byLocal(headerNode, 'CreatedDate'),
-        start: byLocal(headerNode, 'StartDate') || byLocal(headerNode, 'PeriodStart'),
-        end: byLocal(headerNode, 'EndDate') || byLocal(headerNode, 'PeriodEnd'),
+        created: byLocal(headerNode, 'DateCreated') || byLocal(headerNode, 'CreatedDate') || byLocal(headerNode, 'FileCreatedDate') || byLocal(headerNode, 'CreationDate'),
+        start: byLocal(headerNode, 'StartDate') || byLocal(headerNode, 'PeriodStart') || byLocal(headerNode, 'SelectionStartDate') || byLocal(headerNode, 'FromDate'),
+        end: byLocal(headerNode, 'EndDate') || byLocal(headerNode, 'PeriodEnd') || byLocal(headerNode, 'SelectionEndDate') || byLocal(headerNode, 'ToDate'),
       }
     : null;
 
@@ -288,7 +288,7 @@ export async function parseSaftFile(file: File | ArrayBuffer): Promise<SaftResul
     return {
       id: byLocal(c, 'CustomerID') || byLocal(c, 'ID'),
       name: byLocal(c, 'CustomerName') || byLocal(c, 'Name'),
-      vat: byLocal(c, 'TaxRegistrationNumber') || byLocal(c, 'VATNumber') || byLocal(c, 'TaxID'),
+      vat: byLocal(c, 'TaxRegistrationNumber') || byLocal(c, 'VATNumber') || byLocal(c, 'TaxID') || byLocal(c, 'OrganizationNumber') || byLocal(c, 'RegistrationNumber'),
       country: byLocal(addr, 'Country') || byLocal(addr, 'CountryCode'),
       city: byLocal(addr, 'City') || byLocal(addr, 'Town'),
       postal: byLocal(addr, 'PostalCode') || byLocal(addr, 'PostCode'),
@@ -308,7 +308,7 @@ export async function parseSaftFile(file: File | ArrayBuffer): Promise<SaftResul
     return {
       id: byLocal(s, 'SupplierID') || byLocal(s, 'ID'),
       name: byLocal(s, 'SupplierName') || byLocal(s, 'Name'),
-      vat: byLocal(s, 'TaxRegistrationNumber') || byLocal(s, 'VATNumber') || byLocal(s, 'TaxID'),
+      vat: byLocal(s, 'TaxRegistrationNumber') || byLocal(s, 'VATNumber') || byLocal(s, 'TaxID') || byLocal(s, 'OrganizationNumber') || byLocal(s, 'RegistrationNumber'),
       country: byLocal(addr, 'Country') || byLocal(addr, 'CountryCode'),
       city: byLocal(addr, 'City') || byLocal(addr, 'Town'),
       postal: byLocal(addr, 'PostalCode') || byLocal(addr, 'PostCode'),
@@ -325,13 +325,13 @@ export async function parseSaftFile(file: File | ArrayBuffer): Promise<SaftResul
       .concat(arr(byLocal(taxTableRaw, 'TaxCodeDetails')))
       .concat(arr(byLocal(taxTableRaw, 'Tax')));
   const tax_table: TaxTableEntry[] = taxEntries.map((t: any) => ({
-    tax_code: byLocal(t, 'TaxCode') || byLocal(t, 'Code') || byLocal(t, 'VATCode'),
-    description: byLocal(t, 'Description') || byLocal(t, 'TaxDescription'),
-    percentage: byLocal(t, 'TaxPercentage') || byLocal(t, 'TaxPercentageDecimal') || byLocal(t, 'Rate'),
-    exemption_reason: byLocal(t, 'TaxExemptionReason') || byLocal(t, 'ExemptionReason'),
-    declaration_period: byLocal(t, 'TaxDeclarationPeriod') || byLocal(t, 'DeclarationPeriod'),
-    valid_from: byLocal(t, 'ValidFrom') || byLocal(t, 'StartDate'),
-    valid_to: byLocal(t, 'ValidTo') || byLocal(t, 'EndDate'),
+    tax_code: byLocal(t, 'TaxCode') || byLocal(t, 'Code') || byLocal(t, 'VATCode') || byLocal(t, 'TaxCodeID'),
+    description: byLocal(t, 'Description') || byLocal(t, 'TaxDescription') || byLocal(t, 'TaxCodeDescription'),
+    percentage: byLocal(t, 'TaxPercentage') || byLocal(t, 'TaxPercentageDecimal') || byLocal(t, 'Rate') || byLocal(t, 'TaxRate'),
+    exemption_reason: byLocal(t, 'TaxExemptionReason') || byLocal(t, 'ExemptionReason') || byLocal(t, 'Exemption'),
+    declaration_period: byLocal(t, 'TaxDeclarationPeriod') || byLocal(t, 'DeclarationPeriod') || byLocal(t, 'ReportingPeriod'),
+    valid_from: byLocal(t, 'ValidFrom') || byLocal(t, 'StartDate') || byLocal(t, 'EffectiveFrom'),
+    valid_to: byLocal(t, 'ValidTo') || byLocal(t, 'EndDate') || byLocal(t, 'EffectiveTo'),
   }));
 
   // Analysis types
@@ -445,8 +445,16 @@ export async function parseSaftFile(file: File | ArrayBuffer): Promise<SaftResul
         const analyses = arr(byLocal(l, 'Analysis'));
         analyses.forEach((a: any) => {
           const adc = String(byLocal(a, 'DebitCredit') || '').toLowerCase();
-          let aDebit = parseAmountNode(byLocal(a, 'DebitAnalysisAmount')) ?? parseAmountNode(byLocal(a, 'DebitAmount'));
-          let aCredit = parseAmountNode(byLocal(a, 'CreditAnalysisAmount')) ?? parseAmountNode(byLocal(a, 'CreditAmount'));
+          // Enhanced parsing for analysis amounts with more field alternatives
+          let aDebit = parseAmountNode(byLocal(a, 'DebitAnalysisAmount')) ?? 
+                      parseAmountNode(byLocal(a, 'DebitAmount')) ??
+                      parseAmountNode(byLocal(a, 'Debit/Amount')) ??
+                      parseAmountNode(byLocal(a, 'DebitAnalysisAmount/Amount'));
+          let aCredit = parseAmountNode(byLocal(a, 'CreditAnalysisAmount')) ?? 
+                       parseAmountNode(byLocal(a, 'CreditAmount')) ??
+                       parseAmountNode(byLocal(a, 'Credit/Amount')) ??
+                       parseAmountNode(byLocal(a, 'CreditAnalysisAmount/Amount'));
+          
           if (aDebit === undefined && aCredit === undefined) {
             const aAmt = parseAmountNode(byLocal(a, 'AnalysisAmount')) ?? parseAmountNode(byLocal(a, 'Amount'));
             if (aAmt !== undefined) {

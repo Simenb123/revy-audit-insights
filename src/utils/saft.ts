@@ -196,7 +196,8 @@ export async function toXlsxBlob(data: SaftResult): Promise<Blob> {
   trxRows.forEach(r => {
     const key = String(r.vat_code || '');
     const current = byVat.get(key) || 0;
-    byVat.set(key, current + (Number(r.vat_debit) || 0) + (Number(r.vat_credit) || 0));
+    // Fix: Use Math.abs for both vat_debit and vat_credit to handle negative values properly
+    byVat.set(key, current + Math.abs(Number(r.vat_debit) || 0) - Math.abs(Number(r.vat_credit) || 0));
   });
   const mvaOk = Array.from(byVat.values()).every(v => Math.abs(round2(v)) <= 0.01);
   const qualityCols = ['metric','value'];
