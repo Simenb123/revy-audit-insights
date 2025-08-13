@@ -8,7 +8,7 @@ import { TableRow, TableCell } from '@/components/ui/table';
 import { format } from 'date-fns';
 import { useQuery } from '@tanstack/react-query';
 import { logger } from '@/utils/logger';
-
+import ColumnSelector, { ColumnConfig } from '@/components/Accounting/ColumnSelector';
 interface GeneralLedgerTableProps {
   clientId: string;
   versionId?: string;
@@ -52,8 +52,23 @@ const GeneralLedgerTable = ({ clientId, versionId, accountNumberFilter }: Genera
     }).format(amount);
   };
 
-  // Define columns based on field definitions
-  const columns: DataTableColumn<GeneralLedgerTransaction>[] = useMemo(() => {
+  // Kolonnevalg (gjenbruk fra Saldobalanse)
+  const [columnConfig, setColumnConfig] = React.useState<ColumnConfig[]>([
+    { key: 'transaction_date', label: 'Dato', visible: true, required: true },
+    { key: 'account_info', label: 'Konto', visible: true, required: true },
+    { key: 'description', label: 'Beskrivelse', visible: true },
+    { key: 'voucher_number', label: 'Bilag', visible: true },
+    { key: 'debit_amount', label: 'Debet', visible: true },
+    { key: 'credit_amount', label: 'Kredit', visible: true },
+    { key: 'balance_amount', label: 'Beløp', visible: true },
+  ]);
+
+  const handleColumnChange = React.useCallback((key: string, visible: boolean) => {
+    setColumnConfig(prev => prev.map(c => (c.key === key ? { ...c, visible } : c)));
+  }, []);
+
+  // Alle kolonner basert på felter
+  const allColumns: DataTableColumn<GeneralLedgerTransaction>[] = useMemo(() => {
     const debitCol: DataTableColumn<GeneralLedgerTransaction> = {
       key: 'debit_amount',
       header: 'Debet',
@@ -86,7 +101,7 @@ const GeneralLedgerTable = ({ clientId, versionId, accountNumberFilter }: Genera
     };
 
     if (!fieldDefinitions) {
-      // Fallback columns if field definitions are not loaded
+      // Fallback-kolonner dersom feltdefinisjoner ikke er lastet
       return [
         {
           key: 'transaction_date',
@@ -128,7 +143,7 @@ const GeneralLedgerTable = ({ clientId, versionId, accountNumberFilter }: Genera
       ];
     }
 
-    // Map field definitions to columns
+    // Map feltdefinisjoner til kolonner
     const baseColumns: DataTableColumn<GeneralLedgerTransaction>[] = [];
 
     const dateField = fieldDefinitions.find(f => f.field_key === 'transaction_date');
@@ -182,13 +197,19 @@ const GeneralLedgerTable = ({ clientId, versionId, accountNumberFilter }: Genera
       });
     }
 
-    // Always include Debet/Kredit and Beløp columns for richer GL view
+    // Alltid inkluder Debet/Kredit og Beløp
     baseColumns.push(debitCol);
     baseColumns.push(creditCol);
     baseColumns.push(amountCol);
 
     return baseColumns;
   }, [fieldDefinitions]);
+
+  // Filtrer etter valgt kolonnekonfig
+  const visibleColumns: DataTableColumn<GeneralLedgerTransaction>[] = useMemo(() => {
+    const visibleKeys = new Set(columnConfig.filter(c => c.visible).map(c => c.key));
+    return (allColumns || []).filter(col => visibleKeys.has(col.key));
+  }, [allColumns, columnConfig]);
 
   // Calculate totals
   const totals = useMemo(() => {
@@ -211,10 +232,9 @@ const GeneralLedgerTable = ({ clientId, versionId, accountNumberFilter }: Genera
     return { debit, credit, balance };
   }, [transactions]);
 
-  // Create total row
   const totalRow = totals ? (
     <TableRow className="font-bold border-t-2 bg-muted/50">
-      <TableCell colSpan={Math.max(1, (columns?.length || 1) - 1)}>Sum</TableCell>
+      <TableCell colSpan={Math.max(1, (visibleColumns?.length || 1) - 1)}>Sum</TableCell>
       <TableCell className="text-right">
         <div className="flex flex-col items-end gap-0.5">
           <span>Debet: {formatCurrency(totals.debit)}</span>
@@ -234,40 +254,34 @@ const GeneralLedgerTable = ({ clientId, versionId, accountNumberFilter }: Genera
     `Viser ${((currentPage - 1) * pageSize) + 1}-${Math.min(currentPage * pageSize, totalCount || 0)} av ${totalCount || 0} transaksjoner${transactions && transactions.length > 0 ? ` • Side ${currentPage} av ${totalPages}` : ''}${accountNumberFilter ? ` • Filtrert på konto ${accountNumberFilter}` : ''}` :
     undefined;
 
-  const defaultColumnState = useMemo(() => ([
-    { key: 'transaction_date', visible: true, pinnedLeft: true },
-    { key: 'account_info', visible: true, pinnedLeft: true },
-    { key: 'description', visible: true },
-    { key: 'voucher_number', visible: true },
-    { key: 'debit_amount', visible: true },
-    { key: 'credit_amount', visible: true },
-    { key: 'balance_amount', visible: true },
-  ]), []);
 
   return (
-    <DataTable
-      title="Hovedbok"
-      description={description}
-      icon={<LineChart className="h-5 w-5" />}
-      data={transactions || []}
-      columns={columns}
-      isLoading={isLoading}
-      error={error}
-      searchPlaceholder="Søk i transaksjoner..."
-      enableExport={true}
-      exportFileName={`hovedbok_${new Date().getFullYear()}`}
-      enablePagination={true}
-      pageSize={pageSize}
-      totalCount={totalCount || 0}
-      currentPage={currentPage}
-      onPageChange={setCurrentPage}
-      showTotals={true}
-      totalRow={totalRow}
-      emptyMessage="Ingen transaksjoner funnet"
-      enableColumnManager={true}
-      preferencesKey={`gl-table:${clientId}:${versionId || 'active'}`}
-      defaultColumnState={defaultColumnState}
-    />
+    <>
+      <div className="mb-2 flex items-center justify-end gap-2">
+        <ColumnSelector columns={columnConfig} onColumnChange={handleColumnChange} />
+      </div>
+      <DataTable
+        title="Hovedbok"
+        description={description}
+        icon={<LineChart className="h-5 w-5" />}
+        data={transactions || []}
+        columns={visibleColumns}
+        isLoading={isLoading}
+        error={error}
+        searchPlaceholder="Søk i transaksjoner..."
+        enableExport={true}
+        exportFileName={`hovedbok_${new Date().getFullYear()}`}
+        enablePagination={true}
+        pageSize={pageSize}
+        totalCount={totalCount || 0}
+        currentPage={currentPage}
+        onPageChange={setCurrentPage}
+        showTotals={true}
+        totalRow={totalRow}
+        emptyMessage="Ingen transaksjoner funnet"
+        enableColumnManager={false}
+      />
+    </>
   );
 };
 

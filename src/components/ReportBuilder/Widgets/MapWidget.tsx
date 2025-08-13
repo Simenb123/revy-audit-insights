@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { InlineEditableTitle } from '../InlineEditableTitle';
 import { MapContainer, TileLayer } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
+import type { LatLngExpression } from 'leaflet';
 
 interface MapWidgetProps {
   widget: Widget;
@@ -11,8 +12,8 @@ interface MapWidgetProps {
 
 export function MapWidget({ widget }: MapWidgetProps) {
   const { updateWidget } = useWidgetManager();
-  const center = widget.config?.center || [59.9139, 10.7522];
-  const zoom = widget.config?.zoom || 13;
+  const center: LatLngExpression = (widget.config?.center as LatLngExpression) || [59.9139, 10.7522];
+  const zoom: number = (widget.config?.zoom as number) || 13;
 
   const handleTitleChange = (newTitle: string) => {
     updateWidget(widget.id, { title: newTitle });
@@ -27,7 +28,6 @@ export function MapWidget({ widget }: MapWidgetProps) {
         <MapContainer center={center} zoom={zoom} className="h-full w-full">
           <TileLayer
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution="&copy; OpenStreetMap contributors"
           />
         </MapContainer>
       </CardContent>

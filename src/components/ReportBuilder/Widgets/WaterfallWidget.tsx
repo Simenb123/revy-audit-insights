@@ -13,21 +13,23 @@ import {
   Cell,
 } from 'recharts';
 
+type WaterfallItem = { name: string; value: number; start?: number; end?: number };
+
 interface WaterfallWidgetProps {
   widget: Widget;
 }
 
 export function WaterfallWidget({ widget }: WaterfallWidgetProps) {
   const { updateWidget } = useWidgetManager();
-  const rawData = widget.config?.data || [
+  const rawData: WaterfallItem[] = widget.config?.data || [
     { name: 'Start', value: 1000 },
     { name: 'Inntekt', value: 400 },
     { name: 'Kostnad', value: -300 },
     { name: 'Slutt', value: 1100 },
   ];
 
-  const data = rawData.reduce((acc: any[], item) => {
-    const prev = acc.length > 0 ? acc[acc.length - 1].end : 0;
+  const data: WaterfallItem[] = rawData.reduce<WaterfallItem[]>((acc, item) => {
+    const prev = acc.length > 0 ? (acc[acc.length - 1].end || 0) : 0;
     const end = prev + item.value;
     acc.push({ ...item, start: prev, end });
     return acc;
@@ -51,9 +53,9 @@ export function WaterfallWidget({ widget }: WaterfallWidgetProps) {
             <Tooltip />
             <Bar dataKey="start" stackId="a" fill="transparent" />
             <Bar dataKey="value" stackId="a">
-              {data.map((entry: any, index: number) => (
-                <Cell key={`cell-${index}`} fill={entry.value >= 0 ? '#4ade80' : '#f87171'} />
-              ))}
+                {data.map((entry: WaterfallItem, index: number) => (
+                  <Cell key={`cell-${index}`} fill={entry.value >= 0 ? '#4ade80' : '#f87171'} />
+                ))}
             </Bar>
           </ComposedChart>
         </ResponsiveContainer>
