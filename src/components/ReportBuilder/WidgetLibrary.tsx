@@ -16,6 +16,8 @@ import {
   Grid2x2,
   Boxes,
   CircleDot,
+  Map,
+  ChartColumn,
 } from 'lucide-react';
 import { useWidgetTemplates } from '@/hooks/useWidgetTemplates';
 
@@ -149,6 +151,30 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
           { x: 10, y: 30, z: 200 },
           { x: 20, y: 50, z: 100 },
           { x: 30, y: 70, z: 300 },
+        ]
+      }
+    },
+    {
+      type: 'map' as const,
+      title: 'Kart',
+      description: 'Vis geodata på kart',
+      icon: Map,
+      defaultConfig: {
+        center: [59.9139, 10.7522],
+        zoom: 13,
+      }
+    },
+    {
+      type: 'waterfall' as const,
+      title: 'Vannfallsdiagram',
+      description: 'Trinnvis endring',
+      icon: ChartColumn,
+      defaultConfig: {
+        data: [
+          { name: 'Start', value: 1000 },
+          { name: 'Inntekt', value: 400 },
+          { name: 'Kostnad', value: -300 },
+          { name: 'Slutt', value: 1100 },
         ]
       }
     },
@@ -310,7 +336,7 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
           ? 4
           : template.type === 'kpi' || template.type === 'enhancedKpi'
           ? 2
-          : template.type === 'chart' || template.type === 'heatmap' || template.type === 'treemap' || template.type === 'bubble'
+          : template.type === 'chart' || template.type === 'heatmap' || template.type === 'treemap' || template.type === 'bubble' || template.type === 'map' || template.type === 'waterfall'
           ? 4
           : template.type === 'pivot'
           ? 4
