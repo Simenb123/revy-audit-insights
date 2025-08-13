@@ -49,30 +49,37 @@ export const useRecentClients = () => {
     }
   }, [storageKey]);
 
+  const notifyUpdate = useCallback(() => {
+    if (storageKey) {
+      setTimeout(() => {
+        window.dispatchEvent(new Event('recent-clients-updated'));
+      }, 0);
+    }
+  }, [storageKey]);
+
   const addRecentClient = useCallback((client: Omit<RecentClient, 'lastVisited'>) => {
     const now = new Date().toISOString();
     const newClient: RecentClient = { ...client, lastVisited: now };
-    
+
     setRecentClients(prev => {
       const filtered = prev.filter(c => c.id !== client.id);
       const updated = [newClient, ...filtered].slice(0, MAX_RECENT_CLIENTS);
       saveRecentClients(updated);
-      if (storageKey) {
-        window.dispatchEvent(new Event('recent-clients-updated'));
-      }
       return updated;
     });
-  }, [saveRecentClients, storageKey]);
+    notifyUpdate();
+  }, [saveRecentClients, notifyUpdate]);
 
   const clearHistory = useCallback(() => {
     setRecentClients([]);
     if (!storageKey) return;
     try {
       localStorage.removeItem(storageKey);
+      notifyUpdate();
     } catch (error) {
       console.error('Error clearing recent clients:', error);
     }
-  }, [storageKey]);
+  }, [storageKey, notifyUpdate]);
 
   useEffect(() => {
     if (!storageKey) return;
