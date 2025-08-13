@@ -265,15 +265,23 @@ export async function persistParsed(clientId: string, parsed: SaftResult, fileNa
     };
   });
 
-  const { data: inserted, error: accError } = await supabase
+  const { error: accError } = await supabase
     .from('client_chart_of_accounts')
-    .upsert(accountRows)
-    .select('id, account_number');
+    .upsert(accountRows, { onConflict: 'client_id,account_number' });
 
   if (accError) throw accError;
 
+  // Always fetch the IDs for all involved accounts to avoid empty returns on no-op upserts
+  const allAccountNumbers = parsed.accounts.map(a => a.account_id);
+  const { data: accountsAll, error: fetchAccErr } = await supabase
+    .from('client_chart_of_accounts')
+    .select('id, account_number')
+    .eq('client_id', clientId)
+    .in('account_number', allAccountNumbers);
+  if (fetchAccErr) throw fetchAccErr;
+
   const accountMap = new Map<string, string>();
-  inserted?.forEach((row: any) => accountMap.set(row.account_number, row.id));
+  (accountsAll || []).forEach((row: any) => accountMap.set(row.account_number, row.id));
 
   // Derive period dates
   const parseISO = (s?: string) => {
