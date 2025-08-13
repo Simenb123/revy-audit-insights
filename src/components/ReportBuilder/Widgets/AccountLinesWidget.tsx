@@ -7,6 +7,7 @@ import { useFiscalYear } from '@/contexts/FiscalYearContext';
 import { useFormulaCalculation } from '@/hooks/useFormulaCalculation';
 import { useFirmStandardAccounts, type FirmStandardAccount } from '@/hooks/useFirmStandardAccounts';
 import { formatCurrency } from '@/lib/formatters';
+import { useToast } from '@/hooks/use-toast';
 
 interface AccountLinesWidgetProps {
   widget: Widget;
@@ -52,6 +53,7 @@ function AccountLineRow({
     selectedVersion: undefined,
     enabled: showYoY && !!clientId && !!fiscalYear && !!expr,
   });
+  const { toast } = useToast();
 
   const scale = (v: number) => {
     switch (unitScale) {
@@ -95,6 +97,20 @@ function AccountLineRow({
       }
     }
   }
+
+  React.useEffect(() => {
+    if (
+      !loading &&
+      expr.includes('-') &&
+      (!current.data?.isValid || current.data.value === 0)
+    ) {
+      console.warn(`Kontointervall ${expr} mangler data`);
+      toast({
+        title: 'Manglende kontodata',
+        description: `Kontointervall ${expr} mangler data.`,
+      });
+    }
+  }, [loading, current.data, expr, toast]);
 
   return (
     <TableRow>
