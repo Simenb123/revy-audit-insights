@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Settings, Save } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { FormulaWidgetConfig } from './WidgetConfiguration/FormulaWidgetConfig';
+import { PivotWidgetConfig } from './WidgetConfiguration/PivotWidgetConfig';
 import { useFirmStandardAccounts } from '@/hooks/useFirmStandardAccounts';
 import { useFormulaDefinitions } from '@/hooks/useFormulas';
 
@@ -503,6 +504,14 @@ const { data: standardAccounts = [] } = useFirmStandardAccounts();
               />
             </div>
           </div>
+        );
+
+      case 'pivot':
+        return (
+          <PivotWidgetConfig
+            config={config}
+            onUpdate={updateConfig}
+          />
         );
 
       case 'heatmap':

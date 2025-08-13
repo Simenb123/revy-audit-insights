@@ -216,9 +216,7 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
       title: 'Pivot-tabell',
       description: 'Vis data i pivottabell',
       icon: Grid3x3,
-      defaultConfig: {
-        data: [] as any[]
-      }
+      defaultConfig: {}
     },
     {
       type: 'gauge' as const,

@@ -2,6 +2,10 @@ import React from 'react';
 import { Widget, useWidgetManager } from '@/contexts/WidgetManagerContext';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { InlineEditableTitle } from '../InlineEditableTitle';
+import PivotTable from 'react-pivottable';
+import 'react-pivottable/pivottable.css';
+import { useTrialBalanceWithMappings } from '@/hooks/useTrialBalanceWithMappings';
+import { useFiscalYear } from '@/contexts/FiscalYearContext';
 
 interface PivotWidgetProps {
   widget: Widget;
@@ -9,32 +13,20 @@ interface PivotWidgetProps {
 
 export function PivotWidget({ widget }: PivotWidgetProps) {
   const { updateWidget } = useWidgetManager();
-  const data: Record<string, any>[] = widget.config?.data || [];
+  const { selectedFiscalYear } = useFiscalYear();
+  const clientId = widget.config?.clientId as string | undefined;
+  const rowField = widget.config?.rowField as string | undefined;
+  const columnField = widget.config?.columnField as string | undefined;
+  const valueField = widget.config?.valueField as string | undefined;
+
+  const { data } = useTrialBalanceWithMappings(clientId || '', selectedFiscalYear);
+  const entries: Record<string, any>[] = data?.trialBalanceEntries || [];
 
   const handleTitleChange = (newTitle: string) => {
     updateWidget(widget.id, { title: newTitle });
   };
 
-  if (data.length === 0) {
-    return (
-      <Card className="h-full">
-        <CardHeader className="pb-2">
-          <InlineEditableTitle
-            title={widget.title}
-            onTitleChange={handleTitleChange}
-            size="sm"
-          />
-        </CardHeader>
-        <CardContent>
-          <div className="text-sm text-muted-foreground">
-            Ingen pivottabell-data.
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  const columns = Object.keys(data[0]);
+  const hasConfig = !!(rowField && columnField && valueField);
 
   return (
     <Card className="h-full">
@@ -46,28 +38,20 @@ export function PivotWidget({ widget }: PivotWidgetProps) {
         />
       </CardHeader>
       <CardContent>
-        <table className="min-w-full text-xs">
-          <thead>
-            <tr>
-              {columns.map((col) => (
-                <th key={col} className="text-left font-medium pr-2">
-                  {col}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {data.map((row, idx) => (
-              <tr key={idx} className="border-t">
-                {columns.map((col) => (
-                  <td key={col} className="pr-2 py-1">
-                    {row[col]}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        {!clientId || entries.length === 0 || !hasConfig ? (
+          <div className="text-sm text-muted-foreground">
+            Ingen pivottabell-data.
+          </div>
+        ) : (
+          <PivotTable
+            data={entries}
+            rows={rowField ? [rowField] : []}
+            cols={columnField ? [columnField] : []}
+            vals={valueField ? [valueField] : []}
+            aggregatorName="Sum"
+            rendererName="Table"
+          />
+        )}
       </CardContent>
     </Card>
   );
