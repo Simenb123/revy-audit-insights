@@ -62,40 +62,45 @@ export function KpiBenchmarkPanel({
 
   return (
     <div className="space-y-4">
-      {groups.map(([groupName, items]) => {
-        const sum = items.reduce((s, it) => s + (valuesByClient[it.id] ?? 0), 0);
-        const avg = items.length > 0 ? sum / items.length : 0;
-        return (
-          <div key={groupName} className="border rounded-md">
-            <div className="px-3 py-2 text-sm font-medium">{groupName}</div>
-            <div className="px-3 pb-3">
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <div className="text-muted-foreground">Klient</div>
-                <div className="text-right text-muted-foreground">Verdi{unitLabel ? <span className="ml-1 text-xs">({unitLabel})</span> : null}</div>
-                {items.map((it) => (
-                  <MemoClientFormulaValue
-                    key={it.id}
-                    clientId={it.id}
-                    name={it.name}
-                    fiscalYear={fiscalYear}
-                    formulaId={formulaId}
-                    customFormula={customFormula}
-                    selectedVersion={selectedVersion}
-                    displayAsPercentage={displayAsPercentage}
-                    showCurrency={showCurrency}
-                    unitScale={unitScale}
-                    onValue={handleValue}
-                  />
-                ))}
-                <div className="pt-2 text-muted-foreground">Sum</div>
-                <div className="pt-2 text-right tabular-nums" title={unitLabel ? `Enhet: ${unitLabel}` : undefined}>{formatVal(sum)}</div>
-                <div className="text-muted-foreground">Snitt</div>
-                <div className="text-right tabular-nums" title={unitLabel ? `Enhet: ${unitLabel}` : undefined}>{formatVal(avg)}</div>
+      {groups.length === 0 ? (
+        <div className="text-sm text-muted-foreground">Ingen klienter valgt.</div>
+      ) : (
+        groups.map(([groupName, items]) => {
+          const sum = items.reduce((s, it) => s + (valuesByClient[it.id] ?? 0), 0);
+          const avg = items.length > 0 ? sum / items.length : 0;
+          const groupHasData = items.some((it) => Number.isFinite(valuesByClient[it.id]));
+          return (
+            <div key={groupName} className="border rounded-md">
+              <div className="px-3 py-2 text-sm font-medium">{groupName}</div>
+              <div className="px-3 pb-3">
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div className="text-muted-foreground">Klient</div>
+                  <div className="text-right text-muted-foreground">Verdi{unitLabel ? <span className="ml-1 text-xs">({unitLabel})</span> : null}</div>
+                  {items.map((it) => (
+                    <MemoClientFormulaValue
+                      key={it.id}
+                      clientId={it.id}
+                      name={it.name}
+                      fiscalYear={fiscalYear}
+                      formulaId={formulaId}
+                      customFormula={customFormula}
+                      selectedVersion={selectedVersion}
+                      displayAsPercentage={displayAsPercentage}
+                      showCurrency={showCurrency}
+                      unitScale={unitScale}
+                      onValue={handleValue}
+                    />
+                  ))}
+                  <div className="pt-2 text-muted-foreground">Sum</div>
+                  <div className="pt-2 text-right tabular-nums" title={unitLabel ? `Enhet: ${unitLabel}` : undefined}>{groupHasData ? formatVal(sum) : '—'}</div>
+                  <div className="text-muted-foreground">Snitt</div>
+                  <div className="text-right tabular-nums" title={unitLabel ? `Enhet: ${unitLabel}` : undefined}>{groupHasData ? formatVal(avg) : '—'}</div>
+                </div>
               </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })
+      )}
     </div>
   );
 }
