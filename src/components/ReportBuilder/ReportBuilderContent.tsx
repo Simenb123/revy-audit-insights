@@ -7,7 +7,7 @@ import { ReportBuilderTabs } from './ReportBuilderTabs';
 import { SaveReportDialog } from './SaveReportDialog';
 import { LoadReportDialog } from './LoadReportDialog';
 import { ClientReportHeader } from './ClientReportHeader';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus, Save, FolderOpen, Database, LayoutTemplate, FileDown, FileSpreadsheet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -22,6 +22,7 @@ import { loadReportBuilderSettings, saveReportBuilderSettings } from '@/hooks/us
 import { exportReportToPDF, exportReportToExcel } from '@/utils/exportReport';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import type { ThemeConfig } from '@/styles/theme';
+import { ModuleWrapper } from './ModuleWrapper';
 interface ReportBuilderContentProps {
   clientId: string;
   hasData: boolean;
@@ -327,39 +328,29 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
 
         {/* Widget Library */}
         {showWidgetLibrary && hasData && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Widget bibliotek</CardTitle>
-              <CardDescription>
-                Velg widgets for å legge til i rapporten
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <WidgetLibrary 
-                clientId={clientId}
-                onClose={() => setShowWidgetLibrary(false)}
-              />
-            </CardContent>
-          </Card>
+          <ModuleWrapper id="widget-library" title="Widget bibliotek">
+            <p className="text-sm text-muted-foreground mb-2">
+              Velg widgets for å legge til i rapporten
+            </p>
+            <WidgetLibrary
+              clientId={clientId}
+              onClose={() => setShowWidgetLibrary(false)}
+            />
+          </ModuleWrapper>
         )}
 
         {/* Standard Report Templates */}
         {showTemplates && hasData && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Standard rapport maler</CardTitle>
-              <CardDescription>
-                Velg en ferdig rapport mal for rask oppstart
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <StandardReportTemplates 
-                clientId={clientId}
-                onApplyTemplate={handleApplyTemplate}
-                onClose={() => setShowTemplates(false)}
-              />
-            </CardContent>
-          </Card>
+          <ModuleWrapper id="report-templates" title="Standard rapport maler">
+            <p className="text-sm text-muted-foreground mb-2">
+              Velg en ferdig rapport mal for rask oppstart
+            </p>
+            <StandardReportTemplates
+              clientId={clientId}
+              onApplyTemplate={handleApplyTemplate}
+              onClose={() => setShowTemplates(false)}
+            />
+          </ModuleWrapper>
         )}
 
         {/* Dashboard Canvas */}
