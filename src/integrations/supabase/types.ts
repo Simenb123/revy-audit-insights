@@ -3967,6 +3967,11 @@ export type Database = {
           reference_number: string | null
           transaction_date: string
           upload_batch_id: string | null
+          vat_base: number | null
+          vat_code: string | null
+          vat_credit: number | null
+          vat_debit: number | null
+          vat_rate: number | null
           version_id: string | null
           voucher_number: string | null
         }
@@ -3984,6 +3989,11 @@ export type Database = {
           reference_number?: string | null
           transaction_date: string
           upload_batch_id?: string | null
+          vat_base?: number | null
+          vat_code?: string | null
+          vat_credit?: number | null
+          vat_debit?: number | null
+          vat_rate?: number | null
           version_id?: string | null
           voucher_number?: string | null
         }
@@ -4001,6 +4011,11 @@ export type Database = {
           reference_number?: string | null
           transaction_date?: string
           upload_batch_id?: string | null
+          vat_base?: number | null
+          vat_code?: string | null
+          vat_credit?: number | null
+          vat_debit?: number | null
+          vat_rate?: number | null
           version_id?: string | null
           voucher_number?: string | null
         }
