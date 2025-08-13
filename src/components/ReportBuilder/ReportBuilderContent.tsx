@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useWidgetManager } from '@/contexts/WidgetManagerContext';
 import { DashboardCanvas } from './DashboardCanvas';
 import { WidgetLibrary } from './WidgetLibrary';
+import { IntroModal } from './IntroModal';
 import { StandardReportTemplates } from './StandardReportTemplates';
 import { ReportBuilderTabs } from './ReportBuilderTabs';
 import { SaveReportDialog } from './SaveReportDialog';
@@ -37,11 +38,24 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
   const [selectedVersion, setSelectedVersion] = useState<string>('');
   const [currentReport, setCurrentReport] = useState<ClientReport | null>(null);
   const [hasUnsaved, setHasUnsaved] = useState(false);
+  const [showIntro, setShowIntro] = useState(false);
   
   const { widgets, layouts, addWidget, removeWidget, updateLayout, clearWidgets, setWidgets, setLayouts, loadFromStorage } = useWidgetManager();
   const { reports, loading, saveReport, updateReport, deleteReport, saveVersion, listVersions, restoreVersion } = useClientReports(clientId);
   const savedSettings = loadReportBuilderSettings(clientId, selectedFiscalYear);
   const initialTheme = savedSettings?.theme;
+
+  useEffect(() => {
+    if (!savedSettings?.introSeen) {
+      setShowIntro(true);
+    }
+  }, [savedSettings]);
+
+  const handleCloseIntro = () => {
+    const prev = savedSettings || {};
+    saveReportBuilderSettings(clientId, selectedFiscalYear, { ...prev, introSeen: true });
+    setShowIntro(false);
+  };
 
   const handleThemeChange = (theme: ThemeConfig) => {
     const prev = loadReportBuilderSettings(clientId, selectedFiscalYear) || {};
@@ -365,6 +379,8 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
       </div>
 
       {/* Dialogs */}
+      <IntroModal open={showIntro} onClose={handleCloseIntro} />
+
       <SaveReportDialog
         open={showSaveDialog}
         onOpenChange={setShowSaveDialog}
