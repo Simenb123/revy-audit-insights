@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Search, Command, FileText, Users, Book, Brain } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -65,8 +66,8 @@ const GlobalSearch = () => {
           searchResults.push(...clients.map(client => ({
             type: 'client' as const,
             id: client.id,
-            title: client.name,
-            subtitle: client.company_name,
+            title: client.name || 'Uten navn',
+            subtitle: client.company_name || '',
             url: `/clients/${client.id}`,
             icon: Users
           })));
@@ -84,8 +85,8 @@ const GlobalSearch = () => {
           searchResults.push(...articles.map(article => ({
             type: 'article' as const,
             id: article.id,
-            title: article.title,
-            subtitle: article.summary,
+            title: article.title || 'Uten tittel',
+            subtitle: article.summary || '',
             url: `/fag/articles/${article.id}`,
             icon: Book
           })));
@@ -116,6 +117,7 @@ const GlobalSearch = () => {
         setResults(searchResults.slice(0, 10));
       } catch (error) {
         console.error('Search error:', error);
+        setResults([]);
       } finally {
         setLoading(false);
       }
@@ -161,60 +163,69 @@ const GlobalSearch = () => {
               {/* Group results by type */}
               {results.filter(r => r.type === 'page').length > 0 && (
                 <CommandGroup heading="Sider">
-                  {results.filter(r => r.type === 'page').map((result) => (
-                    <CommandItem
-                      key={result.id}
-                      value={result.title}
-                      onSelect={() => handleSelect(result)}
-                    >
-                      <result.icon className="mr-2 h-4 w-4" />
-                      <span>{result.title}</span>
-                    </CommandItem>
-                  ))}
+                  {results.filter(r => r.type === 'page').map((result) => {
+                    const IconComponent = result.icon;
+                    return (
+                      <CommandItem
+                        key={result.id}
+                        value={`${result.title} ${result.subtitle || ''}`}
+                        onSelect={() => handleSelect(result)}
+                      >
+                        <IconComponent className="mr-2 h-4 w-4" />
+                        <span>{result.title}</span>
+                      </CommandItem>
+                    );
+                  })}
                 </CommandGroup>
               )}
               
               {results.filter(r => r.type === 'client').length > 0 && (
                 <CommandGroup heading="Klienter">
-                  {results.filter(r => r.type === 'client').map((result) => (
-                    <CommandItem
-                      key={result.id}
-                      value={result.title}
-                      onSelect={() => handleSelect(result)}
-                    >
-                      <result.icon className="mr-2 h-4 w-4" />
-                      <div className="flex flex-col">
-                        <span>{result.title}</span>
-                        {result.subtitle && (
-                          <span className="text-xs text-muted-foreground">
-                            {result.subtitle}
-                          </span>
-                        )}
-                      </div>
-                    </CommandItem>
-                  ))}
+                  {results.filter(r => r.type === 'client').map((result) => {
+                    const IconComponent = result.icon;
+                    return (
+                      <CommandItem
+                        key={result.id}
+                        value={`${result.title} ${result.subtitle || ''}`}
+                        onSelect={() => handleSelect(result)}
+                      >
+                        <IconComponent className="mr-2 h-4 w-4" />
+                        <div className="flex flex-col">
+                          <span>{result.title}</span>
+                          {result.subtitle && (
+                            <span className="text-xs text-muted-foreground">
+                              {result.subtitle}
+                            </span>
+                          )}
+                        </div>
+                      </CommandItem>
+                    );
+                  })}
                 </CommandGroup>
               )}
               
               {results.filter(r => r.type === 'article').length > 0 && (
                 <CommandGroup heading="Fagstoff">
-                  {results.filter(r => r.type === 'article').map((result) => (
-                    <CommandItem
-                      key={result.id}
-                      value={result.title}
-                      onSelect={() => handleSelect(result)}
-                    >
-                      <result.icon className="mr-2 h-4 w-4" />
-                      <div className="flex flex-col">
-                        <span>{result.title}</span>
-                        {result.subtitle && (
-                          <span className="text-xs text-muted-foreground">
-                            {result.subtitle}
-                          </span>
-                        )}
-                      </div>
-                    </CommandItem>
-                  ))}
+                  {results.filter(r => r.type === 'article').map((result) => {
+                    const IconComponent = result.icon;
+                    return (
+                      <CommandItem
+                        key={result.id}
+                        value={`${result.title} ${result.subtitle || ''}`}
+                        onSelect={() => handleSelect(result)}
+                      >
+                        <IconComponent className="mr-2 h-4 w-4" />
+                        <div className="flex flex-col">
+                          <span>{result.title}</span>
+                          {result.subtitle && (
+                            <span className="text-xs text-muted-foreground">
+                              {result.subtitle}
+                            </span>
+                          )}
+                        </div>
+                      </CommandItem>
+                    );
+                  })}
                 </CommandGroup>
               )}
             </>
