@@ -1,7 +1,7 @@
 import React from 'react';
 import { formatCurrency } from '@/lib/formatters';
 import { useFormulaCalculation } from '@/hooks/useFormulaCalculation';
-import { getScaleDivisor, formatNumeric, formatPercent } from '@/utils/kpiFormat';
+import { getScaleDivisor, formatNumeric, formatPercent, getUnitLabel } from '@/utils/kpiFormat';
 export function KpiBenchmarkPanel({
   fiscalYear,
   clients,
@@ -48,6 +48,10 @@ export function KpiBenchmarkPanel({
     () => (displayAsPercentage ? 1 : getScaleDivisor(unitScale)),
     [displayAsPercentage, unitScale]
   );
+  const unitLabel = React.useMemo(
+    () => getUnitLabel(displayAsPercentage, showCurrency, unitScale),
+    [displayAsPercentage, showCurrency, unitScale]
+  );
 
   const formatVal = React.useCallback((val: number) => {
     if (Number.isNaN(val)) return 'N/A';
@@ -67,7 +71,7 @@ export function KpiBenchmarkPanel({
             <div className="px-3 pb-3">
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <div className="text-muted-foreground">Klient</div>
-                <div className="text-right text-muted-foreground">Verdi</div>
+                <div className="text-right text-muted-foreground">Verdi{unitLabel ? <span className="ml-1 text-xs">({unitLabel})</span> : null}</div>
                 {items.map((it) => (
                   <MemoClientFormulaValue
                     key={it.id}
@@ -84,9 +88,9 @@ export function KpiBenchmarkPanel({
                   />
                 ))}
                 <div className="pt-2 text-muted-foreground">Sum</div>
-                <div className="pt-2 text-right tabular-nums">{formatVal(sum)}</div>
+                <div className="pt-2 text-right tabular-nums" title={unitLabel ? `Enhet: ${unitLabel}` : undefined}>{formatVal(sum)}</div>
                 <div className="text-muted-foreground">Snitt</div>
-                <div className="text-right tabular-nums">{formatVal(avg)}</div>
+                <div className="text-right tabular-nums" title={unitLabel ? `Enhet: ${unitLabel}` : undefined}>{formatVal(avg)}</div>
               </div>
             </div>
           </div>

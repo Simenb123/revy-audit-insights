@@ -121,21 +121,17 @@ export function KpiWidget({ widget }: KpiWidgetProps) {
     const currentValue = currentFormulaResult.data.value;
     const resultType = currentFormulaResult.data.metadata?.type as 'amount' | 'percentage' | 'ratio' | undefined;
 
-    const scaleDivisor =
-      resultType === 'amount'
-        ? (unitScale === 'thousand' ? 1000 : unitScale === 'million' ? 1_000_000 : 1)
-        : 1;
-
+    const scaleDivisor = resultType === 'amount' ? getScaleDivisor(unitScale) : 1;
     const scaledCurrent = currentValue / scaleDivisor;
 
     const formattedValue =
       (displayAsPercentage || resultType === 'percentage')
-        ? `${scaledCurrent.toFixed(1)}%`
+        ? formatPercent(scaledCurrent)
         : resultType === 'ratio'
-          ? new Intl.NumberFormat('nb-NO', { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(scaledCurrent)
+          ? formatNumeric(scaledCurrent)
           : showCurrency
             ? formatCurrency(scaledCurrent)
-            : new Intl.NumberFormat('nb-NO', { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(scaledCurrent);
+            : formatNumeric(scaledCurrent);
 
     // Calculate trend if previous data is available
     if (!showTrend || previousFormulaResult.isLoading || previousFormulaResult.error || !previousFormulaResult.data?.isValid) {
@@ -155,8 +151,7 @@ export function KpiWidget({ widget }: KpiWidgetProps) {
         : changePercent < 0
         ? ('down' as const)
         : ('neutral' as const);
-    const formattedChange =
-      (changePercent > 0 ? '+' : '') + changePercent.toFixed(1) + '%';
+    const formattedChange = `${changePercent > 0 ? '+' : ''}${formatPercent(changePercent)}`;
 
     return {
       value: formattedValue,
