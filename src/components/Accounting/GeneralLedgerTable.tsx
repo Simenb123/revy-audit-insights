@@ -54,6 +54,37 @@ const GeneralLedgerTable = ({ clientId, versionId, accountNumberFilter }: Genera
 
   // Define columns based on field definitions
   const columns: DataTableColumn<GeneralLedgerTransaction>[] = useMemo(() => {
+    const debitCol: DataTableColumn<GeneralLedgerTransaction> = {
+      key: 'debit_amount',
+      header: 'Debet',
+      accessor: 'debit_amount',
+      sortable: true,
+      align: 'right',
+      format: (value: number | null) => formatCurrency(value ?? 0),
+    };
+
+    const creditCol: DataTableColumn<GeneralLedgerTransaction> = {
+      key: 'credit_amount',
+      header: 'Kredit',
+      accessor: 'credit_amount',
+      sortable: true,
+      align: 'right',
+      format: (value: number | null) => formatCurrency(value ?? 0),
+    };
+
+    const amountCol: DataTableColumn<GeneralLedgerTransaction> = {
+      key: 'balance_amount',
+      header: 'Beløp',
+      accessor: 'balance_amount',
+      sortable: true,
+      align: 'right',
+      format: (value: number | null) => (
+        <span className={value && value < 0 ? 'text-red-600' : ''}>
+          {formatCurrency(value)}
+        </span>
+      ),
+    };
+
     if (!fieldDefinitions) {
       // Fallback columns if field definitions are not loaded
       return [
@@ -91,31 +122,19 @@ const GeneralLedgerTable = ({ clientId, versionId, accountNumberFilter }: Genera
           searchable: true,
           format: (value: string | null) => value || '-',
         },
-        {
-          key: 'balance_amount',
-          header: 'Beløp',
-          accessor: 'balance_amount',
-          sortable: true,
-          align: 'right',
-          format: (value: number | null) => (
-            <span className={value && value < 0 ? 'text-red-600' : ''}>
-              {formatCurrency(value)}
-            </span>
-          ),
-        },
+        debitCol,
+        creditCol,
+        amountCol,
       ];
     }
 
     // Map field definitions to columns
     const baseColumns: DataTableColumn<GeneralLedgerTransaction>[] = [];
 
-    // Add columns based on field definitions
     const dateField = fieldDefinitions.find(f => f.field_key === 'transaction_date');
     const accountField = fieldDefinitions.find(f => f.field_key === 'account_number');
     const descriptionField = fieldDefinitions.find(f => f.field_key === 'description');
     const voucherField = fieldDefinitions.find(f => f.field_key === 'voucher_number');
-    const amountField = fieldDefinitions.find(f => f.field_key === 'balance_amount') || 
-                       fieldDefinitions.find(f => f.field_key === 'debit_amount');
 
     if (dateField) {
       baseColumns.push({
@@ -163,20 +182,10 @@ const GeneralLedgerTable = ({ clientId, versionId, accountNumberFilter }: Genera
       });
     }
 
-    if (amountField) {
-      baseColumns.push({
-        key: 'balance_amount',
-        header: amountField.field_label,
-        accessor: 'balance_amount',
-        sortable: true,
-        align: 'right',
-        format: (value: number | null) => (
-          <span className={value && value < 0 ? 'text-red-600' : ''}>
-            {formatCurrency(value)}
-          </span>
-        ),
-      });
-    }
+    // Always include Debet/Kredit and Beløp columns for richer GL view
+    baseColumns.push(debitCol);
+    baseColumns.push(creditCol);
+    baseColumns.push(amountCol);
 
     return baseColumns;
   }, [fieldDefinitions]);
@@ -184,28 +193,36 @@ const GeneralLedgerTable = ({ clientId, versionId, accountNumberFilter }: Genera
   // Calculate totals
   const totals = useMemo(() => {
     if (!transactions) return null;
-    
-    return {
-      balance: transactions.reduce((sum, t) => sum + (t.balance_amount || 0), 0),
-      debit: transactions.reduce((sum, t) => {
-        if (t.balance_amount !== null && t.balance_amount > 0) return sum + t.balance_amount;
-        return sum;
-      }, 0),
-      credit: transactions.reduce((sum, t) => {
-        if (t.balance_amount !== null && t.balance_amount < 0) return sum + Math.abs(t.balance_amount);
-        return sum;
-      }, 0),
-    };
+
+    const hasDebCred = transactions.some(t => t.debit_amount !== null || t.credit_amount !== null);
+
+    const debit = hasDebCred
+      ? transactions.reduce((sum, t) => sum + (t.debit_amount || 0), 0)
+      : transactions.reduce((sum, t) => sum + ((t.balance_amount || 0) > 0 ? (t.balance_amount as number) : 0), 0);
+
+    const credit = hasDebCred
+      ? transactions.reduce((sum, t) => sum + (t.credit_amount || 0), 0)
+      : transactions.reduce((sum, t) => sum + ((t.balance_amount || 0) < 0 ? Math.abs(t.balance_amount as number) : 0), 0);
+
+    const balance = hasDebCred
+      ? debit - credit
+      : transactions.reduce((sum, t) => sum + (t.balance_amount || 0), 0);
+
+    return { debit, credit, balance };
   }, [transactions]);
 
   // Create total row
   const totalRow = totals ? (
     <TableRow className="font-bold border-t-2 bg-muted/50">
-      <TableCell colSpan={4}>Sum</TableCell>
+      <TableCell colSpan={Math.max(1, (columns?.length || 1) - 1)}>Sum</TableCell>
       <TableCell className="text-right">
-        <span className={Math.abs(totals.balance) < 0.01 ? 'text-green-600' : 'text-red-600'}>
-          {formatCurrency(totals.balance)}
-        </span>
+        <div className="flex flex-col items-end gap-0.5">
+          <span>Debet: {formatCurrency(totals.debit)}</span>
+          <span>Kredit: {formatCurrency(totals.credit)}</span>
+          <span className={Math.abs(totals.balance) < 0.01 ? 'text-green-600' : 'text-red-600'}>
+            Netto: {formatCurrency(totals.balance)}
+          </span>
+        </div>
       </TableCell>
     </TableRow>
   ) : null;

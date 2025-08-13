@@ -23,6 +23,7 @@ import GeneralLedgerFilters from './GeneralLedgerFilters';
 import FilteredDataPreview from './FilteredDataPreview';
 import AnalysisPanel from './AnalysisPanel';
 import { parseSaftFile } from '@/utils/saftParser';
+import { persistParsed } from '@/utils/saftImport';
 
 interface TransactionRow {
   date: string;
@@ -394,6 +395,19 @@ const handleMappingComplete = async (mapping: Record<string, string>, headerRowI
 
     try {
       setUploadProgress(10);
+
+      // If SAF-T file, use one-pass import that creates both GL and TB and a new active version
+      const ext = file.name.toLowerCase().split('.').pop();
+      if (ext && (ext === 'xml' || ext === 'zip')) {
+        const parsed = await parseSaftFile(file);
+        await persistParsed(clientId, parsed, file.name);
+        setUploadProgress(100);
+        setStep('success');
+        toast.success('SAF-T import fullført: Hovedbok og saldobalanse opprettet i ny aktiv versjon');
+        onUploadComplete?.();
+        setTimeout(() => window.location.reload(), 1000);
+        return;
+      }
 
       // Create upload batch record
       const userId = (await supabase.auth.getUser()).data.user?.id;
