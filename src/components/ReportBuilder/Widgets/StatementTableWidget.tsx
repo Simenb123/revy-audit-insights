@@ -18,6 +18,8 @@ import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { formatCurrency } from '@/lib/formatters';
 import { filterStatementLines } from '@/utils/filterStatementLines';
 import { exportArrayToXlsx } from '@/utils/exportToXlsx';
+import { useScope } from '@/contexts/ScopeContext';
+import { supabase } from '@/integrations/supabase/client';
 
 interface StatementTableWidgetProps { widget: Widget }
 
@@ -45,9 +47,11 @@ export function StatementTableWidget({ widget }: StatementTableWidgetProps) {
     clientId || '',
     selectedVersion
   );
+  const navigate = useNavigate();
   const { data: mappings = [] } = useTrialBalanceMappings(clientId || '');
   const { data: classifications = [] } = useAccountClassifications(clientId || '', selectedVersion);
-  const navigate = useNavigate();
+  const { scopeType, selectedClientIds } = useScope();
+
 
 const [expanded, setExpanded] = React.useState<Record<string, boolean>>(() => (widget.config?.expanded ?? {}));
 const [accountsExpanded, setAccountsExpanded] = React.useState<Record<string, boolean>>(() => (widget.config?.accountsExpanded ?? {}));
@@ -549,6 +553,88 @@ const flattenVisible = React.useCallback((nodes: any[]): any[] => {
     setLiveMessage('Excel eksportert');
   }, [fi, fb, flattenVisible, periodInfo, showPrevious, showDifference, showPercent]);
 
+  const handleExportConsolidatedXLSX = React.useCallback(async () => {
+    if (scopeType !== 'custom' || !selectedClientIds || selectedClientIds.length === 0) return;
+    const currentYear = periodInfo?.currentYear;
+    const previousYear = periodInfo?.previousYear;
+    if (!currentYear) return;
+
+    // Load clients to get groups
+    const { data: clientRows = [] } = await supabase
+      .from('clients' as any)
+      .select('id, client_group, company_name')
+      .in('id', selectedClientIds);
+
+    const groupByClient = new Map<string, string>();
+    const groupNamesSet = new Set<string>();
+    (clientRows as any[]).forEach((c: any) => {
+      const g = c.client_group || 'Uten gruppe';
+      groupByClient.set(c.id, g);
+      groupNamesSet.add(g);
+    });
+    const groupNames = Array.from(groupNamesSet);
+
+    // Load TB for current and previous year
+    const { data: tbCur = [] } = await supabase
+      .from('trial_balance_entries' as any)
+      .select('client_id, account_number, closing_balance')
+      .in('client_id', selectedClientIds)
+      .eq('period_year', currentYear);
+
+    let tbPrevMulti: any[] = [];
+    if (showPrevious && previousYear) {
+      const { data: tbPrevData = [] } = await supabase
+        .from('trial_balance_entries' as any)
+        .select('client_id, account_number, closing_balance')
+        .in('client_id', selectedClientIds)
+        .eq('period_year', previousYear);
+      tbPrevMulti = tbPrevData as any[];
+    }
+
+    // Build group -> account -> sums
+    const curMap = new Map<string, Map<string, number>>();
+    const prevMap = new Map<string, Map<string, number>>();
+    const addTo = (map: Map<string, Map<string, number>>, group: string, acc: string, val: number) => {
+      if (!map.has(group)) map.set(group, new Map<string, number>());
+      const m = map.get(group)!;
+      m.set(acc, (m.get(acc) || 0) + (val || 0));
+    };
+    (tbCur as any[]).forEach((r: any) => {
+      const g = groupByClient.get(r.client_id) || 'Uten gruppe';
+      addTo(curMap, g, String(r.account_number), Number(r.closing_balance) || 0);
+    });
+    (tbPrevMulti as any[]).forEach((r: any) => {
+      const g = groupByClient.get(r.client_id) || 'Uten gruppe';
+      addTo(prevMap, g, String(r.account_number), Number(r.closing_balance) || 0);
+    });
+
+    const visibleIncome = flattenVisible(fi);
+    const visibleBalance = flattenVisible(fb);
+
+    const rows: any[] = [];
+    const buildRow = (section: string, n: any) => {
+      const accs = getAccountsForLine(n.standard_number);
+      const base: any = { Seksjon: section, Nummer: n.standard_number, Navn: n.standard_name };
+      for (const g of groupNames) {
+        const gCurMap = curMap.get(g) || new Map<string, number>();
+        const gPrevMap = prevMap.get(g) || new Map<string, number>();
+        const curSum = accs.reduce((s, a) => s + (gCurMap.get(String(a)) || 0), 0);
+        const prevSum = showPrevious && previousYear ? accs.reduce((s, a) => s + (gPrevMap.get(String(a)) || 0), 0) : 0;
+        base[`${g} ${currentYear}`] = curSum;
+        if (showPrevious && previousYear) base[`${g} ${previousYear}`] = prevSum;
+        if (showDifference && (showPrevious && previousYear)) base[`${g} Endring`] = curSum - prevSum;
+        if (showPercent && (showPrevious && previousYear)) base[`${g} Endring %`] = prevSum !== 0 ? ((curSum - prevSum) / Math.abs(prevSum)) * 100 : 0;
+      }
+      rows.push(base);
+    };
+
+    visibleIncome.forEach((n) => buildRow('Resultat', n));
+    visibleBalance.forEach((n) => buildRow('Balanse', n));
+
+    exportArrayToXlsx(`konsern-rapport-${currentYear}`, rows);
+    setLiveMessage('Konsern Excel eksportert');
+  }, [scopeType, selectedClientIds, periodInfo, showPrevious, showDifference, showPercent, fi, fb, flattenVisible, getAccountsForLine]);
+
   return (
     <>
       <Card className="h-full">
@@ -605,6 +691,10 @@ const flattenVisible = React.useCallback((nodes: any[]): any[] => {
               </TooltipProvider>
               <Button variant="ghost" size="sm" onClick={handleExportCSV} className="ml-1" disabled={isLoading || !hasData}>Eksporter CSV</Button>
               <Button variant="ghost" size="sm" onClick={handleExportXLSX} className="ml-1" disabled={isLoading || !hasData}>Eksporter Excel</Button>
+              {scopeType === 'custom' && selectedClientIds && selectedClientIds.length > 0 && (
+                <Button variant="ghost" size="sm" onClick={handleExportConsolidatedXLSX} className="ml-1" disabled={isLoading || !hasData}>Konsern-Excel</Button>
+              )}
+
               <Button variant="ghost" size="sm" onClick={() => window.print()} className="ml-1" disabled={isLoading || !hasData}>Skriv ut</Button>
               {import.meta.env?.DEV && (
                 <Button variant="ghost" size="sm" onClick={() => setDebugOpen((v) => !v)} className="ml-1">Debug</Button>
