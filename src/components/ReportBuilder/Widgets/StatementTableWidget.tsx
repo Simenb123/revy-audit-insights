@@ -17,6 +17,7 @@ import { HelpCircle } from 'lucide-react';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { formatCurrency } from '@/lib/formatters';
 import { filterStatementLines } from '@/utils/filterStatementLines';
+import { exportArrayToXlsx } from '@/utils/exportToXlsx';
 
 interface StatementTableWidgetProps { widget: Widget }
 
@@ -527,6 +528,27 @@ const flattenVisible = React.useCallback((nodes: any[]): any[] => {
     setLiveMessage('CSV eksportert');
   }, [filteredIncome, filteredBalance, flattenVisible, periodInfo, showPrevious, showDifference, showPercent]);
 
+  const handleExportXLSX = React.useCallback(() => {
+    const visibleIncome = flattenVisible(fi);
+    const visibleBalance = flattenVisible(fb);
+    const rows = [
+      ...visibleIncome.map((n) => ({ Seksjon: 'Resultat', Nummer: n.standard_number, Navn: n.standard_name, 
+        [String(periodInfo?.currentYear ?? 'År')]: n.amount || 0,
+        ...(showPrevious ? { [String(periodInfo?.previousYear ?? 'I fjor')]: n.previous_amount || 0 } : {}),
+        ...(showDifference ? { Endring: (n.amount || 0) - (n.previous_amount || 0) } : {}),
+        ...(showPercent ? { 'Endring %': (n.previous_amount || 0) !== 0 ? (((n.amount || 0) - (n.previous_amount || 0)) / Math.abs(n.previous_amount || 0)) * 100 : 0 } : {}),
+      })),
+      ...visibleBalance.map((n) => ({ Seksjon: 'Balanse', Nummer: n.standard_number, Navn: n.standard_name, 
+        [String(periodInfo?.currentYear ?? 'År')]: n.amount || 0,
+        ...(showPrevious ? { [String(periodInfo?.previousYear ?? 'I fjor')]: n.previous_amount || 0 } : {}),
+        ...(showDifference ? { Endring: (n.amount || 0) - (n.previous_amount || 0) } : {}),
+        ...(showPercent ? { 'Endring %': (n.previous_amount || 0) !== 0 ? (((n.amount || 0) - (n.previous_amount || 0)) / Math.abs(n.previous_amount || 0)) * 100 : 0 } : {}),
+      })),
+    ];
+    exportArrayToXlsx(`rapport-${periodInfo?.currentYear ?? ''}`, rows);
+    setLiveMessage('Excel eksportert');
+  }, [fi, fb, flattenVisible, periodInfo, showPrevious, showDifference, showPercent]);
+
   return (
     <>
       <Card className="h-full">
@@ -582,6 +604,7 @@ const flattenVisible = React.useCallback((nodes: any[]): any[] => {
                 </Tooltip>
               </TooltipProvider>
               <Button variant="ghost" size="sm" onClick={handleExportCSV} className="ml-1" disabled={isLoading || !hasData}>Eksporter CSV</Button>
+              <Button variant="ghost" size="sm" onClick={handleExportXLSX} className="ml-1" disabled={isLoading || !hasData}>Eksporter Excel</Button>
               <Button variant="ghost" size="sm" onClick={() => window.print()} className="ml-1" disabled={isLoading || !hasData}>Skriv ut</Button>
               {import.meta.env?.DEV && (
                 <Button variant="ghost" size="sm" onClick={() => setDebugOpen((v) => !v)} className="ml-1">Debug</Button>
