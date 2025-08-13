@@ -285,6 +285,7 @@ export async function parseSaftFile(file: File | ArrayBuffer): Promise<SaftResul
       .concat(arr(byLocal(master, 'Customer')));
   const customers: CustomerInfo[] = customersRaw.map((c: any) => {
     const addr = byLocal(c, 'Address') || byLocal(c, 'BillingAddress');
+    const balStruct = byLocal(c, 'BalanceAccountStructure');
     return {
       id: byLocal(c, 'CustomerID') || byLocal(c, 'ID'),
       name: byLocal(c, 'CustomerName') || byLocal(c, 'Name'),
@@ -294,6 +295,7 @@ export async function parseSaftFile(file: File | ArrayBuffer): Promise<SaftResul
       postal: byLocal(addr, 'PostalCode') || byLocal(addr, 'PostCode'),
       street: byLocal(addr, 'StreetName') || byLocal(addr, 'AddressLine1') || byLocal(addr, 'AddressDetail'),
       balance_account:
+        byLocal(balStruct, 'BalanceAccount') ||
         byLocal(c, 'BalanceAccount') || byLocal(c, 'ReceivableAccount') || byLocal(c, 'GeneralLedgerAccountID'),
     };
   });
@@ -305,6 +307,7 @@ export async function parseSaftFile(file: File | ArrayBuffer): Promise<SaftResul
       .concat(arr(byLocal(master, 'Supplier')));
   const suppliers: SupplierInfo[] = suppliersRaw.map((s: any) => {
     const addr = byLocal(s, 'Address') || byLocal(s, 'BillingAddress');
+    const balStruct = byLocal(s, 'BalanceAccountStructure');
     return {
       id: byLocal(s, 'SupplierID') || byLocal(s, 'ID'),
       name: byLocal(s, 'SupplierName') || byLocal(s, 'Name'),
@@ -314,6 +317,7 @@ export async function parseSaftFile(file: File | ArrayBuffer): Promise<SaftResul
       postal: byLocal(addr, 'PostalCode') || byLocal(addr, 'PostCode'),
       street: byLocal(addr, 'StreetName') || byLocal(addr, 'AddressLine1') || byLocal(addr, 'AddressDetail'),
       balance_account:
+        byLocal(balStruct, 'BalanceAccount') ||
         byLocal(s, 'BalanceAccount') || byLocal(s, 'PayableAccount') || byLocal(s, 'GeneralLedgerAccountID'),
     };
   });

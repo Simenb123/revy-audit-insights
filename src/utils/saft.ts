@@ -114,15 +114,34 @@ export async function toXlsxBlob(data: SaftResult): Promise<Blob> {
     description: a.description ?? ''
   }));
 
-  const journalCols = ['journal_id','description','posting_date','journal_type','batch_id','system_id'];
-  const journalRows = (data.journals || []).map(j => ({
-    journal_id: j.journal_id ?? '',
-    description: j.description ?? '',
-    posting_date: j.posting_date ?? '',
-    journal_type: j.journal_type ?? '',
-    batch_id: j.batch_id ?? '',
-    system_id: j.system_id ?? ''
-  }));
+  // Compute period start/end per journal from raw transactions
+  const journalDateMap = new Map<string, { start?: string; end?: string }>();
+  (data.transactions || []).forEach(t => {
+    const jid = String(t.journal_id || '');
+    const ds = t.posting_date ? new Date(t.posting_date) : undefined;
+    if (!ds || isNaN(ds.getTime())) return;
+    const rec = journalDateMap.get(jid) || {};
+    const curStart = rec.start ? new Date(rec.start) : undefined;
+    const curEnd = rec.end ? new Date(rec.end) : undefined;
+    if (!curStart || ds < curStart) rec.start = ds.toISOString().split('T')[0];
+    if (!curEnd || ds > curEnd) rec.end = ds.toISOString().split('T')[0];
+    journalDateMap.set(jid, rec);
+  });
+
+  const journalCols = ['journal_id','description','posting_date','journal_type','batch_id','system_id','period_start','period_end'];
+  const journalRows = (data.journals || []).map(j => {
+    const dates = journalDateMap.get(String(j.journal_id || '')) || {};
+    return {
+      journal_id: j.journal_id ?? '',
+      description: j.description ?? '',
+      posting_date: j.posting_date ?? '',
+      journal_type: j.journal_type ?? '',
+      batch_id: j.batch_id ?? '',
+      system_id: j.system_id ?? '',
+      period_start: dates.start ?? '',
+      period_end: dates.end ?? ''
+    };
+  });
 
   const trxCols = [
     'journal_id','record_id','voucher_no','posting_date',
@@ -182,6 +201,18 @@ export async function toXlsxBlob(data: SaftResult): Promise<Blob> {
     credit_amt: a.credit_amt ?? ''
   }));
 
+  // AR/AP filtered transactions
+  const arTrxRows = trxRows.filter(r => String(r.customer_id || '').trim() !== '');
+  const apTrxRows = trxRows.filter(r => String(r.supplier_id || '').trim() !== '');
+
+  // AR/AP filtered transactions
+  const arTrxRows = trxRows.filter(r => String(r.customer_id || '').trim() !== '');
+  const apTrxRows = trxRows.filter(r => String(r.supplier_id || '').trim() !== '');
+
+  // AR/AP filtered transactions
+  const arTrxRows = trxRows.filter(r => String(r.customer_id || '').trim() !== '');
+  const apTrxRows = trxRows.filter(r => String(r.supplier_id || '').trim() !== '');
+
   const sum = (ns: number[]) => ns.reduce((acc, v) => acc + (v ?? 0), 0);
   const round2 = (n: number) => Math.round(n * 100) / 100;
   const totalSigned = round2(sum(trxRows.map(r => (Number(r.debit) || 0) + (Number(r.credit) || 0))));
@@ -203,7 +234,12 @@ export async function toXlsxBlob(data: SaftResult): Promise<Blob> {
   const qualityCols = ['metric','value'];
   const qualityRows = [
     { metric: 'lines_total', value: trxRows.length },
+    { metric: 'ar_lines_total', value: arTrxRows.length },
+    { metric: 'ap_lines_total', value: apTrxRows.length },
+    { metric: 'unique_customers_in_ar', value: new Set(arTrxRows.map(t => String(t.customer_id || ''))).size },
+    { metric: 'unique_suppliers_in_ap', value: new Set(apTrxRows.map(t => String(t.supplier_id || ''))).size },
     { metric: 'unique_voucher_no', value: new Set(trxRows.map(t => String(t.voucher_no || ''))).size },
+    { metric: 'lines_with_document_fields', value: trxRows.filter(r => String(r.document_no || r.reference_no || '').trim() !== '' ).length },
     { metric: 'lines_with_tax_information', value: (data.transactions || []).filter(t => t.vat_info_source === 'line').length },
     { metric: 'debit_rows_nonzero', value: trxRows.filter(r => (Number(r.debit) || 0) !== 0).length },
     { metric: 'credit_rows_nonzero', value: trxRows.filter(r => (Number(r.credit) || 0) !== 0).length },
@@ -223,6 +259,8 @@ export async function toXlsxBlob(data: SaftResult): Promise<Blob> {
   if (analysisTypeRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(analysisTypeRows, { header: analysisTypeCols }), 'AnalysisTypes');
   if (journalRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(journalRows, { header: journalCols }), 'Journal');
   if (trxRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(trxRows, { header: trxCols }), 'Transactions');
+  if (arTrxRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(arTrxRows, { header: trxCols }), 'AR_Transactions');
+  if (apTrxRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(apTrxRows, { header: trxCols }), 'AP_Transactions');
   if (analysisLineRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(analysisLineRows, { header: analysisLineCols }), 'AnalysisLines');
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(qualityRows, { header: qualityCols }), 'Quality');
 

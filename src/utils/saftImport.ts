@@ -1,4 +1,4 @@
-import JSZip from 'jszip';
+import JSZip from 'jszip'; // used only for ZIP packaging, keep in sync with XLSX sheets
 import * as XLSX from 'xlsx';
 import { supabase } from '@/integrations/supabase/client';
 import type { SaftResult } from './saftParser';
@@ -118,14 +118,30 @@ export async function createZipFromParsed(parsed: SaftResult): Promise<Blob> {
     description: a.description ?? ''
   }));
 
-  const journalCols = ['journal_id','description','posting_date','journal_type','batch_id','system_id'];
+  // Compute period start/end per journal from raw transactions
+  const journalDateMap = new Map<string, { start?: string; end?: string }>();
+  (parsed.transactions || []).forEach(t => {
+    const jid = String(t.journal_id || '');
+    const ds = t.posting_date ? new Date(t.posting_date) : undefined;
+    if (!ds || isNaN(ds.getTime())) return;
+    const rec = journalDateMap.get(jid) || {};
+    const curStart = rec.start ? new Date(rec.start) : undefined;
+    const curEnd = rec.end ? new Date(rec.end) : undefined;
+    if (!curStart || ds < curStart) rec.start = ds.toISOString().split('T')[0];
+    if (!curEnd || ds > curEnd) rec.end = ds.toISOString().split('T')[0];
+    journalDateMap.set(jid, rec);
+  });
+
+  const journalCols = ['journal_id','description','posting_date','journal_type','batch_id','system_id','period_start','period_end'];
   const journalRows = (parsed.journals || []).map(j => ({
     journal_id: j.journal_id ?? '',
     description: j.description ?? '',
     posting_date: j.posting_date ?? '',
     journal_type: j.journal_type ?? '',
     batch_id: j.batch_id ?? '',
-    system_id: j.system_id ?? ''
+    system_id: j.system_id ?? '',
+    period_start: (journalDateMap.get(String(j.journal_id || '')) || {}).start ?? '',
+    period_end: (journalDateMap.get(String(j.journal_id || '')) || {}).end ?? ''
   }));
 
   const trxCols = [
@@ -203,17 +219,28 @@ export async function createZipFromParsed(parsed: SaftResult): Promise<Blob> {
   trxRows.forEach(r => {
     const key = String(r.vat_code || '');
     const current = byVat.get(key) || 0;
-    byVat.set(key, current + (Number(r.vat_debit) || 0) + (Number(r.vat_credit) || 0));
+    // Normalize signs: debit positive, credit negative for VAT totals
+    byVat.set(key, current + Math.abs(Number(r.vat_debit) || 0) - Math.abs(Number(r.vat_credit) || 0));
   });
   const mvaOk = Array.from(byVat.values()).every(v => Math.abs(round2(v)) <= 0.01);
+
+  // AR/AP filtered transactions
+  const arTrxRows = trxRows.filter(r => String(r.customer_id || '').trim() !== '');
+  const apTrxRows = trxRows.filter(r => String(r.supplier_id || '').trim() !== '');
 
   const qualityCols = ['metric','value'];
   const qualityRows = [
     { metric: 'lines_total', value: trxRows.length },
+    { metric: 'ar_lines_total', value: arTrxRows.length },
+    { metric: 'ap_lines_total', value: apTrxRows.length },
+    { metric: 'unique_customers_in_ar', value: new Set(arTrxRows.map(t => String(t.customer_id || ''))).size },
+    { metric: 'unique_suppliers_in_ap', value: new Set(apTrxRows.map(t => String(t.supplier_id || ''))).size },
     { metric: 'unique_voucher_no', value: new Set(trxRows.map(t => String(t.voucher_no || ''))).size },
+    { metric: 'lines_with_document_fields', value: trxRows.filter(r => String(r.document_no || r.reference_no || '').trim() !== '' ).length },
     { metric: 'lines_with_tax_information', value: (parsed.transactions || []).filter(t => t.vat_info_source === 'line').length },
     { metric: 'debit_rows_nonzero', value: trxRows.filter(r => (Number(r.debit) || 0) !== 0).length },
     { metric: 'credit_rows_nonzero', value: trxRows.filter(r => (Number(r.credit) || 0) !== 0).length },
+    { metric: 'sum_signed_total', value: totalSigned },
     { metric: 'balance_ok', value: balanceOk && journalsOk ? 'true' : 'false' },
     { metric: 'balance_diff_total', value: totalSigned },
     { metric: 'mva_ok', value: mvaOk ? 'true' : 'false' },
@@ -230,6 +257,8 @@ export async function createZipFromParsed(parsed: SaftResult): Promise<Blob> {
   zip.file('analysis_types.csv', toCsv(analysisTypeCols, analysisTypeRows));
   zip.file('journal.csv', toCsv(journalCols, journalRows));
   zip.file('transactions.csv', toCsv(trxCols, trxRows));
+  zip.file('ar_transactions.csv', toCsv(trxCols, arTrxRows));
+  zip.file('ap_transactions.csv', toCsv(trxCols, apTrxRows));
   zip.file('analysis_lines.csv', toCsv(analysisLineCols, analysisLineRows));
   zip.file('quality.csv', toCsv(qualityCols, qualityRows));
 
@@ -245,6 +274,8 @@ export async function createZipFromParsed(parsed: SaftResult): Promise<Blob> {
   if (analysisTypeRows.length) XLSX.utils.book_append_sheet(wb, sheetFrom(analysisTypeCols, analysisTypeRows), 'AnalysisTypes');
   if (journalRows.length) XLSX.utils.book_append_sheet(wb, sheetFrom(journalCols, journalRows), 'Journal');
   if (trxRows.length) XLSX.utils.book_append_sheet(wb, sheetFrom(trxCols, trxRows), 'Transactions');
+  if (arTrxRows.length) XLSX.utils.book_append_sheet(wb, sheetFrom(trxCols, arTrxRows), 'AR_Transactions');
+  if (apTrxRows.length) XLSX.utils.book_append_sheet(wb, sheetFrom(trxCols, apTrxRows), 'AP_Transactions');
   if (analysisLineRows.length) XLSX.utils.book_append_sheet(wb, sheetFrom(analysisLineCols, analysisLineRows), 'AnalysisLines');
   const xlsxBuf = XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
   zip.file('SAF-T.xlsx', xlsxBuf);
