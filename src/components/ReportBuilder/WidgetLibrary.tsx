@@ -1,7 +1,13 @@
 import React from 'react';
 import { useWidgetManager, Widget } from '@/contexts/WidgetManagerContext';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   BarChart3,
@@ -19,6 +25,7 @@ import {
   CircleDot,
   ChartColumn,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { useWidgetTemplates } from '@/hooks/useWidgetTemplates';
 
 interface WidgetLibraryProps {
@@ -26,12 +33,23 @@ interface WidgetLibraryProps {
   onClose: () => void;
 }
 
+type Section = 'trial_balance' | 'budget' | 'transactions';
+
 export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
   const { addWidget } = useWidgetManager();
   const { data: dbTemplates } = useWidgetTemplates();
-  const [selectedSection, setSelectedSection] = React.useState<
-    'trial_balance' | 'budget' | 'transactions' | null
-  >(null);
+  const [step, setStep] = React.useState<'select-source' | 'select-widget'>('select-source');
+  const [selectedSection, setSelectedSection] = React.useState<Section | null>(null);
+
+  const sections: Record<Section, { label: string; icon: LucideIcon; description: string }> = {
+    trial_balance: { label: 'Saldobalanse', icon: Table, description: 'Kontosaldoer' },
+    budget: { label: 'Budsjett', icon: TrendingUp, description: 'Planlagte tall' },
+    transactions: {
+      label: 'Transaksjoner',
+      icon: ListOrdered,
+      description: 'Bokførte linjer',
+    },
+  };
 
   const defaultTemplates = React.useMemo(() => ([
     {
@@ -288,27 +306,6 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
     }
   ]), []);
 
-  const dataSources = [
-    {
-      key: 'trial_balance' as const,
-      label: 'Saldobalanse',
-      icon: Table,
-      description: 'Kontosaldoer'
-    },
-    {
-      key: 'budget' as const,
-      label: 'Budsjett',
-      icon: TrendingUp,
-      description: 'Planlagte tall'
-    },
-    {
-      key: 'transactions' as const,
-      label: 'Transaksjoner',
-      icon: ListOrdered,
-      description: 'Bokførte linjer'
-    }
-  ];
-
   const templates = React.useMemo(() => {
     if (dbTemplates && dbTemplates.length > 0) {
       return dbTemplates.map(t => {
@@ -380,26 +377,41 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
     onClose();
   };
 
+  const handleSelectSection = (key: Section) => {
+    setSelectedSection(key);
+    setStep('select-widget');
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        {selectedSection ? (
-          <Button variant="ghost" size="sm" onClick={() => setSelectedSection(null)}>
+        {step === 'select-widget' ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setStep('select-source');
+              setSelectedSection(null);
+            }}
+          >
             Tilbake
           </Button>
         ) : (
           <div />
         )}
         <h3 className="text-lg font-semibold">
-          {selectedSection ? 'Velg widget' : 'Velg datakilde'}
+          {step === 'select-source' ? 'Velg datakilde' : 'Velg widget'}
         </h3>
         <Button variant="ghost" size="sm" onClick={onClose}>
           <X className="h-4 w-4" />
         </Button>
       </div>
 
-      {selectedSection ? (
+      {step === 'select-widget' && selectedSection ? (
         <div className="space-y-2">
+          <p className="text-sm font-medium">
+            {sections[selectedSection].label}
+          </p>
           <p className="text-sm text-muted-foreground">
             Hold musen over en widget for en kort forklaring.
           </p>
@@ -418,7 +430,9 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
                           <template.icon className="h-5 w-5 text-primary" />
                           <div>
                             <CardTitle className="text-sm">{template.title}</CardTitle>
-                            <p className="text-xs text-muted-foreground">{template.dataDescription}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {template.dataDescription}
+                            </p>
                           </div>
                         </div>
                       </CardHeader>
@@ -436,11 +450,11 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {dataSources.map((ds) => (
+          {Object.entries(sections).map(([key, ds]) => (
             <Card
-              key={ds.key}
+              key={key}
               className="cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => setSelectedSection(ds.key)}
+              onClick={() => handleSelectSection(key as Section)}
             >
               <CardHeader className="pb-3">
                 <div className="flex items-center gap-2">
