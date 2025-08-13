@@ -57,7 +57,7 @@ export function KpiBenchmarkPanel({
                 <div className="text-muted-foreground">Klient</div>
                 <div className="text-right text-muted-foreground">Verdi</div>
                 {items.map((it) => (
-                  <ClientFormulaValue
+                  <MemoClientFormulaValue
                     key={it.id}
                     clientId={it.id}
                     name={it.name}
@@ -106,9 +106,14 @@ function ClientFormulaValue({
 }) {
   const result = useFormulaCalculation({ clientId, fiscalYear, formulaId, customFormula, selectedVersion, enabled: !!clientId && !!fiscalYear });
 
+  const lastSentRef = React.useRef<number | undefined>(undefined);
+
   React.useEffect(() => {
     const val = result.data?.isValid ? Number(result.data.value) : NaN;
-    if (!Number.isNaN(val)) onValue(clientId, val);
+    if (!Number.isNaN(val) && lastSentRef.current !== val) {
+      lastSentRef.current = val;
+      onValue(clientId, val);
+    }
   }, [clientId, result.data?.isValid, result.data?.value, onValue]);
 
   const value = result.data?.isValid ? Number(result.data.value) : null;
@@ -126,7 +131,17 @@ function ClientFormulaValue({
   return (
     <>
       <div>{name}</div>
-      <div className="text-right tabular-nums">{result.isLoading ? '…' : formatted}</div>
+      <div className="text-right tabular-nums">
+        {result.isLoading ? (
+          <span className="inline-block h-4 w-12 rounded bg-muted animate-pulse" aria-label="Laster" />
+        ) : result.error ? (
+          'Feil'
+        ) : (
+          formatted
+        )}
+      </div>
     </>
   );
 }
+
+const MemoClientFormulaValue = React.memo(ClientFormulaValue);
