@@ -7,21 +7,23 @@ import 'react-pivottable/pivottable.css';
 import { usePivotData } from '@/hooks/usePivotData';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
 import { useTransactions } from '@/hooks/useTransactions';
+import { useBudgetAnalytics } from '@/hooks/useBudgetAnalytics';
 
 interface PivotWidgetProps {
   widget: Widget;
 }
 
 export function PivotWidget({ widget }: PivotWidgetProps) {
-  const { updateWidget } = useWidgetManager();
+  const { updateWidget, clientId: contextClientId } = useWidgetManager();
   const { selectedFiscalYear } = useFiscalYear();
-  const clientId = widget.config?.clientId as string | undefined;
+  const clientId = (widget.config?.clientId as string | undefined) || contextClientId;
   const dataSource = widget.config?.dataSource || 'trial_balance';
   const rowField = widget.config?.rowField as string | undefined;
   const columnField = widget.config?.columnField as string | undefined;
   const valueField = widget.config?.valueField as string | undefined;
   const { data } = useTrialBalanceWithMappings(clientId || '', selectedFiscalYear);
   const { data: txData } = useTransactions(clientId || '', { pageSize: 1000 });
+  const { data: budgetData } = useBudgetAnalytics(clientId, selectedFiscalYear);
 
   const entries: Record<string, any>[] =
     dataSource === 'transactions'
@@ -33,6 +35,8 @@ export function PivotWidget({ widget }: PivotWidgetProps) {
             t.balance_amount ??
             ((t.debit_amount || 0) as number - (t.credit_amount || 0) as number),
         }))
+      : dataSource === 'budget'
+      ? budgetData?.rows || []
       : data?.trialBalanceEntries || [];
   
   const { data: entries = [] } = usePivotData({

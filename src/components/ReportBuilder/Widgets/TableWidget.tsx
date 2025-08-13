@@ -12,6 +12,7 @@ import { useFilteredData } from '@/hooks/useFilteredData';
 import { useFilters } from '@/contexts/FilterContext';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
 import { useTransactions } from '@/hooks/useTransactions';
+import { useBudgetAnalytics } from '@/hooks/useBudgetAnalytics';
 import { cn } from '@/lib/utils';
 
 interface TableWidgetProps {
@@ -20,11 +21,11 @@ interface TableWidgetProps {
 
 export function TableWidget({ widget }: TableWidgetProps) {
   const { selectedFiscalYear } = useFiscalYear();
-  const { updateWidget } = useWidgetManager();
+  const { updateWidget, clientId: contextClientId } = useWidgetManager();
   const { filters, setCrossFilter, clearCrossFilter } = useFilters();
-  const clientId = widget.config?.clientId;
+  const clientId = widget.config?.clientId || contextClientId;
   const dataSource = widget.config?.dataSource || 'trial_balance';
-  const dimension = widget.config?.dimension || 'account';
+  const dimension = widget.config?.dimension || (dataSource === 'budget' ? 'team' : 'account');
 
   const handleTitleChange = (newTitle: string) => {
     updateWidget(widget.id, { title: newTitle });
@@ -47,6 +48,7 @@ export function TableWidget({ widget }: TableWidgetProps) {
     widget.config?.selectedVersion
   );
   const { data: txData } = useTransactions(clientId || '', { pageSize: 1000 });
+  const { data: budgetData, isLoading: isLoadingBudget } = useBudgetAnalytics(clientId, selectedFiscalYear);
 
   // Apply global filters to trial balance entries
   const filteredTrialBalanceEntries = useFilteredData(trialBalanceData?.trialBalanceEntries || []);
@@ -116,6 +118,51 @@ export function TableWidget({ widget }: TableWidgetProps) {
               )}
             </TableBody>
           </Table>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (dataSource === 'budget') {
+    const rows = React.useMemo(() => {
+      if (!budgetData) return [];
+      const base = dimension === 'team' ? budgetData.byTeam : budgetData.byUser;
+      return base.slice(0, maxRows).map(r => ({ key: r.teamId ?? r.userId, name: r.name, hours: r.hours }));
+    }, [budgetData, dimension, maxRows]);
+    const total = budgetData?.totalHours ?? 0;
+
+    return (
+      <Card className="h-full">
+        <CardHeader className="pb-2">
+          <InlineEditableTitle title={widget.title} onTitleChange={handleTitleChange} size="sm" />
+        </CardHeader>
+        <CardContent className="p-0">
+          {isLoadingBudget ? (
+            <div className="p-4 text-sm text-muted-foreground">Laster budsjett...</div>
+          ) : rows.length === 0 ? (
+            <div className="p-4 text-sm text-muted-foreground">Ingen budsjettdata</div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-xs">{dimension === 'team' ? 'Team' : 'Medlem'}</TableHead>
+                  <TableHead className="text-xs text-right">Timer</TableHead>
+                  {showPercentage && <TableHead className="text-xs text-right">%</TableHead>}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {rows.map(r => (
+                  <TableRow key={r.key} className="text-xs">
+                    <TableCell className="font-medium">{r.name}</TableCell>
+                    <TableCell className="text-right">{new Intl.NumberFormat('nb-NO').format(r.hours)}</TableCell>
+                    {showPercentage && (
+                      <TableCell className="text-right">{total > 0 ? ((r.hours / total) * 100).toFixed(1) : '0.0'}%</TableCell>
+                    )}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     );

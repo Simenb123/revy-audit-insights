@@ -21,6 +21,7 @@ import { useFilteredData } from '@/hooks/useFilteredData';
 import { useFilters } from '@/contexts/FilterContext';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
 import { useFormulaSeries } from '@/hooks/useFormulaSeries';
+import { useBudgetAnalytics } from '@/hooks/useBudgetAnalytics';
 import { cn } from '@/lib/utils';
 
 interface ChartWidgetProps {
@@ -29,14 +30,15 @@ interface ChartWidgetProps {
 
 export function ChartWidget({ widget }: ChartWidgetProps) {
   const { selectedFiscalYear } = useFiscalYear();
-  const { updateWidget } = useWidgetManager();
+  const { updateWidget, clientId: contextClientId } = useWidgetManager();
   const { setCrossFilter, clearCrossFilter, filters } = useFilters();
-  const clientId = widget.config?.clientId;
+  const clientId = widget.config?.clientId || contextClientId;
   const chartType = widget.config?.chartType || 'bar';
   const maxDataPoints = widget.config?.maxDataPoints || 6;
   const showValues = widget.config?.showValues !== false;
   const enableCrossFilter = widget.config?.enableCrossFilter !== false;
-  const dataSource = widget.config?.chartDataSource || 'breakdown';
+  const chartDataSource = widget.config?.chartDataSource || 'breakdown';
+  const dataSource = widget.config?.dataSource || 'trial_balance';
   const yearsBack = widget.config?.yearsBack || 5;
   const startYear = selectedFiscalYear - (yearsBack - 1);
   const unitScale = widget.config?.unitScale || 'none';
@@ -46,12 +48,14 @@ export function ChartWidget({ widget }: ChartWidgetProps) {
   const customFormulaSel = sourceType === 'expr'
     ? (widget.config?.customFormula ?? '')
     : (sourceType === 'alias' ? metric : undefined);
+  const dimension = widget.config?.dimension || 'team';
   const drillPath: string[] = widget.config?.drillPath || [];
   const [drillStack, setDrillStack] = React.useState<string[]>([]);
   const currentLevel = drillStack.length;
   const crossFilterEnabled =
     enableCrossFilter &&
-    dataSource !== 'formulaSeries' &&
+    dataSource === 'trial_balance' &&
+    chartDataSource !== 'formulaSeries' &&
     (drillPath.length === 0 || currentLevel === drillPath.length - 1);
 
   const handleTitleChange = (newTitle: string) => {
@@ -75,8 +79,10 @@ export function ChartWidget({ widget }: ChartWidgetProps) {
     formulaId: formulaIdSel,
     customFormula: customFormulaSel,
     selectedVersion: widget.config?.selectedVersion,
-    enabled: dataSource === 'formulaSeries' && !!clientId,
+    enabled: chartDataSource === 'formulaSeries' && dataSource === 'trial_balance' && !!clientId,
   });
+
+  const { data: budgetData, isLoading: isLoadingBudget } = useBudgetAnalytics(clientId, selectedFiscalYear);
 
   const getFieldValue = React.useCallback((entry: any, field: string) => {
     switch (field) {
@@ -138,7 +144,14 @@ export function ChartWidget({ widget }: ChartWidgetProps) {
   );
 
   const chartData = React.useMemo(() => {
-    if (dataSource === 'formulaSeries') {
+    if (dataSource === 'budget') {
+      const base = (dimension === 'team' ? budgetData?.byTeam : budgetData?.byUser) ?? [];
+      return base
+        .slice(0, maxDataPoints)
+        .map(r => ({ name: r.name.length > 10 ? r.name.slice(0, 9) + '…' : r.name, value: r.hours }));
+    }
+
+    if (chartDataSource === 'formulaSeries') {
       const series = formulaSeries ?? [];
       return series.map(p => ({ name: String(p.year), value: scaleValueByType(p.value, p.type) }));
     }
@@ -174,6 +187,7 @@ export function ChartWidget({ widget }: ChartWidgetProps) {
       }));
   }, [
     dataSource,
+    chartDataSource,
     formulaSeries,
     filteredTrialBalanceEntries,
     maxDataPoints,
@@ -183,6 +197,8 @@ export function ChartWidget({ widget }: ChartWidgetProps) {
     drillStack,
     getFieldValue,
     scaleValueByType,
+    budgetData,
+    dimension,
   ]);
 
   // Handle chart element clicks for drilldown or cross-filtering
@@ -224,7 +240,12 @@ export function ChartWidget({ widget }: ChartWidgetProps) {
   // Check if this widget is the source of current cross-filter
   const isFilterSource = filters.crossFilter?.sourceWidgetId === widget.id;
 
-  const isLoadingCurrent = dataSource === 'formulaSeries' ? isLoadingSeries : isLoadingTB;
+  const isLoadingCurrent =
+    dataSource === 'budget'
+      ? isLoadingBudget
+      : chartDataSource === 'formulaSeries'
+        ? isLoadingSeries
+        : isLoadingTB;
 
   if (isLoadingCurrent) {
     return (

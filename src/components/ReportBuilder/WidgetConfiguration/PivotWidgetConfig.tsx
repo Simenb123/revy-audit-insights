@@ -31,34 +31,31 @@ const transactionValueOptions = [
   { value: 'credit_amount', label: 'Kredit' },
 ];
 
+const budgetFieldOptions = [
+  { value: 'team_id', label: 'Team' },
+  { value: 'user_id', label: 'Medlem' },
+];
+
+const budgetValueOptions = [
+  { value: 'budget_hours', label: 'Timer' },
+];
+
 export function PivotWidgetConfig({ config, onUpdate }: PivotWidgetConfigProps) {
   const fieldOptions =
     config.dataSource === 'transactions'
       ? transactionFieldOptions
+      : config.dataSource === 'budget'
+      ? budgetFieldOptions
       : trialBalanceFieldOptions;
   const valueOptions =
     config.dataSource === 'transactions'
       ? transactionValueOptions
+      : config.dataSource === 'budget'
+      ? budgetValueOptions
       : trialBalanceValueOptions;
 
   return (
     <div className="space-y-4">
-      <div>
-        <Label htmlFor="dataSource">Datakilde</Label>
-        <Select
-          value={config.dataSource || 'trial_balance'}
-          onValueChange={(value) => onUpdate('dataSource', value)}
-        >
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="trial_balance">Saldobalanse</SelectItem>
-            <SelectItem value="transactions">Transaksjoner</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
       <div>
         <Label htmlFor="rowField">Radfelt</Label>
         <Select

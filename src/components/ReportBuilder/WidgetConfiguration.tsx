@@ -251,23 +251,7 @@ export function WidgetConfiguration({ widget, onUpdateWidget }: WidgetConfigurat
       case 'table':
         return (
           <div className="space-y-4">
-            <div>
-              <Label htmlFor="dataSource" title="Velg datakilde">Datakilde</Label>
-              <Select
-                value={config.dataSource || 'trial_balance'}
-                onValueChange={(value) => updateConfig('dataSource', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="trial_balance">Saldobalanse</SelectItem>
-                  <SelectItem value="transactions">Transaksjoner</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {config.dataSource === 'transactions' ? (
+            {config.dataSource === 'transactions' && (
               <div>
                 <Label htmlFor="dimension">Dimensjon</Label>
                 <Select
@@ -284,7 +268,27 @@ export function WidgetConfiguration({ widget, onUpdateWidget }: WidgetConfigurat
                   </SelectContent>
                 </Select>
               </div>
-            ) : (
+            )}
+
+            {config.dataSource === 'budget' && (
+              <div>
+                <Label htmlFor="dimensionBudget">Dimensjon</Label>
+                <Select
+                  value={config.dimension || 'team'}
+                  onValueChange={(value) => updateConfig('dimension', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="team">Team</SelectItem>
+                    <SelectItem value="member">Medlem</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {(!config.dataSource || config.dataSource === 'trial_balance') && (
               <>
                 <div>
                   <Label htmlFor="maxRows" title="Hvor mange rader som vises">Maksimalt antall rader</Label>
@@ -394,6 +398,24 @@ export function WidgetConfiguration({ widget, onUpdateWidget }: WidgetConfigurat
                 </SelectContent>
               </Select>
             </div>
+
+            {config.dataSource === 'budget' && (
+              <div>
+                <Label htmlFor="budgetDimension">Dimensjon</Label>
+                <Select
+                  value={config.dimension || 'team'}
+                  onValueChange={(value) => updateConfig('dimension', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="team">Team</SelectItem>
+                    <SelectItem value="member">Medlem</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             {config.chartDataSource === 'formulaSeries' && (
               <div className="space-y-4">
@@ -864,6 +886,24 @@ export function WidgetConfiguration({ widget, onUpdateWidget }: WidgetConfigurat
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Widget tittel"
               />
+            </div>
+          )}
+          {widget.type !== 'formula' && (
+            <div>
+              <Label htmlFor="dataSource" title="Velg datakilde">Datakilde</Label>
+              <Select
+                value={config.dataSource || 'trial_balance'}
+                onValueChange={(value) => updateConfig('dataSource', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="trial_balance">Saldobalanse</SelectItem>
+                  <SelectItem value="transactions">Transaksjoner</SelectItem>
+                  <SelectItem value="budget">Budsjett</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           )}
           {widget.type !== 'formula' && (

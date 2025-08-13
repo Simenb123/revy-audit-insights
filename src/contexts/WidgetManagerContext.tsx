@@ -64,6 +64,8 @@ interface WidgetManagerContextType {
       label: string;
     }
   ) => void;
+  clientId: string;
+  year: number;
 }
 
 export const WidgetManagerContext = createContext<WidgetManagerContextType | undefined>(undefined);
@@ -150,6 +152,8 @@ export function WidgetManagerProvider({
       loadFromStorage,
       activeCrossFilter,
       setActiveCrossFilter,
+      clientId,
+      year,
     }}>
       {children}
     </WidgetManagerContext.Provider>
