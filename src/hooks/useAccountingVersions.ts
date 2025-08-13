@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { GLVersionOption } from '@/types/accounting';
@@ -89,14 +90,19 @@ export const useActiveVersion = (clientId: string) => {
   return useQuery({
     queryKey: ['active-version', clientId],
     queryFn: async () => {
+      console.log('[Active GL Version] Fetching for client:', clientId);
       const { data, error } = await supabase
         .from('accounting_data_versions')
         .select('*')
         .eq('client_id', clientId)
         .eq('is_active', true)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') throw error;
+      if (error) {
+        console.error('[Active GL Version] Error:', error);
+        throw error;
+      }
+      console.log('[Active GL Version] Result:', data);
       return data as AccountingDataVersion | null;
     },
     enabled: !!clientId,
@@ -108,6 +114,7 @@ export const useSetActiveVersion = () => {
 
   return useMutation({
     mutationFn: async (versionId: string) => {
+      console.log('[Set Active Version] Activating version:', versionId);
       const { error } = await supabase.rpc('set_active_version', {
         p_version_id: versionId
       });
@@ -138,6 +145,7 @@ export const useCreateVersion = () => {
       balanceDifference: number;
       metadata?: any;
     }) => {
+      console.log('[Create GL Version] Start with params:', params);
       // Get next version number
       const { data: nextVersionNumber, error: versionError } = await supabase.rpc(
         'get_next_version_number',
@@ -145,6 +153,7 @@ export const useCreateVersion = () => {
       );
 
       if (versionError) throw versionError;
+      console.log('[Create GL Version] Next version number:', nextVersionNumber);
 
       // Create new version
       const { data, error } = await supabase
@@ -153,8 +162,8 @@ export const useCreateVersion = () => {
           client_id: params.clientId,
           version_number: nextVersionNumber,
           file_name: params.fileName,
-          upload_batch_id: params.uploadBatchId,
-          uploaded_by: (await supabase.auth.getUser()).data.user?.id,
+          upload_batch_id: params.uploadBatchId || null,
+          uploaded_by: (await supabase.auth.getUser()).data.user?.id || null,
           total_transactions: params.totalTransactions,
           total_debit_amount: params.totalDebitAmount,
           total_credit_amount: params.totalCreditAmount,
@@ -162,19 +171,35 @@ export const useCreateVersion = () => {
           metadata: params.metadata || {},
         })
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
 
+      // If RLS prevents returning the row on insert, try to fetch it explicitly
+      if (!data) {
+        console.log('[Create GL Version] Insert returned no row (RLS likely). Refetching...');
+        const { data: fetched, error: fetchError } = await supabase
+          .from('accounting_data_versions')
+          .select('*')
+          .eq('client_id', params.clientId)
+          .eq('version_number', nextVersionNumber)
+          .maybeSingle();
+
+        if (fetchError) throw fetchError;
+        console.log('[Create GL Version] Fallback fetched row:', fetched);
+        return fetched as AccountingDataVersion;
+      }
+
+      console.log('[Create GL Version] Insert returned row:', data);
       return data as AccountingDataVersion;
     },
     onSuccess: (newVersion) => {
       // Invalidate relevant queries to refresh UI
+      console.log('[Create GL Version] Success:', newVersion);
       queryClient.invalidateQueries({ queryKey: ['accounting-versions'] });
       queryClient.invalidateQueries({ queryKey: ['gl-version-options'] });
       queryClient.invalidateQueries({ queryKey: ['general-ledger-v6'] });
       queryClient.invalidateQueries({ queryKey: ['general-ledger-count-v6'] });
-      console.log('[useCreateVersion] New version created:', newVersion);
     },
   });
 };
