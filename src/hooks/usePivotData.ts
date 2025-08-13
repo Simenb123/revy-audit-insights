@@ -64,6 +64,25 @@ export function usePivotData({
         return [] as any[];
       }
 
+      // Enrich with client labels for custom scope to enable client/konsern columns
+      if (scopeType === 'custom' && selectedClientIds.length > 0) {
+        const { data: clients = [] } = await supabase
+          .from('clients' as any)
+          .select('id, company_name, client_group')
+          .in('id', selectedClientIds);
+        const nameMap = new Map<string, string>();
+        const groupMap = new Map<string, string | null>();
+        (clients as any[]).forEach((c: any) => {
+          nameMap.set(c.id, c.company_name || c.name || c.id);
+          groupMap.set(c.id, c.client_group ?? null);
+        });
+        data = data.map((entry: any) => ({
+          ...entry,
+          client_name: nameMap.get(entry.client_id) ?? entry.client_id,
+          client_group: groupMap.get(entry.client_id) ?? null,
+        }));
+      }
+
       if (!rowField && !columnField && !valueField) {
         return data as any[];
       }

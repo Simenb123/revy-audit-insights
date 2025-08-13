@@ -68,6 +68,10 @@ export function PivotWidget({ widget }: PivotWidgetProps) {
     exportArrayToXlsx(widget.title || 'Pivotdata', currentData);
   };
 
+  const setColumnField = (field?: string) => {
+    updateWidget(widget.id, { config: { ...widget.config, columnField: field } });
+  };
+
   return (
     <Card className="h-full">
       <CardHeader className="pb-2 flex flex-row items-center justify-between">
@@ -76,9 +80,29 @@ export function PivotWidget({ widget }: PivotWidgetProps) {
           onTitleChange={handleTitleChange}
           size="sm"
         />
-        <Button variant="outline" size="sm" onClick={handleExport} disabled={!hasData}>
-          Eksporter
-        </Button>
+        <div className="flex items-center gap-2">
+          {scopeType === 'custom' && dataSource !== 'transactions' && (
+            <div className="flex items-center gap-1">
+              <Button
+                variant={columnField === 'client_name' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setColumnField(columnField === 'client_name' ? undefined : 'client_name')}
+              >
+                Kolonner: Klient
+              </Button>
+              <Button
+                variant={columnField === 'client_group' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setColumnField(columnField === 'client_group' ? undefined : 'client_group')}
+              >
+                Kolonner: Konsern
+              </Button>
+            </div>
+          )}
+          <Button variant="outline" size="sm" onClick={handleExport} disabled={!hasData}>
+            Eksporter
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         {!hasData || !hasConfig ? (
