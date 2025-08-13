@@ -16,6 +16,7 @@ export function useKpiBenchmarkState({ scopeType, showBenchmark, selectedClientI
     const load = async () => {
       if (scopeType !== 'custom' || !showBenchmark || !selectedClientIds || selectedClientIds.length === 0) {
         setClientsInfo([]);
+        setValuesByClient({});
         return;
       }
       const { data = [] } = await supabase
@@ -24,6 +25,14 @@ export function useKpiBenchmarkState({ scopeType, showBenchmark, selectedClientI
         .in('id', selectedClientIds);
       const items = (data as any[]).map((c) => ({ id: c.id, name: c.company_name || c.name || c.id, group: c.client_group || 'Uten gruppe' }));
       setClientsInfo(items);
+      // Keep only values for currently selected clients
+      setValuesByClient((prev) => {
+        const next: Record<string, number> = {};
+        for (const id of selectedClientIds) {
+          if (typeof prev[id] === 'number' && !Number.isNaN(prev[id])) next[id] = prev[id];
+        }
+        return next;
+      });
     };
     load();
   }, [scopeType, showBenchmark, selectedClientIds]);

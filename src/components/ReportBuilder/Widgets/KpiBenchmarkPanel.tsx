@@ -1,7 +1,7 @@
 import React from 'react';
 import { formatCurrency } from '@/lib/formatters';
 import { useFormulaCalculation } from '@/hooks/useFormulaCalculation';
-
+import { getScaleDivisor, formatNumeric, formatPercent } from '@/utils/kpiFormat';
 export function KpiBenchmarkPanel({
   fiscalYear,
   clients,
@@ -10,6 +10,7 @@ export function KpiBenchmarkPanel({
   selectedVersion,
   displayAsPercentage,
   showCurrency,
+  unitScale,
   onValue,
 }: {
   fiscalYear: number;
@@ -19,6 +20,7 @@ export function KpiBenchmarkPanel({
   selectedVersion?: string;
   displayAsPercentage: boolean;
   showCurrency: boolean;
+  unitScale: 'none' | 'thousand' | 'million';
   onValue: (id: string, value: number) => void;
 }) {
   const groups = React.useMemo(() => {
@@ -37,12 +39,22 @@ export function KpiBenchmarkPanel({
     onValue(id, value);
   }, [onValue]);
 
+  // Reset cached values when client list changes
+  React.useEffect(() => {
+    setValuesByClient({});
+  }, [clients]);
+
+  const scaleDivisor = React.useMemo(
+    () => (displayAsPercentage ? 1 : getScaleDivisor(unitScale)),
+    [displayAsPercentage, unitScale]
+  );
+
   const formatVal = React.useCallback((val: number) => {
     if (Number.isNaN(val)) return 'N/A';
-    if (displayAsPercentage) return `${val.toFixed(1)}%`;
-    if (showCurrency) return formatCurrency(val);
-    return new Intl.NumberFormat('nb-NO', { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(val);
-  }, [displayAsPercentage, showCurrency]);
+    if (displayAsPercentage) return formatPercent(val);
+    const scaled = val / scaleDivisor;
+    return showCurrency ? formatCurrency(scaled) : formatNumeric(scaled);
+  }, [displayAsPercentage, showCurrency, scaleDivisor]);
 
   return (
     <div className="space-y-4">
@@ -67,6 +79,7 @@ export function KpiBenchmarkPanel({
                     selectedVersion={selectedVersion}
                     displayAsPercentage={displayAsPercentage}
                     showCurrency={showCurrency}
+                    unitScale={unitScale}
                     onValue={handleValue}
                   />
                 ))}
@@ -92,6 +105,7 @@ function ClientFormulaValue({
   selectedVersion,
   displayAsPercentage,
   showCurrency,
+  unitScale,
   onValue,
 }: {
   clientId: string;
@@ -102,6 +116,7 @@ function ClientFormulaValue({
   selectedVersion?: string;
   displayAsPercentage: boolean;
   showCurrency: boolean;
+  unitScale: 'none' | 'thousand' | 'million';
   onValue: (id: string, value: number) => void;
 }) {
   const result = useFormulaCalculation({ clientId, fiscalYear, formulaId, customFormula, selectedVersion, enabled: !!clientId && !!fiscalYear });
@@ -120,11 +135,10 @@ function ClientFormulaValue({
   let formatted = 'N/A';
   if (value !== null) {
     if (displayAsPercentage) {
-      formatted = `${value.toFixed(1)}%`;
-    } else if (showCurrency) {
-      formatted = formatCurrency(value);
+      formatted = formatPercent(value);
     } else {
-      formatted = new Intl.NumberFormat('nb-NO', { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(value);
+      const scaled = value / getScaleDivisor(unitScale);
+      formatted = showCurrency ? formatCurrency(scaled) : formatNumeric(scaled);
     }
   }
 

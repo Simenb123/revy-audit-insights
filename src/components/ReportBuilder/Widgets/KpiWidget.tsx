@@ -16,6 +16,7 @@ import { BenchmarkControls } from './BenchmarkControls';
 import { useKpiBenchmarkAggregation } from '@/hooks/useKpiBenchmarkAggregation';
 import { KpiBenchmarkSummary } from './KpiBenchmarkSummary';
 import { useKpiBenchmarkState } from '@/hooks/useKpiBenchmarkState';
+import { getScaleDivisor, formatNumeric, formatPercent } from '@/utils/kpiFormat';
 
 interface KpiWidgetProps {
   widget: Widget;
@@ -256,6 +257,7 @@ export function KpiWidget({ widget }: KpiWidgetProps) {
               selectedVersion={widget.config?.selectedVersion}
               displayAsPercentage={displayAsPercentage}
               showCurrency={showCurrency}
+              unitScale={unitScale}
               onValue={setClientValue}
             />
           </div>
