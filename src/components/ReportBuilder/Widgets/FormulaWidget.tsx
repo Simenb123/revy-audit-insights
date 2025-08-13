@@ -7,6 +7,9 @@ import { useFiscalYear } from '@/contexts/FiscalYearContext';
 import { useFilters } from '@/contexts/FilterContext';
 import { useFormulaCalculation } from '@/hooks/useFormulaCalculation';
 import { formatCurrency } from '@/lib/formatters';
+import { useScope } from '@/contexts/ScopeContext';
+import { useQueries } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 interface FormulaWidgetProps {
   /**
@@ -32,6 +35,9 @@ export function FormulaWidget({ widget, format: formatProp }: FormulaWidgetProps
   const formula = widget.config?.formula;
   const selectedVersion = widget.config?.selectedVersion;
 
+  const { scopeType, selectedClientIds } = useScope();
+  const isGlobalMulti = !clientId && scopeType === 'custom' && (selectedClientIds?.length || 0) > 0;
+
   const format = (formatProp || widget.config?.format || 'number') as
     | 'currency'
     | 'percent'
@@ -49,12 +55,52 @@ export function FormulaWidget({ widget, format: formatProp }: FormulaWidgetProps
     enabled: !!clientId && !!selectedFiscalYear && !!formula,
   });
 
+  // Multi-client aggregation in global custom scope
+  const multi = useQueries({
+    queries:
+      isGlobalMulti && !!formula
+        ? (selectedClientIds || []).map((id) => ({
+            queryKey: ['formula-calculation', id, selectedFiscalYear, formula, selectedVersion],
+            queryFn: async () => {
+              const { data, error } = await supabase.functions.invoke('calculate-formula', {
+                body: { clientId: id, fiscalYear: selectedFiscalYear, customFormula: formula, selectedVersion },
+              });
+              if (error) throw new Error(error.message || 'Formula calculation failed');
+              return data as any;
+            },
+            staleTime: 5 * 60 * 1000,
+          }))
+        : [],
+  });
+
   // Recalculate whenever filters change
   useEffect(() => {
-    calculation.refetch();
-  }, [filters, calculation.refetch]);
+    if (isGlobalMulti) {
+      multi.forEach((q) => q.refetch());
+    } else {
+      calculation.refetch();
+    }
+  }, [filters, calculation.refetch, isGlobalMulti]);
 
   const displayValue = useMemo(() => {
+    if (isGlobalMulti) {
+      if (multi.length === 0 || multi.some((q) => q.isLoading)) return 'Laster...';
+      const valids = multi.map((q) => q.data).filter((d: any) => d && d.isValid);
+      if (valids.length === 0) return 'N/A';
+      const sum = valids.reduce((s: number, d: any) => s + (Number(d.value) || 0), 0);
+      switch (format) {
+        case 'currency':
+          return formatCurrency(sum);
+        case 'percent':
+          return sum.toFixed(1) + '%';
+        default:
+          return new Intl.NumberFormat('nb-NO', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 2,
+          }).format(sum);
+      }
+    }
+
     if (calculation.isLoading) return 'Laster...';
     if (calculation.error || !calculation.data?.isValid) return 'N/A';
 
@@ -70,9 +116,9 @@ export function FormulaWidget({ widget, format: formatProp }: FormulaWidgetProps
           maximumFractionDigits: 2,
         }).format(value);
     }
-  }, [calculation, format]);
+  }, [isGlobalMulti, multi, calculation, format]);
 
-  if (!clientId || !formula) {
+  if (((!clientId && !isGlobalMulti)) || !formula) {
     return (
       <Card className="h-full">
         <CardHeader className="pb-2">
@@ -87,7 +133,7 @@ export function FormulaWidget({ widget, format: formatProp }: FormulaWidgetProps
         </CardHeader>
         <CardContent>
           <div className="text-sm text-muted-foreground">
-            {!clientId ? 'Klient ikke valgt' : 'Ingen formel konfigurert'}
+            {!formula ? 'Ingen formel konfigurert' : 'Klient ikke valgt'}
           </div>
         </CardContent>
       </Card>
