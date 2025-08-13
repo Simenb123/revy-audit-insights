@@ -1,11 +1,13 @@
 import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from 'react';
 import { loadReportBuilderSettings, saveReportBuilderSettings } from '@/hooks/useReportBuilderSettings';
 
-export type ScopeType = 'client' | 'firm';
+export type ScopeType = 'client' | 'firm' | 'custom';
 
 interface ScopeContextValue {
   scopeType: ScopeType;
   setScopeType: (t: ScopeType) => void;
+  selectedClientIds: string[];
+  setSelectedClientIds: (ids: string[]) => void;
 }
 
 const ScopeContext = createContext<ScopeContextValue | undefined>(undefined);
@@ -19,27 +21,37 @@ interface ScopeProviderProps {
 export function ScopeProvider({ children, clientId, fiscalYear }: ScopeProviderProps) {
   const storageKeyInputs = useMemo(() => ({ clientId, fiscalYear }), [clientId, fiscalYear]);
   const [scopeType, setScopeTypeState] = useState<ScopeType>('client');
+  const [selectedClientIds, setSelectedClientIdsState] = useState<string[]>(clientId ? [clientId] : []);
 
   // Load persisted settings
   useEffect(() => {
     const settings = loadReportBuilderSettings(storageKeyInputs.clientId, storageKeyInputs.fiscalYear);
-    if (settings && (settings as any).scopeType) {
-      setScopeTypeState((settings as any).scopeType as ScopeType);
+    if (settings) {
+      if ((settings as any).scopeType) {
+        setScopeTypeState((settings as any).scopeType as ScopeType);
+      }
+      if ((settings as any).selectedClientIds) {
+        setSelectedClientIdsState((settings as any).selectedClientIds as string[]);
+      } else if (clientId) {
+        setSelectedClientIdsState([clientId]);
+      }
     }
-  }, [storageKeyInputs]);
+  }, [storageKeyInputs, clientId]);
 
-  // Persist when scope changes
+  // Persist when scope or selection changes
   useEffect(() => {
     const existing = loadReportBuilderSettings(storageKeyInputs.clientId, storageKeyInputs.fiscalYear) || {};
     saveReportBuilderSettings(storageKeyInputs.clientId, storageKeyInputs.fiscalYear, {
       ...existing,
       scopeType,
+      selectedClientIds,
     });
-  }, [scopeType, storageKeyInputs]);
+  }, [scopeType, selectedClientIds, storageKeyInputs]);
 
   const setScopeType = useCallback((t: ScopeType) => setScopeTypeState(t), []);
+  const setSelectedClientIds = useCallback((ids: string[]) => setSelectedClientIdsState(ids), []);
 
-  const value = useMemo(() => ({ scopeType, setScopeType }), [scopeType, setScopeType]);
+  const value = useMemo(() => ({ scopeType, setScopeType, selectedClientIds, setSelectedClientIds }), [scopeType, setScopeType, selectedClientIds, setSelectedClientIds]);
 
   return <ScopeContext.Provider value={value}>{children}</ScopeContext.Provider>;
 }

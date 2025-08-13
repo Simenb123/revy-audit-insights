@@ -7,7 +7,8 @@ export interface ReportBuilderSettings {
   theme?: ThemeConfig;
   introSeen?: boolean;
   // Scope settings (optional)
-  scopeType?: 'client' | 'firm';
+  scopeType?: 'client' | 'firm' | 'custom';
+  selectedClientIds?: string[];
 }
 
 const STORAGE_PREFIX = 'report-builder-settings';

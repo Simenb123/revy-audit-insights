@@ -7,7 +7,8 @@ export interface PivotDataParams {
   rowField?: string;
   columnField?: string;
   valueField?: string;
-  scopeType?: 'client' | 'firm';
+  scopeType?: 'client' | 'firm' | 'custom';
+  selectedClientIds?: string[];
 }
 
 export function usePivotData({
@@ -17,12 +18,12 @@ export function usePivotData({
   columnField,
   valueField,
   scopeType = 'client',
+  selectedClientIds = [],
 }: PivotDataParams) {
   return useQuery({
-    queryKey: ['pivot-data', clientId, fiscalYear, rowField, columnField, valueField, scopeType],
-    enabled: !!fiscalYear && (scopeType === 'firm' || !!clientId),
+    queryKey: ['pivot-data', clientId, fiscalYear, rowField, columnField, valueField, scopeType, selectedClientIds?.join(',')],
+    enabled: !!fiscalYear && ((scopeType === 'firm') || (scopeType === 'custom' && selectedClientIds.length > 0) || !!clientId),
     queryFn: async () => {
-      // Try firm-wide RPC when scope is 'firm'; fall back to table if not available
       let data: any[] | null = null;
       let error: any = null;
 
@@ -34,7 +35,6 @@ export function usePivotData({
         error = rpc.error;
 
         if (error) {
-          // Fallback to direct table query if RPC is not available
           const tbl = await supabase
             .from('trial_balance_entries' as any)
             .select('*')
@@ -42,6 +42,14 @@ export function usePivotData({
           data = tbl.data as any[] | null;
           error = tbl.error;
         }
+      } else if (scopeType === 'custom') {
+        const tbl = await supabase
+          .from('trial_balance_entries' as any)
+          .select('*')
+          .in('client_id', selectedClientIds)
+          .eq('period_year', fiscalYear);
+        data = tbl.data as any[] | null;
+        error = tbl.error;
       } else {
         const tbl = await supabase
           .from('trial_balance_entries' as any)

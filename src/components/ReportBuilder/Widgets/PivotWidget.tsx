@@ -1,6 +1,7 @@
 import React from 'react';
 import { Widget, useWidgetManager } from '@/contexts/WidgetManagerContext';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { InlineEditableTitle } from '../InlineEditableTitle';
 import PivotTable from 'react-pivottable';
 import 'react-pivottable/pivottable.css';
@@ -8,6 +9,8 @@ import { usePivotData } from '@/hooks/usePivotData';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
 import { useTransactions } from '@/hooks/useTransactions';
 import { useTrialBalanceWithMappings } from '@/hooks/useTrialBalanceWithMappings';
+import { useScope } from '@/contexts/ScopeContext';
+import { exportArrayToXlsx } from '@/utils/exportToXlsx';
 
 interface PivotWidgetProps {
   widget: Widget;
@@ -16,6 +19,7 @@ interface PivotWidgetProps {
 export function PivotWidget({ widget }: PivotWidgetProps) {
   const { updateWidget } = useWidgetManager();
   const { selectedFiscalYear } = useFiscalYear();
+  const { scopeType, selectedClientIds } = useScope();
   const clientId = widget.config?.clientId as string | undefined;
   const dataSource = widget.config?.dataSource || 'trial_balance';
   const rowField = widget.config?.rowField as string | undefined;
@@ -42,6 +46,8 @@ export function PivotWidget({ widget }: PivotWidgetProps) {
     rowField,
     columnField,
     valueField,
+    scopeType,
+    selectedClientIds,
   });
 
   const handleTitleChange = (newTitle: string) => {
@@ -51,23 +57,37 @@ export function PivotWidget({ widget }: PivotWidgetProps) {
   const actualValueField = valueField || (dataSource === 'transactions' ? 'amount' : undefined);
   const hasConfig = !!(rowField && columnField && actualValueField);
 
+  const currentData = scopeType === 'client' && (dataSource === 'transactions' || dataSource === 'trial_balance')
+    ? entries
+    : pivotEntries;
+
+  const hasData = (currentData?.length || 0) > 0;
+
+  const handleExport = () => {
+    if (!hasData) return;
+    exportArrayToXlsx(widget.title || 'Pivotdata', currentData);
+  };
+
   return (
     <Card className="h-full">
-      <CardHeader className="pb-2">
+      <CardHeader className="pb-2 flex flex-row items-center justify-between">
         <InlineEditableTitle
           title={widget.title}
           onTitleChange={handleTitleChange}
           size="sm"
         />
+        <Button variant="outline" size="sm" onClick={handleExport} disabled={!hasData}>
+          Eksporter
+        </Button>
       </CardHeader>
       <CardContent>
-        {!clientId || entries.length === 0 || !hasConfig ? (
+        {!hasData || !hasConfig ? (
           <div className="text-sm text-muted-foreground">
             Ingen pivottabell-data.
           </div>
         ) : (
           <PivotTable
-            data={dataSource === 'transactions' || dataSource === 'trial_balance' ? entries : pivotEntries}
+            data={currentData}
             rows={rowField ? [rowField] : []}
             cols={columnField ? [columnField] : []}
             vals={actualValueField ? [actualValueField] : []}
