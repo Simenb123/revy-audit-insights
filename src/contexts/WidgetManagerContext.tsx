@@ -31,6 +31,8 @@ export interface Widget {
     | 'heatmap'
     | 'treemap'
     | 'bubble'
+    | 'map'
+    | 'waterfall'
     | 'enhancedKpi';
   title: string;
   config?: Record<string, any>;
