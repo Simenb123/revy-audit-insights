@@ -244,69 +244,106 @@ const { data: standardAccounts = [] } = useFirmStandardAccounts();
         return (
           <div className="space-y-4">
             <div>
-              <Label htmlFor="maxRows">Maksimalt antall rader</Label>
-              <Input
-                id="maxRows"
-                type="number"
-                value={config.maxRows || 10}
-                onChange={(e) => updateConfig('maxRows', parseInt(e.target.value))}
-                min="1"
-                max="50"
-              />
-            </div>
-            <div>
-              <Label htmlFor="sortBy">Sorter etter</Label>
-              <Select 
-                value={config.sortBy || 'balance'} 
-                onValueChange={(value) => updateConfig('sortBy', value)}
+              <Label htmlFor="dataSource">Datakilde</Label>
+              <Select
+                value={config.dataSource || 'trial_balance'}
+                onValueChange={(value) => updateConfig('dataSource', value)}
               >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="balance">Saldo</SelectItem>
-                  <SelectItem value="name">Kontonavn</SelectItem>
-                  <SelectItem value="number">Kontonummer</SelectItem>
+                  <SelectItem value="trial_balance">Saldobalanse</SelectItem>
+                  <SelectItem value="transactions">Transaksjoner</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="showPercentage"
-                checked={config.showPercentage !== false}
-                onChange={(e) => updateConfig('showPercentage', e.target.checked)}
-                className="rounded"
-              />
-              <Label htmlFor="showPercentage">Vis prosent</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="enableTableCrossFilter"
-                checked={config.enableCrossFilter !== false}
-                onChange={(e) => updateConfig('enableCrossFilter', e.target.checked)}
-                className="rounded"
-              />
-              <Label htmlFor="enableTableCrossFilter">Aktiver kryssfiltrering</Label>
-            </div>
-            <div>
-              <Label htmlFor="drillPathTable">Drill-hierarki (komma separert)</Label>
-              <Input
-                id="drillPathTable"
-                value={(config.drillPath || []).join(',')}
-                onChange={(e) =>
-                  updateConfig(
-                    'drillPath',
-                    e.target.value
-                      .split(',')
-                      .map(s => s.trim())
-                      .filter(Boolean)
-                  )
-                }
-                placeholder="standard_name,account"
-              />
-            </div>
+
+            {config.dataSource === 'transactions' ? (
+              <div>
+                <Label htmlFor="dimension">Dimensjon</Label>
+                <Select
+                  value={config.dimension || 'account'}
+                  onValueChange={(value) => updateConfig('dimension', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="date">Dato</SelectItem>
+                    <SelectItem value="account">Konto</SelectItem>
+                    <SelectItem value="description">Beskrivelse</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : (
+              <>
+                <div>
+                  <Label htmlFor="maxRows">Maksimalt antall rader</Label>
+                  <Input
+                    id="maxRows"
+                    type="number"
+                    value={config.maxRows || 10}
+                    onChange={(e) => updateConfig('maxRows', parseInt(e.target.value))}
+                    min="1"
+                    max="50"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="sortBy">Sorter etter</Label>
+                  <Select
+                    value={config.sortBy || 'balance'}
+                    onValueChange={(value) => updateConfig('sortBy', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="balance">Saldo</SelectItem>
+                      <SelectItem value="name">Kontonavn</SelectItem>
+                      <SelectItem value="number">Kontonummer</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="showPercentage"
+                    checked={config.showPercentage !== false}
+                    onChange={(e) => updateConfig('showPercentage', e.target.checked)}
+                    className="rounded"
+                  />
+                  <Label htmlFor="showPercentage">Vis prosent</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="enableTableCrossFilter"
+                    checked={config.enableCrossFilter !== false}
+                    onChange={(e) => updateConfig('enableCrossFilter', e.target.checked)}
+                    className="rounded"
+                  />
+                  <Label htmlFor="enableTableCrossFilter">Aktiver kryssfiltrering</Label>
+                </div>
+                <div>
+                  <Label htmlFor="drillPathTable">Drill-hierarki (komma separert)</Label>
+                  <Input
+                    id="drillPathTable"
+                    value={(config.drillPath || []).join(',')}
+                    onChange={(e) =>
+                      updateConfig(
+                        'drillPath',
+                        e.target.value
+                          .split(',')
+                          .map(s => s.trim())
+                          .filter(Boolean)
+                      )
+                    }
+                    placeholder="standard_name,account"
+                  />
+                </div>
+              </>
+            )}
           </div>
         );
 
