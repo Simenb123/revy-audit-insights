@@ -52,14 +52,28 @@ export function KpiWidget({ widget }: KpiWidgetProps) {
 
   const handleExportBenchmark = () => {
     if (!clientsInfo.length) return;
-    const rows = clientsInfo.map((c) => ({
+    // Per-klient rader
+    const rows: any[] = clientsInfo.map((c) => ({
       Klient: c.name,
       Konsern: c.group,
       Verdi: valuesByClient[c.id] ?? null,
     }));
+    // Konsernaggregater (sum og snitt)
+    const groups = new Map<string, string[]>();
+    clientsInfo.forEach((c) => {
+      const g = c.group || 'Uten gruppe';
+      if (!groups.has(g)) groups.set(g, []);
+      groups.get(g)!.push(c.id);
+    });
+    Array.from(groups.entries()).forEach(([g, ids]) => {
+      const vals = ids.map((id) => valuesByClient[id]).filter((v) => typeof v === 'number' && !Number.isNaN(v)) as number[];
+      const sum = vals.reduce((s, v) => s + v, 0);
+      const avg = vals.length > 0 ? sum / vals.length : 0;
+      rows.push({ Klient: 'SUM', Konsern: g, Verdi: sum });
+      rows.push({ Klient: 'SNITT', Konsern: g, Verdi: avg });
+    });
     exportArrayToXlsx(`${widget.title || 'KPI'}-benchmark-${selectedFiscalYear}`, rows);
   };
-
   const handleTitleChange = (newTitle: string) => {
     updateWidget(widget.id, { title: newTitle });
   };
