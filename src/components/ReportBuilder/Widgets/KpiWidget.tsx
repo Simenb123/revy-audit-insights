@@ -10,6 +10,7 @@ import { formatCurrency } from '@/lib/formatters';
 import { useScope } from '@/contexts/ScopeContext';
 import { supabase } from '@/integrations/supabase/client';
 import { exportArrayToXlsx } from '@/utils/exportToXlsx';
+import { KpiBenchmarkPanel } from './KpiBenchmarkPanel';
 
 interface KpiWidgetProps {
   widget: Widget;
@@ -201,6 +202,20 @@ export function KpiWidget({ widget }: KpiWidgetProps) {
             >
               {metricData.change}
             </span>
+          </div>
+        )}
+        {scopeType === 'custom' && showBenchmark && (
+          <div className="mt-4 border-t pt-3">
+            <KpiBenchmarkPanel
+              fiscalYear={selectedFiscalYear}
+              clients={clientsInfo}
+              formulaId={formulaId}
+              customFormula={customFormula}
+              selectedVersion={widget.config?.selectedVersion}
+              displayAsPercentage={displayAsPercentage}
+              showCurrency={showCurrency}
+              onValue={(id, val) => setValuesByClient((prev) => ({ ...prev, [id]: val }))}
+            />
           </div>
         )}
       </CardContent>
