@@ -376,8 +376,21 @@ function applyNorwegianPatternsWithReasoning(
     'closing_balance': { keywords: ['utgående', 'slutt', 'avslutning', 'ub'], description: 'Norsk sluttbalanse-mønster' },
     'debit_amount': { keywords: ['debet', 'skal', 'dr'], description: 'Norsk debet-mønster' },
     'credit_amount': { keywords: ['kredit', 'have', 'cr'], description: 'Norsk kredit-mønster' },
-    'transaction_date': { keywords: ['dato', 'bilagsdato'], description: 'Norsk dato-mønster' },
-    'voucher_number': { keywords: ['bilag', 'bilagsnr', 'dok'], description: 'Norsk bilagsnummer-mønster' }
+    'transaction_date': { keywords: ['dato', 'bilagsdato', 'transdato', 'posting', 'postering'], description: 'Norsk dato-mønster' },
+    'voucher_number': { keywords: ['bilag', 'bilagsnr', 'bilagsnummer', 'dok'], description: 'Norsk bilagsnummer-mønster' },
+    // General ledger specific patterns
+    'customer_id': { keywords: ['kundenr', 'kundenummer', 'customer', 'debitor'], description: 'Kunde-ID mønster' },
+    'supplier_id': { keywords: ['leverandør', 'leverandornr', 'kreditor', 'supplier'], description: 'Leverandør-ID mønster' },
+    'document_number': { keywords: ['dokument', 'dok', 'faktura', 'invoice', 'voucher'], description: 'Dokumentnummer mønster' },
+    'reference_number': { keywords: ['referanse', 'ref', 'kid'], description: 'Referansenummer/KID mønster' },
+    'journal_id': { keywords: ['journal', 'journalnr', 'batch', 'bunke'], description: 'Journal-ID mønster' },
+    'record_id': { keywords: ['løpenr', 'lopenr', 'entry', 'linje', 'line'], description: 'Oppførings-ID mønster' },
+    'value_date': { keywords: ['verdidato', 'valutadato'], description: 'Verdidato mønster' },
+    'due_date': { keywords: ['forfallsdato', 'forfall', 'due'], description: 'Forfallsdato mønster' },
+    'cid': { keywords: ['kid', 'cid', 'kundeidentifikasjon'], description: 'CID/KID mønster' },
+    'currency_code': { keywords: ['valuta', 'valutakode', 'currency'], description: 'Valutakode mønster' },
+    'amount_currency': { keywords: ['beløp valuta', 'belop valuta', 'foreign amount'], description: 'Beløp i valuta mønster' },
+    'exchange_rate': { keywords: ['valutakurs', 'kurs', 'exchange rate', 'fx'], description: 'Valutakurs mønster' }
   };
 
   const pattern = patterns[field.field_key];
