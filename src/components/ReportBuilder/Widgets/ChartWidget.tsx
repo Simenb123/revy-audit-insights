@@ -22,7 +22,7 @@ import { useFilters } from '@/contexts/FilterContext';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
 import { useFormulaSeries } from '@/hooks/useFormulaSeries';
 import { cn } from '@/lib/utils';
-import { getScaleDivisor, formatNumeric, formatPercent } from '@/utils/kpiFormat';
+import { getScaleDivisor, formatNumeric, formatPercent, getUnitLabel } from '@/utils/kpiFormat';
 import { formatCurrency } from '@/lib/formatters';
 
 interface ChartWidgetProps {
@@ -97,6 +97,7 @@ export function ChartWidget({ widget }: ChartWidgetProps) {
   }, []);
 
   const scaleDivisor = React.useMemo(() => (displayAsPercentage ? 1 : getScaleDivisor(unitScale)), [displayAsPercentage, unitScale]);
+  const unitLabel = React.useMemo(() => getUnitLabel(displayAsPercentage, showCurrency, unitScale), [displayAsPercentage, showCurrency, unitScale]);
 
   const scaleForChart = React.useCallback(
     (val: number, type?: string) => {
@@ -326,6 +327,9 @@ export function ChartWidget({ widget }: ChartWidgetProps) {
             </BarChart>
           )}
         </ResponsiveContainer>
+        {unitLabel && (
+          <div className="mt-2 text-[10px] text-muted-foreground">Enhet: {unitLabel}</div>
+        )}
       </CardContent>
     </Card>
   );
