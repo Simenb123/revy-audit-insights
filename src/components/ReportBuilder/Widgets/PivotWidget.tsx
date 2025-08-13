@@ -7,6 +7,7 @@ import 'react-pivottable/pivottable.css';
 import { usePivotData } from '@/hooks/usePivotData';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
 import { useTransactions } from '@/hooks/useTransactions';
+import { useTrialBalanceWithMappings } from '@/hooks/useTrialBalanceWithMappings';
 
 interface PivotWidgetProps {
   widget: Widget;
@@ -35,7 +36,7 @@ export function PivotWidget({ widget }: PivotWidgetProps) {
         }))
       : data?.trialBalanceEntries || [];
   
-  const { data: entries = [] } = usePivotData({
+  const { data: pivotEntries = [] } = usePivotData({
     clientId,
     fiscalYear: selectedFiscalYear,
     rowField,
@@ -66,7 +67,7 @@ export function PivotWidget({ widget }: PivotWidgetProps) {
           </div>
         ) : (
           <PivotTable
-            data={entries}
+            data={dataSource === 'transactions' || dataSource === 'trial_balance' ? entries : pivotEntries}
             rows={rowField ? [rowField] : []}
             cols={columnField ? [columnField] : []}
             vals={actualValueField ? [actualValueField] : []}
