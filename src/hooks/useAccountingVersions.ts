@@ -117,7 +117,9 @@ export const useSetActiveVersion = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['accounting-versions'] });
       queryClient.invalidateQueries({ queryKey: ['active-version'] });
-      queryClient.invalidateQueries({ queryKey: ['general-ledger-v4'] });
+      queryClient.invalidateQueries({ queryKey: ['gl-version-options'] });
+      queryClient.invalidateQueries({ queryKey: ['general-ledger-v6'] });
+      queryClient.invalidateQueries({ queryKey: ['general-ledger-count-v6'] });
     },
   });
 };
@@ -164,24 +166,15 @@ export const useCreateVersion = () => {
 
       if (error) throw error;
 
-      // Set this version as active
-      const { error: setActiveError } = await supabase.rpc('set_active_version', {
-        p_version_id: data.id
-      });
-
-      if (setActiveError) throw setActiveError;
-
       return data as AccountingDataVersion;
     },
     onSuccess: (newVersion) => {
-      // Invalidate all relevant queries to refresh UI
+      // Invalidate relevant queries to refresh UI
       queryClient.invalidateQueries({ queryKey: ['accounting-versions'] });
-      queryClient.invalidateQueries({ queryKey: ['active-version'] });
       queryClient.invalidateQueries({ queryKey: ['gl-version-options'] });
-      queryClient.invalidateQueries({ queryKey: ['general-ledger-data'] });
-      queryClient.invalidateQueries({ queryKey: ['general-ledger-count'] });
-      
-      console.log('[useCreateVersion] New active version created:', newVersion);
+      queryClient.invalidateQueries({ queryKey: ['general-ledger-v6'] });
+      queryClient.invalidateQueries({ queryKey: ['general-ledger-count-v6'] });
+      console.log('[useCreateVersion] New version created:', newVersion);
     },
   });
 };

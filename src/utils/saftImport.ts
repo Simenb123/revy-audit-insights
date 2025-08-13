@@ -346,6 +346,11 @@ export async function persistParsed(clientId: string, parsed: SaftResult, fileNa
       const debit = t.debit !== undefined ? Math.abs(Number(t.debit) || 0) : 0;
       const credit = t.credit !== undefined ? Math.abs(Number(t.credit) || 0) : 0;
       const balance = debit - credit;
+      const vat_rate = t.vat_rate !== undefined && t.vat_rate !== null && t.vat_rate !== '' ? Number(t.vat_rate) : null;
+      const vat_base = t.vat_base !== undefined && t.vat_base !== null ? Number(t.vat_base) : null;
+      // Normalize VAT: debit positive, credit positive number stored separately
+      const vat_debit = t.vat_debit !== undefined && t.vat_debit !== null ? Math.abs(Number(t.vat_debit) || 0) : null;
+      const vat_credit = t.vat_credit !== undefined && t.vat_credit !== null ? Math.abs(Number(t.vat_credit) || 0) : null;
       return {
         client_id: clientId,
         client_account_id: accountId,
@@ -357,6 +362,13 @@ export async function persistParsed(clientId: string, parsed: SaftResult, fileNa
         debit_amount: debit || null,
         credit_amount: credit || null,
         balance_amount: balance,
+        reference_number: (t as any).reference_no || (t as any).reference_number || null,
+        // VAT fields
+        vat_code: (t as any).vat_code ?? null,
+        vat_rate,
+        vat_base,
+        vat_debit,
+        vat_credit,
       };
     })
     .filter(Boolean) as any[];
