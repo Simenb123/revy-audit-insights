@@ -16,6 +16,7 @@ import { StatementTableToolbar } from './StatementTable/Toolbar';
 import { HelpCircle } from 'lucide-react';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { formatCurrency } from '@/lib/formatters';
+import { filterStatementLines } from '@/utils/filterStatementLines';
 
 interface StatementTableWidgetProps { widget: Widget }
 
@@ -398,41 +399,29 @@ const unmappedSet = React.useMemo(() => {
 }, [allCurrentAccountsSet, mappedAccountsSet]);
 const unmappedCount = unmappedSet.size;
 
-const filterLines = React.useCallback((nodes: any[]): any[] => {
-  const q = (searchQuery || '').trim().toLowerCase();
-  const matchesSearch = (n: any) => {
-    if (!q) return true;
-    return String(n.standard_name || '').toLowerCase().includes(q) || String(n.standard_number || '').toLowerCase().includes(q);
-  };
-  const hasUnmapped = (n: any): boolean => {
-    const accs = getAccountsForLine(String(n.standard_number));
-    return accs.some((a) => unmappedSet.has(a));
-  };
-  if (!showOnlyChanges && !showOnlyUnmapped && !q) return nodes;
-  const recurse = (arr: any[], depth = 0): any[] => arr
-    .map((n) => ({ ...n, children: n.children ? recurse(n.children, depth + 1) : [] }))
-    .filter((n) => {
-      const selfMatches = (!showOnlyChanges || hasChange(n)) && (!showOnlyUnmapped || hasUnmapped(n)) && matchesSearch(n);
-      const keep = selfMatches || (n.children && n.children.length > 0) || (alwaysShowTopHeaders && depth === 0);
-      return keep;
-    });
-  return recurse(nodes, 0);
-}, [showOnlyChanges, hasChange, alwaysShowTopHeaders, showOnlyUnmapped, searchQuery, getAccountsForLine, unmappedSet]);
+const rawIncome = incomeStatement || [];
+const rawBalance = balanceStatement || [];
 
+// Dev-only: log root order to verify sorting
+if (import.meta.env?.DEV) {
+  try {
+    // eslint-disable-next-line no-console
+    console.debug('[StatementTableWidget] income roots order (first 20):', (rawIncome || []).slice(0, 20).map((n: any) => ({ num: n.standard_number, name: n.standard_name, order: n.display_order, type: n.line_type, total: n.is_total_line })));
+  } catch {}
+}
 
-  const rawIncome = incomeStatement || [];
-  const rawBalance = balanceStatement || [];
+const filterOpts = {
+  showOnlyChanges,
+  hasChange,
+  alwaysShowTopHeaders,
+  showOnlyUnmapped,
+  searchQuery,
+  getAccountsForLine,
+  unmappedSet,
+};
 
-  // Dev-only: log root order to verify sorting
-  if (import.meta.env?.DEV) {
-    try {
-      // eslint-disable-next-line no-console
-      console.debug('[StatementTableWidget] income roots order (first 20):', (rawIncome || []).slice(0, 20).map((n: any) => ({ num: n.standard_number, name: n.standard_name, order: n.display_order, type: n.line_type, total: n.is_total_line })));
-    } catch {}
-  }
-
-  const filteredIncome = filterLines(rawIncome);
-  const filteredBalance = filterLines(rawBalance);
+const filteredIncome = filterStatementLines(rawIncome, filterOpts);
+const filteredBalance = filterStatementLines(rawBalance, filterOpts);
 
   const fi = sectionMode === 'balance' ? [] : filteredIncome;
   const fb = sectionMode === 'income' ? [] : filteredBalance;
