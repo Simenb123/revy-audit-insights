@@ -28,6 +28,9 @@ interface WidgetLibraryProps {
 export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
   const { addWidget } = useWidgetManager();
   const { data: dbTemplates } = useWidgetTemplates();
+  const [selectedSection, setSelectedSection] = React.useState<
+    'trial_balance' | 'budget' | 'transactions' | null
+  >(null);
 
   const defaultTemplates = [
     {
@@ -35,6 +38,8 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
       title: 'Filter',
       description: 'Filtrer data på tvers av widgets',
       icon: Filter,
+      section: 'trial_balance' as const,
+      dataDescription: 'Basert på saldobalanse',
       defaultConfig: {
         showSearch: true,
         showAccountCategory: true,
@@ -47,6 +52,8 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
       title: 'Nøkkeltall',
       description: 'Vis viktige finansielle nøkkeltall',
       icon: TrendingUp,
+      section: 'trial_balance' as const,
+      dataDescription: 'Basert på saldobalanse',
       defaultConfig: {
         metric: 'revenue',
         period: 'current_year'
@@ -57,6 +64,8 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
       title: 'Budsjett KPI',
       description: 'Totalt budsjetterte timer for valgt år',
       icon: TrendingUp,
+      section: 'budget' as const,
+      dataDescription: 'Henter tall fra budsjettet',
       defaultConfig: {
         period_year: undefined as unknown as number,
       }
@@ -66,6 +75,8 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
       title: 'Budsjett tabell',
       description: 'Timer per medlem eller team',
       icon: Table,
+      section: 'budget' as const,
+      dataDescription: 'Henter tall fra budsjettet',
       defaultConfig: {
         dimension: 'member' as const,
         maxRows: 10,
@@ -76,6 +87,8 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
       title: 'Budsjett graf',
       description: 'Visualiser budsjetterte timer',
       icon: BarChart3,
+      section: 'budget' as const,
+      dataDescription: 'Henter tall fra budsjettet',
       defaultConfig: {
         chartType: 'bar',
         dimension: 'team' as const,
@@ -87,6 +100,8 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
       title: 'Saldobalanse tabell',
       description: 'Vis kontosaldoer i tabellformat',
       icon: Table,
+      section: 'trial_balance' as const,
+      dataDescription: 'Basert på saldobalanse',
       defaultConfig: {
         showMappings: true,
         groupByCategory: false,
@@ -98,6 +113,8 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
       title: 'Finansiell graf',
       description: 'Visualiser regnskapsdata som grafer',
       icon: BarChart3,
+      section: 'trial_balance' as const,
+      dataDescription: 'Basert på saldobalanse',
       defaultConfig: {
         chartType: 'bar',
         dataSource: 'trial_balance'
@@ -108,6 +125,8 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
       title: 'Heatmap',
       description: 'Vis intensitet i rutenett',
       icon: Grid2x2,
+      section: 'trial_balance' as const,
+      dataDescription: 'Basert på saldobalanse',
       defaultConfig: {
         xField: 'x',
         yField: 'y',
@@ -120,6 +139,8 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
       title: 'Treemap',
       description: 'Hierarkisk arealdiagram',
       icon: Boxes,
+      section: 'trial_balance' as const,
+      dataDescription: 'Basert på saldobalanse',
       defaultConfig: {
         valueField: 'size',
         color: '#3b82f6',
@@ -130,6 +151,8 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
       title: 'Boblediagram',
       description: 'Vis tre variabler',
       icon: CircleDot,
+      section: 'trial_balance' as const,
+      dataDescription: 'Basert på saldobalanse',
       defaultConfig: {
         xField: 'x',
         yField: 'y',
@@ -142,6 +165,8 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
       title: 'Vannfallsdiagram',
       description: 'Trinnvis endring',
       icon: ChartColumn,
+      section: 'trial_balance' as const,
+      dataDescription: 'Basert på saldobalanse',
       defaultConfig: {}
     },
     {
@@ -149,6 +174,8 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
       title: 'KPI kort',
       description: 'Nøkkeltall med fargekoder',
       icon: TrendingUp,
+      section: 'trial_balance' as const,
+      dataDescription: 'Basert på saldobalanse',
       defaultConfig: {
         metric: 'revenue',
         threshold: 0,
@@ -161,6 +188,8 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
       title: 'Tekstnotat',
       description: 'Legg til tekstnotater og kommentarer',
       icon: FileText,
+      section: 'trial_balance' as const,
+      dataDescription: 'Manuell tekst, ingen datakilde',
       defaultConfig: {
         content: 'Skriv dine notater her...'
       }
@@ -170,6 +199,8 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
       title: 'Formel/Nøkkeltall',
       description: 'Beregn finansielle nøkkeltall og formler',
       icon: Calculator,
+      section: 'trial_balance' as const,
+      dataDescription: 'Basert på saldobalanse',
       defaultConfig: {
         formulaId: null as string | null,
         showTrend: false,
@@ -182,6 +213,8 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
       title: 'Pivot-tabell',
       description: 'Vis data i pivottabell',
       icon: Grid3x3,
+      section: 'trial_balance' as const,
+      dataDescription: 'Basert på saldobalanse',
       defaultConfig: { dataSource: 'trial_balance' }
     },
     {
@@ -189,6 +222,8 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
       title: 'Måler',
       description: 'Vis en enkel måler',
       icon: Gauge,
+      section: 'trial_balance' as const,
+      dataDescription: 'Basert på saldobalanse',
       defaultConfig: {}
     },
     {
@@ -196,6 +231,8 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
       title: 'Regnskapslinjer',
       description: 'Vis flere regnskapslinjer og intervaller',
       icon: ListOrdered,
+      section: 'transactions' as const,
+      dataDescription: 'Basert på transaksjoner',
       defaultConfig: {
         accountLines: [] as string[],
         accountIntervals: [] as string[],
@@ -211,6 +248,8 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
       title: 'Regnskapsoppstilling',
       description: 'Resultat og balanse med YoY',
       icon: Table,
+      section: 'trial_balance' as const,
+      dataDescription: 'Basert på saldobalanse',
       defaultConfig: {
         showPrevious: true,
         showDifference: true,
@@ -223,6 +262,8 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
       title: 'Resultatoppstilling',
       description: 'Kun resultatregnskap',
       icon: Table,
+      section: 'trial_balance' as const,
+      dataDescription: 'Basert på saldobalanse',
       defaultConfig: {
         showPrevious: true,
         showDifference: true,
@@ -235,12 +276,35 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
       title: 'Balanseoppstilling',
       description: 'Kun balanse',
       icon: Table,
+      section: 'trial_balance' as const,
+      dataDescription: 'Basert på saldobalanse',
       defaultConfig: {
         showPrevious: true,
         showDifference: true,
         showPercent: true,
         sectionMode: 'balance' as const,
       }
+    }
+  ];
+
+  const dataSources = [
+    {
+      key: 'trial_balance' as const,
+      label: 'Saldobalanse',
+      icon: Table,
+      description: 'Kontosaldoer'
+    },
+    {
+      key: 'budget' as const,
+      label: 'Budsjett',
+      icon: TrendingUp,
+      description: 'Planlagte tall'
+    },
+    {
+      key: 'transactions' as const,
+      label: 'Transaksjoner',
+      icon: ListOrdered,
+      description: 'Bokførte linjer'
     }
   ];
 
@@ -260,6 +324,8 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
           title: t.type,
           description: t.description,
           icon: FileText,
+          section: 'trial_balance',
+          dataDescription: 'Tilpasset datakilde',
           defaultConfig: t.defaultConfig,
         };
       });
@@ -316,33 +382,71 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold">Velg widget type</h3>
+        {selectedSection ? (
+          <Button variant="ghost" size="sm" onClick={() => setSelectedSection(null)}>
+            Tilbake
+          </Button>
+        ) : (
+          <div />
+        )}
+        <h3 className="text-lg font-semibold">
+          {selectedSection ? 'Velg widget' : 'Velg datakilde'}
+        </h3>
         <Button variant="ghost" size="sm" onClick={onClose}>
           <X className="h-4 w-4" />
         </Button>
       </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {templates.map((template) => (
-            <Card 
-              key={`${template.type}-${template.title}`} 
+
+      {selectedSection ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {templates
+            .filter((template) => template.section === selectedSection)
+            .map((template) => (
+              <Card
+                key={`${template.type}-${template.title}`}
+                className="cursor-pointer hover:shadow-md transition-shadow"
+                onClick={() => handleAddWidget(template)}
+              >
+                <CardHeader className="pb-3">
+                  <div className="flex items-center gap-2">
+                    <template.icon className="h-5 w-5 text-primary" />
+                    <div>
+                      <CardTitle className="text-sm">{template.title}</CardTitle>
+                      <p className="text-xs text-muted-foreground">{template.dataDescription}</p>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <CardDescription className="text-xs">
+                    {template.description}
+                  </CardDescription>
+                </CardContent>
+              </Card>
+            ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {dataSources.map((ds) => (
+            <Card
+              key={ds.key}
               className="cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => handleAddWidget(template)}
+              onClick={() => setSelectedSection(ds.key)}
             >
-            <CardHeader className="pb-3">
-              <div className="flex items-center gap-2">
-                <template.icon className="h-5 w-5 text-primary" />
-                <CardTitle className="text-sm">{template.title}</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <CardDescription className="text-xs">
-                {template.description}
-              </CardDescription>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+              <CardHeader className="pb-3">
+                <div className="flex items-center gap-2">
+                  <ds.icon className="h-5 w-5 text-primary" />
+                  <CardTitle className="text-sm">{ds.label}</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <CardDescription className="text-xs">
+                  {ds.description}
+                </CardDescription>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
