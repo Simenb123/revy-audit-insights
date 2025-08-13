@@ -50,6 +50,20 @@ interface WidgetManagerContextType {
   setWidgets: (widgets: Widget[]) => void;
   setLayouts: (layouts: WidgetLayout[]) => void;
   loadFromStorage: () => boolean;
+  activeCrossFilter?: {
+    sourceWidgetId: string;
+    filterType: string;
+    value: any;
+    label: string;
+  };
+  setActiveCrossFilter: (
+    filter?: {
+      sourceWidgetId: string;
+      filterType: string;
+      value: any;
+      label: string;
+    }
+  ) => void;
 }
 
 export const WidgetManagerContext = createContext<WidgetManagerContextType | undefined>(undefined);
@@ -65,6 +79,14 @@ export function WidgetManagerProvider({
 }) {
   const [widgets, setWidgets] = useState<Widget[]>([]);
   const [layouts, setLayouts] = useState<WidgetLayout[]>([]);
+  const [activeCrossFilter, setActiveCrossFilter] = useState<
+    {
+      sourceWidgetId: string;
+      filterType: string;
+      value: any;
+      label: string;
+    } | undefined
+  >(undefined);
   const { load, save, clear } = useWidgetPersistence(clientId, year);
 
   const addWidget = useCallback((widget: Widget, layout: WidgetLayout) => {
@@ -108,6 +130,12 @@ export function WidgetManagerProvider({
     save(widgets, layouts);
   }, [widgets, layouts, save]);
 
+  useEffect(() => {
+    if (activeCrossFilter) {
+      console.debug('Aktivt kryssfilter', activeCrossFilter);
+    }
+  }, [activeCrossFilter]);
+
   return (
     <WidgetManagerContext.Provider value={{
       widgets,
@@ -120,6 +148,8 @@ export function WidgetManagerProvider({
       setWidgets,
       setLayouts,
       loadFromStorage,
+      activeCrossFilter,
+      setActiveCrossFilter,
     }}>
       {children}
     </WidgetManagerContext.Provider>
