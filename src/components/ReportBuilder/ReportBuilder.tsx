@@ -35,7 +35,7 @@ export default function ReportBuilder({ clientId }: ReportBuilderProps) {
 
   return (
     <ClassificationProvider>
-      <WidgetManagerProvider>
+      <WidgetManagerProvider clientId={clientId} year={selectedFiscalYear}>
         <HistoryProvider>
           <HistoryWrapper
             clientId={clientId}

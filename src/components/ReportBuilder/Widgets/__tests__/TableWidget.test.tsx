@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { TableWidget } from '../TableWidget';
+import { WidgetManagerProvider } from '@/contexts/WidgetManagerContext';
 
 vi.mock('@/hooks/useTrialBalanceWithMappings', () => ({
   useTrialBalanceWithMappings: () => ({
@@ -66,7 +67,11 @@ describe('TableWidget', () => {
       }
     };
 
-    render(<TableWidget widget={widget} />);
+    render(
+      <WidgetManagerProvider clientId="123" year={2024}>
+        <TableWidget widget={widget} />
+      </WidgetManagerProvider>
+    );
 
     expect(screen.getByText('RevenueCategory')).toBeInTheDocument();
     expect(screen.queryByText('ExpenseCategory')).not.toBeInTheDocument();
@@ -81,7 +86,11 @@ describe('TableWidget', () => {
       }
     };
 
-    render(<TableWidget widget={widget} />);
+    render(
+      <WidgetManagerProvider clientId="123" year={2024}>
+        <TableWidget widget={widget} />
+      </WidgetManagerProvider>
+    );
 
     expect(screen.getByText('CurrentAssetCategory')).toBeInTheDocument();
     expect(screen.queryByText('RevenueCategory')).not.toBeInTheDocument();
