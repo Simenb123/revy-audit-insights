@@ -54,10 +54,18 @@ interface WidgetManagerContextType {
 
 export const WidgetManagerContext = createContext<WidgetManagerContextType | undefined>(undefined);
 
-export function WidgetManagerProvider({ children }: { children: React.ReactNode }) {
+export function WidgetManagerProvider({
+  children,
+  clientId,
+  year,
+}: {
+  children: React.ReactNode;
+  clientId: string;
+  year: number;
+}) {
   const [widgets, setWidgets] = useState<Widget[]>([]);
   const [layouts, setLayouts] = useState<WidgetLayout[]>([]);
-  const { load, save, clear } = useWidgetPersistence();
+  const { load, save, clear } = useWidgetPersistence(clientId, year);
 
   const addWidget = useCallback((widget: Widget, layout: WidgetLayout) => {
     setWidgets(prev => [...prev, widget]);

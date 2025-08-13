@@ -17,7 +17,7 @@ beforeEach(() => {
 describe('ModuleWrapper', () => {
   it('toggles children when collapse button is clicked', () => {
     render(
-      <WidgetManagerProvider>
+      <WidgetManagerProvider clientId="test-client" year={2024}>
         <ViewModeProvider>
           <ModuleWrapper id="module-1" title="Test">
             <div>Inner Widget</div>
