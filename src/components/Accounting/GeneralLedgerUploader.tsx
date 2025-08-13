@@ -502,15 +502,19 @@ const handleMappingComplete = async (mapping: Record<string, string>, headerRowI
               }
             });
             
-            // Primary: Use balance_amount if it's a valid number (including zero)
+            // Primary: Use single-amount fields if available (balance_amount or amount)
             const hasBalanceAmount = transaction.balance_amount !== undefined && 
                                    transaction.balance_amount !== null && 
                                    typeof transaction.balance_amount === 'number' && 
                                    !isNaN(transaction.balance_amount);
+            const hasAmountField = transaction.amount !== undefined && 
+                                   transaction.amount !== null && 
+                                   typeof transaction.amount === 'number' && 
+                                   !isNaN(transaction.amount);
             
-            if (hasBalanceAmount) {
-              balanceAmount = transaction.balance_amount;
-              console.log(`Using balance_amount: ${balanceAmount}`);
+            if (hasBalanceAmount || hasAmountField) {
+              balanceAmount = hasBalanceAmount ? transaction.balance_amount : transaction.amount;
+              console.log(`Using single amount field: ${balanceAmount}`);
               
               // Set debit/credit based on sign
               if (balanceAmount > 0) {
@@ -557,6 +561,7 @@ const handleMappingComplete = async (mapping: Record<string, string>, headerRowI
             const voucherNumber = transaction.voucher_number || 
                                  transaction.bilagsnummer || 
                                  transaction.voucher || 
+                                 transaction.document_number ||
                                  transaction.reference || 
                                  null;
             
@@ -573,7 +578,19 @@ const handleMappingComplete = async (mapping: Record<string, string>, headerRowI
               debit_amount: debitAmount,
               credit_amount: creditAmount,
               balance_amount: balanceAmount,
-              reference_number: transaction.reference || null,
+              reference_number: transaction.reference_number || transaction.reference || null,
+              // Optional enriched fields
+              customer_id: transaction.customer_id || null,
+              supplier_id: transaction.supplier_id || null,
+              document_number: transaction.document_number || null,
+              value_date: transaction.value_date || null,
+              due_date: transaction.due_date || null,
+              cid: transaction.cid || null,
+              currency_code: transaction.currency_code || null,
+              amount_currency: typeof transaction.amount_currency === 'number' ? transaction.amount_currency : null,
+              exchange_rate: typeof transaction.exchange_rate === 'number' ? transaction.exchange_rate : null,
+              journal_id: transaction.journal_id || null,
+              record_id: transaction.record_id || null,
             };
           })
           .filter(Boolean);

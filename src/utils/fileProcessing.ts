@@ -1247,7 +1247,7 @@ export function convertDataWithMapping(
           } else {
             value = 0;
           }
-        } else if (targetField === 'date') {
+        } else if (targetField === 'date' || /(^|_)date$/.test(targetField) || targetField.endsWith('_date')) {
           if (value && !isNaN(Date.parse(value))) {
             value = new Date(value).toISOString().split('T')[0];
           }
