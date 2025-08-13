@@ -252,23 +252,10 @@ export function WidgetConfiguration({ widget, onUpdateWidget }: WidgetConfigurat
         return (
           <div className="space-y-4">
             <div>
-
-              <Label htmlFor="maxRows" title="Hvor mange rader som vises">Maksimalt antall rader</Label>
-              <Input
-                id="maxRows"
-                type="number"
-                value={config.maxRows || 10}
-                onChange={(e) => updateConfig('maxRows', parseInt(e.target.value))}
-                min="1"
-                max="50"
-              />
-            </div>
-            <div>
-              <Label htmlFor="sortBy" title="Velg sorteringsfelt">Sorter etter</Label>
+              <Label htmlFor="dataSource" title="Velg datakilde">Datakilde</Label>
               <Select
-                value={config.sortBy || 'balance'}
-                onValueChange={(value) => updateConfig('sortBy', value)}
-
+                value={config.dataSource || 'trial_balance'}
+                onValueChange={(value) => updateConfig('dataSource', value)}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -279,8 +266,7 @@ export function WidgetConfiguration({ widget, onUpdateWidget }: WidgetConfigurat
                 </SelectContent>
               </Select>
             </div>
-            {showAdvanced && (
-              <>
+
             {config.dataSource === 'transactions' ? (
               <div>
                 <Label htmlFor="dimension">Dimensjon</Label>
@@ -301,7 +287,7 @@ export function WidgetConfiguration({ widget, onUpdateWidget }: WidgetConfigurat
             ) : (
               <>
                 <div>
-                  <Label htmlFor="maxRows">Maksimalt antall rader</Label>
+                  <Label htmlFor="maxRows" title="Hvor mange rader som vises">Maksimalt antall rader</Label>
                   <Input
                     id="maxRows"
                     type="number"
@@ -312,7 +298,7 @@ export function WidgetConfiguration({ widget, onUpdateWidget }: WidgetConfigurat
                   />
                 </div>
                 <div>
-                  <Label htmlFor="sortBy">Sorter etter</Label>
+                  <Label htmlFor="sortBy" title="Velg sorteringsfelt">Sorter etter</Label>
                   <Select
                     value={config.sortBy || 'balance'}
                     onValueChange={(value) => updateConfig('sortBy', value)}
@@ -327,44 +313,47 @@ export function WidgetConfiguration({ widget, onUpdateWidget }: WidgetConfigurat
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id="showPercentage"
-                    checked={config.showPercentage !== false}
-                    onChange={(e) => updateConfig('showPercentage', e.target.checked)}
-                    className="rounded"
-                  />
-                  <Label htmlFor="showPercentage" title="Vis prosent av totalsum">Vis prosent</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id="enableTableCrossFilter"
-                    checked={config.enableCrossFilter !== false}
-                    onChange={(e) => updateConfig('enableCrossFilter', e.target.checked)}
-                    className="rounded"
-                  />
-                  <Label htmlFor="enableTableCrossFilter" title="La tabellen filtrere andre widgets">Aktiver kryssfiltrering</Label>
-                </div>
-                <div>
-                  <Label htmlFor="drillPathTable" title="Angi hierarki for drilling">Drill-hierarki (komma separert)</Label>
-
-                  <Input
-                    id="drillPathTable"
-                    value={(config.drillPath || []).join(',')}
-                    onChange={(e) =>
-                      updateConfig(
-                        'drillPath',
-                        e.target.value
-                          .split(',')
-                          .map(s => s.trim())
-                          .filter(Boolean)
-                      )
-                    }
-                    placeholder="standard_name,account"
-                  />
-                </div>
+                {showAdvanced && (
+                  <>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="showPercentage"
+                        checked={config.showPercentage !== false}
+                        onChange={(e) => updateConfig('showPercentage', e.target.checked)}
+                        className="rounded"
+                      />
+                      <Label htmlFor="showPercentage" title="Vis prosent av totalsum">Vis prosent</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="enableTableCrossFilter"
+                        checked={config.enableCrossFilter !== false}
+                        onChange={(e) => updateConfig('enableCrossFilter', e.target.checked)}
+                        className="rounded"
+                      />
+                      <Label htmlFor="enableTableCrossFilter" title="La tabellen filtrere andre widgets">Aktiver kryssfiltrering</Label>
+                    </div>
+                    <div>
+                      <Label htmlFor="drillPathTable" title="Angi hierarki for drilling">Drill-hierarki (komma separert)</Label>
+                      <Input
+                        id="drillPathTable"
+                        value={(config.drillPath || []).join(',')}
+                        onChange={(e) =>
+                          updateConfig(
+                            'drillPath',
+                            e.target.value
+                              .split(',')
+                              .map(s => s.trim())
+                              .filter(Boolean)
+                          )
+                        }
+                        placeholder="standard_name,account"
+                      />
+                    </div>
+                  </>
+                )}
               </>
             )}
           </div>

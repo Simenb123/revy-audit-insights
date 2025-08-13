@@ -399,40 +399,40 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
       </div>
 
       {selectedSection ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {templates
-            .filter((template) => template.section === selectedSection)
-            .map((template) => (
-              <Card
-                key={`${template.type}-${template.title}`}
-      <p className="text-sm text-muted-foreground">
-        Hold musen over en widget for en kort forklaring.
-      </p>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {templates.map((template) => (
-          <Tooltip key={`${template.type}-${template.title}`}>
-            <TooltipTrigger asChild>
-              <Card
-                className="cursor-pointer hover:shadow-md transition-shadow"
-                onClick={() => handleAddWidget(template)}
-              >
-                <CardHeader className="pb-3">
-                  <div className="flex items-center gap-2">
-                    <template.icon className="h-5 w-5 text-primary" />
-                    <div>
-                      <CardTitle className="text-sm">{template.title}</CardTitle>
-                      <p className="text-xs text-muted-foreground">{template.dataDescription}</p>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <CardDescription className="text-xs">
-                    {template.description}
-                  </CardDescription>
-                </CardContent>
-              </Card>
-            ))}
+        <div className="space-y-2">
+          <p className="text-sm text-muted-foreground">
+            Hold musen over en widget for en kort forklaring.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {templates
+              .filter((template) => template.section === selectedSection)
+              .map((template) => (
+                <Tooltip key={`${template.type}-${template.title}`}>
+                  <TooltipTrigger asChild>
+                    <Card
+                      className="cursor-pointer hover:shadow-md transition-shadow"
+                      onClick={() => handleAddWidget(template)}
+                    >
+                      <CardHeader className="pb-3">
+                        <div className="flex items-center gap-2">
+                          <template.icon className="h-5 w-5 text-primary" />
+                          <div>
+                            <CardTitle className="text-sm">{template.title}</CardTitle>
+                            <p className="text-xs text-muted-foreground">{template.dataDescription}</p>
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="pt-0">
+                        <CardDescription className="text-xs">
+                          {template.description}
+                        </CardDescription>
+                      </CardContent>
+                    </Card>
+                  </TooltipTrigger>
+                  <TooltipContent>{template.description}</TooltipContent>
+                </Tooltip>
+              ))}
+          </div>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -457,11 +457,6 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
           ))}
         </div>
       )}
-            </TooltipTrigger>
-            <TooltipContent>{template.description}</TooltipContent>
-          </Tooltip>
-        ))}
-      </div>
     </div>
   );
 }
