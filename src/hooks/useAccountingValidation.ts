@@ -28,12 +28,19 @@ export const useAccountingValidation = (clientId: string, selectedGLVersion?: st
   return useQuery({
     queryKey: ['accounting-validation', clientId, selectedGLVersion, selectedTBVersion],
     queryFn: async () => {
+      console.log('[Validation Query] Running with:', { 
+        hasGL: !!generalLedgerData, 
+        hasTB: !!trialBalanceData,
+        glLength: generalLedgerData?.length || 0,
+        tbLength: trialBalanceData?.length || 0 
+      });
+
       if (!generalLedgerData || !trialBalanceData) {
         return {
           overallValidation: {
-            isValid: false,
-            message: 'Mangler data for validering - både hovedbok og saldobalanse må være lastet inn',
-            severity: 'warning' as const
+            isValid: true,
+            message: 'Venter på data - både hovedbok og saldobalanse må være lastet inn',
+            severity: 'info' as const
           },
           accountValidations: [] as AccountValidation[]
         };
@@ -96,6 +103,6 @@ export const useAccountingValidation = (clientId: string, selectedGLVersion?: st
         accountValidations
       };
     },
-    enabled: !!clientId && !!generalLedgerData && !!trialBalanceData && generalLedgerData.length > 0 && trialBalanceData.length > 0,
+    enabled: !!clientId,
   });
 };

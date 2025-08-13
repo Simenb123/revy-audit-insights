@@ -22,9 +22,13 @@ const ValidationPanel = ({ clientId, selectedGLVersion, selectedTBVersion }: Val
     hasTBVersion: !!selectedTBVersion
   });
 
-  const { data: validation, isLoading, error } = useAccountingValidation(clientId, selectedGLVersion, selectedTBVersion);
+  const { data: validation, isLoading, error, status, fetchStatus } = useAccountingValidation(clientId, selectedGLVersion, selectedTBVersion);
 
-  if (isLoading) {
+  console.log('[ValidationPanel] Query status:', { status, fetchStatus, isLoading });
+  console.log('[ValidationPanel] Validation data:', validation);
+  console.log('[ValidationPanel] Error:', error);
+
+  if (isLoading || status === 'pending') {
     return (
       <Card>
         <CardHeader>
@@ -66,10 +70,7 @@ const ValidationPanel = ({ clientId, selectedGLVersion, selectedTBVersion }: Val
     );
   }
 
-  if (error || !validation) {
-    const errorMessage = error?.message || 'Validering kunne ikke utføres';
-    
-    // Add detailed logging for debugging
+  if (error) {
     console.error('❌ ValidationPanel error details:', {
       error: error?.message || 'Unknown error',
       errorObject: error,
@@ -85,12 +86,28 @@ const ValidationPanel = ({ clientId, selectedGLVersion, selectedTBVersion }: Val
           <CardTitle>Validering</CardTitle>
         </CardHeader>
         <CardContent>
+          <Alert variant="destructive">
+            <Info className="h-4 w-4" />
+            <AlertDescription>
+              Feil under validering: {error.message || 'Ukjent feil'}
+            </AlertDescription>
+          </Alert>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!validation) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Validering</CardTitle>
+        </CardHeader>
+        <CardContent>
           <Alert variant="default">
             <Info className="h-4 w-4" />
             <AlertDescription>
-              {errorMessage.includes('Mangler data') 
-                ? 'Venter på at data lastes inn. Dette kan ta litt tid...' 
-                : 'Kunne ikke utføre validering. Sjekk at både hovedbok og saldobalanse er lastet inn.'}
+              Laster validering...
             </AlertDescription>
           </Alert>
         </CardContent>
