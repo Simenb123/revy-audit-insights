@@ -14,6 +14,8 @@ import { KpiBenchmarkPanel } from './KpiBenchmarkPanel';
 import { loadReportBuilderSettings, saveReportBuilderSettings } from '@/hooks/useReportBuilderSettings';
 import { useKpiBenchmarkExport } from '@/hooks/useKpiBenchmarkExport';
 import { BenchmarkControls } from './BenchmarkControls';
+import { useKpiBenchmarkAggregation } from '@/hooks/useKpiBenchmarkAggregation';
+import { KpiBenchmarkSummary } from './KpiBenchmarkSummary';
 
 interface KpiWidgetProps {
   widget: Widget;
@@ -177,27 +179,16 @@ export function KpiWidget({ widget }: KpiWidgetProps) {
     };
   }, [currentFormulaResult, previousFormulaResult, showTrend, displayAsPercentage, showCurrency, unitScale]);
 
-  const scaleDivisorAgg = unitScale === 'thousand' ? 1000 : unitScale === 'million' ? 1_000_000 : 1;
-  const selectedIds = React.useMemo(() => (
-    selectedGroup === 'all'
-      ? clientsInfo.map((c) => c.id)
-      : clientsInfo.filter((c) => c.group === selectedGroup).map((c) => c.id)
-  ), [clientsInfo, selectedGroup]);
-  const aggVals = React.useMemo(() => selectedIds
-    .map((id) => valuesByClient[id])
-    .filter((v) => typeof v === 'number' && !Number.isNaN(v)) as number[], [selectedIds, valuesByClient]);
-  const aggSum = React.useMemo(() => aggVals.reduce((s, v) => s + v, 0), [aggVals]);
-  const aggAvg = React.useMemo(() => (aggVals.length ? aggSum / aggVals.length : 0), [aggVals, aggSum]);
-  const aggregatedDisplay = React.useMemo(() => {
-    if (!showBenchmark || aggregateMode === 'none') return null;
-    if (aggVals.length === 0) return null;
-    const val = aggregateMode === 'sum' ? aggSum : aggAvg;
-    if (displayAsPercentage) return `${val.toFixed(1)}%`;
-    const scaled = val / scaleDivisorAgg;
-    return showCurrency
-      ? formatCurrency(scaled)
-      : new Intl.NumberFormat('nb-NO', { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(scaled);
-  }, [showBenchmark, aggregateMode, aggSum, aggAvg, aggVals.length, displayAsPercentage, showCurrency, scaleDivisorAgg]);
+  const { aggregatedDisplay } = useKpiBenchmarkAggregation({
+    showBenchmark,
+    aggregateMode,
+    displayAsPercentage,
+    showCurrency,
+    unitScale,
+    selectedGroup,
+    clientsInfo,
+    valuesByClient,
+  });
 
   if (currentFormulaResult.isLoading) {
     return (
@@ -247,7 +238,7 @@ export function KpiWidget({ widget }: KpiWidgetProps) {
         )}
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-bold">{aggregatedDisplay ?? metricData.value}</div>
+        <KpiBenchmarkSummary aggregatedDisplay={aggregatedDisplay} fallbackValue={metricData.value} />
         {showTrend && (
           <div className="flex items-center pt-1">
             {metricData.trend === 'up' ? (
