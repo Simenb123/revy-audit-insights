@@ -12,6 +12,7 @@ import { useScope } from '@/contexts/ScopeContext';
 import { supabase } from '@/integrations/supabase/client';
 import { exportArrayToXlsx } from '@/utils/exportToXlsx';
 import { KpiBenchmarkPanel } from './KpiBenchmarkPanel';
+import { loadReportBuilderSettings, saveReportBuilderSettings } from '@/hooks/useReportBuilderSettings';
 
 interface KpiWidgetProps {
   widget: Widget;
@@ -38,6 +39,16 @@ export function KpiWidget({ widget }: KpiWidgetProps) {
   const groupNames = React.useMemo(() => Array.from(new Set((clientsInfo || []).map((c) => c.group || 'Uten gruppe'))), [clientsInfo]);
   const [selectedGroup, setSelectedGroup] = React.useState<string>('all');
 
+  // Load persisted benchmark selections
+  React.useEffect(() => {
+    if (!clientId || !selectedFiscalYear) return;
+    const s = loadReportBuilderSettings(clientId, selectedFiscalYear);
+    if (s) {
+      if (typeof s.benchmarkAggregateMode === 'string') setAggregateMode(s.benchmarkAggregateMode as 'none' | 'sum' | 'avg');
+      if (typeof s.benchmarkSelectedGroup === 'string') setSelectedGroup(s.benchmarkSelectedGroup);
+      if (typeof s.benchmarkShow === 'boolean') setShowBenchmark(s.benchmarkShow);
+    }
+  }, [clientId, selectedFiscalYear]);
 
   React.useEffect(() => {
     const load = async () => {
@@ -54,6 +65,18 @@ export function KpiWidget({ widget }: KpiWidgetProps) {
     };
     load();
   }, [scopeType, showBenchmark, selectedClientIds]);
+
+  // Persist benchmark selections
+  React.useEffect(() => {
+    if (!clientId || !selectedFiscalYear) return;
+    const existing = loadReportBuilderSettings(clientId, selectedFiscalYear) || {};
+    saveReportBuilderSettings(clientId, selectedFiscalYear, {
+      ...existing,
+      benchmarkAggregateMode: aggregateMode,
+      benchmarkSelectedGroup: selectedGroup,
+      benchmarkShow: showBenchmark,
+    });
+  }, [clientId, selectedFiscalYear, aggregateMode, selectedGroup, showBenchmark]);
 
   const handleExportBenchmark = () => {
     if (!clientsInfo.length) return;
@@ -174,13 +197,14 @@ export function KpiWidget({ widget }: KpiWidgetProps) {
   const aggAvg = React.useMemo(() => (aggVals.length ? aggSum / aggVals.length : 0), [aggVals, aggSum]);
   const aggregatedDisplay = React.useMemo(() => {
     if (!showBenchmark || aggregateMode === 'none') return null;
+    if (aggVals.length === 0) return null;
     const val = aggregateMode === 'sum' ? aggSum : aggAvg;
     if (displayAsPercentage) return `${val.toFixed(1)}%`;
     const scaled = val / scaleDivisorAgg;
     return showCurrency
       ? formatCurrency(scaled)
       : new Intl.NumberFormat('nb-NO', { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(scaled);
-  }, [showBenchmark, aggregateMode, aggSum, aggAvg, displayAsPercentage, showCurrency, scaleDivisorAgg]);
+  }, [showBenchmark, aggregateMode, aggSum, aggAvg, aggVals.length, displayAsPercentage, showCurrency, scaleDivisorAgg]);
 
   if (currentFormulaResult.isLoading) {
     return (

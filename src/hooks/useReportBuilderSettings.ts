@@ -9,6 +9,10 @@ export interface ReportBuilderSettings {
   // Scope settings (optional)
   scopeType?: 'client' | 'firm' | 'custom';
   selectedClientIds?: string[];
+  // Benchmark UI selections (optional)
+  benchmarkAggregateMode?: 'none' | 'sum' | 'avg';
+  benchmarkSelectedGroup?: string;
+  benchmarkShow?: boolean;
 }
 
 const STORAGE_PREFIX = 'report-builder-settings';
