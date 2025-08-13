@@ -9,13 +9,13 @@ import { useFormulaCalculation } from '@/hooks/useFormulaCalculation';
 import { InlineEditableTitle } from '../InlineEditableTitle';
 import { formatCurrency } from '@/lib/formatters';
 import { useScope } from '@/contexts/ScopeContext';
-import { supabase } from '@/integrations/supabase/client';
 import { KpiBenchmarkPanel } from './KpiBenchmarkPanel';
 import { loadReportBuilderSettings, saveReportBuilderSettings } from '@/hooks/useReportBuilderSettings';
 import { useKpiBenchmarkExport } from '@/hooks/useKpiBenchmarkExport';
 import { BenchmarkControls } from './BenchmarkControls';
 import { useKpiBenchmarkAggregation } from '@/hooks/useKpiBenchmarkAggregation';
 import { KpiBenchmarkSummary } from './KpiBenchmarkSummary';
+import { useKpiBenchmarkState } from '@/hooks/useKpiBenchmarkState';
 
 interface KpiWidgetProps {
   widget: Widget;
@@ -36,10 +36,10 @@ export function KpiWidget({ widget }: KpiWidgetProps) {
 
   const { scopeType, selectedClientIds } = useScope();
   const [showBenchmark, setShowBenchmark] = React.useState(false);
-  const [clientsInfo, setClientsInfo] = React.useState<Array<{ id: string; name: string; group: string }>>([]);
-  const [valuesByClient, setValuesByClient] = React.useState<Record<string, number>>({});
+  const { clientsInfo, valuesByClient, setClientValue, groupNames } = useKpiBenchmarkState({ scopeType, showBenchmark, selectedClientIds });
+  
   const [aggregateMode, setAggregateMode] = React.useState<'none' | 'sum' | 'avg'>('none');
-  const groupNames = React.useMemo(() => Array.from(new Set((clientsInfo || []).map((c) => c.group || 'Uten gruppe'))), [clientsInfo]);
+  
   const [selectedGroup, setSelectedGroup] = React.useState<string>('all');
 
   // Load persisted benchmark selections
@@ -53,21 +53,6 @@ export function KpiWidget({ widget }: KpiWidgetProps) {
     }
   }, [clientId, selectedFiscalYear]);
 
-  React.useEffect(() => {
-    const load = async () => {
-      if (scopeType !== 'custom' || !showBenchmark || !selectedClientIds || selectedClientIds.length === 0) {
-        setClientsInfo([]);
-        return;
-      }
-      const { data = [] } = await supabase
-        .from('clients' as any)
-        .select('id, company_name, name, client_group')
-        .in('id', selectedClientIds);
-      const items = (data as any[]).map((c) => ({ id: c.id, name: c.company_name || c.name || c.id, group: c.client_group || 'Uten gruppe' }));
-      setClientsInfo(items);
-    };
-    load();
-  }, [scopeType, showBenchmark, selectedClientIds]);
 
   // Persist benchmark selections
   React.useEffect(() => {
@@ -271,7 +256,7 @@ export function KpiWidget({ widget }: KpiWidgetProps) {
               selectedVersion={widget.config?.selectedVersion}
               displayAsPercentage={displayAsPercentage}
               showCurrency={showCurrency}
-              onValue={(id, val) => setValuesByClient((prev) => ({ ...prev, [id]: val }))}
+              onValue={setClientValue}
             />
           </div>
         )}
