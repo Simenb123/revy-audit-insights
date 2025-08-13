@@ -43,7 +43,11 @@ export function WidgetWrapper({ widget, children }: WidgetWrapperProps) {
     }
   };
   return (
-    <div ref={containerRef} className="relative group h-full overflow-auto">
+    <div
+      ref={containerRef}
+      data-widget-id={widget.id}
+      className="relative group h-full overflow-auto"
+    >
       {children}
       {!isViewMode && (
         <div className="widget-controls absolute top-2 right-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
