@@ -24,23 +24,22 @@ const StickyClientLayout: React.FC<StickyClientLayoutProps> = ({
   React.useEffect(() => {
     setSubHeader(
       <ClientSubHeader
-        centerContent={
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <h1 className="text-lg font-semibold text-foreground">{clientName}</h1>
-              {orgNumber && (
-                <span className="text-xs text-muted-foreground font-mono bg-muted px-2 py-1 rounded">
-                  {orgNumber}
-                </span>
-              )}
-            </div>
-            <div className="text-muted-foreground">•</div>
-            <h2 className="text-sm text-muted-foreground">{pageTitle}</h2>
+        leftContent={
+          <div className="flex items-center gap-2">
+            <h1 className="text-lg font-semibold text-foreground">{clientName}</h1>
+            {orgNumber && (
+              <span className="text-xs text-muted-foreground font-mono bg-muted px-2 py-1 rounded">
+                {orgNumber}
+              </span>
+            )}
           </div>
+        }
+        centerContent={
+          <h2 className="text-sm text-muted-foreground">{pageTitle}</h2>
         }
         rightContent={
           <div className="flex items-center gap-3">
-            <FiscalYearSelector 
+            <FiscalYearSelector
               clientName={clientName}
               showClientName={false}
             />
