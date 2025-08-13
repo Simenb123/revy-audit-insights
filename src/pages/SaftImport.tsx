@@ -37,7 +37,7 @@ const SaftImport: React.FC<SaftImportProps> = ({ clientId }) => {
     }
 
     try {
-      await persistParsed(clientId, parsed);
+      await persistParsed(clientId, parsed, file.name);
 
       // Lag én samlet XLSX med alle faner og last både ned og opp til lagring
       const xlsx = await toXlsxBlob(parsed);

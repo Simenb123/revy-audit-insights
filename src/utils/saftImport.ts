@@ -252,7 +252,7 @@ export async function createZipFromParsed(parsed: SaftResult): Promise<Blob> {
   return zip.generateAsync({ type: 'blob' });
 }
 
-export async function persistParsed(clientId: string, parsed: SaftResult): Promise<void> {
+export async function persistParsed(clientId: string, parsed: SaftResult, fileName?: string): Promise<void> {
   // Upsert accounts into client_chart_of_accounts
   const accountRows = parsed.accounts.map(a => {
     const derivedType = convertToNorwegian(String((a as any).account_type ?? (a as any).type ?? ''));
@@ -275,32 +275,135 @@ export async function persistParsed(clientId: string, parsed: SaftResult): Promi
   const accountMap = new Map<string, string>();
   inserted?.forEach((row: any) => accountMap.set(row.account_number, row.id));
 
-  // Insert transactions
-  const txRows = parsed.transactions
+  // Derive period dates
+  const parseISO = (s?: string) => {
+    if (!s) return null;
+    const d = new Date(s);
+    return isNaN(d.getTime()) ? null : d;
+  };
+  const headerStart = parseISO((parsed as any).header?.start);
+  const headerEnd = parseISO((parsed as any).header?.end);
+  const trxDates = (parsed.transactions || [])
+    .map(t => parseISO((t as any).posting_date))
+    .filter((d): d is Date => !!d);
+
+  const minTrxDate = trxDates.length ? new Date(Math.min(...trxDates.map(d => d.getTime()))) : null;
+  const maxTrxDate = trxDates.length ? new Date(Math.max(...trxDates.map(d => d.getTime()))) : null;
+
+  const periodStart = headerStart || minTrxDate || null;
+  const periodEnd = headerEnd || maxTrxDate || headerStart || minTrxDate || new Date();
+
+  const toDateString = (d: Date | null) => d ? d.toISOString().split('T')[0] : null;
+  const period_start_date = toDateString(periodStart) || `${periodEnd.getFullYear()}-01-01`;
+  const period_end_date = toDateString(periodEnd) || `${periodEnd.getFullYear()}-12-31`;
+  const period_year = periodEnd.getFullYear();
+
+  // Prepare GL rows
+  const txRows = (parsed.transactions || [])
     .map(t => {
       const accountId = t.account_id ? accountMap.get(t.account_id) : undefined;
       if (!accountId) return null;
-      const date = t.posting_date ? new Date(t.posting_date) : new Date();
+      const dateObj = t.posting_date ? new Date(t.posting_date) : periodEnd;
+      const debit = t.debit !== undefined ? Math.abs(Number(t.debit) || 0) : 0;
+      const credit = t.credit !== undefined ? Math.abs(Number(t.credit) || 0) : 0;
+      const balance = debit - credit;
       return {
         client_id: clientId,
         client_account_id: accountId,
-        transaction_date: date.toISOString().split('T')[0],
-        period_year: date.getFullYear(),
-        period_month: date.getMonth() + 1,
-        voucher_number: t.voucher_no || null,
+        transaction_date: dateObj.toISOString().split('T')[0],
+        period_year: dateObj.getFullYear(),
+        period_month: dateObj.getMonth() + 1,
+        voucher_number: (t as any).voucher_no || (t as any).voucher_number || null,
         description: t.description || '',
-        debit_amount: t.debit || 0,
-        credit_amount: t.credit || 0,
-        balance_amount: (t.debit || 0) - (t.credit || 0)
+        debit_amount: debit || null,
+        credit_amount: credit || null,
+        balance_amount: balance,
       };
     })
     .filter(Boolean) as any[];
 
+  const totalTransactions = txRows.length;
+  const totalDebitAmount = txRows.reduce((s, r) => s + (r.debit_amount || 0), 0);
+  const totalCreditAmount = txRows.reduce((s, r) => s + (r.credit_amount || 0), 0);
+  const balanceDifference = Math.round(((totalDebitAmount - totalCreditAmount) + Number.EPSILON) * 100) / 100;
+
+  // Create version
+  let versionId: string | null = null;
+  let versionNumber: number | null = null;
+  {
+    const { data: nextNum, error: verErr } = await supabase.rpc('get_next_version_number', { p_client_id: clientId });
+    if (verErr) throw verErr;
+    versionNumber = nextNum as number;
+    const { data: version, error: insErr } = await supabase
+      .from('accounting_data_versions')
+      .insert({
+        client_id: clientId,
+        version_number: versionNumber,
+        file_name: fileName || 'SAF-T import',
+        total_transactions: totalTransactions,
+        total_debit_amount: totalDebitAmount,
+        total_credit_amount: totalCreditAmount,
+        balance_difference: balanceDifference,
+        metadata: {
+          source: 'saft',
+          period_start_date,
+          period_end_date
+        }
+      })
+      .select('*')
+      .single();
+    if (insErr) throw insErr;
+    versionId = version.id;
+
+    // Set this version as active
+    await supabase.rpc('set_active_version', { p_version_id: versionId });
+  }
+
+  // Insert GL with version_id
   if (txRows.length) {
+    const rowsWithVersion = txRows.map(r => ({ ...r, version_id: versionId }));
     const { error: txError } = await supabase
       .from('general_ledger_transactions')
-      .insert(txRows);
+      .insert(rowsWithVersion);
     if (txError) throw txError;
+  }
+
+  // Aggregate debit/credit per account for TB
+  const sums = new Map<string, { debit: number; credit: number }>();
+  txRows.forEach(r => {
+    const key = r.client_account_id as string;
+    const s = sums.get(key) || { debit: 0, credit: 0 };
+    s.debit += r.debit_amount || 0;
+    s.credit += r.credit_amount || 0;
+    sums.set(key, s);
+  });
+
+  // Insert trial balances from Accounts
+  const tbRows = (parsed.accounts || [])
+    .map(a => {
+      const accountId = a.account_id ? accountMap.get(a.account_id) : undefined;
+      if (!accountId) return null;
+      const s = sums.get(accountId) || { debit: 0, credit: 0 };
+      return {
+        client_id: clientId,
+        client_account_id: accountId,
+        opening_balance: a.opening_balance ?? 0,
+        closing_balance: a.closing_balance ?? 0,
+        debit_turnover: s.debit,
+        credit_turnover: s.credit,
+        period_start_date,
+        period_end_date,
+        period_year,
+        version: versionNumber ? `v${versionNumber}` : 'v1'
+      };
+    })
+    .filter(Boolean) as any[];
+
+  if (tbRows.length) {
+    const { error: tbError } = await supabase
+      .from('trial_balances')
+      .insert(tbRows);
+    if (tbError) throw tbError;
   }
 }
 

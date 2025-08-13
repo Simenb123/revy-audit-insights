@@ -15,7 +15,7 @@ const SaftImport = () => {
   const [file, setFile] = useState<File | null>(null);
   const [generateXlsx, setGenerateXlsx] = useState(true);
   const [generateCsv, setGenerateCsv] = useState(false);
-  const [uploadToSupabase, setUploadToSupabase] = useState(false);
+  const [uploadToSupabase, setUploadToSupabase] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const { clientId: clientIdParam, orgNumber } = useParams<{ clientId?: string; orgNumber?: string }>();
   const { data: lookup } = useClientLookup(orgNumber);
@@ -83,7 +83,7 @@ const SaftImport = () => {
         if (!clientId) {
           toast.error('Ingen klient-kontekst: kan ikke lagre til database uten valgt klient.');
         } else {
-          await persistParsed(clientId, parsed);
+          await persistParsed(clientId, parsed, file.name);
           const storagePath = await uploadZipToStorage(clientId, zip, `${baseName}.zip`);
           console.log('SAF-T ZIP lastet opp til:', storagePath);
         }
