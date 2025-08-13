@@ -2,6 +2,7 @@ import React from 'react';
 import { useWidgetManager, Widget } from '@/contexts/WidgetManagerContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   BarChart3,
   Table,
@@ -29,7 +30,7 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
   const { addWidget } = useWidgetManager();
   const { data: dbTemplates } = useWidgetTemplates();
 
-  const defaultTemplates = [
+  const defaultTemplates = React.useMemo(() => ([
     {
       type: 'filter' as const,
       title: 'Filter',
@@ -242,7 +243,7 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
         sectionMode: 'balance' as const,
       }
     }
-  ];
+  ]), []);
 
   const templates = React.useMemo(() => {
     if (dbTemplates && dbTemplates.length > 0) {
@@ -265,7 +266,7 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
       });
     }
     return defaultTemplates;
-  }, [dbTemplates]);
+  }, [dbTemplates, defaultTemplates]);
 
   const handleAddWidget = (template: typeof templates[0]) => {
     const widgetId = `widget-${Date.now()}`;
@@ -321,26 +322,33 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
           <X className="h-4 w-4" />
         </Button>
       </div>
-      
+      <p className="text-sm text-muted-foreground">
+        Hold musen over en widget for en kort forklaring.
+      </p>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {templates.map((template) => (
-            <Card 
-              key={`${template.type}-${template.title}`} 
-              className="cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => handleAddWidget(template)}
-            >
-            <CardHeader className="pb-3">
-              <div className="flex items-center gap-2">
-                <template.icon className="h-5 w-5 text-primary" />
-                <CardTitle className="text-sm">{template.title}</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <CardDescription className="text-xs">
-                {template.description}
-              </CardDescription>
-            </CardContent>
-          </Card>
+          <Tooltip key={`${template.type}-${template.title}`}>
+            <TooltipTrigger asChild>
+              <Card
+                className="cursor-pointer hover:shadow-md transition-shadow"
+                onClick={() => handleAddWidget(template)}
+              >
+                <CardHeader className="pb-3">
+                  <div className="flex items-center gap-2">
+                    <template.icon className="h-5 w-5 text-primary" />
+                    <CardTitle className="text-sm">{template.title}</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <CardDescription className="text-xs">
+                    {template.description}
+                  </CardDescription>
+                </CardContent>
+              </Card>
+            </TooltipTrigger>
+            <TooltipContent>{template.description}</TooltipContent>
+          </Tooltip>
         ))}
       </div>
     </div>

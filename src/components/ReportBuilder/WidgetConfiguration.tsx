@@ -22,7 +22,8 @@ export function WidgetConfiguration({ widget, onUpdateWidget }: WidgetConfigurat
   const [isOpen, setIsOpen] = useState(false);
   const [title, setTitle] = useState(widget.title);
   const [config, setConfig] = useState(widget.config || {});
-const { data: standardAccounts = [] } = useFirmStandardAccounts();
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const { data: standardAccounts = [] } = useFirmStandardAccounts();
   const { data: formulas = [] } = useFormulaDefinitions();
 
   const handleSave = () => {
@@ -43,7 +44,7 @@ const { data: standardAccounts = [] } = useFirmStandardAccounts();
         return (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <Label htmlFor="show-search">Vis søkefelt</Label>
+              <Label htmlFor="show-search" title="Aktiverer søk i kontolisten">Vis søkefelt</Label>
               <Switch
                 id="show-search"
                 checked={config.showSearch !== false}
@@ -52,7 +53,7 @@ const { data: standardAccounts = [] } = useFirmStandardAccounts();
             </div>
 
             <div className="flex items-center justify-between">
-              <Label htmlFor="show-category">Vis kontokategori-filter</Label>
+              <Label htmlFor="show-category" title="Vis filter for kontokategorier">Vis kontokategori-filter</Label>
               <Switch
                 id="show-category"
                 checked={config.showAccountCategory !== false}
@@ -60,23 +61,27 @@ const { data: standardAccounts = [] } = useFirmStandardAccounts();
               />
             </div>
 
-            <div className="flex items-center justify-between">
-              <Label htmlFor="show-type">Vis kontotype-filter</Label>
-              <Switch
-                id="show-type"
-                checked={config.showAccountType !== false}
-                onCheckedChange={(checked) => updateConfig('showAccountType', checked)}
-              />
-            </div>
+            {showAdvanced && (
+              <>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="show-type" title="Vis filter for kontotype">Vis kontotype-filter</Label>
+                  <Switch
+                    id="show-type"
+                    checked={config.showAccountType !== false}
+                    onCheckedChange={(checked) => updateConfig('showAccountType', checked)}
+                  />
+                </div>
 
-            <div className="flex items-center justify-between">
-              <Label htmlFor="show-date">Vis datofilter</Label>
-              <Switch
-                id="show-date"
-                checked={config.showDateRange !== false}
-                onCheckedChange={(checked) => updateConfig('showDateRange', checked)}
-              />
-            </div>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="show-date" title="La brukeren velge periode">Vis datofilter</Label>
+                  <Switch
+                    id="show-date"
+                    checked={config.showDateRange !== false}
+                    onCheckedChange={(checked) => updateConfig('showDateRange', checked)}
+                  />
+                </div>
+              </>
+            )}
           </div>
         );
 
@@ -85,7 +90,7 @@ const { data: standardAccounts = [] } = useFirmStandardAccounts();
         return (
           <div className="space-y-4">
             <div>
-              <Label htmlFor="sourceType">Kildetype</Label>
+              <Label htmlFor="sourceType" title="Hvor verdien hentes fra">Kildetype</Label>
               <Select
                 value={config.sourceType || 'alias'}
                 onValueChange={(value) => updateConfig('sourceType', value)}
@@ -103,7 +108,7 @@ const { data: standardAccounts = [] } = useFirmStandardAccounts();
 
             {(!config.sourceType || config.sourceType === 'alias') && (
               <div>
-                <Label htmlFor="metric">Nøkkeltall</Label>
+                <Label htmlFor="metric" title="Velg et forhåndsdefinert nøkkeltall">Nøkkeltall</Label>
                 <Select
                   value={config.metric || 'revenue'}
                   onValueChange={(value) => updateConfig('metric', value)}
@@ -127,7 +132,7 @@ const { data: standardAccounts = [] } = useFirmStandardAccounts();
 
             {config.sourceType === 'formula' && (
               <div>
-                <Label htmlFor="formulaId">Lagret formel</Label>
+                <Label htmlFor="formulaId" title="Velg en lagret formel">Lagret formel</Label>
                 <Select
                   value={config.formulaId || ''}
                   onValueChange={(value) => updateConfig('formulaId', value)}
@@ -146,7 +151,7 @@ const { data: standardAccounts = [] } = useFirmStandardAccounts();
 
             {config.sourceType === 'expr' && (
               <div>
-                <Label htmlFor="customFormula">Uttrykk (bruk [NN] eller [A-B], f.eks. [19-79])</Label>
+                <Label htmlFor="customFormula" title="Skriv eget uttrykk med kontonummer">Uttrykk (bruk [NN] eller [A-B], f.eks. [19-79])</Label>
                 <Textarea
                   id="customFormula"
                   value={config.customFormula || ''}
@@ -156,85 +161,88 @@ const { data: standardAccounts = [] } = useFirmStandardAccounts();
                 />
               </div>
             )}
-
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="showTrend"
-                checked={config.showTrend !== false}
-                onChange={(e) => updateConfig('showTrend', e.target.checked)}
-                className="rounded"
-              />
-              <Label htmlFor="showTrend">Vis trend</Label>
-            </div>
-
-            <div>
-              <Label htmlFor="unitScale">Enhetsskala</Label>
-              <Select
-                value={config.unitScale || 'none'}
-                onValueChange={(value) => updateConfig('unitScale', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Ingen</SelectItem>
-                  <SelectItem value="thousand">Tusen</SelectItem>
-                  <SelectItem value="million">Millioner</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="displayAsPercentage"
-                checked={config.displayAsPercentage || false}
-                onChange={(e) => updateConfig('displayAsPercentage', e.target.checked)}
-                className="rounded"
-              />
-              <Label htmlFor="displayAsPercentage">Vis som prosent</Label>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="showCurrency"
-                checked={(config.showCurrency !== false) && !config.displayAsPercentage}
-                onChange={(e) => updateConfig('showCurrency', e.target.checked)}
-                className="rounded"
-                disabled={config.displayAsPercentage}
-              />
-              <Label htmlFor="showCurrency">Vis valuta</Label>
-            </div>
-
-            {widget.type === 'enhancedKpi' && (
+            {showAdvanced && (
               <>
-                <div>
-                  <Label htmlFor="threshold">Terskel</Label>
-                  <Input
-                    id="threshold"
-                    type="number"
-                    value={config.threshold ?? 0}
-                    onChange={(e) => updateConfig('threshold', parseFloat(e.target.value))}
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="showTrend"
+                    checked={config.showTrend !== false}
+                    onChange={(e) => updateConfig('showTrend', e.target.checked)}
+                    className="rounded"
                   />
+                  <Label htmlFor="showTrend" title="Vis utvikling over tid">Vis trend</Label>
                 </div>
+
                 <div>
-                  <Label htmlFor="positiveColor">Positiv farge</Label>
-                  <Input
-                    id="positiveColor"
-                    value={config.positiveColor || 'text-success'}
-                    onChange={(e) => updateConfig('positiveColor', e.target.value)}
-                  />
+                  <Label htmlFor="unitScale" title="Skaler tallene">Enhetsskala</Label>
+                  <Select
+                    value={config.unitScale || 'none'}
+                    onValueChange={(value) => updateConfig('unitScale', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Ingen</SelectItem>
+                      <SelectItem value="thousand">Tusen</SelectItem>
+                      <SelectItem value="million">Millioner</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-                <div>
-                  <Label htmlFor="negativeColor">Negativ farge</Label>
-                  <Input
-                    id="negativeColor"
-                    value={config.negativeColor || 'text-destructive'}
-                    onChange={(e) => updateConfig('negativeColor', e.target.value)}
+
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="displayAsPercentage"
+                    checked={config.displayAsPercentage || false}
+                    onChange={(e) => updateConfig('displayAsPercentage', e.target.checked)}
+                    className="rounded"
                   />
+                  <Label htmlFor="displayAsPercentage" title="Vis verdien som prosent">Vis som prosent</Label>
                 </div>
+
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="showCurrency"
+                    checked={(config.showCurrency !== false) && !config.displayAsPercentage}
+                    onChange={(e) => updateConfig('showCurrency', e.target.checked)}
+                    className="rounded"
+                    disabled={config.displayAsPercentage}
+                  />
+                  <Label htmlFor="showCurrency" title="Vis valutategn">Vis valuta</Label>
+                </div>
+
+                {widget.type === 'enhancedKpi' && (
+                  <>
+                    <div>
+                      <Label htmlFor="threshold" title="Grense for fargeendring">Terskel</Label>
+                      <Input
+                        id="threshold"
+                        type="number"
+                        value={config.threshold ?? 0}
+                        onChange={(e) => updateConfig('threshold', parseFloat(e.target.value))}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="positiveColor" title="Farge ved positiv verdi">Positiv farge</Label>
+                      <Input
+                        id="positiveColor"
+                        value={config.positiveColor || 'text-success'}
+                        onChange={(e) => updateConfig('positiveColor', e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="negativeColor" title="Farge ved negativ verdi">Negativ farge</Label>
+                      <Input
+                        id="negativeColor"
+                        value={config.negativeColor || 'text-destructive'}
+                        onChange={(e) => updateConfig('negativeColor', e.target.value)}
+                      />
+                    </div>
+                  </>
+                )}
               </>
             )}
           </div>
@@ -244,10 +252,23 @@ const { data: standardAccounts = [] } = useFirmStandardAccounts();
         return (
           <div className="space-y-4">
             <div>
-              <Label htmlFor="dataSource">Datakilde</Label>
+
+              <Label htmlFor="maxRows" title="Hvor mange rader som vises">Maksimalt antall rader</Label>
+              <Input
+                id="maxRows"
+                type="number"
+                value={config.maxRows || 10}
+                onChange={(e) => updateConfig('maxRows', parseInt(e.target.value))}
+                min="1"
+                max="50"
+              />
+            </div>
+            <div>
+              <Label htmlFor="sortBy" title="Velg sorteringsfelt">Sorter etter</Label>
               <Select
-                value={config.dataSource || 'trial_balance'}
-                onValueChange={(value) => updateConfig('dataSource', value)}
+                value={config.sortBy || 'balance'}
+                onValueChange={(value) => updateConfig('sortBy', value)}
+
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -258,7 +279,8 @@ const { data: standardAccounts = [] } = useFirmStandardAccounts();
                 </SelectContent>
               </Select>
             </div>
-
+            {showAdvanced && (
+              <>
             {config.dataSource === 'transactions' ? (
               <div>
                 <Label htmlFor="dimension">Dimensjon</Label>
@@ -313,7 +335,7 @@ const { data: standardAccounts = [] } = useFirmStandardAccounts();
                     onChange={(e) => updateConfig('showPercentage', e.target.checked)}
                     className="rounded"
                   />
-                  <Label htmlFor="showPercentage">Vis prosent</Label>
+                  <Label htmlFor="showPercentage" title="Vis prosent av totalsum">Vis prosent</Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <input
@@ -323,10 +345,11 @@ const { data: standardAccounts = [] } = useFirmStandardAccounts();
                     onChange={(e) => updateConfig('enableCrossFilter', e.target.checked)}
                     className="rounded"
                   />
-                  <Label htmlFor="enableTableCrossFilter">Aktiver kryssfiltrering</Label>
+                  <Label htmlFor="enableTableCrossFilter" title="La tabellen filtrere andre widgets">Aktiver kryssfiltrering</Label>
                 </div>
                 <div>
-                  <Label htmlFor="drillPathTable">Drill-hierarki (komma separert)</Label>
+                  <Label htmlFor="drillPathTable" title="Angi hierarki for drilling">Drill-hierarki (komma separert)</Label>
+
                   <Input
                     id="drillPathTable"
                     value={(config.drillPath || []).join(',')}
@@ -351,9 +374,9 @@ const { data: standardAccounts = [] } = useFirmStandardAccounts();
         return (
           <div className="space-y-4">
             <div>
-              <Label htmlFor="chartType">Diagramtype</Label>
-              <Select 
-                value={config.chartType || 'bar'} 
+              <Label htmlFor="chartType" title="Velg hvordan data vises">Diagramtype</Label>
+              <Select
+                value={config.chartType || 'bar'}
                 onValueChange={(value) => updateConfig('chartType', value)}
               >
                 <SelectTrigger>
@@ -368,9 +391,9 @@ const { data: standardAccounts = [] } = useFirmStandardAccounts();
             </div>
 
             <div>
-              <Label htmlFor="dataSource">Datakilde</Label>
-              <Select 
-                value={config.chartDataSource || 'breakdown'} 
+              <Label htmlFor="dataSource" title="Hvor data hentes fra">Datakilde</Label>
+              <Select
+                value={config.chartDataSource || 'breakdown'}
                 onValueChange={(value) => updateConfig('chartDataSource', value)}
               >
                 <SelectTrigger>
@@ -386,7 +409,7 @@ const { data: standardAccounts = [] } = useFirmStandardAccounts();
             {config.chartDataSource === 'formulaSeries' && (
               <div className="space-y-4">
                 <div>
-                  <Label>Kildetype</Label>
+                  <Label title="Hvor verdien hentes fra">Kildetype</Label>
                   <Select
                     value={config.sourceType || 'alias'}
                     onValueChange={(value) => updateConfig('sourceType', value)}
@@ -404,7 +427,7 @@ const { data: standardAccounts = [] } = useFirmStandardAccounts();
 
                 {(!config.sourceType || config.sourceType === 'alias') && (
                   <div>
-                    <Label>Nøkkeltall</Label>
+                    <Label title="Velg et forhåndsdefinert nøkkeltall">Nøkkeltall</Label>
                     <Select
                       value={config.metric || 'revenue'}
                       onValueChange={(value) => updateConfig('metric', value)}
@@ -428,7 +451,7 @@ const { data: standardAccounts = [] } = useFirmStandardAccounts();
 
                 {config.sourceType === 'formula' && (
                   <div>
-                    <Label>Lagret formel</Label>
+                    <Label title="Velg en lagret formel">Lagret formel</Label>
                     <Select
                       value={config.formulaId || ''}
                       onValueChange={(value) => updateConfig('formulaId', value)}
@@ -447,7 +470,7 @@ const { data: standardAccounts = [] } = useFirmStandardAccounts();
 
                 {config.sourceType === 'expr' && (
                   <div>
-                    <Label>Egendefinert uttrykk (bruk [NN] eller [A-B], f.eks. [19-79])</Label>
+                    <Label title="Skriv eget uttrykk med kontonummer">Egendefinert uttrykk (bruk [NN] eller [A-B], f.eks. [19-79])</Label>
                     <Textarea
                       value={config.customFormula || ''}
                       onChange={(e) => updateConfig('customFormula', e.target.value)}
@@ -456,90 +479,96 @@ const { data: standardAccounts = [] } = useFirmStandardAccounts();
                     />
                   </div>
                 )}
+                {showAdvanced && (
+                  <>
+                    <div>
+                      <Label htmlFor="yearsBack" title="Hvor mange år som vises">Antall år</Label>
+                      <Input
+                        id="yearsBack"
+                        type="number"
+                        value={config.yearsBack || 5}
+                        onChange={(e) => updateConfig('yearsBack', Math.max(1, parseInt(e.target.value) || 1))}
+                        min="1"
+                        max="15"
+                      />
+                    </div>
 
-                <div>
-                  <Label htmlFor="yearsBack">Antall år</Label>
-                  <Input
-                    id="yearsBack"
-                    type="number"
-                    value={config.yearsBack || 5}
-                    onChange={(e) => updateConfig('yearsBack', Math.max(1, parseInt(e.target.value) || 1))}
-                    min="1"
-                    max="15"
-                  />
-                </div>
+                    <div>
+                      <Label htmlFor="unitScaleChart" title="Skaler tallene">Enhetsskala</Label>
+                      <Select
+                        value={config.unitScale || 'none'}
+                        onValueChange={(value) => updateConfig('unitScale', value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">Ingen</SelectItem>
+                          <SelectItem value="thousand">Tusen</SelectItem>
+                          <SelectItem value="million">Millioner</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-                <div>
-                  <Label htmlFor="unitScaleChart">Enhetsskala</Label>
-                  <Select
-                    value={config.unitScale || 'none'}
-                    onValueChange={(value) => updateConfig('unitScale', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Ingen</SelectItem>
-                      <SelectItem value="thousand">Tusen</SelectItem>
-                      <SelectItem value="million">Millioner</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="text-xs text-muted-foreground">Tips: For tidsserier anbefales linjediagram.</div>
+                    <div className="text-xs text-muted-foreground">Tips: For tidsserier anbefales linjediagram.</div>
+                  </>
+                )}
               </div>
             )}
-
-            <div>
-              <Label htmlFor="maxDataPoints">Maksimalt antall datapunkter</Label>
-              <Input
-                id="maxDataPoints"
-                type="number"
-                value={config.maxDataPoints || 6}
-                onChange={(e) => updateConfig('maxDataPoints', parseInt(e.target.value))}
-                min="3"
-                max="20"
-                disabled={config.chartDataSource === 'formulaSeries'}
-              />
-            </div>
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="showValues"
-                checked={config.showValues !== false}
-                onChange={(e) => updateConfig('showValues', e.target.checked)}
-                className="rounded"
-              />
-              <Label htmlFor="showValues">Vis verdier</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="enableCrossFilter"
-                checked={config.enableCrossFilter !== false}
-                onChange={(e) => updateConfig('enableCrossFilter', e.target.checked)}
-                className="rounded"
-                disabled={config.chartDataSource === 'formulaSeries'}
-              />
-              <Label htmlFor="enableCrossFilter">Aktiver kryssfiltrering</Label>
-            </div>
-            <div>
-              <Label htmlFor="drillPathChart">Drill-hierarki (komma separert)</Label>
-              <Input
-                id="drillPathChart"
-                value={(config.drillPath || []).join(',')}
-                onChange={(e) =>
-                  updateConfig(
-                    'drillPath',
-                    e.target.value
-                      .split(',')
-                      .map(s => s.trim())
-                      .filter(Boolean)
-                  )
-                }
-                placeholder="standard_name,account"
-              />
-            </div>
+            {showAdvanced && (
+              <>
+                <div>
+                  <Label htmlFor="maxDataPoints" title="Begrenser antall punkter">Maksimalt antall datapunkter</Label>
+                  <Input
+                    id="maxDataPoints"
+                    type="number"
+                    value={config.maxDataPoints || 6}
+                    onChange={(e) => updateConfig('maxDataPoints', parseInt(e.target.value))}
+                    min="3"
+                    max="20"
+                    disabled={config.chartDataSource === 'formulaSeries'}
+                  />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="showValues"
+                    checked={config.showValues !== false}
+                    onChange={(e) => updateConfig('showValues', e.target.checked)}
+                    className="rounded"
+                  />
+                  <Label htmlFor="showValues" title="Vis tall på grafen">Vis verdier</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="enableCrossFilter"
+                    checked={config.enableCrossFilter !== false}
+                    onChange={(e) => updateConfig('enableCrossFilter', e.target.checked)}
+                    className="rounded"
+                    disabled={config.chartDataSource === 'formulaSeries'}
+                  />
+                  <Label htmlFor="enableCrossFilter" title="La grafen filtrere andre widgets">Aktiver kryssfiltrering</Label>
+                </div>
+                <div>
+                  <Label htmlFor="drillPathChart" title="Angi hierarki for drilling">Drill-hierarki (komma separert)</Label>
+                  <Input
+                    id="drillPathChart"
+                    value={(config.drillPath || []).join(',')}
+                    onChange={(e) =>
+                      updateConfig(
+                        'drillPath',
+                        e.target.value
+                          .split(',')
+                          .map(s => s.trim())
+                          .filter(Boolean)
+                      )
+                    }
+                    placeholder="standard_name,account"
+                  />
+                </div>
+              </>
+            )}
           </div>
         );
 
@@ -839,13 +868,19 @@ const { data: standardAccounts = [] } = useFirmStandardAccounts();
         <div className="space-y-4 py-4">
           {widget.type !== 'formula' && (
             <div>
-              <Label htmlFor="title">Tittel</Label>
+              <Label htmlFor="title" title="Teksten som vises på widgeten">Tittel</Label>
               <Input
                 id="title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Widget tittel"
               />
+            </div>
+          )}
+          {widget.type !== 'formula' && (
+            <div className="flex items-center justify-between">
+              <Label htmlFor="advanced-toggle" title="Skjul eller vis flere valg">Avanserte innstillinger</Label>
+              <Switch id="advanced-toggle" checked={showAdvanced} onCheckedChange={setShowAdvanced} />
             </div>
           )}
           {renderTypeSpecificConfig()}
