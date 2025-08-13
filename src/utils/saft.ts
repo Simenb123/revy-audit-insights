@@ -205,14 +205,6 @@ export async function toXlsxBlob(data: SaftResult): Promise<Blob> {
   const arTrxRows = trxRows.filter(r => String(r.customer_id || '').trim() !== '');
   const apTrxRows = trxRows.filter(r => String(r.supplier_id || '').trim() !== '');
 
-  // AR/AP filtered transactions
-  const arTrxRows = trxRows.filter(r => String(r.customer_id || '').trim() !== '');
-  const apTrxRows = trxRows.filter(r => String(r.supplier_id || '').trim() !== '');
-
-  // AR/AP filtered transactions
-  const arTrxRows = trxRows.filter(r => String(r.customer_id || '').trim() !== '');
-  const apTrxRows = trxRows.filter(r => String(r.supplier_id || '').trim() !== '');
-
   const sum = (ns: number[]) => ns.reduce((acc, v) => acc + (v ?? 0), 0);
   const round2 = (n: number) => Math.round(n * 100) / 100;
   const totalSigned = round2(sum(trxRows.map(r => (Number(r.debit) || 0) + (Number(r.credit) || 0))));
