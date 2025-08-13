@@ -1,6 +1,6 @@
 import React from 'react';
 import { useLocation, Link } from 'react-router-dom';
-import { ChevronRight, Home } from 'lucide-react';
+import { Home } from 'lucide-react';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -41,20 +41,20 @@ const AppBreadcrumb = () => {
 
   return (
     <Breadcrumb>
-      <BreadcrumbList>
+      <BreadcrumbList className="text-white">
         {breadcrumbItems.map((item, index) => {
           const isLast = index === breadcrumbItems.length - 1;
-          
+
           return (
             <React.Fragment key={item.path}>
               <BreadcrumbItem>
                 {isLast ? (
-                  <BreadcrumbPage className="flex items-center gap-1">
+                  <BreadcrumbPage className="flex items-center gap-1 text-white">
                     {item.icon && <item.icon className="w-4 h-4" />}
                     {item.name}
                   </BreadcrumbPage>
                 ) : (
-                  <BreadcrumbLink asChild>
+                  <BreadcrumbLink asChild className="text-white hover:text-white">
                     <Link to={item.path} className="flex items-center gap-1">
                       {item.icon && <item.icon className="w-4 h-4" />}
                       {item.name}
@@ -62,7 +62,7 @@ const AppBreadcrumb = () => {
                   </BreadcrumbLink>
                 )}
               </BreadcrumbItem>
-              {!isLast && <BreadcrumbSeparator />}
+              {!isLast && <BreadcrumbSeparator className="text-white" />}
             </React.Fragment>
           );
         })}
