@@ -9,7 +9,7 @@ export const useGeneralLedgerCount = (clientId: string, versionId?: string, filt
       
       let query = supabase
         .from('general_ledger_transactions')
-        .select(filters?.accountNumber ? 'id, client_chart_of_accounts!inner(account_number)' : 'id', { count: 'exact', head: true })
+        .select(filters?.accountNumber ? 'id, client_chart_of_accounts(account_number)' : 'id', { count: 'exact', head: true })
         .eq('client_id', clientId);
 
       if (filters?.accountNumber) {

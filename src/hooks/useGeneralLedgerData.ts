@@ -46,7 +46,7 @@ export const useGeneralLedgerData = (clientId: string, versionId?: string, pagin
             period_year,
             period_month,
             version_id,
-            client_chart_of_accounts!inner(
+            client_chart_of_accounts(
               account_number,
               account_name
             )
@@ -188,7 +188,7 @@ export const useGeneralLedgerData = (clientId: string, versionId?: string, pagin
             period_year,
             period_month,
             version_id,
-            client_chart_of_accounts!inner(
+            client_chart_of_accounts(
               account_number,
               account_name
             )

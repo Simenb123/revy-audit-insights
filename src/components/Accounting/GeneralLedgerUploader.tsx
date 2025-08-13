@@ -428,7 +428,7 @@ const handleMappingComplete = async (mapping: Record<string, string>, headerRowI
       if (batchError) throw batchError;
       setUploadProgress(20);
 
-      // Create new version
+      // Create new version but don't activate yet
       const version = await createVersion.mutateAsync({
         clientId,
         fileName: file.name,
@@ -446,10 +446,6 @@ const handleMappingComplete = async (mapping: Record<string, string>, headerRowI
 
       setVersionId(version.id);
       setUploadProgress(30);
-      
-      // Automatically set the new version as active
-      console.log('Setting new version as active:', version.id);
-      await setActiveVersionMutation.mutateAsync(version.id);
 
       // Get all unique account numbers from transactions
       const accountNumbers = transactions
@@ -623,23 +619,33 @@ const handleMappingComplete = async (mapping: Record<string, string>, headerRowI
         setUploadProgress(40 + ((i + batchTransactions.length) / transactions.length) * 50);
       }
 
-      // Verify transactions were inserted
-      const { data: verifyData, error: verifyError } = await supabase
-        .from('general_ledger_transactions')
-        .select('id, balance_amount, version_id')
-        .eq('version_id', version.id)
-        .limit(5);
+      // Only activate version if transaction insertion was successful
+      if (successful > 0) {
+        console.log('Activating version after successful transaction insertion:', version.id);
+        await setActiveVersionMutation.mutateAsync(version.id);
+        setUploadProgress(90);
         
-      if (verifyError) {
-        console.error('Verification failed:', verifyError);
-        throw new Error('Could not verify transaction insertion');
-      }
-      
-      console.log(`✅ Verification: Found ${verifyData?.length || 0} transactions for version ${version.id}`);
-      console.log('Sample transactions:', verifyData);
-      
-      if (!verifyData || verifyData.length === 0) {
-        throw new Error('No transactions were saved to the database. Please check the upload process.');
+        // Verify transactions were inserted
+        const { data: verifyData, error: verifyError } = await supabase
+          .from('general_ledger_transactions')
+          .select('id, balance_amount, version_id')
+          .eq('version_id', version.id)
+          .limit(5);
+          
+        if (verifyError) {
+          console.error('Verification failed:', verifyError);
+          throw new Error('Could not verify transaction insertion');
+        }
+        
+        console.log(`✅ Verification: Found ${verifyData?.length || 0} transactions for version ${version.id}`);
+        console.log('Sample transactions:', verifyData);
+        
+        if (!verifyData || verifyData.length === 0) {
+          throw new Error('No transactions were saved to the database. Please check the upload process.');
+        }
+      } else {
+        console.error('No transactions were successfully inserted, not activating version');
+        throw new Error('Ingen transaksjoner ble satt inn');
       }
 
       // Update batch status

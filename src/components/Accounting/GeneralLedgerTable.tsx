@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { LineChart } from 'lucide-react';
 import { GeneralLedgerTransaction, useGeneralLedgerData } from '@/hooks/useGeneralLedgerData';
 import { useGeneralLedgerCount } from '@/hooks/useGeneralLedgerCount';
+import { useActiveVersion } from '@/hooks/useAccountingVersions';
 import { getFieldDefinitions } from '@/utils/fieldDefinitions';
 import DataTable, { DataTableColumn } from '@/components/ui/data-table';
 import { TableRow, TableCell } from '@/components/ui/table';
@@ -27,6 +28,7 @@ const GeneralLedgerTable = ({ clientId, versionId, accountNumberFilter }: Genera
   const { data: transactions, isLoading, error } = useGeneralLedgerData(clientId, versionId, { page: currentPage, pageSize }, { accountNumber: accountNumberFilter });
   const { data: totalCount, isLoading: isCountLoading } = useGeneralLedgerCount(clientId, versionId, { accountNumber: accountNumberFilter });
   const { data: allTransactions, isLoading: isExportLoading } = useGeneralLedgerData(clientId, versionId, undefined, { accountNumber: accountNumberFilter });
+  const { data: activeVersion } = useActiveVersion(clientId);
 
   if (isDebug) {
     logger.log('📊 GeneralLedgerTable data:', {
@@ -278,7 +280,11 @@ const GeneralLedgerTable = ({ clientId, versionId, accountNumberFilter }: Genera
         onPageChange={setCurrentPage}
         showTotals={true}
         totalRow={totalRow}
-        emptyMessage="Ingen transaksjoner funnet"
+        emptyMessage={
+          activeVersion 
+            ? `Ingen transaksjoner i aktiv versjon (${activeVersion.version_number}). Last opp data eller aktiver en annen versjon.`
+            : "Ingen aktiv versjon funnet. Last opp hovedbok eller aktiver en eksisterende versjon."
+        }
         enableColumnManager={false}
       />
     </>

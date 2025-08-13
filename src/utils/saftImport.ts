@@ -335,7 +335,7 @@ export async function persistParsed(clientId: string, parsed: SaftResult, fileNa
   const totalCreditAmount = txRows.reduce((s, r) => s + (r.credit_amount || 0), 0);
   const balanceDifference = Math.round(((totalDebitAmount - totalCreditAmount) + Number.EPSILON) * 100) / 100;
 
-  // Create version
+  // Create version but don't activate yet
   let versionId: string | null = null;
   let versionNumber: number | null = null;
   {
@@ -362,18 +362,18 @@ export async function persistParsed(clientId: string, parsed: SaftResult, fileNa
       .single();
     if (insErr) throw insErr;
     versionId = version.id;
-
-    // Set this version as active
-    await supabase.rpc('set_active_version', { p_version_id: versionId });
   }
 
   // Insert GL with version_id
+  let insertedTransactions = 0;
   if (txRows.length) {
     const rowsWithVersion = txRows.map(r => ({ ...r, version_id: versionId }));
-    const { error: txError } = await supabase
+    const { data, error: txError } = await supabase
       .from('general_ledger_transactions')
-      .insert(rowsWithVersion);
+      .insert(rowsWithVersion)
+      .select();
     if (txError) throw txError;
+    insertedTransactions = data?.length || 0;
   }
 
   // Aggregate debit/credit per account for TB
@@ -412,6 +412,13 @@ export async function persistParsed(clientId: string, parsed: SaftResult, fileNa
       .from('trial_balances')
       .insert(tbRows);
     if (tbError) throw tbError;
+  }
+
+  // Only set version as active after successful data insertion
+  if (insertedTransactions > 0 && versionId) {
+    await supabase.rpc('set_active_version', { p_version_id: versionId });
+  } else {
+    throw new Error('No transactions were inserted successfully');
   }
 }
 
