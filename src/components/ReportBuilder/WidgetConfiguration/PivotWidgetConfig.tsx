@@ -7,21 +7,58 @@ interface PivotWidgetConfigProps {
   onUpdate: (key: string, value: any) => void;
 }
 
-const fieldOptions = [
+const trialBalanceFieldOptions = [
   { value: 'account_number', label: 'Kontonummer' },
   { value: 'account_name', label: 'Kontonavn' },
   { value: 'standard_name', label: 'Standardkonto' },
 ];
 
-const valueOptions = [
+const transactionFieldOptions = [
+  { value: 'transaction_date', label: 'Dato' },
+  { value: 'account_number', label: 'Kontonummer' },
+  { value: 'description', label: 'Beskrivelse' },
+];
+
+const trialBalanceValueOptions = [
   { value: 'closing_balance', label: 'Saldo' },
   { value: 'debit_turnover', label: 'Debet' },
   { value: 'credit_turnover', label: 'Kredit' },
 ];
 
+const transactionValueOptions = [
+  { value: 'amount', label: 'Beløp' },
+  { value: 'debit_amount', label: 'Debet' },
+  { value: 'credit_amount', label: 'Kredit' },
+];
+
 export function PivotWidgetConfig({ config, onUpdate }: PivotWidgetConfigProps) {
+  const fieldOptions =
+    config.dataSource === 'transactions'
+      ? transactionFieldOptions
+      : trialBalanceFieldOptions;
+  const valueOptions =
+    config.dataSource === 'transactions'
+      ? transactionValueOptions
+      : trialBalanceValueOptions;
+
   return (
     <div className="space-y-4">
+      <div>
+        <Label htmlFor="dataSource">Datakilde</Label>
+        <Select
+          value={config.dataSource || 'trial_balance'}
+          onValueChange={(value) => onUpdate('dataSource', value)}
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="trial_balance">Saldobalanse</SelectItem>
+            <SelectItem value="transactions">Transaksjoner</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
       <div>
         <Label htmlFor="rowField">Radfelt</Label>
         <Select

@@ -17,7 +17,6 @@ import { HeatmapWidget } from './Widgets/HeatmapWidget';
 import { TreemapWidget } from './Widgets/TreemapWidget';
 import { BubbleChartWidget } from './Widgets/BubbleChartWidget';
 import { EnhancedKpiWidget } from './Widgets/EnhancedKpiWidget';
-import { MapWidget } from './Widgets/MapWidget';
 import { WaterfallWidget } from './Widgets/WaterfallWidget';
 
 interface WidgetRendererProps {
@@ -58,8 +57,6 @@ export function WidgetRenderer({ widget }: WidgetRendererProps) {
       return <TreemapWidget widget={widget} />;
     case 'bubble':
       return <BubbleChartWidget widget={widget} />;
-    case 'map':
-      return <MapWidget widget={widget} />;
     case 'waterfall':
       return <WaterfallWidget widget={widget} />;
     case 'enhancedKpi':

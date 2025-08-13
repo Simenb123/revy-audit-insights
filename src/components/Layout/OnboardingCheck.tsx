@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import ProfileSetupForm from '../Onboarding/ProfileSetupForm';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Brain, Sparkles, Users, TrendingUp } from 'lucide-react';
+import { Brain, Sparkles, Users, TrendingUp, Filter } from 'lucide-react';
 
 interface OnboardingCheckProps {
   children?: React.ReactNode;
@@ -26,6 +26,11 @@ const OnboardingCheck: React.FC<OnboardingCheckProps> = ({ children }) => {
       icon: Users,
       title: "Team-samarbeid",
       description: "Sømløst samarbeid i revisjonsgrupper"
+    },
+    {
+      icon: Filter,
+      title: "Kryssfiltrering",
+      description: "Klikk på diagrammer og tabeller for å filtrere andre widgets"
     },
     {
       icon: Sparkles,

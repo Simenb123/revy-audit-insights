@@ -2,6 +2,7 @@ import React from 'react';
 import { Widget, useWidgetManager } from '@/contexts/WidgetManagerContext';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { InlineEditableTitle } from '../InlineEditableTitle';
+import { useHeatmapData } from '@/hooks/useHeatmapData';
 
 interface HeatmapWidgetProps {
   widget: Widget;
@@ -9,12 +10,8 @@ interface HeatmapWidgetProps {
 
 export function HeatmapWidget({ widget }: HeatmapWidgetProps) {
   const { updateWidget } = useWidgetManager();
-  const data = widget.config?.data || [
-    { x: 'A', y: '1', value: 10 },
-    { x: 'B', y: '1', value: 30 },
-    { x: 'A', y: '2', value: 20 },
-    { x: 'B', y: '2', value: 40 }
-  ];
+  const clientId = widget.config?.clientId as string | undefined;
+  const { data = [] } = useHeatmapData(clientId);
 
   const xValues = Array.from(new Set(data.map((d: any) => d.x)));
   const yValues = Array.from(new Set(data.map((d: any) => d.y)));
@@ -41,22 +38,28 @@ export function HeatmapWidget({ widget }: HeatmapWidgetProps) {
         <InlineEditableTitle title={widget.title} onTitleChange={handleTitleChange} size="sm" />
       </CardHeader>
       <CardContent className="overflow-auto">
-        <div className="grid" style={{ gridTemplateColumns: `repeat(${xValues.length}, minmax(20px,1fr))` }}>
-          {yValues.map(y =>
-            xValues.map(x => {
-              const cell = data.find((d: any) => d.x === x && d.y === y);
-              const value = cell ? cell.value : 0;
-              return (
-                <div
-                  key={`${x}-${y}`}
-                  className="aspect-square"
-                  style={{ backgroundColor: getColor(value) }}
-                  title={`${x},${y}: ${value}`}
-                />
-              );
-            })
-          )}
-        </div>
+        {data.length === 0 ? (
+          <div className="text-sm text-muted-foreground">
+            Ingen heatmap-data.
+          </div>
+        ) : (
+          <div className="grid" style={{ gridTemplateColumns: `repeat(${xValues.length}, minmax(20px,1fr))` }}>
+            {yValues.map((y) =>
+              xValues.map((x) => {
+                const cell = data.find((d: any) => d.x === x && d.y === y);
+                const value = cell ? cell.value : 0;
+                return (
+                  <div
+                    key={`${x}-${y}`}
+                    className="aspect-square"
+                    style={{ backgroundColor: getColor(value) }}
+                    title={`${x},${y}: ${value}`}
+                  />
+                );
+              })
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

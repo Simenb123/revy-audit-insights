@@ -4,6 +4,7 @@ import { DashboardCanvas } from './DashboardCanvas';
 import { WidgetLibrary } from './WidgetLibrary';
 import { IntroModal } from './IntroModal';
 import { StandardReportTemplates } from './StandardReportTemplates';
+import { ReportTemplates } from './ReportTemplates';
 import { ReportBuilderTabs } from './ReportBuilderTabs';
 import { SaveReportDialog } from './SaveReportDialog';
 import { LoadReportDialog } from './LoadReportDialog';
@@ -353,14 +354,13 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
           </ModuleWrapper>
         )}
 
-        {/* Standard Report Templates */}
+        {/* Report Templates */}
         {showTemplates && hasData && (
-          <ModuleWrapper id="report-templates" title="Standard rapport maler">
-            <p className="text-sm text-muted-foreground mb-2">
-              Velg en ferdig rapport mal for rask oppstart
-            </p>
-            <StandardReportTemplates
+          <ModuleWrapper id="report-templates" title="Rapport maler">
+            <ReportTemplates
               clientId={clientId}
+              widgets={widgets}
+              layouts={layouts}
               onApplyTemplate={handleApplyTemplate}
               onClose={() => setShowTemplates(false)}
             />

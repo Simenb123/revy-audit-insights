@@ -252,6 +252,7 @@ export function WidgetConfiguration({ widget, onUpdateWidget }: WidgetConfigurat
         return (
           <div className="space-y-4">
             <div>
+
               <Label htmlFor="maxRows" title="Hvor mange rader som vises">Maksimalt antall rader</Label>
               <Input
                 id="maxRows"
@@ -267,19 +268,65 @@ export function WidgetConfiguration({ widget, onUpdateWidget }: WidgetConfigurat
               <Select
                 value={config.sortBy || 'balance'}
                 onValueChange={(value) => updateConfig('sortBy', value)}
+
               >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="balance">Saldo</SelectItem>
-                  <SelectItem value="name">Kontonavn</SelectItem>
-                  <SelectItem value="number">Kontonummer</SelectItem>
+                  <SelectItem value="trial_balance">Saldobalanse</SelectItem>
+                  <SelectItem value="transactions">Transaksjoner</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             {showAdvanced && (
               <>
+            {config.dataSource === 'transactions' ? (
+              <div>
+                <Label htmlFor="dimension">Dimensjon</Label>
+                <Select
+                  value={config.dimension || 'account'}
+                  onValueChange={(value) => updateConfig('dimension', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="date">Dato</SelectItem>
+                    <SelectItem value="account">Konto</SelectItem>
+                    <SelectItem value="description">Beskrivelse</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : (
+              <>
+                <div>
+                  <Label htmlFor="maxRows">Maksimalt antall rader</Label>
+                  <Input
+                    id="maxRows"
+                    type="number"
+                    value={config.maxRows || 10}
+                    onChange={(e) => updateConfig('maxRows', parseInt(e.target.value))}
+                    min="1"
+                    max="50"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="sortBy">Sorter etter</Label>
+                  <Select
+                    value={config.sortBy || 'balance'}
+                    onValueChange={(value) => updateConfig('sortBy', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="balance">Saldo</SelectItem>
+                      <SelectItem value="name">Kontonavn</SelectItem>
+                      <SelectItem value="number">Kontonummer</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="flex items-center space-x-2">
                   <input
                     type="checkbox"
@@ -302,6 +349,7 @@ export function WidgetConfiguration({ widget, onUpdateWidget }: WidgetConfigurat
                 </div>
                 <div>
                   <Label htmlFor="drillPathTable" title="Angi hierarki for drilling">Drill-hierarki (komma separert)</Label>
+
                   <Input
                     id="drillPathTable"
                     value={(config.drillPath || []).join(',')}

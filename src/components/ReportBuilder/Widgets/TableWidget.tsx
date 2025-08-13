@@ -11,6 +11,8 @@ import { useTrialBalanceWithMappings } from '@/hooks/useTrialBalanceWithMappings
 import { useFilteredData } from '@/hooks/useFilteredData';
 import { useFilters } from '@/contexts/FilterContext';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
+import { useTransactions } from '@/hooks/useTransactions';
+import { cn } from '@/lib/utils';
 
 interface TableWidgetProps {
   widget: Widget;
@@ -21,6 +23,8 @@ export function TableWidget({ widget }: TableWidgetProps) {
   const { updateWidget } = useWidgetManager();
   const { filters, setCrossFilter, clearCrossFilter } = useFilters();
   const clientId = widget.config?.clientId;
+  const dataSource = widget.config?.dataSource || 'trial_balance';
+  const dimension = widget.config?.dimension || 'account';
 
   const handleTitleChange = (newTitle: string) => {
     updateWidget(widget.id, { title: newTitle });
@@ -42,9 +46,80 @@ export function TableWidget({ widget }: TableWidgetProps) {
     selectedFiscalYear,
     widget.config?.selectedVersion
   );
+  const { data: txData } = useTransactions(clientId || '', { pageSize: 1000 });
 
   // Apply global filters to trial balance entries
   const filteredTrialBalanceEntries = useFilteredData(trialBalanceData?.trialBalanceEntries || []);
+
+  if (dataSource === 'transactions') {
+    const rows = React.useMemo(() => {
+      const map: Record<string, number> = {};
+      (txData?.transactions || []).forEach(t => {
+        const key =
+          dimension === 'date'
+            ? t.transaction_date
+            : dimension === 'description'
+            ? t.description
+            : `${t.account_number} - ${t.account_name}`;
+        const amount =
+          t.balance_amount ??
+          ((t.debit_amount || 0) as number - (t.credit_amount || 0) as number);
+        map[key] = (map[key] || 0) + amount;
+      });
+      const total = Object.values(map).reduce((s, v) => s + Math.abs(v), 0);
+      const arr = Object.entries(map).map(([key, amount]) => ({
+        key,
+        amount,
+        formatted: new Intl.NumberFormat('no-NO').format(amount),
+        percentage: total > 0 ? (Math.abs(amount) / total) * 100 : 0,
+      }));
+      arr.sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount));
+      return { arr, total };
+    }, [txData, dimension]);
+
+    return (
+      <Card className="h-full">
+        <CardHeader className="pb-2">
+          <InlineEditableTitle title={widget.title} onTitleChange={handleTitleChange} size="sm" />
+        </CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="text-xs">
+                  {dimension === 'date'
+                    ? 'Dato'
+                    : dimension === 'description'
+                    ? 'Beskrivelse'
+                    : 'Konto'}
+                </TableHead>
+                <TableHead className="text-xs text-right">Beløp</TableHead>
+                {showPercentage && <TableHead className="text-xs text-right">%</TableHead>}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {rows.arr.slice(0, maxRows).map((r, index) => (
+                <TableRow key={index} className="text-xs">
+                  <TableCell className="font-medium">{r.key}</TableCell>
+                  <TableCell className="text-right">{r.formatted}</TableCell>
+                  {showPercentage && (
+                    <TableCell className="text-right">{r.percentage.toFixed(1)}%</TableCell>
+                  )}
+                </TableRow>
+              ))}
+              {rows.arr.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={showPercentage ? 3 : 2} className="text-center text-muted-foreground">
+                    Ingen data tilgjengelig
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    );
+  }
 
   const getFieldValue = React.useCallback((entry: any, field: string) => {
     switch (field) {
@@ -200,7 +275,16 @@ export function TableWidget({ widget }: TableWidgetProps) {
   }
 
   return (
-    <Card className={`h-full ${isFilterSource ? 'ring-2 ring-primary' : ''}`}>
+    <Card
+      className={cn(
+        'h-full',
+        isFilterSource
+          ? 'ring-2 ring-primary'
+          : filters.crossFilter
+            ? 'ring-2 ring-primary/50'
+            : ''
+      )}
+    >
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <InlineEditableTitle 

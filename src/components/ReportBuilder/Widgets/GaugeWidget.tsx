@@ -2,6 +2,7 @@ import React from 'react';
 import { Widget, useWidgetManager } from '@/contexts/WidgetManagerContext';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { InlineEditableTitle } from '../InlineEditableTitle';
+import { useGaugeData } from '@/hooks/useGaugeData';
 
 interface GaugeWidgetProps {
   widget: Widget;
@@ -9,8 +10,10 @@ interface GaugeWidgetProps {
 
 export function GaugeWidget({ widget }: GaugeWidgetProps) {
   const { updateWidget } = useWidgetManager();
-  const value = Number(widget.config?.value ?? 50);
-  const max = Number(widget.config?.max ?? 100);
+  const clientId = widget.config?.clientId as string | undefined;
+  const { data } = useGaugeData(clientId);
+  const value = data?.value ?? Number(widget.config?.value ?? 0);
+  const max = data?.max ?? Number(widget.config?.max ?? 100);
   const percentage = Math.min(Math.max(value / max, 0), 1) * 100;
 
   const handleTitleChange = (newTitle: string) => {
