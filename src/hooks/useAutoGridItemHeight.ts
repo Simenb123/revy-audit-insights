@@ -1,11 +1,17 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useWidgetManager } from '@/contexts/WidgetManagerContext';
 import { GRID_ROW_HEIGHT, GRID_DEFAULT_MAX_ROWS } from '@/components/ReportBuilder/gridConfig';
+import { GRID_MARGIN } from '@/components/ReportBuilder/gridConfig';
 
 /**
  * Automatically adjusts a react-grid-layout item's height (h) to fit its content.
- * Pass a ref to the element that contains the widget content – we read scrollHeight
- * so it also works when the container has a constrained height.
+ * Pass a ref to the element that contains the widget content.
+ *
+ * Improvements:
+ * - Measures the first non-absolute/fixed child to avoid counting overlays
+ * - Uses rowHeight + vertical margin for accurate row math
+ * - Debounced shrink, immediate growth
+ * - Exposes fitToContent API and allows ignoring maxRows when explicitly requested
  */
 export function useAutoGridItemHeight(
   widgetId: string,
@@ -23,6 +29,61 @@ export function useAutoGridItemHeight(
   const pendingShrinkRowsRef = useRef<number | null>(null);
   const opts = { minRows: 1, maxRows: GRID_DEFAULT_MAX_ROWS, enabled: true, ...options };
 
+  const effectiveRow = GRID_ROW_HEIGHT + (Array.isArray(GRID_MARGIN) ? GRID_MARGIN[1] : 0);
+
+  // Find the best element to measure inside the container
+  const getContentElement = () => {
+    const el = containerRef.current;
+    if (!el) return null;
+    // Prefer a direct child that isn't absolutely/fixed positioned
+    const children = Array.from(el.children) as HTMLElement[];
+    for (const child of children) {
+      const style = window.getComputedStyle(child);
+      if (style.display === 'none') continue;
+      if (style.position === 'absolute' || style.position === 'fixed') continue;
+      return child;
+    }
+    return el; // fallback to the container itself
+  };
+
+  const getContentHeight = () => {
+    const target = getContentElement();
+    if (!target) return 0;
+    // scrollHeight handles overflowed content; offsetHeight is a fallback
+    const h = Math.max(target.scrollHeight, target.offsetHeight, 0);
+    return h;
+  };
+
+  const rowsFromHeight = (height: number, ignoreMax?: boolean) => {
+    const minRows = Math.max(1, opts.minRows ?? 1);
+    const rawRows = Math.ceil((height + (effectiveRow - GRID_ROW_HEIGHT)) / effectiveRow);
+    const requiredRows = Math.max(minRows, rawRows);
+    if (!ignoreMax && typeof opts.maxRows === 'number') {
+      return Math.min(requiredRows, opts.maxRows);
+    }
+    return requiredRows;
+  };
+
+  const commitRows = (rows: number) => {
+    if (lastRowsRef.current === rows) return;
+    const current = layouts.find(l => l.i === widgetId);
+    if (current && current.h === rows) {
+      lastRowsRef.current = rows;
+      return;
+    }
+    const next = layouts.map(l => (l.i === widgetId ? { ...l, h: rows } : l));
+    lastRowsRef.current = rows;
+    updateLayout(next);
+  };
+
+  // Public API to force-fit the content height
+  const fitToContent = useCallback((opts2?: { ignoreMaxRows?: boolean }) => {
+    const height = getContentHeight();
+    const rows = rowsFromHeight(height, Boolean(opts2?.ignoreMaxRows));
+    commitRows(rows);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [layouts, widgetId]);
+
   useEffect(() => {
     if (!opts.enabled) return;
     const el = containerRef.current;
@@ -32,29 +93,8 @@ export function useAutoGridItemHeight(
     const SHRINK_DELAY_MS = 400;
 
     const computeRows = () => {
-      // scrollHeight gives natural content height even if container is shorter
-      const contentHeight = el.scrollHeight || el.offsetHeight || 0;
-      // Convert pixel height to grid rows. RGL item height ~ h * rowHeight
-      const requiredRows = Math.max(
-        opts.minRows ?? 1,
-        Math.ceil(contentHeight / GRID_ROW_HEIGHT)
-      );
-      const clampedRows = typeof opts.maxRows === 'number'
-        ? Math.min(requiredRows, opts.maxRows)
-        : requiredRows;
-      return clampedRows;
-    };
-
-    const commitRows = (rows: number) => {
-      if (lastRowsRef.current === rows) return;
-      const current = layouts.find(l => l.i === widgetId);
-      if (current && current.h === rows) {
-        lastRowsRef.current = rows;
-        return;
-      }
-      const next = layouts.map(l => (l.i === widgetId ? { ...l, h: rows } : l));
-      lastRowsRef.current = rows;
-      updateLayout(next);
+      const contentHeight = getContentHeight();
+      return rowsFromHeight(contentHeight);
     };
 
     const handleMeasure = () => {
@@ -137,7 +177,10 @@ export function useAutoGridItemHeight(
       }
       pendingShrinkRowsRef.current = null;
     };
-    // Important: depend on layouts length but not the entire object to avoid loops
+    // Depend on stable primitives to avoid loops
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [widgetId, containerRef, layouts.length, opts.enabled, opts.minRows, opts.maxRows]);
+
+  return { fitToContent };
 }
+

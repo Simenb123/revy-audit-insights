@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { Widget, useWidgetManager } from '@/contexts/WidgetManagerContext';
 import { WidgetConfiguration } from './WidgetConfiguration';
 import { Button } from '@/components/ui/button';
@@ -18,7 +18,7 @@ export function WidgetWrapper({ widget, children }: WidgetWrapperProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
 
 // Auto-adjust height to content
-  useAutoGridItemHeight(widget.id, containerRef, { minRows: 2, enabled: true });
+  const { fitToContent } = useAutoGridItemHeight(widget.id, containerRef, { minRows: 2, enabled: true });
 
   const handleUpdateWidget = (updates: Partial<Widget>) => {
     updateWidget(widget.id, updates);
@@ -28,6 +28,21 @@ export function WidgetWrapper({ widget, children }: WidgetWrapperProps) {
     removeWidget(widget.id);
   };
 
+  useEffect(() => {
+    const root = containerRef.current?.closest('.react-grid-item') as HTMLElement | null;
+    if (!root) return;
+    const handle = root.querySelector('.react-resizable-handle-se, .react-resizable-handle') as HTMLElement | null;
+    if (!handle) return;
+    const onDblClick = (e: MouseEvent) => {
+      e.stopPropagation();
+      fitToContent({ ignoreMaxRows: true });
+    };
+    handle.addEventListener('dblclick', onDblClick);
+    handle.setAttribute('title', 'Dobbeltklikk for å tilpasse høyden');
+    return () => {
+      handle.removeEventListener('dblclick', onDblClick);
+    };
+  }, [fitToContent]);
   const sectionIds = Array.from(new Set(widgets.map(w => w.sectionId).filter(Boolean))) as string[];
 
   const handleSectionChange = (value: string) => {
