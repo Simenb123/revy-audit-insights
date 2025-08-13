@@ -433,7 +433,56 @@ const filteredBalance = filterStatementLines(rawBalance, filterOpts);
 
   const hasData = (fi?.length ?? 0) > 0 || (fb?.length ?? 0) > 0;
 
+  // Konsernkolonner (custom scope): forenklet gruppering per client_group for nåværende år
+  const showGroupColumns: boolean = widget.config?.showGroupColumns === true;
+  const [groupNames, setGroupNames] = React.useState<string[]>([]);
+  const [groupCurMap, setGroupCurMap] = React.useState<Map<string, Map<string, number>>>(new Map());
+
+  React.useEffect(() => {
+    const run = async () => {
+      if (scopeType !== 'custom' || !selectedClientIds || selectedClientIds.length === 0 || !periodInfo?.currentYear) {
+        setGroupNames([]);
+        setGroupCurMap(new Map());
+        return;
+      }
+      const currentYear = periodInfo.currentYear;
+      const { data: clients = [] } = await supabase
+        .from('clients' as any)
+        .select('id, client_group')
+        .in('id', selectedClientIds);
+      const groupByClient = new Map<string, string>();
+      const gset = new Set<string>();
+      (clients as any[]).forEach((c: any) => {
+        const g = c.client_group || 'Uten gruppe';
+        groupByClient.set(c.id, g);
+        gset.add(g);
+      });
+      const groups = Array.from(gset);
+      const { data: tbCur = [] } = await supabase
+        .from('trial_balance_entries' as any)
+        .select('client_id, account_number, closing_balance')
+        .in('client_id', selectedClientIds)
+        .eq('period_year', currentYear);
+
+      const curMap = new Map<string, Map<string, number>>();
+      const addTo = (map: Map<string, Map<string, number>>, group: string, acc: string, val: number) => {
+        if (!map.has(group)) map.set(group, new Map<string, number>());
+        const m = map.get(group)!;
+        m.set(acc, (m.get(acc) || 0) + (val || 0));
+      };
+      (tbCur as any[]).forEach((r: any) => {
+        const g = groupByClient.get(r.client_id) || 'Uten gruppe';
+        addTo(curMap, g, String(r.account_number), Number(r.closing_balance) || 0);
+      });
+
+      setGroupNames(groups);
+      setGroupCurMap(curMap);
+    };
+    run();
+  }, [scopeType, selectedClientIds, periodInfo?.currentYear]);
+
 const colCount = 1 + 1 + (showPrevious ? 1 : 0) + (showDifference ? 1 : 0) + (showPercent ? 1 : 0);
+
 const countVisibleLines = React.useCallback(function countVisibleLines(nodes: any[]): number {
   return nodes.reduce((sum: number, n: any) => {
     const self = 1;
@@ -692,7 +741,18 @@ const flattenVisible = React.useCallback((nodes: any[]): any[] => {
               <Button variant="ghost" size="sm" onClick={handleExportCSV} className="ml-1" disabled={isLoading || !hasData}>Eksporter CSV</Button>
               <Button variant="ghost" size="sm" onClick={handleExportXLSX} className="ml-1" disabled={isLoading || !hasData}>Eksporter Excel</Button>
               {scopeType === 'custom' && selectedClientIds && selectedClientIds.length > 0 && (
-                <Button variant="ghost" size="sm" onClick={handleExportConsolidatedXLSX} className="ml-1" disabled={isLoading || !hasData}>Konsern-Excel</Button>
+                <>
+                  <Button variant="ghost" size="sm" onClick={handleExportConsolidatedXLSX} className="ml-1" disabled={isLoading || !hasData}>Konsern-Excel</Button>
+                  <Button
+                    variant={showGroupColumns ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => updateConfig({ showGroupColumns: !showGroupColumns })}
+                    className="ml-1"
+                    disabled={isLoading || !hasData}
+                  >
+                    Konsernkolonner
+                  </Button>
+                </>
               )}
 
               <Button variant="ghost" size="sm" onClick={() => window.print()} className="ml-1" disabled={isLoading || !hasData}>Skriv ut</Button>
@@ -812,6 +872,49 @@ const flattenVisible = React.useCallback((nodes: any[]): any[] => {
           )}
         </CardContent>
       </Card>
+
+      {showGroupColumns && scopeType === 'custom' && groupNames.length > 0 && (
+        <div className="mt-4 overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Linje</TableHead>
+                {groupNames.map((g) => (
+                  <TableHead key={g} className="text-right whitespace-nowrap">{g} {String(periodInfo?.currentYear ?? '')}</TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {fi.map((line: any) => {
+                const accs = getAccountsForLine(line.standard_number);
+                return (
+                  <TableRow key={`grp-inc-${line.id}`}>
+                    <TableCell className="whitespace-nowrap">{line.standard_number} {line.standard_name}</TableCell>
+                    {groupNames.map((g) => {
+                      const m = groupCurMap.get(g) || new Map<string, number>();
+                      const sum = accs.reduce((s: number, a: string) => s + (m.get(String(a)) || 0), 0);
+                      return <TableCell key={g} className="text-right tabular-nums whitespace-nowrap">{formatCurrency(sum)}</TableCell>;
+                    })}
+                  </TableRow>
+                );
+              })}
+              {fb.map((line: any) => {
+                const accs = getAccountsForLine(line.standard_number);
+                return (
+                  <TableRow key={`grp-bal-${line.id}`}>
+                    <TableCell className="whitespace-nowrap">{line.standard_number} {line.standard_name}</TableCell>
+                    {groupNames.map((g) => {
+                      const m = groupCurMap.get(g) || new Map<string, number>();
+                      const sum = accs.reduce((s: number, a: string) => s + (m.get(String(a)) || 0), 0);
+                      return <TableCell key={g} className="text-right tabular-nums whitespace-nowrap">{formatCurrency(sum)}</TableCell>;
+                    })}
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
+      )}
 
       {drilldownPanel && panelContext && (
         <Sheet open={panelOpen} onOpenChange={setPanelOpen}>
