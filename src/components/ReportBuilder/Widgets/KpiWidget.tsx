@@ -1,11 +1,15 @@
 import React from 'react';
 import { Widget, useWidgetManager } from '@/contexts/WidgetManagerContext';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
 import { useFormulaCalculation } from '@/hooks/useFormulaCalculation';
 import { InlineEditableTitle } from '../InlineEditableTitle';
 import { formatCurrency } from '@/lib/formatters';
+import { useScope } from '@/contexts/ScopeContext';
+import { supabase } from '@/integrations/supabase/client';
+import { exportArrayToXlsx } from '@/utils/exportToXlsx';
 
 interface KpiWidgetProps {
   widget: Widget;
@@ -23,6 +27,37 @@ export function KpiWidget({ widget }: KpiWidgetProps) {
   const displayAsPercentage = widget.config?.displayAsPercentage || false;
   const showCurrency = widget.config?.showCurrency !== false;
   const unitScale = widget.config?.unitScale || 'none';
+
+  const { scopeType, selectedClientIds } = useScope();
+  const [showBenchmark, setShowBenchmark] = React.useState(false);
+  const [clientsInfo, setClientsInfo] = React.useState<Array<{ id: string; name: string; group: string }>>([]);
+  const [valuesByClient, setValuesByClient] = React.useState<Record<string, number>>({});
+
+  React.useEffect(() => {
+    const load = async () => {
+      if (scopeType !== 'custom' || !showBenchmark || !selectedClientIds || selectedClientIds.length === 0) {
+        setClientsInfo([]);
+        return;
+      }
+      const { data = [] } = await supabase
+        .from('clients' as any)
+        .select('id, company_name, name, client_group')
+        .in('id', selectedClientIds);
+      const items = (data as any[]).map((c) => ({ id: c.id, name: c.company_name || c.name || c.id, group: c.client_group || 'Uten gruppe' }));
+      setClientsInfo(items);
+    };
+    load();
+  }, [scopeType, showBenchmark, selectedClientIds]);
+
+  const handleExportBenchmark = () => {
+    if (!clientsInfo.length) return;
+    const rows = clientsInfo.map((c) => ({
+      Klient: c.name,
+      Konsern: c.group,
+      Verdi: valuesByClient[c.id] ?? null,
+    }));
+    exportArrayToXlsx(`${widget.title || 'KPI'}-benchmark-${selectedFiscalYear}`, rows);
+  };
 
   const handleTitleChange = (newTitle: string) => {
     updateWidget(widget.id, { title: newTitle });
@@ -125,12 +160,24 @@ export function KpiWidget({ widget }: KpiWidgetProps) {
 
   return (
     <Card className="h-full">
-      <CardHeader className="pb-2">
+      <CardHeader className="pb-2 flex items-center justify-between gap-2">
         <InlineEditableTitle 
           title={widget.title} 
           onTitleChange={handleTitleChange}
           size="sm"
         />
+        {scopeType === 'custom' && (
+          <div className="flex items-center gap-2">
+            {showBenchmark && (
+              <Button variant="outline" size="sm" onClick={handleExportBenchmark}>
+                Eksporter benchmark
+              </Button>
+            )}
+            <Button variant={showBenchmark ? 'default' : 'outline'} size="sm" onClick={() => setShowBenchmark((v) => !v)}>
+              Benchmark
+            </Button>
+          </div>
+        )}
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-bold">{metricData.value}</div>
