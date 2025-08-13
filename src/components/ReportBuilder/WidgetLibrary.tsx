@@ -2,6 +2,7 @@ import React from 'react';
 import { useWidgetManager, Widget } from '@/contexts/WidgetManagerContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   BarChart3,
   Table,
@@ -32,7 +33,7 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
     'trial_balance' | 'budget' | 'transactions' | null
   >(null);
 
-  const defaultTemplates = [
+  const defaultTemplates = React.useMemo(() => ([
     {
       type: 'filter' as const,
       title: 'Filter',
@@ -285,7 +286,7 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
         sectionMode: 'balance' as const,
       }
     }
-  ];
+  ]), []);
 
   const dataSources = [
     {
@@ -331,7 +332,7 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
       });
     }
     return defaultTemplates;
-  }, [dbTemplates]);
+  }, [dbTemplates, defaultTemplates]);
 
   const handleAddWidget = (template: typeof templates[0]) => {
     const widgetId = `widget-${Date.now()}`;
@@ -404,6 +405,15 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
             .map((template) => (
               <Card
                 key={`${template.type}-${template.title}`}
+      <p className="text-sm text-muted-foreground">
+        Hold musen over en widget for en kort forklaring.
+      </p>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {templates.map((template) => (
+          <Tooltip key={`${template.type}-${template.title}`}>
+            <TooltipTrigger asChild>
+              <Card
                 className="cursor-pointer hover:shadow-md transition-shadow"
                 onClick={() => handleAddWidget(template)}
               >
@@ -447,6 +457,11 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
           ))}
         </div>
       )}
+            </TooltipTrigger>
+            <TooltipContent>{template.description}</TooltipContent>
+          </Tooltip>
+        ))}
+      </div>
     </div>
   );
 }

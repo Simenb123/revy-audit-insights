@@ -5,6 +5,7 @@ export interface ReportBuilderSettings {
   selectedVersion?: string;
   isViewMode?: boolean;
   theme?: ThemeConfig;
+  introSeen?: boolean;
 }
 
 const STORAGE_PREFIX = 'report-builder-settings';
