@@ -109,8 +109,12 @@ useEffect(() => {
   };
 
   const openTab = (tab: 'ai' | 'chat' | 'figures') => {
-    setActiveTab(tab);
-    if (isCollapsed) setIsCollapsed(false);
+    if (!isCollapsed && activeTab === tab) {
+      setIsCollapsed(true);
+    } else {
+      setActiveTab(tab);
+      setIsCollapsed(false);
+    }
   };
   const getPageTitle = () => {
     switch (pageType) {
@@ -302,7 +306,7 @@ useEffect(() => {
                       variant="ghost"
                       size="icon"
                       className={`h-8 w-8 hover-scale ${activeTab === 'ai' ? 'bg-primary/10 text-primary' : 'hover:bg-muted'}`}
-                      onClick={() => setActiveTab('ai')}
+                      onClick={() => openTab('ai')}
                       aria-label="Bytt til AI-Revy Chat"
                     >
                       <Bot className="h-4 w-4" />
@@ -317,7 +321,7 @@ useEffect(() => {
                       variant="ghost"
                       size="icon"
                       className={`h-8 w-8 hover-scale ${activeTab === 'chat' ? 'bg-primary/10 text-primary' : 'hover:bg-muted'}`}
-                      onClick={() => setActiveTab('chat')}
+                      onClick={() => openTab('chat')}
                       aria-label="Bytt til Teamchat"
                     >
                       <MessageSquare className="h-4 w-4" />
@@ -332,7 +336,7 @@ useEffect(() => {
                       variant="ghost"
                       size="icon"
                       className={`h-8 w-8 hover-scale ${activeTab === 'figures' ? 'bg-primary/10 text-primary' : 'hover:bg-muted'}`}
-                      onClick={() => setActiveTab('figures')}
+                      onClick={() => openTab('figures')}
                       aria-label="Bytt til Analyse"
                     >
                       <BarChart2 className="h-4 w-4" />
