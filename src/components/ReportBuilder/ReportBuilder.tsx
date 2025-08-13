@@ -16,14 +16,20 @@ interface ReportBuilderProps {
 
 export default function ReportBuilder({ clientId }: ReportBuilderProps) {
   const { selectedFiscalYear } = useFiscalYear();
-  
-  // Check if we have trial balance data for widgets
-  const { data: trialBalanceData, isLoading } = useTrialBalanceWithMappings(
-    clientId, 
-    selectedFiscalYear
-  );
+  const isGlobal = clientId === 'global';
 
-  const hasData = trialBalanceData && trialBalanceData.trialBalanceEntries.length > 0;
+  // For global mode, skip prefetch; widgets will fetch scoped data.
+  let hasData = true;
+  let isLoading = false;
+
+  if (!isGlobal) {
+    const { data: trialBalanceData, isLoading: loading } = useTrialBalanceWithMappings(
+      clientId,
+      selectedFiscalYear
+    );
+    isLoading = loading;
+    hasData = !!(trialBalanceData && trialBalanceData.trialBalanceEntries.length > 0);
+  }
 
   if (isLoading) {
     return (

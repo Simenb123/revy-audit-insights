@@ -17,6 +17,7 @@ export function ClientsMultiSelect() {
   };
 
   const clearAll = () => setSelectedClientIds([]);
+  const selectAll = () => setSelectedClientIds((clients || []).map((c: any) => c.id).filter(Boolean));
 
   if (isLoading) return <div className="text-sm opacity-70">Laster klienter…</div>;
 
@@ -30,7 +31,9 @@ export function ClientsMultiSelect() {
           </label>
         ))}
       </div>
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-2 min-w-[140px]">
+        <div className="text-xs text-muted-foreground">Valgt {selectedClientIds.length}/{clients.length}</div>
+        <Button variant="outline" size="sm" onClick={selectAll}>Velg alle</Button>
         <Button variant="outline" size="sm" onClick={clearAll}>Tøm</Button>
       </div>
     </div>

@@ -20,8 +20,9 @@ interface ScopeProviderProps {
 
 export function ScopeProvider({ children, clientId, fiscalYear }: ScopeProviderProps) {
   const storageKeyInputs = useMemo(() => ({ clientId, fiscalYear }), [clientId, fiscalYear]);
-  const [scopeType, setScopeTypeState] = useState<ScopeType>('client');
-  const [selectedClientIds, setSelectedClientIdsState] = useState<string[]>(clientId ? [clientId] : []);
+  const isGlobal = clientId === 'global';
+  const [scopeType, setScopeTypeState] = useState<ScopeType>(isGlobal ? 'custom' : 'client');
+  const [selectedClientIds, setSelectedClientIdsState] = useState<string[]>(isGlobal ? [] : (clientId ? [clientId] : []));
 
   // Load persisted settings
   useEffect(() => {
@@ -32,7 +33,7 @@ export function ScopeProvider({ children, clientId, fiscalYear }: ScopeProviderP
       }
       if ((settings as any).selectedClientIds) {
         setSelectedClientIdsState((settings as any).selectedClientIds as string[]);
-      } else if (clientId) {
+      } else if (clientId && clientId !== 'global') {
         setSelectedClientIdsState([clientId]);
       }
     }

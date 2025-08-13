@@ -40,6 +40,7 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
   const [currentReport, setCurrentReport] = useState<ClientReport | null>(null);
   const [hasUnsaved, setHasUnsaved] = useState(false);
   const [showIntro, setShowIntro] = useState(false);
+  const isGlobal = clientId === 'global';
   
   const { widgets, layouts, addWidget, removeWidget, updateLayout, clearWidgets, setWidgets, setLayouts, loadFromStorage } = useWidgetManager();
   const { reports, loading, saveReport, updateReport, deleteReport, saveVersion, listVersions, restoreVersion } = useClientReports(clientId);
@@ -221,7 +222,7 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
           
           <div className="flex flex-col gap-4">
             {/* Version Selector */}
-            {versionOptions.length > 0 && (
+            {!isGlobal && versionOptions.length > 0 && (
               <div className="flex items-center gap-2 min-w-0">
                 <Label htmlFor="version-select" className="flex items-center gap-1 text-sm whitespace-nowrap">
                   <Database className="h-4 w-4" />
@@ -247,14 +248,14 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
             
             <div className="flex flex-wrap gap-2">
               <ViewModeToggle 
-                disabled={!hasData || widgets.length === 0 || !selectedVersion}
+                disabled={!hasData || (!isGlobal && (widgets.length === 0 || !selectedVersion))}
               />
               
               <Button
                 variant="outline"
                 onClick={() => setShowWidgetLibrary(!showWidgetLibrary)}
                 className="flex items-center gap-2"
-                disabled={!hasData || !selectedVersion}
+                disabled={!hasData || (!isGlobal && !selectedVersion)}
               >
                 <Plus className="h-4 w-4" />
                 Legg til widget
@@ -264,7 +265,7 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
                 variant="outline"
                 onClick={() => setShowTemplates(true)}
                 className="flex items-center gap-2"
-                disabled={!hasData || !selectedVersion}
+                disabled={!hasData || (!isGlobal && !selectedVersion)}
               >
                 <LayoutTemplate className="h-4 w-4" />
                 Rapport maler
@@ -274,7 +275,7 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
                 variant="outline" 
                 className="flex items-center gap-2"
                 onClick={() => setShowLoadDialog(true)}
-                disabled={!hasData || !selectedVersion}
+                disabled={!hasData || (!isGlobal && !selectedVersion)}
               >
                 <FolderOpen className="h-4 w-4" />
                 Last rapport
@@ -296,7 +297,7 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
                 variant="outline"
                 className="flex items-center gap-2"
                 onClick={() => setShowSaveDialog(true)}
-                disabled={!hasData || widgets.length === 0 || !selectedVersion}
+                disabled={!hasData || (!isGlobal && (widgets.length === 0 || !selectedVersion))}
               >
                 <Save className="h-4 w-4" />
                 {currentReport ? 'Lagre som ny' : 'Lagre rapport'}
@@ -306,7 +307,7 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
                 variant="outline"
                 className="flex items-center gap-2"
                 onClick={() => exportReportToPDF(widgets, layouts)}
-                disabled={!hasData || widgets.length === 0 || !selectedVersion}
+                disabled={!hasData || (!isGlobal && (widgets.length === 0 || !selectedVersion))}
               >
                 <FileDown className="h-4 w-4" />
                 Eksporter til PDF
@@ -316,7 +317,7 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
                 variant="outline"
                 className="flex items-center gap-2"
                 onClick={() => exportReportToExcel(widgets, layouts)}
-                disabled={!hasData || widgets.length === 0 || !selectedVersion}
+                disabled={!hasData || (!isGlobal && (widgets.length === 0 || !selectedVersion))}
               >
                 <FileSpreadsheet className="h-4 w-4" />
                 Eksporter til Excel
@@ -368,7 +369,7 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
         )}
 
         {/* Dashboard Canvas */}
-        {hasData && selectedVersion && (
+        {hasData && (selectedVersion || isGlobal) && (
           <ReportBuilderTabs 
             clientId={clientId} 
             selectedVersion={selectedVersion}

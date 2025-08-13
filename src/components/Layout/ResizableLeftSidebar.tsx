@@ -88,6 +88,11 @@ const resourceItems = [
     icon: Users,
   },
   {
+    title: 'Rapporter',
+    url: '/reports',
+    icon: FileText,
+  },
+  {
     title: 'Team',
     url: '/teams',
     icon: Users,

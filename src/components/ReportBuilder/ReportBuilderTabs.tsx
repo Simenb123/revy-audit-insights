@@ -18,7 +18,8 @@ export function ReportBuilderTabs({
   selectedFiscalYear, 
   hasData 
 }: ReportBuilderTabsProps) {
-  if (!hasData || !selectedVersion) {
+  const isGlobal = clientId === 'global';
+  if (!hasData || (!selectedVersion && !isGlobal)) {
     return null;
   }
 
@@ -29,10 +30,12 @@ export function ReportBuilderTabs({
           <Grid3X3 className="h-4 w-4" />
           Dashboard
         </TabsTrigger>
-        <TabsTrigger value="classification" className="flex items-center gap-2">
-          <Settings2 className="h-4 w-4" />
-          Klassifisering
-        </TabsTrigger>
+        {!isGlobal && (
+          <TabsTrigger value="classification" className="flex items-center gap-2">
+            <Settings2 className="h-4 w-4" />
+            Klassifisering
+          </TabsTrigger>
+        )}
         <TabsTrigger value="theme" className="flex items-center gap-2">
           <Palette className="h-4 w-4" />
           Tema
@@ -45,13 +48,15 @@ export function ReportBuilderTabs({
         </div>
       </TabsContent>
 
-      <TabsContent value="classification" className="space-y-4">
-        <AccountClassificationView 
-          clientId={clientId}
-          selectedVersion={selectedVersion}
-          selectedFiscalYear={selectedFiscalYear}
-        />
-      </TabsContent>
+      {!isGlobal && (
+        <TabsContent value="classification" className="space-y-4">
+          <AccountClassificationView 
+            clientId={clientId}
+            selectedVersion={selectedVersion}
+            selectedFiscalYear={selectedFiscalYear}
+          />
+        </TabsContent>
+      )}
 
       <TabsContent value="theme" className="space-y-4">
         <ThemePanel />
