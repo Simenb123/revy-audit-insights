@@ -31,21 +31,59 @@ export async function exportReportToPDF(widgets: Widget[], layouts: WidgetLayout
   const textColor = theme === 'dark' ? '#ffffff' : '#000000';
   const bgColor = theme === 'dark' ? '#000000' : '#ffffff';
 
-  for (let idx = 0; idx < layouts.length; idx++) {
-    const layout = layouts[idx];
-    const widget = widgets.find(w => w.id === layout.widgetId || w.id === layout.i);
-    const canvas = await captureWidget(widget?.id ?? layout.i);
-    const imgData = canvas.toDataURL('image/png');
+  // Group layouts by section while preserving first-seen order
+  type SectionGroup = { id: string; title: string; layouts: WidgetLayout[] };
+  const sectionOrder: string[] = [];
+  const sectionMap = new Map<string, SectionGroup>();
+  const getSectionTitle = (id: string) => (id === 'none' ? 'Uten seksjon' : `Seksjon ${id.substring(0, 6)}`);
 
-    if (idx > 0) doc.addPage();
+  for (const l of layouts) {
+    const sid = l.sectionId || 'none';
+    if (!sectionMap.has(sid)) {
+      sectionMap.set(sid, { id: sid, title: getSectionTitle(sid), layouts: [] });
+      sectionOrder.push(sid);
+    }
+    sectionMap.get(sid)!.layouts.push(l);
+  }
+
+  let isFirstPage = true;
+  for (const sid of sectionOrder) {
+    const section = sectionMap.get(sid)!;
+
+    // Section cover page
+    if (!isFirstPage) doc.addPage();
+    isFirstPage = false;
     doc.setFillColor(bgColor);
     doc.rect(0, 0, pageWidth, pageHeight, 'F');
     doc.setTextColor(textColor);
-    doc.text(widget?.title ?? layout.i, 40, 30);
+    doc.setFontSize(16);
+    doc.text(section.title, 40, 40);
 
-    const imgWidth = pageWidth - 80;
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
-    doc.addImage(imgData, 'PNG', 40, 40, imgWidth, Math.min(imgHeight, pageHeight - 80));
+    // Render each widget in the section on its own page
+    for (let i = 0; i < section.layouts.length; i++) {
+      const layout = section.layouts[i];
+      const widget = widgets.find(w => w.id === layout.widgetId || w.id === layout.i);
+      if (!widget) continue;
+
+      doc.addPage();
+      doc.setFillColor(bgColor);
+      doc.rect(0, 0, pageWidth, pageHeight, 'F');
+      doc.setTextColor(textColor);
+      doc.setFontSize(12);
+      doc.text(widget.title || layout.i, 40, 30);
+
+      try {
+        const canvas = await captureWidget(widget.id || layout.i);
+        const imgData = canvas.toDataURL('image/png');
+        const imgWidth = pageWidth - 80;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        doc.addImage(imgData, 'PNG', 40, 40, imgWidth, Math.min(imgHeight, pageHeight - 80));
+      } catch (e) {
+        // If capture fails, still leave the title as a placeholder
+        doc.setTextColor(textColor);
+        doc.text('(Kunne ikke fange widget-innhold)', 40, 60);
+      }
+    }
   }
 
   const blob = doc.output('blob');
@@ -72,15 +110,52 @@ async function fetchWidgetData(widget: Widget): Promise<any[]> {
 export async function exportReportToExcel(widgets: Widget[], layouts: WidgetLayout[]): Promise<void> {
   const workbook = XLSX.utils.book_new();
 
-  for (const widget of widgets) {
-    if (widget.type === 'table' || widget.type === 'chart') {
-      const data = await fetchWidgetData(widget);
-      if (data.length > 0) {
-        const sheet = XLSX.utils.json_to_sheet(data);
-        const sheetName = widget.title.substring(0, 31) || 'Sheet';
-        XLSX.utils.book_append_sheet(workbook, sheet, sheetName);
-      }
+  // Group layouts by section while preserving order
+  type SectionGroup = { id: string; title: string; layouts: WidgetLayout[] };
+  const sectionOrder: string[] = [];
+  const sectionMap = new Map<string, SectionGroup>();
+  const getSectionTitle = (id: string) => (id === 'none' ? 'Uten seksjon' : `Seksjon ${id.substring(0, 6)}`);
+
+  for (const l of layouts) {
+    const sid = l.sectionId || 'none';
+    if (!sectionMap.has(sid)) {
+      sectionMap.set(sid, { id: sid, title: getSectionTitle(sid), layouts: [] });
+      sectionOrder.push(sid);
     }
+    sectionMap.get(sid)!.layouts.push(l);
+  }
+
+  for (const sid of sectionOrder) {
+    const section = sectionMap.get(sid)!;
+    const rows: any[][] = [];
+
+    // Section heading
+    rows.push([section.title]);
+    rows.push([]);
+
+    for (const layout of section.layouts) {
+      const widget = widgets.find(w => w.id === layout.widgetId || w.id === layout.i);
+      if (!widget) continue;
+      if (widget.type !== 'table' && widget.type !== 'chart') continue;
+
+      const data = await fetchWidgetData(widget);
+      if (!data || data.length === 0) continue;
+
+      // Widget title row
+      rows.push([widget.title || layout.i]);
+
+      // Convert JSON rows to AOA
+      const headers = Object.keys(data[0]);
+      rows.push(headers);
+      for (const r of data) {
+        rows.push(headers.map(h => (r as any)[h]));
+      }
+      rows.push([]); // Blank spacer
+    }
+
+    const sheet = XLSX.utils.aoa_to_sheet(rows.length > 0 ? rows : [[section.title]]);
+    const safeName = (section.title || 'Seksjon').substring(0, 31) || 'Seksjon';
+    XLSX.utils.book_append_sheet(workbook, sheet, safeName);
   }
 
   const wbout = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
