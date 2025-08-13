@@ -1,7 +1,9 @@
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import { useFirmStandardAccounts, type FirmStandardAccount } from '@/hooks/useFirmStandardAccounts';
 import { useTrialBalanceData } from '@/hooks/useTrialBalanceData';
 import { useTrialBalanceMappings, type TrialBalanceMapping } from '@/hooks/useTrialBalanceMappings';
+import { supabase } from '@/integrations/supabase/client';
+import { useQueryClient } from '@tanstack/react-query';
 
 export interface DetailedStatementLine {
   id: string;
@@ -36,6 +38,37 @@ export function useDetailedFinancialStatement(clientId: string, selectedVersion?
   const { data: firmAccounts = [], isPending: firmPending } = useFirmStandardAccounts();
   const { data: trialBalance, isPending: tbPending } = useTrialBalanceData(clientId, selectedVersion);
   const { data: mappings = [], isPending: mappingsPending } = useTrialBalanceMappings(clientId);
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (!clientId) return;
+    const channel = supabase
+      .channel(`dfs-${clientId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'trial_balance_mappings', filter: `client_id=eq.${clientId}` },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['trial-balance-mappings', clientId] });
+          queryClient.invalidateQueries({
+            predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0] === 'trial-balance' && q.queryKey[1] === clientId,
+          });
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'client_chart_of_accounts', filter: `client_id=eq.${clientId}` },
+        () => {
+          queryClient.invalidateQueries({
+            predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0] === 'trial-balance' && q.queryKey[1] === clientId,
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [clientId, queryClient]);
 
   // Derive current year from TB and fetch previous year TB
   const currentYear = trialBalance?.[0]?.period_year as number | undefined;

@@ -16,7 +16,6 @@ import {
   Grid2x2,
   Boxes,
   CircleDot,
-  Map,
   ChartColumn,
 } from 'lucide-react';
 import { useWidgetTemplates } from '@/hooks/useWidgetTemplates';
@@ -114,12 +113,6 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
         yField: 'y',
         valueField: 'value',
         colorScale: 'blue',
-        data: [
-          { x: 'A', y: '1', value: 10 },
-          { x: 'B', y: '1', value: 30 },
-          { x: 'A', y: '2', value: 20 },
-          { x: 'B', y: '2', value: 40 },
-        ]
       }
     },
     {
@@ -130,12 +123,6 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
       defaultConfig: {
         valueField: 'size',
         color: '#3b82f6',
-        data: [
-          { name: 'A', size: 400 },
-          { name: 'B', size: 300 },
-          { name: 'C', size: 300 },
-          { name: 'D', size: 200 },
-        ]
       }
     },
     {
@@ -148,21 +135,6 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
         yField: 'y',
         sizeField: 'z',
         color: '#3b82f6',
-        data: [
-          { x: 10, y: 30, z: 200 },
-          { x: 20, y: 50, z: 100 },
-          { x: 30, y: 70, z: 300 },
-        ]
-      }
-    },
-    {
-      type: 'map' as const,
-      title: 'Kart',
-      description: 'Vis geodata på kart',
-      icon: Map,
-      defaultConfig: {
-        center: [59.9139, 10.7522],
-        zoom: 13,
       }
     },
     {
@@ -170,14 +142,7 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
       title: 'Vannfallsdiagram',
       description: 'Trinnvis endring',
       icon: ChartColumn,
-      defaultConfig: {
-        data: [
-          { name: 'Start', value: 1000 },
-          { name: 'Inntekt', value: 400 },
-          { name: 'Kostnad', value: -300 },
-          { name: 'Slutt', value: 1100 },
-        ]
-      }
+      defaultConfig: {}
     },
     {
       type: 'enhancedKpi' as const,
@@ -224,10 +189,7 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
       title: 'Måler',
       description: 'Vis en enkel måler',
       icon: Gauge,
-      defaultConfig: {
-        value: 50,
-        max: 100
-      }
+      defaultConfig: {}
     },
     {
       type: 'accountLines' as const,
@@ -335,7 +297,7 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
           ? 4
           : template.type === 'kpi' || template.type === 'enhancedKpi'
           ? 2
-          : template.type === 'chart' || template.type === 'heatmap' || template.type === 'treemap' || template.type === 'bubble' || template.type === 'map' || template.type === 'waterfall'
+          : template.type === 'chart' || template.type === 'heatmap' || template.type === 'treemap' || template.type === 'bubble' || template.type === 'waterfall'
           ? 4
           : template.type === 'pivot'
           ? 4

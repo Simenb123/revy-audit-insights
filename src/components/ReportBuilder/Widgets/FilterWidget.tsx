@@ -59,7 +59,7 @@ export function FilterWidget({ widget }: FilterWidgetProps) {
   };
 
   return (
-    <Card className="h-full">
+    <Card className={cn('h-full', isCrossFiltered ? 'ring-2 ring-primary' : '')}>
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-sm">
           <Filter className="h-4 w-4" />

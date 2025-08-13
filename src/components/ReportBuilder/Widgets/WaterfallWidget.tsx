@@ -12,6 +12,7 @@ import {
   ResponsiveContainer,
   Cell,
 } from 'recharts';
+import { useWaterfallData } from '@/hooks/useWaterfallData';
 
 type WaterfallItem = { name: string; value: number; start?: number; end?: number };
 
@@ -21,12 +22,8 @@ interface WaterfallWidgetProps {
 
 export function WaterfallWidget({ widget }: WaterfallWidgetProps) {
   const { updateWidget } = useWidgetManager();
-  const rawData: WaterfallItem[] = widget.config?.data || [
-    { name: 'Start', value: 1000 },
-    { name: 'Inntekt', value: 400 },
-    { name: 'Kostnad', value: -300 },
-    { name: 'Slutt', value: 1100 },
-  ];
+  const clientId = widget.config?.clientId as string | undefined;
+  const { data: rawData = [] } = useWaterfallData(clientId);
 
   const data: WaterfallItem[] = rawData.reduce<WaterfallItem[]>((acc, item) => {
     const prev = acc.length > 0 ? (acc[acc.length - 1].end || 0) : 0;
@@ -45,20 +42,24 @@ export function WaterfallWidget({ widget }: WaterfallWidgetProps) {
         <InlineEditableTitle title={widget.title} onTitleChange={handleTitleChange} size="sm" />
       </CardHeader>
       <CardContent className="h-[250px]">
-        <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="name" />
-            <YAxis />
-            <Tooltip />
-            <Bar dataKey="start" stackId="a" fill="transparent" />
-            <Bar dataKey="value" stackId="a">
+        {data.length === 0 ? (
+          <div className="text-sm text-muted-foreground">Ingen vannfallsdata.</div>
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
+            <ComposedChart data={data}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" />
+              <YAxis />
+              <Tooltip />
+              <Bar dataKey="start" stackId="a" fill="transparent" />
+              <Bar dataKey="value" stackId="a">
                 {data.map((entry: WaterfallItem, index: number) => (
                   <Cell key={`cell-${index}`} fill={entry.value >= 0 ? '#4ade80' : '#f87171'} />
                 ))}
-            </Bar>
-          </ComposedChart>
-        </ResponsiveContainer>
+              </Bar>
+            </ComposedChart>
+          </ResponsiveContainer>
+        )}
       </CardContent>
     </Card>
   );

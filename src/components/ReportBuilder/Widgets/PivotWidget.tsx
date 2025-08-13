@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { InlineEditableTitle } from '../InlineEditableTitle';
 import PivotTable from 'react-pivottable';
 import 'react-pivottable/pivottable.css';
-import { useTrialBalanceWithMappings } from '@/hooks/useTrialBalanceWithMappings';
+import { usePivotData } from '@/hooks/usePivotData';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
 import { useTransactions } from '@/hooks/useTransactions';
 
@@ -20,7 +20,6 @@ export function PivotWidget({ widget }: PivotWidgetProps) {
   const rowField = widget.config?.rowField as string | undefined;
   const columnField = widget.config?.columnField as string | undefined;
   const valueField = widget.config?.valueField as string | undefined;
-
   const { data } = useTrialBalanceWithMappings(clientId || '', selectedFiscalYear);
   const { data: txData } = useTransactions(clientId || '', { pageSize: 1000 });
 
@@ -35,6 +34,14 @@ export function PivotWidget({ widget }: PivotWidgetProps) {
             ((t.debit_amount || 0) as number - (t.credit_amount || 0) as number),
         }))
       : data?.trialBalanceEntries || [];
+  
+  const { data: entries = [] } = usePivotData({
+    clientId,
+    fiscalYear: selectedFiscalYear,
+    rowField,
+    columnField,
+    valueField,
+  });
 
   const handleTitleChange = (newTitle: string) => {
     updateWidget(widget.id, { title: newTitle });
