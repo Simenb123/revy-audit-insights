@@ -1,0 +1,64 @@
+import { useQuery } from '@tanstack/react-query'
+import { supabase } from '@/integrations/supabase/client'
+
+export interface Transaction {
+  id: string
+  transaction_date: string
+  account_number: string
+  account_name: string
+  description: string
+  debit_amount: number | null
+  credit_amount: number | null
+  balance_amount: number | null
+}
+
+interface UseTransactionsOptions {
+  page?: number
+  pageSize?: number
+  startDate?: string
+  endDate?: string
+  startAccount?: string
+  endAccount?: string
+}
+
+export function useTransactions(
+  clientId: string,
+  options: UseTransactionsOptions = {}
+) {
+  return useQuery({
+    queryKey: ['transactions', clientId, options],
+    enabled: !!clientId,
+    queryFn: async () => {
+      const { page = 1, pageSize = 100, startDate, endDate, startAccount, endAccount } = options
+      const { data, error } = await supabase.functions.invoke('transactions', {
+        body: {
+          clientId,
+          startDate,
+          endDate,
+          startAccount,
+          endAccount,
+          page,
+          pageSize,
+        },
+      })
+
+      if (error) throw error
+
+      const items = (data?.data || []).map((t: any) => ({
+        id: t.id,
+        transaction_date: t.transaction_date,
+        account_number: t.client_chart_of_accounts?.account_number || '',
+        account_name: t.client_chart_of_accounts?.account_name || '',
+        description: t.description,
+        debit_amount: t.debit_amount,
+        credit_amount: t.credit_amount,
+        balance_amount: t.balance_amount ?? ((t.debit_amount || 0) as number - (t.credit_amount || 0) as number),
+      })) as Transaction[]
+
+      return {
+        transactions: items,
+        count: data?.count ?? 0,
+      }
+    },
+  })
+}

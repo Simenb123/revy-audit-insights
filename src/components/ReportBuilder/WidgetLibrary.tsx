@@ -90,7 +90,8 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
       icon: Table,
       defaultConfig: {
         showMappings: true,
-        groupByCategory: false
+        groupByCategory: false,
+        dataSource: 'trial_balance'
       }
     },
     {
@@ -216,7 +217,7 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
       title: 'Pivot-tabell',
       description: 'Vis data i pivottabell',
       icon: Grid3x3,
-      defaultConfig: {}
+      defaultConfig: { dataSource: 'trial_balance' }
     },
     {
       type: 'gauge' as const,
