@@ -20,7 +20,7 @@ export function useTreemapData(clientId?: string) {
         return [];
       }
 
-      return data.map((d) => ({ name: d.name, size: d.size }));
+      return data.map((d: any) => ({ name: d.name, size: d.size }));
     },
   });
 }

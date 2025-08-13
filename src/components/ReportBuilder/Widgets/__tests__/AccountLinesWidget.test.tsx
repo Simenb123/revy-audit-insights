@@ -35,14 +35,14 @@ vi.mock('@/hooks/useFormulaCalculation', () => ({
   useFormulaCalculation: ({ customFormula }: any) => ({
     data: { value: formulaValues[customFormula as string] ?? 0, isValid: true },
     isLoading: false,
-    error: null,
+    error: null as any,
   }),
 }));
 
 describe('AccountLinesWidget', () => {
   const baseWidget = {
     id: 'widget-1',
-    type: 'account_lines' as const,
+    type: 'accountLines' as const,
     title: 'Test Account Lines',
     config: {
       clientId: '123',

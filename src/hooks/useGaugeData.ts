@@ -22,8 +22,8 @@ export function useGaugeData(clientId?: string) {
       }
 
       return {
-        value: data.value ?? 0,
-        max: data.max ?? 100,
+        value: (data as any).value ?? 0,
+        max: (data as any).max ?? 100,
       };
     },
   });

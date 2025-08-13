@@ -3,7 +3,7 @@ import { useWidgetManager } from '@/contexts/WidgetManagerContext';
 import { DashboardCanvas } from './DashboardCanvas';
 import { WidgetLibrary } from './WidgetLibrary';
 import { IntroModal } from './IntroModal';
-import { StandardReportTemplates } from './StandardReportTemplates';
+// import { StandardReportTemplates } from './StandardReportTemplates';
 import { ReportTemplates } from './ReportTemplates';
 import { ReportBuilderTabs } from './ReportBuilderTabs';
 import { SaveReportDialog } from './SaveReportDialog';

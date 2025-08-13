@@ -20,7 +20,7 @@ export function useWaterfallData(clientId?: string) {
         return [];
       }
 
-      return data.map((d) => ({ name: d.name, value: d.value }));
+      return data.map((d: any) => ({ name: d.name, value: d.value }));
     },
   });
 }

@@ -21,7 +21,7 @@ export function useBubbleData(clientId?: string) {
         return [];
       }
 
-      return data.map((d) => ({ x: d.x, y: d.y, z: d.z }));
+      return data.map((d: any) => ({ x: d.x, y: d.y, z: d.z }));
     },
   });
 }

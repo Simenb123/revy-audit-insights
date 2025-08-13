@@ -9,7 +9,7 @@ vi.mock('@/hooks/useFormulaCalculation', () => ({
   useFormulaCalculation: () => ({
     data: { value: 100, isValid: true },
     isLoading: false,
-    error: null,
+    error: null as any,
     refetch,
   }),
 }));

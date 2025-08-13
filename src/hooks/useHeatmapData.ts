@@ -21,7 +21,7 @@ export function useHeatmapData(clientId?: string) {
         return [];
       }
 
-      return data.map((d) => ({
+      return data.map((d: any) => ({
         x: d.x,
         y: d.y,
         value: d.value,
