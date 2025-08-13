@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useScope } from '@/contexts/ScopeContext';
+import { pickLatestVersionRows, buildStandardLookups, buildMappingLookup, buildClassificationLookup, buildPrevYearMap } from './utils/trialBalanceUtils';
 
 export interface TrialBalanceEntryWithMapping {
   id: string;
@@ -81,19 +82,7 @@ export const useScopedTrialBalanceWithMappings = (
       }
 
       // If version not specified, pick latest created_at per client for the year
-      let filteredRows = tbRows as any[];
-      if (!selectedVersion) {
-        const latestByClient = new Map<string, string>();
-        for (const row of tbRows as any[]) {
-          const cid = row.client_id as string;
-          const created = row.created_at as string;
-          const prev = latestByClient.get(cid);
-          if (!prev || new Date(created) > new Date(prev)) {
-            latestByClient.set(cid, created);
-          }
-        }
-        filteredRows = (tbRows as any[]).filter(r => latestByClient.get(r.client_id) === r.created_at);
-      }
+      const filteredRows = selectedVersion ? (tbRows as any[]) : pickLatestVersionRows(tbRows as any[], 'client_id');
 
       // Fetch mappings and classifications across all clients in scope
       const [{ data: mappingsData, error: mapErr }, { data: classificationsData, error: classErr }, { data: standardAccounts, error: saErr }] = await Promise.all([
@@ -116,40 +105,10 @@ export const useScopedTrialBalanceWithMappings = (
       // classifications are optional
 
       // Build lookups
-      const stdByNumber = new Map<string, any>();
-      standardAccounts?.forEach(sa => {
-        stdByNumber.set(sa.standard_number, sa);
-      });
+      const stdByNumber = buildStandardLookups(standardAccounts || []);
+      const mappingLookup = buildMappingLookup(mappingsData || [], stdByNumber);
 
-      const mappingLookup = new Map<string, any>(); // key: client_id|account_number
-      mappingsData?.forEach(m => {
-        const sa = stdByNumber.get(m.statement_line_number);
-        if (!sa) return;
-        mappingLookup.set(`${m.client_id}|${m.account_number}`, {
-          standard_account_id: sa.id,
-          standard_number: sa.standard_number,
-          standard_name: sa.standard_name,
-          standard_category: sa.category,
-          standard_account_type: sa.account_type,
-          standard_analysis_group: sa.analysis_group,
-        });
-      });
-
-      const classificationLookup = new Map<string, any>();
-      classificationsData?.forEach(c => {
-        // Only if not already mapped
-        if (mappingLookup.has(`${c.client_id}|${c.account_number}`)) return;
-        const sa = standardAccounts?.find(s => s.standard_name === c.new_category);
-        if (!sa) return;
-        classificationLookup.set(`${c.client_id}|${c.account_number}`, {
-          standard_account_id: sa.id,
-          standard_number: sa.standard_number,
-          standard_name: sa.standard_name,
-          standard_category: sa.category,
-          standard_account_type: sa.account_type,
-          standard_analysis_group: sa.analysis_group,
-        });
-      });
+      const classificationLookup = buildClassificationLookup(classificationsData || [], standardAccounts || [], mappingLookup);
 
       // Previous year balances per account_number per client (latest version)
       const prevYear = fiscalYear - 1;
@@ -160,19 +119,7 @@ export const useScopedTrialBalanceWithMappings = (
         .eq('period_year', prevYear)
         .order('created_at', { ascending: false });
 
-      const latestPrevByClient = new Map<string, string>();
-      prevRows?.forEach((r: any) => {
-        const cid = r.client_id as string;
-        const created = r.created_at as string;
-        const prev = latestPrevByClient.get(cid);
-        if (!prev || new Date(created) > new Date(prev)) latestPrevByClient.set(cid, created);
-      });
-      const prevMap = new Map<string, number>(); // key: client_id|accNo
-      prevRows?.forEach((r: any) => {
-        if (latestPrevByClient.get(r.client_id) !== r.created_at) return;
-        const accNo = r?.client_chart_of_accounts?.account_number as string;
-        if (accNo) prevMap.set(`${r.client_id}|${accNo}`, r.closing_balance || 0);
-      });
+      const prevMap = buildPrevYearMap(prevRows || []);
 
       const trialBalanceEntries: TrialBalanceEntryWithMapping[] = filteredRows.map((tb: any) => {
         const acc = tb.client_chart_of_accounts;
