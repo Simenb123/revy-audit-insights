@@ -17,6 +17,8 @@ import { useKpiBenchmarkAggregation } from '@/hooks/useKpiBenchmarkAggregation';
 import { KpiBenchmarkSummary } from './KpiBenchmarkSummary';
 import { useKpiBenchmarkState } from '@/hooks/useKpiBenchmarkState';
 import { getScaleDivisor, formatNumeric, formatPercent } from '@/utils/kpiFormat';
+import { useQueries } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 interface KpiWidgetProps {
   widget: Widget;
@@ -108,8 +110,116 @@ export function KpiWidget({ widget }: KpiWidgetProps) {
     enabled: !!clientId && !!previousFiscalYear && showTrend
   });
 
-  // Calculate metric data using new edge function
+  // Multi-client aggregation in custom scope (global mode)
+  const isGlobalMulti = !clientId && scopeType === 'custom' && (selectedClientIds?.length || 0) > 0;
+  const enabledMulti = isGlobalMulti && !!selectedFiscalYear;
+
+  const multiCurrent = useQueries({
+    queries: enabledMulti
+      ? (selectedClientIds || []).map((id) => ({
+          queryKey: [
+            'formula-calculation',
+            id,
+            selectedFiscalYear,
+            formulaId,
+            typeof customFormula === 'object' ? JSON.stringify(customFormula) : customFormula,
+            widget.config?.selectedVersion,
+          ],
+          queryFn: async () => {
+            const payload: any = {
+              clientId: id,
+              fiscalYear: selectedFiscalYear,
+              selectedVersion: widget.config?.selectedVersion,
+            };
+            if (typeof formulaId === 'string') payload.formulaId = formulaId;
+            if (customFormula !== undefined) payload.customFormula = customFormula;
+            const { data, error } = await supabase.functions.invoke('calculate-formula', { body: payload });
+            if (error) throw new Error(error.message || 'Formula calculation failed');
+            return data as any;
+          },
+          staleTime: 5 * 60 * 1000,
+        }))
+      : [],
+  });
+
+  const multiPrev = useQueries({
+    queries: enabledMulti && showTrend
+      ? (selectedClientIds || []).map((id) => ({
+          queryKey: [
+            'formula-calculation-prev',
+            id,
+            previousFiscalYear,
+            formulaId,
+            typeof customFormula === 'object' ? JSON.stringify(customFormula) : customFormula,
+            widget.config?.selectedVersion,
+          ],
+          queryFn: async () => {
+            const payload: any = {
+              clientId: id,
+              fiscalYear: previousFiscalYear,
+              selectedVersion: widget.config?.selectedVersion,
+            };
+            if (typeof formulaId === 'string') payload.formulaId = formulaId;
+            if (customFormula !== undefined) payload.customFormula = customFormula;
+            const { data, error } = await supabase.functions.invoke('calculate-formula', { body: payload });
+            if (error) throw new Error(error.message || 'Formula calculation failed');
+            return data as any;
+          },
+          staleTime: 5 * 60 * 1000,
+        }))
+      : [],
+  });
+
+  // Calculate metric data (single client or aggregated multi-client)
   const metricData = React.useMemo(() => {
+    if (isGlobalMulti) {
+      if (multiCurrent.length === 0 || multiCurrent.some((q) => q.isLoading)) {
+        return { value: 'Laster...', change: '0%', trend: 'neutral' as const };
+      }
+      const valids = multiCurrent
+        .map((q) => q.data)
+        .filter((d: any) => d && d.isValid) as any[];
+      if (valids.length === 0) {
+        return { value: 'N/A', change: '0%', trend: 'neutral' as const };
+      }
+      const currentSum = valids.reduce((s, d) => s + (Number(d.value) || 0), 0);
+      const resultType = (valids.find((d) => d?.metadata?.type)?.metadata?.type || 'amount') as
+        | 'amount'
+        | 'percentage'
+        | 'ratio';
+      const divisor = resultType === 'amount' ? getScaleDivisor(unitScale) : 1;
+      const aggValue = aggregateMode === 'avg' ? currentSum / valids.length : currentSum;
+      const scaledCurrent = aggValue / divisor;
+      const formattedValue =
+        displayAsPercentage || resultType === 'percentage'
+          ? formatPercent(scaledCurrent)
+          : resultType === 'ratio'
+          ? formatNumeric(scaledCurrent)
+          : showCurrency
+          ? formatCurrency(scaledCurrent)
+          : formatNumeric(scaledCurrent);
+
+      if (!showTrend) {
+        return { value: formattedValue, change: '0%', trend: 'neutral' as const };
+      }
+      if (multiPrev.length === 0 || multiPrev.some((q) => q.isLoading) || multiPrev.every((q) => !q.data?.isValid)) {
+        return { value: formattedValue, change: '0%', trend: 'neutral' as const };
+      }
+      const prevValids = multiPrev
+        .map((q) => q.data)
+        .filter((d: any) => d && d.isValid) as any[];
+      const prevSum = prevValids.reduce((s, d) => s + (Number(d.value) || 0), 0);
+      if (prevSum === 0) {
+        return { value: formattedValue, change: '0%', trend: 'neutral' as const };
+      }
+      const diff = aggValue - prevSum;
+      const changePercent = (diff / Math.abs(prevSum)) * 100;
+      const trend = changePercent > 0 ? ('up' as const) : changePercent < 0 ? ('down' as const) : ('neutral' as const);
+      const formattedChange = `${changePercent > 0 ? '+' : ''}${formatPercent(changePercent)}`;
+      return { value: formattedValue, change: formattedChange, trend };
+    }
+
+    // Single-client path
     if (currentFormulaResult.isLoading) {
       return { value: 'Laster...', change: '0%', trend: 'neutral' as const };
     }
@@ -125,15 +235,14 @@ export function KpiWidget({ widget }: KpiWidgetProps) {
     const scaledCurrent = currentValue / scaleDivisor;
 
     const formattedValue =
-      (displayAsPercentage || resultType === 'percentage')
+      displayAsPercentage || resultType === 'percentage'
         ? formatPercent(scaledCurrent)
         : resultType === 'ratio'
-          ? formatNumeric(scaledCurrent)
-          : showCurrency
-            ? formatCurrency(scaledCurrent)
-            : formatNumeric(scaledCurrent);
+        ? formatNumeric(scaledCurrent)
+        : showCurrency
+        ? formatCurrency(scaledCurrent)
+        : formatNumeric(scaledCurrent);
 
-    // Calculate trend if previous data is available
     if (!showTrend || previousFormulaResult.isLoading || previousFormulaResult.error || !previousFormulaResult.data?.isValid) {
       return { value: formattedValue, change: '0%', trend: 'neutral' as const };
     }
@@ -145,12 +254,7 @@ export function KpiWidget({ widget }: KpiWidgetProps) {
 
     const diff = currentValue - previousValue;
     const changePercent = (diff / Math.abs(previousValue)) * 100;
-    const trend =
-      changePercent > 0
-        ? ('up' as const)
-        : changePercent < 0
-        ? ('down' as const)
-        : ('neutral' as const);
+    const trend = changePercent > 0 ? ('up' as const) : changePercent < 0 ? ('down' as const) : ('neutral' as const);
     const formattedChange = `${changePercent > 0 ? '+' : ''}${formatPercent(changePercent)}`;
 
     return {
@@ -158,7 +262,19 @@ export function KpiWidget({ widget }: KpiWidgetProps) {
       change: formattedChange,
       trend,
     };
-  }, [currentFormulaResult, previousFormulaResult, showTrend, displayAsPercentage, showCurrency, unitScale]);
+  }, [
+    isGlobalMulti,
+    multiCurrent,
+    multiPrev,
+    aggregateMode,
+    unitScale,
+    displayAsPercentage,
+    showCurrency,
+    showTrend,
+    currentFormulaResult,
+    previousFormulaResult,
+  ]);
+
 
   const { aggregatedDisplay } = useKpiBenchmarkAggregation({
     showBenchmark,
@@ -171,7 +287,7 @@ export function KpiWidget({ widget }: KpiWidgetProps) {
     valuesByClient,
   });
 
-  if (currentFormulaResult.isLoading) {
+  if ((isGlobalMulti && multiCurrent.some((q) => q.isLoading)) || (!isGlobalMulti && currentFormulaResult.isLoading)) {
     return (
       <Card className="h-full">
         <CardHeader className="pb-2">
