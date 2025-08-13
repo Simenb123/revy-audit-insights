@@ -158,12 +158,12 @@ export function ChartWidget({ widget }: ChartWidgetProps) {
     formulaSeries,
     filteredTrialBalanceEntries,
     maxDataPoints,
-    scaleValue,
+    scaleForChart,
     currentLevel,
     drillPath,
     drillStack,
     getFieldValue,
-    scaleValueByType,
+    
   ]);
 
   // Handle chart element clicks for drilldown or cross-filtering
