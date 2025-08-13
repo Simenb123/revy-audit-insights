@@ -6,6 +6,8 @@ export interface ReportBuilderSettings {
   isViewMode?: boolean;
   theme?: ThemeConfig;
   introSeen?: boolean;
+  // Scope settings (optional)
+  scopeType?: 'client' | 'firm';
 }
 
 const STORAGE_PREFIX = 'report-builder-settings';

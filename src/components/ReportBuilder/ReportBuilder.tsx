@@ -7,6 +7,8 @@ import { useFiscalYear } from '@/contexts/FiscalYearContext';
 import { ClassificationProvider } from '@/contexts/ClassificationContext';
 import { HistoryProvider, useHistory } from '@/contexts/HistoryContext';
 import { Button } from '@/components/ui/button';
+import { ScopeProvider } from '@/contexts/ScopeContext';
+import { ScopeSelector } from './ScopeSelector';
 
 interface ReportBuilderProps {
   clientId: string;
@@ -35,15 +37,17 @@ export default function ReportBuilder({ clientId }: ReportBuilderProps) {
 
   return (
     <ClassificationProvider>
-      <WidgetManagerProvider clientId={clientId} year={selectedFiscalYear}>
-        <HistoryProvider>
-          <HistoryWrapper
-            clientId={clientId}
-            hasData={hasData}
-            selectedFiscalYear={selectedFiscalYear}
-          />
-        </HistoryProvider>
-      </WidgetManagerProvider>
+      <ScopeProvider clientId={clientId} fiscalYear={selectedFiscalYear}>
+        <WidgetManagerProvider clientId={clientId} year={selectedFiscalYear}>
+          <HistoryProvider>
+            <HistoryWrapper
+              clientId={clientId}
+              hasData={hasData}
+              selectedFiscalYear={selectedFiscalYear}
+            />
+          </HistoryProvider>
+        </WidgetManagerProvider>
+      </ScopeProvider>
     </ClassificationProvider>
   );
 }
@@ -59,13 +63,16 @@ function HistoryWrapper({ clientId, hasData, selectedFiscalYear }: HistoryWrappe
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-2">
-        <Button variant="outline" onClick={undo} disabled={!canUndo}>
-          Angre
-        </Button>
-        <Button variant="outline" onClick={redo} disabled={!canRedo}>
-          Gjør om
-        </Button>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={undo} disabled={!canUndo}>
+            Angre
+          </Button>
+          <Button variant="outline" onClick={redo} disabled={!canRedo}>
+            Gjør om
+          </Button>
+        </div>
+        <ScopeSelector />
       </div>
       <ReportBuilderContent
         clientId={clientId}
