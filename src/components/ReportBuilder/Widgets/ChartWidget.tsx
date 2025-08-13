@@ -22,6 +22,8 @@ import { useFilters } from '@/contexts/FilterContext';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
 import { useFormulaSeries } from '@/hooks/useFormulaSeries';
 import { cn } from '@/lib/utils';
+import { getScaleDivisor, formatNumeric, formatPercent } from '@/utils/kpiFormat';
+import { formatCurrency } from '@/lib/formatters';
 
 interface ChartWidgetProps {
   widget: Widget;
@@ -40,6 +42,8 @@ export function ChartWidget({ widget }: ChartWidgetProps) {
   const yearsBack = widget.config?.yearsBack || 5;
   const startYear = selectedFiscalYear - (yearsBack - 1);
   const unitScale = widget.config?.unitScale || 'none';
+  const displayAsPercentage = widget.config?.displayAsPercentage || false;
+  const showCurrency = widget.config?.showCurrency !== false;
   const sourceType = widget.config?.sourceType || 'alias';
   const metric = widget.config?.metric || 'revenue';
   const formulaIdSel = sourceType === 'formula' ? widget.config?.formulaId : undefined;
@@ -92,55 +96,31 @@ export function ChartWidget({ widget }: ChartWidgetProps) {
     }
   }, []);
 
-  // Scale helper based on configured unitScale
-  const scaleValue = React.useCallback(
-    (val: number) => {
-      switch (unitScale) {
-        case 'thousand':
-          return val / 1_000;
-        case 'million':
-          return val / 1_000_000;
-        case 'percent':
-          return val * 100;
-        default:
-          return val;
-      }
-    },
-    [unitScale]
-  );
+  const scaleDivisor = React.useMemo(() => (displayAsPercentage ? 1 : getScaleDivisor(unitScale)), [displayAsPercentage, unitScale]);
 
-  const scaleValueByType = React.useCallback(
+  const scaleForChart = React.useCallback(
     (val: number, type?: string) => {
-      // Percentages are already in 0-100 range from the API; don't multiply again
-      if (unitScale === 'percent') {
-        const base = type === 'percentage' ? val : val * 100;
-        return base;
-      }
-      let v = val;
-      // Only scale amounts; not percentages/ratios
-      if (type !== 'percentage' && type !== 'ratio') {
-        if (unitScale === 'thousand') v = v / 1_000;
-        else if (unitScale === 'million') v = v / 1_000_000;
-      }
-      return v;
+      if (displayAsPercentage || type === 'percentage' || type === 'ratio') return val;
+      return val / scaleDivisor;
     },
-    [unitScale]
+    [displayAsPercentage, scaleDivisor]
   );
 
-  const formatDisplay = React.useCallback(
-    (val: number) => {
-      if (unitScale === 'percent') {
-        return `${val.toFixed(1)}%`;
+  const formatValue = React.useCallback(
+    (val: number, type?: string) => {
+      if (displayAsPercentage || type === 'percentage') {
+        return formatPercent(val, 1);
       }
-      return new Intl.NumberFormat('nb-NO', { maximumFractionDigits: 2 }).format(val);
+      const scaled = val / scaleDivisor;
+      return showCurrency ? formatCurrency(scaled) : formatNumeric(scaled);
     },
-    [unitScale]
+    [displayAsPercentage, scaleDivisor, showCurrency]
   );
 
   const chartData = React.useMemo(() => {
     if (dataSource === 'formulaSeries') {
       const series = formulaSeries ?? [];
-      return series.map(p => ({ name: String(p.year), value: scaleValueByType(p.value, p.type) }));
+      return series.map(p => ({ name: String(p.year), value: scaleForChart(p.value, p.type), type: p.type || 'amount' }));
     }
 
     if (!filteredTrialBalanceEntries || filteredTrialBalanceEntries.length === 0) {
@@ -170,7 +150,8 @@ export function ChartWidget({ widget }: ChartWidgetProps) {
       .slice(0, maxDataPoints)
       .map(([name, balance]) => ({
         name: name.slice(0, 10),
-        value: scaleValue(Math.abs(balance))
+        value: scaleForChart(Math.abs(balance), 'amount'),
+        type: 'amount'
       }));
   }, [
     dataSource,
@@ -294,7 +275,7 @@ export function ChartWidget({ widget }: ChartWidgetProps) {
                 tickLine={false}
                 tick={{ fontSize: 10 }}
               />
-              <Tooltip formatter={(value: number) => formatDisplay(Number(value))} />
+              <Tooltip formatter={(value: number, name: any, props: any) => formatValue(Number(value), props?.payload?.type)} />
               <YAxis hide />
               <Line
                 type="monotone"
@@ -310,7 +291,7 @@ export function ChartWidget({ widget }: ChartWidgetProps) {
             </LineChart>
           ) : chartType === 'pie' ? (
             <PieChart onClick={handleChartClick}>
-              <Tooltip formatter={(value: number) => formatDisplay(Number(value))} />
+              <Tooltip formatter={(value: number, name: any, props: any) => formatValue(Number(value), props?.payload?.type)} />
               <Pie
                 data={chartData}
                 dataKey="value"
@@ -330,7 +311,7 @@ export function ChartWidget({ widget }: ChartWidgetProps) {
                 tickLine={false}
                 tick={{ fontSize: 10 }}
               />
-              <Tooltip formatter={(value: number) => formatDisplay(Number(value))} />
+              <Tooltip formatter={(value: number, name: any, props: any) => formatValue(Number(value), props?.payload?.type)} />
               <YAxis hide />
               <Bar
                 dataKey="value"

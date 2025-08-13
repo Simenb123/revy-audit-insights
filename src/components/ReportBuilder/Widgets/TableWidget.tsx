@@ -13,6 +13,8 @@ import { useFilters } from '@/contexts/FilterContext';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
 import { useTransactions } from '@/hooks/useTransactions';
 import { cn } from '@/lib/utils';
+import { getScaleDivisor, formatNumeric, getUnitLabel } from '@/utils/kpiFormat';
+import { formatCurrency } from '@/lib/formatters';
 
 interface TableWidgetProps {
   widget: Widget;
@@ -41,6 +43,10 @@ export function TableWidget({ widget }: TableWidgetProps) {
   const [selectedCategory, setSelectedCategory] = React.useState<string>('all');
   const [expandedGroups, setExpandedGroups] = React.useState<Set<string>>(new Set());
   
+  const unitScale: 'none' | 'thousand' | 'million' = widget.config?.unitScale || 'none';
+  const showCurrency: boolean = widget.config?.showCurrency !== false;
+  const scaleDivisor = React.useMemo(() => getScaleDivisor(unitScale), [unitScale]);
+  const unitLabel = React.useMemo(() => getUnitLabel(false, showCurrency, unitScale), [showCurrency, unitScale]);
   const { data: trialBalanceData, isLoading } = useTrialBalanceWithMappings(
     clientId,
     selectedFiscalYear,
@@ -67,15 +73,18 @@ export function TableWidget({ widget }: TableWidgetProps) {
         map[key] = (map[key] || 0) + amount;
       });
       const total = Object.values(map).reduce((s, v) => s + Math.abs(v), 0);
-      const arr = Object.entries(map).map(([key, amount]) => ({
-        key,
-        amount,
-        formatted: new Intl.NumberFormat('no-NO').format(amount),
-        percentage: total > 0 ? (Math.abs(amount) / total) * 100 : 0,
-      }));
+      const arr = Object.entries(map).map(([key, amount]) => {
+        const amountScaled = amount / scaleDivisor;
+        return {
+          key,
+          amount,
+          formatted: showCurrency ? formatCurrency(amountScaled) : formatNumeric(amountScaled),
+          percentage: total > 0 ? (Math.abs(amount) / total) * 100 : 0,
+        };
+      });
       arr.sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount));
       return { arr, total };
-    }, [txData, dimension]);
+    }, [txData, dimension, scaleDivisor, showCurrency]);
 
     return (
       <Card className="h-full">
@@ -93,7 +102,7 @@ export function TableWidget({ widget }: TableWidgetProps) {
                     ? 'Beskrivelse'
                     : 'Konto'}
                 </TableHead>
-                <TableHead className="text-xs text-right">Beløp</TableHead>
+                <TableHead className="text-xs text-right">Beløp {unitLabel ? `(${unitLabel})` : ''}</TableHead>
                 {showPercentage && <TableHead className="text-xs text-right">%</TableHead>}
               </TableRow>
             </TableHeader>
@@ -176,7 +185,7 @@ export function TableWidget({ widget }: TableWidgetProps) {
         ...entry,
         account: `${entry.account_number} - ${entry.account_name}`,
         balance: entry.closing_balance,
-        formattedBalance: new Intl.NumberFormat('no-NO').format(entry.closing_balance)
+        formattedBalance: showCurrency ? formatCurrency(entry.closing_balance / scaleDivisor) : formatNumeric(entry.closing_balance / scaleDivisor)
       });
     });
 
@@ -359,7 +368,7 @@ export function TableWidget({ widget }: TableWidgetProps) {
                       </Badge>
                     </div>
                     <span className="text-xs font-medium">
-                      {new Intl.NumberFormat('no-NO').format(categoryTotal)}
+                      {showCurrency ? formatCurrency(categoryTotal / scaleDivisor) : formatNumeric(categoryTotal / scaleDivisor)}
                     </span>
                   </Button>
                   
@@ -410,7 +419,7 @@ export function TableWidget({ widget }: TableWidgetProps) {
             <TableHeader>
               <TableRow>
                 <TableHead className="text-xs">Konto</TableHead>
-                <TableHead className="text-xs text-right">Saldo</TableHead>
+                <TableHead className="text-xs text-right">Saldo {unitLabel ? `(${unitLabel})` : ''}</TableHead>
                 {showPercentage && <TableHead className="text-xs text-right">%</TableHead>}
               </TableRow>
             </TableHeader>
