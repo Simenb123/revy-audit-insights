@@ -3,6 +3,7 @@ import ClientSubHeader from './ClientSubHeader';
 import FiscalYearSelector from './FiscalYearSelector';
 import MaterialitySummary from './MaterialitySummary';
 import { useSubHeader } from './SubHeaderContext';
+import { formatOrgNumber } from '@/utils/formatOrgNumber';
 
 interface StickyClientLayoutProps {
   clientName: string;
@@ -29,7 +30,7 @@ const StickyClientLayout: React.FC<StickyClientLayoutProps> = ({
             <h1 className="text-lg font-semibold text-foreground">{clientName}</h1>
             {orgNumber && (
               <span className="text-xs text-muted-foreground font-mono bg-muted px-2 py-1 rounded">
-                {orgNumber}
+                {formatOrgNumber(orgNumber)}
               </span>
             )}
           </div>
