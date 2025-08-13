@@ -16,7 +16,7 @@ import {
   LabelList,
   Tooltip
 } from 'recharts';
-import { useTrialBalanceWithMappings } from '@/hooks/useTrialBalanceWithMappings';
+import { useScopedTrialBalanceWithMappings } from '@/hooks/useScopedTrialBalanceWithMappings';
 import { useFilteredData } from '@/hooks/useFilteredData';
 import { useFilters } from '@/contexts/FilterContext';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
@@ -62,7 +62,7 @@ export function ChartWidget({ widget }: ChartWidgetProps) {
     updateWidget(widget.id, { title: newTitle });
   };
   
-  const { data: trialBalanceData, isLoading: isLoadingTB } = useTrialBalanceWithMappings(
+  const { data: trialBalanceData, isLoading: isLoadingTB } = useScopedTrialBalanceWithMappings(
     clientId,
     selectedFiscalYear,
     widget.config?.selectedVersion

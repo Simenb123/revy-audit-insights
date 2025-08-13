@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Filter, ChevronDown, ChevronRight } from 'lucide-react';
-import { useTrialBalanceWithMappings } from '@/hooks/useTrialBalanceWithMappings';
+import { useScopedTrialBalanceWithMappings } from '@/hooks/useScopedTrialBalanceWithMappings';
 import { useFilteredData } from '@/hooks/useFilteredData';
 import { useFilters } from '@/contexts/FilterContext';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
@@ -47,7 +47,7 @@ export function TableWidget({ widget }: TableWidgetProps) {
   const showCurrency: boolean = widget.config?.showCurrency !== false;
   const scaleDivisor = React.useMemo(() => getScaleDivisor(unitScale), [unitScale]);
   const unitLabel = React.useMemo(() => getUnitLabel(false, showCurrency, unitScale), [showCurrency, unitScale]);
-  const { data: trialBalanceData, isLoading } = useTrialBalanceWithMappings(
+  const { data: trialBalanceData, isLoading } = useScopedTrialBalanceWithMappings(
     clientId,
     selectedFiscalYear,
     widget.config?.selectedVersion
