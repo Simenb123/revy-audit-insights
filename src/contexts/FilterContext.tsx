@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
+import { useWidgetManager } from '@/contexts/WidgetManagerContext';
+import { useToast } from '@/hooks/use-toast';
 
 export interface FilterState {
   dateRange?: {
@@ -32,6 +34,8 @@ const FilterContext = createContext<FilterContextType | undefined>(undefined);
 
 export function FilterProvider({ children }: { children: React.ReactNode }) {
   const [filters, setFilters] = useState<FilterState>({});
+  const { setActiveCrossFilter } = useWidgetManager();
+  const { toast } = useToast();
 
   const updateFilter = useCallback((key: keyof FilterState, value: any) => {
     setFilters(prev => ({
@@ -52,17 +56,28 @@ export function FilterProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  const setCrossFilter = useCallback((sourceWidgetId: string, filterType: string, value: any, label: string) => {
-    setFilters(prev => ({
-      ...prev,
-      crossFilter: {
-        sourceWidgetId,
-        filterType: filterType as 'category' | 'account' | 'amount_range',
-        value,
-        label
+  const setCrossFilter = useCallback(
+    (sourceWidgetId: string, filterType: string, value: any, label: string) => {
+      setFilters(prev => ({
+        ...prev,
+        crossFilter: {
+          sourceWidgetId,
+          filterType: filterType as 'category' | 'account' | 'amount_range',
+          value,
+          label,
+        },
+      }));
+      setActiveCrossFilter({ sourceWidgetId, filterType, value, label });
+      if (typeof window !== 'undefined' && !localStorage.getItem('crossFilterTooltipShown')) {
+        toast({
+          title: 'Kryssfilter aktivert',
+          description: 'Widgets med markering viser nå filtrerte tall. Klikk på filteret for å fjerne.',
+        });
+        localStorage.setItem('crossFilterTooltipShown', 'true');
       }
-    }));
-  }, []);
+    },
+    [setActiveCrossFilter, toast]
+  );
 
   const clearCrossFilter = useCallback(() => {
     setFilters(prev => {
@@ -70,7 +85,8 @@ export function FilterProvider({ children }: { children: React.ReactNode }) {
       delete newFilters.crossFilter;
       return newFilters;
     });
-  }, []);
+    setActiveCrossFilter(undefined);
+  }, [setActiveCrossFilter]);
 
   const isCrossFiltered = Boolean(filters.crossFilter);
 

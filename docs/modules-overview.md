@@ -38,6 +38,10 @@ Database changes live in `supabase/migrations` as SQL scripts.
 - For how to manage audit actions see [manage-audit-actions.md](manage-audit-actions.md).
 - For guidelines on the form layout see [audit-action-editor-ui.md](audit-action-editor-ui.md).
 
+## Cross-filtering in widgets
+
+In the report builder you can click on a table row or a chart slice to filter the other widgets. A small badge and a colored ring show which widgets are affected so you always know where the numbers come from.
+
 ## Voice Features
 
 Two edge functions provide basic voice capabilities:

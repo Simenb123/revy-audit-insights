@@ -11,6 +11,7 @@ import { useTrialBalanceWithMappings } from '@/hooks/useTrialBalanceWithMappings
 import { useFilteredData } from '@/hooks/useFilteredData';
 import { useFilters } from '@/contexts/FilterContext';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
+import { cn } from '@/lib/utils';
 
 interface TableWidgetProps {
   widget: Widget;
@@ -200,7 +201,16 @@ export function TableWidget({ widget }: TableWidgetProps) {
   }
 
   return (
-    <Card className={`h-full ${isFilterSource ? 'ring-2 ring-primary' : ''}`}>
+    <Card
+      className={cn(
+        'h-full',
+        isFilterSource
+          ? 'ring-2 ring-primary'
+          : filters.crossFilter
+            ? 'ring-2 ring-primary/50'
+            : ''
+      )}
+    >
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <InlineEditableTitle 
