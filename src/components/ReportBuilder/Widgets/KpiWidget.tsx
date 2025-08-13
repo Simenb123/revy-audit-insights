@@ -13,6 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { exportArrayToXlsx } from '@/utils/exportToXlsx';
 import { KpiBenchmarkPanel } from './KpiBenchmarkPanel';
 import { loadReportBuilderSettings, saveReportBuilderSettings } from '@/hooks/useReportBuilderSettings';
+import { toast } from '@/hooks/use-toast';
 
 interface KpiWidgetProps {
   widget: Widget;
@@ -78,54 +79,72 @@ export function KpiWidget({ widget }: KpiWidgetProps) {
     });
   }, [clientId, selectedFiscalYear, aggregateMode, selectedGroup, showBenchmark]);
 
+  const filteredClients = React.useMemo(() => (
+    selectedGroup === 'all' ? clientsInfo : clientsInfo.filter((c) => c.group === selectedGroup)
+  ), [clientsInfo, selectedGroup]);
+
+  const canExport = React.useMemo(() => {
+    if (!showBenchmark || filteredClients.length === 0) return false;
+    return filteredClients.some((c) => {
+      const v = valuesByClient[c.id];
+      return typeof v === 'number' && !Number.isNaN(v);
+    });
+  }, [showBenchmark, filteredClients, valuesByClient]);
+
   const handleExportBenchmark = () => {
-    if (!clientsInfo.length) return;
+    try {
+      if (!canExport) {
+        toast({ variant: 'destructive', title: 'Ingen data', description: 'Ingen data å eksportere ennå.' });
+        return;
+      }
 
-    const groupLabel = selectedGroup === 'all' ? 'Alle grupper' : selectedGroup;
-    const aggLabel = aggregateMode === 'sum' ? 'Sum' : aggregateMode === 'avg' ? 'Snitt' : 'Ingen';
+      const groupLabel = selectedGroup === 'all' ? 'Alle grupper' : selectedGroup;
+      const aggLabel = aggregateMode === 'sum' ? 'Sum' : aggregateMode === 'avg' ? 'Snitt' : 'Ingen';
 
-    const filtered = selectedGroup === 'all' ? clientsInfo : clientsInfo.filter((c) => c.group === selectedGroup);
+      // Per-klient rader (filtrert på valgt gruppe)
+      const rows: any[] = filteredClients.map((c) => ({
+        Klient: c.name,
+        Konsern: c.group,
+        Verdi: valuesByClient[c.id] ?? null,
+        Type: 'Klient',
+        'Valgt gruppe': groupLabel,
+        Aggregering: aggLabel,
+      }));
 
-    // Per-klient rader (filtrert på valgt gruppe)
-    const rows: any[] = filtered.map((c) => ({
-      Klient: c.name,
-      Konsern: c.group,
-      Verdi: valuesByClient[c.id] ?? null,
-      Type: 'Klient',
-      'Valgt gruppe': groupLabel,
-      Aggregering: aggLabel,
-    }));
+      // Konsernaggregater (sum og snitt) for relevante grupper
+      const groups = new Map<string, string[]>();
+      filteredClients.forEach((c) => {
+        const g = c.group || 'Uten gruppe';
+        if (!groups.has(g)) groups.set(g, []);
+        groups.get(g)!.push(c.id);
+      });
 
-    // Konsernaggregater (sum og snitt) for relevante grupper
-    const groups = new Map<string, string[]>();
-    filtered.forEach((c) => {
-      const g = c.group || 'Uten gruppe';
-      if (!groups.has(g)) groups.set(g, []);
-      groups.get(g)!.push(c.id);
-    });
+      Array.from(groups.entries()).forEach(([g, ids]) => {
+        const vals = ids.map((id) => valuesByClient[id]).filter((v) => typeof v === 'number' && !Number.isNaN(v)) as number[];
+        const sum = vals.reduce((s, v) => s + v, 0);
+        const avg = vals.length > 0 ? sum / vals.length : 0;
+        rows.push({ Klient: 'SUM', Konsern: g, Verdi: sum, Type: 'Gruppe SUM', 'Valgt gruppe': groupLabel, Aggregering: aggLabel });
+        rows.push({ Klient: 'SNITT', Konsern: g, Verdi: avg, Type: 'Gruppe SNITT', 'Valgt gruppe': groupLabel, Aggregering: aggLabel });
+      });
 
-    Array.from(groups.entries()).forEach(([g, ids]) => {
-      const vals = ids.map((id) => valuesByClient[id]).filter((v) => typeof v === 'number' && !Number.isNaN(v)) as number[];
-      const sum = vals.reduce((s, v) => s + v, 0);
-      const avg = vals.length > 0 ? sum / vals.length : 0;
-      rows.push({ Klient: 'SUM', Konsern: g, Verdi: sum, Type: 'Gruppe SUM', 'Valgt gruppe': groupLabel, Aggregering: aggLabel });
-      rows.push({ Klient: 'SNITT', Konsern: g, Verdi: avg, Type: 'Gruppe SNITT', 'Valgt gruppe': groupLabel, Aggregering: aggLabel });
-    });
+      // Overordnet aggregat i henhold til valgt modus
+      if (aggregateMode !== 'none') {
+        const allVals = filteredClients
+          .map((c) => valuesByClient[c.id])
+          .filter((v) => typeof v === 'number' && !Number.isNaN(v)) as number[];
+        const sum = allVals.reduce((s, v) => s + v, 0);
+        const avg = allVals.length > 0 ? sum / allVals.length : 0;
+        const val = aggregateMode === 'sum' ? sum : avg;
+        rows.push({ Klient: aggregateMode === 'sum' ? 'AGGREGAT (SUM)' : 'AGGREGAT (SNITT)', Konsern: groupLabel, Verdi: val, Type: 'AGGREGAT', 'Valgt gruppe': groupLabel, Aggregering: aggLabel });
+      }
 
-    // Overordnet aggregat i henhold til valgt modus
-    if (aggregateMode !== 'none') {
-      const allVals = filtered
-        .map((c) => valuesByClient[c.id])
-        .filter((v) => typeof v === 'number' && !Number.isNaN(v)) as number[];
-      const sum = allVals.reduce((s, v) => s + v, 0);
-      const avg = allVals.length > 0 ? sum / allVals.length : 0;
-      const val = aggregateMode === 'sum' ? sum : avg;
-      rows.push({ Klient: aggregateMode === 'sum' ? 'AGGREGAT (SUM)' : 'AGGREGAT (SNITT)', Konsern: groupLabel, Verdi: val, Type: 'AGGREGAT', 'Valgt gruppe': groupLabel, Aggregering: aggLabel });
+      const slug = (s: string) => s.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+      const fileName = `${widget.title || 'KPI'}-benchmark-${selectedFiscalYear}-grp-${slug(groupLabel)}-agg-${aggregateMode}`;
+      exportArrayToXlsx(fileName, rows);
+      toast({ title: 'Eksportert', description: `Fil lagret: ${fileName}.xlsx` });
+    } catch (e: any) {
+      toast({ variant: 'destructive', title: 'Feil ved eksport', description: e?.message || 'Ukjent feil under eksport.' });
     }
-
-    const slug = (s: string) => s.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-    const fileName = `${widget.title || 'KPI'}-benchmark-${selectedFiscalYear}-grp-${slug(groupLabel)}-agg-${aggregateMode}`;
-    exportArrayToXlsx(fileName, rows);
   };
   const handleTitleChange = (newTitle: string) => {
     updateWidget(widget.id, { title: newTitle });
@@ -285,7 +304,7 @@ export function KpiWidget({ widget }: KpiWidgetProps) {
                 >
                   Snitt
                 </Button>
-                <Button variant="outline" size="sm" onClick={handleExportBenchmark}>
+                <Button variant="outline" size="sm" onClick={handleExportBenchmark} disabled={!canExport} title={!canExport ? 'Ingen data å eksportere ennå' : undefined}>
                   Eksporter benchmark
                 </Button>
               </>
