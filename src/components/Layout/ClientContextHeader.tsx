@@ -4,6 +4,7 @@ import { ArrowLeft, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
+import { formatOrgNumber } from '@/utils/formatOrgNumber';
 
 interface ClientContextHeaderProps {
   clientName: string;
@@ -39,7 +40,7 @@ const ClientContextHeader: React.FC<ClientContextHeaderProps> = ({
                 <h1 className="text-xl font-semibold text-foreground">{clientName}</h1>
                 {orgNumber && (
                   <span className="text-sm text-muted-foreground font-mono bg-muted px-2 py-1 rounded">
-                    {orgNumber}
+                    {formatOrgNumber(orgNumber)}
                   </span>
                 )}
               </div>
