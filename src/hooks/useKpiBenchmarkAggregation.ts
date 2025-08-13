@@ -1,5 +1,6 @@
 import { formatCurrency } from '@/lib/formatters';
 import type { AggregateMode, ClientInfo } from '@/types/kpi';
+import { getScaleDivisor, formatNumeric, formatPercent } from '@/utils/kpiFormat';
 
 interface Params {
   showBenchmark: boolean;
@@ -22,7 +23,7 @@ export function useKpiBenchmarkAggregation({
   clientsInfo,
   valuesByClient,
 }: Params) {
-  const scaleDivisorAgg = unitScale === 'thousand' ? 1000 : unitScale === 'million' ? 1_000_000 : 1;
+  const scaleDivisorAgg = getScaleDivisor(unitScale);
   const selectedIds = (selectedGroup === 'all'
     ? clientsInfo.map((c) => c.id)
     : clientsInfo.filter((c) => c.group === selectedGroup).map((c) => c.id));
@@ -36,11 +37,11 @@ export function useKpiBenchmarkAggregation({
     if (!showBenchmark || aggregateMode === 'none') return null;
     if (aggVals.length === 0) return null;
     const val = aggregateMode === 'sum' ? aggSum : aggAvg;
-    if (displayAsPercentage) return `${val.toFixed(1)}%`;
+    if (displayAsPercentage) return formatPercent(val);
     const scaled = val / scaleDivisorAgg;
     return showCurrency
       ? formatCurrency(scaled)
-      : new Intl.NumberFormat('nb-NO', { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(scaled);
+      : formatNumeric(scaled);
   })();
 
   return { aggregatedDisplay };

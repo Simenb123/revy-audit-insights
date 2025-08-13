@@ -2,6 +2,7 @@ import { exportArrayToXlsx } from '@/utils/exportToXlsx';
 import { toast } from '@/hooks/use-toast';
 import { formatCurrency } from '@/lib/formatters';
 import type { AggregateMode, ClientInfo } from '@/types/kpi';
+import { getScaleDivisor, formatNumeric, formatPercent, getUnitLabel } from '@/utils/kpiFormat';
 
 interface Params {
   showBenchmark: boolean;
@@ -47,35 +48,17 @@ export function useKpiBenchmarkExport({
       const aggLabel = aggregateMode === 'sum' ? 'Sum' : aggregateMode === 'avg' ? 'Snitt' : 'Ingen';
 
       // Enhet/skalering lik visningen
-      const scaleDivisor = displayAsPercentage
-        ? 1
-        : unitScale === 'thousand'
-          ? 1000
-          : unitScale === 'million'
-            ? 1_000_000
-            : 1;
+      const scaleDivisor = displayAsPercentage ? 1 : getScaleDivisor(unitScale);
 
-      const unitLabel = displayAsPercentage
-        ? '%'
-        : showCurrency
-          ? unitScale === 'thousand'
-            ? 'kr (i tusen)'
-            : unitScale === 'million'
-              ? 'kr (i millioner)'
-              : 'kr'
-          : unitScale === 'thousand'
-            ? 'i tusen'
-            : unitScale === 'million'
-              ? 'i millioner'
-              : '';
+      const unitLabel = getUnitLabel(displayAsPercentage, showCurrency, unitScale);
 
       const formatForExport = (val?: number | null) => {
         if (typeof val !== 'number' || Number.isNaN(val)) return '';
-        if (displayAsPercentage) return `${val.toFixed(1)}%`;
+        if (displayAsPercentage) return formatPercent(val);
         const scaled = val / scaleDivisor;
         return showCurrency
           ? formatCurrency(scaled)
-          : new Intl.NumberFormat('nb-NO', { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(scaled);
+          : formatNumeric(scaled);
       };
 
       // Per-klient rader (filtrert på valgt gruppe)
