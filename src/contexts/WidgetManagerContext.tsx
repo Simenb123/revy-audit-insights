@@ -50,6 +50,8 @@ interface WidgetManagerContextType {
   setWidgets: (widgets: Widget[]) => void;
   setLayouts: (layouts: WidgetLayout[]) => void;
   loadFromStorage: () => boolean;
+  clientId: string;
+  year: number;
 }
 
 export const WidgetManagerContext = createContext<WidgetManagerContextType | undefined>(undefined);
@@ -120,6 +122,8 @@ export function WidgetManagerProvider({
       setWidgets,
       setLayouts,
       loadFromStorage,
+      clientId,
+      year,
     }}>
       {children}
     </WidgetManagerContext.Provider>

@@ -8,6 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Filter, ChevronDown, ChevronRight } from 'lucide-react';
 import { useTrialBalanceWithMappings } from '@/hooks/useTrialBalanceWithMappings';
+import { useGeneralLedgerData } from '@/hooks/useGeneralLedgerData';
+import { useBudgetAnalytics } from '@/hooks/useBudgetAnalytics';
 import { useFilteredData } from '@/hooks/useFilteredData';
 import { useFilters } from '@/contexts/FilterContext';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
@@ -18,9 +20,11 @@ interface TableWidgetProps {
 
 export function TableWidget({ widget }: TableWidgetProps) {
   const { selectedFiscalYear } = useFiscalYear();
-  const { updateWidget } = useWidgetManager();
+  const { updateWidget, clientId: contextClientId, year } = useWidgetManager();
   const { filters, setCrossFilter, clearCrossFilter } = useFilters();
-  const clientId = widget.config?.clientId;
+  const clientId = widget.config?.clientId || contextClientId;
+  const periodYear = widget.config?.period_year || selectedFiscalYear || year;
+  const dataSource = widget.config?.dataSource || 'trial_balance';
 
   const handleTitleChange = (newTitle: string) => {
     updateWidget(widget.id, { title: newTitle });
@@ -37,14 +41,48 @@ export function TableWidget({ widget }: TableWidgetProps) {
   const [selectedCategory, setSelectedCategory] = React.useState<string>('all');
   const [expandedGroups, setExpandedGroups] = React.useState<Set<string>>(new Set());
   
-  const { data: trialBalanceData, isLoading } = useTrialBalanceWithMappings(
+  const { data: trialBalanceData, isLoading: tbLoading } = useTrialBalanceWithMappings(
     clientId,
-    selectedFiscalYear,
+    periodYear,
     widget.config?.selectedVersion
   );
+  const { data: transactionsData, isLoading: txLoading } = useGeneralLedgerData(
+    clientId || '',
+    widget.config?.selectedVersion
+  );
+  const { data: budgetData, isLoading: budgetLoading } = useBudgetAnalytics(
+    clientId,
+    periodYear
+  );
 
-  // Apply global filters to trial balance entries
-  const filteredTrialBalanceEntries = useFilteredData(trialBalanceData?.trialBalanceEntries || []);
+  let rawEntries: any[] = [];
+  let isLoading = false;
+
+  if (dataSource === 'transactions') {
+    isLoading = txLoading;
+    rawEntries = (transactionsData || []).map(t => ({
+      account_number: t.account_number,
+      account_name: t.account_name,
+      closing_balance: (t.debit_amount || 0) - (t.credit_amount || 0),
+      ...t,
+    }));
+  } else if (dataSource === 'budget') {
+    isLoading = budgetLoading;
+    const dimension = (widget.config?.dimension as 'member' | 'team') || 'member';
+    const items = dimension === 'team' ? budgetData?.byTeam : budgetData?.byUser;
+    rawEntries = (items || []).map((r: any) => ({
+      account_number: r.teamId || r.userId,
+      account_name: r.name,
+      closing_balance: r.hours,
+      balance: r.hours,
+    }));
+  } else {
+    isLoading = tbLoading;
+    rawEntries = trialBalanceData?.trialBalanceEntries || [];
+  }
+
+  // Apply global filters to source entries
+  const filteredTrialBalanceEntries = useFilteredData(rawEntries);
 
   const getFieldValue = React.useCallback((entry: any, field: string) => {
     switch (field) {

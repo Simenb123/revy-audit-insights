@@ -5,6 +5,8 @@ import { InlineEditableTitle } from '../InlineEditableTitle';
 import PivotTable from 'react-pivottable';
 import 'react-pivottable/pivottable.css';
 import { useTrialBalanceWithMappings } from '@/hooks/useTrialBalanceWithMappings';
+import { useGeneralLedgerData } from '@/hooks/useGeneralLedgerData';
+import { useBudgetAnalytics } from '@/hooks/useBudgetAnalytics';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
 
 interface PivotWidgetProps {
@@ -12,15 +14,33 @@ interface PivotWidgetProps {
 }
 
 export function PivotWidget({ widget }: PivotWidgetProps) {
-  const { updateWidget } = useWidgetManager();
+  const { updateWidget, clientId: contextClientId, year } = useWidgetManager();
   const { selectedFiscalYear } = useFiscalYear();
-  const clientId = widget.config?.clientId as string | undefined;
+  const clientId = (widget.config?.clientId as string | undefined) || contextClientId;
+  const periodYear = widget.config?.period_year || selectedFiscalYear || year;
+  const dataSource = widget.config?.dataSource || 'trial_balance';
   const rowField = widget.config?.rowField as string | undefined;
   const columnField = widget.config?.columnField as string | undefined;
   const valueField = widget.config?.valueField as string | undefined;
 
-  const { data } = useTrialBalanceWithMappings(clientId || '', selectedFiscalYear);
-  const entries: Record<string, any>[] = data?.trialBalanceEntries || [];
+  const { data: tbData } = useTrialBalanceWithMappings(clientId || '', periodYear);
+  const { data: txData } = useGeneralLedgerData(clientId || '');
+  const { data: budgetData } = useBudgetAnalytics(clientId || '', periodYear);
+
+  let entries: Record<string, any>[] = [];
+  if (dataSource === 'transactions') {
+    entries = (txData || []).map(t => ({
+      ...t,
+      amount: (t.debit_amount || 0) - (t.credit_amount || 0),
+    }));
+  } else if (dataSource === 'budget') {
+    entries = (budgetData?.byUser || []).map(r => ({
+      name: r.name,
+      hours: r.hours,
+    }));
+  } else {
+    entries = tbData?.trialBalanceEntries || [];
+  }
 
   const handleTitleChange = (newTitle: string) => {
     updateWidget(widget.id, { title: newTitle });

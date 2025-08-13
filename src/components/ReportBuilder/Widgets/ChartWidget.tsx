@@ -17,6 +17,8 @@ import {
   Tooltip
 } from 'recharts';
 import { useTrialBalanceWithMappings } from '@/hooks/useTrialBalanceWithMappings';
+import { useGeneralLedgerData } from '@/hooks/useGeneralLedgerData';
+import { useBudgetAnalytics } from '@/hooks/useBudgetAnalytics';
 import { useFilteredData } from '@/hooks/useFilteredData';
 import { useFilters } from '@/contexts/FilterContext';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
@@ -28,16 +30,18 @@ interface ChartWidgetProps {
 
 export function ChartWidget({ widget }: ChartWidgetProps) {
   const { selectedFiscalYear } = useFiscalYear();
-  const { updateWidget } = useWidgetManager();
+  const { updateWidget, clientId: contextClientId, year } = useWidgetManager();
   const { setCrossFilter, clearCrossFilter, filters } = useFilters();
-  const clientId = widget.config?.clientId;
+  const clientId = widget.config?.clientId || contextClientId;
   const chartType = widget.config?.chartType || 'bar';
   const maxDataPoints = widget.config?.maxDataPoints || 6;
   const showValues = widget.config?.showValues !== false;
   const enableCrossFilter = widget.config?.enableCrossFilter !== false;
-  const dataSource = widget.config?.chartDataSource || 'breakdown';
+  const dataSource = widget.config?.dataSource || 'trial_balance';
+  const chartDataSource = widget.config?.chartDataSource || 'breakdown';
   const yearsBack = widget.config?.yearsBack || 5;
-  const startYear = selectedFiscalYear - (yearsBack - 1);
+  const periodYear = widget.config?.period_year || selectedFiscalYear || year;
+  const startYear = periodYear - (yearsBack - 1);
   const unitScale = widget.config?.unitScale || 'none';
   const sourceType = widget.config?.sourceType || 'alias';
   const metric = widget.config?.metric || 'revenue';
@@ -50,7 +54,7 @@ export function ChartWidget({ widget }: ChartWidgetProps) {
   const currentLevel = drillStack.length;
   const crossFilterEnabled =
     enableCrossFilter &&
-    dataSource !== 'formulaSeries' &&
+    chartDataSource !== 'formulaSeries' &&
     (drillPath.length === 0 || currentLevel === drillPath.length - 1);
 
   const handleTitleChange = (newTitle: string) => {
@@ -59,22 +63,51 @@ export function ChartWidget({ widget }: ChartWidgetProps) {
   
   const { data: trialBalanceData, isLoading: isLoadingTB } = useTrialBalanceWithMappings(
     clientId,
-    selectedFiscalYear,
+    periodYear,
     widget.config?.selectedVersion
   );
+  const { data: transactionsData, isLoading: txLoading } = useGeneralLedgerData(
+    clientId || '',
+    widget.config?.selectedVersion
+  );
+  const { data: budgetData, isLoading: budgetLoading } = useBudgetAnalytics(
+    clientId,
+    periodYear
+  );
+
+  let baseEntries: any[] = [];
+  let baseLoading = false;
+  if (dataSource === 'transactions') {
+    baseLoading = txLoading;
+    baseEntries = (transactionsData || []).map(t => ({
+      account_number: t.account_number,
+      account_name: t.account_name,
+      closing_balance: (t.debit_amount || 0) - (t.credit_amount || 0),
+    }));
+  } else if (dataSource === 'budget') {
+    baseLoading = budgetLoading;
+    baseEntries = (budgetData?.byUser || []).map(r => ({
+      account_number: r.userId || r.teamId,
+      account_name: r.name,
+      closing_balance: r.hours,
+    }));
+  } else {
+    baseLoading = isLoadingTB;
+    baseEntries = trialBalanceData?.trialBalanceEntries || [];
+  }
 
   // Apply global filters
-  const filteredTrialBalanceEntries = useFilteredData(trialBalanceData?.trialBalanceEntries || []);
+  const filteredTrialBalanceEntries = useFilteredData(baseEntries);
 
   // Fetch formula time series when timeseries data source is selected
   const { data: formulaSeries, isLoading: isLoadingSeries } = useFormulaSeries({
     clientId,
     startYear,
-    endYear: selectedFiscalYear,
+    endYear: periodYear,
     formulaId: formulaIdSel,
     customFormula: customFormulaSel,
     selectedVersion: widget.config?.selectedVersion,
-    enabled: dataSource === 'formulaSeries' && !!clientId,
+    enabled: chartDataSource === 'formulaSeries' && !!clientId,
   });
 
   const getFieldValue = React.useCallback((entry: any, field: string) => {
@@ -137,7 +170,7 @@ export function ChartWidget({ widget }: ChartWidgetProps) {
   );
 
   const chartData = React.useMemo(() => {
-    if (dataSource === 'formulaSeries') {
+    if (chartDataSource === 'formulaSeries') {
       const series = formulaSeries ?? [];
       return series.map(p => ({ name: String(p.year), value: scaleValueByType(p.value, p.type) }));
     }
@@ -172,7 +205,7 @@ export function ChartWidget({ widget }: ChartWidgetProps) {
         value: scaleValue(Math.abs(balance))
       }));
   }, [
-    dataSource,
+    chartDataSource,
     formulaSeries,
     filteredTrialBalanceEntries,
     maxDataPoints,
@@ -223,7 +256,7 @@ export function ChartWidget({ widget }: ChartWidgetProps) {
   // Check if this widget is the source of current cross-filter
   const isFilterSource = filters.crossFilter?.sourceWidgetId === widget.id;
 
-  const isLoadingCurrent = dataSource === 'formulaSeries' ? isLoadingSeries : isLoadingTB;
+  const isLoadingCurrent = chartDataSource === 'formulaSeries' ? isLoadingSeries : baseLoading;
 
   if (isLoadingCurrent) {
     return (

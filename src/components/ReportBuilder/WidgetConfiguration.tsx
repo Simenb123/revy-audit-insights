@@ -24,6 +24,7 @@ export function WidgetConfiguration({ widget, onUpdateWidget }: WidgetConfigurat
   const [config, setConfig] = useState(widget.config || {});
 const { data: standardAccounts = [] } = useFirmStandardAccounts();
   const { data: formulas = [] } = useFormulaDefinitions();
+  const dataSources = ['trial_balance', 'transactions', 'budget'];
 
   const handleSave = () => {
     onUpdateWidget({
@@ -811,6 +812,22 @@ const { data: standardAccounts = [] } = useFirmStandardAccounts();
               />
             </div>
           )}
+          <div>
+            <Label htmlFor="dataSource">Datakilde</Label>
+            <Select
+              value={config.dataSource || 'trial_balance'}
+              onValueChange={(value) => updateConfig('dataSource', value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Velg datakilde" />
+              </SelectTrigger>
+              <SelectContent>
+                {dataSources.map((ds) => (
+                  <SelectItem key={ds} value={ds}>{ds}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           {renderTypeSpecificConfig()}
         </div>
         {widget.type !== 'formula' && (
