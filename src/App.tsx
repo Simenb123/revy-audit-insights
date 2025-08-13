@@ -53,6 +53,7 @@ import Sandbox from "./pages/Sandbox";
 import ResourcePlanner from "./pages/ResourcePlanner";
 import AllocationImport from "./pages/AllocationImport";
 import Superadmin from "./pages/Superadmin";
+// Import SaftUpload page that contains the SAF-T upload interface
 import SaftUpload from "./pages/SaftUpload";
 import SaftImport from "@/components/DataUpload/SaftImport";
 import UploadHistory from "./pages/UploadHistory";
