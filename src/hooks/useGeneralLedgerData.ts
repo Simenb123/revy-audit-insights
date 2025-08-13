@@ -15,6 +15,13 @@ export interface GeneralLedgerTransaction {
   voucher_number: string;
   period_year: number;
   period_month: number;
+  // VAT-related (optional)
+  vat_code?: string | null;
+  vat_rate?: number | string | null;
+  vat_base?: number | null;
+  vat_debit?: number | null;
+  vat_credit?: number | null;
+  vat_amount?: number | null;
 }
 
 export const useGeneralLedgerData = (clientId: string, versionId?: string, pagination?: { page: number; pageSize: number }, filters?: { accountNumber?: string }) => {
@@ -41,6 +48,11 @@ export const useGeneralLedgerData = (clientId: string, versionId?: string, pagin
             debit_amount,
             credit_amount,
             balance_amount,
+            vat_code,
+            vat_rate,
+            vat_base,
+            vat_debit,
+            vat_credit,
             reference_number,
             voucher_number,
             period_year,
@@ -123,6 +135,13 @@ export const useGeneralLedgerData = (clientId: string, versionId?: string, pagin
           debit_amount: transaction.debit_amount,
           credit_amount: transaction.credit_amount,
           balance_amount: transaction.balance_amount,
+          // VAT fields
+          vat_code: transaction.vat_code || null,
+          vat_rate: transaction.vat_rate ?? null,
+          vat_base: transaction.vat_base ?? null,
+          vat_debit: transaction.vat_debit ?? null,
+          vat_credit: transaction.vat_credit ?? null,
+          vat_amount: ((transaction.vat_debit || 0) as number) - ((transaction.vat_credit || 0) as number),
           reference_number: transaction.reference_number || '',
           voucher_number: transaction.voucher_number || '',
           period_year: transaction.period_year,
@@ -183,6 +202,11 @@ export const useGeneralLedgerData = (clientId: string, versionId?: string, pagin
             debit_amount,
             credit_amount,
             balance_amount,
+            vat_code,
+            vat_rate,
+            vat_base,
+            vat_debit,
+            vat_credit,
             reference_number,
             voucher_number,
             period_year,
@@ -252,6 +276,13 @@ export const useGeneralLedgerData = (clientId: string, versionId?: string, pagin
         debit_amount: transaction.debit_amount,
         credit_amount: transaction.credit_amount,
         balance_amount: transaction.balance_amount,
+        // VAT fields
+        vat_code: transaction.vat_code || null,
+        vat_rate: transaction.vat_rate ?? null,
+        vat_base: transaction.vat_base ?? null,
+        vat_debit: transaction.vat_debit ?? null,
+        vat_credit: transaction.vat_credit ?? null,
+        vat_amount: ((transaction.vat_debit || 0) as number) - ((transaction.vat_credit || 0) as number),
         reference_number: transaction.reference_number || '',
         voucher_number: transaction.voucher_number || '',
         period_year: transaction.period_year,

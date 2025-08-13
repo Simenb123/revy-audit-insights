@@ -63,6 +63,10 @@ const GeneralLedgerTable = ({ clientId, versionId, accountNumberFilter }: Genera
     { key: 'debit_amount', label: 'Debet', visible: true },
     { key: 'credit_amount', label: 'Kredit', visible: true },
     { key: 'balance_amount', label: 'Beløp', visible: true },
+    { key: 'vat_code', label: 'MVA-kode', visible: false },
+    { key: 'vat_rate', label: 'MVA-sats', visible: false },
+    { key: 'vat_base', label: 'MVA-grunnlag', visible: false },
+    { key: 'vat_amount', label: 'MVA-beløp', visible: false },
   ]);
 
   const handleColumnChange = React.useCallback((key: string, visible: boolean) => {
@@ -104,45 +108,77 @@ const GeneralLedgerTable = ({ clientId, versionId, accountNumberFilter }: Genera
 
     if (!fieldDefinitions) {
       // Fallback-kolonner dersom feltdefinisjoner ikke er lastet
-      return [
-        {
-          key: 'transaction_date',
-          header: 'Dato',
-          accessor: 'transaction_date',
-          sortable: true,
-          format: (value: string) => format(new Date(value), 'dd.MM.yyyy'),
-        },
-        {
-          key: 'account_info',
-          header: 'Konto',
-          accessor: (transaction: GeneralLedgerTransaction) => (
-            <div>
-              <div className="font-medium">{transaction.account_number}</div>
-              <div className="text-sm text-muted-foreground">{transaction.account_name}</div>
-            </div>
-          ),
-          sortable: true,
-          searchable: true,
-        },
-        {
-          key: 'description',
-          header: 'Beskrivelse',
-          accessor: 'description',
-          sortable: true,
-          searchable: true,
-        },
-        {
-          key: 'voucher_number',
-          header: 'Bilag',
-          accessor: 'voucher_number',
-          sortable: true,
-          searchable: true,
-          format: (value: string | null) => value || '-',
-        },
-        debitCol,
-        creditCol,
-        amountCol,
-      ];
+        return [
+          {
+            key: 'transaction_date',
+            header: 'Dato',
+            accessor: 'transaction_date',
+            sortable: true,
+            format: (value: string) => format(new Date(value), 'dd.MM.yyyy'),
+          },
+          {
+            key: 'account_info',
+            header: 'Konto',
+            accessor: (transaction: GeneralLedgerTransaction) => (
+              <div>
+                <div className="font-medium">{transaction.account_number}</div>
+                <div className="text-sm text-muted-foreground">{transaction.account_name}</div>
+              </div>
+            ),
+            sortable: true,
+            searchable: true,
+          },
+          {
+            key: 'description',
+            header: 'Beskrivelse',
+            accessor: 'description',
+            sortable: true,
+            searchable: true,
+          },
+          {
+            key: 'voucher_number',
+            header: 'Bilag',
+            accessor: 'voucher_number',
+            sortable: true,
+            searchable: true,
+            format: (value: string | null) => value || '-',
+          },
+          {
+            key: 'vat_code',
+            header: 'MVA-kode',
+            accessor: 'vat_code' as any,
+            sortable: true,
+            searchable: true,
+            format: (value: string | null) => value || '-',
+          },
+          {
+            key: 'vat_rate',
+            header: 'MVA-sats',
+            accessor: 'vat_rate' as any,
+            sortable: true,
+            align: 'right',
+            format: (value: number | string | null) => (value !== null && value !== undefined && value !== '' ? `${value}%` : '-'),
+          },
+          {
+            key: 'vat_base',
+            header: 'MVA-grunnlag',
+            accessor: 'vat_base' as any,
+            sortable: true,
+            align: 'right',
+            format: (value: number | null) => formatCurrency(value ?? 0),
+          },
+          {
+            key: 'vat_amount',
+            header: 'MVA-beløp',
+            accessor: 'vat_amount' as any,
+            sortable: true,
+            align: 'right',
+            format: (value: number | null) => formatCurrency(value ?? 0),
+          },
+          debitCol,
+          creditCol,
+          amountCol,
+        ];
     }
 
     // Map feltdefinisjoner til kolonner
@@ -152,6 +188,10 @@ const GeneralLedgerTable = ({ clientId, versionId, accountNumberFilter }: Genera
     const accountField = fieldDefinitions.find(f => f.field_key === 'account_number');
     const descriptionField = fieldDefinitions.find(f => f.field_key === 'description');
     const voucherField = fieldDefinitions.find(f => f.field_key === 'voucher_number');
+    const vatCodeField = fieldDefinitions.find(f => f.field_key === 'vat_code');
+    const vatRateField = fieldDefinitions.find(f => f.field_key === 'vat_rate');
+    const vatBaseField = fieldDefinitions.find(f => f.field_key === 'vat_base');
+    const vatAmountField = fieldDefinitions.find(f => f.field_key === 'vat_amount');
 
     if (dateField) {
       baseColumns.push({
@@ -196,6 +236,50 @@ const GeneralLedgerTable = ({ clientId, versionId, accountNumberFilter }: Genera
         sortable: true,
         searchable: true,
         format: (value: string | null) => value || '-',
+      });
+    }
+
+    if (vatCodeField) {
+      baseColumns.push({
+        key: 'vat_code',
+        header: vatCodeField.field_label,
+        accessor: 'vat_code' as any,
+        sortable: true,
+        searchable: true,
+        format: (value: string | null) => value || '-',
+      });
+    }
+
+    if (vatRateField) {
+      baseColumns.push({
+        key: 'vat_rate',
+        header: vatRateField.field_label,
+        accessor: 'vat_rate' as any,
+        sortable: true,
+        align: 'right',
+        format: (value: number | string | null) => (value !== null && value !== undefined && value !== '' ? `${value}%` : '-'),
+      });
+    }
+
+    if (vatBaseField) {
+      baseColumns.push({
+        key: 'vat_base',
+        header: vatBaseField.field_label,
+        accessor: 'vat_base' as any,
+        sortable: true,
+        align: 'right',
+        format: (value: number | null) => formatCurrency(value ?? 0),
+      });
+    }
+
+    if (vatAmountField) {
+      baseColumns.push({
+        key: 'vat_amount',
+        header: vatAmountField.field_label,
+        accessor: 'vat_amount' as any,
+        sortable: true,
+        align: 'right',
+        format: (value: number | null) => formatCurrency(value ?? 0),
       });
     }
 
