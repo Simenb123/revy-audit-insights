@@ -362,7 +362,18 @@ export async function persistParsed(clientId: string, parsed: SaftResult, fileNa
         debit_amount: debit || null,
         credit_amount: credit || null,
         balance_amount: balance,
+        // New AR/AP and document fields
+        customer_id: (t as any).customer_id || null,
+        supplier_id: (t as any).supplier_id || null,
+        document_number: (t as any).document_no || (t as any).document_number || null,
         reference_number: (t as any).reference_no || (t as any).reference_number || null,
+        value_date: toDateString(parseISO((t as any).value_date)),
+        due_date: toDateString(parseISO((t as any).due_date)),
+        cid: (t as any).cid || null,
+        // Currency
+        currency_code: (t as any).currency || null,
+        amount_currency: t.amount_currency ?? null,
+        exchange_rate: t.exchange_rate ?? null,
         // VAT fields
         vat_code: (t as any).vat_code ?? null,
         vat_rate,

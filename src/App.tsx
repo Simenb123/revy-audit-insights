@@ -54,7 +54,7 @@ import ResourcePlanner from "./pages/ResourcePlanner";
 import AllocationImport from "./pages/AllocationImport";
 import Superadmin from "./pages/Superadmin";
 import SaftUpload from "./pages/SaftUpload";
-import SaftImport from "@/components/SaftImport";
+import SaftImport from "@/components/DataUpload/SaftImport";
 import UploadHistory from "./pages/UploadHistory";
 import LegacyUploadHistoryRedirect from "./pages/LegacyUploadHistoryRedirect";
 const queryClient = new QueryClient();

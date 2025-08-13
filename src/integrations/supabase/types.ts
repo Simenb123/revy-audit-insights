@@ -3954,19 +3954,28 @@ export type Database = {
       }
       general_ledger_transactions: {
         Row: {
+          amount_currency: number | null
           balance_amount: number | null
+          cid: string | null
           client_account_id: string
           client_id: string
           created_at: string
           credit_amount: number | null
+          currency_code: string | null
+          customer_id: string | null
           debit_amount: number | null
           description: string | null
+          document_number: string | null
+          due_date: string | null
+          exchange_rate: number | null
           id: string
           period_month: number
           period_year: number
           reference_number: string | null
+          supplier_id: string | null
           transaction_date: string
           upload_batch_id: string | null
+          value_date: string | null
           vat_base: number | null
           vat_code: string | null
           vat_credit: number | null
@@ -3976,19 +3985,28 @@ export type Database = {
           voucher_number: string | null
         }
         Insert: {
+          amount_currency?: number | null
           balance_amount?: number | null
+          cid?: string | null
           client_account_id: string
           client_id: string
           created_at?: string
           credit_amount?: number | null
+          currency_code?: string | null
+          customer_id?: string | null
           debit_amount?: number | null
           description?: string | null
+          document_number?: string | null
+          due_date?: string | null
+          exchange_rate?: number | null
           id?: string
           period_month: number
           period_year: number
           reference_number?: string | null
+          supplier_id?: string | null
           transaction_date: string
           upload_batch_id?: string | null
+          value_date?: string | null
           vat_base?: number | null
           vat_code?: string | null
           vat_credit?: number | null
@@ -3998,19 +4016,28 @@ export type Database = {
           voucher_number?: string | null
         }
         Update: {
+          amount_currency?: number | null
           balance_amount?: number | null
+          cid?: string | null
           client_account_id?: string
           client_id?: string
           created_at?: string
           credit_amount?: number | null
+          currency_code?: string | null
+          customer_id?: string | null
           debit_amount?: number | null
           description?: string | null
+          document_number?: string | null
+          due_date?: string | null
+          exchange_rate?: number | null
           id?: string
           period_month?: number
           period_year?: number
           reference_number?: string | null
+          supplier_id?: string | null
           transaction_date?: string
           upload_batch_id?: string | null
+          value_date?: string | null
           vat_base?: number | null
           vat_code?: string | null
           vat_credit?: number | null
