@@ -2,7 +2,7 @@ import React from 'react';
 import { Widget, useWidgetManager } from '@/contexts/WidgetManagerContext';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
 import { useFormulaCalculation } from '@/hooks/useFormulaCalculation';
@@ -10,10 +10,10 @@ import { InlineEditableTitle } from '../InlineEditableTitle';
 import { formatCurrency } from '@/lib/formatters';
 import { useScope } from '@/contexts/ScopeContext';
 import { supabase } from '@/integrations/supabase/client';
-import { exportArrayToXlsx } from '@/utils/exportToXlsx';
 import { KpiBenchmarkPanel } from './KpiBenchmarkPanel';
 import { loadReportBuilderSettings, saveReportBuilderSettings } from '@/hooks/useReportBuilderSettings';
-import { toast } from '@/hooks/use-toast';
+import { useKpiBenchmarkExport } from '@/hooks/useKpiBenchmarkExport';
+import { BenchmarkControls } from './BenchmarkControls';
 
 interface KpiWidgetProps {
   widget: Widget;
@@ -83,105 +83,18 @@ export function KpiWidget({ widget }: KpiWidgetProps) {
     selectedGroup === 'all' ? clientsInfo : clientsInfo.filter((c) => c.group === selectedGroup)
   ), [clientsInfo, selectedGroup]);
 
-  const canExport = React.useMemo(() => {
-    if (!showBenchmark || filteredClients.length === 0) return false;
-    return filteredClients.some((c) => {
-      const v = valuesByClient[c.id];
-      return typeof v === 'number' && !Number.isNaN(v);
-    });
-  }, [showBenchmark, filteredClients, valuesByClient]);
-
-  const handleExportBenchmark = () => {
-    try {
-      if (!canExport) {
-        toast({ variant: 'destructive', title: 'Ingen data', description: 'Ingen data å eksportere ennå.' });
-        return;
-      }
-
-      const groupLabel = selectedGroup === 'all' ? 'Alle grupper' : selectedGroup;
-      const aggLabel = aggregateMode === 'sum' ? 'Sum' : aggregateMode === 'avg' ? 'Snitt' : 'Ingen';
-
-      // Enhet/skalering lik visningen
-      const scaleDivisor = displayAsPercentage
-        ? 1
-        : unitScale === 'thousand'
-          ? 1000
-          : unitScale === 'million'
-            ? 1_000_000
-            : 1;
-
-      const unitLabel = displayAsPercentage
-        ? '%'
-        : showCurrency
-          ? unitScale === 'thousand'
-            ? 'kr (i tusen)'
-            : unitScale === 'million'
-              ? 'kr (i millioner)'
-              : 'kr'
-          : unitScale === 'thousand'
-            ? 'i tusen'
-            : unitScale === 'million'
-              ? 'i millioner'
-              : '';
-
-      const formatForExport = (val?: number | null) => {
-        if (typeof val !== 'number' || Number.isNaN(val)) return '';
-        if (displayAsPercentage) return `${val.toFixed(1)}%`;
-        const scaled = val / scaleDivisor;
-        return showCurrency
-          ? formatCurrency(scaled)
-          : new Intl.NumberFormat('nb-NO', { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(scaled);
-      };
-
-      // Per-klient rader (filtrert på valgt gruppe)
-      const rows: any[] = filteredClients.map((c) => {
-        const raw = valuesByClient[c.id];
-        return {
-          Klient: c.name,
-          Konsern: c.group,
-          Verdi: formatForExport(raw),
-          Enhet: unitLabel,
-          Type: 'Klient',
-          'Valgt gruppe': groupLabel,
-          Aggregering: aggLabel,
-        };
-      });
-
-      // Konsernaggregater (sum og snitt) for relevante grupper
-      const groups = new Map<string, string[]>();
-      filteredClients.forEach((c) => {
-        const g = c.group || 'Uten gruppe';
-        if (!groups.has(g)) groups.set(g, []);
-        groups.get(g)!.push(c.id);
-      });
-
-      Array.from(groups.entries()).forEach(([g, ids]) => {
-        const vals = ids.map((id) => valuesByClient[id]).filter((v) => typeof v === 'number' && !Number.isNaN(v)) as number[];
-        const sum = vals.reduce((s, v) => s + v, 0);
-        const avg = vals.length > 0 ? sum / vals.length : 0;
-        rows.push({ Klient: 'SUM', Konsern: g, Verdi: formatForExport(sum), Enhet: unitLabel, Type: 'Gruppe SUM', 'Valgt gruppe': groupLabel, Aggregering: aggLabel });
-        rows.push({ Klient: 'SNITT', Konsern: g, Verdi: formatForExport(avg), Enhet: unitLabel, Type: 'Gruppe SNITT', 'Valgt gruppe': groupLabel, Aggregering: aggLabel });
-      });
-
-      // Overordnet aggregat i henhold til valgt modus
-      if (aggregateMode !== 'none') {
-        const allVals = filteredClients
-          .map((c) => valuesByClient[c.id])
-          .filter((v) => typeof v === 'number' && !Number.isNaN(v)) as number[];
-        const sum = allVals.reduce((s, v) => s + v, 0);
-        const avg = allVals.length > 0 ? sum / allVals.length : 0;
-        const val = aggregateMode === 'sum' ? sum : avg;
-        rows.push({ Klient: aggregateMode === 'sum' ? 'AGGREGAT (SUM)' : 'AGGREGAT (SNITT)', Konsern: groupLabel, Verdi: formatForExport(val), Enhet: unitLabel, Type: 'AGGREGAT', 'Valgt gruppe': groupLabel, Aggregering: aggLabel });
-      }
-
-      const slug = (s: string) => s.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-      const fileName = `${widget.title || 'KPI'}-benchmark-${selectedFiscalYear}-grp-${slug(groupLabel)}-agg-${aggregateMode}`;
-      exportArrayToXlsx(fileName, rows);
-      toast({ title: 'Eksportert', description: `Fil lagret: ${fileName}.xlsx` });
-    } catch (e: any) {
-      toast({ variant: 'destructive', title: 'Feil ved eksport', description: e?.message || 'Ukjent feil under eksport.' });
-    }
-  };
+  const { canExport, handleExportBenchmark } = useKpiBenchmarkExport({
+    showBenchmark,
+    widgetTitle: widget.title,
+    selectedFiscalYear,
+    selectedGroup,
+    aggregateMode,
+    displayAsPercentage,
+    showCurrency,
+    unitScale,
+    filteredClients,
+    valuesByClient,
+  });
   const handleTitleChange = (newTitle: string) => {
     updateWidget(widget.id, { title: newTitle });
   };
@@ -315,34 +228,16 @@ export function KpiWidget({ widget }: KpiWidgetProps) {
           <div className="flex items-center gap-2">
             {showBenchmark && (
               <>
-                <Select value={selectedGroup} onValueChange={(v) => setSelectedGroup(v)}>
-                  <SelectTrigger className="h-8 w-[160px]">
-                    <SelectValue placeholder="Alle grupper" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Alle grupper</SelectItem>
-                    {groupNames.map((g) => (
-                      <SelectItem key={g} value={g}>{g}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button
-                  variant={aggregateMode === 'sum' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setAggregateMode((m) => (m === 'sum' ? 'none' : 'sum'))}
-                >
-                  Sum
-                </Button>
-                <Button
-                  variant={aggregateMode === 'avg' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setAggregateMode((m) => (m === 'avg' ? 'none' : 'avg'))}
-                >
-                  Snitt
-                </Button>
-                <Button variant="outline" size="sm" onClick={handleExportBenchmark} disabled={!canExport} title={!canExport ? 'Ingen data å eksportere ennå' : undefined}>
-                  Eksporter benchmark
-                </Button>
+                <BenchmarkControls
+                  groupNames={groupNames}
+                  selectedGroup={selectedGroup}
+                  onSelectedGroupChange={setSelectedGroup}
+                  aggregateMode={aggregateMode}
+                  onToggleSum={() => setAggregateMode((m) => (m === 'sum' ? 'none' : 'sum'))}
+                  onToggleAvg={() => setAggregateMode((m) => (m === 'avg' ? 'none' : 'avg'))}
+                  canExport={canExport}
+                  onExport={handleExportBenchmark}
+                />
               </>
             )}
             <Button variant={showBenchmark ? 'default' : 'outline'} size="sm" onClick={() => setShowBenchmark((v) => !v)}>
