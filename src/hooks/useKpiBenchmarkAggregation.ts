@@ -1,8 +1,5 @@
 import { formatCurrency } from '@/lib/formatters';
-
-export type AggregateMode = 'none' | 'sum' | 'avg';
-
-interface ClientInfo { id: string; name: string; group: string }
+import type { AggregateMode, ClientInfo } from '@/types/kpi';
 
 interface Params {
   showBenchmark: boolean;

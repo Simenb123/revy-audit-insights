@@ -1,7 +1,6 @@
 import React from 'react';
 import { supabase } from '@/integrations/supabase/client';
-
-export interface ClientInfo { id: string; name: string; group: string }
+import type { ClientInfo } from '@/types/kpi';
 
 interface Params {
   scopeType: string;
