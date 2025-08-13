@@ -144,7 +144,12 @@ export function DashboardCanvas({ clientId, selectedVersion }: DashboardCanvasPr
             isViewMode && "print:shadow-none print:border-gray-300"
           )}>
             <WidgetWrapper widget={widget}>
-              <WidgetRenderer widget={{ ...widget, config: { ...widget.config, clientId, selectedVersion } }} />
+              {(() => {
+                const effectiveClientId = clientId === 'global' ? undefined : clientId;
+                return (
+                  <WidgetRenderer widget={{ ...widget, config: { ...widget.config, clientId: effectiveClientId, selectedVersion } }} />
+                );
+              })()}
             </WidgetWrapper>
           </div>
         ))}

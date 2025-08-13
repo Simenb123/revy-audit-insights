@@ -25,11 +25,13 @@ import { exportReportToPDF, exportReportToExcel } from '@/utils/exportReport';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import type { ThemeConfig } from '@/styles/theme';
 import { ModuleWrapper } from './ModuleWrapper';
+import { useScope } from '@/contexts/ScopeContext';
 interface ReportBuilderContentProps {
   clientId: string;
   hasData: boolean;
   selectedFiscalYear: number;
 }
+
 
 export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: ReportBuilderContentProps) {
   const [showWidgetLibrary, setShowWidgetLibrary] = useState(false);
@@ -41,6 +43,9 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
   const [hasUnsaved, setHasUnsaved] = useState(false);
   const [showIntro, setShowIntro] = useState(false);
   const isGlobal = clientId === 'global';
+  const { scopeType, selectedClientIds } = useScope();
+  const globalReady = isGlobal && ((scopeType === 'custom' && selectedClientIds.length > 0) || scopeType === 'firm');
+  const canUse = isGlobal ? globalReady : (!!hasData && !!selectedVersion);
   
   const { widgets, layouts, addWidget, removeWidget, updateLayout, clearWidgets, setWidgets, setLayouts, loadFromStorage } = useWidgetManager();
   const { reports, loading, saveReport, updateReport, deleteReport, saveVersion, listVersions, restoreVersion } = useClientReports(clientId);
@@ -64,7 +69,7 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
     saveReportBuilderSettings(clientId, selectedFiscalYear, { ...prev, theme });
   };
   // Fetch available trial balance versions
-  const { data: versionOptions = [], isLoading: versionsLoading } = useTBVersionOptions(clientId, selectedFiscalYear);
+  const { data: versionOptions = [], isLoading: versionsLoading } = useTBVersionOptions(isGlobal ? '' : clientId, selectedFiscalYear);
   
   // Set selected version from saved settings if valid, otherwise default to latest
   useEffect(() => {
@@ -248,14 +253,14 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
             
             <div className="flex flex-wrap gap-2">
               <ViewModeToggle 
-                disabled={!hasData || (!isGlobal && (widgets.length === 0 || !selectedVersion))}
+                disabled={!canUse || widgets.length === 0}
               />
               
               <Button
                 variant="outline"
                 onClick={() => setShowWidgetLibrary(!showWidgetLibrary)}
                 className="flex items-center gap-2"
-                disabled={!hasData || (!isGlobal && !selectedVersion)}
+                disabled={!canUse}
               >
                 <Plus className="h-4 w-4" />
                 Legg til widget
@@ -265,7 +270,7 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
                 variant="outline"
                 onClick={() => setShowTemplates(true)}
                 className="flex items-center gap-2"
-                disabled={!hasData || (!isGlobal && !selectedVersion)}
+                disabled={!canUse}
               >
                 <LayoutTemplate className="h-4 w-4" />
                 Rapport maler
@@ -275,7 +280,7 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
                 variant="outline" 
                 className="flex items-center gap-2"
                 onClick={() => setShowLoadDialog(true)}
-                disabled={!hasData || (!isGlobal && !selectedVersion)}
+                disabled={!canUse}
               >
                 <FolderOpen className="h-4 w-4" />
                 Last rapport
@@ -297,7 +302,7 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
                 variant="outline"
                 className="flex items-center gap-2"
                 onClick={() => setShowSaveDialog(true)}
-                disabled={!hasData || (!isGlobal && (widgets.length === 0 || !selectedVersion))}
+                disabled={!canUse || widgets.length === 0}
               >
                 <Save className="h-4 w-4" />
                 {currentReport ? 'Lagre som ny' : 'Lagre rapport'}
@@ -307,7 +312,7 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
                 variant="outline"
                 className="flex items-center gap-2"
                 onClick={() => exportReportToPDF(widgets, layouts)}
-                disabled={!hasData || (!isGlobal && (widgets.length === 0 || !selectedVersion))}
+                disabled={!canUse || widgets.length === 0}
               >
                 <FileDown className="h-4 w-4" />
                 Eksporter til PDF
@@ -317,7 +322,7 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
                 variant="outline"
                 className="flex items-center gap-2"
                 onClick={() => exportReportToExcel(widgets, layouts)}
-                disabled={!hasData || (!isGlobal && (widgets.length === 0 || !selectedVersion))}
+                disabled={!canUse || widgets.length === 0}
               >
                 <FileSpreadsheet className="h-4 w-4" />
                 Eksporter til Excel
@@ -331,7 +336,16 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
           </div>
 
         {/* Data Status */}
-        {!hasData && (
+        {isGlobal && !globalReady ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>Velg klienter for å starte</CardTitle>
+              <CardDescription>
+                Velg ett eller flere klienter under Omfang for å bygge rapporter på tvers.
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        ) : (!isGlobal && !hasData) ? (
           <Card>
             <CardHeader>
               <CardTitle>Ingen regnskapsdata funnet</CardTitle>
@@ -340,10 +354,10 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
               </CardDescription>
             </CardHeader>
           </Card>
-        )}
+        ) : null}
 
         {/* Widget Library */}
-        {showWidgetLibrary && hasData && (
+        {showWidgetLibrary && canUse && (
           <ModuleWrapper id="widget-library" title="Widget bibliotek">
             <p className="text-sm text-muted-foreground mb-2">
               Velg widgets for å legge til i rapporten
