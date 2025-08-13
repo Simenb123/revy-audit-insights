@@ -28,18 +28,18 @@ export function WidgetWrapper({ widget, children }: WidgetWrapperProps) {
     removeWidget(widget.id);
   };
 
-  const groupIds = Array.from(new Set(widgets.map(w => w.groupId).filter(Boolean))) as string[];
+  const sectionIds = Array.from(new Set(widgets.map(w => w.sectionId).filter(Boolean))) as string[];
 
-  const handleGroupChange = (value: string) => {
+  const handleSectionChange = (value: string) => {
     if (value === 'new') {
-      const name = prompt('Enter group name');
+      const name = prompt('Enter section name');
       if (name) {
-        handleUpdateWidget({ groupId: name });
+        handleUpdateWidget({ sectionId: name });
       }
     } else if (value === 'none') {
-      handleUpdateWidget({ groupId: undefined });
+      handleUpdateWidget({ sectionId: undefined });
     } else {
-      handleUpdateWidget({ groupId: value });
+      handleUpdateWidget({ sectionId: value });
     }
   };
   return (
@@ -48,16 +48,16 @@ export function WidgetWrapper({ widget, children }: WidgetWrapperProps) {
       {!isViewMode && (
         <div className="widget-controls absolute top-2 right-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
           <div onMouseDown={e => e.stopPropagation()}>
-            <Select value={widget.groupId || 'none'} onValueChange={handleGroupChange}>
+            <Select value={widget.sectionId || 'none'} onValueChange={handleSectionChange}>
               <SelectTrigger className="h-6 w-24 text-xs">
-                <SelectValue placeholder="Group" />
+                <SelectValue placeholder="Section" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">No group</SelectItem>
-                {groupIds.map(id => (
+                <SelectItem value="none">No section</SelectItem>
+                {sectionIds.map(id => (
                   <SelectItem key={id} value={id}>{id}</SelectItem>
                 ))}
-                <SelectItem value="new">New group...</SelectItem>
+                <SelectItem value="new">New section...</SelectItem>
               </SelectContent>
             </Select>
           </div>

@@ -34,15 +34,15 @@ export function DashboardCanvas({ clientId, selectedVersion }: DashboardCanvasPr
         h: item.h,
         widgetId: existingWidget?.widgetId || item.i,
         dataSourceId: existingWidget?.dataSourceId,
-        groupId: widget?.groupId || existingWidget?.groupId,
+        sectionId: widget?.sectionId || existingWidget?.sectionId,
       };
     });
 
     if (movingItem) {
       const prev = layouts.find(l => l.i === movingItem.i);
       const widget = widgets.find(w => w.id === (prev?.widgetId || movingItem.i));
-      const groupId = widget?.groupId || prev?.groupId;
-      if (groupId && prev) {
+      const sectionId = widget?.sectionId || prev?.sectionId;
+      if (sectionId && prev) {
         const dx = movingItem.x - prev.x;
         const dy = movingItem.y - prev.y;
         const dw = movingItem.w - prev.w;
@@ -51,7 +51,7 @@ export function DashboardCanvas({ clientId, selectedVersion }: DashboardCanvasPr
           updatedLayouts = updatedLayouts.map(l => {
             if (l.i !== movingItem.i) {
               const w = widgets.find(w => w.id === l.widgetId);
-              if (w?.groupId === groupId) {
+              if (w?.sectionId === sectionId) {
                 return { ...l, x: l.x + dx, y: l.y + dy, w: l.w + dw, h: l.h + dh };
               }
             }
