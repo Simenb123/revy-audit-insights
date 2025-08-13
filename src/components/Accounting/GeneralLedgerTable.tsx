@@ -79,7 +79,7 @@ const GeneralLedgerTable = ({ clientId, versionId, accountNumberFilter }: Genera
       sortable: true,
       align: 'right',
       format: (value: number | null) => (
-        <span className={value && value < 0 ? 'text-red-600' : ''}>
+        <span className={value && value < 0 ? 'text-destructive' : ''}>
           {formatCurrency(value)}
         </span>
       ),
@@ -219,7 +219,7 @@ const GeneralLedgerTable = ({ clientId, versionId, accountNumberFilter }: Genera
         <div className="flex flex-col items-end gap-0.5">
           <span>Debet: {formatCurrency(totals.debit)}</span>
           <span>Kredit: {formatCurrency(totals.credit)}</span>
-          <span className={Math.abs(totals.balance) < 0.01 ? 'text-green-600' : 'text-red-600'}>
+          <span className={Math.abs(totals.balance) < 0.01 ? 'text-foreground' : 'text-destructive'}>
             Netto: {formatCurrency(totals.balance)}
           </span>
         </div>
@@ -233,6 +233,16 @@ const GeneralLedgerTable = ({ clientId, versionId, accountNumberFilter }: Genera
   const description = !isCountLoading ? 
     `Viser ${((currentPage - 1) * pageSize) + 1}-${Math.min(currentPage * pageSize, totalCount || 0)} av ${totalCount || 0} transaksjoner${transactions && transactions.length > 0 ? ` • Side ${currentPage} av ${totalPages}` : ''}${accountNumberFilter ? ` • Filtrert på konto ${accountNumberFilter}` : ''}` :
     undefined;
+
+  const defaultColumnState = useMemo(() => ([
+    { key: 'transaction_date', visible: true, pinnedLeft: true },
+    { key: 'account_info', visible: true, pinnedLeft: true },
+    { key: 'description', visible: true },
+    { key: 'voucher_number', visible: true },
+    { key: 'debit_amount', visible: true },
+    { key: 'credit_amount', visible: true },
+    { key: 'balance_amount', visible: true },
+  ]), []);
 
   return (
     <DataTable
@@ -254,6 +264,9 @@ const GeneralLedgerTable = ({ clientId, versionId, accountNumberFilter }: Genera
       showTotals={true}
       totalRow={totalRow}
       emptyMessage="Ingen transaksjoner funnet"
+      enableColumnManager={true}
+      preferencesKey={`gl-table:${clientId}:${versionId || 'active'}`}
+      defaultColumnState={defaultColumnState}
     />
   );
 };
