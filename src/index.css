@@ -50,14 +50,21 @@
     --sidebar-ring: 174 57% 80%;
 
     /* Sub-header surface */
-    --sub-header-bg: 213 23% 97%; /* Cooler neutral gray for sub-header */
-    --sub-header-foreground: var(--foreground);
+    --sub-header-bg: var(--revio-100);
+    --sub-header-foreground: var(--revio-900);
 
     --revio-100: 174 57% 95%;
     --revio-500: 173 49% 39%;
     --revio-600: 173 49% 35%;
     --revio-700: 173 49% 30%;
     --revio-900: 173 49% 15%;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --sub-header-bg: var(--revio-700);
+      --sub-header-foreground: var(--revio-100);
+    }
   }
 }
 
@@ -250,8 +257,20 @@
 
   /* Sub-header surface styling */
   [data-sub-header] {
-    background-color: hsl(var(--sub-header-bg));
+    background: hsl(var(--sub-header-bg));
     color: hsl(var(--sub-header-foreground));
+    border-bottom: 1px solid hsl(var(--revio-500) / 0.18);
+    box-shadow: 0 1px 0 hsl(0 0% 100% / 0.65) inset;
+  }
+
+  [data-sub-header][data-variant="glass"] {
+    background: hsl(var(--sub-header-bg) / 0.6);
+    backdrop-filter: blur(8px);
+  }
+
+  [data-sub-header][data-variant="accent"] {
+    background: hsl(var(--accent));
+    color: hsl(var(--accent-foreground));
   }
 }
 
