@@ -80,27 +80,52 @@ export function KpiWidget({ widget }: KpiWidgetProps) {
 
   const handleExportBenchmark = () => {
     if (!clientsInfo.length) return;
-    // Per-klient rader
-    const rows: any[] = clientsInfo.map((c) => ({
+
+    const groupLabel = selectedGroup === 'all' ? 'Alle grupper' : selectedGroup;
+    const aggLabel = aggregateMode === 'sum' ? 'Sum' : aggregateMode === 'avg' ? 'Snitt' : 'Ingen';
+
+    const filtered = selectedGroup === 'all' ? clientsInfo : clientsInfo.filter((c) => c.group === selectedGroup);
+
+    // Per-klient rader (filtrert på valgt gruppe)
+    const rows: any[] = filtered.map((c) => ({
       Klient: c.name,
       Konsern: c.group,
       Verdi: valuesByClient[c.id] ?? null,
+      Type: 'Klient',
+      'Valgt gruppe': groupLabel,
+      Aggregering: aggLabel,
     }));
-    // Konsernaggregater (sum og snitt)
+
+    // Konsernaggregater (sum og snitt) for relevante grupper
     const groups = new Map<string, string[]>();
-    clientsInfo.forEach((c) => {
+    filtered.forEach((c) => {
       const g = c.group || 'Uten gruppe';
       if (!groups.has(g)) groups.set(g, []);
       groups.get(g)!.push(c.id);
     });
+
     Array.from(groups.entries()).forEach(([g, ids]) => {
       const vals = ids.map((id) => valuesByClient[id]).filter((v) => typeof v === 'number' && !Number.isNaN(v)) as number[];
       const sum = vals.reduce((s, v) => s + v, 0);
       const avg = vals.length > 0 ? sum / vals.length : 0;
-      rows.push({ Klient: 'SUM', Konsern: g, Verdi: sum });
-      rows.push({ Klient: 'SNITT', Konsern: g, Verdi: avg });
+      rows.push({ Klient: 'SUM', Konsern: g, Verdi: sum, Type: 'Gruppe SUM', 'Valgt gruppe': groupLabel, Aggregering: aggLabel });
+      rows.push({ Klient: 'SNITT', Konsern: g, Verdi: avg, Type: 'Gruppe SNITT', 'Valgt gruppe': groupLabel, Aggregering: aggLabel });
     });
-    exportArrayToXlsx(`${widget.title || 'KPI'}-benchmark-${selectedFiscalYear}`, rows);
+
+    // Overordnet aggregat i henhold til valgt modus
+    if (aggregateMode !== 'none') {
+      const allVals = filtered
+        .map((c) => valuesByClient[c.id])
+        .filter((v) => typeof v === 'number' && !Number.isNaN(v)) as number[];
+      const sum = allVals.reduce((s, v) => s + v, 0);
+      const avg = allVals.length > 0 ? sum / allVals.length : 0;
+      const val = aggregateMode === 'sum' ? sum : avg;
+      rows.push({ Klient: aggregateMode === 'sum' ? 'AGGREGAT (SUM)' : 'AGGREGAT (SNITT)', Konsern: groupLabel, Verdi: val, Type: 'AGGREGAT', 'Valgt gruppe': groupLabel, Aggregering: aggLabel });
+    }
+
+    const slug = (s: string) => s.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    const fileName = `${widget.title || 'KPI'}-benchmark-${selectedFiscalYear}-grp-${slug(groupLabel)}-agg-${aggregateMode}`;
+    exportArrayToXlsx(fileName, rows);
   };
   const handleTitleChange = (newTitle: string) => {
     updateWidget(widget.id, { title: newTitle });
