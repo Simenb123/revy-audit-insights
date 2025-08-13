@@ -2,6 +2,7 @@ import React from 'react';
 import { Widget, useWidgetManager } from '@/contexts/WidgetManagerContext';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
 import { useFormulaCalculation } from '@/hooks/useFormulaCalculation';
@@ -33,6 +34,10 @@ export function KpiWidget({ widget }: KpiWidgetProps) {
   const [showBenchmark, setShowBenchmark] = React.useState(false);
   const [clientsInfo, setClientsInfo] = React.useState<Array<{ id: string; name: string; group: string }>>([]);
   const [valuesByClient, setValuesByClient] = React.useState<Record<string, number>>({});
+  const [aggregateMode, setAggregateMode] = React.useState<'none' | 'sum' | 'avg'>('none');
+  const groupNames = React.useMemo(() => Array.from(new Set((clientsInfo || []).map((c) => c.group || 'Uten gruppe'))), [clientsInfo]);
+  const [selectedGroup, setSelectedGroup] = React.useState<string>('all');
+
 
   React.useEffect(() => {
     const load = async () => {
@@ -156,6 +161,27 @@ export function KpiWidget({ widget }: KpiWidgetProps) {
     };
   }, [currentFormulaResult, previousFormulaResult, showTrend, displayAsPercentage, showCurrency, unitScale]);
 
+  const scaleDivisorAgg = unitScale === 'thousand' ? 1000 : unitScale === 'million' ? 1_000_000 : 1;
+  const selectedIds = React.useMemo(() => (
+    selectedGroup === 'all'
+      ? clientsInfo.map((c) => c.id)
+      : clientsInfo.filter((c) => c.group === selectedGroup).map((c) => c.id)
+  ), [clientsInfo, selectedGroup]);
+  const aggVals = React.useMemo(() => selectedIds
+    .map((id) => valuesByClient[id])
+    .filter((v) => typeof v === 'number' && !Number.isNaN(v)) as number[], [selectedIds, valuesByClient]);
+  const aggSum = React.useMemo(() => aggVals.reduce((s, v) => s + v, 0), [aggVals]);
+  const aggAvg = React.useMemo(() => (aggVals.length ? aggSum / aggVals.length : 0), [aggVals, aggSum]);
+  const aggregatedDisplay = React.useMemo(() => {
+    if (!showBenchmark || aggregateMode === 'none') return null;
+    const val = aggregateMode === 'sum' ? aggSum : aggAvg;
+    if (displayAsPercentage) return `${val.toFixed(1)}%`;
+    const scaled = val / scaleDivisorAgg;
+    return showCurrency
+      ? formatCurrency(scaled)
+      : new Intl.NumberFormat('nb-NO', { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(scaled);
+  }, [showBenchmark, aggregateMode, aggSum, aggAvg, displayAsPercentage, showCurrency, scaleDivisorAgg]);
+
   if (currentFormulaResult.isLoading) {
     return (
       <Card className="h-full">
@@ -184,9 +210,36 @@ export function KpiWidget({ widget }: KpiWidgetProps) {
         {scopeType === 'custom' && (
           <div className="flex items-center gap-2">
             {showBenchmark && (
-              <Button variant="outline" size="sm" onClick={handleExportBenchmark}>
-                Eksporter benchmark
-              </Button>
+              <>
+                <Select value={selectedGroup} onValueChange={(v) => setSelectedGroup(v)}>
+                  <SelectTrigger className="h-8 w-[160px]">
+                    <SelectValue placeholder="Alle grupper" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Alle grupper</SelectItem>
+                    {groupNames.map((g) => (
+                      <SelectItem key={g} value={g}>{g}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  variant={aggregateMode === 'sum' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setAggregateMode((m) => (m === 'sum' ? 'none' : 'sum'))}
+                >
+                  Sum
+                </Button>
+                <Button
+                  variant={aggregateMode === 'avg' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setAggregateMode((m) => (m === 'avg' ? 'none' : 'avg'))}
+                >
+                  Snitt
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleExportBenchmark}>
+                  Eksporter benchmark
+                </Button>
+              </>
             )}
             <Button variant={showBenchmark ? 'default' : 'outline'} size="sm" onClick={() => setShowBenchmark((v) => !v)}>
               Benchmark
@@ -195,7 +248,7 @@ export function KpiWidget({ widget }: KpiWidgetProps) {
         )}
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-bold">{metricData.value}</div>
+        <div className="text-2xl font-bold">{aggregatedDisplay ?? metricData.value}</div>
         {showTrend && (
           <div className="flex items-center pt-1">
             {metricData.trend === 'up' ? (
