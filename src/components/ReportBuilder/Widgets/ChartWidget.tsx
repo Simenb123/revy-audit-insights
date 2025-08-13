@@ -2,6 +2,7 @@ import React from 'react';
 import { Widget, useWidgetManager } from '@/contexts/WidgetManagerContext';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { InlineEditableTitle } from '../InlineEditableTitle';
+import { Button } from '@/components/ui/button';
 import {
   BarChart,
   Bar,
@@ -44,14 +45,20 @@ export function ChartWidget({ widget }: ChartWidgetProps) {
   const customFormulaSel = sourceType === 'expr'
     ? (widget.config?.customFormula ?? '')
     : (sourceType === 'alias' ? metric : undefined);
-  const crossFilterEnabled = enableCrossFilter && dataSource !== 'formulaSeries';
+  const drillPath: string[] = widget.config?.drillPath || [];
+  const [drillStack, setDrillStack] = React.useState<string[]>([]);
+  const currentLevel = drillStack.length;
+  const crossFilterEnabled =
+    enableCrossFilter &&
+    dataSource !== 'formulaSeries' &&
+    (drillPath.length === 0 || currentLevel === drillPath.length - 1);
 
   const handleTitleChange = (newTitle: string) => {
     updateWidget(widget.id, { title: newTitle });
   };
   
   const { data: trialBalanceData, isLoading: isLoadingTB } = useTrialBalanceWithMappings(
-    clientId, 
+    clientId,
     selectedFiscalYear,
     widget.config?.selectedVersion
   );
@@ -69,6 +76,20 @@ export function ChartWidget({ widget }: ChartWidgetProps) {
     selectedVersion: widget.config?.selectedVersion,
     enabled: dataSource === 'formulaSeries' && !!clientId,
   });
+
+  const getFieldValue = React.useCallback((entry: any, field: string) => {
+    switch (field) {
+      case 'account':
+      case 'account_number':
+        return `${entry.account_number} - ${entry.account_name}`;
+      case 'standard_name':
+        return entry.standard_name || 'Ikke klassifisert';
+      case 'standard_category':
+        return entry.standard_category || 'Ikke klassifisert';
+      default:
+        return entry[field] || 'Ikke klassifisert';
+    }
+  }, []);
 
   // Scale helper based on configured unitScale
   const scaleValue = React.useCallback(
@@ -125,50 +146,75 @@ export function ChartWidget({ widget }: ChartWidgetProps) {
       return [];
     }
 
-    // Group filtered entries by standard name and calculate totals
+    let entries = filteredTrialBalanceEntries;
+
+    // Apply drill filters for previously selected levels
+    for (let i = 0; i < currentLevel; i++) {
+      const field = drillPath[i];
+      const value = drillStack[i];
+      entries = entries.filter(e => getFieldValue(e, field) === value);
+    }
+
+    const groupField = drillPath[currentLevel] || 'standard_name';
+
     const grouped: Record<string, number> = {};
-    filteredTrialBalanceEntries.forEach(entry => {
-      const standardName = entry.standard_name || 'Ikke klassifisert';
-      grouped[standardName] = (grouped[standardName] || 0) + Math.abs(entry.closing_balance);
+    entries.forEach(entry => {
+      const key = getFieldValue(entry, groupField);
+      grouped[key] = (grouped[key] || 0) + Math.abs(entry.closing_balance);
     });
 
-    // Get top accounts by balance for chart
     return Object.entries(grouped)
       .filter(([_, balance]) => Math.abs(balance) > 0)
       .sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]))
       .slice(0, maxDataPoints)
       .map(([name, balance]) => ({
-        name: name.slice(0, 10), // Truncate long names
+        name: name.slice(0, 10),
         value: scaleValue(Math.abs(balance))
       }));
-  }, [dataSource, formulaSeries, filteredTrialBalanceEntries, maxDataPoints, scaleValue]);
+  }, [
+    dataSource,
+    formulaSeries,
+    filteredTrialBalanceEntries,
+    maxDataPoints,
+    scaleValue,
+    currentLevel,
+    drillPath,
+    drillStack,
+    getFieldValue,
+    scaleValueByType,
+  ]);
 
-  // Handle chart element clicks for cross-filtering
-  const handleChartClick = (data: any, index: number) => {
-    if (!crossFilterEnabled || !data || !data.activePayload?.[0]) return;
-    
+  // Handle chart element clicks for drilldown or cross-filtering
+  const handleChartClick = (data: any) => {
+    if (!data || !data.activePayload?.[0]) return;
+
     const clickedData = data.activePayload[0].payload;
-    const categoryName = clickedData.name;
-    
-    // Find the full category name from the original data
-    const originalEntry = filteredTrialBalanceEntries.find(entry => 
-      entry.standard_name?.slice(0, 10) === categoryName
+    const name = clickedData.name;
+
+    if (drillPath.length && currentLevel < drillPath.length - 1) {
+      setDrillStack([...drillStack, name]);
+      return;
+    }
+
+    if (!crossFilterEnabled) return;
+
+    const field = drillPath[currentLevel] || 'standard_name';
+    const filterType = field === 'account' || field === 'account_number' ? 'account' : 'category';
+    const originalEntry = filteredTrialBalanceEntries.find(entry =>
+      getFieldValue(entry, field).slice(0, 10) === name
     );
-    
+
     if (originalEntry) {
-      const fullCategoryName = originalEntry.standard_name;
-      
-      // Check if this category is already filtered
-      if (filters.crossFilter?.value === fullCategoryName) {
-        // Clear the cross-filter if clicking on the same category
+      const fullValue = getFieldValue(originalEntry, field);
+
+      if (filters.crossFilter?.value === fullValue) {
         clearCrossFilter();
       } else {
-        // Set new cross-filter
         setCrossFilter(
           widget.id,
-          'category',
-          fullCategoryName,
-          `Kategori: ${fullCategoryName}`
+          filterType,
+          fullValue,
+          `${filterType === 'account' ? 'Konto' : 'Kategori'}: ${fullValue}`
         );
       }
     }
@@ -213,7 +259,18 @@ export function ChartWidget({ widget }: ChartWidgetProps) {
           )}
         </div>
       </CardHeader>
-      <CardContent className="pt-2">{crossFilterEnabled && (
+      <CardContent className="pt-2">
+        {drillStack.length > 0 && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="mb-2"
+            onClick={() => setDrillStack(drillStack.slice(0, -1))}
+          >
+            Tilbake
+          </Button>
+        )}
+        {crossFilterEnabled && (
           <div className="text-xs text-muted-foreground mb-2">
             💡 Klikk på diagrammet for å filtrere andre widgets
           </div>

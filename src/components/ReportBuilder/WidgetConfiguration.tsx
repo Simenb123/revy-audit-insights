@@ -289,6 +289,23 @@ const { data: standardAccounts = [] } = useFirmStandardAccounts();
               />
               <Label htmlFor="enableTableCrossFilter">Aktiver kryssfiltrering</Label>
             </div>
+            <div>
+              <Label htmlFor="drillPathTable">Drill-hierarki (komma separert)</Label>
+              <Input
+                id="drillPathTable"
+                value={(config.drillPath || []).join(',')}
+                onChange={(e) =>
+                  updateConfig(
+                    'drillPath',
+                    e.target.value
+                      .split(',')
+                      .map(s => s.trim())
+                      .filter(Boolean)
+                  )
+                }
+                placeholder="standard_name,account"
+              />
+            </div>
           </div>
         );
 
@@ -467,6 +484,23 @@ const { data: standardAccounts = [] } = useFirmStandardAccounts();
                 disabled={config.chartDataSource === 'formulaSeries'}
               />
               <Label htmlFor="enableCrossFilter">Aktiver kryssfiltrering</Label>
+            </div>
+            <div>
+              <Label htmlFor="drillPathChart">Drill-hierarki (komma separert)</Label>
+              <Input
+                id="drillPathChart"
+                value={(config.drillPath || []).join(',')}
+                onChange={(e) =>
+                  updateConfig(
+                    'drillPath',
+                    e.target.value
+                      .split(',')
+                      .map(s => s.trim())
+                      .filter(Boolean)
+                  )
+                }
+                placeholder="standard_name,account"
+              />
             </div>
           </div>
         );

@@ -28,7 +28,9 @@ export function TableWidget({ widget }: TableWidgetProps) {
   const maxRows = widget.config?.maxRows || 10;
   const sortBy = widget.config?.sortBy || 'balance';
   const showPercentage = widget.config?.showPercentage !== false;
-  const groupByCategory = widget.config?.groupByCategory !== false;
+  const drillPath: string[] = widget.config?.drillPath || ['standard_name', 'account'];
+  const groupField = drillPath[0];
+  const groupByCategory = widget.config?.groupByCategory !== false && !!groupField;
   const classificationFilter = widget.config?.filterByClassification;
   const enableCrossFilter = widget.config?.enableCrossFilter !== false;
   
@@ -36,13 +38,27 @@ export function TableWidget({ widget }: TableWidgetProps) {
   const [expandedGroups, setExpandedGroups] = React.useState<Set<string>>(new Set());
   
   const { data: trialBalanceData, isLoading } = useTrialBalanceWithMappings(
-    clientId, 
+    clientId,
     selectedFiscalYear,
     widget.config?.selectedVersion
   );
 
   // Apply global filters to trial balance entries
   const filteredTrialBalanceEntries = useFilteredData(trialBalanceData?.trialBalanceEntries || []);
+
+  const getFieldValue = React.useCallback((entry: any, field: string) => {
+    switch (field) {
+      case 'account':
+      case 'account_number':
+        return `${entry.account_number} - ${entry.account_name}`;
+      case 'standard_name':
+        return entry.standard_name || 'Ikke klassifisert';
+      case 'standard_category':
+        return entry.standard_category || 'Ikke klassifisert';
+      default:
+        return entry[field] || 'Ikke klassifisert';
+    }
+  }, []);
 
   const { groupedData, categories, totalBalance } = React.useMemo(() => {
     if (!filteredTrialBalanceEntries || filteredTrialBalanceEntries.length === 0) {
@@ -62,24 +78,25 @@ export function TableWidget({ widget }: TableWidgetProps) {
 
     // Filter by selected category
     if (selectedCategory !== 'all') {
-      filteredEntries = filteredEntries.filter(entry => 
-        entry.standard_name === selectedCategory || 
-        (!entry.standard_name && selectedCategory === 'unmapped')
-      );
+      filteredEntries = filteredEntries.filter(entry => {
+        const val = getFieldValue(entry, groupField);
+        return selectedCategory === val ||
+          (selectedCategory === 'unmapped' && val === 'Ikke klassifisert');
+      });
     }
 
-    // Group by classification
+    // Group by configured field
     const grouped: Record<string, any[]> = {};
     const categorySet = new Set<string>();
 
     filteredEntries.forEach(entry => {
-      const category = entry.standard_name || 'Ikke klassifisert';
+      const category = getFieldValue(entry, groupField);
       categorySet.add(category);
-      
+
       if (!grouped[category]) {
         grouped[category] = [];
       }
-      
+
       grouped[category].push({
         ...entry,
         account: `${entry.account_number} - ${entry.account_name}`,
@@ -112,7 +129,7 @@ export function TableWidget({ widget }: TableWidgetProps) {
       categories: cats, 
       totalBalance: total 
     };
-  }, [filteredTrialBalanceEntries, selectedCategory, sortBy, classificationFilter]);
+  }, [filteredTrialBalanceEntries, selectedCategory, sortBy, classificationFilter, groupField, getFieldValue]);
 
   const toggleGroup = (category: string) => {
     const newExpanded = new Set(expandedGroups);
@@ -144,16 +161,20 @@ export function TableWidget({ widget }: TableWidgetProps) {
   // Handle category clicks for cross-filtering  
   const handleCategoryClick = (category: string, totalBalance: number) => {
     if (!enableCrossFilter) return;
-    
-    // Check if this category is already filtered
+
+    const filterType =
+      groupField === 'account' || groupField === 'account_number'
+        ? 'account'
+        : 'category';
+
     if (filters.crossFilter?.value === category) {
       clearCrossFilter();
     } else {
       setCrossFilter(
         widget.id,
-        'category',
+        filterType,
         category,
-        `Kategori: ${category}`
+        `${filterType === 'account' ? 'Konto' : 'Kategori'}: ${category}`
       );
     }
   };
