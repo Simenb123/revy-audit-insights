@@ -18,10 +18,12 @@ interface ReportTemplatesProps {
 }
 
 export function ReportTemplates({ clientId, widgets, layouts, onApplyTemplate, onClose }: ReportTemplatesProps) {
-  const { listTemplates, createTemplate, deleteTemplate } = useReportTemplates()
+  const { listTemplates, createTemplate, updateTemplate, deleteTemplate } = useReportTemplates()
   const [templates, setTemplates] = useState<ReportTemplate[]>([])
   const [name, setName] = useState('')
   const [preview, setPreview] = useState<ReportTemplate | null>(null)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editingName, setEditingName] = useState('')
 
   useEffect(() => {
     listTemplates().then(setTemplates).catch(() => setTemplates([]))
@@ -64,6 +66,19 @@ export function ReportTemplates({ clientId, widgets, layouts, onApplyTemplate, o
     }
   }
 
+  const handleUpdate = async (id: string) => {
+    if (!editingName.trim()) return
+    try {
+      await updateTemplate(id, editingName, widgets, layouts)
+      toast.success('Mal oppdatert')
+      setTemplates(await listTemplates())
+      setEditingId(null)
+      setEditingName('')
+    } catch {
+      toast.error('Kunne ikke oppdatere mal')
+    }
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -89,10 +104,42 @@ export function ReportTemplates({ clientId, widgets, layouts, onApplyTemplate, o
         {templates.map(t => (
           <Card key={t.id} className="hover:shadow-md transition-shadow">
             <CardHeader className="pb-2 flex flex-row justify-between items-center">
-              <CardTitle className="text-sm">{t.name}</CardTitle>
-              <Button variant="ghost" size="sm" onClick={() => handleDelete(t.id)}>
-                <Trash2 className="h-4 w-4" />
-              </Button>
+              {editingId === t.id ? (
+                <>
+                  <Input
+                    value={editingName}
+                    onChange={e => setEditingName(e.target.value)}
+                    className="h-8 text-sm"
+                  />
+                  <div className="flex gap-1">
+                    <Button variant="ghost" size="sm" onClick={() => handleUpdate(t.id)}>
+                      <Save className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => setEditingId(null)}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <CardTitle className="text-sm">{t.name}</CardTitle>
+                  <div className="flex gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setEditingId(t.id)
+                        setEditingName(t.name)
+                      }}
+                    >
+                      Endre
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => handleDelete(t.id)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </>
+              )}
             </CardHeader>
             <CardContent className="pt-0">
               <CardDescription className="text-xs mb-2">
