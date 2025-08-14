@@ -2,6 +2,7 @@ import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import EnhancedUserManagement from './EnhancedUserManagement';
 import GranularAccessControl from './GranularAccessControl';
+import AdvancedRoleManagement from './AdvancedRoleManagement';
 
 const UserManagement = () => {
   return (
@@ -16,9 +17,10 @@ const UserManagement = () => {
       </div>
 
       <Tabs defaultValue="users" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="users">Brukerbehandling</TabsTrigger>
           <TabsTrigger value="access">Tilgangskontroll</TabsTrigger>
+          <TabsTrigger value="roles">Avanserte roller</TabsTrigger>
         </TabsList>
 
         <TabsContent value="users">
@@ -27,6 +29,10 @@ const UserManagement = () => {
 
         <TabsContent value="access">
           <GranularAccessControl />
+        </TabsContent>
+
+        <TabsContent value="roles">
+          <AdvancedRoleManagement />
         </TabsContent>
       </Tabs>
     </div>
