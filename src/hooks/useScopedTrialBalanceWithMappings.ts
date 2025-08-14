@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
-import { useTrialBalanceWithMappings } from './useTrialBalanceWithMappings';
+import { useQuery, useQueries } from '@tanstack/react-query';
+import { useTrialBalanceWithMappings, fetchTrialBalanceWithMappings } from './useTrialBalanceWithMappings';
 import { logger } from '@/utils/logger';
 
 export interface ScopedTrialBalanceData {
@@ -28,33 +28,16 @@ export function useScopedTrialBalanceWithMappings(
     versionId
   );
 
-  // For multiple clients, fetch each client's data separately then aggregate
-  const multiClientQuery = useQuery({
-    queryKey: ['scoped-trial-balance', 'multi', clientIds.sort(), fiscalYear, versionId],
-    queryFn: async (): Promise<ScopedTrialBalanceData[]> => {
-      if (!hasMultipleClients) return [];
-
-      const results: ScopedTrialBalanceData[] = [];
-      
-      // Fetch each client's data
-      for (const clientId of clientIds) {
-        try {
-          // We would ideally use the cached result from individual client queries here
-          // For now, let's return a placeholder structure
-          results.push({
-            clientId,
-            companyName: `Client ${clientId}`,
-            trialBalance: []
-          });
-        } catch (error) {
-          logger.error(`Error fetching trial balance for client ${clientId}:`, error);
-        }
-      }
-
-      return results;
-    },
-    enabled: hasMultipleClients && clientIds.length > 0,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+  // For multiple clients, fetch each client's data in parallel using useQueries
+  const multiClientQueries = useQueries({
+    queries: hasMultipleClients
+      ? clientIds.map((clientId) => ({
+          queryKey: ['trial-balance-with-mappings', clientId, fiscalYear, versionId],
+          queryFn: () => fetchTrialBalanceWithMappings(clientId, fiscalYear, versionId),
+          staleTime: 1000 * 60 * 5,
+          enabled: true,
+        }))
+      : [],
   });
 
   if (singleClientId) {
@@ -71,9 +54,17 @@ export function useScopedTrialBalanceWithMappings(
   }
 
   return {
-    data: multiClientQuery.data,
-    isLoading: multiClientQuery.isLoading,
-    error: multiClientQuery.error,
-    refetch: multiClientQuery.refetch
+    data: hasMultipleClients
+      ? clientIds.map((clientId, idx) => ({
+          clientId,
+          companyName: `Client ${clientId}`,
+          trialBalance: multiClientQueries[idx]?.data,
+        }))
+      : [],
+    isLoading: multiClientQueries.some((q) => q.isLoading),
+    error: multiClientQueries.find((q) => q.error)?.error,
+    refetch: async () => {
+      await Promise.all(multiClientQueries.map((q) => q.refetch()));
+    },
   };
 }

@@ -68,6 +68,22 @@ export function TableWidget({ widget }: TableWidgetProps) {
   }
   const filteredTrialBalanceEntries = useFilteredData(allEntries);
 
+  // Empty state for trial balance-based tables
+  if (dataSource !== 'transactions' && !isLoading && (!filteredTrialBalanceEntries || filteredTrialBalanceEntries.length === 0)) {
+    return (
+      <Card className="h-full">
+        <CardHeader className="pb-2">
+          <InlineEditableTitle title={widget.title} onTitleChange={handleTitleChange} size="sm" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-sm text-muted-foreground">
+            Ingen data å vise for valgt omfang/år. Kontroller at saldobalanse er importert og at konti er mappet.
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   if (dataSource === 'transactions') {
     const rows = React.useMemo(() => {
       const map: Record<string, number> = {};
