@@ -10,6 +10,8 @@ import { ControlTestResults } from './ControlTestResults';
 import { RiskScoringResults } from './RiskScoringResults';
 import { TransactionFlowAnalysis } from './TransactionFlowAnalysis';
 import { AIAnalysisResults } from './AIAnalysisResults';
+import { ReportGeneratorPanel } from './ReportGeneratorPanel';
+import { ReportData } from '@/services/reportGenerationService';
 
 interface ComprehensiveAnalysisDashboardProps {
   clientId: string;
@@ -180,12 +182,13 @@ export function ComprehensiveAnalysisDashboard({
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="overview">Oversikt</TabsTrigger>
               <TabsTrigger value="controls">Kontrolltester</TabsTrigger>
               <TabsTrigger value="risk">Risikoskåring</TabsTrigger>
               <TabsTrigger value="flow">Transaksjonsflyt</TabsTrigger>
               <TabsTrigger value="ai">AI-analyse</TabsTrigger>
+              <TabsTrigger value="report">Rapport</TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview" className="space-y-4">
@@ -262,6 +265,21 @@ export function ComprehensiveAnalysisDashboard({
               {analysisResults?.aiAnalysis && (
                 <AIAnalysisResults results={analysisResults.aiAnalysis} />
               )}
+            </TabsContent>
+
+            <TabsContent value="report">
+              <ReportGeneratorPanel 
+                reportData={analysisResults ? {
+                  clientName: 'Klient', // This should come from props
+                  reportDate: new Date().toLocaleDateString('nb-NO'),
+                  fiscalYear: '2024',
+                  basicAnalysis: analysisResults.basicAnalysis,
+                  controlTests: analysisResults.controlTests,
+                  riskScoring: analysisResults.riskScoring,
+                  aiAnalysis: analysisResults.aiAnalysis
+                } : null}
+                isLoading={loading}
+              />
             </TabsContent>
           </Tabs>
         </CardContent>
