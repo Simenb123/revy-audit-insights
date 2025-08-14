@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/utils/logger';
 
 export interface GeneralLedgerTransaction {
   id: string;
@@ -256,14 +257,15 @@ export const useGeneralLedgerData = (clientId: string, versionId?: string, pagin
       }
 
       if (allTransactions.length === 0) {
-        console.log('⚠️ No general ledger transactions found for client:', clientId);
+        logger.warn('No general ledger transactions found for client:', clientId);
         return [];
       }
 
-      console.log('✅ TOTAL TRANSACTIONS LOADED:', allTransactions.length);
-      console.log('✅ FIRST TRANSACTION:', allTransactions[0]?.transaction_date);
-      console.log('✅ LAST TRANSACTION:', allTransactions[allTransactions.length - 1]?.transaction_date);
-      console.log('✅ Found', allTransactions.length, 'general ledger transactions');
+      logger.info('Loaded general ledger transactions:', {
+        total: allTransactions.length,
+        firstDate: allTransactions[0]?.transaction_date,
+        lastDate: allTransactions[allTransactions.length - 1]?.transaction_date
+      });
       
       // Transform the data to include account details
       const transformedData = allTransactions.map((transaction: any) => ({
@@ -289,15 +291,13 @@ export const useGeneralLedgerData = (clientId: string, versionId?: string, pagin
         period_month: transaction.period_month,
       })) as GeneralLedgerTransaction[];
 
-      console.log('📊 General Ledger Summary:', {
+      logger.debug('General Ledger processed:', {
         totalTransactions: transformedData.length,
         dateRange: transformedData.length > 0 ? {
           from: transformedData[transformedData.length - 1]?.transaction_date,
           to: transformedData[0]?.transaction_date
         } : null
       });
-
-      console.log('🔄 FINAL TRANSFORMED DATA LENGTH:', transformedData.length);
       
       return transformedData;
     },
