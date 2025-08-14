@@ -14,6 +14,8 @@ import {
   Play,
   RefreshCw
 } from 'lucide-react';
+import AnalysisGuideCard from '@/components/AnalysisGuideCard';
+import AnalysisStatusCard from '@/components/AnalysisStatusCard';
 import { useAnalysisSessions, useAnalysisSessionsForClient } from '@/hooks/useAnalysisSessions';
 import { analysisService } from '@/services/analysisService';
 import { toast } from 'sonner';
@@ -36,6 +38,8 @@ export const AnalysisPanel = ({
 }: AnalysisPanelProps) => {
   const [activeAnalysis, setActiveAnalysis] = useState<string | null>(null);
   const [basicAnalysisResults, setBasicAnalysisResults] = useState<any>(null);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const [lastAnalysisTime, setLastAnalysisTime] = useState<string | null>(null);
   
   const { createSession } = useAnalysisSessions();
   const { data: sessions, refetch: refetchSessions } = useAnalysisSessionsForClient(clientId);
@@ -77,11 +81,13 @@ export const AnalysisPanel = ({
 
   const runBasicAnalysis = async () => {
     if (!dataVersionId) {
+      setAnalysisError('Ingen dataversjon valgt. Velg en dataversjon først.');
       toast.error('Ingen dataversjon valgt');
       return;
     }
 
     setActiveAnalysis('basic_transaction');
+    setAnalysisError(null);
     
     try {
       const results = await analysisService.performBasicTransactionAnalysis({
@@ -92,8 +98,12 @@ export const AnalysisPanel = ({
       });
       
       setBasicAnalysisResults(results);
+      setLastAnalysisTime(new Date().toISOString());
+      setAnalysisError(null);
       toast.success('Grunnleggende analyse fullført');
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Ukjent feil ved analyse';
+      setAnalysisError(`Analysefeil: ${errorMessage}`);
       toast.error('Feil ved kjøring av analyse');
       console.error('Analysis failed:', error);
     } finally {
@@ -103,11 +113,13 @@ export const AnalysisPanel = ({
 
   const runAdvancedAnalysis = async (analysisType: string) => {
     if (!dataVersionId) {
+      setAnalysisError('Ingen dataversjon valgt. Velg en dataversjon først.');
       toast.error('Ingen dataversjon valgt');
       return;
     }
 
     setActiveAnalysis(analysisType);
+    setAnalysisError(null);
 
     try {
       // Create analysis session
@@ -133,13 +145,32 @@ export const AnalysisPanel = ({
       // Store results
       await analysisService.storeAnalysisResults(session.id, [results]);
       
+      setLastAnalysisTime(new Date().toISOString());
+      setAnalysisError(null);
       toast.success('Avansert analyse planlagt - Python-integrasjon kommer snart');
       refetchSessions();
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Ukjent feil ved avansert analyse';
+      setAnalysisError(`Avansert analysefeil: ${errorMessage}. Dette kan skyldes at AI-tjenesten er utilgjengelig.`);
       toast.error('Feil ved oppstart av avansert analyse');
       console.error('Advanced analysis failed:', error);
     } finally {
       setActiveAnalysis(null);
+    }
+  };
+
+  const handleAnalysisSelect = (analysisType: string) => {
+    if (analysisType === 'basic_transaction') {
+      runBasicAnalysis();
+    } else {
+      runAdvancedAnalysis(analysisType);
+    }
+  };
+
+  const handleRetryAnalysis = () => {
+    setAnalysisError(null);
+    if (basicAnalysisResults) {
+      runBasicAnalysis();
     }
   };
 
@@ -161,8 +192,28 @@ export const AnalysisPanel = ({
     }
   };
 
+  const isDataReady = !!dataVersionId && !!filterStats;
+  const totalAnalysesRun = (sessions?.length || 0) + (basicAnalysisResults ? 1 : 0);
+
   return (
     <div className={`space-y-6 ${className}`}>
+      {/* Analysis Status */}
+      <AnalysisStatusCard
+        dataLoading={!isDataReady}
+        analysisRunning={!!activeAnalysis}
+        analysisError={analysisError}
+        lastAnalysisTime={lastAnalysisTime}
+        totalAnalysesRun={totalAnalysesRun}
+        onRetry={handleRetryAnalysis}
+      />
+
+      {/* Analysis Guide */}
+      <AnalysisGuideCard
+        isDataReady={isDataReady}
+        currentAnalysisCount={totalAnalysesRun}
+        onAnalysisSelect={handleAnalysisSelect}
+      />
+
       {/* Analysis Actions */}
       <Card>
         <CardHeader>
