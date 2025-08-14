@@ -81,6 +81,7 @@
     "fast-xml-parser": "^4.3.5",
     "framer-motion": "^12.6.5",
     "fuse.js": "^7.1.0",
+    "html2canvas": "^1.4.1",
     "input-otp": "^1.2.4",
     "jspdf": "^2.5.2",
     "jszip": "^3.10.1",

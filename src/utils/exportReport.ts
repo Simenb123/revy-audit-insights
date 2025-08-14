@@ -15,12 +15,16 @@ async function captureWidget(widgetId: string): Promise<HTMLCanvasElement> {
 }
 
 async function uploadFile(blob: Blob, fileName: string, contentType: string): Promise<string | null> {
-  const { error } = await supabase.storage
-    .from('reports')
+  const bucket = 'pdf-documents';
+  const { error: uploadError } = await supabase.storage
+    .from(bucket)
     .upload(fileName, blob, { contentType, upsert: true });
-  if (error) return null;
-  const { data } = supabase.storage.from('reports').getPublicUrl(fileName);
-  return data?.publicUrl ?? null;
+  if (uploadError) return null;
+  const { data: signed, error: signedError } = await supabase.storage
+    .from(bucket)
+    .createSignedUrl(fileName, 60 * 60); // 1 time
+  if (signedError || !signed?.signedUrl) return null;
+  return signed.signedUrl;
 }
 
 export async function exportReportToPDF(widgets: Widget[], layouts: WidgetLayout[]): Promise<void> {
@@ -89,7 +93,7 @@ export async function exportReportToPDF(widgets: Widget[], layouts: WidgetLayout
   const blob = doc.output('blob');
   const fileName = `report-${Date.now()}.pdf`;
   const url = await uploadFile(blob, fileName, 'application/pdf');
-  if (url) window.open(url, '_blank');
+if (url) window.open(url, '_blank');
 }
 
 async function fetchWidgetData(widget: Widget): Promise<any[]> {
@@ -164,6 +168,6 @@ export async function exportReportToExcel(widgets: Widget[], layouts: WidgetLayo
   });
   const fileName = `report-${Date.now()}.xlsx`;
   const url = await uploadFile(blob, fileName, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-  if (url) window.open(url, '_blank');
+if (url) window.open(url, '_blank');
 }
 
