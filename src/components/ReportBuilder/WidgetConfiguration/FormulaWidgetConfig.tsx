@@ -8,10 +8,12 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Calculator, TrendingUp, Save } from 'lucide-react';
+import { Calculator, TrendingUp, Save, Library } from 'lucide-react';
 import { useFormulaDefinitions } from '@/hooks/useFormulas';
 import { EnhancedFormulaBuilder, FormulaData } from '@/components/Admin/forms/EnhancedFormulaBuilder';
 import { SaveFormulaDialog } from './SaveFormulaDialog';
+import { KpiLibrary } from './KpiLibrary';
+import { type KpiDefinition } from '@/lib/kpiLibrary';
 
 interface FormulaWidgetConfigProps {
   widget: Widget;
@@ -131,6 +133,20 @@ export function FormulaWidgetConfig({ widget, onUpdateWidget, standardAccounts }
     refetch(); // Refresh the formula definitions list
   };
 
+  const handleKpiSelect = (kpi: KpiDefinition) => {
+    onUpdateWidget({
+      title: kpi.name,
+      config: {
+        ...widget.config,
+        customFormula: kpi.formula,
+        formulaId: null,
+        displayAsPercentage: kpi.displayAsPercentage,
+        showCurrency: kpi.showCurrency,
+        unitScale: kpi.unitScale || 'none'
+      }
+    });
+  };
+
   return (
     <div className="space-y-6">
       <div className="space-y-2">
@@ -184,11 +200,29 @@ export function FormulaWidgetConfig({ widget, onUpdateWidget, standardAccounts }
       </Card>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="kpi">KPI</TabsTrigger>
           <TabsTrigger value="formula">Formel</TabsTrigger>
           <TabsTrigger value="standard">Standard</TabsTrigger>
           <TabsTrigger value="display">Visning</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="kpi" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Library className="h-5 w-5" />
+                KPI-bibliotek
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <KpiLibrary 
+                onSelectKpi={handleKpiSelect}
+                selectedKpiId={widget.config?.kpiId}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         <TabsContent value="formula" className="space-y-4">
           <Card>
