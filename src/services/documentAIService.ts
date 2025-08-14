@@ -35,8 +35,10 @@ export const generateDocumentInsights = async (context: DocumentAnalysisContext)
   }
 
   // Check for low confidence AI suggestions
-  const lowConfidenceDocs = context.documents.filter(doc => 
-    doc.ai_confidence_score && doc.ai_confidence_score < 0.6
+  const lowConfidenceDocs = context.documents.filter(
+    doc =>
+      typeof doc.ai_confidence_score === 'number' &&
+      doc.ai_confidence_score < 0.6
   );
   if (lowConfidenceDocs.length > 0) {
     insights.push({
