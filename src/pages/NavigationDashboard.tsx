@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
 import {
   Users, Home, BarChart3, Book, Settings, Building2, MessageSquare,
-  UserCog, GraduationCap, FileText, Brain, Database, HelpCircle
+  UserCog, GraduationCap, FileText, Brain, Database, HelpCircle, Shield
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import StandardPageLayout from '@/components/Layout/StandardPageLayout';
@@ -26,7 +26,8 @@ const NavigationDashboard = () => {
         { name: 'Dashboard', href: '/', icon: Home, description: 'Oversikt og KPIer', color: 'bg-blue-500' },
         { name: 'Klienter', href: '/clients', icon: Users, description: 'Administrer revisjonsoppdrag', color: 'bg-green-500' },
         { name: 'Fagstoff', href: '/fag', icon: Book, description: 'Kunnskapsbase og artikler', color: 'bg-purple-500' },
-        { name: 'AI Revy', href: '/ai-revy-admin', icon: Brain, description: 'AI-assistent for revisjon', color: 'bg-orange-500' }
+        { name: 'AI Revy', href: '/ai-revy-admin', icon: Brain, description: 'AI-assistent for revisjon', color: 'bg-orange-500' },
+        { name: 'Administrasjon', href: '/admin', icon: Shield, description: 'Bruker- og organisasjonsadministrasjon', color: 'bg-purple-500' }
       ]
     },
     {

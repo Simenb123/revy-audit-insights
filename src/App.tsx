@@ -53,6 +53,7 @@ import Sandbox from "./pages/Sandbox";
 import ResourcePlanner from "./pages/ResourcePlanner";
 import AllocationImport from "./pages/AllocationImport";
 import Superadmin from "./pages/Superadmin";
+import AdminPage from "./pages/Admin";
 // Import SaftUpload page that contains the SAF-T upload interface
 import SaftUpload from "./pages/SaftUpload";
 import SaftImport from "@/components/DataUpload/SaftImport";
@@ -117,6 +118,7 @@ function App() {
                   <Route path="fag/*" element={<KnowledgeBase />} />
                   <Route path="academy" element={<Academy />} />
                   <Route path="ai-revy-admin" element={<AIRevyAdmin />} />
+                  <Route path="admin/*" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
                   <Route path="superadmin" element={<ProtectedRoute><Superadmin /></ProtectedRoute>} />
                   <Route path="performance" element={<PerformanceMonitoring />} />
                   <Route path="resource-planner" element={<ProtectedRoute><ResourcePlanner /></ProtectedRoute>} />
