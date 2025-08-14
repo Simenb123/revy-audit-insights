@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -2635,6 +2635,45 @@ export type Database = {
           },
         ]
       }
+      collaboration_sessions: {
+        Row: {
+          client_id: string
+          created_at: string
+          cursor_position: Json | null
+          dashboard_id: string
+          fiscal_year: number
+          id: string
+          is_active: boolean
+          last_seen: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          cursor_position?: Json | null
+          dashboard_id: string
+          fiscal_year: number
+          id?: string
+          is_active?: boolean
+          last_seen?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          cursor_position?: Json | null
+          dashboard_id?: string
+          fiscal_year?: number
+          id?: string
+          is_active?: boolean
+          last_seen?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       column_mapping_history: {
         Row: {
           client_id: string
@@ -2716,6 +2755,146 @@ export type Database = {
           name?: string
           sort_order?: number
           updated_at?: string
+        }
+        Relationships: []
+      }
+      dashboard_comments: {
+        Row: {
+          client_id: string
+          content: string
+          created_at: string
+          dashboard_id: string
+          fiscal_year: number
+          id: string
+          parent_comment_id: string | null
+          resolved: boolean
+          resolved_at: string | null
+          resolved_by_user_id: string | null
+          updated_at: string
+          user_id: string
+          widget_id: string | null
+        }
+        Insert: {
+          client_id: string
+          content: string
+          created_at?: string
+          dashboard_id: string
+          fiscal_year: number
+          id?: string
+          parent_comment_id?: string | null
+          resolved?: boolean
+          resolved_at?: string | null
+          resolved_by_user_id?: string | null
+          updated_at?: string
+          user_id: string
+          widget_id?: string | null
+        }
+        Update: {
+          client_id?: string
+          content?: string
+          created_at?: string
+          dashboard_id?: string
+          fiscal_year?: number
+          id?: string
+          parent_comment_id?: string | null
+          resolved?: boolean
+          resolved_at?: string | null
+          resolved_by_user_id?: string | null
+          updated_at?: string
+          user_id?: string
+          widget_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dashboard_comments_parent_comment_id_fkey"
+            columns: ["parent_comment_id"]
+            isOneToOne: false
+            referencedRelation: "dashboard_comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dashboard_shares: {
+        Row: {
+          client_id: string
+          created_at: string
+          dashboard_id: string
+          expires_at: string | null
+          fiscal_year: number
+          id: string
+          share_type: string
+          shared_by_user_id: string
+          shared_with_user_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          dashboard_id: string
+          expires_at?: string | null
+          fiscal_year: number
+          id?: string
+          share_type: string
+          shared_by_user_id: string
+          shared_with_user_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          dashboard_id?: string
+          expires_at?: string | null
+          fiscal_year?: number
+          id?: string
+          share_type?: string
+          shared_by_user_id?: string
+          shared_with_user_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      dashboard_versions: {
+        Row: {
+          client_id: string
+          created_at: string
+          created_by_user_id: string
+          dashboard_id: string
+          description: string | null
+          fiscal_year: number
+          id: string
+          layouts_data: Json
+          settings_data: Json | null
+          version_name: string | null
+          version_number: number
+          widgets_data: Json
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          created_by_user_id: string
+          dashboard_id: string
+          description?: string | null
+          fiscal_year: number
+          id?: string
+          layouts_data: Json
+          settings_data?: Json | null
+          version_name?: string | null
+          version_number: number
+          widgets_data: Json
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          created_by_user_id?: string
+          dashboard_id?: string
+          description?: string | null
+          fiscal_year?: number
+          id?: string
+          layouts_data?: Json
+          settings_data?: Json | null
+          version_name?: string | null
+          version_number?: number
+          widgets_data?: Json
         }
         Relationships: []
       }
@@ -6618,6 +6797,36 @@ export type Database = {
           },
         ]
       }
+      user_profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string | null
+          email: string | null
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       widget_templates: {
         Row: {
           audit_firm_id: string | null
@@ -6726,16 +6935,16 @@ export type Database = {
     Functions: {
       approve_firm_access_request: {
         Args: {
-          p_request_id: string
           p_assign_role?: Database["public"]["Enums"]["user_role_type"]
+          p_request_id: string
         }
         Returns: boolean
       }
       calculate_ai_cost: {
         Args: {
+          completion_tokens: number
           model_name: string
           prompt_tokens: number
-          completion_tokens: number
         }
         Returns: number
       }
@@ -6744,7 +6953,7 @@ export type Database = {
         Returns: boolean
       }
       claim_audit_firm_by_org: {
-        Args: { p_org_number: string; p_firm_name?: string }
+        Args: { p_firm_name?: string; p_org_number: string }
         Returns: string
       }
       cleanup_expired_cache: {
@@ -6770,10 +6979,10 @@ export type Database = {
       get_potential_clients_summary: {
         Args: { p_auditor_org_number: string }
         Returns: {
-          total_potential: number
-          new_this_week: number
           converted: number
           lost: number
+          new_this_week: number
+          total_potential: number
         }[]
       }
       get_user_department: {
@@ -6810,45 +7019,45 @@ export type Database = {
       }
       match_knowledge_articles: {
         Args: {
-          p_query_embedding: string
-          p_match_threshold: number
           p_match_count: number
+          p_match_threshold: number
+          p_query_embedding: string
         }
         Returns: {
-          id: string
-          title: string
-          slug: string
-          summary: string
-          content: string
-          category_id: string
-          status: Database["public"]["Enums"]["article_status"]
           author_id: string
-          view_count: number
-          created_at: string
-          updated_at: string
-          published_at: string
           category: Json
-          similarity: number
+          category_id: string
+          content: string
+          created_at: string
+          id: string
+          published_at: string
           reference_code: string
+          similarity: number
+          slug: string
+          status: Database["public"]["Enums"]["article_status"]
+          summary: string
+          title: string
+          updated_at: string
           valid_from: string
           valid_until: string
+          view_count: number
         }[]
       }
       process_existing_completed_documents: {
         Args: Record<PropertyKey, never>
         Returns: {
           document_id: string
+          error_message: string
           file_name: string
           triggered: boolean
-          error_message: string
         }[]
       }
       queue_articles_for_embedding: {
         Args: Record<PropertyKey, never>
         Returns: {
+          content: string
           id: string
           title: string
-          content: string
         }[]
       }
       reject_firm_access_request: {
@@ -6858,9 +7067,9 @@ export type Database = {
       request_firm_access: {
         Args: {
           p_audit_firm_id: string
-          p_role_requested?: Database["public"]["Enums"]["user_role_type"]
-          p_message?: string
           p_email?: string
+          p_message?: string
+          p_role_requested?: Database["public"]["Enums"]["user_role_type"]
         }
         Returns: string
       }
@@ -6871,8 +7080,8 @@ export type Database = {
       toggle_trial_balance_lock: {
         Args: {
           p_client_id: string
-          p_period_year: number
           p_is_locked: boolean
+          p_period_year: number
         }
         Returns: boolean
       }
