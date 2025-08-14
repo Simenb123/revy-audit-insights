@@ -151,26 +151,21 @@ export function useCollaboration(dashboardId: string, clientId: string, fiscalYe
   const fetchComments = useCallback(async () => {
     const { data, error } = await supabase
       .from('dashboard_comments')
-      .select(`
-        *,
-        user:user_profiles!dashboard_comments_user_id_fkey(
-          display_name,
-          avatar_url
-        )
-      `)
+      .select('*')
       .eq('dashboard_id', dashboardId)
       .eq('client_id', clientId)
       .eq('fiscal_year', fiscalYear)
       .order('created_at', { ascending: true });
 
     if (!error && data) {
-      // Group comments by parent/child relationship
+      // Group comments by parent/child relationship (simplified without user data for now)
       const commentMap = new Map<string, Comment>();
       const rootComments: Comment[] = [];
 
       data.forEach(comment => {
         const processedComment: Comment = {
           ...comment,
+          user: { display_name: null, avatar_url: null },
           replies: []
         };
         commentMap.set(comment.id, processedComment);
@@ -200,20 +195,19 @@ export function useCollaboration(dashboardId: string, clientId: string, fiscalYe
   const fetchVersions = useCallback(async () => {
     const { data, error } = await supabase
       .from('dashboard_versions')
-      .select(`
-        *,
-        created_by_user:user_profiles!dashboard_versions_created_by_user_id_fkey(
-          display_name,
-          avatar_url
-        )
-      `)
+      .select('*')
       .eq('dashboard_id', dashboardId)
       .eq('client_id', clientId)
       .eq('fiscal_year', fiscalYear)
       .order('version_number', { ascending: false });
 
     if (!error && data) {
-      setVersions(data);
+      // Simplified version processing without user data for now
+      const processedVersions = data.map(version => ({
+        ...version,
+        created_by_user: { display_name: null as string | null, avatar_url: null as string | null }
+      }));
+      setVersions(processedVersions);
     }
   }, [dashboardId, clientId, fiscalYear]);
 
