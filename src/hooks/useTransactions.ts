@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/integrations/supabase/client'
+import { toast } from 'sonner'
 
 export interface Transaction {
   id: string
@@ -59,6 +60,9 @@ export function useTransactions(
         transactions: items,
         count: data?.count ?? 0,
       }
+    },
+    onError: (error: any) => {
+      toast.error(error.message)
     },
   })
 }

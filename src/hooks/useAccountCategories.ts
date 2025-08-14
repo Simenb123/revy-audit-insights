@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 export interface AccountCategory {
   id: string;
@@ -23,6 +24,9 @@ export const useAccountCategories = () => {
       if (error) throw error;
       return data || [];
     },
+    onError: (error: any) => {
+      toast.error(error.message);
+    },
   });
 };
 
@@ -42,6 +46,9 @@ export const useCreateAccountCategory = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['account-categories'] });
+    },
+    onError: (error: any) => {
+      toast.error(error.message);
     },
   });
 };
@@ -64,6 +71,9 @@ export const useUpdateAccountCategory = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['account-categories'] });
     },
+    onError: (error: any) => {
+      toast.error(error.message);
+    },
   });
 };
 
@@ -81,6 +91,9 @@ export const useDeleteAccountCategory = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['account-categories'] });
+    },
+    onError: (error: any) => {
+      toast.error(error.message);
     },
   });
 };
