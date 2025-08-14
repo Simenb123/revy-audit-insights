@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label';
 import { useScope } from '@/contexts/ScopeContext';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
 import { useWidgetManager } from '@/contexts/WidgetManagerContext';
-import { exportReportToPDF } from '@/utils/reportExport';
+import { exportReportToPDF, exportReportToExcel } from '@/utils/exportReport';
 import { useToast } from '@/hooks/use-toast';
 
 interface ExportReportDialogProps {
@@ -33,26 +33,17 @@ export function ExportReportDialog({ open, onOpenChange }: ExportReportDialogPro
   const handleExport = async () => {
     setIsExporting(true);
     try {
-      const metadata = {
-        scope: scopeType,
-        fiscalYear: selectedFiscalYear,
-        clientCount: selectedClientIds.length,
-        exportDate: new Date().toLocaleDateString('nb-NO'),
-        totalWidgets: widgets.length
-      };
-
       if (format === 'pdf') {
-        await exportReportToPDF(widgets, layouts, metadata);
+        await exportReportToPDF(widgets, layouts);
         toast({
           title: "Rapport eksportert",
           description: "PDF-rapporten er lastet ned til din enhet.",
         });
       } else {
-        // Excel export placeholder
+        await exportReportToExcel(widgets, layouts);
         toast({
-          title: "Kommer snart",
-          description: "Excel-eksport er under utvikling.",
-          variant: "destructive"
+          title: "Rapport eksportert",
+          description: "Excel-rapporten er lastet ned til din enhet.",
         });
       }
     } catch (error) {
@@ -88,7 +79,7 @@ export function ExportReportDialog({ open, onOpenChange }: ExportReportDialogPro
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="pdf">PDF</SelectItem>
-                <SelectItem value="excel">Excel (kommer snart)</SelectItem>
+                <SelectItem value="excel">Excel</SelectItem>
               </SelectContent>
             </Select>
           </div>
