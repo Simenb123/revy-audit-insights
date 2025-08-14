@@ -128,6 +128,44 @@ export const getContextualDocumentSuggestions = async (
     }
   }
 
+  // Use user question to tailor suggestions
+  if (userQuestion) {
+    const lowerQuestion = userQuestion.toLowerCase();
+
+    // Insert keyword-based suggestions related to the question
+    const keywordSuggestions: string[] = [];
+    if (lowerQuestion.includes('kategori')) {
+      keywordSuggestions.push('Foreslå kategorisering for ukategoriserte dokumenter');
+    }
+    if (lowerQuestion.includes('mangel')) {
+      keywordSuggestions.push('Hvilke dokumenter mangler for en komplett revisjon?');
+    }
+    if (lowerQuestion.includes('kvalitet')) {
+      keywordSuggestions.push('Kan du analysere kvaliteten på de opplastede dokumentene?');
+    }
+
+    keywordSuggestions.forEach(suggestion => {
+      if (!suggestions.includes(suggestion)) {
+        suggestions.unshift(suggestion);
+      }
+    });
+
+    // Rank suggestions by keyword overlap with the question
+    const keywords = lowerQuestion.split(/\s+/).filter(word => word.length > 2);
+    const ranked = suggestions
+      .map(text => ({
+        text,
+        score: keywords.reduce(
+          (acc, kw) => acc + (text.toLowerCase().includes(kw) ? 1 : 0),
+          0
+        )
+      }))
+      .sort((a, b) => b.score - a.score)
+      .map(item => item.text);
+
+    return [...new Set(ranked)].slice(0, 4);
+  }
+
   return suggestions.slice(0, 4); // Limit to 4 suggestions
 };
 
