@@ -10,8 +10,11 @@ const corsHeaders = {
 interface TransactionAnalysisRequest {
   clientId: string;
   versionId?: string;
-  analysisType: 'anomaly_detection' | 'pattern_analysis' | 'risk_assessment' | 'fraud_detection';
+  analysisType: 'anomaly_detection' | 'pattern_analysis' | 'risk_assessment' | 'fraud_detection' | 'comparative_analysis' | 'industry_benchmark';
   maxTransactions?: number;
+  modelPreference?: 'auto' | 'gpt-5' | 'gpt-4.1' | 'o3' | 'fast';
+  compareWithPreviousPeriod?: boolean;
+  industryCode?: string;
 }
 
 interface AIAnalysisResult {
@@ -57,7 +60,15 @@ serve(async (req) => {
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey);
-    const { clientId, versionId, analysisType, maxTransactions = 1000 }: TransactionAnalysisRequest = await req.json();
+    const { 
+      clientId, 
+      versionId, 
+      analysisType, 
+      maxTransactions = 1000,
+      modelPreference = 'auto',
+      compareWithPreviousPeriod = false,
+      industryCode
+    }: TransactionAnalysisRequest = await req.json();
 
     console.log(`[AI Analysis] Starting ${analysisType} for client ${clientId}`);
     const startTime = Date.now();
@@ -101,7 +112,60 @@ serve(async (req) => {
       throw new Error('No transactions found for analysis');
     }
 
-    console.log(`[AI Analysis] Analyzing ${transactions.length} transactions`);
+    console.log(`[AI Analysis] Analyzing ${transactions.length} transactions with model preference: ${modelPreference}`);
+
+    // Determine optimal AI model based on analysis type and preferences
+    const selectOptimalModel = (analysisType: string, modelPref: string, transactionCount: number): string => {
+      if (modelPref !== 'auto') {
+        const modelMap = {
+          'gpt-5': 'gpt-5-2025-08-07',
+          'gpt-4.1': 'gpt-4.1-2025-04-14', 
+          'o3': 'o3-2025-04-16',
+          'fast': 'gpt-5-mini-2025-08-07'
+        };
+        return modelMap[modelPref as keyof typeof modelMap] || 'gpt-4.1-2025-04-14';
+      }
+
+      // Auto-selection based on complexity
+      if (analysisType === 'anomaly_detection' && transactionCount > 500) {
+        return 'o3-2025-04-16'; // Best for complex pattern recognition
+      } else if (analysisType === 'fraud_detection') {
+        return 'gpt-5-2025-08-07'; // Most comprehensive reasoning
+      } else if (analysisType === 'comparative_analysis') {
+        return 'gpt-5-2025-08-07'; // Best for multi-period analysis
+      } else if (transactionCount < 100) {
+        return 'gpt-5-mini-2025-08-07'; // Fast for smaller datasets
+      }
+      return 'gpt-4.1-2025-04-14'; // Reliable default
+    };
+
+    const selectedModel = selectOptimalModel(analysisType, modelPreference, transactions.length);
+    console.log(`[AI Analysis] Selected model: ${selectedModel}`);
+
+    // Get comparison data if requested
+    let comparisonData = null;
+    if (compareWithPreviousPeriod) {
+      const currentDate = new Date(transactions[0]?.transaction_date || new Date());
+      const previousYearStart = new Date(currentDate.getFullYear() - 1, 0, 1);
+      const previousYearEnd = new Date(currentDate.getFullYear() - 1, 11, 31);
+
+      const { data: previousTransactions } = await supabase
+        .from('general_ledger_transactions')
+        .select('transaction_date, debit_amount, credit_amount, client_chart_of_accounts(account_number)')
+        .eq('client_id', clientId)
+        .gte('transaction_date', previousYearStart.toISOString())
+        .lte('transaction_date', previousYearEnd.toISOString())
+        .limit(1000);
+
+      if (previousTransactions && previousTransactions.length > 0) {
+        comparisonData = {
+          totalTransactions: previousTransactions.length,
+          totalDebit: previousTransactions.reduce((sum, tx) => sum + (tx.debit_amount || 0), 0),
+          totalCredit: previousTransactions.reduce((sum, tx) => sum + (tx.credit_amount || 0), 0),
+          uniqueAccounts: [...new Set(previousTransactions.map(tx => tx.client_chart_of_accounts?.account_number))].length
+        };
+      }
+    }
 
     // Forbered data for AI-analyse
     const transactionSummary = transactions.slice(0, 50).map(tx => ({
@@ -129,55 +193,148 @@ serve(async (req) => {
       uniqueVouchers: [...new Set(transactions.map(tx => tx.voucher_number))].length
     };
 
-    // AI-analyse med OpenAI
-    const systemPrompt = `Du er en ekspert på norsk revisjon og transaksjonsanalyse. Analyser disse regnskapstransaksjonene for ${analysisType}.
+    // Enhanced AI analysis with dynamic prompts
+    const getEnhancedSystemPrompt = (analysisType: string, industryCode?: string): string => {
+      const basePrompt = `Du er en ekspert på norsk revisjon og transaksjonsanalyse med dyp kunnskap om regnskapsregler, ISA-standarder og norske regnskapsprinsipper.`;
+      
+      const industryContext = industryCode ? `
+      
+Bransje-spesifikk kontekst (NACE ${industryCode}):
+- Ta hensyn til bransjetypiske transaksjoner og risiki
+- Sammenlign med normale mønstre for denne bransjen
+- Identifiser avvik fra bransjestandarder` : '';
 
+      switch (analysisType) {
+        case 'anomaly_detection':
+          return `${basePrompt}${industryContext}
+          
+Fokuser på anomali-deteksjon:
+- Statistiske avvik fra normale mønstre
+- Uvanlige tidsperioder (helger, høytider, etter arbeidstid)
+- Beløp som er avrundet eller under autorisasjonsgrenser
+- Transaksjoner uten bilag eller med manglende referanser
+- Sekvensielle avbrudd i bilagsnummerering
+- Transaksjoner som reverserer tidligere poster
+- Uvanlige kontokombiner eller posterings-mønstre`;
+
+        case 'fraud_detection':
+          return `${basePrompt}${industryContext}
+          
+Fokuser på potensielt misligheter:
+- Indikatorer på manipulasjon eller overføring
+- Uautoriserte endringer i stamdata
+- Transaksjoner som kringgår normale kontroller
+- Oppdelinger av beløp for å unngå godkjenningsgrenser
+- Transaksjoner til ukjente eller relaterte parter
+- Timing-relaterte manipulasjoner (periode-slutt)
+- Systembrukere med unormale transaksjons-mønstre`;
+
+        case 'comparative_analysis':
+          return `${basePrompt}${industryContext}
+          
+Fokuser på sammenlignende analyse:
+- År-over-år trender og endringer
+- Sesongjusteringer og periodiske variationer
+- Vekstrater og utviklingsmønstre
+- Avvik fra historiske data
+- Endringer i regnskapsprinsipper eller klassifikasjoner`;
+
+        case 'industry_benchmark':
+          return `${basePrompt}${industryContext}
+          
+Fokuser på bransje-benchmarking:
+- Sammenlign nøkkeltall med bransjegjennomsnitt
+- Identifiser uvanlige regnskapsmetoder for bransjen
+- Vurder transaksjonsvolum og -typer mot bransjenorm
+- Analyser kostnad/inntekt-strukturer`;
+
+        default:
+          return `${basePrompt}${industryContext}
+          
+Generell transaksjonsanalyse:
+- Identifiser uvanlige mønstre og anomalier
+- Vurder risikofaktorer og kontroll-svakheter
+- Gi anbefalinger for videre revisjonsprosedyrer
+- Fokuser på vesentlighet og risiko`;
+      }
+    };
+
+    const systemPrompt = getEnhancedSystemPrompt(analysisType, industryCode);
+
+    const contextInfo = `
 Kontekst:
 - Totalt ${stats.totalTransactions} transaksjoner fra ${stats.dateRange.from} til ${stats.dateRange.to}
 - Total debet: ${stats.totalDebit.toLocaleString('no-NO')} kr
 - Total kredit: ${stats.totalCredit.toLocaleString('no-NO')} kr
 - ${stats.uniqueAccounts} unike kontoer
 - ${stats.uniqueVouchers} unike bilag
+- AI-modell: ${selectedModel}
+${comparisonData ? `
+- Sammenligning med forrige periode:
+  * Forrige år: ${comparisonData.totalTransactions} transaksjoner
+  * Debet endring: ${((stats.totalDebit - comparisonData.totalDebit) / comparisonData.totalDebit * 100).toFixed(1)}%
+  * Kredit endring: ${((stats.totalCredit - comparisonData.totalCredit) / comparisonData.totalCredit * 100).toFixed(1)}%` : ''}
 
-Fokuser på:
-1. Uvanlige beløp eller mønstre
-2. Transaksjoner på uvanlige tidspunkt
-3. Potensielle feil eller inkonsistenser
-4. Risikofylte transaksjoner
-5. Brudd på normale regnskapsprinsipper
+Analyser transaksjonene grundig og gi strukturerte innsikter på norsk.`;
 
-Svar på norsk med strukturerte innsikter.`;
+    const analysisPrompt = `${contextInfo}
 
-    const analysisPrompt = `Analyser disse transaksjonene (viser første 50 av ${transactions.length}):
+Analyser disse transaksjonene (viser utvalg av ${Math.min(50, transactions.length)} av totalt ${transactions.length}):
 
 ${JSON.stringify(transactionSummary, null, 2)}
 
-Gi en detaljert analyse med:
-1. Identifiserte anomalier eller uvanlige mønstre
-2. Risikofaktorer og områder som krever oppmerksomhet
-3. Konkrete anbefalinger for videre undersøkelse
-4. Vurdering av overall risiko
+${comparisonData ? `
+Sammenligning med forrige periode:
+${JSON.stringify(comparisonData, null, 2)}
+` : ''}
+
+Basert på analysetypen "${analysisType}", gi en detaljert vurdering med:
+
+1. Identifiserte anomalier, mønstre eller avvik
+2. Risikofaktorer og områder som krever oppmerksomhet  
+3. Konkrete anbefalinger for videre revisjonsprosedyrer
+4. Overall risiko-vurdering med begrunnelse
+5. Spesifikke transaksjoner som bør undersøkes nærmere
 
 Strukturer svaret som JSON med følgende format:
 {
   "insights": [
     {
-      "type": "anomaly|pattern|risk|recommendation",
+      "type": "anomaly|pattern|risk|recommendation|comparison|benchmark",
       "severity": "low|medium|high|critical", 
-      "title": "Kort tittel",
-      "description": "Detaljert beskrivelse",
+      "title": "Kort beskrivende tittel",
+      "description": "Detaljert beskrivelse av funnet",
       "affectedTransactions": ["tx_id_1", "tx_id_2"],
-      "recommendedAction": "Konkret anbefaling",
-      "confidence": 0.95
+      "recommendedAction": "Konkret anbefaling for revisors oppfølging",
+      "confidence": 0.95,
+      "potentialImpact": "Beskrivelse av mulig konsekvens"
     }
   ],
   "summary": {
     "totalTransactionsAnalyzed": ${transactions.length},
     "anomaliesFound": 0,
     "overallRiskLevel": "low|medium|high|critical",
-    "keyFindings": ["Første hovedfunn", "Andre hovedfunn"]
+    "keyFindings": ["Første hovedfunn", "Andre hovedfunn"],
+    "recommendedProcedures": ["Anbefalt revisjonsprosedyre 1", "Anbefalt revisjonsprosedyre 2"]
   }
 }`;
+
+    // Determine appropriate parameters for the selected model
+    const getModelParameters = (model: string) => {
+      if (model.startsWith('gpt-5') || model.startsWith('o3')) {
+        return {
+          max_completion_tokens: 3000,
+          // Note: No temperature parameter for GPT-5 and O3 models
+        };
+      } else {
+        return {
+          max_tokens: 2000,
+          temperature: 0.3,
+        };
+      }
+    };
+
+    const modelParams = getModelParameters(selectedModel);
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -186,13 +343,12 @@ Strukturer svaret som JSON med følgende format:
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4.1-2025-04-14',
+        model: selectedModel,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: analysisPrompt }
         ],
-        max_tokens: 2000,
-        temperature: 0.3,
+        ...modelParams,
         response_format: { type: "json_object" }
       }),
     });
@@ -225,9 +381,11 @@ Strukturer svaret som JSON med følgende format:
       },
       metadata: {
         analysisType,
-        modelUsed: 'gpt-4.1-2025-04-14',
+        modelUsed: selectedModel,
         processingTime,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        comparisonIncluded: !!comparisonData,
+        industryCode: industryCode || null
       }
     };
 
