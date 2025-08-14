@@ -24,9 +24,6 @@ export const useAccountCategories = () => {
       if (error) throw error;
       return data || [];
     },
-    onError: (error: any) => {
-      toast.error(error.message);
-    },
   });
 };
 

@@ -28,7 +28,7 @@ export const generateContextualRecommendations = async (
       recommendationQuery,
       'audit-actions', // context
       [], // history
-      client, // clientData
+      client as any, // clientData
       userRole,
       null // session ID
     );
