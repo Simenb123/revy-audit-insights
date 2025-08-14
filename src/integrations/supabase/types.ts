@@ -5446,6 +5446,36 @@ export type Database = {
           },
         ]
       }
+      report_builder_settings: {
+        Row: {
+          client_key: string
+          created_at: string
+          fiscal_year: number
+          id: string
+          settings: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          client_key: string
+          created_at?: string
+          fiscal_year: number
+          id?: string
+          settings?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          client_key?: string
+          created_at?: string
+          fiscal_year?: number
+          id?: string
+          settings?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       report_layouts: {
         Row: {
           client_id: string
