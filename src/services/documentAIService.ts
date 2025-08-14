@@ -18,6 +18,11 @@ export interface DocumentAnalysisContext {
   userContext: string;
 }
 
+export interface ClientData {
+  company_name?: string;
+  industry?: string;
+}
+
 export const generateDocumentInsights = async (context: DocumentAnalysisContext): Promise<DocumentInsight[]> => {
   const insights: DocumentInsight[] = [];
   
@@ -128,7 +133,7 @@ export const generateSmartDocumentPrompt = (
   userMessage: string,
   documents: ClientDocument[],
   context: string,
-  clientData?: any
+  clientData?: ClientData
 ): string => {
   const documentStats = {
     total: documents.length,
@@ -151,7 +156,7 @@ DOKUMENTOVERSIKT:
 - Kategorier: ${documentStats.categories.join(', ') || 'Ingen'}
 - Fagområder: ${documentStats.subjectAreas.join(', ') || 'Ingen'}
 
-${clientData?.company_name ? `KLIENT: ${clientData.company_name} (${clientData.industry || 'Ukjent bransje'})` : ''}
+${clientData?.company_name ? `KLIENT: ${clientData.company_name} (${clientData.industry ?? 'Ukjent bransje'})` : ''}
 
 Gi et konkret, praktisk svar som hjelper brukeren med dokumenthåndtering og revisjon. Fokuser på handlingsrettede råd.`;
 };
