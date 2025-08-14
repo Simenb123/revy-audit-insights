@@ -60,6 +60,7 @@ import SaftImport from "@/components/DataUpload/SaftImport";
 import UploadHistory from "./pages/UploadHistory";
 import LegacyUploadHistoryRedirect from "./pages/LegacyUploadHistoryRedirect";
 import Reports from "./pages/Reports";
+import KeyFigureManager from "./pages/KeyFigureManager";
 const queryClient = new QueryClient();
 
 function App() {
@@ -123,8 +124,9 @@ function App() {
                   <Route path="performance" element={<PerformanceMonitoring />} />
                   <Route path="resource-planner" element={<ProtectedRoute><ResourcePlanner /></ProtectedRoute>} />
                   <Route path="allocation-import" element={<ProtectedRoute><AllocationImport /></ProtectedRoute>} />
-                  <Route path="sandbox" element={<ProtectedRoute><Sandbox /></ProtectedRoute>} />
-                  <Route path="reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
+                   <Route path="sandbox" element={<ProtectedRoute><Sandbox /></ProtectedRoute>} />
+                   <Route path="reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
+                   <Route path="key-figures" element={<ProtectedRoute><KeyFigureManager /></ProtectedRoute>} />
                 </Route>
                 <Route path="*" element={<NotFound />} />
               </Routes>
