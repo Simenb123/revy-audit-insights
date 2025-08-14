@@ -15,6 +15,8 @@ import { ReportGeneratorPanel } from './ReportGeneratorPanel';
 import { AnalysisConfigurationPanel } from './AnalysisConfigurationPanel';
 import { AnalysisProgressIndicator } from './AnalysisProgressIndicator';
 import { AnalysisOptimizationPanel } from '@/components/AnalysisOptimizationPanel';
+import { AnalyticsInsightsPanel } from '@/components/AnalyticsInsightsPanel';
+import { NotificationManagementPanel } from '@/components/NotificationManagementPanel';
 import { ReportData } from '@/services/reportGenerationService';
 import { AnalysisConfiguration } from '@/services/analysisConfigurationService';
 import { useAnalysisProgress } from '@/hooks/useAnalysisProgress';
@@ -290,15 +292,12 @@ export function ComprehensiveAnalysisDashboard({
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-7">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="overview">Oversikt</TabsTrigger>
               <TabsTrigger value="controls">Kontrolltester</TabsTrigger>
               <TabsTrigger value="risk">Risikoskåring</TabsTrigger>
-              <TabsTrigger value="flow">Transaksjonsflyt</TabsTrigger>
               <TabsTrigger value="ai">AI-analyse</TabsTrigger>
-              <TabsTrigger value="report">Rapport</TabsTrigger>
-              <TabsTrigger value="config">Innstillinger</TabsTrigger>
-              <TabsTrigger value="optimization">Optimalisering</TabsTrigger>
+              <TabsTrigger value="advanced">Avansert</TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview" className="space-y-4">
@@ -364,43 +363,64 @@ export function ComprehensiveAnalysisDashboard({
               )}
             </TabsContent>
 
-            <TabsContent value="flow">
-              <TransactionFlowAnalysis 
-                data={null}
-                isLoading={false}
-              />
-            </TabsContent>
-
             <TabsContent value="ai">
               {analysisResults?.aiAnalysis && (
                 <AIAnalysisResults results={analysisResults.aiAnalysis} />
               )}
             </TabsContent>
 
-            <TabsContent value="report">
-              <ReportGeneratorPanel 
-                reportData={analysisResults ? {
-                  clientName: 'Klient', // This should come from props
-                  reportDate: new Date().toLocaleDateString('nb-NO'),
-                  fiscalYear: '2024',
-                  basicAnalysis: analysisResults.basicAnalysis,
-                  controlTests: analysisResults.controlTests,
-                  riskScoring: analysisResults.riskScoring,
-                  aiAnalysis: analysisResults.aiAnalysis
-                } : null}
-                isLoading={loading}
-              />
-            </TabsContent>
-
-            <TabsContent value="config">
-              <AnalysisConfigurationPanel 
-                currentConfig={analysisConfig || undefined}
-                onConfigurationChange={setAnalysisConfig}
-              />
-            </TabsContent>
-
-            <TabsContent value="optimization">
-              <AnalysisOptimizationPanel />
+            <TabsContent value="advanced">
+              <Tabs defaultValue="flow" className="w-full">
+                <TabsList className="grid w-full grid-cols-5">
+                  <TabsTrigger value="flow">Transaksjonsflyt</TabsTrigger>
+                  <TabsTrigger value="report">Rapport</TabsTrigger>
+                  <TabsTrigger value="config">Innstillinger</TabsTrigger>
+                  <TabsTrigger value="optimization">Optimalisering</TabsTrigger>
+                  <TabsTrigger value="analytics">Analytics</TabsTrigger>
+                  <TabsTrigger value="notifications">Varsler</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="flow">
+                  <TransactionFlowAnalysis 
+                    data={null}
+                    isLoading={false}
+                  />
+                </TabsContent>
+                
+                <TabsContent value="report">
+                  <ReportGeneratorPanel 
+                    reportData={analysisResults ? {
+                      clientName: 'Klient',
+                      reportDate: new Date().toLocaleDateString('nb-NO'),
+                      fiscalYear: '2024',
+                      basicAnalysis: analysisResults.basicAnalysis,
+                      controlTests: analysisResults.controlTests,
+                      riskScoring: analysisResults.riskScoring,
+                      aiAnalysis: analysisResults.aiAnalysis
+                    } : null}
+                    isLoading={loading}
+                  />
+                </TabsContent>
+                
+                <TabsContent value="config">
+                  <AnalysisConfigurationPanel 
+                    currentConfig={analysisConfig || undefined}
+                    onConfigurationChange={setAnalysisConfig}
+                  />
+                </TabsContent>
+                
+                <TabsContent value="optimization">
+                  <AnalysisOptimizationPanel />
+                </TabsContent>
+                
+                <TabsContent value="analytics">
+                  <AnalyticsInsightsPanel />
+                </TabsContent>
+                
+                <TabsContent value="notifications">
+                  <NotificationManagementPanel />
+                </TabsContent>
+              </Tabs>
             </TabsContent>
           </Tabs>
         </CardContent>
