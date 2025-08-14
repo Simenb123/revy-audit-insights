@@ -8,9 +8,10 @@ import ClientNavigation from '@/components/Clients/ClientDetails/ClientNavigatio
 import AccountingExplorer from '@/components/DataAnalysis/AccountingExplorer';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BarChart3, Database, Download } from 'lucide-react';
+import { BarChart3, Database, Download, Brain } from 'lucide-react';
 import ReportBuilder from '@/components/ReportBuilder/ReportBuilder';
 import { Button } from '@/components/ui/button';
+import { ComprehensiveAnalysisDashboard } from '@/components/TransactionAnalysis';
 
 const AnalysisPage = () => {
   const { clientId } = useParams<{ clientId: string }>();
@@ -70,10 +71,14 @@ const AnalysisPage = () => {
               </Button>
             </div>
             <Tabs defaultValue="data" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="data" className="flex items-center gap-2">
                   <Database className="h-4 w-4" />
                   Dataanalyse
+                </TabsTrigger>
+                <TabsTrigger value="analysis" className="flex items-center gap-2">
+                  <Brain className="h-4 w-4" />
+                  Avansert analyse
                 </TabsTrigger>
                 <TabsTrigger value="reports" className="flex items-center gap-2">
                   <BarChart3 className="h-4 w-4" />
@@ -83,6 +88,13 @@ const AnalysisPage = () => {
               
               <TabsContent value="data" className="mt-6">
                 <AccountingExplorer clientId={client.id} />
+              </TabsContent>
+              
+              <TabsContent value="analysis" className="mt-6">
+                <ComprehensiveAnalysisDashboard 
+                  clientId={client.id} 
+                  dataVersionId="" 
+                />
               </TabsContent>
               
               <TabsContent value="reports" className="mt-6">
