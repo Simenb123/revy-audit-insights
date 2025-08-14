@@ -14,6 +14,7 @@ import KeyFigureEditor from '@/components/KeyFigure/KeyFigureEditor';
 import { FormulaAccountMapper } from '@/components/KeyFigure/FormulaAccountMapper';
 import { VisualFormulaTester } from '@/components/KeyFigure/VisualFormulaTester';
 import { FormulaDebugger } from '@/components/KeyFigure/FormulaDebugger';
+import { FormulaSuggestions } from '@/components/KeyFigure/FormulaSuggestions';
 
 const categoryIcons = {
   profitability: TrendingUp,
@@ -380,6 +381,23 @@ export default function KeyFigureManager() {
           </div>
         </div>
       )}
+      
+      {/* AI Formula Suggestions */}
+      <FormulaSuggestions
+        clientId={selectedClientId}
+        onSelectSuggestion={(suggestion) => {
+          // Create new formula from suggestion
+          const newFormula = {
+            name: suggestion.name,
+            description: suggestion.description,
+            formula_expression: suggestion.formula,
+            category: suggestion.category,
+            format: 'number' as const,
+          };
+          setSelectedFormula(newFormula as any);
+          setIsEditorOpen(true);
+        }}
+      />
 
       {filteredKeyFigures.length === 0 && (
         <Card>
