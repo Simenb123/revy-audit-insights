@@ -33,7 +33,11 @@ export interface Widget {
     | 'bubble'
     | 'map'
     | 'waterfall'
-    | 'enhancedKpi';
+    | 'enhancedKpi'
+    | 'metricCard'
+    | 'progress'
+    | 'activityFeed'
+    | 'alerts';
   title: string;
   config?: Record<string, any>;
   sectionId?: string;

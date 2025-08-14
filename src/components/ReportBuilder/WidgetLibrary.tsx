@@ -18,6 +18,9 @@ import {
   Boxes,
   CircleDot,
   ChartColumn,
+  Target,
+  Activity,
+  Bell,
 } from 'lucide-react';
 import { useWidgetTemplates } from '@/hooks/useWidgetTemplates';
 
@@ -285,6 +288,58 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
         showPercent: true,
         sectionMode: 'balance' as const,
       }
+    },
+    // New widget types
+    {
+      type: 'metricCard' as const,
+      title: 'Metrikkort',
+      description: 'Enkelt kort med nøkkeltall og trend',
+      icon: Target,
+      section: 'trial_balance' as const,
+      dataDescription: 'Basert på saldobalanse',
+      defaultConfig: {
+        unit: 'currency',
+        showTrend: true,
+        showTarget: false,
+        color: 'blue'
+      }
+    },
+    {
+      type: 'progress' as const,
+      title: 'Fremdrift',
+      description: 'Vis fremdrift mot mål',
+      icon: Activity,
+      section: 'trial_balance' as const,
+      dataDescription: 'Basert på saldobalanse',
+      defaultConfig: {
+        showProgress: true,
+        showTargets: true
+      }
+    },
+    {
+      type: 'activityFeed' as const,
+      title: 'Aktivitetslogg',
+      description: 'Vis siste aktiviteter og transaksjoner',
+      icon: Bell,
+      section: 'transactions' as const,
+      dataDescription: 'Basert på transaksjoner',
+      defaultConfig: {
+        maxItems: 5,
+        showUser: true,
+        showTimestamp: true
+      }
+    },
+    {
+      type: 'alerts' as const,
+      title: 'Varsler',
+      description: 'Vis viktige varsler og påminnelser',
+      icon: Bell,
+      section: 'trial_balance' as const,
+      dataDescription: 'Systemgenererte varsler',
+      defaultConfig: {
+        severity: 'all',
+        showResolved: false
+      }
     }
   ]), []);
 
@@ -352,23 +407,27 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
           ? 4
           : template.type === 'text'
           ? 6
-          : template.type === 'kpi' || template.type === 'enhancedKpi'
+          : template.type === 'kpi' || template.type === 'enhancedKpi' || template.type === 'metricCard'
           ? 3
           : template.type === 'gauge'
           ? 3
+          : template.type === 'progress' || template.type === 'activityFeed' || template.type === 'alerts'
+          ? 4
           : template.type === 'statementTable'
           ? 8
           : 6,
       h:
         template.type === 'filter'
           ? 4
-          : template.type === 'kpi' || template.type === 'enhancedKpi'
+          : template.type === 'kpi' || template.type === 'enhancedKpi' || template.type === 'metricCard'
           ? 2
           : template.type === 'chart' || template.type === 'heatmap' || template.type === 'treemap' || template.type === 'bubble' || template.type === 'waterfall'
           ? 4
           : template.type === 'pivot'
           ? 4
           : template.type === 'gauge'
+          ? 3
+          : template.type === 'progress' || template.type === 'activityFeed' || template.type === 'alerts'
           ? 3
           : template.type === 'statementTable'
           ? 4

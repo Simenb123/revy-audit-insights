@@ -18,6 +18,10 @@ import { TreemapWidget } from './Widgets/TreemapWidget';
 import { BubbleChartWidget } from './Widgets/BubbleChartWidget';
 import { EnhancedKpiWidget } from './Widgets/EnhancedKpiWidget';
 import { WaterfallWidget } from './Widgets/WaterfallWidget';
+import { MetricCardWidget } from './Widgets/MetricCardWidget';
+import { ProgressWidget } from './Widgets/ProgressWidget';
+import { ActivityFeedWidget } from './Widgets/ActivityFeedWidget';
+import { AlertsWidget } from './Widgets/AlertsWidget';
 
 interface WidgetRendererProps {
   widget: Widget;
@@ -61,6 +65,14 @@ export function WidgetRenderer({ widget }: WidgetRendererProps) {
       return <WaterfallWidget widget={widget} />;
     case 'enhancedKpi':
       return <EnhancedKpiWidget widget={widget} />;
+    case 'metricCard':
+      return <MetricCardWidget widget={widget} />;
+    case 'progress':
+      return <ProgressWidget widget={widget} />;
+    case 'activityFeed':
+      return <ActivityFeedWidget widget={widget} />;
+    case 'alerts':
+      return <AlertsWidget widget={widget} />;
     default:
       return (
         <div className="p-4 text-center text-muted-foreground">
