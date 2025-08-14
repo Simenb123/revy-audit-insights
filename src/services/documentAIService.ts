@@ -1,5 +1,4 @@
 
-import { supabase } from '@/integrations/supabase/client';
 import { ClientDocument } from '@/hooks/useClientDocuments';
 
 export interface DocumentInsight {
@@ -18,7 +17,7 @@ export interface DocumentAnalysisContext {
   userContext: string;
 }
 
-export const generateDocumentInsights = async (context: DocumentAnalysisContext): Promise<DocumentInsight[]> => {
+export const generateDocumentInsights = (context: DocumentAnalysisContext): DocumentInsight[] => {
   const insights: DocumentInsight[] = [];
   
   // Analyze document categorization quality
@@ -77,11 +76,11 @@ export const generateDocumentInsights = async (context: DocumentAnalysisContext)
   return insights.sort((a, b) => b.confidence - a.confidence);
 };
 
-export const getContextualDocumentSuggestions = async (
+export const getContextualDocumentSuggestions = (
   userQuestion: string,
   documents: ClientDocument[],
   context: string
-): Promise<string[]> => {
+): string[] => {
   const suggestions: string[] = [];
   
   // Context-specific suggestions

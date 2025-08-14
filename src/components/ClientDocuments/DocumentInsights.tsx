@@ -23,10 +23,10 @@ const DocumentInsights: React.FC<DocumentInsightsProps> = ({
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const loadInsights = async () => {
+    const loadInsights = () => {
       setIsLoading(true);
       try {
-        const generatedInsights = await generateDocumentInsights({
+        const generatedInsights = generateDocumentInsights({
           documents,
           clientId,
           userContext: context
