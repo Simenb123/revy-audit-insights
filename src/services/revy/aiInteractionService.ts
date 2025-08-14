@@ -1,19 +1,20 @@
 import { logger } from '@/utils/logger';
 
 import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
-import { RevyContext, RevyChatMessage } from '@/types/revio';
+import { RevyContext } from '@/types/revio';
+import { AIClientData, AIClientDocument, AIHistoryMessage } from '@/types/revy-ai';
 import { createTimeoutSignal } from '@/utils/networkHelpers';
 import { contextSpecificHelp, errorMessages } from './fallbackMessages';
 
 // Generate AI response using Supabase Edge Function with enhanced context and knowledge integration
 export const generateAIResponse = async (
-  message: string, 
+  message: string,
   context: RevyContext,
-  history: RevyChatMessage[],
-  clientData?: any,
+  history: AIHistoryMessage[],
+  clientData?: AIClientData,
   userRole?: string,
   sessionId?: string,
-  clientDocuments?: any[]
+  clientDocuments?: AIClientDocument[]
 ): Promise<string> => {
   if (!isSupabaseConfigured || !supabase) {
     logger.error("Supabase is not configured. AI response cannot proceed.");

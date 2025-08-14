@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { RevyContext } from '@/types/revio';
 
 const invokeMock = vi.hoisted(() => vi.fn());
 const getUserMock = vi.hoisted(() => vi.fn());
@@ -46,7 +47,7 @@ describe('getRelevantKnowledge', () => {
   it('fetches article titles from knowledge-search', async () => {
     invokeMock.mockResolvedValue({ data: { articles: [{ id: 1, title: 'Art' }] }, error: null });
     const { getRelevantKnowledge } = await loadService();
-    const res = await getRelevantKnowledge('query', 'general' as any);
+    const res = await getRelevantKnowledge('query', 'general' as RevyContext);
     expect(res).toEqual(['Art']);
     expect(invokeMock).toHaveBeenCalledWith('knowledge-search', expect.objectContaining({ body: { query: 'query' } }));
   });
