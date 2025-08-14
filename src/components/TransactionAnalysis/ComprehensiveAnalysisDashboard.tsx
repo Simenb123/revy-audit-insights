@@ -15,8 +15,8 @@ import { ReportGeneratorPanel } from './ReportGeneratorPanel';
 import { AnalysisConfigurationPanel } from './AnalysisConfigurationPanel';
 import { AnalysisProgressIndicator } from './AnalysisProgressIndicator';
 import { AnalysisOptimizationPanel } from '@/components/AnalysisOptimizationPanel';
-import { AnalyticsInsightsPanel } from '@/components/AnalyticsInsightsPanel';
-import { NotificationManagementPanel } from '@/components/NotificationManagementPanel';
+// import { AnalyticsInsightsPanel } from '@/components/AnalyticsInsightsPanel';
+// import { NotificationManagementPanel } from '@/components/NotificationManagementPanel';
 import { ReportData } from '@/services/reportGenerationService';
 import { AnalysisConfiguration } from '@/services/analysisConfigurationService';
 import { useAnalysisProgress } from '@/hooks/useAnalysisProgress';
@@ -414,11 +414,15 @@ export function ComprehensiveAnalysisDashboard({
                 </TabsContent>
                 
                 <TabsContent value="analytics">
-                  <AnalyticsInsightsPanel />
+                  <div className="text-center p-8 text-muted-foreground">
+                    Analytics insights kommer snart...
+                  </div>
                 </TabsContent>
                 
                 <TabsContent value="notifications">
-                  <NotificationManagementPanel />
+                  <div className="text-center p-8 text-muted-foreground">
+                    Notification management kommer snart...
+                  </div>
                 </TabsContent>
               </Tabs>
             </TabsContent>
