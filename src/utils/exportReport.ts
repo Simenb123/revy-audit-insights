@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import * as XLSX from 'xlsx';
+import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import type { Widget, WidgetLayout } from '@/contexts/WidgetManagerContext';
 
@@ -93,7 +94,11 @@ export async function exportReportToPDF(widgets: Widget[], layouts: WidgetLayout
   const blob = doc.output('blob');
   const fileName = `report-${Date.now()}.pdf`;
   const url = await uploadFile(blob, fileName, 'application/pdf');
-if (url) window.open(url, '_blank');
+  if (!url) {
+    toast.error('Kunne ikke eksportere rapport. Prøv igjen senere.');
+    return;
+  }
+  window.open(url, '_blank');
 }
 
 async function fetchWidgetData(widget: Widget): Promise<any[]> {
@@ -167,7 +172,15 @@ export async function exportReportToExcel(widgets: Widget[], layouts: WidgetLayo
     type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   });
   const fileName = `report-${Date.now()}.xlsx`;
-  const url = await uploadFile(blob, fileName, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-if (url) window.open(url, '_blank');
+  const url = await uploadFile(
+    blob,
+    fileName,
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  );
+  if (!url) {
+    toast.error('Kunne ikke eksportere rapport. Prøv igjen senere.');
+    return;
+  }
+  window.open(url, '_blank');
 }
 
