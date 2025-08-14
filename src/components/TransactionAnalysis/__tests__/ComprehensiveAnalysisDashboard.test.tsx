@@ -20,7 +20,7 @@ vi.mock('@/hooks/usePerformanceMonitor', () => ({
       memoryUsage: 23.4
     },
     isLoading: false,
-    warnings: []
+    warnings: [] as string[]
   })
 }));
 
@@ -248,7 +248,7 @@ describe('ComprehensiveAnalysisDashboard', () => {
       ...mockAnalysisResults,
       riskScoring: {
         overallRisk: 0.8,
-        transactionRisks: []
+        transactionRisks: [] as any[]
       }
     };
     mockAnalysisService.performComprehensiveAnalysis.mockResolvedValue(highRiskResults);

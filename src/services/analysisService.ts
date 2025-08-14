@@ -8,6 +8,8 @@ export interface AnalysisRequest {
   analysisType: 'transaction_patterns' | 'risk_analysis' | 'financial_ratios' | 'anomaly_detection';
   filterCriteria?: any;
   configuration?: any;
+  customConfig?: any;
+  progressCallback?: (step: string, progressPercent: number) => void;
 }
 
 export interface AnalysisResult {

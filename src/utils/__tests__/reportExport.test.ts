@@ -25,6 +25,7 @@ vi.mock('jspdf-autotable', () => ({}));
 
 // Import after mocking
 import { exportAnalysisReportToPDF } from '../reportExport';
+import type { TransactionRiskScore } from '@/services/riskScoringService';
 
 describe('reportExport', () => {
   beforeEach(() => {
@@ -56,34 +57,34 @@ describe('reportExport', () => {
       },
       controlTests: [
         {
-          testId: 'voucher_balance_test',
           testName: 'Bilagsbalanse test',
-          result: 'PASS',
-          severity: 'HIGH',
-          details: []
+          passed: true,
+          errorCount: 0,
+          details: [] as any[],
+          description: 'Test for voucher balance validation',
+          severity: 'info' as const
         },
         {
-          testId: 'duplicate_transactions_test',
           testName: 'Duplikat transaksjoner',
-          result: 'FAIL',
-          severity: 'MEDIUM',
-          details: ['Found 3 potential duplicates']
+          passed: false,
+          errorCount: 3,
+          details: ['Found 3 potential duplicates'] as any[],
+          description: 'Test for duplicate transactions',
+          severity: 'warning' as const
         }
       ],
       riskScoring: {
-        overallRisk: 0.35,
-        transactionRisks: [
-          {
-            transactionId: '1',
-            riskScore: 0.8,
-            riskFactors: ['weekend_posting', 'large_amount']
-          },
-          {
-            transactionId: '2',
-            riskScore: 0.2,
-            riskFactors: []
-          }
-        ]
+        totalTransactions: 1000,
+        highRiskTransactions: [] as TransactionRiskScore[],
+        riskDistribution: {
+          low: 70,
+          medium: 25,
+          high: 4,
+          critical: 1
+        },
+        topRiskFactors: [] as any[],
+        overallRisk: 'medium' as any,
+        recommendations: [] as string[]
       },
       aiAnalysis: {
         summary: 'Overall transaction patterns appear normal',
@@ -155,6 +156,20 @@ describe('reportExport', () => {
             min: 50,
             max: 200
           }
+        },
+        controlTests: [] as any[],
+        riskScoring: {
+          totalTransactions: 10,
+          highRiskTransactions: [] as TransactionRiskScore[],
+          riskDistribution: {
+            low: 8,
+            medium: 2,
+            high: 0,
+            critical: 0
+          },
+          topRiskFactors: [] as any[],
+          overallRisk: 'low' as any,
+          recommendations: [] as string[]
         }
       };
 
