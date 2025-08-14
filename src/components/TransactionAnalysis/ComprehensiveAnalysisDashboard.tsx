@@ -4,7 +4,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, TrendingUp, AlertTriangle, CheckCircle, Activity } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Loader2, TrendingUp, AlertTriangle, CheckCircle, Activity, Download, FileSpreadsheet } from 'lucide-react';
 import { analysisService } from '@/services/analysisService';
 import { ControlTestResults } from './ControlTestResults';
 import { RiskScoringResults } from './RiskScoringResults';
@@ -13,6 +14,7 @@ import { AIAnalysisResults } from './AIAnalysisResults';
 import { ReportGeneratorPanel } from './ReportGeneratorPanel';
 import { AnalysisConfigurationPanel } from './AnalysisConfigurationPanel';
 import { AnalysisProgressIndicator } from './AnalysisProgressIndicator';
+import { AnalysisOptimizationPanel } from '@/components/AnalysisOptimizationPanel';
 import { ReportData } from '@/services/reportGenerationService';
 import { AnalysisConfiguration } from '@/services/analysisConfigurationService';
 import { useAnalysisProgress } from '@/hooks/useAnalysisProgress';
@@ -32,6 +34,7 @@ export function ComprehensiveAnalysisDashboard({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('overview');
+  const [isExporting, setIsExporting] = useState(false);
   
   const { progress, initializeProgress, startStep, updateStepProgress, completeStep, failStep, reset } = useAnalysisProgress();
   const performanceMetrics = usePerformanceMonitor('ComprehensiveAnalysisDashboard');
@@ -127,6 +130,34 @@ export function ComprehensiveAnalysisDashboard({
       case 'medium': return 'warning';
       case 'low': return 'success';
       default: return 'secondary';
+    }
+  };
+
+  const handleExcelExport = async (type: 'analysis' | 'transactions') => {
+    if (!analysisResults) return;
+    
+    setIsExporting(true);
+    try {
+      const { exportAnalysisToExcel, exportTransactionsToExcel } = await import('@/utils/excelExport');
+      
+      if (type === 'analysis') {
+        await exportAnalysisToExcel({
+          clientName: 'Klient', // Should come from props
+          reportDate: new Date().toLocaleDateString('nb-NO'),
+          fiscalYear: '2024',
+          basicAnalysis: analysisResults.basicAnalysis,
+          controlTests: analysisResults.controlTests,
+          riskScoring: analysisResults.riskScoring,
+          aiAnalysis: analysisResults.aiAnalysis
+        });
+      } else {
+        // Note: This would need actual transaction data - placeholder for now
+        await exportTransactionsToExcel([], 'Klient_transaksjoner');
+      }
+    } catch (error) {
+      console.error('Excel export failed:', error);
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -259,7 +290,7 @@ export function ComprehensiveAnalysisDashboard({
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-6">
+            <TabsList className="grid w-full grid-cols-7">
               <TabsTrigger value="overview">Oversikt</TabsTrigger>
               <TabsTrigger value="controls">Kontrolltester</TabsTrigger>
               <TabsTrigger value="risk">Risikoskåring</TabsTrigger>
@@ -267,6 +298,7 @@ export function ComprehensiveAnalysisDashboard({
               <TabsTrigger value="ai">AI-analyse</TabsTrigger>
               <TabsTrigger value="report">Rapport</TabsTrigger>
               <TabsTrigger value="config">Innstillinger</TabsTrigger>
+              <TabsTrigger value="optimization">Optimalisering</TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview" className="space-y-4">
@@ -366,6 +398,10 @@ export function ComprehensiveAnalysisDashboard({
                 onConfigurationChange={setAnalysisConfig}
               />
             </TabsContent>
+
+            <TabsContent value="optimization">
+              <AnalysisOptimizationPanel />
+            </TabsContent>
           </Tabs>
         </CardContent>
       </Card>
@@ -383,33 +419,60 @@ export function ComprehensiveAnalysisDashboard({
           )}
         </Button>
         
-        <Button 
-          variant="outline"
-          onClick={() => {
-            if (analysisResults) {
-              import('@/utils/reportExport').then(({ exportAnalysisReportToPDF }) => {
-                exportAnalysisReportToPDF({
-                  reportData: {
-                    clientName: 'Klient',
-                    reportDate: new Date().toLocaleDateString('nb-NO'),
-                    fiscalYear: '2024',
-                    basicAnalysis: analysisResults.basicAnalysis,
-                    controlTests: analysisResults.controlTests,
-                    riskScoring: analysisResults.riskScoring,
-                    aiAnalysis: analysisResults.aiAnalysis
-                  },
-                  analysisType: 'comprehensive',
-                  dateRange: {
-                    start: analysisResults.basicAnalysis?.date_range?.start || 'N/A',
-                    end: analysisResults.basicAnalysis?.date_range?.end || 'N/A'
-                  }
-                });
-              });
-            }
-          }}
-        >
-          Eksporter rapport
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" disabled={!analysisResults || isExporting}>
+              {isExporting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Eksporterer...
+                </>
+              ) : (
+                <>
+                  <Download className="w-4 h-4 mr-2" />
+                  Eksporter
+                </>
+              )}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            <DropdownMenuItem 
+              onClick={() => {
+                if (analysisResults) {
+                  import('@/utils/reportExport').then(({ exportAnalysisReportToPDF }) => {
+                    exportAnalysisReportToPDF({
+                      reportData: {
+                        clientName: 'Klient',
+                        reportDate: new Date().toLocaleDateString('nb-NO'),
+                        fiscalYear: '2024',
+                        basicAnalysis: analysisResults.basicAnalysis,
+                        controlTests: analysisResults.controlTests,
+                        riskScoring: analysisResults.riskScoring,
+                        aiAnalysis: analysisResults.aiAnalysis
+                      },
+                      analysisType: 'comprehensive',
+                      dateRange: {
+                        start: analysisResults.basicAnalysis?.date_range?.start || 'N/A',
+                        end: analysisResults.basicAnalysis?.date_range?.end || 'N/A'
+                      }
+                    });
+                  });
+                }
+              }}
+            >
+              <Download className="w-4 h-4 mr-2" />
+              PDF Rapport
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleExcelExport('analysis')}>
+              <FileSpreadsheet className="w-4 h-4 mr-2" />
+              Excel Analyse
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleExcelExport('transactions')}>
+              <FileSpreadsheet className="w-4 h-4 mr-2" />
+              Excel Transaksjoner
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
   );

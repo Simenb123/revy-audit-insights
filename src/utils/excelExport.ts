@@ -438,3 +438,37 @@ export class ExcelExportService {
     }
   }
 }
+
+// Convenience functions for easier importing
+export async function exportAnalysisToExcel(data: {
+  clientName?: string;
+  reportDate: string;
+  fiscalYear: string;
+  basicAnalysis: any;
+  controlTests: any[];
+  riskScoring: any;
+  aiAnalysis?: any;
+}): Promise<void> {
+  const excelData: ExcelAnalysisData = {
+    basicAnalysis: data.basicAnalysis,
+    controlTests: data.controlTests,
+    riskScoring: data.riskScoring,
+    aiAnalysis: data.aiAnalysis,
+    metadata: {
+      clientName: data.clientName,
+      periodStart: data.basicAnalysis?.date_range?.start,
+      periodEnd: data.basicAnalysis?.date_range?.end,
+      generatedAt: new Date().toLocaleString('nb-NO'),
+      analysisSummary: `Analyse for ${data.clientName || 'klient'} - ${data.fiscalYear}`
+    }
+  };
+
+  return ExcelExportService.exportAnalysisToExcel(excelData, `${data.clientName || 'analyse'}_${data.fiscalYear}`);
+}
+
+export async function exportTransactionsToExcel(
+  transactions: any[], 
+  filename: string = 'transaksjoner'
+): Promise<void> {
+  return ExcelExportService.exportTransactionData(transactions, filename);
+}
