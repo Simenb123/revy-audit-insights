@@ -52,12 +52,13 @@ export class AnalysisService {
   }
 
   /**
-   * Comprehensive analysis including controls and risk scoring
+   * Comprehensive analysis including controls, risk scoring, and AI insights
    */
   async performComprehensiveAnalysis(request: AnalysisRequest): Promise<{
     basicAnalysis: any;
     controlTests: ControlTestResult[];
     riskScoring: RiskScoringResults;
+    aiAnalysis?: any;
   }> {
     // Run basic analysis
     const basicAnalysis = await this.performBasicTransactionAnalysis(request);
@@ -85,11 +86,44 @@ export class AnalysisService {
     // Run risk scoring
     const riskScoring = await riskScoringService.scoreTransactionRisk(transactions || []);
     
+    // Run AI analysis if requested
+    let aiAnalysis;
+    if (request.analysisType === 'anomaly_detection' || request.analysisType === 'risk_analysis') {
+      try {
+        aiAnalysis = await this.performAIAnalysis(request);
+      } catch (error) {
+        console.warn('AI analysis failed:', error);
+        aiAnalysis = null;
+      }
+    }
+    
     return {
       basicAnalysis,
       controlTests,
-      riskScoring
+      riskScoring,
+      aiAnalysis
     };
+  }
+
+  /**
+   * Phase 2: AI-powered analysis using edge functions
+   */
+  async performAIAnalysis(request: AnalysisRequest): Promise<any> {
+    const { data, error } = await supabase.functions.invoke('ai-transaction-analysis', {
+      body: {
+        clientId: request.clientId,
+        versionId: request.dataVersionId,
+        analysisType: request.analysisType,
+        maxTransactions: 1000
+      }
+    });
+
+    if (error) {
+      console.error('AI Analysis error:', error);
+      throw new Error(`AI Analysis failed: ${error.message}`);
+    }
+
+    return data;
   }
 
   /**
@@ -97,6 +131,15 @@ export class AnalysisService {
    * For now, it returns a placeholder structure
    */
   async performAdvancedAnalysis(request: AnalysisRequest): Promise<AnalysisResult> {
+    // Try AI analysis first
+    if (request.analysisType === 'anomaly_detection' || request.analysisType === 'risk_analysis') {
+      try {
+        return await this.performAIAnalysis(request);
+      } catch (error) {
+        console.warn('AI analysis failed, falling back to placeholder:', error);
+      }
+    }
+
     // TODO: Replace with actual Python FastAPI call
     // const response = await fetch(`${PYTHON_API_URL}/analyze`, {
     //   method: 'POST',
