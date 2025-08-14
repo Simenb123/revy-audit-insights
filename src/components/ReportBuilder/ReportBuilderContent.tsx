@@ -335,6 +335,14 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
             </div>
           </div>
           </div>
+        {/* Scope Status */}
+        <div className="text-xs text-muted-foreground">
+          {isGlobal ? (
+            <span>Omfang: {scopeType === 'firm' ? 'Hele firma' : scopeType === 'custom' ? 'Valgte klienter' : 'Klient'} • Klienter: {scopeType === 'custom' ? selectedClientIds.length : '—'} • År: {selectedFiscalYear}</span>
+          ) : (
+            <span>Aktiv versjon: {selectedVersion || '—'} • År: {selectedFiscalYear}</span>
+          )}
+        </div>
 
         {/* Data Status */}
         {isGlobal && !globalReady ? (

@@ -219,6 +219,24 @@ export function ChartWidget({ widget }: ChartWidgetProps) {
 
   const isLoadingCurrent = dataSource === 'formulaSeries' ? isLoadingSeries : isLoadingTB;
 
+  // Empty state for trial balance-based charts
+  if (dataSource !== 'formulaSeries' && !isLoadingCurrent && filteredTrialBalanceEntries.length === 0) {
+    return (
+      <Card className="h-full">
+        <CardHeader className="pb-2">
+          <InlineEditableTitle 
+            title={widget.title} 
+            onTitleChange={handleTitleChange}
+            size="sm"
+          />
+        </CardHeader>
+        <CardContent>
+          <div className="text-sm text-muted-foreground">Ingen data å vise for valgt omfang/år. Kontroller at saldobalanse er importert og at konti er mappet.</div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   if (isLoadingCurrent) {
     return (
       <Card className="h-full">
