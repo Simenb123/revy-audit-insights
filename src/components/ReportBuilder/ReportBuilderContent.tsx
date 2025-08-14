@@ -252,9 +252,10 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
             )}
             
             <div className="flex flex-wrap gap-2">
-              <ViewModeToggle 
-                disabled={!canUse || widgets.length === 0}
-              />
+          <ViewModeToggle 
+            fiscalYear={selectedFiscalYear}
+            disabled={!canUse || widgets.length === 0}
+          />
               
               <Button
                 variant="outline"

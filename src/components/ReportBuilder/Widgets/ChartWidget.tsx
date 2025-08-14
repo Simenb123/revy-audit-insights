@@ -24,6 +24,8 @@ import { useFormulaSeries } from '@/hooks/useFormulaSeries';
 import { cn } from '@/lib/utils';
 import { getScaleDivisor, formatNumeric, formatPercent, getUnitLabel } from '@/utils/kpiFormat';
 import { formatCurrency } from '@/lib/formatters';
+import { useScope } from '@/contexts/ScopeContext';
+import type { TrialBalanceEntryWithMapping } from '@/hooks/useTrialBalanceWithMappings';
 
 interface ChartWidgetProps {
   widget: Widget;
@@ -33,6 +35,7 @@ export function ChartWidget({ widget }: ChartWidgetProps) {
   const { selectedFiscalYear } = useFiscalYear();
   const { updateWidget } = useWidgetManager();
   const { setCrossFilter, clearCrossFilter, filters } = useFilters();
+  const { selectedClientIds } = useScope();
   const clientId = widget.config?.clientId;
   const chartType = widget.config?.chartType || 'bar';
   const maxDataPoints = widget.config?.maxDataPoints || 6;
@@ -63,13 +66,21 @@ export function ChartWidget({ widget }: ChartWidgetProps) {
   };
   
   const { data: trialBalanceData, isLoading: isLoadingTB } = useScopedTrialBalanceWithMappings(
-    clientId,
+    selectedClientIds,
     selectedFiscalYear,
     widget.config?.selectedVersion
   );
 
-  // Apply global filters
-  const filteredTrialBalanceEntries = useFilteredData(trialBalanceData?.trialBalanceEntries || []);
+  // Apply global filters - aggregate entries from all clients
+  const allEntries: TrialBalanceEntryWithMapping[] = [];
+  if (trialBalanceData?.length) {
+    for (const clientData of trialBalanceData) {
+      if (clientData.trialBalance?.trialBalanceEntries) {
+        allEntries.push(...clientData.trialBalance.trialBalanceEntries);
+      }
+    }
+  }
+  const filteredTrialBalanceEntries = useFilteredData(allEntries);
 
   // Fetch formula time series when timeseries data source is selected
   const { data: formulaSeries, isLoading: isLoadingSeries } = useFormulaSeries({

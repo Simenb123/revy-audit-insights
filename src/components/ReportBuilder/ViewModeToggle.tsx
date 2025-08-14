@@ -1,59 +1,31 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Eye, Edit3, Download } from 'lucide-react';
-import { useViewMode } from './ViewModeContext';
-import { cn } from '@/lib/utils';
+import { Eye, Edit } from 'lucide-react';
+import { useReportBuilderSettings } from '@/hooks/useReportBuilderSettings';
 
 interface ViewModeToggleProps {
+  fiscalYear: number;
   disabled?: boolean;
-  onExportPDF?: () => void;
 }
 
-export function ViewModeToggle({ disabled, onExportPDF }: ViewModeToggleProps) {
-  const { isViewMode, toggleViewMode } = useViewMode();
+export function ViewModeToggle({ fiscalYear, disabled }: ViewModeToggleProps) {
+  const [settings, saveSettings] = useReportBuilderSettings('global', fiscalYear);
+  const isViewMode = settings.isViewMode ?? false;
 
-  const handlePrintToPDF = () => {
-    if (onExportPDF) {
-      onExportPDF();
-    } else {
-      // Default browser print
-      window.print();
-    }
+  const toggleViewMode = () => {
+    saveSettings({ ...settings, isViewMode: !isViewMode });
   };
 
   return (
-    <div className="flex items-center gap-2">
-      <Button
-        variant={isViewMode ? "default" : "outline"}
-        size="sm"
-        onClick={toggleViewMode}
-        disabled={disabled}
-        className="flex items-center gap-2"
-      >
-        {isViewMode ? (
-          <>
-            <Edit3 className="h-4 w-4" />
-            Rediger
-          </>
-        ) : (
-          <>
-            <Eye className="h-4 w-4" />
-            Forhåndsvis
-          </>
-        )}
-      </Button>
-      
-      {isViewMode && (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handlePrintToPDF}
-          className="flex items-center gap-2"
-        >
-          <Download className="h-4 w-4" />
-          Eksporter PDF
-        </Button>
-      )}
-    </div>
+    <Button
+      variant={isViewMode ? "default" : "outline"}
+      size="sm"
+      onClick={toggleViewMode}
+      disabled={disabled}
+      className="flex items-center gap-2"
+    >
+      {isViewMode ? <Eye className="h-4 w-4" /> : <Edit className="h-4 w-4" />}
+      {isViewMode ? 'Visningsmodus' : 'Redigeringsmodus'}
+    </Button>
   );
 }

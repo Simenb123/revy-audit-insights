@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Filter, ChevronDown, ChevronRight } from 'lucide-react';
-import { useScopedTrialBalanceWithMappings } from '@/hooks/useScopedTrialBalanceWithMappings';
+import { useScopedTrialBalanceWithMappings, type ScopedTrialBalanceData } from '@/hooks/useScopedTrialBalanceWithMappings';
 import { useFilteredData } from '@/hooks/useFilteredData';
 import { useFilters } from '@/contexts/FilterContext';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
@@ -15,6 +15,8 @@ import { useTransactions } from '@/hooks/useTransactions';
 import { cn } from '@/lib/utils';
 import { getScaleDivisor, formatNumeric, getUnitLabel } from '@/utils/kpiFormat';
 import { formatCurrency } from '@/lib/formatters';
+import { useScope } from '@/contexts/ScopeContext';
+import type { TrialBalanceEntryWithMapping } from '@/hooks/useTrialBalanceWithMappings';
 
 interface TableWidgetProps {
   widget: Widget;
@@ -24,6 +26,7 @@ export function TableWidget({ widget }: TableWidgetProps) {
   const { selectedFiscalYear } = useFiscalYear();
   const { updateWidget } = useWidgetManager();
   const { filters, setCrossFilter, clearCrossFilter } = useFilters();
+  const { selectedClientIds } = useScope();
   const clientId = widget.config?.clientId;
   const dataSource = widget.config?.dataSource || 'trial_balance';
   const dimension = widget.config?.dimension || 'account';
@@ -48,14 +51,22 @@ export function TableWidget({ widget }: TableWidgetProps) {
   const scaleDivisor = React.useMemo(() => getScaleDivisor(unitScale), [unitScale]);
   const unitLabel = React.useMemo(() => getUnitLabel(false, showCurrency, unitScale), [showCurrency, unitScale]);
   const { data: trialBalanceData, isLoading } = useScopedTrialBalanceWithMappings(
-    clientId,
+    selectedClientIds,
     selectedFiscalYear,
     widget.config?.selectedVersion
   );
   const { data: txData } = useTransactions(clientId || '', { pageSize: 1000 });
-
-  // Apply global filters to trial balance entries
-  const filteredTrialBalanceEntries = useFilteredData(trialBalanceData?.trialBalanceEntries || []);
+  
+  // Apply global filters to trial balance entries - aggregate from all clients
+  const allEntries: TrialBalanceEntryWithMapping[] = [];
+  if (trialBalanceData?.length) {
+    for (const clientData of trialBalanceData) {
+      if (clientData.trialBalance?.trialBalanceEntries) {
+        allEntries.push(...clientData.trialBalance.trialBalanceEntries);
+      }
+    }
+  }
+  const filteredTrialBalanceEntries = useFilteredData(allEntries);
 
   if (dataSource === 'transactions') {
     const rows = React.useMemo(() => {
