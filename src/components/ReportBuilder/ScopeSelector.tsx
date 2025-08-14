@@ -10,8 +10,15 @@ import { Download, Share2, Database } from 'lucide-react';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
 
 export function ScopeSelector() {
-  const { scopeType, setScopeType } = useScope();
+  const scopeContext = useScope();
   const { selectedFiscalYear } = useFiscalYear();
+  
+  // Ensure context is available before destructuring
+  if (!scopeContext) {
+    return null;
+  }
+  
+  const { scopeType, setScopeType } = scopeContext;
   const [showExportDialog, setShowExportDialog] = React.useState(false);
   const [showShareDialog, setShowShareDialog] = React.useState(false);
   const [showDataSourceDialog, setShowDataSourceDialog] = React.useState(false);
