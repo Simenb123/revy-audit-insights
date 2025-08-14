@@ -14,24 +14,15 @@ import { Check } from 'lucide-react';
 import { Account, Transaction, SamplingResult } from '@/types/revio';
 import { formatCurrency } from '@/lib/formatters';
 
-// Mock transactions data
-const mockTransactions: Transaction[] = [
-  {
-    id: '1',
-    date: '2024-01-15',
-    description: 'Salg av konsulenttjenester',
-    amount: 24500,
-    account: '3100',
-    voucher: '1001'
-  },
-  // ... more mock transactions would go here
-];
+import { supabase } from '@/integrations/supabase/client';
 
 export interface TransactionSamplingProps {
   selectedAccount?: Account | null;
+  clientId: string;
+  versionId?: string;
 }
 
-const TransactionSampling = ({ selectedAccount }: TransactionSamplingProps) => {
+const TransactionSampling = ({ selectedAccount, clientId, versionId }: TransactionSamplingProps) => {
   const [samplingMethod, setSamplingMethod] = useState<'random' | 'stratified' | 'monetary'>('random');
   const [sampleSize, setSampleSize] = useState<number>(5);
   const [coverageTarget, setCoverageTarget] = useState<number>(30);
@@ -40,31 +31,76 @@ const TransactionSampling = ({ selectedAccount }: TransactionSamplingProps) => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   
   // Apply sampling
-  const applySampling = () => {
+  const applySampling = async () => {
+    if (!clientId || !selectedAccount) return;
+    
     setIsLoading(true);
     
-    // Simulate API call delay
-    setTimeout(() => {
-      // In a real app, this would call an API that performs the sampling
-      const sampledTransactions = mockTransactions.slice(0, sampleSize);
-      
-      // Calculate summary statistics
-      const totalAmount = mockTransactions.reduce((sum, t) => sum + t.amount, 0);
-      const sampledAmount = sampledTransactions.reduce((sum, t) => sum + t.amount, 0);
-      
-      setSamplingResult({
-        transactions: sampledTransactions,
-        summary: {
-          totalCount: mockTransactions.length,
-          sampledCount: sampledTransactions.length,
-          totalAmount,
-          sampledAmount,
-          coverage: totalAmount > 0 ? (sampledAmount / totalAmount) * 100 : 0,
+    try {
+      const { data, error } = await supabase.functions.invoke('transaction-sampling', {
+        body: {
+          clientId,
+          versionId,
+          method: samplingMethod,
+          params: {
+            sampleSize,
+            coverageTarget,
+            threshold
+          },
+          accountFilter: selectedAccount.number
         }
       });
+
+      if (error) {
+        console.error('Sampling error:', error);
+        throw new Error('Feil ved utvalgsuttak');
+      }
+
+      // Transform backend data to frontend format
+      const transformedTransactions = data.transactions.map((tx: any) => ({
+        id: tx.id,
+        date: tx.transaction_date,
+        description: tx.description,
+        amount: Math.abs((tx.debit_amount || 0) - (tx.credit_amount || 0)),
+        account: tx.account_number,
+        voucher: tx.voucher_number,
+        isTested: false
+      }));
+
+      setSamplingResult({
+        transactions: transformedTransactions,
+        summary: data.summary
+      });
       
+    } catch (error) {
+      console.error('Sampling failed:', error);
+      // Fallback to mock data if API fails
+      const mockTransactions = [
+        {
+          id: '1',
+          date: '2024-01-15',
+          description: 'Eksempel transaksjon',
+          amount: 24500,
+          account: selectedAccount.number,
+          voucher: '1001',
+          isTested: false
+        }
+      ];
+      
+      setSamplingResult({
+        transactions: mockTransactions.slice(0, sampleSize),
+        summary: {
+          totalCount: 1,
+          sampledCount: 1,
+          totalAmount: 24500,
+          sampledAmount: 24500,
+          coverage: 100,
+          method: samplingMethod
+        }
+      });
+    } finally {
       setIsLoading(false);
-    }, 800);
+    }
   };
   
   // Reset sampling

@@ -267,6 +267,7 @@ export interface SamplingResult {
     sampledAmount?: number;
     coveragePercentage?: number;
     coverage?: number;
+    method?: string;
   };
 }
 

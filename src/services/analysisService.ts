@@ -60,51 +60,85 @@ export class AnalysisService {
     basicAnalysis: any;
     controlTests: ControlTestResult[];
     riskScoring: RiskScoringResults;
+    transactionFlow?: any;
     aiAnalysis?: any;
   }> {
-    // Run basic analysis
-    const basicAnalysis = await this.performBasicTransactionAnalysis(request);
-    
-    // Run control tests
-    const controlTests = await controlTestSuite.runCompleteControlTests(
-      request.clientId, 
-      request.dataVersionId
-    );
-    
-    // Get transaction data for risk scoring
-    const { data: transactions } = await supabase
-      .from('general_ledger_transactions')
-      .select(`
-        id,
-        transaction_date,
-        debit_amount,
-        credit_amount,
-        description,
-        voucher_number,
-        client_chart_of_accounts(account_number)
-      `)
-      .eq('version_id', request.dataVersionId);
-    
-    // Run risk scoring
-    const riskScoring = await riskScoringService.scoreTransactionRisk(transactions || []);
-    
-    // Run AI analysis if requested
-    let aiAnalysis;
-    if (request.analysisType === 'anomaly_detection' || request.analysisType === 'risk_analysis') {
+    try {
+      // Progress tracking
+      request.progressCallback?.('Starter analyse...', 10);
+      
+      // Run basic analysis
+      const basicAnalysis = await this.performBasicTransactionAnalysis(request);
+      request.progressCallback?.('Grunnleggende analyse fullført', 25);
+      
+      // Run control tests
+      const controlTests = await controlTestSuite.runCompleteControlTests(
+        request.clientId, 
+        request.dataVersionId
+      );
+      request.progressCallback?.('Kontrolltester fullført', 50);
+      
+      // Get transaction data for risk scoring
+      const { data: transactions } = await supabase
+        .from('general_ledger_transactions')
+        .select(`
+          id,
+          transaction_date,
+          debit_amount,
+          credit_amount,
+          description,
+          voucher_number,
+          client_chart_of_accounts(account_number)
+        `)
+        .eq('version_id', request.dataVersionId);
+      
+      // Run risk scoring
+      const riskScoring = await riskScoringService.scoreTransactionRisk(transactions || []);
+      request.progressCallback?.('Risikoskåring fullført', 70);
+      
+      // Run transaction flow analysis
+      let transactionFlow;
       try {
-        aiAnalysis = await this.performAIAnalysis(request);
+        const { transactionFlowService } = await import('./transactionFlowService');
+        transactionFlow = await transactionFlowService.analyzeTransactionFlow(
+          request.clientId, 
+          request.dataVersionId
+        );
+        request.progressCallback?.('Transaksjonsflyt-analyse fullført', 85);
       } catch (error) {
-        console.warn('AI analysis failed:', error);
-        aiAnalysis = null;
+        console.warn('Transaction flow analysis failed:', error);
+        transactionFlow = null;
       }
+      
+      // Run AI analysis if requested
+      let aiAnalysis;
+      if (request.analysisType === 'anomaly_detection' || request.analysisType === 'risk_analysis') {
+        try {
+          aiAnalysis = await this.performAIAnalysis(request);
+          request.progressCallback?.('AI-analyse fullført', 95);
+        } catch (error) {
+          console.warn('AI analysis failed:', error);
+          aiAnalysis = {
+            error: true,
+            message: 'AI-analyse er midlertidig utilgjengelig',
+            details: error instanceof Error ? error.message : 'Ukjent feil'
+          };
+        }
+      }
+      
+      request.progressCallback?.('Analyse fullført', 100);
+      
+      return {
+        basicAnalysis,
+        controlTests,
+        riskScoring,
+        transactionFlow,
+        aiAnalysis
+      };
+    } catch (error) {
+      console.error('Comprehensive analysis failed:', error);
+      throw new Error(`Analyse feilet: ${error instanceof Error ? error.message : 'Ukjent feil'}`);
     }
-    
-    return {
-      basicAnalysis,
-      controlTests,
-      riskScoring,
-      aiAnalysis
-    };
   }
 
   /**

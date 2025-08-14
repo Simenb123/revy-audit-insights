@@ -73,6 +73,9 @@ export class ControlTestSuite {
     // 5. Totalbalanse kontroll
     results.push(await this.testOverallBalance(transactions));
     
+    // 6. Sekvenskontroll for bilagsnummer
+    results.push(await this.testVoucherSequence(transactions));
+    
     return results;
   }
 
@@ -397,6 +400,104 @@ export class ControlTestSuite {
       }],
       description: 'Kontrollerer at total debet = total kredit for hele datasettet',
       severity: isBalanced ? 'info' : 'error'
+    };
+  }
+
+  /**
+   * Test 6: Sekvenskontroll for bilagsnummer
+   */
+  private async testVoucherSequence(transactions: any[]): Promise<ControlTestResult> {
+    const sequenceIssues: Array<{
+      issue: 'missing_voucher' | 'duplicate_voucher' | 'sequence_gap';
+      voucherNumber?: string;
+      description: string;
+      details?: any;
+    }> = [];
+
+    // Filtrer ut transaksjoner uten bilagsnummer
+    const transactionsWithVouchers = transactions.filter(tx => tx.voucher_number);
+    const missingVoucherCount = transactions.length - transactionsWithVouchers.length;
+    
+    if (missingVoucherCount > 0) {
+      sequenceIssues.push({
+        issue: 'missing_voucher',
+        description: `${missingVoucherCount} transaksjoner mangler bilagsnummer`,
+        details: { count: missingVoucherCount }
+      });
+    }
+
+    // Samle alle bilagsnumre og sjekk for duplikater
+    const voucherCounts = new Map<string, number>();
+    transactionsWithVouchers.forEach(tx => {
+      const voucher = tx.voucher_number;
+      voucherCounts.set(voucher, (voucherCounts.get(voucher) || 0) + 1);
+    });
+
+    // Finn duplikater (flere bilag med samme nummer)
+    const duplicates: string[] = [];
+    voucherCounts.forEach((count, voucher) => {
+      if (count > 1) {
+        duplicates.push(voucher);
+      }
+    });
+
+    duplicates.forEach(voucher => {
+      sequenceIssues.push({
+        issue: 'duplicate_voucher',
+        voucherNumber: voucher,
+        description: `Bilagsnummer ${voucher} brukes ${voucherCounts.get(voucher)} ganger`,
+        details: { occurrences: voucherCounts.get(voucher) }
+      });
+    });
+
+    // Sjekk for sekvensielle hull (kun hvis bilagsnumre er numeriske)
+    const numericVouchers = Array.from(voucherCounts.keys())
+      .filter(voucher => /^\d+$/.test(voucher))
+      .map(voucher => parseInt(voucher))
+      .sort((a, b) => a - b);
+
+    if (numericVouchers.length > 1) {
+      const gaps: number[] = [];
+      for (let i = 1; i < numericVouchers.length; i++) {
+        const current = numericVouchers[i];
+        const previous = numericVouchers[i - 1];
+        const expectedNext = previous + 1;
+        
+        if (current > expectedNext) {
+          for (let missing = expectedNext; missing < current; missing++) {
+            gaps.push(missing);
+          }
+        }
+      }
+
+      if (gaps.length > 0 && gaps.length <= 10) { // Rapporter kun hvis ikke for mange hull
+        gaps.forEach(missingNumber => {
+          sequenceIssues.push({
+            issue: 'sequence_gap',
+            voucherNumber: missingNumber.toString(),
+            description: `Manglende bilagsnummer: ${missingNumber}`,
+            details: { missingNumber }
+          });
+        });
+      } else if (gaps.length > 10) {
+        sequenceIssues.push({
+          issue: 'sequence_gap',
+          description: `${gaps.length} manglende bilagsnumre i sekvensen`,
+          details: { gapCount: gaps.length, firstGap: gaps[0], lastGap: gaps[gaps.length - 1] }
+        });
+      }
+    }
+
+    const errorCount = sequenceIssues.length;
+    const hasSerious = duplicates.length > 0 || missingVoucherCount > transactions.length * 0.1;
+
+    return {
+      testName: 'voucher_sequence',
+      passed: errorCount === 0,
+      errorCount,
+      details: sequenceIssues,
+      description: 'Kontrollerer sekvens og unike bilagsnumre',
+      severity: hasSerious ? 'error' : errorCount > 0 ? 'warning' : 'info'
     };
   }
 }
