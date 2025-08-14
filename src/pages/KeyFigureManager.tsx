@@ -4,13 +4,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Search, Edit, Trash2, TrendingUp, DollarSign, Activity, Target, BarChart3 } from 'lucide-react';
-import { useFormulaDefinitions, useDeleteFormulaDefinition } from '@/hooks/useFormulas';
+import { Plus, Search, Edit, Trash2, TrendingUp, DollarSign, Activity, Target, BarChart3, Calculator, Pencil } from 'lucide-react';
+import { useFormulaDefinitions, useDeleteFormulaDefinition, FormulaDefinition } from '@/hooks/useFormulas';
 import { KPI_LIBRARY, KPI_CATEGORIES, KpiDefinition } from '@/lib/kpiLibrary';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import KeyFigureEditor from '@/components/KeyFigure/KeyFigureEditor';
+import { FormulaAccountMapper } from '@/components/KeyFigure/FormulaAccountMapper';
+import { VisualFormulaTester } from '@/components/KeyFigure/VisualFormulaTester';
+import { FormulaDebugger } from '@/components/KeyFigure/FormulaDebugger';
 
 const categoryIcons = {
   profitability: TrendingUp,
@@ -31,8 +34,10 @@ const categoryColors = {
 export default function KeyFigureManager() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [selectedFormula, setSelectedFormula] = useState<any>(null);
+  const [selectedFormula, setSelectedFormula] = useState<FormulaDefinition | null>(null);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [selectedClientId, setSelectedClientId] = useState<string>('');
+  const [showAdvancedTools, setShowAdvancedTools] = useState(false);
   const { data: customFormulas = [], isLoading, refetch } = useFormulaDefinitions();
   const { mutate: deleteFormula } = useDeleteFormulaDefinition();
   const { toast } = useToast();
@@ -95,12 +100,31 @@ export default function KeyFigureManager() {
   };
 
   const handleEditFormula = (formula: any) => {
-    setSelectedFormula(formula);
+    // Convert to FormulaDefinition format
+    const formulaData: FormulaDefinition = {
+      id: formula.id,
+      name: formula.name,
+      description: formula.description,
+      formula_expression: formula.formula,
+      category: formula.category,
+      is_system_formula: formula.isSystem,
+      created_by: '',
+      created_at: '',
+      updated_at: '',
+      version: 1,
+      is_active: true,
+      metadata: {}
+    };
+    setSelectedFormula(formulaData);
     setIsEditorOpen(true);
   };
 
   const handleEditorSuccess = () => {
     refetch();
+    setShowAdvancedTools(true); // Show advanced tools after creating/editing
+  };
+
+  const handleEditorClose = () => {
     setIsEditorOpen(false);
     setSelectedFormula(null);
   };
@@ -139,10 +163,21 @@ export default function KeyFigureManager() {
             Administrer og opprett nøkkeltall og formler for finansanalyse
           </p>
         </div>
-        <Button onClick={handleCreateNew}>
-          <Plus className="mr-2 h-4 w-4" />
-          Opprett nøkkeltall
-        </Button>
+        <div className="flex items-center gap-4">
+          <Button onClick={handleCreateNew}>
+            <Plus className="mr-2 h-4 w-4" />
+            Opprett nøkkeltall
+          </Button>
+          
+          <Button
+            variant="outline"
+            onClick={() => setShowAdvancedTools(!showAdvancedTools)}
+            className="flex items-center gap-2"
+          >
+            <Calculator className="h-4 w-4" />
+            {showAdvancedTools ? 'Skjul verktøy' : 'Vis verktøy'}
+          </Button>
+        </div>
       </div>
 
       {/* Stats Overview */}
@@ -322,6 +357,30 @@ export default function KeyFigureManager() {
         })}
       </div>
 
+      {showAdvancedTools && selectedFormula && (
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mt-6">
+          <div className="space-y-6">
+            <FormulaAccountMapper
+              formulaExpression={selectedFormula.formula_expression}
+              clientId={selectedClientId}
+            />
+            
+            <VisualFormulaTester
+              formulaExpression={selectedFormula.formula_expression}
+              formulaId={selectedFormula.id}
+              clientId={selectedClientId}
+              format="number"
+            />
+          </div>
+          
+          <div>
+            <FormulaDebugger
+              formulaExpression={selectedFormula.formula_expression}
+            />
+          </div>
+        </div>
+      )}
+
       {filteredKeyFigures.length === 0 && (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
@@ -337,7 +396,7 @@ export default function KeyFigureManager() {
       <KeyFigureEditor
         formula={selectedFormula}
         isOpen={isEditorOpen}
-        onClose={() => setIsEditorOpen(false)}
+        onClose={handleEditorClose}
         onSuccess={handleEditorSuccess}
       />
     </div>
