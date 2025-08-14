@@ -9,6 +9,129 @@ interface WidgetPreviewProps {
 export function WidgetPreview({ type, title, config = {} }: WidgetPreviewProps) {
   const heading = title || 'Forhåndsvisning';
 
+  // Apply styling configuration
+  const getWidgetStyles = () => {
+    const styles: React.CSSProperties = {};
+    
+    if (config.padding !== undefined) {
+      styles.padding = `${config.padding}px`;
+    }
+    
+    if (config.borderRadius !== undefined) {
+      styles.borderRadius = `${config.borderRadius}px`;
+    }
+    
+    return styles;
+  };
+
+  const getWidgetClasses = () => {
+    const classes = ['rounded-md', 'border', 'p-3'];
+    
+    // Theme preset classes
+    if (config.themePreset) {
+      switch (config.themePreset) {
+        case 'professional':
+          classes.push('bg-slate-50', 'border-slate-200');
+          break;
+        case 'modern':
+          classes.push('bg-gradient-to-br', 'from-blue-50', 'to-indigo-50', 'border-blue-200');
+          break;
+        case 'minimal':
+          classes.push('bg-white', 'border-gray-100', 'shadow-none');
+          break;
+        case 'bold':
+          classes.push('bg-primary/5', 'border-primary/20');
+          break;
+        case 'elegant':
+          classes.push('bg-gradient-to-br', 'from-purple-50', 'to-pink-50', 'border-purple-200');
+          break;
+      }
+    }
+    
+    // Background
+    if (config.background) {
+      switch (config.background) {
+        case 'white':
+          classes.push('bg-white');
+          break;
+        case 'muted':
+          classes.push('bg-muted/50');
+          break;
+        case 'gradient':
+          classes.push('bg-gradient-to-br', 'from-primary/5', 'to-secondary/5');
+          break;
+        case 'transparent':
+          classes.push('bg-transparent');
+          break;
+      }
+    }
+    
+    // Visual effects
+    if (config.showShadow !== false) {
+      classes.push('shadow-sm');
+    }
+    
+    if (config.showBorder === false) {
+      classes.push('border-transparent');
+    }
+    
+    if (config.enableHover !== false) {
+      classes.push('hover:shadow-md', 'transition-shadow');
+    }
+    
+    // Layout variant
+    if (config.layoutVariant) {
+      switch (config.layoutVariant) {
+        case 'compact':
+          classes.push('p-2');
+          break;
+        case 'expanded':
+          classes.push('p-6');
+          break;
+        case 'card':
+          classes.push('shadow-lg', 'border-2');
+          break;
+        case 'minimal':
+          classes.push('p-1', 'border-0', 'shadow-none');
+          break;
+      }
+    }
+    
+    // Custom classes
+    if (config.customClasses) {
+      classes.push(...config.customClasses);
+    }
+    
+    return classes.join(' ');
+  };
+
+  const getTextStyles = () => {
+    const classes = [];
+    
+    if (config.fontSize) {
+      switch (config.fontSize) {
+        case 'xs': classes.push('text-xs'); break;
+        case 'sm': classes.push('text-sm'); break;
+        case 'base': classes.push('text-base'); break;
+        case 'lg': classes.push('text-lg'); break;
+        case 'xl': classes.push('text-xl'); break;
+        case '2xl': classes.push('text-2xl'); break;
+      }
+    }
+    
+    if (config.fontWeight) {
+      switch (config.fontWeight) {
+        case 'light': classes.push('font-light'); break;
+        case 'normal': classes.push('font-normal'); break;
+        case 'medium': classes.push('font-medium'); break;
+        case 'semibold': classes.push('font-semibold'); break;
+        case 'bold': classes.push('font-bold'); break;
+      }
+    }
+    
+    return classes.join(' ');
+  };
+
   const renderContent = () => {
     switch (type) {
       case 'kpi':
@@ -77,9 +200,11 @@ export function WidgetPreview({ type, title, config = {} }: WidgetPreviewProps) 
   };
 
   return (
-    <div className="rounded-md border p-3">
-      <div className="text-sm font-medium mb-2 truncate">{heading}</div>
-      {renderContent()}
+    <div className={getWidgetClasses()} style={getWidgetStyles()}>
+      <div className={`text-sm font-medium mb-2 truncate ${getTextStyles()}`}>{heading}</div>
+      <div className={getTextStyles()}>
+        {renderContent()}
+      </div>
     </div>
   );
 }

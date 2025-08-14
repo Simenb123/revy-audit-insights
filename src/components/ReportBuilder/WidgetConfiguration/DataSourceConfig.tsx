@@ -9,24 +9,18 @@ import { dataSourceManager, type DataSource } from '@/lib/dataSource';
 import { useDataSource } from '@/hooks/useDataSource';
 
 interface DataSourceConfigProps {
-  widgetId: string;
-  dataSourceId?: string;
-  autoRefresh?: boolean;
-  refreshInterval?: number;
-  onDataSourceChange: (dataSourceId: string) => void;
-  onAutoRefreshChange: (enabled: boolean) => void;
-  onRefreshIntervalChange: (interval: number) => void;
+  config: Record<string, any>;
+  onChange: (config: Record<string, any>) => void;
 }
 
-export function DataSourceConfig({
-  widgetId,
-  dataSourceId,
-  autoRefresh = true,
-  refreshInterval = 15,
-  onDataSourceChange,
-  onAutoRefreshChange,
-  onRefreshIntervalChange
-}: DataSourceConfigProps) {
+export function DataSourceConfig({ config, onChange }: DataSourceConfigProps) {
+  const dataSourceId = config.dataSourceId;
+  const autoRefresh = config.autoRefresh ?? true;
+  const refreshInterval = config.refreshInterval ?? 15;
+
+  const updateConfig = (updates: Record<string, any>) => {
+    onChange({ ...config, ...updates });
+  };
   const [dataSources] = useState(dataSourceManager.getAllDataSources());
   const { data, loading, error, lastUpdated, refresh } = useDataSource(dataSourceId || '', {
     autoRefresh,
@@ -55,7 +49,7 @@ export function DataSourceConfig({
 
       <div className="space-y-2">
         <Label htmlFor="data-source">Velg datakilde</Label>
-        <Select value={dataSourceId || ""} onValueChange={onDataSourceChange}>
+        <Select value={dataSourceId || ""} onValueChange={(value) => updateConfig({ dataSourceId: value })}>
           <SelectTrigger>
             <SelectValue placeholder="Velg en datakilde..." />
           </SelectTrigger>
@@ -119,7 +113,7 @@ export function DataSourceConfig({
               <div className="flex items-center space-x-2">
                 <Switch
                   checked={autoRefresh}
-                  onCheckedChange={onAutoRefreshChange}
+                  onCheckedChange={(checked) => updateConfig({ autoRefresh: checked })}
                 />
                 <span className="text-sm text-muted-foreground">
                   {autoRefresh ? 'På' : 'Av'}
@@ -131,7 +125,7 @@ export function DataSourceConfig({
               <Label>Oppdateringsintervall</Label>
               <Select
                 value={refreshInterval.toString()}
-                onValueChange={(value) => onRefreshIntervalChange(Number(value))}
+                onValueChange={(value) => updateConfig({ refreshInterval: Number(value) })}
                 disabled={!autoRefresh}
               >
                 <SelectTrigger>
