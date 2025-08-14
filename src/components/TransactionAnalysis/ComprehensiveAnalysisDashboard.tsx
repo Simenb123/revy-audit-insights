@@ -12,8 +12,11 @@ import { TransactionFlowAnalysis } from './TransactionFlowAnalysis';
 import { AIAnalysisResults } from './AIAnalysisResults';
 import { ReportGeneratorPanel } from './ReportGeneratorPanel';
 import { AnalysisConfigurationPanel } from './AnalysisConfigurationPanel';
+import { AnalysisProgressIndicator } from './AnalysisProgressIndicator';
 import { ReportData } from '@/services/reportGenerationService';
 import { AnalysisConfiguration } from '@/services/analysisConfigurationService';
+import { useAnalysisProgress } from '@/hooks/useAnalysisProgress';
+import { usePerformanceMonitor } from '@/hooks/usePerformanceMonitor';
 
 interface ComprehensiveAnalysisDashboardProps {
   clientId: string;
@@ -29,21 +32,66 @@ export function ComprehensiveAnalysisDashboard({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('overview');
+  
+  const { progress, initializeProgress, startStep, updateStepProgress, completeStep, failStep, reset } = useAnalysisProgress();
+  const performanceMetrics = usePerformanceMonitor('ComprehensiveAnalysisDashboard');
 
   const runComprehensiveAnalysis = async () => {
     setLoading(true);
     setError(null);
+    reset();
+    
+    // Initialize progress steps
+    initializeProgress([
+      { id: 'init', label: 'Initialiserer analyse' },
+      { id: 'fetch_data', label: 'Henter transaksjonsdata' },
+      { id: 'basic_analysis', label: 'Utfører grunnleggende analyse' },
+      { id: 'control_tests', label: 'Kjører kontrolltester' },
+      { id: 'risk_scoring', label: 'Beregner risikoskårer' },
+      { id: 'ai_analysis', label: 'Utfører AI-analyse' },
+      { id: 'compile_results', label: 'Kompilerer resultater' },
+      { id: 'completed', label: 'Analyse fullført' }
+    ]);
     
     try {
       const results = await analysisService.performComprehensiveAnalysis({
         clientId,
         dataVersionId,
-        analysisType: 'risk_analysis'
+        analysisType: 'risk_analysis',
+        customConfig: analysisConfig,
+        progressCallback: (step: string, progressPercent: number) => {
+          if (step === 'init') startStep('init');
+          else if (step === 'fetch_data') {
+            completeStep('init');
+            startStep('fetch_data');
+          } else if (step === 'basic_analysis') {
+            completeStep('fetch_data');
+            startStep('basic_analysis');
+          } else if (step === 'control_tests') {
+            completeStep('basic_analysis');
+            startStep('control_tests');
+          } else if (step === 'risk_scoring') {
+            completeStep('control_tests');
+            startStep('risk_scoring');
+          } else if (step === 'ai_analysis') {
+            completeStep('risk_scoring');
+            startStep('ai_analysis');
+          } else if (step === 'compile_results') {
+            completeStep('ai_analysis');
+            startStep('compile_results');
+          } else if (step === 'completed') {
+            completeStep('compile_results');
+            startStep('completed');
+            completeStep('completed');
+          }
+        }
       });
       
       setAnalysisResults(results);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Analyse feilet');
+      const errorMessage = err instanceof Error ? err.message : 'Analyse feilet';
+      setError(errorMessage);
+      failStep(progress.currentStep || 'unknown', errorMessage);
     } finally {
       setLoading(false);
     }
@@ -123,6 +171,32 @@ export function ComprehensiveAnalysisDashboard({
 
   return (
     <div className="space-y-6">
+      {/* Progress Indicator */}
+      {(loading || progress.steps.length > 0) && (
+        <AnalysisProgressIndicator progress={progress} />
+      )}
+      
+      {/* Performance Monitor (Development Only) */}
+      {process.env.NODE_ENV === 'development' && !performanceMetrics.isLoading && (
+        <Card className="border-dashed">
+          <CardHeader>
+            <CardTitle className="text-sm">Performance Metrics (Dev)</CardTitle>
+          </CardHeader>
+          <CardContent className="text-xs space-y-1">
+            <div>Render Time: {performanceMetrics.metrics.renderTime.toFixed(2)}ms</div>
+            <div>Load Time: {performanceMetrics.metrics.loadTime.toFixed(2)}ms</div>
+            {performanceMetrics.metrics.memoryUsage && (
+              <div>Memory Usage: {performanceMetrics.metrics.memoryUsage.toFixed(2)}MB</div>
+            )}
+            {performanceMetrics.warnings.length > 0 && (
+              <div className="text-amber-600">
+                Warnings: {performanceMetrics.warnings.join(', ')}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+      
       {/* Analysis Overview */}
       {summary && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
