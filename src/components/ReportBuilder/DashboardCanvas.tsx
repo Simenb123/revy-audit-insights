@@ -100,7 +100,7 @@ export function DashboardCanvas({ clientId, selectedVersion }: DashboardCanvasPr
   }));
 
   return (
-    <div ref={containerRef} className={cn(
+    <div ref={containerRef} data-report-container className={cn(
       "relative p-4 min-h-screen bg-background",
       isViewMode && "print:p-0 print:min-h-0 print:bg-white"
     )}>

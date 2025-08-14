@@ -2,10 +2,13 @@ import React, { useRef, useEffect } from 'react';
 import { Widget, useWidgetManager } from '@/contexts/WidgetManagerContext';
 import { WidgetConfiguration } from './WidgetConfiguration';
 import { Button } from '@/components/ui/button';
-import { X } from 'lucide-react';
+import { X, Download, Copy, Image } from 'lucide-react';
 import { useViewMode } from './ViewModeContext';
 import { useAutoGridItemHeight } from '@/hooks/useAutoGridItemHeight';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { exportWidgetAsImage, copyWidgetToClipboard } from '@/utils/imageExport';
+import { useToast } from '@/hooks/use-toast';
 
 interface WidgetWrapperProps {
   widget: Widget;
@@ -15,6 +18,7 @@ interface WidgetWrapperProps {
 export function WidgetWrapper({ widget, children }: WidgetWrapperProps) {
   const { updateWidget, removeWidget, widgets } = useWidgetManager();
   const { isViewMode } = useViewMode();
+  const { toast } = useToast();
   const containerRef = useRef<HTMLDivElement | null>(null);
 
 // Auto-adjust height to content
@@ -57,6 +61,38 @@ export function WidgetWrapper({ widget, children }: WidgetWrapperProps) {
       handleUpdateWidget({ sectionId: value });
     }
   };
+
+  const handleExportWidget = async (format: 'png' | 'jpeg') => {
+    try {
+      await exportWidgetAsImage(widget.id, `${widget.title || 'widget'}-${Date.now()}`, { format });
+      toast({
+        title: "Widget eksportert",
+        description: `Widget eksportert som ${format.toUpperCase()}.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Eksportfeil",
+        description: "Kunne ikke eksportere widget.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleCopyWidget = async () => {
+    try {
+      await copyWidgetToClipboard(widget.id);
+      toast({
+        title: "Widget kopiert",
+        description: "Widget er kopiert til utklippstavlen.",
+      });
+    } catch (error) {
+      toast({
+        title: "Kopieringsfeil",
+        description: "Kunne ikke kopiere widget.",
+        variant: "destructive"
+      });
+    }
+  };
   return (
     <div
       ref={containerRef}
@@ -84,6 +120,29 @@ export function WidgetWrapper({ widget, children }: WidgetWrapperProps) {
             widget={widget}
             onUpdateWidget={handleUpdateWidget}
           />
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                <Download className="h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleExportWidget('png')}>
+                <Image className="h-4 w-4 mr-2" />
+                Eksporter som PNG
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExportWidget('jpeg')}>
+                <Image className="h-4 w-4 mr-2" />
+                Eksporter som JPEG
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleCopyWidget}>
+                <Copy className="h-4 w-4 mr-2" />
+                Kopier til utklippstavle
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          
           <Button
             variant="ghost"
             size="sm"

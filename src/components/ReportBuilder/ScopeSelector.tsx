@@ -3,14 +3,16 @@ import { Button } from '@/components/ui/button';
 import { useScope } from '@/contexts/ScopeContext';
 import { ClientsMultiSelect } from './ClientsMultiSelect';
 import { ExportReportDialog } from './ExportReportDialog';
+import { ShareDialog } from './ShareDialog';
 import { ViewModeToggle } from './ViewModeToggle';
-import { Download } from 'lucide-react';
+import { Download, Share2 } from 'lucide-react';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
 
 export function ScopeSelector() {
   const { scopeType, setScopeType } = useScope();
   const { selectedFiscalYear } = useFiscalYear();
   const [showExportDialog, setShowExportDialog] = React.useState(false);
+  const [showShareDialog, setShowShareDialog] = React.useState(false);
 
   return (
     <div className="flex flex-col gap-4" aria-label="Omfangsvelger">
@@ -50,6 +52,15 @@ export function ScopeSelector() {
           <Button
             variant="outline"
             size="sm"
+            onClick={() => setShowShareDialog(true)}
+            className="flex items-center gap-2"
+          >
+            <Share2 className="h-4 w-4" />
+            Del
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => setShowExportDialog(true)}
             className="flex items-center gap-2"
           >
@@ -65,6 +76,11 @@ export function ScopeSelector() {
         </div>
       )}
 
+      <ShareDialog
+        open={showShareDialog}
+        onOpenChange={setShowShareDialog}
+      />
+      
       <ExportReportDialog
         open={showExportDialog}
         onOpenChange={setShowExportDialog}
