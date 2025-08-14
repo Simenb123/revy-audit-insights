@@ -12,7 +12,7 @@ export interface MainGroup {
 }
 
 export const useMainGroups = () => {
-  return useQuery({
+  return useQuery<MainGroup[], Error>({
     queryKey: ['main-groups'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -28,8 +28,8 @@ export const useMainGroups = () => {
 
 export const useCreateMainGroup = () => {
   const queryClient = useQueryClient();
-  
-  return useMutation({
+
+  return useMutation<MainGroup, Error>({
     mutationFn: async (group: Omit<MainGroup, 'id' | 'created_at' | 'updated_at'>) => {
       const { data, error } = await supabase
         .from('main_groups')
@@ -48,8 +48,8 @@ export const useCreateMainGroup = () => {
 
 export const useUpdateMainGroup = () => {
   const queryClient = useQueryClient();
-  
-  return useMutation({
+
+  return useMutation<MainGroup, Error>({
     mutationFn: async ({ id, ...updates }: Partial<MainGroup> & { id: string }) => {
       const { data, error } = await supabase
         .from('main_groups')
@@ -69,8 +69,8 @@ export const useUpdateMainGroup = () => {
 
 export const useDeleteMainGroup = () => {
   const queryClient = useQueryClient();
-  
-  return useMutation({
+
+  return useMutation<void, Error>({
     mutationFn: async (id: string) => {
       const { error } = await supabase
         .from('main_groups')
