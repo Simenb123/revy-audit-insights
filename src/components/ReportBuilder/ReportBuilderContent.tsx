@@ -365,6 +365,26 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
           </Card>
         ) : null}
 
+        {/* Kom i gang - tom tilstand */}
+        {canUse && widgets.length === 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Kom i gang med rapporten</CardTitle>
+              <CardDescription>
+                Velg en mal for å starte raskt, eller legg til dine egne widgets fra biblioteket.
+              </CardDescription>
+            </CardHeader>
+            <div className="px-6 pb-4 flex flex-wrap gap-2">
+              <Button variant="default" onClick={() => setShowTemplates(true)} className="gap-2">
+                <LayoutTemplate className="h-4 w-4" /> Start fra mal
+              </Button>
+              <Button variant="outline" onClick={() => setShowWidgetLibrary(true)} className="gap-2">
+                <Plus className="h-4 w-4" /> Legg til widget
+              </Button>
+            </div>
+          </Card>
+        )}
+
         {/* Widget Library */}
         {showWidgetLibrary && canUse && (
           <ModuleWrapper id="widget-library" title="Widget bibliotek">
