@@ -61,8 +61,5 @@ export function useTransactions(
         count: data?.count ?? 0,
       }
     },
-    onError: (error: any) => {
-      toast.error(error.message)
-    },
   })
 }

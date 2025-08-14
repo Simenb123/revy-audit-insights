@@ -30,7 +30,7 @@ export function PivotWidget({ widget }: PivotWidgetProps) {
 
   const entries: Record<string, any>[] =
     dataSource === 'transactions'
-      ? (txData?.transactions || []).map((t: any) => ({
+      ? ((txData as any)?.transactions || []).map((t: any) => ({
           transaction_date: t.transaction_date,
           account_number: t.account_number,
           description: t.description,

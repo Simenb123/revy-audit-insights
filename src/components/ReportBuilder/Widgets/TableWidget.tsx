@@ -87,7 +87,7 @@ export function TableWidget({ widget }: TableWidgetProps) {
   if (dataSource === 'transactions') {
     const rows = React.useMemo(() => {
       const map: Record<string, number> = {};
-      (txData?.transactions || []).forEach(t => {
+      ((txData as any)?.transactions || []).forEach((t: any) => {
         const key =
           dimension === 'date'
             ? t.transaction_date
