@@ -1,4 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import type { AIHistoryMessage } from '@/types/revy-ai'
+import type { RevyContext } from '@/types/revio'
 
 // helper to dynamically import after mocking
 const loadService = async () => {
@@ -22,7 +24,7 @@ describe('generateAIResponse', () => {
     }))
     const { generateAIResponse } = await loadService()
     await expect(
-      generateAIResponse('hello', 'general' as any, [] as any)
+      generateAIResponse('hello', 'general' as RevyContext, [] as AIHistoryMessage[])
     ).rejects.toThrow('Supabase not initialized')
   })
 
@@ -34,7 +36,7 @@ describe('generateAIResponse', () => {
       isSupabaseConfigured: true
     }))
     const { generateAIResponse } = await loadService()
-    const res = await generateAIResponse('hi', 'general' as any, [] as any)
+    const res = await generateAIResponse('hi', 'general' as RevyContext, [] as AIHistoryMessage[])
     expect(res).toContain('Tjenesten er midlertidig nede for vedlikehold')
   })
 
@@ -46,7 +48,7 @@ describe('generateAIResponse', () => {
       isSupabaseConfigured: true
     }))
     const { generateAIResponse } = await loadService()
-    const res = await generateAIResponse('hi', 'general' as any, [] as any)
+    const res = await generateAIResponse('hi', 'general' as RevyContext, [] as AIHistoryMessage[])
     expect(res).toContain('En teknisk feil oppstod')
   })
 
@@ -58,7 +60,7 @@ describe('generateAIResponse', () => {
       isSupabaseConfigured: true
     }))
     const { generateAIResponse } = await loadService()
-    const res = await generateAIResponse('hi', 'general' as any, [] as any)
+    const res = await generateAIResponse('hi', 'general' as RevyContext, [] as AIHistoryMessage[])
     expect(res).toBe('hello ai')
   })
 })
