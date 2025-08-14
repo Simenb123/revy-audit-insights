@@ -16,6 +16,7 @@ import { VisualFormulaTester } from '@/components/KeyFigure/VisualFormulaTester'
 import { FormulaDebugger } from '@/components/KeyFigure/FormulaDebugger';
 import { FormulaValidatorComponent } from '@/components/KeyFigure/FormulaValidatorComponent';
 import { FormulaSuggestions } from '@/components/KeyFigure/FormulaSuggestions';
+import { SmartFormulaBuilder } from '@/components/KeyFigure/SmartFormulaBuilder';
 
 const categoryIcons = {
   profitability: TrendingUp,
@@ -395,22 +396,24 @@ export default function KeyFigureManager() {
         </div>
       )}
       
-      {/* AI Formula Suggestions */}
-      <FormulaSuggestions
-        clientId={selectedClientId}
-        onSelectSuggestion={(suggestion: any) => {
-          // Create new formula from suggestion
-          const newFormula = {
-            name: suggestion.name,
-            description: suggestion.description,
-            formula_expression: suggestion.formula,
-            category: suggestion.category,
-            format: 'number' as const,
-          };
-          setSelectedFormula(newFormula as any);
-          setIsEditorOpen(true);
-        }}
-      />
+      {/* Smart Formula Builder */}
+      <div className="space-y-6">
+        <SmartFormulaBuilder
+          clientId="test-client"
+          availableAccounts={[
+            { code: '1500', name: 'Kundefordringer' },
+            { code: '1900', name: 'Kontanter og bankinnskudd' },
+            { code: '2400', name: 'Kortsiktig gjeld' },
+            { code: '3020', name: 'Salgsinntekt' },
+            { code: '4000', name: 'Varekostnad' },
+            { code: '3050', name: 'Driftsresultat' }
+          ]}
+          onFormulaComplete={(formula) => {
+            console.log('New formula created:', formula);
+            // Integration with existing key figure system would go here
+          }}
+        />
+      </div>
 
       {filteredKeyFigures.length === 0 && (
         <Card>
