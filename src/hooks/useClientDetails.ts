@@ -11,6 +11,12 @@ export function useClientDetails(clientId: string) {
     queryFn: async (): Promise<Client | null> => {
       logger.log('🔍 [USE_CLIENT_DETAILS] Fetching client for clientId:', clientId);
       
+      // Handle global reports - don't fetch from database
+      if (clientId === 'global') {
+        logger.log('✅ [USE_CLIENT_DETAILS] Global report - returning null without database query');
+        return null;
+      }
+      
       if (!clientId || clientId.trim() === '') {
         logger.error('❌ [USE_CLIENT_DETAILS] Empty clientId provided');
         throw new Error('Klient-ID er påkrevd');
@@ -139,7 +145,7 @@ export function useClientDetails(clientId: string) {
 
       return client;
     },
-    enabled: !!clientId && clientId.trim() !== '',
+    enabled: !!clientId && clientId.trim() !== '' && clientId !== 'global',
     staleTime: 1000 * 60 * 5, // 5 minutes
     retry: (failureCount, error) => {
       logger.log('🔄 [USE_CLIENT_DETAILS] Query retry:', { failureCount, error: error.message });

@@ -1,5 +1,5 @@
 import React from 'react';
-import ReportBuilder from '@/components/ReportBuilder/ReportBuilder';
+import { GlobalReportBuilder } from '@/components/ReportBuilder/GlobalReportBuilder';
 
 export default function Reports() {
   return (
@@ -9,7 +9,7 @@ export default function Reports() {
         <p className="text-muted-foreground">Bygg rapporter på tvers av klienter</p>
       </header>
       <section>
-        <ReportBuilder clientId="global" />
+        <GlobalReportBuilder clientId="global" />
       </section>
     </main>
   );
