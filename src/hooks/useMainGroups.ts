@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
+const MAIN_GROUPS_KEY = ['main-groups'];
+
 export interface MainGroup {
   id: string;
   name: string;
@@ -13,7 +15,7 @@ export interface MainGroup {
 
 export const useMainGroups = () => {
   return useQuery({
-    queryKey: ['main-groups'],
+    queryKey: MAIN_GROUPS_KEY,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('main_groups')
@@ -41,7 +43,7 @@ export const useCreateMainGroup = () => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['main-groups'] });
+      queryClient.invalidateQueries({ queryKey: MAIN_GROUPS_KEY });
     },
   });
 };
@@ -62,7 +64,7 @@ export const useUpdateMainGroup = () => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['main-groups'] });
+      queryClient.invalidateQueries({ queryKey: MAIN_GROUPS_KEY });
     },
   });
 };
@@ -80,7 +82,7 @@ export const useDeleteMainGroup = () => {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['main-groups'] });
+      queryClient.invalidateQueries({ queryKey: MAIN_GROUPS_KEY });
     },
   });
 };
