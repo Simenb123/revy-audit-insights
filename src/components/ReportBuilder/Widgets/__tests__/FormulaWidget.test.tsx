@@ -14,6 +14,14 @@ vi.mock('@/hooks/useFormulaCalculation', () => ({
   }),
 }));
 
+vi.mock('@/hooks/useFormulas', () => ({
+  useFormulaDefinitions: () => ({
+    data: [] as any[],
+    isLoading: false,
+    error: null as any,
+  }),
+}));
+
 vi.mock('@/contexts/FiscalYearContext', () => ({
   useFiscalYear: () => ({ selectedFiscalYear: 2024 }),
 }));

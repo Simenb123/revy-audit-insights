@@ -6,15 +6,19 @@ import { Widget, useWidgetManager } from '@/contexts/WidgetManagerContext';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
 import { useFilters } from '@/contexts/FilterContext';
 import { useFormulaCalculation } from '@/hooks/useFormulaCalculation';
+import { useFormulaDefinitions } from '@/hooks/useFormulas';
 import { formatCurrency } from '@/lib/formatters';
+import { formatNumeric, formatPercent } from '@/utils/kpiFormat';
 import { useScope } from '@/contexts/ScopeContext';
 import { useQueries } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
 interface FormulaWidgetProps {
   /**
-   * Widget configuration. The formula expression should be provided via
-   * `widget.config.formula` and the client via `widget.config.clientId`.
+   * Widget configuration. The formula expression can be provided via:
+   * - `widget.config.formulaId` for predefined formulas from the database
+   * - `widget.config.formula` for custom formula expressions
+   * The client should be provided via `widget.config.clientId`.
    */
   widget: Widget;
   /** Optional format of the result. Defaults to plain number. */
@@ -24,7 +28,7 @@ interface FormulaWidgetProps {
 /**
  * Displays the result of a formula expression. The component re-calculates the
  * value whenever filters, client, fiscal year or the formula itself changes.
- * It reuses the same formula engine that is utilised in AccountLinesWidget.
+ * Supports both predefined formulas (via formulaId) and custom formulas.
  */
 export function FormulaWidget({ widget, format: formatProp }: FormulaWidgetProps) {
   const { updateWidget } = useWidgetManager();
@@ -32,11 +36,22 @@ export function FormulaWidget({ widget, format: formatProp }: FormulaWidgetProps
   const { filters } = useFilters();
 
   const clientId = widget.config?.clientId;
-  const formula = widget.config?.formula;
+  const formulaId = widget.config?.formulaId;
+  const customFormula = widget.config?.formula;
   const selectedVersion = widget.config?.selectedVersion;
+
+  const { data: formulas } = useFormulaDefinitions();
 
   const { scopeType, selectedClientIds } = useScope();
   const isGlobalMulti = !clientId && scopeType === 'custom' && (selectedClientIds?.length || 0) > 0;
+
+  // Get the selected formula definition if using a predefined formula
+  const selectedFormula = useMemo(() => {
+    if (formulaId && formulas) {
+      return formulas.find(f => f.id === formulaId);
+    }
+    return null;
+  }, [formulaId, formulas]);
 
   const format = (formatProp || widget.config?.format || 'number') as
     | 'currency'
@@ -47,23 +62,35 @@ export function FormulaWidget({ widget, format: formatProp }: FormulaWidgetProps
     updateWidget(widget.id, { title });
   };
 
+  const hasValidFormula = !!(formulaId || customFormula);
+
   const calculation = useFormulaCalculation({
     clientId,
     fiscalYear: selectedFiscalYear,
-    customFormula: formula,
+    formulaId,
+    customFormula,
     selectedVersion,
-    enabled: !!clientId && !!selectedFiscalYear && !!formula,
+    enabled: !!clientId && !!selectedFiscalYear && hasValidFormula,
   });
 
   // Multi-client aggregation in global custom scope
   const multi = useQueries({
     queries:
-      isGlobalMulti && !!formula
+      isGlobalMulti && hasValidFormula
         ? (selectedClientIds || []).map((id) => ({
-            queryKey: ['formula-calculation', id, selectedFiscalYear, formula, selectedVersion],
+            queryKey: ['formula-calculation', id, selectedFiscalYear, formulaId, customFormula, selectedVersion],
             queryFn: async () => {
+              const payload: any = { 
+                clientId: id, 
+                fiscalYear: selectedFiscalYear, 
+                selectedVersion 
+              };
+              
+              if (formulaId) payload.formulaId = formulaId;
+              if (customFormula) payload.customFormula = customFormula;
+
               const { data, error } = await supabase.functions.invoke('calculate-formula', {
-                body: { clientId: id, fiscalYear: selectedFiscalYear, customFormula: formula, selectedVersion },
+                body: payload,
               });
               if (error) throw new Error(error.message || 'Formula calculation failed');
               return data as any;
@@ -92,12 +119,9 @@ export function FormulaWidget({ widget, format: formatProp }: FormulaWidgetProps
         case 'currency':
           return formatCurrency(sum);
         case 'percent':
-          return sum.toFixed(1) + '%';
+          return formatPercent(sum);
         default:
-          return new Intl.NumberFormat('nb-NO', {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 2,
-          }).format(sum);
+          return formatNumeric(sum);
       }
     }
 
@@ -109,16 +133,13 @@ export function FormulaWidget({ widget, format: formatProp }: FormulaWidgetProps
       case 'currency':
         return formatCurrency(value);
       case 'percent':
-        return value.toFixed(1) + '%';
+        return formatPercent(value);
       default:
-        return new Intl.NumberFormat('nb-NO', {
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 2,
-        }).format(value);
+        return formatNumeric(value);
     }
   }, [isGlobalMulti, multi, calculation, format]);
 
-  if (((!clientId && !isGlobalMulti)) || !formula) {
+  if (((!clientId && !isGlobalMulti)) || !hasValidFormula) {
     return (
       <Card className="h-full">
         <CardHeader className="pb-2">
@@ -133,7 +154,7 @@ export function FormulaWidget({ widget, format: formatProp }: FormulaWidgetProps
         </CardHeader>
         <CardContent>
           <div className="text-sm text-muted-foreground">
-            {!formula ? 'Ingen formel konfigurert' : 'Klient ikke valgt'}
+            {!hasValidFormula ? 'Ingen formel konfigurert' : 'Klient ikke valgt'}
           </div>
         </CardContent>
       </Card>
@@ -151,6 +172,11 @@ export function FormulaWidget({ widget, format: formatProp }: FormulaWidgetProps
             size="sm"
           />
         </div>
+        {selectedFormula && (
+          <div className="text-xs text-muted-foreground">
+            {selectedFormula.name}
+          </div>
+        )}
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-bold">{displayValue}</div>
