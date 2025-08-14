@@ -309,7 +309,31 @@ export function ComprehensiveAnalysisDashboard({
           )}
         </Button>
         
-        <Button variant="outline">
+        <Button 
+          variant="outline"
+          onClick={() => {
+            if (analysisResults) {
+              import('@/utils/reportExport').then(({ exportAnalysisReportToPDF }) => {
+                exportAnalysisReportToPDF({
+                  reportData: {
+                    clientName: 'Klient',
+                    reportDate: new Date().toLocaleDateString('nb-NO'),
+                    fiscalYear: '2024',
+                    basicAnalysis: analysisResults.basicAnalysis,
+                    controlTests: analysisResults.controlTests,
+                    riskScoring: analysisResults.riskScoring,
+                    aiAnalysis: analysisResults.aiAnalysis
+                  },
+                  analysisType: 'comprehensive',
+                  dateRange: {
+                    start: analysisResults.basicAnalysis?.date_range?.start || 'N/A',
+                    end: analysisResults.basicAnalysis?.date_range?.end || 'N/A'
+                  }
+                });
+              });
+            }
+          }}
+        >
           Eksporter rapport
         </Button>
       </div>

@@ -6,6 +6,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, FileText, Download, CheckCircle, AlertTriangle } from 'lucide-react';
 import { reportGenerationService, ReportTemplate, ReportData, GeneratedReport } from '@/services/reportGenerationService';
+import { exportAnalysisReportToPDF } from '@/utils/reportExport';
 
 interface ReportGeneratorPanelProps {
   reportData: ReportData | null;
@@ -55,6 +56,26 @@ export function ReportGeneratorPanel({ reportData, isLoading }: ReportGeneratorP
       URL.revokeObjectURL(url);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Kunne ikke eksportere PDF');
+    } finally {
+      setExportingPDF(false);
+    }
+  };
+
+  const handleDirectPDFExport = async () => {
+    if (!reportData) return;
+
+    setExportingPDF(true);
+    try {
+      await exportAnalysisReportToPDF({
+        reportData,
+        analysisType: 'comprehensive',
+        dateRange: {
+          start: reportData.basicAnalysis?.date_range?.start || 'N/A',
+          end: reportData.basicAnalysis?.date_range?.end || 'N/A'
+        }
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Kunne ikke eksportere analyse-PDF');
     } finally {
       setExportingPDF(false);
     }
@@ -165,24 +186,56 @@ export function ReportGeneratorPanel({ reportData, isLoading }: ReportGeneratorP
           </div>
         )}
 
-        {/* Generate Report Button */}
-        <Button 
-          onClick={handleGenerateReport} 
-          disabled={generatingReport || !reportData}
-          className="w-full"
-        >
-          {generatingReport ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Genererer rapport...
-            </>
-          ) : (
-            <>
-              <FileText className="w-4 h-4 mr-2" />
-              Generer rapport
-            </>
-          )}
-        </Button>
+        {/* Action Buttons */}
+        <div className="space-y-3">
+          <Button 
+            onClick={handleGenerateReport} 
+            disabled={generatingReport || !reportData}
+            className="w-full"
+          >
+            {generatingReport ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Genererer rapport...
+              </>
+            ) : (
+              <>
+                <FileText className="w-4 h-4 mr-2" />
+                Generer rapport
+              </>
+            )}
+          </Button>
+          
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">
+                eller
+              </span>
+            </div>
+          </div>
+          
+          <Button 
+            onClick={handleDirectPDFExport}
+            disabled={exportingPDF || !reportData}
+            variant="outline"
+            className="w-full"
+          >
+            {exportingPDF ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Eksporterer...
+              </>
+            ) : (
+              <>
+                <Download className="w-4 h-4 mr-2" />
+                Eksporter direkte til PDF
+              </>
+            )}
+          </Button>
+        </div>
 
         {/* Generated Report Summary */}
         {generatedReport && (
