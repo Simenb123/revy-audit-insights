@@ -1,0 +1,289 @@
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Loader2, TrendingUp, AlertTriangle, CheckCircle, Activity } from 'lucide-react';
+import { analysisService } from '@/services/analysisService';
+import { ControlTestResults } from './ControlTestResults';
+import { RiskScoringResults } from './RiskScoringResults';
+import { TransactionFlowAnalysis } from './TransactionFlowAnalysis';
+import { AIAnalysisResults } from './AIAnalysisResults';
+
+interface ComprehensiveAnalysisDashboardProps {
+  clientId: string;
+  dataVersionId: string;
+}
+
+export function ComprehensiveAnalysisDashboard({ 
+  clientId, 
+  dataVersionId 
+}: ComprehensiveAnalysisDashboardProps) {
+  const [analysisResults, setAnalysisResults] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('overview');
+
+  const runComprehensiveAnalysis = async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const results = await analysisService.performComprehensiveAnalysis({
+        clientId,
+        dataVersionId,
+        analysisType: 'risk_analysis'
+      });
+      
+      setAnalysisResults(results);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Analyse feilet');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (clientId && dataVersionId) {
+      runComprehensiveAnalysis();
+    }
+  }, [clientId, dataVersionId]);
+
+  const getOverallRiskLevel = () => {
+    if (!analysisResults) return 'unknown';
+    
+    const { controlTests, riskScoring } = analysisResults;
+    
+    // Check for critical control failures
+    const criticalFailures = controlTests?.filter((test: any) => 
+      test.result === 'FAIL' && test.severity === 'HIGH'
+    )?.length || 0;
+    
+    // Check overall risk score
+    const overallRisk = riskScoring?.overallRisk || 0;
+    
+    if (criticalFailures > 0 || overallRisk > 0.7) return 'high';
+    if (overallRisk > 0.4) return 'medium';
+    return 'low';
+  };
+
+  const getRiskColor = (level: string) => {
+    switch (level) {
+      case 'high': return 'destructive';
+      case 'medium': return 'warning';
+      case 'low': return 'success';
+      default: return 'secondary';
+    }
+  };
+
+  const getAnalysisSummary = () => {
+    if (!analysisResults) return null;
+    
+    const { basicAnalysis, controlTests, riskScoring, aiAnalysis } = analysisResults;
+    
+    const passedTests = controlTests?.filter((test: any) => test.result === 'PASS')?.length || 0;
+    const totalTests = controlTests?.length || 0;
+    const highRiskTransactions = riskScoring?.transactionRisks?.filter((t: any) => t.riskScore > 0.7)?.length || 0;
+    
+    return {
+      totalTransactions: basicAnalysis?.total_transactions || 0,
+      testsPassed: `${passedTests}/${totalTests}`,
+      overallRisk: riskScoring?.overallRisk || 0,
+      highRiskTransactions,
+      aiInsights: aiAnalysis?.recommendations?.length || 0
+    };
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <span className="ml-2">Kjører omfattende analyse...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <Alert variant="destructive">
+        <AlertTriangle className="h-4 w-4" />
+        <AlertDescription>{error}</AlertDescription>
+      </Alert>
+    );
+  }
+
+  const summary = getAnalysisSummary();
+  const riskLevel = getOverallRiskLevel();
+
+  return (
+    <div className="space-y-6">
+      {/* Analysis Overview */}
+      {summary && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Totale transaksjoner</CardTitle>
+              <Activity className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{summary.totalTransactions.toLocaleString()}</div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Kontrolltester</CardTitle>
+              <CheckCircle className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{summary.testsPassed}</div>
+              <p className="text-xs text-muted-foreground">Bestått/Totalt</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Risikoskåre</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center space-x-2">
+                <div className="text-2xl font-bold">{(summary.overallRisk * 100).toFixed(0)}%</div>
+                <Badge variant={getRiskColor(riskLevel)}>
+                  {riskLevel.toUpperCase()}
+                </Badge>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Høyrisiko transaksjoner</CardTitle>
+              <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{summary.highRiskTransactions}</div>
+              <p className="text-xs text-muted-foreground">Krever oppmerksomhet</p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Detailed Analysis Tabs */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Detaljert analyse</CardTitle>
+          <CardDescription>
+            Komplett analyse av transaksjonsdata med kontrolltester, risikoskåring og AI-innsikter
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="overview">Oversikt</TabsTrigger>
+              <TabsTrigger value="controls">Kontrolltester</TabsTrigger>
+              <TabsTrigger value="risk">Risikoskåring</TabsTrigger>
+              <TabsTrigger value="flow">Transaksjonsflyt</TabsTrigger>
+              <TabsTrigger value="ai">AI-analyse</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="overview" className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Analyse sammendrag</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex justify-between">
+                      <span>Dataperiode:</span>
+                      <span className="font-medium">
+                        {analysisResults?.basicAnalysis?.date_range?.start} - {analysisResults?.basicAnalysis?.date_range?.end}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Antall kontoer:</span>
+                      <span className="font-medium">
+                        {analysisResults?.basicAnalysis?.account_distribution?.length || 0}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Gjennomsnittlig beløp:</span>
+                      <span className="font-medium">
+                        {analysisResults?.basicAnalysis?.amount_statistics?.average?.toLocaleString('nb-NO', { 
+                          style: 'currency', 
+                          currency: 'NOK' 
+                        })}
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Hovedfunn</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      {analysisResults?.aiAnalysis?.key_findings?.map((finding: string, index: number) => (
+                        <div key={index} className="flex items-start space-x-2">
+                          <div className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0" />
+                          <span className="text-sm">{finding}</span>
+                        </div>
+                      )) || (
+                        <p className="text-muted-foreground text-sm">Ingen spesifikke funn identifisert</p>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="controls">
+              {analysisResults?.controlTests && (
+                <ControlTestResults results={analysisResults.controlTests} />
+              )}
+            </TabsContent>
+
+            <TabsContent value="risk">
+              {analysisResults?.riskScoring && (
+                <RiskScoringResults results={analysisResults.riskScoring} />
+              )}
+            </TabsContent>
+
+            <TabsContent value="flow">
+              <TransactionFlowAnalysis 
+                data={null}
+                isLoading={false}
+              />
+            </TabsContent>
+
+            <TabsContent value="ai">
+              {analysisResults?.aiAnalysis && (
+                <AIAnalysisResults results={analysisResults.aiAnalysis} />
+              )}
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
+
+      {/* Action Buttons */}
+      <div className="flex space-x-2">
+        <Button onClick={runComprehensiveAnalysis} disabled={loading}>
+          {loading ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Analyserer...
+            </>
+          ) : (
+            'Kjør ny analyse'
+          )}
+        </Button>
+        
+        <Button variant="outline">
+          Eksporter rapport
+        </Button>
+      </div>
+    </div>
+  );
+}
