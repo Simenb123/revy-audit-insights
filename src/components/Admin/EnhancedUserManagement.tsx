@@ -52,13 +52,17 @@ import {
   Eye
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAllUserProfiles, type UserSummary } from '@/hooks/useAllUserProfiles';
+import { useEmployees, type EmployeeProfile } from '@/hooks/useEmployees';
+import { useBulkUserActions, useUpdateUser, useSyncUsers } from '@/hooks/useUserManagement';
+import type { UserRole } from '@/types/organization';
 
 interface User {
   id: string;
   firstName: string;
   lastName: string;
   email: string | null;
-  role: 'admin' | 'partner' | 'manager' | 'employee';
+  role: UserRole;
   status: 'active' | 'inactive' | 'pre_registered' | 'student' | 'test';
   department?: string;
   lastLogin?: string;
@@ -79,45 +83,26 @@ const EnhancedUserManagement = () => {
 
   const { toast } = useToast();
 
-  // Mock data - replace with actual data fetching
-  const users: User[] = [
-    {
-      id: '1',
-      firstName: 'Ole',
-      lastName: 'Hansen',
-      email: 'ole.hansen@firma.no',
-      role: 'admin',
-      status: 'active',
-      department: 'Ledelse',
-      lastLogin: '2024-01-14T10:00:00Z',
-      createdAt: '2024-01-01T00:00:00Z',
-      updatedAt: '2024-01-14T10:00:00Z'
-    },
-    {
-      id: '2',
-      firstName: 'Kari',
-      lastName: 'Nilsen',
-      email: 'kari.nilsen@firma.no',
-      role: 'partner',
-      status: 'active',
-      department: 'Revisjon',
-      lastLogin: '2024-01-13T15:30:00Z',
-      createdAt: '2024-01-02T00:00:00Z',
-      updatedAt: '2024-01-13T15:30:00Z'
-    },
-    {
-      id: '3',
-      firstName: 'Per',
-      lastName: 'Johansen',
-      email: 'per.johansen@firma.no',
-      role: 'employee',
-      status: 'inactive',
-      department: 'Regnskap',
-      lastLogin: '2024-01-10T09:00:00Z',
-      createdAt: '2024-01-03T00:00:00Z',
-      updatedAt: '2024-01-10T09:00:00Z'
-    }
-  ];
+  // Real data fetching
+  const { data: userProfiles = [], isLoading: loadingProfiles } = useAllUserProfiles();
+  const { data: employees = [], isLoading: loadingEmployees } = useEmployees();
+  const bulkActions = useBulkUserActions();
+  const updateUser = useUpdateUser();
+  const syncUsers = useSyncUsers();
+
+  // Combine and transform data
+  const users: User[] = userProfiles.map(profile => ({
+    id: profile.id,
+    firstName: profile.first_name || '',
+    lastName: profile.last_name || '',
+    email: profile.email,
+    role: profile.user_role,
+    status: employees.find(emp => emp.id === profile.id)?.is_active ? 'active' : 'inactive',
+    department: undefined as string | undefined, // TODO: Add department mapping
+    lastLogin: undefined as string | undefined, // TODO: Add last login tracking
+    createdAt: new Date().toISOString(), // TODO: Get from database
+    updatedAt: new Date().toISOString(), // TODO: Get from database
+  }));
 
   const departments = ['Ledelse', 'Revisjon', 'Regnskap', 'HR'];
 
@@ -173,41 +158,22 @@ const EnhancedUserManagement = () => {
   const handleBulkAction = async () => {
     if (!bulkAction || selectedUsers.size === 0) return;
 
+    if (bulkAction === 'export') {
+      handleExportUsers();
+      return;
+    }
+
+    const userIds = Array.from(selectedUsers);
+    
     try {
-      switch (bulkAction) {
-        case 'activate':
-          // Implement bulk activate
-          toast({
-            title: 'Brukere aktivert',
-            description: `${selectedUsers.size} brukere er aktivert.`,
-          });
-          break;
-        case 'deactivate':
-          // Implement bulk deactivate
-          toast({
-            title: 'Brukere deaktivert',
-            description: `${selectedUsers.size} brukere er deaktivert.`,
-          });
-          break;
-        case 'delete':
-          // Implement bulk delete
-          toast({
-            title: 'Brukere slettet',
-            description: `${selectedUsers.size} brukere er slettet.`,
-          });
-          break;
-        case 'export':
-          handleExportUsers();
-          break;
-      }
+      await bulkActions.mutateAsync({
+        userIds,
+        action: bulkAction as 'activate' | 'deactivate' | 'delete',
+      });
       setSelectedUsers(new Set());
       setBulkAction('');
     } catch (error) {
-      toast({
-        title: 'Feil ved bulk-operasjon',
-        description: 'Kunne ikke utføre operasjonen.',
-        variant: 'destructive',
-      });
+      // Error handling is done in the mutation
     }
   };
 
@@ -241,20 +207,18 @@ const EnhancedUserManagement = () => {
     });
   };
 
-  // Sync function (mock)
+  // Sync function
   const handleSyncUsers = async () => {
     toast({
       title: 'Synkronisering startet',
       description: 'Synkroniserer brukere mellom auth.users og profiles...',
     });
     
-    // Simulate sync process
-    setTimeout(() => {
-      toast({
-        title: 'Synkronisering fullført',
-        description: 'Alle brukere er synkronisert.',
-      });
-    }, 2000);
+    try {
+      await syncUsers.mutateAsync();
+    } catch (error) {
+      // Error handling is done in the mutation
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -289,8 +253,12 @@ const EnhancedUserManagement = () => {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={handleSyncUsers}>
-            <RefreshCw className="h-4 w-4 mr-2" />
+          <Button 
+            variant="outline" 
+            onClick={handleSyncUsers}
+            disabled={syncUsers.isPending}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${syncUsers.isPending ? 'animate-spin' : ''}`} />
             Synkroniser brukere
           </Button>
           <Button>
@@ -387,8 +355,11 @@ const EnhancedUserManagement = () => {
                 >
                   Avbryt
                 </Button>
-                <Button onClick={handleBulkAction} disabled={!bulkAction}>
-                  Utfør handling
+                <Button 
+                  onClick={handleBulkAction} 
+                  disabled={!bulkAction || bulkActions.isPending}
+                >
+                  {bulkActions.isPending ? 'Utfører...' : 'Utfør handling'}
                 </Button>
               </div>
             </div>
@@ -408,6 +379,11 @@ const EnhancedUserManagement = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {loadingProfiles || loadingEmployees ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="text-muted-foreground">Laster brukere...</div>
+            </div>
+          ) : (
           <Table>
             <TableHeader>
               <TableRow>
@@ -513,6 +489,7 @@ const EnhancedUserManagement = () => {
               ))}
             </TableBody>
           </Table>
+          )}
         </CardContent>
       </Card>
 

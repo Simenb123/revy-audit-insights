@@ -44,6 +44,9 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useTemporaryAccess, useGrantTemporaryAccess, useRevokeTemporaryAccess } from '@/hooks/useTemporaryAccess';
+import { useAdminAuditLogs } from '@/hooks/useAdminAuditLogs';
+import { useAllUserProfiles } from '@/hooks/useAllUserProfiles';
 
 interface Permission {
   id: string;
@@ -78,6 +81,13 @@ const GranularAccessControl = () => {
   const [showCreateRole, setShowCreateRole] = useState(false);
   const [showTempAccess, setShowTempAccess] = useState(false);
   const { toast } = useToast();
+
+  // Real data fetching
+  const { data: temporaryAccesses = [], isLoading: loadingTempAccess } = useTemporaryAccess();
+  const { data: auditLogs = [], isLoading: loadingAuditLogs } = useAdminAuditLogs();
+  const { data: users = [] } = useAllUserProfiles();
+  const grantTempAccess = useGrantTemporaryAccess();
+  const revokeTempAccess = useRevokeTemporaryAccess();
 
   // Mock data
   const permissions: Permission[] = [
@@ -142,30 +152,22 @@ const GranularAccessControl = () => {
     }
   ];
 
-  const temporaryAccesses: TemporaryAccess[] = [
-    {
-      id: '1',
-      userId: 'user1',
-      userName: 'Kari Nilsen',
-      resource: 'Bedrift AS',
-      resourceType: 'client',
-      startDate: '2024-01-10',
-      endDate: '2024-01-20',
-      status: 'active',
-      grantedBy: 'Ole Hansen'
-    },
-    {
-      id: '2',
-      userId: 'user2',
-      userName: 'Per Johansen',
-      resource: 'Revisjonsavdeling',
-      resourceType: 'department',
-      startDate: '2024-01-01',
-      endDate: '2024-01-15',
-      status: 'expired',
-      grantedBy: 'Ole Hansen'
-    }
-  ];
+  // Transform temporary access data for UI
+  const transformedTempAccesses = temporaryAccesses.map(access => ({
+    id: access.id,
+    userId: access.user_id,
+    userName: access.user?.first_name && access.user?.last_name 
+      ? `${access.user.first_name} ${access.user.last_name}`
+      : access.user?.email || 'Ukjent bruker',
+    resource: access.resource_id || access.resource_type,
+    resourceType: access.resource_type,
+    startDate: access.start_date,
+    endDate: access.end_date,
+    status: access.status,
+    grantedBy: access.granted_by_user?.first_name && access.granted_by_user?.last_name
+      ? `${access.granted_by_user.first_name} ${access.granted_by_user.last_name}`
+      : access.granted_by_user?.email || 'Ukjent'
+  }));
 
   const getPermissionsByCategory = (category: string) => {
     return permissions.filter(p => p.category === category);
@@ -198,12 +200,28 @@ const GranularAccessControl = () => {
     setShowCreateRole(false);
   };
 
-  const handleGrantTemporaryAccess = () => {
-    toast({
-      title: 'Midlertidig tilgang gitt',
-      description: 'Bruker har fått midlertidig tilgang.',
-    });
-    setShowTempAccess(false);
+  const handleGrantTemporaryAccess = async (formData: any) => {
+    try {
+      await grantTempAccess.mutateAsync({
+        userId: formData.userId,
+        resourceType: formData.resourceType,
+        resourceId: formData.resourceId,
+        startDate: formData.startDate,
+        endDate: formData.endDate,
+        reason: formData.reason,
+      });
+      setShowTempAccess(false);
+    } catch (error) {
+      // Error handling is done in the mutation
+    }
+  };
+
+  const handleRevokeAccess = async (accessId: string) => {
+    try {
+      await revokeTempAccess.mutateAsync(accessId);
+    } catch (error) {
+      // Error handling is done in the mutation
+    }
   };
 
   return (
@@ -239,8 +257,14 @@ const GranularAccessControl = () => {
                         <SelectValue placeholder="Velg bruker" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="user1">Kari Nilsen</SelectItem>
-                        <SelectItem value="user2">Per Johansen</SelectItem>
+                        {users.map(user => (
+                          <SelectItem key={user.id} value={user.id}>
+                            {user.first_name && user.last_name 
+                              ? `${user.first_name} ${user.last_name}`
+                              : user.email || 'Ukjent bruker'
+                            }
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -458,6 +482,11 @@ const GranularAccessControl = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
+              {loadingTempAccess ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="text-muted-foreground">Laster midlertidige tilganger...</div>
+                </div>
+              ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -472,7 +501,7 @@ const GranularAccessControl = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {temporaryAccesses.map(access => (
+                  {transformedTempAccesses.map(access => (
                     <TableRow key={access.id}>
                       <TableCell>{access.userName}</TableCell>
                       <TableCell>{access.resource}</TableCell>
@@ -493,16 +522,22 @@ const GranularAccessControl = () => {
                       </TableCell>
                       <TableCell>{access.grantedBy}</TableCell>
                       <TableCell>
-                        {access.status === 'active' && (
-                          <Button variant="outline" size="sm">
-                            Trekk tilbake
-                          </Button>
-                        )}
+                         {access.status === 'active' && (
+                           <Button 
+                             variant="outline" 
+                             size="sm"
+                             onClick={() => handleRevokeAccess(access.id)}
+                             disabled={revokeTempAccess.isPending}
+                           >
+                             Tilbakekall
+                           </Button>
+                         )}
                       </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -519,9 +554,53 @@ const GranularAccessControl = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-center text-muted-foreground py-8">
-                Tilgangslogg implementeres i neste steg
-              </div>
+              {loadingAuditLogs ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="text-muted-foreground">Laster audit logs...</div>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Tidspunkt</TableHead>
+                      <TableHead>Bruker</TableHead>
+                      <TableHead>Handling</TableHead>
+                      <TableHead>Mål</TableHead>
+                      <TableHead>Beskrivelse</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {auditLogs.map(log => (
+                      <TableRow key={log.id}>
+                        <TableCell>
+                          {new Date(log.created_at).toLocaleDateString('nb-NO', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </TableCell>
+                        <TableCell>
+                          {log.user?.first_name && log.user?.last_name
+                            ? `${log.user.first_name} ${log.user.last_name}`
+                            : log.user?.email || 'Ukjent bruker'
+                          }
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{log.action_type}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          {log.target_user?.first_name && log.target_user?.last_name
+                            ? `${log.target_user.first_name} ${log.target_user.last_name}`
+                            : log.target_user?.email || '-'
+                          }
+                        </TableCell>
+                        <TableCell>{log.description}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

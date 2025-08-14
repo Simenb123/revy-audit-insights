@@ -558,6 +558,42 @@ export type Database = {
           },
         ]
       }
+      admin_audit_logs: {
+        Row: {
+          action_type: string
+          created_at: string
+          description: string
+          id: string
+          metadata: Json | null
+          new_values: Json | null
+          old_values: Json | null
+          target_user_id: string | null
+          user_id: string
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          description: string
+          id?: string
+          metadata?: Json | null
+          new_values?: Json | null
+          old_values?: Json | null
+          target_user_id?: string | null
+          user_id: string
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          description?: string
+          id?: string
+          metadata?: Json | null
+          new_values?: Json | null
+          old_values?: Json | null
+          target_user_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       ai_cache: {
         Row: {
           client_id: string | null
@@ -2757,6 +2793,50 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      custom_permissions: {
+        Row: {
+          audit_firm_id: string | null
+          category: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          audit_firm_id?: string | null
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          audit_firm_id?: string | null
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_permissions_audit_firm_id_fkey"
+            columns: ["audit_firm_id"]
+            isOneToOne: false
+            referencedRelation: "audit_firms"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       dashboard_comments: {
         Row: {
@@ -6280,6 +6360,51 @@ export type Database = {
           },
         ]
       }
+      temporary_access: {
+        Row: {
+          created_at: string
+          end_date: string
+          granted_by: string
+          id: string
+          metadata: Json | null
+          reason: string | null
+          resource_id: string | null
+          resource_type: string
+          start_date: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          end_date: string
+          granted_by: string
+          id?: string
+          metadata?: Json | null
+          reason?: string | null
+          resource_id?: string | null
+          resource_type: string
+          start_date?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          end_date?: string
+          granted_by?: string
+          id?: string
+          metadata?: Json | null
+          reason?: string | null
+          resource_id?: string | null
+          resource_type?: string
+          start_date?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       test_scenarios: {
         Row: {
           annual_revenue: number | null
@@ -6642,6 +6767,41 @@ export type Database = {
             columns: ["scenario_id"]
             isOneToOne: false
             referencedRelation: "test_scenarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_custom_permissions: {
+        Row: {
+          expires_at: string | null
+          granted_at: string
+          granted_by: string | null
+          id: string
+          permission_id: string
+          user_id: string
+        }
+        Insert: {
+          expires_at?: string | null
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          permission_id: string
+          user_id: string
+        }
+        Update: {
+          expires_at?: string | null
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          permission_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_custom_permissions_permission_id_fkey"
+            columns: ["permission_id"]
+            isOneToOne: false
+            referencedRelation: "custom_permissions"
             referencedColumns: ["id"]
           },
         ]
