@@ -12,8 +12,6 @@ import { Calculator, TrendingUp, Save, Library } from 'lucide-react';
 import { useFormulaDefinitions } from '@/hooks/useFormulas';
 import { EnhancedFormulaBuilder, FormulaData } from '@/components/Admin/forms/EnhancedFormulaBuilder';
 import { SaveFormulaDialog } from './SaveFormulaDialog';
-import { KpiLibrary } from './KpiLibrary';
-import { type KpiDefinition } from '@/lib/kpiLibrary';
 
 interface FormulaWidgetConfigProps {
   widget: Widget;
@@ -21,61 +19,11 @@ interface FormulaWidgetConfigProps {
   standardAccounts: Array<{ standard_number: string; standard_name: string }>;
 }
 
-// Standard formulas for quick setup
-const standardFormulas = [
-  {
-    id: 'gross_margin',
-    name: 'Bruttofortjenestegrad',
-    description: 'Bruttofortjeneste i prosent av omsetning',
-    category: 'Lønnsomhet',
-    formula: {
-      type: 'formula' as const,
-      terms: [
-        { id: '1', type: 'account' as const, account: '3000' },
-        { id: '2', type: 'account' as const, account: '4000', operator: '+' as const },
-        { id: '3', type: 'parenthesis' as const, parenthesis: 'close' as const, operator: '/' as const },
-        { id: '4', type: 'account' as const, account: '3000' },
-        { id: '5', type: 'constant' as const, constant: 100, operator: '*' as const }
-      ],
-      metadata: { description: 'Bruttofortjenestegrad beregning', category: 'profitability' }
-    },
-    displayAsPercentage: true
-  },
-  {
-    id: 'current_ratio',
-    name: 'Likviditetsgrad 1',
-    description: 'Omløpsmidler / kortsiktig gjeld',
-    category: 'Likviditet',
-    formula: {
-      type: 'formula' as const,
-      terms: [
-        { id: '1', type: 'account' as const, account: '1500' },
-        { id: '2', type: 'account' as const, account: '2500', operator: '/' as const }
-      ],
-      metadata: { description: 'Likviditetsgrad 1 beregning', category: 'liquidity' }
-    },
-    displayAsPercentage: false
-  },
-  {
-    id: 'equity_ratio',
-    name: 'Egenkapitalandel',
-    description: 'Egenkapital i prosent av totalkapital',
-    category: 'Soliditet',
-    formula: {
-      type: 'formula' as const,
-      terms: [
-        { id: '1', type: 'account' as const, account: '2000' },
-        { id: '2', type: 'account' as const, account: '1000', operator: '/' as const },
-        { id: '3', type: 'constant' as const, constant: 100, operator: '*' as const }
-      ],
-      metadata: { description: 'Egenkapitalandel beregning', category: 'solvency' }
-    },
-    displayAsPercentage: true
-  }
-];
+// These are now managed in the database via formula_definitions
+// Keep only a few basic quick-start options for backward compatibility
 
 export function FormulaWidgetConfig({ widget, onUpdateWidget, standardAccounts }: FormulaWidgetConfigProps) {
-  const [activeTab, setActiveTab] = useState('formula');
+  const [activeTab, setActiveTab] = useState('predefined');
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const { data: formulaDefinitions, refetch } = useFormulaDefinitions();
 
@@ -89,30 +37,23 @@ export function FormulaWidgetConfig({ widget, onUpdateWidget, standardAccounts }
     });
   };
 
-  const handleStandardFormulaSelect = (standardFormulaId: string) => {
-    const standardFormula = standardFormulas.find(f => f.id === standardFormulaId);
-    if (standardFormula) {
+  const handlePredefinedFormulaSelect = (formulaId: string) => {
+    const predefinedFormula = formulaDefinitions?.find(f => f.id === formulaId);
+    if (predefinedFormula) {
       onUpdateWidget({
-        title: standardFormula.name,
+        title: predefinedFormula.name,
         config: {
           ...widget.config,
-          customFormula: standardFormula.formula,
-          formulaId: null,
-          displayAsPercentage: standardFormula.displayAsPercentage,
-          showCurrency: !standardFormula.displayAsPercentage
+          formulaId: formulaId,
+          customFormula: null // Clear custom formula when using database formula
         }
       });
     }
   };
 
   const handleDatabaseFormulaSelect = (formulaId: string) => {
-    onUpdateWidget({
-      config: {
-        ...widget.config,
-        formulaId: formulaId,
-        customFormula: null // Clear custom formula when using database formula
-      }
-    });
+    // This is now handled by the predefined formulas tab
+    handlePredefinedFormulaSelect(formulaId);
   };
 
   const handleSaveFormula = () => {
@@ -133,19 +74,7 @@ export function FormulaWidgetConfig({ widget, onUpdateWidget, standardAccounts }
     refetch(); // Refresh the formula definitions list
   };
 
-  const handleKpiSelect = (kpi: KpiDefinition) => {
-    onUpdateWidget({
-      title: kpi.name,
-      config: {
-        ...widget.config,
-        customFormula: kpi.formula,
-        formulaId: null,
-        displayAsPercentage: kpi.displayAsPercentage,
-        showCurrency: kpi.showCurrency,
-        unitScale: kpi.unitScale || 'none'
-      }
-    });
-  };
+  // KPI support is now integrated into the predefined formulas system
 
   return (
     <div className="space-y-6">
@@ -200,26 +129,65 @@ export function FormulaWidgetConfig({ widget, onUpdateWidget, standardAccounts }
       </Card>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="kpi">KPI</TabsTrigger>
-          <TabsTrigger value="formula">Formel</TabsTrigger>
-          <TabsTrigger value="standard">Standard</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="predefined">Predefinerte</TabsTrigger>
+          <TabsTrigger value="formula">Egendefinert</TabsTrigger>
           <TabsTrigger value="display">Visning</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="kpi" className="space-y-4">
+        <TabsContent value="predefined" className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <Library className="h-5 w-5" />
-                KPI-bibliotek
+                Predefinerte formler
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <KpiLibrary 
-                onSelectKpi={handleKpiSelect}
-                selectedKpiId={widget.config?.kpiId}
-              />
+              {formulaDefinitions && formulaDefinitions.length > 0 ? (
+                <div className="grid grid-cols-1 gap-3">
+                  {formulaDefinitions.map((formula) => (
+                    <div
+                      key={formula.id}
+                      className={`flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors ${
+                        widget.config?.formulaId === formula.id ? 'border-primary bg-primary/5' : ''
+                      }`}
+                      onClick={() => handlePredefinedFormulaSelect(formula.id)}
+                    >
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-medium">{formula.name}</h4>
+                          {formula.category && (
+                            <Badge variant="outline" className="text-xs">
+                              {formula.category}
+                            </Badge>
+                          )}
+                          {widget.config?.formulaId === formula.id && (
+                            <Badge variant="default" className="text-xs">
+                              Aktiv
+                            </Badge>
+                          )}
+                        </div>
+                        {formula.description && (
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {formula.description}
+                          </p>
+                        )}
+                      </div>
+                      <Button 
+                        variant={widget.config?.formulaId === formula.id ? "default" : "outline"} 
+                        size="sm"
+                      >
+                        {widget.config?.formulaId === formula.id ? 'Valgt' : 'Velg'}
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-sm text-muted-foreground p-4 text-center border border-dashed rounded-lg">
+                  Ingen predefinerte formler tilgjengelig. Lag egendefinerte formler i neste fane.
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -256,84 +224,8 @@ export function FormulaWidgetConfig({ widget, onUpdateWidget, standardAccounts }
               )}
             </CardContent>
           </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base flex items-center justify-between">
-                Lagrede formler
-                {widget.config?.formulaId && (
-                  <Badge variant="default" className="text-xs">
-                    Aktiv
-                  </Badge>
-                )}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {formulaDefinitions && formulaDefinitions.length > 0 ? (
-                <Select
-                  value={widget.config?.formulaId || ''}
-                  onValueChange={handleDatabaseFormulaSelect}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Velg en lagret formel..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {formulaDefinitions.map((formula) => (
-                      <SelectItem key={formula.id} value={formula.id}>
-                        <div className="flex items-center gap-2">
-                          <span>{formula.name}</span>
-                          {formula.category && (
-                            <Badge variant="secondary" className="text-xs">
-                              {formula.category}
-                            </Badge>
-                          )}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <div className="text-sm text-muted-foreground p-4 text-center border border-dashed rounded-lg">
-                  Ingen lagrede formler ennå. Lag en formel ovenfor og trykk "Lagre formel".
-                </div>
-              )}
-            </CardContent>
-          </Card>
         </TabsContent>
 
-        <TabsContent value="standard" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Standard nøkkeltall</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 gap-3">
-                {standardFormulas.map((formula) => (
-                  <div
-                    key={formula.id}
-                    className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 cursor-pointer"
-                    onClick={() => handleStandardFormulaSelect(formula.id)}
-                  >
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-medium">{formula.name}</h4>
-                        <Badge variant="outline" className="text-xs">
-                          {formula.category}
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {formula.description}
-                      </p>
-                    </div>
-                    <Button variant="outline" size="sm">
-                      Bruk
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
 
         <TabsContent value="display" className="space-y-4">
           <Card>
