@@ -92,7 +92,7 @@ Regler:
 `
 
     const response = await callOpenAI('chat/completions', {
-      model: 'gpt-4o-mini',
+      model: 'gpt-5-2025-08-07',
       messages: [
         {
           role: 'system',
@@ -103,8 +103,7 @@ Regler:
           content: prompt
         }
       ],
-      temperature: 0.7,
-      max_tokens: 2000
+      max_completion_tokens: 2000
     })
 
     const suggestions = JSON.parse(response.choices[0].message.content)

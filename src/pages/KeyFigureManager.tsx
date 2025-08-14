@@ -14,6 +14,7 @@ import KeyFigureEditor from '@/components/KeyFigure/KeyFigureEditor';
 import { FormulaAccountMapper } from '@/components/KeyFigure/FormulaAccountMapper';
 import { VisualFormulaTester } from '@/components/KeyFigure/VisualFormulaTester';
 import { FormulaDebugger } from '@/components/KeyFigure/FormulaDebugger';
+import { FormulaValidatorComponent } from '@/components/KeyFigure/FormulaValidatorComponent';
 import { FormulaSuggestions } from '@/components/KeyFigure/FormulaSuggestions';
 
 const categoryIcons = {
@@ -379,13 +380,25 @@ export default function KeyFigureManager() {
               formulaExpression={selectedFormula.formula_expression}
             />
           </div>
+          
+          <div>
+            <FormulaValidatorComponent
+              formula={selectedFormula.formula_expression}
+              formulaId={selectedFormula.id}
+              allFormulas={allKeyFigures.filter(kf => 'formula' in kf).map((kf: any) => ({
+                id: kf.id,
+                formula_expression: kf.formula
+              }))}
+              allowedAccounts={[]} // TODO: Get from client's chart of accounts
+            />
+          </div>
         </div>
       )}
       
       {/* AI Formula Suggestions */}
       <FormulaSuggestions
         clientId={selectedClientId}
-        onSelectSuggestion={(suggestion) => {
+        onSelectSuggestion={(suggestion: any) => {
           // Create new formula from suggestion
           const newFormula = {
             name: suggestion.name,
