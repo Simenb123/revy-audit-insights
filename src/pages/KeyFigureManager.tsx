@@ -10,6 +10,7 @@ import { KPI_LIBRARY, KPI_CATEGORIES, KpiDefinition } from '@/lib/kpiLibrary';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import KeyFigureEditor from '@/components/KeyFigure/KeyFigureEditor';
 
 const categoryIcons = {
   profitability: TrendingUp,
@@ -30,7 +31,9 @@ const categoryColors = {
 export default function KeyFigureManager() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const { data: customFormulas = [], isLoading } = useFormulaDefinitions();
+  const [selectedFormula, setSelectedFormula] = useState<any>(null);
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const { data: customFormulas = [], isLoading, refetch } = useFormulaDefinitions();
   const { mutate: deleteFormula } = useDeleteFormulaDefinition();
   const { toast } = useToast();
 
@@ -86,6 +89,22 @@ export default function KeyFigureManager() {
     });
   };
 
+  const handleCreateNew = () => {
+    setSelectedFormula(null);
+    setIsEditorOpen(true);
+  };
+
+  const handleEditFormula = (formula: any) => {
+    setSelectedFormula(formula);
+    setIsEditorOpen(true);
+  };
+
+  const handleEditorSuccess = () => {
+    refetch();
+    setIsEditorOpen(false);
+    setSelectedFormula(null);
+  };
+
   const getCategoryInfo = (category: string) => {
     if (category === 'custom') {
       return { name: 'Egendefinerte', description: 'Brukerdefinerte formler og nøkkeltall' };
@@ -120,7 +139,7 @@ export default function KeyFigureManager() {
             Administrer og opprett nøkkeltall og formler for finansanalyse
           </p>
         </div>
-        <Button>
+        <Button onClick={handleCreateNew}>
           <Plus className="mr-2 h-4 w-4" />
           Opprett nøkkeltall
         </Button>
@@ -240,7 +259,12 @@ export default function KeyFigureManager() {
                               <Badge variant="outline" className="text-xs">System</Badge>
                             ) : (
                               <div className="flex gap-1">
-                                <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="h-6 w-6 p-0"
+                                  onClick={() => handleEditFormula(kf)}
+                                >
                                   <Edit className="h-3 w-3" />
                                 </Button>
                                 <AlertDialog>
@@ -309,6 +333,13 @@ export default function KeyFigureManager() {
           </CardContent>
         </Card>
       )}
+
+      <KeyFigureEditor
+        formula={selectedFormula}
+        isOpen={isEditorOpen}
+        onClose={() => setIsEditorOpen(false)}
+        onSuccess={handleEditorSuccess}
+      />
     </div>
   );
 }
