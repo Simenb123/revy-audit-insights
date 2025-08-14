@@ -1,4 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
+import { controlTestSuite, ControlTestResult } from './controlTestSuite';
+import { riskScoringService, RiskScoringResults } from './riskScoringService';
 
 export interface AnalysisRequest {
   clientId: string;
@@ -19,8 +21,7 @@ export interface AnalysisResult {
 export class AnalysisService {
   
   /**
-   * Phase 1: TypeScript-based basic analysis
-   * These will be replaced by Python microservices in Phase 2
+   * Phase 1: TypeScript-based basic analysis including controls and risk scoring
    */
   async performBasicTransactionAnalysis(request: AnalysisRequest): Promise<any> {
     // Get transaction data for analysis
@@ -48,6 +49,47 @@ export class AnalysisService {
     };
 
     return analysis;
+  }
+
+  /**
+   * Comprehensive analysis including controls and risk scoring
+   */
+  async performComprehensiveAnalysis(request: AnalysisRequest): Promise<{
+    basicAnalysis: any;
+    controlTests: ControlTestResult[];
+    riskScoring: RiskScoringResults;
+  }> {
+    // Run basic analysis
+    const basicAnalysis = await this.performBasicTransactionAnalysis(request);
+    
+    // Run control tests
+    const controlTests = await controlTestSuite.runCompleteControlTests(
+      request.clientId, 
+      request.dataVersionId
+    );
+    
+    // Get transaction data for risk scoring
+    const { data: transactions } = await supabase
+      .from('general_ledger_transactions')
+      .select(`
+        id,
+        transaction_date,
+        debit_amount,
+        credit_amount,
+        description,
+        voucher_number,
+        client_chart_of_accounts(account_number)
+      `)
+      .eq('version_id', request.dataVersionId);
+    
+    // Run risk scoring
+    const riskScoring = await riskScoringService.scoreTransactionRisk(transactions || []);
+    
+    return {
+      basicAnalysis,
+      controlTests,
+      riskScoring
+    };
   }
 
   /**
