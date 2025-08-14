@@ -11,7 +11,9 @@ import { RiskScoringResults } from './RiskScoringResults';
 import { TransactionFlowAnalysis } from './TransactionFlowAnalysis';
 import { AIAnalysisResults } from './AIAnalysisResults';
 import { ReportGeneratorPanel } from './ReportGeneratorPanel';
+import { AnalysisConfigurationPanel } from './AnalysisConfigurationPanel';
 import { ReportData } from '@/services/reportGenerationService';
+import { AnalysisConfiguration } from '@/services/analysisConfigurationService';
 
 interface ComprehensiveAnalysisDashboardProps {
   clientId: string;
@@ -23,6 +25,7 @@ export function ComprehensiveAnalysisDashboard({
   dataVersionId 
 }: ComprehensiveAnalysisDashboardProps) {
   const [analysisResults, setAnalysisResults] = useState<any>(null);
+  const [analysisConfig, setAnalysisConfig] = useState<AnalysisConfiguration | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('overview');
@@ -182,13 +185,14 @@ export function ComprehensiveAnalysisDashboard({
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="overview">Oversikt</TabsTrigger>
               <TabsTrigger value="controls">Kontrolltester</TabsTrigger>
               <TabsTrigger value="risk">Risikoskåring</TabsTrigger>
               <TabsTrigger value="flow">Transaksjonsflyt</TabsTrigger>
               <TabsTrigger value="ai">AI-analyse</TabsTrigger>
               <TabsTrigger value="report">Rapport</TabsTrigger>
+              <TabsTrigger value="config">Innstillinger</TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview" className="space-y-4">
@@ -279,6 +283,13 @@ export function ComprehensiveAnalysisDashboard({
                   aiAnalysis: analysisResults.aiAnalysis
                 } : null}
                 isLoading={loading}
+              />
+            </TabsContent>
+
+            <TabsContent value="config">
+              <AnalysisConfigurationPanel 
+                currentConfig={analysisConfig || undefined}
+                onConfigurationChange={setAnalysisConfig}
               />
             </TabsContent>
           </Tabs>

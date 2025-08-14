@@ -5,3 +5,4 @@ export { TransactionFlowAnalysis } from './TransactionFlowAnalysis';
 export { TransactionFlowVisualization } from './TransactionFlowVisualization';
 export { AIAnalysisResults } from './AIAnalysisResults';
 export { ReportGeneratorPanel } from './ReportGeneratorPanel';
+export { AnalysisConfigurationPanel } from './AnalysisConfigurationPanel';
