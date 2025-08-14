@@ -209,7 +209,8 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
     <ThemeProvider initialTheme={initialTheme} onChange={handleThemeChange}>
       <ViewModeProvider initialIsViewMode={!!savedSettings?.isViewMode}>
         <FilterProvider>
-        <div className="space-y-6">
+          <ViewModeSettingsSync />
+          <div className="space-y-6">
         {/* Client Report Header */}
         <ClientReportHeader 
           clientId={clientId} 
