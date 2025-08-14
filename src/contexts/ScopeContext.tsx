@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from 'react';
 import { loadReportBuilderSettings, saveReportBuilderSettings } from '@/hooks/useReportBuilderSettings';
+import { useClientList } from '@/hooks/useClientList';
 
 export type ScopeType = 'client' | 'firm' | 'custom';
 
@@ -23,6 +24,7 @@ export function ScopeProvider({ children, clientId, fiscalYear }: ScopeProviderP
   const isGlobal = clientId === 'global';
   const [scopeType, setScopeTypeState] = useState<ScopeType>(isGlobal ? 'custom' : 'client');
   const [selectedClientIds, setSelectedClientIdsState] = useState<string[]>(isGlobal ? [] : (clientId ? [clientId] : []));
+  const { data: firmClients = [] } = useClientList();
 
   // Load persisted settings
   useEffect(() => {
@@ -38,6 +40,18 @@ export function ScopeProvider({ children, clientId, fiscalYear }: ScopeProviderP
       }
     }
   }, [storageKeyInputs, clientId]);
+
+  // Auto-select all firm clients in global 'firm' scope
+  useEffect(() => {
+    if (!isGlobal) return;
+    if (scopeType !== 'firm') return;
+    const allIds = (firmClients || []).map((c: any) => c.id).filter(Boolean);
+    if (!allIds.length) return;
+    const hasSame = selectedClientIds.length === allIds.length && selectedClientIds.every(id => allIds.includes(id));
+    if (!hasSame) {
+      setSelectedClientIdsState(allIds);
+    }
+  }, [isGlobal, scopeType, firmClients, selectedClientIds]);
 
   // Persist when scope or selection changes
   useEffect(() => {
