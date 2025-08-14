@@ -12,6 +12,7 @@ import { FormulaWidgetConfig } from './WidgetConfiguration/FormulaWidgetConfig';
 import { PivotWidgetConfig } from './WidgetConfiguration/PivotWidgetConfig';
 import { useFirmStandardAccounts } from '@/hooks/useFirmStandardAccounts';
 import { useFormulaDefinitions } from '@/hooks/useFormulas';
+import { WidgetPreview } from './WidgetPreview';
 
 interface WidgetConfigurationProps {
   widget: Widget;
@@ -873,6 +874,13 @@ export function WidgetConfiguration({ widget, onUpdateWidget }: WidgetConfigurat
             </div>
           )}
           {renderTypeSpecificConfig()}
+
+          {widget.type !== 'formula' && (
+            <div className="space-y-2 pt-2">
+              <Label className="text-xs text-muted-foreground">Forhåndsvisning</Label>
+              <WidgetPreview type={widget.type} title={title} config={config} />
+            </div>
+          )}
         </div>
         {widget.type !== 'formula' && (
           <div className="flex justify-end space-x-2">
