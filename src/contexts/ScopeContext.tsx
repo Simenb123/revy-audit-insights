@@ -72,11 +72,8 @@ export function ScopeProvider({ children, clientId, fiscalYear }: ScopeProviderP
 }
 
 export function useScope() {
-  console.log('useScope called');
   const ctx = useContext(ScopeContext);
-  console.log('useScope context value:', ctx);
   if (!ctx) {
-    console.error('useScope: No context found! ScopeProvider is missing.');
     throw new Error('useScope must be used within a ScopeProvider');
   }
   return ctx;

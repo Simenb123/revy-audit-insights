@@ -43,9 +43,7 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
   const [hasUnsaved, setHasUnsaved] = useState(false);
   const [showIntro, setShowIntro] = useState(false);
   const isGlobal = clientId === 'global';
-  console.log('ReportBuilderContent: About to call useScope');
   const { scopeType, selectedClientIds } = useScope();
-  console.log('ReportBuilderContent: useScope returned:', { scopeType, selectedClientIds });
   const globalReady = isGlobal && ((scopeType === 'custom' && selectedClientIds.length > 0) || scopeType === 'firm');
   const canUse = isGlobal ? globalReady : (!!hasData && !!selectedVersion);
   

@@ -13,11 +13,7 @@ export function GlobalReportBuilder({ clientId }: GlobalReportBuilderProps) {
   // Global reports don't need specific client data validation
   // and should always be considered as having "data" available
   const hasData = true;
-  console.log('GlobalReportBuilder: Rendering with providers for clientId:', clientId);
-
   const selectedFiscalYear = new Date().getFullYear() - 1; // Default to previous year
-
-  console.log('GlobalReportBuilder: About to render with ScopeProvider');
 
   return (
     <ClassificationProvider>
