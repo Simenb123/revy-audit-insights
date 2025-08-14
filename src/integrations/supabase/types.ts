@@ -7221,6 +7221,15 @@ export type Database = {
         }
         Returns: boolean
       }
+      calculate_account_distribution: {
+        Args: { p_client_id: string; p_version_id: string }
+        Returns: {
+          account_name: string
+          account_number: string
+          total_amount: number
+          transaction_count: number
+        }[]
+      }
       calculate_ai_cost: {
         Args: {
           completion_tokens: number
@@ -7228,6 +7237,18 @@ export type Database = {
           prompt_tokens: number
         }
         Returns: number
+      }
+      calculate_amount_statistics: {
+        Args: { p_client_id: string; p_version_id: string }
+        Returns: Json
+      }
+      calculate_monthly_summary: {
+        Args: { p_client_id: string; p_version_id: string }
+        Returns: {
+          month: string
+          total_amount: number
+          transaction_count: number
+        }[]
       }
       cancel_my_firm_access_request: {
         Args: { p_request_id: string }
@@ -7249,9 +7270,35 @@ export type Database = {
         Args: { p_audit_firm_id: string }
         Returns: number
       }
+      find_duplicate_transactions: {
+        Args: { p_client_id: string; p_version_id: string }
+        Returns: {
+          account_number: string
+          amount: number
+          description: string
+          duplicate_key: string
+          transaction_count: number
+          transaction_date: string
+          transaction_ids: string[]
+        }[]
+      }
+      find_time_logic_issues: {
+        Args: { p_client_id: string; p_version_id: string }
+        Returns: {
+          issue_description: string
+          issue_type: string
+          transaction_date: string
+          transaction_id: string
+          voucher_number: string
+        }[]
+      }
       generate_certificate_number: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      get_basic_transaction_info: {
+        Args: { p_client_id: string; p_version_id: string }
+        Returns: Json
       }
       get_next_version_number: {
         Args: { p_client_id: string }
