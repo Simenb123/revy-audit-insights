@@ -41,6 +41,9 @@ export interface Widget {
   title: string;
   config?: Record<string, any>;
   sectionId?: string;
+  dataSourceId?: string;
+  autoRefresh?: boolean;
+  refreshInterval?: number;
 }
 
 interface WidgetManagerContextType {

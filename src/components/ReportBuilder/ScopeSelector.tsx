@@ -4,8 +4,9 @@ import { useScope } from '@/contexts/ScopeContext';
 import { ClientsMultiSelect } from './ClientsMultiSelect';
 import { ExportReportDialog } from './ExportReportDialog';
 import { ShareDialog } from './ShareDialog';
+import { DataSourceManager } from './DataSourceManager';
 import { ViewModeToggle } from './ViewModeToggle';
-import { Download, Share2 } from 'lucide-react';
+import { Download, Share2, Database } from 'lucide-react';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
 
 export function ScopeSelector() {
@@ -13,6 +14,7 @@ export function ScopeSelector() {
   const { selectedFiscalYear } = useFiscalYear();
   const [showExportDialog, setShowExportDialog] = React.useState(false);
   const [showShareDialog, setShowShareDialog] = React.useState(false);
+  const [showDataSourceDialog, setShowDataSourceDialog] = React.useState(false);
 
   return (
     <div className="flex flex-col gap-4" aria-label="Omfangsvelger">
@@ -52,6 +54,15 @@ export function ScopeSelector() {
           <Button
             variant="outline"
             size="sm"
+            onClick={() => setShowDataSourceDialog(true)}
+            className="flex items-center gap-2"
+          >
+            <Database className="h-4 w-4" />
+            Datakilder
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => setShowShareDialog(true)}
             className="flex items-center gap-2"
           >
@@ -84,6 +95,11 @@ export function ScopeSelector() {
       <ExportReportDialog
         open={showExportDialog}
         onOpenChange={setShowExportDialog}
+      />
+      
+      <DataSourceManager
+        open={showDataSourceDialog}
+        onOpenChange={setShowDataSourceDialog}
       />
     </div>
   );
