@@ -340,6 +340,33 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
         severity: 'all',
         showResolved: false
       }
+    },
+    {
+      type: 'accountHierarchy' as const,
+      title: 'Hierarkisk drilldown',
+      description: 'Naviger fra kategorier til kontoer til transaksjoner',
+      icon: ListOrdered,
+      section: 'transactions' as const,
+      dataDescription: 'Basert på saldobalanse og transaksjoner',
+      defaultConfig: {}
+    },
+    {
+      type: 'metricsExplorer' as const,
+      title: 'Metrics Explorer',
+      description: 'Utforsk nøkkeltall på alle aggregeringsnivåer',
+      icon: Calculator,
+      section: 'transactions' as const,
+      dataDescription: 'Basert på transaksjoner',
+      defaultConfig: {}
+    },
+    {
+      type: 'smartNavigation' as const,
+      title: 'Smart navigasjon',
+      description: 'Hurtig navigasjon til kontoer og kategorier',
+      icon: Target,
+      section: 'transactions' as const,
+      dataDescription: 'Basert på saldobalanse og transaksjoner',
+      defaultConfig: {}
     }
   ]), []);
 

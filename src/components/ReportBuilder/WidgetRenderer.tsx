@@ -13,6 +13,9 @@ import { StatementTableWidget } from './Widgets/StatementTableWidget';
 import { BudgetKpiWidget } from './Widgets/BudgetKpiWidget';
 import { BudgetTableWidget } from './Widgets/BudgetTableWidget';
 import { BudgetChartWidget } from './Widgets/BudgetChartWidget';
+import { AccountHierarchyWidget } from './Widgets/AccountHierarchyWidget';
+import { MetricsExplorerWidget } from './Widgets/MetricsExplorerWidget';
+import { SmartNavigationWidget } from './Widgets/SmartNavigationWidget';
 import { HeatmapWidget } from './Widgets/HeatmapWidget';
 import { TreemapWidget } from './Widgets/TreemapWidget';
 import { BubbleChartWidget } from './Widgets/BubbleChartWidget';
@@ -73,6 +76,12 @@ export function WidgetRenderer({ widget }: WidgetRendererProps) {
       return <ActivityFeedWidget widget={widget} />;
     case 'alerts':
       return <AlertsWidget widget={widget} />;
+    case 'accountHierarchy':
+      return <AccountHierarchyWidget widget={widget} />;
+    case 'metricsExplorer':
+      return <MetricsExplorerWidget widget={widget} />;
+    case 'smartNavigation':
+      return <SmartNavigationWidget widget={widget} />;
     default:
       return (
         <div className="p-4 text-center text-muted-foreground">

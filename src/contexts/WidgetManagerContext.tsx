@@ -37,7 +37,10 @@ export interface Widget {
     | 'metricCard'
     | 'progress'
     | 'activityFeed'
-    | 'alerts';
+    | 'alerts'
+    | 'accountHierarchy'
+    | 'metricsExplorer'
+    | 'smartNavigation';
   title: string;
   config?: Record<string, any>;
   sectionId?: string;
