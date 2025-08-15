@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BarChart3, Database, Download, Brain } from 'lucide-react';
 import ReportBuilder from '@/components/ReportBuilder/ReportBuilder';
 import { Button } from '@/components/ui/button';
-import { ComprehensiveAnalysisDashboard } from '@/components/TransactionAnalysis';
+import { RegnskapsDashboard } from '@/components/Accounting/RegnskapsDashboard';
 
 const AnalysisPage = () => {
   const { clientId } = useParams<{ clientId: string }>();
@@ -91,10 +91,7 @@ const AnalysisPage = () => {
               </TabsContent>
               
               <TabsContent value="analysis" className="mt-6">
-                <ComprehensiveAnalysisDashboard 
-                  clientId={client.id} 
-                  dataVersionId="" 
-                />
+                <RegnskapsDashboard clientId={client.id} />
               </TabsContent>
               
               <TabsContent value="reports" className="mt-6">
