@@ -25,9 +25,9 @@ export interface GeneralLedgerTransaction {
   vat_amount?: number | null;
 }
 
-export const useGeneralLedgerData = (clientId: string, versionId?: string, pagination?: { page: number; pageSize: number }, filters?: { accountNumber?: string }) => {
+export const useGeneralLedgerData = (clientId: string, versionId?: string, pagination?: { page: number; pageSize: number }, filters?: { accountNumber?: string; sortBy?: string; sortOrder?: 'asc' | 'desc' }) => {
   return useQuery({
-    queryKey: ['general-ledger-v6', clientId, versionId, pagination, filters?.accountNumber],
+    queryKey: ['general-ledger-v7', clientId, versionId, pagination, filters?.accountNumber, filters?.sortBy, filters?.sortOrder],
     queryFn: async () => {
       console.log('🔍 Fetching general ledger data for client:', clientId, 'version:', versionId);
       console.log('🔐 Auth user ID:', (await supabase.auth.getUser()).data.user?.id);
@@ -119,8 +119,25 @@ export const useGeneralLedgerData = (clientId: string, versionId?: string, pagin
           }
         }
 
+        // Apply server-side sorting
+        if (filters?.sortBy) {
+          let sortColumn = filters.sortBy;
+          let ascending = filters.sortOrder === 'asc';
+          
+          // Handle account_number sorting by joining table
+          if (filters.sortBy === 'account_number') {
+            sortColumn = 'client_chart_of_accounts.account_number';
+          } else if (filters.sortBy === 'account_name') {
+            sortColumn = 'client_chart_of_accounts.account_name';
+          }
+          
+          query = query.order(sortColumn, { ascending });
+        } else {
+          // Default sort by transaction_date
+          query = query.order('transaction_date', { ascending: false });
+        }
+
         const { data, error } = await query
-          .order('transaction_date', { ascending: false })
           .range(offset, offset + pageSize - 1);
 
         if (error) throw error;

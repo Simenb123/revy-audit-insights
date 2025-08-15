@@ -21,6 +21,8 @@ Deno.serve(async (req) => {
       endAccount,
       page = 1,
       pageSize = 100,
+      sortBy,
+      sortOrder = 'asc'
     } = body;
 
     const offset = (page - 1) * pageSize;
@@ -34,6 +36,7 @@ Deno.serve(async (req) => {
         debit_amount,
         credit_amount,
         balance_amount,
+        voucher_number,
         client_chart_of_accounts!inner(account_number, account_name)
       `, { count: 'exact' })
       .eq('client_id', clientId);
@@ -43,8 +46,25 @@ Deno.serve(async (req) => {
     if (startAccount) query = query.gte('client_chart_of_accounts.account_number', startAccount);
     if (endAccount) query = query.lte('client_chart_of_accounts.account_number', endAccount);
 
+    // Apply server-side sorting
+    if (sortBy) {
+      let sortColumn = sortBy;
+      let ascending = sortOrder === 'asc';
+      
+      // Handle account_number sorting by joining table
+      if (sortBy === 'account_number') {
+        sortColumn = 'client_chart_of_accounts.account_number';
+      } else if (sortBy === 'account_name') {
+        sortColumn = 'client_chart_of_accounts.account_name';
+      }
+      
+      query = query.order(sortColumn, { ascending });
+    } else {
+      // Default sort by transaction_date
+      query = query.order('transaction_date', { ascending: true });
+    }
+
     const { data, error, count } = await query
-      .order('transaction_date', { ascending: true })
       .range(offset, offset + pageSize - 1);
 
     if (error) {

@@ -59,6 +59,11 @@ export interface DataTableProps<T = any> {
   virtualizeRows?: boolean; // window rows for performance
   rowHeight?: number; // approximate row height for virtualization
   overscan?: number; // extra rows above/below viewport
+  // Server-side features
+  enableServerSorting?: boolean; // Enable server-side sorting
+  onSort?: (sortBy: string, sortOrder: 'asc' | 'desc') => void;
+  serverSortBy?: string;
+  serverSortOrder?: 'asc' | 'desc';
 }
 
 const DataTable = <T extends Record<string, any>>({
@@ -92,6 +97,10 @@ const DataTable = <T extends Record<string, any>>({
   virtualizeRows = false,
   rowHeight = 48,
   overscan = 5,
+  enableServerSorting = false,
+  onSort,
+  serverSortBy,
+  serverSortOrder = 'asc',
 }: DataTableProps<T>) => {
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearch = useDebounce(searchTerm, 250);
@@ -311,7 +320,22 @@ const DataTable = <T extends Record<string, any>>({
   const filteredAndSortedData = useMemo(() => {
     if (!data) return [];
 
-    // Filter first
+    // If server-side sorting is enabled, skip client-side sorting and just handle search filtering
+    if (enableServerSorting) {
+      let filtered = data;
+      if (debouncedSearch && showSearch) {
+        const searchableColumns = columns.filter((col) => col.searchable !== false);
+        filtered = data.filter((item) => {
+          return searchableColumns.some((column) => {
+            const v = typeof column.accessor === 'function' ? column.accessor(item) : item[column.accessor as keyof T];
+            return String(v ?? '').toLowerCase().includes(debouncedSearch.toLowerCase());
+          });
+        });
+      }
+      return filtered;
+    }
+
+    // Client-side filtering and sorting
     let filtered = data;
     if (debouncedSearch && showSearch) {
       const searchableColumns = columns.filter((col) => col.searchable !== false);
@@ -357,7 +381,7 @@ const DataTable = <T extends Record<string, any>>({
     }
 
     return filtered;
-  }, [data, debouncedSearch, sortBy, sortOrder, columns, showSearch]);
+  }, [data, debouncedSearch, sortBy, sortOrder, columns, showSearch, enableServerSorting]);
   
   // Virtualization calculations
   const virtualization = useMemo(() => {
@@ -381,6 +405,14 @@ const DataTable = <T extends Record<string, any>>({
     const column = columns.find((col) => col.key === columnKey);
     if (!column?.sortable) return;
 
+    // Server-side sorting
+    if (enableServerSorting && onSort) {
+      const newSortOrder = (serverSortBy === columnKey && serverSortOrder === 'asc') ? 'desc' : 'asc';
+      onSort(columnKey, newSortOrder);
+      return;
+    }
+
+    // Client-side sorting
     // Bevar scrollposisjon i tabellkroppen før vi endrer sortering
     const el = bodyScrollRef.current;
     if (el) {
@@ -414,6 +446,11 @@ const DataTable = <T extends Record<string, any>>({
   const getSortIcon = (columnKey: string) => {
     const column = columns.find((col) => col.key === columnKey);
     if (!column?.sortable) return null;
+
+    if (enableServerSorting) {
+      if (serverSortBy !== columnKey) return <ArrowUpDown className="h-4 w-4" />;
+      return serverSortOrder === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />;
+    }
 
     if (sortBy !== columnKey) return <ArrowUpDown className="h-4 w-4" />;
     return sortOrder === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />;

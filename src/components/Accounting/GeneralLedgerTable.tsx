@@ -18,6 +18,8 @@ interface GeneralLedgerTableProps {
 
 const GeneralLedgerTable = ({ clientId, versionId, accountNumberFilter }: GeneralLedgerTableProps) => {
   const [currentPage, setCurrentPage] = React.useState(1);
+  const [sortBy, setSortBy] = React.useState<string>('');
+  const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>('asc');
   const pageSize = 100;
   const isDebug = process.env.NODE_ENV !== 'production';
 
@@ -25,7 +27,7 @@ const GeneralLedgerTable = ({ clientId, versionId, accountNumberFilter }: Genera
     logger.log('🔍 GeneralLedgerTable rendering for client:', clientId, 'version:', versionId);
   }
   
-  const { data: transactions, isLoading, error } = useGeneralLedgerData(clientId, versionId, { page: currentPage, pageSize }, { accountNumber: accountNumberFilter });
+  const { data: transactions, isLoading, error } = useGeneralLedgerData(clientId, versionId, { page: currentPage, pageSize }, { accountNumber: accountNumberFilter, sortBy, sortOrder });
   const { data: totalCount, isLoading: isCountLoading } = useGeneralLedgerCount(clientId, versionId, { accountNumber: accountNumberFilter });
   const { data: allTransactions, isLoading: isExportLoading } = useGeneralLedgerData(clientId, versionId, undefined, { accountNumber: accountNumberFilter });
   const { data: activeVersion } = useActiveVersion(clientId);
@@ -57,7 +59,8 @@ const GeneralLedgerTable = ({ clientId, versionId, accountNumberFilter }: Genera
   // Kolonnevalg (gjenbruk fra Saldobalanse)
   const [columnConfig, setColumnConfig] = React.useState<ColumnConfig[]>([
     { key: 'transaction_date', label: 'Dato', visible: true, required: true },
-    { key: 'account_info', label: 'Konto', visible: true, required: true },
+    { key: 'account_number', label: 'Kontonr', visible: true, required: true },
+    { key: 'account_name', label: 'Kontonavn', visible: true, required: true },
     { key: 'description', label: 'Beskrivelse', visible: true },
     { key: 'voucher_number', label: 'Bilag', visible: true },
     { key: 'debit_amount', label: 'Debet', visible: true },
@@ -71,6 +74,12 @@ const GeneralLedgerTable = ({ clientId, versionId, accountNumberFilter }: Genera
 
   const handleColumnChange = React.useCallback((key: string, visible: boolean) => {
     setColumnConfig(prev => prev.map(c => (c.key === key ? { ...c, visible } : c)));
+  }, []);
+
+  const handleSort = React.useCallback((newSortBy: string, newSortOrder: 'asc' | 'desc') => {
+    setSortBy(newSortBy);
+    setSortOrder(newSortOrder);
+    setCurrentPage(1); // Reset to first page when sorting
   }, []);
 
   // Alle kolonner basert på felter
@@ -117,16 +126,20 @@ const GeneralLedgerTable = ({ clientId, versionId, accountNumberFilter }: Genera
             format: (value: string) => format(new Date(value), 'dd.MM.yyyy'),
           },
           {
-            key: 'account_info',
-            header: 'Konto',
-            accessor: (transaction: GeneralLedgerTransaction) => (
-              <div>
-                <div className="font-medium">{transaction.account_number}</div>
-                <div className="text-sm text-muted-foreground">{transaction.account_name}</div>
-              </div>
-            ),
+            key: 'account_number',
+            header: 'Kontonr',
+            accessor: 'account_number',
             sortable: true,
             searchable: true,
+            className: 'font-medium',
+          },
+          {
+            key: 'account_name',
+            header: 'Kontonavn',
+            accessor: 'account_name',
+            sortable: true,
+            searchable: true,
+            className: 'font-medium',
           },
           {
             key: 'description',
@@ -205,16 +218,20 @@ const GeneralLedgerTable = ({ clientId, versionId, accountNumberFilter }: Genera
 
     if (accountField) {
       baseColumns.push({
-        key: 'account_info',
-        header: accountField.field_label,
-        accessor: (transaction: GeneralLedgerTransaction) => (
-          <div>
-            <div className="font-medium">{transaction.account_number}</div>
-            <div className="text-sm text-muted-foreground">{transaction.account_name}</div>
-          </div>
-        ),
+        key: 'account_number',
+        header: 'Kontonr',
+        accessor: 'account_number',
         sortable: true,
         searchable: true,
+        className: 'font-medium',
+      });
+      baseColumns.push({
+        key: 'account_name',
+        header: 'Kontonavn',
+        accessor: 'account_name',
+        sortable: true,
+        searchable: true,
+        className: 'font-medium',
       });
     }
 
@@ -370,6 +387,10 @@ const GeneralLedgerTable = ({ clientId, versionId, accountNumberFilter }: Genera
             : "Ingen aktiv versjon funnet. Last opp hovedbok eller aktiver en eksisterende versjon."
         }
         enableColumnManager={false}
+        enableServerSorting={true}
+        onSort={handleSort}
+        serverSortBy={sortBy}
+        serverSortOrder={sortOrder}
       />
     </>
   );
