@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Search, Download, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, Settings2, Bookmark, Plus, RotateCcw, Pencil, Trash, GripHorizontal, Info } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
+import { TableLoadingSkeleton } from '@/components/ui/loading-skeleton';
 import ColumnManager, { ColumnState as CMState } from '@/components/ui/column-manager';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger } from '@/components/ui/dropdown-menu';
@@ -741,8 +741,9 @@ const TableBlock = (
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-64 w-full" />
+          <div className="p-4">
+            <TableLoadingSkeleton rows={Math.min(pageSize, 10)} columns={Math.min(effectiveColumns.list.length, 6)} />
+          </div>
           </div>
         </CardContent>
       </Card>
