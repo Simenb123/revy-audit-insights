@@ -1,7 +1,6 @@
 import React, { useMemo } from 'react';
 import { LineChart } from 'lucide-react';
-import { GeneralLedgerTransaction, useGeneralLedgerData } from '@/hooks/useGeneralLedgerData';
-import { useGeneralLedgerCount } from '@/hooks/useGeneralLedgerCount';
+import { useTransactions } from '@/hooks/useTransactions';
 import { useActiveVersion } from '@/hooks/useAccountingVersions';
 import { getFieldDefinitions } from '@/utils/fieldDefinitions';
 import DataTable, { DataTableColumn } from '@/components/ui/data-table';
@@ -28,29 +27,24 @@ const GeneralLedgerTable = ({ clientId, versionId, accountNumberFilter }: Genera
     logger.log('🔍 GeneralLedgerTable rendering for client:', clientId, 'version:', versionId);
   }
   
-  // All sorting is now server-side with denormalized data
-  const { data: transactions, isLoading, error } = useGeneralLedgerData(
-    clientId, 
-    versionId, 
-    { page: currentPage, pageSize }, 
-    { 
-      accountNumber: accountNumberFilter, 
-      sortBy, 
-      sortOrder
-    }
-  );
+  // Use the updated useTransactions hook that provides server-side totals
+  const { data: transactionData, isLoading, error } = useTransactions(clientId, {
+    page: currentPage,
+    pageSize,
+    sortBy: sortBy,
+    sortOrder: sortOrder,
+  });
 
-  const { data: serverTotalCount, isLoading: isCountLoading } = useGeneralLedgerCount(clientId, versionId, { accountNumber: accountNumberFilter });
-  
-  const sortedTransactions = transactions;
-  const totalCount = serverTotalCount;
-  const { data: allTransactions, isLoading: isExportLoading } = useGeneralLedgerData(clientId, versionId, undefined, { accountNumber: accountNumberFilter });
+  const transactions = transactionData?.transactions || [];
+  const totalCount = transactionData?.count || 0;
+  const serverTotals = transactionData?.totals || { totalDebit: 0, totalCredit: 0, totalBalance: 0 };
   const { data: activeVersion } = useActiveVersion(clientId);
 
   if (isDebug) {
     logger.log('📊 GeneralLedgerTable data:', {
       transactionsCount: transactions?.length || 0,
       totalCount,
+      serverTotals,
       isLoading,
       error: error?.message
     });
@@ -98,8 +92,8 @@ const GeneralLedgerTable = ({ clientId, versionId, accountNumberFilter }: Genera
   }, []);
 
   // Alle kolonner basert på felter
-  const allColumns: DataTableColumn<GeneralLedgerTransaction>[] = useMemo(() => {
-    const debitCol: DataTableColumn<GeneralLedgerTransaction> = {
+  const allColumns: DataTableColumn<any>[] = useMemo(() => {
+    const debitCol: DataTableColumn<any> = {
       key: 'debit_amount',
       header: 'Debet',
       accessor: 'debit_amount',
@@ -108,7 +102,7 @@ const GeneralLedgerTable = ({ clientId, versionId, accountNumberFilter }: Genera
       format: (value: number | null) => formatCurrency(value ?? 0),
     };
 
-    const creditCol: DataTableColumn<GeneralLedgerTransaction> = {
+    const creditCol: DataTableColumn<any> = {
       key: 'credit_amount',
       header: 'Kredit',
       accessor: 'credit_amount',
@@ -117,7 +111,7 @@ const GeneralLedgerTable = ({ clientId, versionId, accountNumberFilter }: Genera
       format: (value: number | null) => formatCurrency(value ?? 0),
     };
 
-    const amountCol: DataTableColumn<GeneralLedgerTransaction> = {
+    const amountCol: DataTableColumn<any> = {
       key: 'balance_amount',
       header: 'Beløp',
       accessor: 'balance_amount',
@@ -210,7 +204,7 @@ const GeneralLedgerTable = ({ clientId, versionId, accountNumberFilter }: Genera
     }
 
     // Map feltdefinisjoner til kolonner
-    const baseColumns: DataTableColumn<GeneralLedgerTransaction>[] = [];
+    const baseColumns: DataTableColumn<any>[] = [];
 
     const dateField = fieldDefinitions.find(f => f.field_key === 'transaction_date');
     const accountField = fieldDefinitions.find(f => f.field_key === 'account_number');
@@ -324,34 +318,21 @@ const GeneralLedgerTable = ({ clientId, versionId, accountNumberFilter }: Genera
   }, [fieldDefinitions]);
 
   // Filtrer etter valgt kolonnekonfig
-  const visibleColumns: DataTableColumn<GeneralLedgerTransaction>[] = useMemo(() => {
+  const visibleColumns: DataTableColumn<any>[] = useMemo(() => {
     const visibleKeys = new Set(columnConfig.filter(c => c.visible).map(c => c.key));
     return (allColumns || []).filter(col => visibleKeys.has(col.key));
   }, [allColumns, columnConfig]);
 
-  // Note: Totals are no longer calculated here as this component now uses denormalized data from useGeneralLedgerData
-  // We keep this for compatibility, but in practice it just returns basic page totals
+  // Use server-calculated totals from the edge function
   const totals = useMemo(() => {
-    if (!sortedTransactions) return null;
+    return {
+      debit: serverTotals.totalDebit,
+      credit: serverTotals.totalCredit,
+      balance: serverTotals.totalBalance
+    };
+  }, [serverTotals]);
 
-    const hasDebCred = sortedTransactions.some(t => t.debit_amount !== null || t.credit_amount !== null);
-
-    const debit = hasDebCred
-      ? sortedTransactions.reduce((sum, t) => sum + (t.debit_amount || 0), 0)
-      : sortedTransactions.reduce((sum, t) => sum + ((t.balance_amount || 0) > 0 ? (t.balance_amount as number) : 0), 0);
-
-    const credit = hasDebCred
-      ? sortedTransactions.reduce((sum, t) => sum + (t.credit_amount || 0), 0)
-      : sortedTransactions.reduce((sum, t) => sum + ((t.balance_amount || 0) < 0 ? Math.abs(t.balance_amount as number) : 0), 0);
-
-    const balance = hasDebCred
-      ? debit - credit
-      : sortedTransactions.reduce((sum, t) => sum + (t.balance_amount || 0), 0);
-
-    return { debit, credit, balance };
-  }, [sortedTransactions]);
-
-  const totalRow = totals ? (
+  const totalRow = (
     <TableRow className="font-bold border-t-2 bg-muted/50">
       <TableCell colSpan={Math.max(1, (visibleColumns?.length || 1) - 1)}>Sum</TableCell>
       <TableCell className="text-right">
@@ -364,14 +345,12 @@ const GeneralLedgerTable = ({ clientId, versionId, accountNumberFilter }: Genera
         </div>
       </TableCell>
     </TableRow>
-  ) : null;
+  );
 
   const totalPages = Math.ceil((totalCount || 0) / pageSize);
   
 // Create description text
-  const description = !isCountLoading ? 
-    `Viser ${((currentPage - 1) * pageSize) + 1}-${Math.min(currentPage * pageSize, totalCount || 0)} av ${totalCount || 0} transaksjoner${sortedTransactions && sortedTransactions.length > 0 ? ` • Side ${currentPage} av ${totalPages}` : ''}${accountNumberFilter ? ` • Filtrert på konto ${accountNumberFilter}` : ''}` :
-    undefined;
+  const description = `Viser ${((currentPage - 1) * pageSize) + 1}-${Math.min(currentPage * pageSize, totalCount || 0)} av ${totalCount || 0} transaksjoner${transactions && transactions.length > 0 ? ` • Side ${currentPage} av ${totalPages}` : ''}${accountNumberFilter ? ` • Filtrert på konto ${accountNumberFilter}` : ''}`;
 
 
   return (
@@ -383,7 +362,7 @@ const GeneralLedgerTable = ({ clientId, versionId, accountNumberFilter }: Genera
         title="Hovedbok"
         description={description}
         icon={<LineChart className="h-5 w-5" />}
-        data={sortedTransactions || []}
+        data={transactions || []}
         columns={visibleColumns}
         isLoading={isLoading}
         error={error}
