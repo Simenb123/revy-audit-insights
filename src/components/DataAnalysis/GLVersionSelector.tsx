@@ -55,24 +55,29 @@ const GLVersionSelector: React.FC<GLVersionSelectorProps> = ({
         <span className="text-sm font-medium">Versjon:</span>
         <Select value={selectedVersion.id} onValueChange={handleSelectVersion}>
           <SelectTrigger className="w-[320px]">
-            <SelectValue placeholder="Velg versjon" />
+            <div className="flex items-center gap-2">
+              <FileText size={14} className="text-muted-foreground" />
+              <div className="flex flex-col flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">{selectedVersion.label}</span>
+                  {selectedVersion.is_active && (
+                    <Star size={12} className="text-amber-500 fill-amber-500" />
+                  )}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {format(new Date(selectedVersion.created_at), 'dd.MM.yyyy HH:mm')} • {selectedVersion.total_transactions} transaksjoner
+                </div>
+              </div>
+            </div>
           </SelectTrigger>
           <SelectContent>
             {versions.map(version => (
-              <SelectItem key={version.id} value={version.id} className="flex gap-2 items-center">
-                <div className="flex items-center gap-2 w-full">
-                  <FileText size={14} className="mr-2" />
-                  <div className="flex flex-col flex-1">
-                    <div className="flex items-center gap-2">
-                      <span>{version.label}</span>
-                      {version.is_active && (
-                        <Star size={12} className="text-amber-500 fill-amber-500" />
-                      )}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {format(new Date(version.created_at), 'dd.MM.yyyy HH:mm')} • {version.total_transactions} transaksjoner
-                    </div>
-                  </div>
+              <SelectItem key={version.id} value={version.id}>
+                <div className="flex items-center gap-2">
+                  <span>{version.label}</span>
+                  {version.is_active && (
+                    <Star size={12} className="text-amber-500 fill-amber-500" />
+                  )}
                 </div>
               </SelectItem>
             ))}
