@@ -5314,6 +5314,546 @@ export type Database = {
           },
         ]
       }
+      payroll_companies: {
+        Row: {
+          created_at: string
+          id: string
+          import_id: string
+          navn: string | null
+          orgnr: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          import_id: string
+          navn?: string | null
+          orgnr?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          import_id?: string
+          navn?: string | null
+          orgnr?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payroll_companies_import_id_fkey"
+            columns: ["import_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_imports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payroll_deductions: {
+        Row: {
+          beloep: number
+          beskrivelse: string | null
+          created_at: string
+          id: string
+          import_id: string
+          recipient_id: string | null
+        }
+        Insert: {
+          beloep?: number
+          beskrivelse?: string | null
+          created_at?: string
+          id?: string
+          import_id: string
+          recipient_id?: string | null
+        }
+        Update: {
+          beloep?: number
+          beskrivelse?: string | null
+          created_at?: string
+          id?: string
+          import_id?: string
+          recipient_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payroll_deductions_import_id_fkey"
+            columns: ["import_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_imports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payroll_deductions_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_recipients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payroll_employer_contributions: {
+        Row: {
+          beregningskode: string | null
+          created_at: string
+          grunnlag: number
+          id: string
+          import_id: string
+          prosentsats: number | null
+          sone: string
+          type: Database["public"]["Enums"]["payroll_aga_type"]
+        }
+        Insert: {
+          beregningskode?: string | null
+          created_at?: string
+          grunnlag?: number
+          id?: string
+          import_id: string
+          prosentsats?: number | null
+          sone: string
+          type: Database["public"]["Enums"]["payroll_aga_type"]
+        }
+        Update: {
+          beregningskode?: string | null
+          created_at?: string
+          grunnlag?: number
+          id?: string
+          import_id?: string
+          prosentsats?: number | null
+          sone?: string
+          type?: Database["public"]["Enums"]["payroll_aga_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payroll_employer_contributions_import_id_fkey"
+            columns: ["import_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_imports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payroll_employments: {
+        Row: {
+          created_at: string
+          id: string
+          import_id: string
+          recipient_id: string
+          sluttdato: string | null
+          startdato: string | null
+          stillingsprosent: number | null
+          type: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          import_id: string
+          recipient_id: string
+          sluttdato?: string | null
+          startdato?: string | null
+          stillingsprosent?: number | null
+          type?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          import_id?: string
+          recipient_id?: string
+          sluttdato?: string | null
+          startdato?: string | null
+          stillingsprosent?: number | null
+          type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payroll_employments_import_id_fkey"
+            columns: ["import_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_imports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payroll_employments_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_recipients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payroll_imports: {
+        Row: {
+          antall_personer_innrapportert: number | null
+          antall_personer_unike: number | null
+          avstemmingstidspunkt: string | null
+          client_id: string
+          created_at: string
+          created_by: string | null
+          file_name: string | null
+          fom_kalendermaaned: string | null
+          id: string
+          navn: string | null
+          orgnr: string | null
+          period_key: string
+          tom_kalendermaaned: string | null
+          updated_at: string
+        }
+        Insert: {
+          antall_personer_innrapportert?: number | null
+          antall_personer_unike?: number | null
+          avstemmingstidspunkt?: string | null
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          file_name?: string | null
+          fom_kalendermaaned?: string | null
+          id?: string
+          navn?: string | null
+          orgnr?: string | null
+          period_key: string
+          tom_kalendermaaned?: string | null
+          updated_at?: string
+        }
+        Update: {
+          antall_personer_innrapportert?: number | null
+          antall_personer_unike?: number | null
+          avstemmingstidspunkt?: string | null
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          file_name?: string | null
+          fom_kalendermaaned?: string | null
+          id?: string
+          navn?: string | null
+          orgnr?: string | null
+          period_key?: string
+          tom_kalendermaaned?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payroll_imports_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payroll_income: {
+        Row: {
+          aga_pliktig: boolean | null
+          antall: number | null
+          beloep: number
+          beskrivelse: string | null
+          created_at: string
+          fordel: string | null
+          id: string
+          import_id: string
+          recipient_id: string
+          trekkpliktig: boolean | null
+        }
+        Insert: {
+          aga_pliktig?: boolean | null
+          antall?: number | null
+          beloep?: number
+          beskrivelse?: string | null
+          created_at?: string
+          fordel?: string | null
+          id?: string
+          import_id: string
+          recipient_id: string
+          trekkpliktig?: boolean | null
+        }
+        Update: {
+          aga_pliktig?: boolean | null
+          antall?: number | null
+          beloep?: number
+          beskrivelse?: string | null
+          created_at?: string
+          fordel?: string | null
+          id?: string
+          import_id?: string
+          recipient_id?: string
+          trekkpliktig?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payroll_income_import_id_fkey"
+            columns: ["import_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_imports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payroll_income_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_recipients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payroll_leaves: {
+        Row: {
+          beskrivelse: string | null
+          created_at: string
+          employment_id: string
+          id: string
+          import_id: string
+          slutt_dato: string | null
+          start_dato: string | null
+        }
+        Insert: {
+          beskrivelse?: string | null
+          created_at?: string
+          employment_id: string
+          id?: string
+          import_id: string
+          slutt_dato?: string | null
+          start_dato?: string | null
+        }
+        Update: {
+          beskrivelse?: string | null
+          created_at?: string
+          employment_id?: string
+          id?: string
+          import_id?: string
+          slutt_dato?: string | null
+          start_dato?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payroll_leaves_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_employments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payroll_leaves_import_id_fkey"
+            columns: ["import_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_imports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payroll_pensions: {
+        Row: {
+          created_at: string
+          id: string
+          identifikator: string | null
+          import_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          identifikator?: string | null
+          import_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          identifikator?: string | null
+          import_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payroll_pensions_import_id_fkey"
+            columns: ["import_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_imports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payroll_recipients: {
+        Row: {
+          ansattnummer: string | null
+          company_id: string
+          created_at: string
+          foedselsdato: string | null
+          id: string
+          import_id: string
+          navn: string | null
+        }
+        Insert: {
+          ansattnummer?: string | null
+          company_id: string
+          created_at?: string
+          foedselsdato?: string | null
+          id?: string
+          import_id: string
+          navn?: string | null
+        }
+        Update: {
+          ansattnummer?: string | null
+          company_id?: string
+          created_at?: string
+          foedselsdato?: string | null
+          id?: string
+          import_id?: string
+          navn?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payroll_recipients_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payroll_recipients_import_id_fkey"
+            columns: ["import_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_imports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payroll_submissions: {
+        Row: {
+          altinn_referanse: string | null
+          antall_inntektsmottakere: number | null
+          created_at: string
+          forfallsdato: string | null
+          id: string
+          import_id: string
+          innsendings_id: string | null
+          kalendermaaned: string | null
+          kid_aga: string | null
+          kid_finansskatt: string | null
+          kid_trekk: string | null
+          kildesystem: string | null
+          kontonummer: string | null
+          leveringstidspunkt: string | null
+          meldings_id: string | null
+          status: string | null
+          sum_aga: number | null
+          sum_forskuddstrekk: number | null
+          tidsstempel_fra_altinn: string | null
+        }
+        Insert: {
+          altinn_referanse?: string | null
+          antall_inntektsmottakere?: number | null
+          created_at?: string
+          forfallsdato?: string | null
+          id?: string
+          import_id: string
+          innsendings_id?: string | null
+          kalendermaaned?: string | null
+          kid_aga?: string | null
+          kid_finansskatt?: string | null
+          kid_trekk?: string | null
+          kildesystem?: string | null
+          kontonummer?: string | null
+          leveringstidspunkt?: string | null
+          meldings_id?: string | null
+          status?: string | null
+          sum_aga?: number | null
+          sum_forskuddstrekk?: number | null
+          tidsstempel_fra_altinn?: string | null
+        }
+        Update: {
+          altinn_referanse?: string | null
+          antall_inntektsmottakere?: number | null
+          created_at?: string
+          forfallsdato?: string | null
+          id?: string
+          import_id?: string
+          innsendings_id?: string | null
+          kalendermaaned?: string | null
+          kid_aga?: string | null
+          kid_finansskatt?: string | null
+          kid_trekk?: string | null
+          kildesystem?: string | null
+          kontonummer?: string | null
+          leveringstidspunkt?: string | null
+          meldings_id?: string | null
+          status?: string | null
+          sum_aga?: number | null
+          sum_forskuddstrekk?: number | null
+          tidsstempel_fra_altinn?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payroll_submissions_import_id_fkey"
+            columns: ["import_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_imports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payroll_tax_deductions: {
+        Row: {
+          beloep: number
+          created_at: string
+          id: string
+          import_id: string
+          recipient_id: string | null
+        }
+        Insert: {
+          beloep?: number
+          created_at?: string
+          id?: string
+          import_id: string
+          recipient_id?: string | null
+        }
+        Update: {
+          beloep?: number
+          created_at?: string
+          id?: string
+          import_id?: string
+          recipient_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payroll_tax_deductions_import_id_fkey"
+            columns: ["import_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_imports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payroll_tax_deductions_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_recipients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payroll_variables: {
+        Row: {
+          created_at: string
+          id: string
+          import_id: string
+          name: string
+          value: Json
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          import_id: string
+          name: string
+          value: Json
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          import_id?: string
+          name?: string
+          value?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payroll_variables_import_id_fkey"
+            columns: ["import_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_imports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pdf_conversions: {
         Row: {
           category_id: string
@@ -7479,6 +8019,7 @@ export type Database = {
         | "student"
         | "test"
       engagement_type: "revisjon" | "regnskap" | "annet"
+      payroll_aga_type: "loenn" | "pensjon" | "fradragSone"
       planning_module_key:
         | "ANALYTICAL_REVIEW"
         | "TEAM_DISCUSSION"
@@ -7679,6 +8220,7 @@ export const Constants = {
         "test",
       ],
       engagement_type: ["revisjon", "regnskap", "annet"],
+      payroll_aga_type: ["loenn", "pensjon", "fradragSone"],
       planning_module_key: [
         "ANALYTICAL_REVIEW",
         "TEAM_DISCUSSION",
