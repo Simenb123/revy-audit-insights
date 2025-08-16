@@ -67,18 +67,17 @@ const GLVersionSelector: React.FC<GLVersionSelectorProps> = ({
         <div className="flex items-center gap-2">
           <Clock size={16} className="text-muted-foreground" />
           <span className="text-sm font-medium">Versjon:</span>
-          <Select value={selectedVersion.id} onValueChange={handleSelectVersion}>
-            <SelectTrigger className="w-[280px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {versions.map(version => (
-                <SelectItem key={version.id} value={version.id}>
-                  {version.label}{version.is_active ? ' (Standard)' : ''}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <select 
+            value={selectedVersion.id} 
+            onChange={(e) => handleSelectVersion(e.target.value)}
+            className="w-[280px] h-9 px-3 py-1 text-sm border border-input bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+          >
+            {versions.map(version => (
+              <option key={version.id} value={version.id}>
+                {version.label}{version.is_active ? ' (Standard)' : ''}
+              </option>
+            ))}
+          </select>
         </div>
         
         <div className="flex items-center gap-2">
