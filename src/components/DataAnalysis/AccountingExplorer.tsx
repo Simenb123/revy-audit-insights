@@ -41,9 +41,19 @@ const AccountingExplorer: React.FC<AccountingExplorerProps> = ({ clientId }) => 
 
   // Get default selected versions with proper fallbacks
   const defaultGLVersion = useMemo(() => {
+    // First, find the version with highest version_number that has data (total_transactions > 0)
+    const versionsWithData = glVersionOptions
+      .filter(v => v.total_transactions > 0)
+      .sort((a, b) => b.version_number - a.version_number);
+    
+    const latestWithData = versionsWithData[0];
+    
+    // Fallback to active version if no versions have data, then to first version
     const activeVersion = glVersionOptions.find(v => v.is_active);
-    const result = activeVersion || glVersionOptions[0] || null;
+    const result = latestWithData || activeVersion || glVersionOptions[0] || null;
+    
     console.log('[AccountingExplorer] Default GL Version:', result);
+    console.log('[AccountingExplorer] Versions with data:', versionsWithData);
     return result;
   }, [glVersionOptions]);
 
