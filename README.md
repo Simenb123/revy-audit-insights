@@ -23,6 +23,8 @@ for detailed API examples.
 
 Most pages render inside the `ResponsiveLayout` wrapper. Using `maxWidth="full"` removes any width limit so content fills the viewport.
 
+For a description in everyday, non-technical language for ordinary users, see [docs/revio-overview-non-technical.md](docs/revio-overview-non-technical.md). This document must be kept up to date.
+
 For a high-level tour of the architecture and key modules, see [docs/project-overview.md](docs/project-overview.md).
 For the document processing pipeline, see [docs/document-workflow.md](docs/document-workflow.md).
 For using the AI-driven audit action generator, see [docs/audit-action-generator.md](docs/audit-action-generator.md).

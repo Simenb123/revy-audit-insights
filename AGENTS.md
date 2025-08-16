@@ -28,6 +28,7 @@ Kjør `npm run dev` for å starte utviklingsserveren. Den laster automatisk inn 
 
 - Følg prosjektets ESLint-oppsett ved å kjøre `npm run lint` dersom du har gjort kodeendringer.
 - Hold dokumentasjonen oppdatert dersom nye funksjoner eller skript legges til.
+- Sørg for at `docs/revio-overview-non-technical.md` holdes oppdatert og skrevet i dagligspråk.
 
 ## Kommunikasjon
 
