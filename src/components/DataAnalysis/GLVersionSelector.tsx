@@ -73,12 +73,7 @@ const GLVersionSelector: React.FC<GLVersionSelectorProps> = ({
           <SelectContent>
             {versions.map(version => (
               <SelectItem key={version.id} value={version.id}>
-                <div className="flex items-center gap-2">
-                  <span>{version.label}</span>
-                  {version.is_active && (
-                    <Star size={12} className="text-amber-500 fill-amber-500" />
-                  )}
-                </div>
+                {version.label}{version.is_active ? ' (Standard)' : ''}
               </SelectItem>
             ))}
           </SelectContent>
