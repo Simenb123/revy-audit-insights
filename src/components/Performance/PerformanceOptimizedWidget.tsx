@@ -4,7 +4,6 @@ import { useWidgetMemoryManagement } from '@/hooks/useMemoryManagement';
 import { useIntersectionObserver } from '@/hooks/useIntersectionObserver';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ErrorBoundary } from '@/components/ErrorBoundary';
 import type { Widget, WidgetLayout } from '@/contexts/WidgetManagerContext';
 
 interface PerformanceOptimizedWidgetProps {
@@ -58,11 +57,13 @@ const PerformanceOptimizedWidget = memo<PerformanceOptimizedWidgetProps>(functio
   } = useWidgetMemoryManagement(widget.id);
 
   // Intersection observer for lazy loading
-  const { isIntersecting } = useIntersectionObserver(containerRef, {
+  const { elementRef: intersectionRef, isIntersecting } = useIntersectionObserver({
     threshold: 0.1,
     rootMargin: '50px',
-    enabled: enableLazyLoading,
   });
+  
+  // Use container ref or intersection ref
+  const finalRef = enableLazyLoading ? intersectionRef : containerRef;
   
   const hasIntersected = isIntersecting;
 
@@ -143,7 +144,7 @@ const PerformanceOptimizedWidget = memo<PerformanceOptimizedWidgetProps>(functio
   if (enableLazyLoading && !hasIntersected) {
     return (
       <div
-        ref={containerRef}
+        ref={finalRef as React.RefObject<HTMLDivElement>}
         style={styles}
         className={containerClasses}
       >
@@ -164,7 +165,7 @@ const PerformanceOptimizedWidget = memo<PerformanceOptimizedWidgetProps>(functio
 
   const widgetContent = (
     <div
-      ref={containerRef}
+      ref={finalRef as React.RefObject<HTMLDivElement>}
       style={styles}
       className={containerClasses}
       onClick={handleClick}
@@ -199,26 +200,7 @@ const PerformanceOptimizedWidget = memo<PerformanceOptimizedWidgetProps>(functio
     </div>
   );
 
-  return (
-    <ErrorBoundary
-      fallback={({ error, reset }: { error: Error; reset: () => void }) => (
-        <Card className="h-full w-full flex items-center justify-center p-4">
-          <div className="text-center">
-            <p className="text-sm text-muted-foreground mb-2">Widget failed to load</p>
-            <button onClick={reset} className="text-primary hover:underline text-sm">
-              Try again
-            </button>
-          </div>
-        </Card>
-      )}
-      onError={(error: Error) => {
-        console.error(`Widget ${widget.id} error:`, error);
-        clearCache(); // Clear cache on error
-      }}
-    >
-      {widgetContent}
-    </ErrorBoundary>
-  );
+  return widgetContent;
 });
 
 // Additional optimization: React.memo with custom comparison
