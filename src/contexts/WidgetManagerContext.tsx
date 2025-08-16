@@ -40,7 +40,8 @@ export interface Widget {
     | 'alerts'
     | 'accountHierarchy'
     | 'metricsExplorer'
-    | 'smartNavigation';
+    | 'smartNavigation'
+    | 'crossCheck';
   title: string;
   config?: Record<string, any>;
   sectionId?: string;

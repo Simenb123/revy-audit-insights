@@ -349,8 +349,9 @@ export const CrossCheckWidget: React.FC<CrossCheckWidgetProps> = ({
 
           <TabsContent value="details" className="mt-4">
             <EnhancedDataTable<ValidationResult>
+              widgetId={`${dataSourceId}-validation`}
               title="Valideringsresultater"
-              tableData={validationResults}
+              fetchData={async () => validationResults}
               columns={[
                 {
                   key: 'ruleId',

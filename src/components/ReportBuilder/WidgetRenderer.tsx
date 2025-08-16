@@ -25,6 +25,7 @@ import { MetricCardWidget } from './Widgets/MetricCardWidget';
 import { ProgressWidget } from './Widgets/ProgressWidget';
 import { ActivityFeedWidget } from './Widgets/ActivityFeedWidget';
 import { AlertsWidget } from './Widgets/AlertsWidget';
+import { CrossCheckWidget } from '../Widgets/CrossCheckWidget';
 
 interface WidgetRendererProps {
   widget: Widget;
@@ -82,6 +83,8 @@ export function WidgetRenderer({ widget }: WidgetRendererProps) {
       return <MetricsExplorerWidget widget={widget} />;
     case 'smartNavigation':
       return <SmartNavigationWidget widget={widget} />;
+    case 'crossCheck':
+      return <CrossCheckWidget data={[]} dataSourceId={widget.id} />;
     default:
       return (
         <div className="p-4 text-center text-muted-foreground">
