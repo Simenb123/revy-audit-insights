@@ -63,6 +63,7 @@ export function useTransactions(
       return {
         transactions: items,
         count: data?.count ?? 0,
+        totals: data?.totals ?? { totalDebit: 0, totalCredit: 0, totalBalance: 0 },
       }
     },
   })

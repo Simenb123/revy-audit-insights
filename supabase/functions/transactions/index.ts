@@ -67,7 +67,37 @@ Deno.serve(async (req) => {
       });
     }
 
-    return new Response(JSON.stringify({ data, count }), {
+    // Calculate totals for all transactions matching the filters (not just the page)
+    let totalsQuery = supabase
+      .from('general_ledger_transactions')
+      .select('debit_amount, credit_amount, balance_amount')
+      .eq('client_id', clientId);
+
+    // Apply the same filters as the main query
+    if (startDate) totalsQuery = totalsQuery.gte('transaction_date', startDate);
+    if (endDate) totalsQuery = totalsQuery.lte('transaction_date', endDate);
+    if (startAccount) totalsQuery = totalsQuery.gte('account_number', startAccount);
+    if (endAccount) totalsQuery = totalsQuery.lte('account_number', endAccount);
+
+    const { data: totalsData, error: totalsError } = await totalsQuery;
+
+    if (totalsError) {
+      console.error('Error calculating totals:', totalsError);
+      return new Response(JSON.stringify({ error: totalsError.message }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Calculate the sums
+    const totals = totalsData.reduce((acc, transaction) => {
+      acc.totalDebit += transaction.debit_amount || 0;
+      acc.totalCredit += transaction.credit_amount || 0;
+      acc.totalBalance += transaction.balance_amount || 0;
+      return acc;
+    }, { totalDebit: 0, totalCredit: 0, totalBalance: 0 });
+
+    return new Response(JSON.stringify({ data, count, totals }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

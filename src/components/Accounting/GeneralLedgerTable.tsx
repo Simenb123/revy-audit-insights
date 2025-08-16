@@ -329,7 +329,8 @@ const GeneralLedgerTable = ({ clientId, versionId, accountNumberFilter }: Genera
     return (allColumns || []).filter(col => visibleKeys.has(col.key));
   }, [allColumns, columnConfig]);
 
-  // Calculate totals
+  // Note: Totals are no longer calculated here as this component now uses denormalized data from useGeneralLedgerData
+  // We keep this for compatibility, but in practice it just returns basic page totals
   const totals = useMemo(() => {
     if (!sortedTransactions) return null;
 
