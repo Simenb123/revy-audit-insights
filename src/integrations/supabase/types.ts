@@ -4334,6 +4334,8 @@ export type Database = {
       }
       general_ledger_transactions: {
         Row: {
+          account_name: string | null
+          account_number: string | null
           amount_currency: number | null
           balance_amount: number | null
           cid: string | null
@@ -4365,6 +4367,8 @@ export type Database = {
           voucher_number: string | null
         }
         Insert: {
+          account_name?: string | null
+          account_number?: string | null
           amount_currency?: number | null
           balance_amount?: number | null
           cid?: string | null
@@ -4396,6 +4400,8 @@ export type Database = {
           voucher_number?: string | null
         }
         Update: {
+          account_name?: string | null
+          account_number?: string | null
           amount_currency?: number | null
           balance_amount?: number | null
           cid?: string | null
