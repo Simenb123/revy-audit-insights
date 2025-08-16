@@ -25,15 +25,15 @@ export interface GeneralLedgerTransaction {
   vat_amount?: number | null;
 }
 
-export const useGeneralLedgerData = (clientId: string, versionId?: string, pagination?: { page: number; pageSize: number }, filters?: { accountNumber?: string; sortBy?: string; sortOrder?: 'asc' | 'desc' }) => {
+export const useGeneralLedgerData = (clientId: string, versionId?: string, pagination?: { page: number; pageSize: number }, filters?: { accountNumber?: string; sortBy?: string; sortOrder?: 'asc' | 'desc'; forceLoadAll?: boolean }) => {
   return useQuery({
-    queryKey: ['general-ledger-v7', clientId, versionId, pagination, filters?.accountNumber, filters?.sortBy, filters?.sortOrder],
+    queryKey: ['general-ledger-v7', clientId, versionId, pagination, filters?.accountNumber, filters?.sortBy, filters?.sortOrder, filters?.forceLoadAll],
     queryFn: async () => {
       console.log('🔍 Fetching general ledger data for client:', clientId, 'version:', versionId);
       console.log('🔐 Auth user ID:', (await supabase.auth.getUser()).data.user?.id);
       
-      // If pagination is specified, fetch only that page
-      if (pagination) {
+      // If pagination is specified and not forcing full load, fetch only that page
+      if (pagination && !filters?.forceLoadAll) {
         const { page, pageSize } = pagination;
         const offset = (page - 1) * pageSize;
         
