@@ -49,76 +49,80 @@ const GLVersionSelector: React.FC<GLVersionSelectorProps> = ({
   }
   
   return (
-    <div className="flex justify-between items-center border-b pb-4 mb-4">
-      <div className="flex items-center gap-2">
-        <Clock size={16} className="text-muted-foreground" />
-        <span className="text-sm font-medium">Versjon:</span>
-        <Select value={selectedVersion.id} onValueChange={handleSelectVersion}>
-          <SelectTrigger className="w-[320px]">
-            <div className="flex items-center gap-2">
-              <FileText size={14} className="text-muted-foreground" />
-              <div className="flex flex-col flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">{selectedVersion.label}</span>
-                  {selectedVersion.is_active && (
-                    <Star size={12} className="text-amber-500 fill-amber-500" />
-                  )}
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  {format(new Date(selectedVersion.created_at), 'dd.MM.yyyy HH:mm')} • {selectedVersion.total_transactions} transaksjoner
-                </div>
-              </div>
-            </div>
-          </SelectTrigger>
-          <SelectContent>
-            {versions.map(version => (
-              <SelectItem key={version.id} value={version.id}>
-                {version.label}{version.is_active ? ' (Standard)' : ''}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+    <div className="border-b pb-4 mb-4">
+      {/* Version Information Display */}
+      <div className="flex items-center gap-2 mb-3">
+        <FileText size={16} className="text-muted-foreground" />
+        <span className="font-medium">{selectedVersion.label}</span>
+        {selectedVersion.is_active && (
+          <Star size={12} className="text-amber-500 fill-amber-500" />
+        )}
+        <span className="text-sm text-muted-foreground">
+          • {format(new Date(selectedVersion.created_at), 'dd.MM.yyyy HH:mm')} • {selectedVersion.total_transactions} transaksjoner
+        </span>
+      </div>
+      
+      {/* Version Selector and Controls */}
+      <div className="flex justify-between items-center">
+        <div className="flex items-center gap-2">
+          <Clock size={16} className="text-muted-foreground" />
+          <span className="text-sm font-medium">Versjon:</span>
+          <Select value={selectedVersion.id} onValueChange={handleSelectVersion}>
+            <SelectTrigger className="w-[280px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {versions.map(version => (
+                <SelectItem key={version.id} value={version.id}>
+                  {version.label}{version.is_active ? ' (Standard)' : ''}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
         
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={handleSetAsDefault}
-              disabled={selectedVersion.is_active || setActiveVersionMutation.isPending}
-              className="h-8"
-            >
-              {selectedVersion.is_active ? (
-                <Star size={14} className="text-amber-500 fill-amber-500" />
-              ) : (
-                <StarOff size={14} />
-              )}
-              {selectedVersion.is_active ? 'Standard' : 'Sett som standard'}
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p className="max-w-xs">
-              {selectedVersion.is_active 
-                ? 'Denne versjonen er allerede satt som standard'
-                : 'Sett denne versjonen som standard versjon som lastes automatisk'
-              }
-            </p>
-          </TooltipContent>
-        </Tooltip>
-        
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-6 w-6">
-              <HelpCircle size={14} />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p className="max-w-xs">
-              Du ser på versjon <strong>{selectedVersion.label}</strong> fra {format(new Date(selectedVersion.created_at), 'dd. MMMM yyyy')}. 
-              Du kan velge en tidligere versjon fra nedtrekksmenyen eller sette denne som standard.
-            </p>
-          </TooltipContent>
-        </Tooltip>
+        <div className="flex items-center gap-2">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleSetAsDefault}
+                disabled={selectedVersion.is_active || setActiveVersionMutation.isPending}
+                className="h-8"
+              >
+                {selectedVersion.is_active ? (
+                  <Star size={14} className="text-amber-500 fill-amber-500" />
+                ) : (
+                  <StarOff size={14} />
+                )}
+                {selectedVersion.is_active ? 'Standard' : 'Sett som standard'}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p className="max-w-xs">
+                {selectedVersion.is_active 
+                  ? 'Denne versjonen er allerede satt som standard'
+                  : 'Sett denne versjonen som standard versjon som lastes automatisk'
+                }
+              </p>
+            </TooltipContent>
+          </Tooltip>
+          
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-6 w-6">
+                <HelpCircle size={14} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p className="max-w-xs">
+                Du ser på versjon <strong>{selectedVersion.label}</strong> fra {format(new Date(selectedVersion.created_at), 'dd. MMMM yyyy')}. 
+                Du kan velge en tidligere versjon fra nedtrekksmenyen eller sette denne som standard.
+              </p>
+            </TooltipContent>
+          </Tooltip>
+        </div>
       </div>
     </div>
   );
