@@ -276,12 +276,12 @@ export function EnhancedDataTable<T extends Record<string, any>>({
       {renderHeader()}
       <CardContent className="p-0">
         <DataTable<T>
+          title={title}
+          description={description}
           {...dataTableProps}
           data={filteredData}
           columns={visibleColumns}
           isLoading={isCacheLoading}
-          onSelectionChange={handleRowSelection}
-          onFilterChange={handleFilterChange}
         />
       </CardContent>
     </Card>

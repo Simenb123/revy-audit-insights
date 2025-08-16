@@ -8,6 +8,8 @@ import { AuthProvider } from "@/components/Auth/AuthProvider";
 import { RevyContextProvider } from "@/components/RevyContext/RevyContextProvider";
 import { AIGlobalProvider } from "@/components/AI/AIGlobalProvider";
 import { DataCacheProvider } from "@/components/Optimization/DataCache";
+import { SmartLoadingProvider } from "@/components/Optimization/SmartLoadingManager";
+import { WidgetManagerProvider } from "@/contexts/WidgetManagerContext";
 import { FiscalYearProvider } from "@/contexts/FiscalYearContext";
 import AppLayout from "@/components/Layout/AppLayout";
 import { RightSidebarProvider } from "@/components/Layout/RightSidebarContext";
@@ -67,10 +69,12 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <DataCacheProvider>
-          <AIGlobalProvider>
-            <AuthProvider>
-              <FiscalYearProvider>
+        <SmartLoadingProvider>
+          <DataCacheProvider>
+            <WidgetManagerProvider clientId="default" year={new Date().getFullYear()}>
+              <AIGlobalProvider>
+                <AuthProvider>
+                  <FiscalYearProvider>
                 <BrowserRouter>
                   <ScrollToTop />
                   <ClientHistoryTracker />
@@ -142,12 +146,14 @@ function App() {
                 <Toaster />
               </RevyContextProvider>
             </BrowserRouter>
-          </FiscalYearProvider>
-        </AuthProvider>
-      </AIGlobalProvider>
-    </DataCacheProvider>
-  </TooltipProvider>
-</QueryClientProvider>
+                  </FiscalYearProvider>
+                </AuthProvider>
+              </AIGlobalProvider>
+            </WidgetManagerProvider>
+          </DataCacheProvider>
+        </SmartLoadingProvider>
+      </TooltipProvider>
+    </QueryClientProvider>
 );
 }
 

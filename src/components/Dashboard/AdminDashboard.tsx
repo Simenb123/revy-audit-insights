@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Brain, Settings, Users, BarChart3, Shield, Database } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import DashboardGrid from './DashboardGrid';
+import { EnhancedDashboardGrid } from './EnhancedDashboardGrid';
 
 const AdminDashboard = () => {
   return (
@@ -114,8 +114,8 @@ const AdminDashboard = () => {
         </Link>
       </div>
 
-      {/* Standard Dashboard Grid */}
-      <DashboardGrid />
+      {/* Enhanced Dashboard Grid */}
+      <EnhancedDashboardGrid />
     </div>
   );
 };
