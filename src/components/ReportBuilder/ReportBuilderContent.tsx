@@ -26,6 +26,7 @@ import { ThemeProvider } from '@/contexts/ThemeContext';
 import type { ThemeConfig } from '@/styles/theme';
 import { ModuleWrapper } from './ModuleWrapper';
 import { useScope } from '@/contexts/ScopeContext';
+
 interface ReportBuilderContentProps {
   clientId: string;
   hasData: boolean;
