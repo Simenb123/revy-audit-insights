@@ -28,54 +28,22 @@ const GeneralLedgerTable = ({ clientId, versionId, accountNumberFilter }: Genera
     logger.log('🔍 GeneralLedgerTable rendering for client:', clientId, 'version:', versionId);
   }
   
-  // Determine if we need global sorting
-  const needsGlobalSorting = sortBy === 'account_number' || sortBy === 'account_name';
-  
+  // All sorting is now server-side with denormalized data
   const { data: transactions, isLoading, error } = useGeneralLedgerData(
     clientId, 
     versionId, 
-    needsGlobalSorting ? undefined : { page: currentPage, pageSize }, 
+    { page: currentPage, pageSize }, 
     { 
       accountNumber: accountNumberFilter, 
-      sortBy: needsGlobalSorting ? '' : sortBy, 
-      sortOrder: needsGlobalSorting ? 'asc' : sortOrder,
-      forceLoadAll: needsGlobalSorting
+      sortBy, 
+      sortOrder
     }
   );
 
-  // Apply client-side sorting and pagination for account fields when doing global sorting
-  const { sortedTransactions, totalCount: globalSortTotalCount } = useMemo(() => {
-    if (!transactions) {
-      return { sortedTransactions: undefined, totalCount: 0 };
-    }
-
-    if (!needsGlobalSorting) {
-      return { sortedTransactions: transactions, totalCount: 0 };
-    }
-
-    // Global sorting: sort all transactions, then paginate
-    const sorted = [...transactions].sort((a, b) => {
-      const aValue = sortBy === 'account_number' ? a.account_number : a.account_name;
-      const bValue = sortBy === 'account_number' ? b.account_number : b.account_name;
-      
-      const comparison = aValue.localeCompare(bValue, 'nb-NO', { numeric: true });
-      return sortOrder === 'asc' ? comparison : -comparison;
-    });
-
-    // Apply pagination to sorted results
-    const startIndex = (currentPage - 1) * pageSize;
-    const endIndex = startIndex + pageSize;
-    const paginatedData = sorted.slice(startIndex, endIndex);
-
-    return { 
-      sortedTransactions: paginatedData, 
-      totalCount: sorted.length 
-    };
-  }, [transactions, sortBy, sortOrder, needsGlobalSorting, currentPage, pageSize]);
   const { data: serverTotalCount, isLoading: isCountLoading } = useGeneralLedgerCount(clientId, versionId, { accountNumber: accountNumberFilter });
   
-  // Use global sort count when doing client-side sorting, otherwise use server count
-  const totalCount = needsGlobalSorting ? globalSortTotalCount : serverTotalCount;
+  const sortedTransactions = transactions;
+  const totalCount = serverTotalCount;
   const { data: allTransactions, isLoading: isExportLoading } = useGeneralLedgerData(clientId, versionId, undefined, { accountNumber: accountNumberFilter });
   const { data: activeVersion } = useActiveVersion(clientId);
 
@@ -124,12 +92,6 @@ const GeneralLedgerTable = ({ clientId, versionId, accountNumberFilter }: Genera
   }, []);
 
   const handleSort = React.useCallback((newSortBy: string, newSortOrder: 'asc' | 'desc') => {
-    const willNeedGlobalSorting = newSortBy === 'account_number' || newSortBy === 'account_name';
-    
-    if (willNeedGlobalSorting) {
-      setIsGlobalSorting(true);
-    }
-    
     setSortBy(newSortBy);
     setSortOrder(newSortOrder);
     setCurrentPage(1); // Reset to first page when sorting
@@ -407,7 +369,7 @@ const GeneralLedgerTable = ({ clientId, versionId, accountNumberFilter }: Genera
   
 // Create description text
   const description = !isCountLoading ? 
-    `Viser ${((currentPage - 1) * pageSize) + 1}-${Math.min(currentPage * pageSize, totalCount || 0)} av ${totalCount || 0} transaksjoner${sortedTransactions && sortedTransactions.length > 0 ? ` • Side ${currentPage} av ${totalPages}` : ''}${accountNumberFilter ? ` • Filtrert på konto ${accountNumberFilter}` : ''}${needsGlobalSorting ? ' • Global sortering' : ''}` :
+    `Viser ${((currentPage - 1) * pageSize) + 1}-${Math.min(currentPage * pageSize, totalCount || 0)} av ${totalCount || 0} transaksjoner${sortedTransactions && sortedTransactions.length > 0 ? ` • Side ${currentPage} av ${totalPages}` : ''}${accountNumberFilter ? ` • Filtrert på konto ${accountNumberFilter}` : ''}` :
     undefined;
 
 
@@ -422,7 +384,7 @@ const GeneralLedgerTable = ({ clientId, versionId, accountNumberFilter }: Genera
         icon={<LineChart className="h-5 w-5" />}
         data={sortedTransactions || []}
         columns={visibleColumns}
-        isLoading={isLoading || (needsGlobalSorting && isGlobalSorting)}
+        isLoading={isLoading}
         error={error}
         searchPlaceholder="Søk i transaksjoner..."
         enableExport={true}

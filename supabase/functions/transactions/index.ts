@@ -37,28 +37,20 @@ Deno.serve(async (req) => {
         credit_amount,
         balance_amount,
         voucher_number,
-        client_chart_of_accounts!inner(account_number, account_name)
+        account_number,
+        account_name
       `, { count: 'exact' })
       .eq('client_id', clientId);
 
     if (startDate) query = query.gte('transaction_date', startDate);
     if (endDate) query = query.lte('transaction_date', endDate);
-    if (startAccount) query = query.gte('client_chart_of_accounts.account_number', startAccount);
-    if (endAccount) query = query.lte('client_chart_of_accounts.account_number', endAccount);
+    if (startAccount) query = query.gte('account_number', startAccount);
+    if (endAccount) query = query.lte('account_number', endAccount);
 
-    // Apply server-side sorting
+    // Apply server-side sorting - now all fields are directly sortable
     if (sortBy) {
-      let sortColumn = sortBy;
       let ascending = sortOrder === 'asc';
-      
-      // Handle account_number sorting by joining table
-      if (sortBy === 'account_number') {
-        sortColumn = 'client_chart_of_accounts.account_number';
-      } else if (sortBy === 'account_name') {
-        sortColumn = 'client_chart_of_accounts.account_name';
-      }
-      
-      query = query.order(sortColumn, { ascending });
+      query = query.order(sortBy, { ascending });
     } else {
       // Default sort by transaction_date
       query = query.order('transaction_date', { ascending: true });

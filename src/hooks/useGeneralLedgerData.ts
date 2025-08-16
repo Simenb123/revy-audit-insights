@@ -59,16 +59,14 @@ export const useGeneralLedgerData = (clientId: string, versionId?: string, pagin
             period_year,
             period_month,
             version_id,
-            client_chart_of_accounts(
-              account_number,
-              account_name
-            )
+            account_number,
+            account_name
           `)
           .eq('client_id', clientId);
 
         // Optional filter by account number
         if (filters?.accountNumber) {
-          query = query.eq('client_chart_of_accounts.account_number', filters.accountNumber);
+          query = query.eq('account_number', filters.accountNumber);
         }
 
         // Filter by version if specified
@@ -119,12 +117,10 @@ export const useGeneralLedgerData = (clientId: string, versionId?: string, pagin
           }
         }
 
-        // Apply server-side sorting (skip for account fields due to Supabase limitations)
-        if (filters?.sortBy && filters.sortBy !== 'account_number' && filters.sortBy !== 'account_name') {
-          let sortColumn = filters.sortBy;
+        // Apply server-side sorting - now all fields are directly sortable
+        if (filters?.sortBy) {
           let ascending = filters.sortOrder === 'asc';
-          
-          query = query.order(sortColumn, { ascending });
+          query = query.order(filters.sortBy, { ascending });
         } else {
           // Default sort by transaction_date
           query = query.order('transaction_date', { ascending: false });
@@ -140,8 +136,8 @@ export const useGeneralLedgerData = (clientId: string, versionId?: string, pagin
           id: transaction.id,
           transaction_date: transaction.transaction_date,
           client_account_id: transaction.client_account_id,
-          account_number: transaction.client_chart_of_accounts?.account_number || 'Ukjent',
-          account_name: transaction.client_chart_of_accounts?.account_name || 'Ukjent konto',
+          account_number: transaction.account_number || 'Ukjent',
+          account_name: transaction.account_name || 'Ukjent konto',
           description: transaction.description,
           debit_amount: transaction.debit_amount,
           credit_amount: transaction.credit_amount,
@@ -223,16 +219,14 @@ export const useGeneralLedgerData = (clientId: string, versionId?: string, pagin
             period_year,
             period_month,
             version_id,
-            client_chart_of_accounts(
-              account_number,
-              account_name
-            )
+            account_number,
+            account_name
           `)
           .eq('client_id', clientId);
 
         // Optional filter by account number
         if (filters?.accountNumber) {
-          query = query.eq('client_chart_of_accounts.account_number', filters.accountNumber);
+          query = query.eq('account_number', filters.accountNumber);
         }
 
         // Filter by version if we have one
@@ -282,8 +276,8 @@ export const useGeneralLedgerData = (clientId: string, versionId?: string, pagin
         id: transaction.id,
         transaction_date: transaction.transaction_date,
         client_account_id: transaction.client_account_id,
-        account_number: transaction.client_chart_of_accounts?.account_number || 'Ukjent',
-        account_name: transaction.client_chart_of_accounts?.account_name || 'Ukjent konto',
+        account_number: transaction.account_number || 'Ukjent',
+        account_name: transaction.account_name || 'Ukjent konto',
         description: transaction.description,
         debit_amount: transaction.debit_amount,
         credit_amount: transaction.credit_amount,

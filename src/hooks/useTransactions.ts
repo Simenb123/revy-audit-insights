@@ -20,6 +20,8 @@ interface UseTransactionsOptions {
   endDate?: string
   startAccount?: string
   endAccount?: string
+  sortBy?: string
+  sortOrder?: 'asc' | 'desc'
 }
 
 export function useTransactions(
@@ -30,7 +32,7 @@ export function useTransactions(
     queryKey: ['transactions', clientId, options],
     enabled: !!clientId,
     queryFn: async () => {
-      const { page = 1, pageSize = 100, startDate, endDate, startAccount, endAccount } = options
+      const { page = 1, pageSize = 100, startDate, endDate, startAccount, endAccount, sortBy, sortOrder } = options
       const { data, error } = await supabase.functions.invoke('transactions', {
         body: {
           clientId,
@@ -40,6 +42,8 @@ export function useTransactions(
           endAccount,
           page,
           pageSize,
+          sortBy,
+          sortOrder,
         },
       })
 
@@ -48,8 +52,8 @@ export function useTransactions(
       const items = (data?.data || []).map((t: any) => ({
         id: t.id,
         transaction_date: t.transaction_date,
-        account_number: t.client_chart_of_accounts?.account_number || '',
-        account_name: t.client_chart_of_accounts?.account_name || '',
+        account_number: t.account_number || '',
+        account_name: t.account_name || '',
         description: t.description,
         debit_amount: t.debit_amount,
         credit_amount: t.credit_amount,
