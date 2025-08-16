@@ -1,5 +1,9 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, memo } from 'react';
 import { useWidgetPersistence } from '@/hooks/useWidgetPersistence';
+import { useValidatedState } from '@/hooks/useValidatedState';
+import { widgetCacheManager } from '@/services/widgetCacheManager';
+import { WidgetSchema, WidgetLayoutSchema, validateWidget, validateWidgetLayout } from '@/types/widget';
+import { logger } from '@/utils/logger';
 
 export interface WidgetLayout {
   i: string;
@@ -79,7 +83,7 @@ interface WidgetManagerContextType {
 
 export const WidgetManagerContext = createContext<WidgetManagerContextType | undefined>(undefined);
 
-export function WidgetManagerProvider({
+export const WidgetManagerProvider = memo(function WidgetManagerProvider({
   children,
   clientId,
   year,
@@ -88,8 +92,10 @@ export function WidgetManagerProvider({
   clientId: string;
   year: number;
 }) {
+  // Use standard state - validation will be done at runtime
   const [widgets, setWidgets] = useState<Widget[]>([]);
   const [layouts, setLayouts] = useState<WidgetLayout[]>([]);
+
   const [activeCrossFilter, setActiveCrossFilter] = useState<
     {
       sourceWidgetId: string;
@@ -101,13 +107,26 @@ export function WidgetManagerProvider({
   const { load, save, clear } = useWidgetPersistence(clientId, year);
 
   const addWidget = useCallback((widget: Widget, layout: WidgetLayout) => {
-    setWidgets(prev => [...prev, widget]);
-    setLayouts(prev => [...prev, layout]);
+    try {
+      // Cache the widget
+      widgetCacheManager.setWidget(widget);
+      
+      setWidgets(prev => [...prev, widget]);
+      setLayouts(prev => [...prev, layout]);
+      logger.debug('Widget added:', widget.id);
+    } catch (error) {
+      logger.error('Failed to add widget:', error);
+      throw new Error(`Invalid widget data: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }, []);
 
   const removeWidget = useCallback((widgetId: string) => {
+    // Invalidate cache
+    widgetCacheManager.invalidateWidget(widgetId);
+    
     setWidgets(prev => prev.filter(w => w.id !== widgetId));
     setLayouts(prev => prev.filter(l => l.widgetId !== widgetId));
+    logger.debug('Widget removed:', widgetId);
   }, []);
 
   const updateLayout = useCallback((newLayouts: WidgetLayout[]) => {
@@ -115,9 +134,27 @@ export function WidgetManagerProvider({
   }, []);
 
   const updateWidget = useCallback((widgetId: string, updates: Partial<Widget>) => {
-    setWidgets(prev => prev.map(w => w.id === widgetId ? { ...w, ...updates } : w));
-    if (Object.prototype.hasOwnProperty.call(updates, 'sectionId')) {
-      setLayouts(prev => prev.map(l => l.widgetId === widgetId ? { ...l, sectionId: updates.sectionId } : l));
+    try {
+      setWidgets(prev => prev.map(w => {
+        if (w.id === widgetId) {
+          const updatedWidget = { ...w, ...updates };
+          
+          // Update cache
+          widgetCacheManager.setWidget(updatedWidget);
+          
+          return updatedWidget;
+        }
+        return w;
+      }));
+      
+      if (Object.prototype.hasOwnProperty.call(updates, 'sectionId')) {
+        setLayouts(prev => prev.map(l => l.widgetId === widgetId ? { ...l, sectionId: updates.sectionId } : l));
+      }
+      
+      logger.debug('Widget updated:', widgetId);
+    } catch (error) {
+      logger.error('Failed to update widget:', error);
+      throw new Error(`Invalid widget update: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }, []);
 
@@ -165,7 +202,7 @@ export function WidgetManagerProvider({
       {children}
     </WidgetManagerContext.Provider>
   );
-}
+});
 
 export function useWidgetManager() {
   const context = useContext(WidgetManagerContext);
