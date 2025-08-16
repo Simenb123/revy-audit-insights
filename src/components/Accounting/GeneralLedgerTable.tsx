@@ -28,6 +28,23 @@ const GeneralLedgerTable = ({ clientId, versionId, accountNumberFilter }: Genera
   }
   
   const { data: transactions, isLoading, error } = useGeneralLedgerData(clientId, versionId, { page: currentPage, pageSize }, { accountNumber: accountNumberFilter, sortBy, sortOrder });
+
+  // Apply client-side sorting for account fields
+  const sortedTransactions = useMemo(() => {
+    if (!transactions || !sortBy || (sortBy !== 'account_number' && sortBy !== 'account_name')) {
+      return transactions;
+    }
+
+    const sorted = [...transactions].sort((a, b) => {
+      const aValue = sortBy === 'account_number' ? a.account_number : a.account_name;
+      const bValue = sortBy === 'account_number' ? b.account_number : b.account_name;
+      
+      const comparison = aValue.localeCompare(bValue, 'nb-NO', { numeric: true });
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
+
+    return sorted;
+  }, [transactions, sortBy, sortOrder]);
   const { data: totalCount, isLoading: isCountLoading } = useGeneralLedgerCount(clientId, versionId, { accountNumber: accountNumberFilter });
   const { data: allTransactions, isLoading: isExportLoading } = useGeneralLedgerData(clientId, versionId, undefined, { accountNumber: accountNumberFilter });
   const { data: activeVersion } = useActiveVersion(clientId);
@@ -316,24 +333,24 @@ const GeneralLedgerTable = ({ clientId, versionId, accountNumberFilter }: Genera
 
   // Calculate totals
   const totals = useMemo(() => {
-    if (!transactions) return null;
+    if (!sortedTransactions) return null;
 
-    const hasDebCred = transactions.some(t => t.debit_amount !== null || t.credit_amount !== null);
+    const hasDebCred = sortedTransactions.some(t => t.debit_amount !== null || t.credit_amount !== null);
 
     const debit = hasDebCred
-      ? transactions.reduce((sum, t) => sum + (t.debit_amount || 0), 0)
-      : transactions.reduce((sum, t) => sum + ((t.balance_amount || 0) > 0 ? (t.balance_amount as number) : 0), 0);
+      ? sortedTransactions.reduce((sum, t) => sum + (t.debit_amount || 0), 0)
+      : sortedTransactions.reduce((sum, t) => sum + ((t.balance_amount || 0) > 0 ? (t.balance_amount as number) : 0), 0);
 
     const credit = hasDebCred
-      ? transactions.reduce((sum, t) => sum + (t.credit_amount || 0), 0)
-      : transactions.reduce((sum, t) => sum + ((t.balance_amount || 0) < 0 ? Math.abs(t.balance_amount as number) : 0), 0);
+      ? sortedTransactions.reduce((sum, t) => sum + (t.credit_amount || 0), 0)
+      : sortedTransactions.reduce((sum, t) => sum + ((t.balance_amount || 0) < 0 ? Math.abs(t.balance_amount as number) : 0), 0);
 
     const balance = hasDebCred
       ? debit - credit
-      : transactions.reduce((sum, t) => sum + (t.balance_amount || 0), 0);
+      : sortedTransactions.reduce((sum, t) => sum + (t.balance_amount || 0), 0);
 
     return { debit, credit, balance };
-  }, [transactions]);
+  }, [sortedTransactions]);
 
   const totalRow = totals ? (
     <TableRow className="font-bold border-t-2 bg-muted/50">
@@ -354,7 +371,7 @@ const GeneralLedgerTable = ({ clientId, versionId, accountNumberFilter }: Genera
   
 // Create description text
   const description = !isCountLoading ? 
-    `Viser ${((currentPage - 1) * pageSize) + 1}-${Math.min(currentPage * pageSize, totalCount || 0)} av ${totalCount || 0} transaksjoner${transactions && transactions.length > 0 ? ` • Side ${currentPage} av ${totalPages}` : ''}${accountNumberFilter ? ` • Filtrert på konto ${accountNumberFilter}` : ''}` :
+    `Viser ${((currentPage - 1) * pageSize) + 1}-${Math.min(currentPage * pageSize, totalCount || 0)} av ${totalCount || 0} transaksjoner${sortedTransactions && sortedTransactions.length > 0 ? ` • Side ${currentPage} av ${totalPages}` : ''}${accountNumberFilter ? ` • Filtrert på konto ${accountNumberFilter}` : ''}${(sortBy === 'account_number' || sortBy === 'account_name') ? ' • Sortert lokalt' : ''}` :
     undefined;
 
 
@@ -367,7 +384,7 @@ const GeneralLedgerTable = ({ clientId, versionId, accountNumberFilter }: Genera
         title="Hovedbok"
         description={description}
         icon={<LineChart className="h-5 w-5" />}
-        data={transactions || []}
+        data={sortedTransactions || []}
         columns={visibleColumns}
         isLoading={isLoading}
         error={error}

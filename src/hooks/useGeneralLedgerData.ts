@@ -119,17 +119,10 @@ export const useGeneralLedgerData = (clientId: string, versionId?: string, pagin
           }
         }
 
-        // Apply server-side sorting
-        if (filters?.sortBy) {
+        // Apply server-side sorting (skip for account fields due to Supabase limitations)
+        if (filters?.sortBy && filters.sortBy !== 'account_number' && filters.sortBy !== 'account_name') {
           let sortColumn = filters.sortBy;
           let ascending = filters.sortOrder === 'asc';
-          
-          // Handle account_number sorting by joining table
-          if (filters.sortBy === 'account_number') {
-            sortColumn = 'client_chart_of_accounts.account_number';
-          } else if (filters.sortBy === 'account_name') {
-            sortColumn = 'client_chart_of_accounts.account_name';
-          }
           
           query = query.order(sortColumn, { ascending });
         } else {
