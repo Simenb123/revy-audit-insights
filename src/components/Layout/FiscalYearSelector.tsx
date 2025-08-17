@@ -20,7 +20,7 @@ const FiscalYearSelector: React.FC<FiscalYearSelectorProps> = ({
       {showClientName && clientName && (
         <div className="flex items-center gap-2">
           <span className="font-medium">{clientName}</span>
-          <Badge variant="outline" className="flex items-center gap-1">
+          <Badge variant="secondary" className="flex items-center gap-1 bg-primary/10 text-primary border-primary/20">
             <Calendar className="w-3 h-3" />
             {selectedFiscalYear}
           </Badge>
@@ -33,12 +33,16 @@ const FiscalYearSelector: React.FC<FiscalYearSelectorProps> = ({
           value={selectedFiscalYear.toString()}
           onValueChange={(value) => setSelectedFiscalYear(parseInt(value, 10))}
         >
-          <SelectTrigger className="w-[120px]">
+          <SelectTrigger className="w-[120px] bg-background border-input text-foreground">
             <SelectValue />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="bg-popover border-border z-50">
             {fiscalYearOptions.map((year) => (
-              <SelectItem key={year} value={year.toString()}>
+              <SelectItem 
+                key={year} 
+                value={year.toString()}
+                className="text-popover-foreground hover:bg-accent hover:text-accent-foreground"
+              >
                 {year}
               </SelectItem>
             ))}

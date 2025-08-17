@@ -18,7 +18,7 @@ const ClientSubHeader: React.FC<ClientSubHeaderProps> = ({
     <div
       data-sub-header
       className={cn(
-        'sticky top-[var(--global-header-current-height)] z-40 border-b shadow-sm h-[var(--sub-header-height)] px-4',
+        'sticky top-[var(--global-header-current-height)] z-40 bg-muted/50 border-b border-border shadow-sm h-[var(--sub-header-height)] px-4',
         'flex items-center justify-between',
         className
       )}
