@@ -11,6 +11,7 @@ import { DataManagementPanel } from '@/components/DataUpload/DataManagementPanel
 import { useAccountingYear } from '@/hooks/useAccountingYear';
 import AccountingYearHeader from '@/components/AccountingYearHeader';
 import TrialBalanceMappingTable from './TrialBalanceMappingTable';
+import { useQueryClient } from '@tanstack/react-query';
 // Removed useAvailableVersions since versions are now auto-generated
 import {
   processExcelFile,
@@ -39,6 +40,7 @@ const TrialBalanceUploader = ({ clientId, onUploadComplete }: TrialBalanceUpload
   // Get accounting year for auto-generating version and period dates
   const { accountingYear, isLoading: yearLoading } = useAccountingYear(clientId || '');
   const { selectedFiscalYear } = useFiscalYear();
+  const queryClient = useQueryClient();
   
 const [selectedFile, setSelectedFile] = useState<File | null>(null);
 const [filePreview, setFilePreview] = useState<FilePreview | null>(null);
@@ -80,37 +82,33 @@ const handleFileSelect = async (file: File) => {
   
   if (['xml', 'zip'].includes(extension || '')) {
     setSelectedFile(file);
+    setStep('upload');
+    setUploadProgress(5);
+    
     try {
-      const { accounts } = await parseSaftFile(file);
-      const rows = accounts.map(a => [
-        a.account_id,
-        a.description || '',
-        a.opening_balance ?? '',
-        a.closing_balance ?? ''
-      ]);
-      const preview: FilePreview = {
-        headers: ['account_number', 'account_name', 'opening_balance', 'closing_balance'],
-        rows: rows.slice(0, 5),
-        allRows: rows,
-        hasHeaders: true,
-        totalRows: rows.length,
-        headerRowIndex: 0,
-        skippedRows: [],
-        originalRowNumbers: rows.map((_, i) => i + 1),
-      };
-      setFilePreview(preview);
-      const converted = accounts.map(a => ({
-        account_number: a.account_id,
-        account_name: a.description || '',
-        opening_balance: a.opening_balance ?? 0,
-        closing_balance: a.closing_balance ?? 0,
-      }));
-      setConvertedData(converted);
-      setStep('upload');
-      await uploadTrialBalance(converted, file);
+      toast.info('Starter SAF-T import - parser både saldobalanse og hovedbok...');
+      const parsed = await parseSaftFile(file);
+      setUploadProgress(40);
+      
+      // Use full SAF-T import functionality via persistParsed
+      const { persistParsed } = await import('@/utils/saftImport');
+      await persistParsed(clientId, parsed, file.name);
+      setUploadProgress(100);
+      
+      setStep('success');
+      toast.success(`SAF-T import fullført! Importerte ${parsed.accounts.length} kontoer og ${parsed.transactions.length} transaksjoner.`);
+      
+      // Invalidate relevant queries to refresh UI with new data
+      queryClient.invalidateQueries({ queryKey: ['accounting-versions'] });
+      queryClient.invalidateQueries({ queryKey: ['gl-version-options'] });
+      queryClient.invalidateQueries({ queryKey: ['general-ledger-v6'] });
+      queryClient.invalidateQueries({ queryKey: ['trial-balance-versions'] });
+      queryClient.invalidateQueries({ queryKey: ['trial-balances'] });
+      
+      if (onUploadComplete) onUploadComplete();
     } catch (err) {
-      console.error(err);
-      toast.error('Feil ved lesing av SAF-T fil');
+      console.error('SAF-T import error:', err);
+      toast.error(`Feil ved SAF-T import: ${err instanceof Error ? err.message : 'Ukjent feil'}`);
       setStep('select');
     }
     return;
