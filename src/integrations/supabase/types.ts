@@ -2303,6 +2303,65 @@ export type Database = {
           },
         ]
       }
+      client_investments: {
+        Row: {
+          average_cost_price: number | null
+          client_id: string
+          created_at: string
+          created_by: string | null
+          current_market_value: number | null
+          current_quantity: number
+          id: string
+          is_active: boolean
+          last_valuation_date: string | null
+          notes: string | null
+          portfolio_percentage: number | null
+          security_id: string
+          total_cost_basis: number | null
+          updated_at: string
+        }
+        Insert: {
+          average_cost_price?: number | null
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          current_market_value?: number | null
+          current_quantity?: number
+          id?: string
+          is_active?: boolean
+          last_valuation_date?: string | null
+          notes?: string | null
+          portfolio_percentage?: number | null
+          security_id: string
+          total_cost_basis?: number | null
+          updated_at?: string
+        }
+        Update: {
+          average_cost_price?: number | null
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          current_market_value?: number | null
+          current_quantity?: number
+          id?: string
+          is_active?: boolean
+          last_valuation_date?: string | null
+          notes?: string | null
+          portfolio_percentage?: number | null
+          security_id?: string
+          total_cost_basis?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_investments_security_id_fkey"
+            columns: ["security_id"]
+            isOneToOne: false
+            referencedRelation: "investment_securities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_reports: {
         Row: {
           client_id: string
@@ -2823,6 +2882,39 @@ export type Database = {
           is_active?: boolean
           name?: string
           sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      country_risk_classifications: {
+        Row: {
+          country_code: string
+          country_name: string
+          created_at: string
+          description: string | null
+          exemption_method_risk_level: string
+          id: string
+          is_active: boolean
+          updated_at: string
+        }
+        Insert: {
+          country_code: string
+          country_name: string
+          created_at?: string
+          description?: string | null
+          exemption_method_risk_level?: string
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+        }
+        Update: {
+          country_code?: string
+          country_name?: string
+          created_at?: string
+          description?: string | null
+          exemption_method_risk_level?: string
+          id?: string
+          is_active?: boolean
           updated_at?: string
         }
         Relationships: []
@@ -4527,6 +4619,119 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      investment_securities: {
+        Row: {
+          country_code: string | null
+          created_at: string
+          created_by: string | null
+          currency_code: string
+          exchange: string | null
+          id: string
+          is_active: boolean
+          isin_code: string
+          name: string
+          sector: string | null
+          security_type: string
+          updated_at: string
+        }
+        Insert: {
+          country_code?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency_code?: string
+          exchange?: string | null
+          id?: string
+          is_active?: boolean
+          isin_code: string
+          name: string
+          sector?: string | null
+          security_type?: string
+          updated_at?: string
+        }
+        Update: {
+          country_code?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency_code?: string
+          exchange?: string | null
+          id?: string
+          is_active?: boolean
+          isin_code?: string
+          name?: string
+          sector?: string | null
+          security_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      investment_transactions: {
+        Row: {
+          client_id: string
+          created_at: string
+          created_by: string | null
+          currency_code: string
+          exchange_rate: number | null
+          fees: number | null
+          id: string
+          notes: string | null
+          price_per_unit: number
+          quantity: number
+          security_id: string
+          tax_withheld: number | null
+          total_amount: number
+          transaction_date: string
+          transaction_type: string
+          updated_at: string
+          voucher_reference: string | null
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          currency_code?: string
+          exchange_rate?: number | null
+          fees?: number | null
+          id?: string
+          notes?: string | null
+          price_per_unit: number
+          quantity: number
+          security_id: string
+          tax_withheld?: number | null
+          total_amount: number
+          transaction_date: string
+          transaction_type: string
+          updated_at?: string
+          voucher_reference?: string | null
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          currency_code?: string
+          exchange_rate?: number | null
+          fees?: number | null
+          id?: string
+          notes?: string | null
+          price_per_unit?: number
+          quantity?: number
+          security_id?: string
+          tax_withheld?: number | null
+          total_amount?: number
+          transaction_date?: string
+          transaction_type?: string
+          updated_at?: string
+          voucher_reference?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "investment_transactions_security_id_fkey"
+            columns: ["security_id"]
+            isOneToOne: false
+            referencedRelation: "investment_securities"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       isa_standards: {
         Row: {

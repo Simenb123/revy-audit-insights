@@ -241,6 +241,25 @@ const ResizableLeftSidebar = () => {
     },
   ] : []
 
+  // Investment sub-items
+  const investmentItems = clientId ? [
+    {
+      title: 'Porteføljeoversikt',
+      url: `/clients/${clientId}/investments/overview`,
+      icon: BarChart3,
+    },
+    {
+      title: 'Verdipapirer',
+      url: `/clients/${clientId}/investments/securities`,
+      icon: Shield,
+    },
+    {
+      title: 'Transaksjoner',
+      url: `/clients/${clientId}/investments/transactions`,
+      icon: FileText,
+    },
+  ] : []
+
   const clientWorkItems = clientId ? clientMainItems : generalWorkItems
 
   const isActive = (url: string) => {
@@ -438,6 +457,51 @@ const ResizableLeftSidebar = () => {
                         <CollapsibleContent>
                           <SidebarMenuSub>
                             {costItems.map((item) => {
+                              const isItemActive = isActive(item.url)
+                              
+                              return (
+                                <SidebarMenuItem key={item.title}>
+                                  <SidebarMenuSubButton 
+                                    asChild 
+                                    isActive={isItemActive}
+                                  >
+                                    <Link to={item.url} className="flex items-center gap-2 w-full">
+                                      <item.icon className="h-3 w-3 flex-shrink-0" />
+                                      <span className="text-xs truncate">{item.title}</span>
+                                    </Link>
+                                  </SidebarMenuSubButton>
+                                </SidebarMenuItem>
+                              )
+                            })}
+                          </SidebarMenuSub>
+                        </CollapsibleContent>
+                      </Collapsible>
+                    </SidebarMenuItem>
+                  )}
+
+                  {/* Investeringer sub-section */}
+                  {clientId && investmentItems.length > 0 && (
+                    <SidebarMenuItem>
+                      <Collapsible 
+                        open={!collapsedSections['investments']} 
+                        onOpenChange={() => toggleSection('investments')}
+                      >
+                        <CollapsibleTrigger asChild>
+                          <SidebarMenuButton className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground cursor-pointer flex items-center justify-between group">
+                            <div className="flex items-center gap-2">
+                              <TrendingUp className="h-4 w-4 flex-shrink-0" />
+                              {!isCollapsed && <span className="text-xs truncate">Investeringer</span>}
+                            </div>
+                            {!isCollapsed && (
+                              collapsedSections['investments'] ? 
+                                <ChevronRight className="h-3 w-3 opacity-50 group-hover:opacity-100" /> : 
+                                <ChevronDown className="h-3 w-3 opacity-50 group-hover:opacity-100" />
+                            )}
+                          </SidebarMenuButton>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <SidebarMenuSub>
+                            {investmentItems.map((item) => {
                               const isItemActive = isActive(item.url)
                               
                               return (
