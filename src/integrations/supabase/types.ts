@@ -4620,6 +4620,71 @@ export type Database = {
         }
         Relationships: []
       }
+      historical_prices: {
+        Row: {
+          closing_price: number
+          created_at: string
+          created_by: string | null
+          currency_code: string
+          high_price: number | null
+          id: string
+          is_year_end: boolean
+          low_price: number | null
+          notes: string | null
+          opening_price: number | null
+          price_date: string
+          security_id: string
+          source: string
+          source_reference: string | null
+          updated_at: string
+          volume: number | null
+        }
+        Insert: {
+          closing_price: number
+          created_at?: string
+          created_by?: string | null
+          currency_code?: string
+          high_price?: number | null
+          id?: string
+          is_year_end?: boolean
+          low_price?: number | null
+          notes?: string | null
+          opening_price?: number | null
+          price_date: string
+          security_id: string
+          source?: string
+          source_reference?: string | null
+          updated_at?: string
+          volume?: number | null
+        }
+        Update: {
+          closing_price?: number
+          created_at?: string
+          created_by?: string | null
+          currency_code?: string
+          high_price?: number | null
+          id?: string
+          is_year_end?: boolean
+          low_price?: number | null
+          notes?: string | null
+          opening_price?: number | null
+          price_date?: string
+          security_id?: string
+          source?: string
+          source_reference?: string | null
+          updated_at?: string
+          volume?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "historical_prices_security_id_fkey"
+            columns: ["security_id"]
+            isOneToOne: false
+            referencedRelation: "investment_securities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       investment_securities: {
         Row: {
           country_code: string | null
@@ -8034,7 +8099,60 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      latest_security_prices: {
+        Row: {
+          closing_price: number | null
+          currency_code: string | null
+          is_year_end: boolean | null
+          price_date: string | null
+          security_id: string | null
+          source: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "historical_prices_security_id_fkey"
+            columns: ["security_id"]
+            isOneToOne: false
+            referencedRelation: "investment_securities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      year_end_security_prices: {
+        Row: {
+          closing_price: number | null
+          currency_code: string | null
+          price_date: string | null
+          security_id: string | null
+          source: string | null
+          year: number | null
+        }
+        Insert: {
+          closing_price?: number | null
+          currency_code?: string | null
+          price_date?: string | null
+          security_id?: string | null
+          source?: string | null
+          year?: never
+        }
+        Update: {
+          closing_price?: number | null
+          currency_code?: string | null
+          price_date?: string | null
+          security_id?: string | null
+          source?: string | null
+          year?: never
+        }
+        Relationships: [
+          {
+            foreignKeyName: "historical_prices_security_id_fkey"
+            columns: ["security_id"]
+            isOneToOne: false
+            referencedRelation: "investment_securities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       approve_firm_access_request: {
