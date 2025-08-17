@@ -1849,6 +1849,117 @@ export type Database = {
           },
         ]
       }
+      bank_statements: {
+        Row: {
+          bank_account_number: string
+          client_id: string
+          closing_balance: number
+          created_at: string
+          currency_code: string
+          file_name: string | null
+          id: string
+          opening_balance: number
+          statement_date: string
+          statement_reference: string | null
+          updated_at: string
+        }
+        Insert: {
+          bank_account_number: string
+          client_id: string
+          closing_balance?: number
+          created_at?: string
+          currency_code?: string
+          file_name?: string | null
+          id?: string
+          opening_balance?: number
+          statement_date: string
+          statement_reference?: string | null
+          updated_at?: string
+        }
+        Update: {
+          bank_account_number?: string
+          client_id?: string
+          closing_balance?: number
+          created_at?: string
+          currency_code?: string
+          file_name?: string | null
+          id?: string
+          opening_balance?: number
+          statement_date?: string
+          statement_reference?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      bank_transactions: {
+        Row: {
+          amount: number
+          balance_after: number | null
+          bank_statement_id: string
+          created_at: string
+          description: string
+          id: string
+          journal_entry_line_id: string | null
+          reconciled_at: string | null
+          reconciled_by: string | null
+          reconciliation_status: string
+          reference_number: string | null
+          transaction_date: string
+          transaction_type: string | null
+          updated_at: string
+          value_date: string | null
+        }
+        Insert: {
+          amount: number
+          balance_after?: number | null
+          bank_statement_id: string
+          created_at?: string
+          description: string
+          id?: string
+          journal_entry_line_id?: string | null
+          reconciled_at?: string | null
+          reconciled_by?: string | null
+          reconciliation_status?: string
+          reference_number?: string | null
+          transaction_date: string
+          transaction_type?: string | null
+          updated_at?: string
+          value_date?: string | null
+        }
+        Update: {
+          amount?: number
+          balance_after?: number | null
+          bank_statement_id?: string
+          created_at?: string
+          description?: string
+          id?: string
+          journal_entry_line_id?: string | null
+          reconciled_at?: string | null
+          reconciled_by?: string | null
+          reconciliation_status?: string
+          reference_number?: string | null
+          transaction_date?: string
+          transaction_type?: string | null
+          updated_at?: string
+          value_date?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_transactions_bank_statement_id_fkey"
+            columns: ["bank_statement_id"]
+            isOneToOne: false
+            referencedRelation: "bank_statements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_transactions_journal_entry_line_id_fkey"
+            columns: ["journal_entry_line_id"]
+            isOneToOne: false
+            referencedRelation: "journal_entry_lines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bulk_import_sessions: {
         Row: {
           auditor_name: string | null
@@ -4122,6 +4233,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      financial_reports_cache: {
+        Row: {
+          client_id: string
+          created_by: string | null
+          expires_at: string
+          generated_at: string
+          id: string
+          parameters: Json | null
+          period_end: string
+          period_start: string
+          report_data: Json
+          report_type: string
+        }
+        Insert: {
+          client_id: string
+          created_by?: string | null
+          expires_at?: string
+          generated_at?: string
+          id?: string
+          parameters?: Json | null
+          period_end: string
+          period_start: string
+          report_data: Json
+          report_type: string
+        }
+        Update: {
+          client_id?: string
+          created_by?: string | null
+          expires_at?: string
+          generated_at?: string
+          id?: string
+          parameters?: Json | null
+          period_end?: string
+          period_start?: string
+          report_data?: Json
+          report_type?: string
+        }
+        Relationships: []
       }
       firm_access_requests: {
         Row: {
@@ -7123,6 +7273,57 @@ export type Database = {
           },
         ]
       }
+      reconciliation_suggestions: {
+        Row: {
+          bank_transaction_id: string
+          confidence_score: number
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          id: string
+          journal_entry_line_id: string
+          match_reason: string | null
+          status: string
+        }
+        Insert: {
+          bank_transaction_id: string
+          confidence_score?: number
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          id?: string
+          journal_entry_line_id: string
+          match_reason?: string | null
+          status?: string
+        }
+        Update: {
+          bank_transaction_id?: string
+          confidence_score?: number
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          id?: string
+          journal_entry_line_id?: string
+          match_reason?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reconciliation_suggestions_bank_transaction_id_fkey"
+            columns: ["bank_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "bank_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reconciliation_suggestions_journal_entry_line_id_fkey"
+            columns: ["journal_entry_line_id"]
+            isOneToOne: false
+            referencedRelation: "journal_entry_lines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       related_party_indicators: {
         Row: {
           created_at: string
@@ -8786,6 +8987,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: number
       }
+      cleanup_expired_financial_reports: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
       convert_currency: {
         Args: {
           p_amount: number
@@ -8825,9 +9030,21 @@ export type Database = {
           voucher_number: string
         }[]
       }
+      generate_balance_sheet: {
+        Args: { p_as_of_date: string; p_client_id: string }
+        Returns: Json
+      }
       generate_certificate_number: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      generate_income_statement: {
+        Args: {
+          p_client_id: string
+          p_period_end: string
+          p_period_start: string
+        }
+        Returns: Json
       }
       get_basic_transaction_info: {
         Args: { p_client_id: string; p_version_id: string }
