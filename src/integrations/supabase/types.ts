@@ -2040,6 +2040,252 @@ export type Database = {
           },
         ]
       }
+      budget_actuals: {
+        Row: {
+          actual_amount: number
+          budget_line_id: string
+          budgeted_amount: number
+          id: string
+          last_updated: string
+          period_month: number
+          period_year: number
+          variance_amount: number | null
+          variance_percentage: number | null
+        }
+        Insert: {
+          actual_amount?: number
+          budget_line_id: string
+          budgeted_amount?: number
+          id?: string
+          last_updated?: string
+          period_month: number
+          period_year: number
+          variance_amount?: number | null
+          variance_percentage?: number | null
+        }
+        Update: {
+          actual_amount?: number
+          budget_line_id?: string
+          budgeted_amount?: number
+          id?: string
+          last_updated?: string
+          period_month?: number
+          period_year?: number
+          variance_amount?: number | null
+          variance_percentage?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "budget_actuals_budget_line_id_fkey"
+            columns: ["budget_line_id"]
+            isOneToOne: false
+            referencedRelation: "budget_lines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      budget_lines: {
+        Row: {
+          account_name: string
+          account_number: string
+          account_type: string
+          allocation_method: string | null
+          apr_amount: number | null
+          aug_amount: number | null
+          budget_category: string | null
+          budget_id: string
+          created_at: string
+          dec_amount: number | null
+          feb_amount: number | null
+          id: string
+          jan_amount: number | null
+          jul_amount: number | null
+          jun_amount: number | null
+          mar_amount: number | null
+          may_amount: number | null
+          notes: string | null
+          nov_amount: number | null
+          oct_amount: number | null
+          period_type: string
+          sep_amount: number | null
+          total_annual_amount: number | null
+          updated_at: string
+        }
+        Insert: {
+          account_name: string
+          account_number: string
+          account_type: string
+          allocation_method?: string | null
+          apr_amount?: number | null
+          aug_amount?: number | null
+          budget_category?: string | null
+          budget_id: string
+          created_at?: string
+          dec_amount?: number | null
+          feb_amount?: number | null
+          id?: string
+          jan_amount?: number | null
+          jul_amount?: number | null
+          jun_amount?: number | null
+          mar_amount?: number | null
+          may_amount?: number | null
+          notes?: string | null
+          nov_amount?: number | null
+          oct_amount?: number | null
+          period_type?: string
+          sep_amount?: number | null
+          total_annual_amount?: number | null
+          updated_at?: string
+        }
+        Update: {
+          account_name?: string
+          account_number?: string
+          account_type?: string
+          allocation_method?: string | null
+          apr_amount?: number | null
+          aug_amount?: number | null
+          budget_category?: string | null
+          budget_id?: string
+          created_at?: string
+          dec_amount?: number | null
+          feb_amount?: number | null
+          id?: string
+          jan_amount?: number | null
+          jul_amount?: number | null
+          jun_amount?: number | null
+          mar_amount?: number | null
+          may_amount?: number | null
+          notes?: string | null
+          nov_amount?: number | null
+          oct_amount?: number | null
+          period_type?: string
+          sep_amount?: number | null
+          total_annual_amount?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "budget_lines_budget_id_fkey"
+            columns: ["budget_id"]
+            isOneToOne: false
+            referencedRelation: "budgets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      budget_templates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_default: boolean | null
+          name: string
+          template_type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_default?: boolean | null
+          name: string
+          template_type?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_default?: boolean | null
+          name?: string
+          template_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      budgets: {
+        Row: {
+          approval_date: string | null
+          approved_by: string | null
+          budget_name: string
+          budget_type: string
+          budget_year: number
+          client_id: string
+          created_at: string
+          created_by: string | null
+          currency_code: string
+          end_date: string
+          id: string
+          is_active: boolean | null
+          net_income: number | null
+          notes: string | null
+          start_date: string
+          status: string
+          template_id: string | null
+          total_expenses: number | null
+          total_revenue: number | null
+          updated_at: string
+          version_number: number
+        }
+        Insert: {
+          approval_date?: string | null
+          approved_by?: string | null
+          budget_name: string
+          budget_type?: string
+          budget_year: number
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          currency_code?: string
+          end_date: string
+          id?: string
+          is_active?: boolean | null
+          net_income?: number | null
+          notes?: string | null
+          start_date: string
+          status?: string
+          template_id?: string | null
+          total_expenses?: number | null
+          total_revenue?: number | null
+          updated_at?: string
+          version_number?: number
+        }
+        Update: {
+          approval_date?: string | null
+          approved_by?: string | null
+          budget_name?: string
+          budget_type?: string
+          budget_year?: number
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          currency_code?: string
+          end_date?: string
+          id?: string
+          is_active?: boolean | null
+          net_income?: number | null
+          notes?: string | null
+          start_date?: string
+          status?: string
+          template_id?: string | null
+          total_expenses?: number | null
+          total_revenue?: number | null
+          updated_at?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "budgets_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "budget_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bulk_import_sessions: {
         Row: {
           auditor_name: string | null
@@ -4820,6 +5066,109 @@ export type Database = {
             columns: ["asset_category_id"]
             isOneToOne: false
             referencedRelation: "asset_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      forecast_lines: {
+        Row: {
+          account_name: string
+          account_number: string
+          calculation_method: string | null
+          created_at: string
+          forecasted_amount: number
+          growth_rate: number | null
+          id: string
+          notes: string | null
+          period_month: number
+          period_year: number
+          scenario_id: string
+        }
+        Insert: {
+          account_name: string
+          account_number: string
+          calculation_method?: string | null
+          created_at?: string
+          forecasted_amount?: number
+          growth_rate?: number | null
+          id?: string
+          notes?: string | null
+          period_month: number
+          period_year: number
+          scenario_id: string
+        }
+        Update: {
+          account_name?: string
+          account_number?: string
+          calculation_method?: string | null
+          created_at?: string
+          forecasted_amount?: number
+          growth_rate?: number | null
+          id?: string
+          notes?: string | null
+          period_month?: number
+          period_year?: number
+          scenario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forecast_lines_scenario_id_fkey"
+            columns: ["scenario_id"]
+            isOneToOne: false
+            referencedRelation: "forecast_scenarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      forecast_scenarios: {
+        Row: {
+          assumptions: string | null
+          base_budget_id: string | null
+          client_id: string
+          confidence_level: number | null
+          created_at: string
+          created_by: string | null
+          forecast_period_end: string
+          forecast_period_start: string
+          id: string
+          scenario_name: string
+          scenario_type: string
+          updated_at: string
+        }
+        Insert: {
+          assumptions?: string | null
+          base_budget_id?: string | null
+          client_id: string
+          confidence_level?: number | null
+          created_at?: string
+          created_by?: string | null
+          forecast_period_end: string
+          forecast_period_start: string
+          id?: string
+          scenario_name: string
+          scenario_type?: string
+          updated_at?: string
+        }
+        Update: {
+          assumptions?: string | null
+          base_budget_id?: string | null
+          client_id?: string
+          confidence_level?: number | null
+          created_at?: string
+          created_by?: string | null
+          forecast_period_end?: string
+          forecast_period_start?: string
+          id?: string
+          scenario_name?: string
+          scenario_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forecast_scenarios_base_budget_id_fkey"
+            columns: ["base_budget_id"]
+            isOneToOne: false
+            referencedRelation: "budgets"
             referencedColumns: ["id"]
           },
         ]
@@ -8866,6 +9215,56 @@ export type Database = {
         }
         Relationships: []
       }
+      variance_reports: {
+        Row: {
+          analysis_notes: string | null
+          budget_id: string
+          client_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          report_period_end: string
+          report_period_start: string
+          report_type: string
+          significant_variances: Json | null
+          summary_data: Json
+        }
+        Insert: {
+          analysis_notes?: string | null
+          budget_id: string
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          report_period_end: string
+          report_period_start: string
+          report_type?: string
+          significant_variances?: Json | null
+          summary_data?: Json
+        }
+        Update: {
+          analysis_notes?: string | null
+          budget_id?: string
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          report_period_end?: string
+          report_period_start?: string
+          report_type?: string
+          significant_variances?: Json | null
+          summary_data?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "variance_reports_budget_id_fkey"
+            columns: ["budget_id"]
+            isOneToOne: false
+            referencedRelation: "budgets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       voucher_sequences: {
         Row: {
           client_id: string
@@ -9186,6 +9585,10 @@ export type Database = {
         Args: { p_client_id: string; p_version_id: string }
         Returns: Json
       }
+      calculate_budget_totals: {
+        Args: { p_budget_id: string }
+        Returns: undefined
+      }
       calculate_monthly_summary: {
         Args: { p_client_id: string; p_version_id: string }
         Returns: {
@@ -9283,6 +9686,10 @@ export type Database = {
       }
       get_basic_transaction_info: {
         Args: { p_client_id: string; p_version_id: string }
+        Returns: Json
+      }
+      get_budget_summary: {
+        Args: { p_budget_year: number; p_client_id: string }
         Returns: Json
       }
       get_exchange_rate: {
@@ -9401,6 +9808,10 @@ export type Database = {
       set_active_version: {
         Args: { p_version_id: string }
         Returns: undefined
+      }
+      sync_budget_actuals: {
+        Args: { p_budget_id: string; p_month: number; p_year: number }
+        Returns: number
       }
       toggle_trial_balance_lock: {
         Args: {
