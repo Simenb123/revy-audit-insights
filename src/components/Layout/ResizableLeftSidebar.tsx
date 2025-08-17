@@ -36,7 +36,8 @@ import {
   ChevronRight,
   DollarSign,
   TrendingUp,
-  Receipt
+  Receipt,
+  ArrowRightLeft
 } from 'lucide-react'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { useIsSuperAdmin } from '@/hooks/useIsSuperAdmin'
@@ -252,6 +253,16 @@ const ResizableLeftSidebar = () => {
       title: 'Verdipapirer',
       url: `/clients/${clientId}/investments/securities`,
       icon: Shield,
+    },
+    {
+      title: 'Historiske kurser',
+      url: `/clients/${clientId}/investments/prices`,
+      icon: TrendingUp,
+    },
+    {
+      title: 'Valutakurser',
+      url: `/clients/${clientId}/investments/currencies`,
+      icon: ArrowRightLeft,
     },
     {
       title: 'Transaksjoner',

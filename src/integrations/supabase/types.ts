@@ -2919,6 +2919,42 @@ export type Database = {
         }
         Relationships: []
       }
+      currencies: {
+        Row: {
+          created_at: string
+          currency_code: string
+          currency_name: string
+          decimal_places: number
+          id: string
+          is_active: boolean
+          is_base_currency: boolean
+          symbol: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          currency_code: string
+          currency_name: string
+          decimal_places?: number
+          id?: string
+          is_active?: boolean
+          is_base_currency?: boolean
+          symbol?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          currency_code?: string
+          currency_name?: string
+          decimal_places?: number
+          id?: string
+          is_active?: boolean
+          is_base_currency?: boolean
+          symbol?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       custom_permissions: {
         Row: {
           audit_firm_id: string | null
@@ -3867,6 +3903,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      exchange_rates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          exchange_rate: number
+          from_currency_code: string
+          id: string
+          is_year_end: boolean
+          notes: string | null
+          rate_date: string
+          source: string
+          source_reference: string | null
+          to_currency_code: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          exchange_rate: number
+          from_currency_code: string
+          id?: string
+          is_year_end?: boolean
+          notes?: string | null
+          rate_date: string
+          source?: string
+          source_reference?: string | null
+          to_currency_code?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          exchange_rate?: number
+          from_currency_code?: string
+          id?: string
+          is_year_end?: boolean
+          notes?: string | null
+          rate_date?: string
+          source?: string
+          source_reference?: string | null
+          to_currency_code?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       field_definitions: {
         Row: {
@@ -8099,6 +8180,17 @@ export type Database = {
       }
     }
     Views: {
+      latest_exchange_rates: {
+        Row: {
+          exchange_rate: number | null
+          from_currency_code: string | null
+          is_year_end: boolean | null
+          rate_date: string | null
+          source: string | null
+          to_currency_code: string | null
+        }
+        Relationships: []
+      }
       latest_security_prices: {
         Row: {
           closing_price: number | null
@@ -8117,6 +8209,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      year_end_exchange_rates: {
+        Row: {
+          exchange_rate: number | null
+          from_currency_code: string | null
+          rate_date: string | null
+          source: string | null
+          to_currency_code: string | null
+          year: number | null
+        }
+        Insert: {
+          exchange_rate?: number | null
+          from_currency_code?: string | null
+          rate_date?: string | null
+          source?: string | null
+          to_currency_code?: string | null
+          year?: never
+        }
+        Update: {
+          exchange_rate?: number | null
+          from_currency_code?: string | null
+          rate_date?: string | null
+          source?: string | null
+          to_currency_code?: string | null
+          year?: never
+        }
+        Relationships: []
       }
       year_end_security_prices: {
         Row: {
@@ -8203,6 +8322,15 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: number
       }
+      convert_currency: {
+        Args: {
+          p_amount: number
+          p_date?: string
+          p_from_currency: string
+          p_to_currency?: string
+        }
+        Returns: number
+      }
       copy_global_mapping_rules_to_firm: {
         Args: { p_audit_firm_id: string }
         Returns: number
@@ -8240,6 +8368,14 @@ export type Database = {
       get_basic_transaction_info: {
         Args: { p_client_id: string; p_version_id: string }
         Returns: Json
+      }
+      get_exchange_rate: {
+        Args: {
+          p_date?: string
+          p_from_currency: string
+          p_to_currency?: string
+        }
+        Returns: number
       }
       get_next_version_number: {
         Args: { p_client_id: string }
