@@ -113,11 +113,13 @@ function App() {
                   <Route path="clients/:clientId/payroll/analysis" element={<ProtectedRoute><PayrollAnalysis /></ProtectedRoute>} />
                   <Route path="clients/:clientId/payroll/upload" element={<ProtectedRoute><PayrollUpload /></ProtectedRoute>} />
                   <Route path="clients/:clientId/investments/overview" element={<ProtectedRoute><InvestmentOverview /></ProtectedRoute>} />
-                  <Route path="clients/:clientId/investments/securities" element={<ProtectedRoute><InvestmentSecurities /></ProtectedRoute>} />
-                  <Route path="clients/:clientId/investments/prices" element={<ProtectedRoute><InvestmentPrices /></ProtectedRoute>} />
-                   <Route path="clients/:clientId/investments/currencies" element={<ProtectedRoute><CurrencyManagement /></ProtectedRoute>} />
                    <Route path="clients/:clientId/investments/portfolios" element={<ProtectedRoute><InvestmentPortfolios /></ProtectedRoute>} />
                    <Route path="clients/:clientId/investments/transactions" element={<ProtectedRoute><InvestmentTransactions /></ProtectedRoute>} />
+                   
+                   {/* Global Resources */}
+                   <Route path="resources/currencies" element={<ProtectedRoute><CurrencyManagement /></ProtectedRoute>} />
+                   <Route path="resources/securities/prices" element={<ProtectedRoute><InvestmentPrices /></ProtectedRoute>} />
+                   <Route path="resources/securities/catalog" element={<ProtectedRoute><InvestmentSecurities /></ProtectedRoute>} />
                    <Route path="clients/:clientId/bookkeeping-journal" element={<ProtectedRoute><BookkeepingJournal /></ProtectedRoute>} />
                    <Route path="clients/:clientId/bookkeeping-reports" element={<ProtectedRoute><BookkeepingReports /></ProtectedRoute>} />
                    <Route path="clients/:clientId/assets" element={<ProtectedRoute><AssetManagement /></ProtectedRoute>} />

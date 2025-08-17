@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Search, Shield, AlertTriangle, CheckCircle, ExternalLink, Edit, Trash2 } from 'lucide-react';
+import { Plus, Search, Shield, AlertTriangle, CheckCircle, ExternalLink, Edit, Trash2, Globe } from 'lucide-react';
 import { useInvestmentSecurities } from '@/hooks/useInvestmentSecurities';
 import SecurityRegistrationForm from '@/components/investments/SecurityRegistrationForm';
 import { formatISIN, getRiskLevelFromISIN } from '@/utils/isinValidation';
@@ -77,12 +77,16 @@ export default function InvestmentSecurities() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Header with global context */}
       <div className="flex items-center justify-between">
         <div>
+          <div className="flex items-center gap-2 mb-2">
+            <Globe className="h-5 w-5 text-primary" />
+            <span className="text-sm text-muted-foreground">Global ressurs</span>
+          </div>
           <h1 className="text-3xl font-bold">Verdipapirer</h1>
           <p className="text-muted-foreground">
-            Global database med ISIN-koder og risikoklassifisering
+            Global database med ISIN-koder og risikoklassifisering - tilgjengelig for alle klienter
           </p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -240,10 +244,23 @@ export default function InvestmentSecurities() {
       {/* Risk Classification Info */}
       <Card>
         <CardHeader>
-          <CardTitle>Risikoklassifisering fritaksmetoden</CardTitle>
+          <CardTitle>Risikoklassifisering fritaksmetoden og global tilgjengelighet</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
+            <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
+              <div className="flex items-start gap-2">
+                <Globe className="h-5 w-5 text-primary mt-0.5" />
+                <div>
+                  <p className="font-medium text-primary">Global verdipapirdatabase</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Denne databasen er tilgjengelig for alle klienter og kan brukes på tvers av 
+                    revisjonsoppdrag for konsistent risikoklassifisering og ISIN-håndtering.
+                  </p>
+                </div>
+              </div>
+            </div>
+            
             <div>
               <h4 className="font-medium mb-3">Automatisk klassifisering basert på ISIN-landkode:</h4>
               <div className="grid gap-3">
@@ -295,7 +312,8 @@ export default function InvestmentSecurities() {
                   <p className="font-medium text-warning">Viktig informasjon</p>
                   <p className="text-sm text-muted-foreground mt-1">
                     Høyrisiko-investeringer krever særskilt vurdering av fritaksmetoden og kan påvirke 
-                    skatteplikten for utbytte og gevinster. Kontakt skatterådgiver ved usikkerhet.
+                    skatteplikten for utbytte og gevinster. Klienter kan søke opp og bruke disse 
+                    verdipapirene direkte i sine porteføljer uten å måtte registrere ISIN-koder på nytt.
                   </p>
                 </div>
               </div>

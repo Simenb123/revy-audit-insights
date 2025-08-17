@@ -12,7 +12,10 @@ import {
   Bot,
   Zap,
   TrendingUp,
-  Shield
+  Shield,
+  Globe,
+  ArrowRightLeft,
+  DollarSign
 } from 'lucide-react';
 import {
   Sidebar,
@@ -40,6 +43,12 @@ const mainNavItems: NavItem[] = [
   { title: 'Klienter', url: '/clients', icon: Users, badge: null },
   { title: 'AI Command Center', url: '/ai-command', icon: Brain, badge: 'NY' },
   { title: 'Dokumenter', url: '/documents', icon: FileText, badge: null },
+];
+
+const resourceNavItems: NavItem[] = [
+  { title: 'Valutakurser', url: '/resources/currencies', icon: ArrowRightLeft, badge: null },
+  { title: 'Verdipapirkurser', url: '/resources/securities/prices', icon: TrendingUp, badge: null },
+  { title: 'Verdipapirer', url: '/resources/securities/catalog', icon: Shield, badge: null },
 ];
 
 const aiNavItems: NavItem[] = [
@@ -128,6 +137,19 @@ export function AIRevioSidebar() {
           <SidebarGroupContent>
             <SidebarMenu className="space-y-1">
               {mainNavItems.map(renderNavItem)}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* Resources */}
+        <SidebarGroup>
+          <SidebarGroupLabel className={`${collapsed ? "sr-only" : ""} flex items-center gap-2`}>
+            <Globe className="h-4 w-4 text-primary" />
+            {!collapsed && "Ressurser"}
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu className="space-y-1">
+              {resourceNavItems.map(renderNavItem)}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

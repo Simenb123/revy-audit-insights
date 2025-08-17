@@ -15,7 +15,8 @@ import {
   Trash2,
   Filter,
   Download,
-  AlertCircle
+  AlertCircle,
+  Globe
 } from 'lucide-react';
 import { useHistoricalPrices } from '@/hooks/useHistoricalPrices';
 import PriceRegistrationForm from '@/components/investments/PriceRegistrationForm';
@@ -107,12 +108,16 @@ export default function InvestmentPrices() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Header with global context */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Historiske kurser</h1>
+          <div className="flex items-center gap-2 mb-2">
+            <Globe className="h-5 w-5 text-primary" />
+            <span className="text-sm text-muted-foreground">Global ressurs</span>
+          </div>
+          <h1 className="text-3xl font-bold">Historiske verdipapirkurser</h1>
           <p className="text-muted-foreground">
-            Registrer og administrer kurser for verdsettelse på balansedag
+            Global database med kurser for verdsettelse på balansedag - tilgjengelig for alle klienter
           </p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -360,11 +365,15 @@ export default function InvestmentPrices() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <AlertCircle className="h-5 w-5" />
-            Revisjonsformål
+            Revisjonsformål og global tilgjengelighet
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-3 text-sm">
+            <p>
+              <strong>Global database:</strong> Disse kursene er tilgjengelige for alle klienter og 
+              kan brukes på tvers av revisjonsoppdrag for konsistent verdsettelse.
+            </p>
             <p>
               <strong>Balansedag-kurser:</strong> Marker kurser per 31.12 som balansedag-kurser. 
               Disse brukes for verdsettelse i årsoppgjøret og er spesielt viktige for revisjonsformål.
@@ -374,8 +383,8 @@ export default function InvestmentPrices() {
               Dette er viktig for etterprøvbarhet i revisjonssammenheng.
             </p>
             <p>
-              <strong>Valutakurser:</strong> Husk å ta hensyn til valutakurser ved verdsettelse 
-              av utenlandske verdipapirer på balansedagen.
+              <strong>Automatisk tilgang:</strong> Klienter kan søke opp og bruke disse kursene 
+              direkte i sine investeringsregistreringer uten å måtte registrere kurser på nytt.
             </p>
           </div>
         </CardContent>

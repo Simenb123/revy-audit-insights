@@ -122,12 +122,16 @@ export default function CurrencyManagement() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Header with global context */}
       <div className="flex items-center justify-between">
         <div>
+          <div className="flex items-center gap-2 mb-2">
+            <Globe className="h-5 w-5 text-primary" />
+            <span className="text-sm text-muted-foreground">Global ressurs</span>
+          </div>
           <h1 className="text-3xl font-bold">Valutakurser</h1>
           <p className="text-muted-foreground">
-            Administrer historiske valutakurser for omregning av utenlandske investeringer
+            Global database med historiske valutakurser for omregning av utenlandske investeringer
           </p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -395,11 +399,15 @@ export default function CurrencyManagement() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <AlertCircle className="h-5 w-5" />
-            Valutaomregning for revisjonsformål
+            Global valutaomregning for revisjonsformål
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-3 text-sm">
+            <p>
+              <strong>Global tilgjengelighet:</strong> Disse valutakursene er tilgjengelige for alle 
+              klienter og kan brukes på tvers av revisjonsoppdrag for konsistent omregning.
+            </p>
             <p>
               <strong>Balansedag-kurser:</strong> Registrer valutakurser per 31.12 for korrekt omregning 
               av utenlandske investeringer på balansedagen.
@@ -409,12 +417,8 @@ export default function CurrencyManagement() {
               Disse kan lastes ned fra deres nettside og importeres.
             </p>
             <p>
-              <strong>Kildehenvisning:</strong> Dokumenter alltid kilden til valutakursene for 
-              etterprøvbarhet i revisjonssammenheng.
-            </p>
-            <p>
-              <strong>Automatisk omregning:</strong> Systemet bruker disse kursene automatisk for 
-              omregning av investeringer og transaksjoner i utenlandsk valuta.
+              <strong>Automatisk bruk:</strong> Klienter kan søke opp og bruke disse kursene 
+              automatisk i sine investeringsberegninger uten å måtte registrere kurser på nytt.
             </p>
           </div>
         </CardContent>
