@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Client } from '@/types/revio';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -28,7 +29,7 @@ const ExecutionPhase = ({ client }: ExecutionPhaseProps) => {
             Last opp hovedboken for detaljert transaksjonsanalyse.
           </p>
           
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Button 
               onClick={() => setShowUploader(true)}
               className="flex items-center gap-2"
@@ -39,6 +40,18 @@ const ExecutionPhase = ({ client }: ExecutionPhaseProps) => {
             <Button variant="outline" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
               Vis transaksjoner
+            </Button>
+            <Button variant="outline" className="flex items-center gap-2" asChild>
+              <Link to={`/clients/${client.id}/payroll`}>
+                <Upload className="h-4 w-4" />
+                Last opp A07 lønnsdata
+              </Link>
+            </Button>
+            <Button variant="outline" className="flex items-center gap-2" asChild>
+              <Link to={`/clients/${client.id}/regnskapsdata`}>
+                <FileText className="h-4 w-4" />
+                Se alle regnskapsdata
+              </Link>
             </Button>
           </div>
         </CardContent>

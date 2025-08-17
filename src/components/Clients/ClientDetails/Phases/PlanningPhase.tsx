@@ -1,8 +1,9 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Client } from '@/types/revio';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Upload, Database } from 'lucide-react';
+import { Upload, Database, FileText } from 'lucide-react';
 import ActionsContainer from '../Actions/ActionsContainer';
 import TrialBalanceUploader from '@/components/Accounting/TrialBalanceUploader';
 
@@ -28,7 +29,7 @@ const PlanningPhase = ({ client }: PlanningPhaseProps) => {
             Start med å laste opp saldobalansen for å etablere kontostrukturen.
           </p>
           
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Button 
               onClick={() => setShowUploader(true)}
               className="flex items-center gap-2"
@@ -39,6 +40,12 @@ const PlanningPhase = ({ client }: PlanningPhaseProps) => {
             <Button variant="outline" className="flex items-center gap-2">
               <Database className="h-4 w-4" />
               Vis kontoplan
+            </Button>
+            <Button variant="outline" className="flex items-center gap-2" asChild>
+              <Link to={`/clients/${client.id}/regnskapsdata`}>
+                <FileText className="h-4 w-4" />
+                Se alle regnskapsdata
+              </Link>
             </Button>
           </div>
         </CardContent>

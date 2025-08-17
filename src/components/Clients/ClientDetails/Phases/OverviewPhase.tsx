@@ -111,6 +111,15 @@ const OverviewPhase = ({ client }: OverviewPhaseProps) => {
               </div>
             </div>
           </div>
+          
+          <div className="mt-4 pt-4 border-t">
+            <Button variant="outline" className="w-full flex items-center gap-2" asChild>
+              <Link to={`/clients/${client.id}/regnskapsdata`}>
+                <FileText className="h-4 w-4" />
+                Se alle regnskapsdata
+              </Link>
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>

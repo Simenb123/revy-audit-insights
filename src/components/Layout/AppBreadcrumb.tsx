@@ -111,7 +111,8 @@ function getSegmentName(segment: string, allSegments: string[], index: number): 
     'upload': 'Last opp PDF',
     'admin': 'Administrasjon',
     'hemmelig-ai-trening': 'AI-trening',
-    'revisjonshandlinger': 'Revisjonshandlinger'
+    'revisjonshandlinger': 'Revisjonshandlinger',
+    'payroll': 'A07 Lønnsdata'
   };
 
   // Handle org numbers (9-digit numbers)

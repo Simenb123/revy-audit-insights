@@ -64,6 +64,17 @@ const phaseConfig = {
 
 const phases: AuditPhase[] = ['overview', 'engagement', 'planning', 'risk_assessment', 'execution', 'completion', 'reporting'];
 
+// Additional navigation items for client-specific functionality
+const additionalNavItems = [
+  {
+    id: 'regnskapsdata',
+    label: 'Regnskapsdata',
+    icon: FileText,
+    description: 'Saldobalanse, hovedbok og lønnsdata',
+    color: 'bg-blue-600'
+  }
+];
+
 const ClientNavigation = ({ currentPhase, selectedPhase, onPhaseSelect, clientId }: ClientNavigationProps) => {
   const getPhaseStatus = (phase: AuditPhase) => {
     const currentIndex = phases.indexOf(currentPhase);
@@ -147,6 +158,40 @@ const ClientNavigation = ({ currentPhase, selectedPhase, onPhaseSelect, clientId
               </div>
             );
           })}
+          
+          {/* Separator line */}
+          <div className="my-4 border-t" />
+          
+          {/* Additional navigation items */}
+          {additionalNavItems.map((item) => (
+            <div key={item.id}>
+              <Button
+                variant="ghost"
+                className="w-full h-auto p-4 justify-start text-left hover:bg-accent"
+                onClick={() => window.location.href = `/clients/${clientId}/regnskapsdata`}
+              >
+                <div className="flex items-start gap-4 w-full">
+                  <div className={cn(
+                    "flex items-center justify-center w-12 h-12 rounded-full flex-shrink-0",
+                    item.color + ' text-white'
+                  )}>
+                    <item.icon className="h-5 w-5" />
+                  </div>
+                  
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="font-medium">{item.label}</h3>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      {item.description}
+                    </p>
+                  </div>
+                  
+                  <ChevronRight className="h-4 w-4" />
+                </div>
+              </Button>
+            </div>
+          ))}
         </div>
       </CardContent>
     </Card>
