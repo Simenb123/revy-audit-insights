@@ -1257,6 +1257,86 @@ export type Database = {
           },
         ]
       }
+      asset_categories: {
+        Row: {
+          created_at: string
+          default_salvage_value_percentage: number | null
+          default_useful_life_years: number | null
+          depreciation_method: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          default_salvage_value_percentage?: number | null
+          default_useful_life_years?: number | null
+          depreciation_method?: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          default_salvage_value_percentage?: number | null
+          default_useful_life_years?: number | null
+          depreciation_method?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      asset_maintenance_log: {
+        Row: {
+          cost: number | null
+          created_at: string
+          created_by: string | null
+          description: string
+          fixed_asset_id: string
+          id: string
+          maintenance_date: string
+          maintenance_type: string
+          next_maintenance_date: string | null
+          vendor: string | null
+        }
+        Insert: {
+          cost?: number | null
+          created_at?: string
+          created_by?: string | null
+          description: string
+          fixed_asset_id: string
+          id?: string
+          maintenance_date: string
+          maintenance_type: string
+          next_maintenance_date?: string | null
+          vendor?: string | null
+        }
+        Update: {
+          cost?: number | null
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          fixed_asset_id?: string
+          id?: string
+          maintenance_date?: string
+          maintenance_type?: string
+          next_maintenance_date?: string | null
+          vendor?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_maintenance_log_fixed_asset_id_fkey"
+            columns: ["fixed_asset_id"]
+            isOneToOne: false
+            referencedRelation: "fixed_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_action_area_mappings: {
         Row: {
           action_template_id: string | null
@@ -3538,6 +3618,56 @@ export type Database = {
           },
         ]
       }
+      depreciation_schedules: {
+        Row: {
+          accumulated_depreciation: number
+          book_value: number
+          created_at: string
+          depreciation_amount: number
+          fixed_asset_id: string
+          id: string
+          is_calculated: boolean
+          is_posted: boolean
+          journal_entry_id: string | null
+          period_month: number
+          period_year: number
+        }
+        Insert: {
+          accumulated_depreciation: number
+          book_value: number
+          created_at?: string
+          depreciation_amount: number
+          fixed_asset_id: string
+          id?: string
+          is_calculated?: boolean
+          is_posted?: boolean
+          journal_entry_id?: string | null
+          period_month: number
+          period_year: number
+        }
+        Update: {
+          accumulated_depreciation?: number
+          book_value?: number
+          created_at?: string
+          depreciation_amount?: number
+          fixed_asset_id?: string
+          id?: string
+          is_calculated?: boolean
+          is_posted?: boolean
+          journal_entry_id?: string | null
+          period_month?: number
+          period_year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "depreciation_schedules_fixed_asset_id_fkey"
+            columns: ["fixed_asset_id"]
+            isOneToOne: false
+            referencedRelation: "fixed_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       document_categories: {
         Row: {
           category_name: string
@@ -4601,6 +4731,95 @@ export type Database = {
             columns: ["parent_line_id"]
             isOneToOne: false
             referencedRelation: "firm_standard_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fixed_assets: {
+        Row: {
+          accumulated_depreciation: number
+          asset_category_id: string | null
+          asset_name: string
+          asset_number: string
+          book_value: number
+          client_id: string
+          created_at: string
+          created_by: string | null
+          depreciation_method: string
+          description: string | null
+          disposal_date: string | null
+          disposal_method: string | null
+          disposal_price: number | null
+          id: string
+          location: string | null
+          purchase_date: string
+          purchase_price: number
+          salvage_value: number | null
+          serial_number: string | null
+          status: string
+          updated_at: string
+          useful_life_years: number
+          vendor: string | null
+          warranty_expiry_date: string | null
+        }
+        Insert: {
+          accumulated_depreciation?: number
+          asset_category_id?: string | null
+          asset_name: string
+          asset_number: string
+          book_value?: number
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          depreciation_method?: string
+          description?: string | null
+          disposal_date?: string | null
+          disposal_method?: string | null
+          disposal_price?: number | null
+          id?: string
+          location?: string | null
+          purchase_date: string
+          purchase_price: number
+          salvage_value?: number | null
+          serial_number?: string | null
+          status?: string
+          updated_at?: string
+          useful_life_years: number
+          vendor?: string | null
+          warranty_expiry_date?: string | null
+        }
+        Update: {
+          accumulated_depreciation?: number
+          asset_category_id?: string | null
+          asset_name?: string
+          asset_number?: string
+          book_value?: number
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          depreciation_method?: string
+          description?: string | null
+          disposal_date?: string | null
+          disposal_method?: string | null
+          disposal_price?: number | null
+          id?: string
+          location?: string | null
+          purchase_date?: string
+          purchase_price?: number
+          salvage_value?: number | null
+          serial_number?: string | null
+          status?: string
+          updated_at?: string
+          useful_life_years?: number
+          vendor?: string | null
+          warranty_expiry_date?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fixed_assets_asset_category_id_fkey"
+            columns: ["asset_category_id"]
+            isOneToOne: false
+            referencedRelation: "asset_categories"
             referencedColumns: ["id"]
           },
         ]
@@ -8975,6 +9194,14 @@ export type Database = {
           transaction_count: number
         }[]
       }
+      calculate_straight_line_depreciation: {
+        Args: {
+          p_purchase_price: number
+          p_salvage_value: number
+          p_useful_life_years: number
+        }
+        Returns: number
+      }
       cancel_my_firm_access_request: {
         Args: { p_request_id: string }
         Returns: boolean
@@ -9038,12 +9265,20 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      generate_depreciation_schedule: {
+        Args: { p_asset_id: string }
+        Returns: number
+      }
       generate_income_statement: {
         Args: {
           p_client_id: string
           p_period_end: string
           p_period_start: string
         }
+        Returns: Json
+      }
+      get_asset_summary: {
+        Args: { p_client_id: string }
         Returns: Json
       }
       get_basic_transaction_info: {

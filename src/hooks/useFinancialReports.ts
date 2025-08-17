@@ -70,7 +70,7 @@ export const useIncomeStatement = (
       });
 
       if (error) throw error;
-      return data as IncomeStatement;
+      return data as unknown as IncomeStatement;
     },
     enabled: enabled && !!clientId && !!periodStart && !!periodEnd,
   });
@@ -90,7 +90,7 @@ export const useBalanceSheet = (
       });
 
       if (error) throw error;
-      return data as BalanceSheet;
+      return data as unknown as BalanceSheet;
     },
     enabled: enabled && !!clientId && !!asOfDate,
   });
