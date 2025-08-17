@@ -242,27 +242,12 @@ const ResizableLeftSidebar = () => {
     },
   ] : []
 
-  // Investment sub-items
+  // Investment sub-items (client-specific only)
   const investmentItems = clientId ? [
     {
       title: 'Porteføljeoversikt',
       url: `/clients/${clientId}/investments/overview`,
       icon: BarChart3,
-    },
-    {
-      title: 'Verdipapirer',
-      url: `/clients/${clientId}/investments/securities`,
-      icon: Shield,
-    },
-    {
-      title: 'Historiske kurser',
-      url: `/clients/${clientId}/investments/prices`,
-      icon: TrendingUp,
-    },
-    {
-      title: 'Valutakurser',
-      url: `/clients/${clientId}/investments/currencies`,
-      icon: ArrowRightLeft,
     },
     {
       title: 'Porteføljer',
@@ -275,6 +260,25 @@ const ResizableLeftSidebar = () => {
       icon: FileText,
     },
   ] : []
+
+  // Resource reference items (links to global resources)
+  const resourceReferenceItems = [
+    {
+      title: 'Verdipapirer',
+      url: '/resources/securities/catalog',
+      icon: Shield,
+    },
+    {
+      title: 'Historiske kurser',
+      url: '/resources/securities/prices',
+      icon: TrendingUp,
+    },
+    {
+      title: 'Valutakurser',
+      url: '/resources/currencies',
+      icon: ArrowRightLeft,
+    },
+  ]
 
   const clientWorkItems = clientId ? clientMainItems : generalWorkItems
 
@@ -534,16 +538,65 @@ const ResizableLeftSidebar = () => {
                                 </SidebarMenuItem>
                               )
                             })}
-                          </SidebarMenuSub>
-                        </CollapsibleContent>
-                      </Collapsible>
-                    </SidebarMenuItem>
-                  )}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </CollapsibleContent>
-          </SidebarGroup>
-        </Collapsible>
+                           </SidebarMenuSub>
+                         </CollapsibleContent>
+                       </Collapsible>
+                     </SidebarMenuItem>
+                   )}
+                 </SidebarMenu>
+               </SidebarGroupContent>
+             </CollapsibleContent>
+           </SidebarGroup>
+         </Collapsible>
+
+         {/* Globale ressurser seksjon - kun når vi er i en klient-kontekst */}
+         {clientId && (
+           <Collapsible 
+             open={!collapsedSections['global-resources']} 
+             onOpenChange={() => toggleSection('global-resources')}
+           >
+             <SidebarGroup>
+               <CollapsibleTrigger asChild>
+                 <SidebarGroupLabel className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground cursor-pointer flex items-center justify-between group">
+                   {!isCollapsed && (
+                     <>
+                       <span>Globale ressurser</span>
+                       {collapsedSections['global-resources'] ? 
+                         <ChevronRight className="h-3 w-3 opacity-50 group-hover:opacity-100" /> : 
+                         <ChevronDown className="h-3 w-3 opacity-50 group-hover:opacity-100" />
+                       }
+                     </>
+                   )}
+                 </SidebarGroupLabel>
+               </CollapsibleTrigger>
+               <CollapsibleContent>
+                 <SidebarGroupContent>
+                   <SidebarMenu className="space-y-1">
+                     {resourceReferenceItems.map((item) => {
+                       const isItemActive = isActive(item.url)
+                       
+                       return (
+                         <SidebarMenuItem key={item.title}>
+                           <SidebarMenuButton 
+                             asChild 
+                             isActive={isItemActive}
+                             className={isCollapsed ? "justify-center p-2" : "justify-start pl-2 pr-2"}
+                             tooltip={isCollapsed ? item.title : undefined}
+                           >
+                             <Link to={item.url} className={isCollapsed ? "flex items-center justify-center w-full h-full" : "flex items-center gap-2 w-full"}>
+                               <item.icon className="h-4 w-4 flex-shrink-0" />
+                               {!isCollapsed && <span className="text-xs truncate">{item.title}</span>}
+                             </Link>
+                           </SidebarMenuButton>
+                         </SidebarMenuItem>
+                       )
+                     })}
+                   </SidebarMenu>
+                 </SidebarGroupContent>
+               </CollapsibleContent>
+             </SidebarGroup>
+           </Collapsible>
+         )}
 
         {/* Administrasjon seksjon - kun hvis brukeren har tilgang til minst ett element */}
         {filteredAdminItems.length > 0 && (
