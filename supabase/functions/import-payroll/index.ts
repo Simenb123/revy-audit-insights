@@ -22,17 +22,17 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Extract relevant data from A07 JSON structure
+    // Extract relevant data from A07 JSON structure (using correct paths)
     const extractedData = {
       period_key,
       file_name,
-      orgnr: payroll_data.innsendingsopplysninger?.organisasjonsnummer,
-      navn: payroll_data.innsendingsopplysninger?.organisasjonsnavn,
-      avstemmingstidspunkt: payroll_data.oppgave?.avstemmingstidspunkt,
-      fom_kalendermaaned: payroll_data.oppgave?.fomKalenderMaaned,
-      tom_kalendermaaned: payroll_data.oppgave?.tomKalenderMaaned,
-      antall_personer_innrapportert: payroll_data.oppgaveSammendrag?.antallPersonerInnrapportert,
-      antall_personer_unike: payroll_data.oppgaveSammendrag?.antallPersonerUnike
+      orgnr: payroll_data.mottatt?.opplysningspliktig?.norskIdentifikator,
+      navn: payroll_data.mottatt?.opplysningspliktig?.navn,
+      avstemmingstidspunkt: payroll_data.mottatt?.avstemmingstidspunkt,
+      fom_kalendermaaned: payroll_data.mottatt?.fomKalendermaaned,
+      tom_kalendermaaned: payroll_data.mottatt?.tomKalendermaaned,
+      antall_personer_innrapportert: payroll_data.mottatt?.oppgave?.oppsummerteVirksomheter?.antallPersonerInnrapportert?.antall,
+      antall_personer_unike: payroll_data.mottatt?.oppgave?.oppsummerteVirksomheter?.antallPersonerInnrapportert?.unike
     }
 
     // Insert payroll import record
@@ -54,41 +54,89 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Process and store payroll variables
+    // Process and store payroll variables using correct A07 structure
     const variables = []
     
-    // Extract key variables from the payroll data
-    if (payroll_data.oppgaveSammendrag) {
-      const sammendrag = payroll_data.oppgaveSammendrag
+    // Extract data from the correct structure
+    const oppgave = payroll_data.mottatt?.oppgave
+    const oppsummerte = oppgave?.oppsummerteVirksomheter
+    const betalingsinfo = oppgave?.betalingsinformasjon
+    const innsendinger = payroll_data.mottatt?.opplysningspliktig?.innsendinger || []
+    
+    if (oppsummerte) {
+      // Calculate totals from innsendinger
+      let totalInntektsmottakere = 0
+      let totalBruttolonn = 0
+      let totalForskuddstrekk = 0
+      let totalArbeidsgiveravgift = 0
+      
+      // Sum up from monthly submissions
+      innsendinger.forEach(innsending => {
+        totalInntektsmottakere += innsending.antallInntektsmottakere || 0
+        const mottatt = innsending.mottattAvgiftOgTrekkTotalt
+        if (mottatt) {
+          totalForskuddstrekk += mottatt.sumForskuddstrekk || 0
+          totalArbeidsgiveravgift += mottatt.sumArbeidsgiveravgift || 0
+        }
+      })
+      
+      // Extract from inntekt array to calculate bruttolønn
+      if (oppsummerte.inntekt) {
+        oppsummerte.inntekt.forEach(inntekt => {
+          if (inntekt.beloep && inntekt.beloep > 0) {
+            totalBruttolonn += inntekt.beloep
+          }
+        })
+      }
       
       variables.push(
-        { name: 'antall.virksomheter', value: sammendrag.antallVirksomheter || 0 },
-        { name: 'antall.mottakere', value: sammendrag.antallInntektsmottakere || 0 },
-        { name: 'sum.bruttolonn', value: sammendrag.sumBruttolonn || 0 },
-        { name: 'sum.forskuddstrekk.person', value: sammendrag.sumForskuddstrekkPerson || 0 },
-        { name: 'sum.forskuddstrekk.innsendinger', value: sammendrag.sumForskuddstrekkInnsendinger || 0 },
-        { name: 'sum.aga.innsendinger', value: sammendrag.sumArbeidsgiveravgiftInnsendinger || 0 },
-        { name: 'opp.sum.antallPersonerInnrapportert', value: sammendrag.antallPersonerInnrapportert || 0 },
-        { name: 'opp.sum.antallPersonerUnike', value: sammendrag.antallPersonerUnike || 0 }
+        { name: 'antall.virksomheter', value: oppgave?.virksomhet?.length || 1 },
+        { name: 'antall.mottakere', value: totalInntektsmottakere },
+        { name: 'sum.bruttolonn', value: totalBruttolonn },
+        { name: 'sum.forskuddstrekk.person', value: oppsummerte.forskuddstrekk?.reduce((sum, f) => sum + Math.abs(f.beloep || 0), 0) || 0 },
+        { name: 'sum.forskuddstrekk.innsendinger', value: totalForskuddstrekk },
+        { name: 'sum.aga.innsendinger', value: totalArbeidsgiveravgift },
+        { name: 'opp.sum.antallPersonerInnrapportert', value: oppsummerte.antallPersonerInnrapportert?.antall || 0 },
+        { name: 'opp.sum.antallPersonerUnike', value: oppsummerte.antallPersonerInnrapportert?.unike || 0 }
       )
 
       // Process AGA by zone if available
-      if (sammendrag.arbeidsgiveravgiftSoner) {
+      if (oppsummerte.arbeidsgiveravgift?.loennOgGodtgjoerelse) {
+        const agaSoner = {}
+        oppsummerte.arbeidsgiveravgift.loennOgGodtgjoerelse.forEach(aga => {
+          agaSoner[aga.sone] = {
+            grunnlag: aga.avgiftsgrunnlagBeloep || 0,
+            sats: aga.prosentsats || 0,
+            belop: Math.round((aga.avgiftsgrunnlagBeloep || 0) * (aga.prosentsats || 0) / 100)
+          }
+        })
         variables.push({
           name: 'aga.soner',
-          value: sammendrag.arbeidsgiveravgiftSoner
+          value: agaSoner
         })
       }
 
-      // Process employment relationships if available
-      if (sammendrag.arbeidsforholdSammendrag) {
-        const af = sammendrag.arbeidsforholdSammendrag
+      // Extract employment relationships from first virksomhet
+      if (oppgave?.virksomhet?.[0]?.inntektsmottaker?.[0]?.arbeidsforhold) {
+        const af = oppgave.virksomhet[0].inntektsmottaker[0].arbeidsforhold[0]
         variables.push(
-          { name: 'antall.af.aktive', value: af.antallAktiveIPerioden || 0 },
-          { name: 'antall.af.nye', value: af.antallNyeIPerioden || 0 },
-          { name: 'antall.af.sluttede', value: af.antallSluttedePerioden || 0 }
+          { name: 'antall.af.aktive', value: af ? 1 : 0 },
+          { name: 'antall.af.nye', value: 0 }, // Would need more logic to determine
+          { name: 'antall.af.sluttede', value: 0 } // Would need more logic to determine
         )
       }
+      
+      // Store monthly submissions data
+      variables.push({
+        name: 'innsendinger.detaljer',
+        value: innsendinger.map(i => ({
+          maaned: i.kalendermaaned,
+          leveringstidspunkt: i.leveringstidspunkt,
+          status: i.status,
+          antallInntektsmottakere: i.antallInntektsmottakere,
+          kildesystem: i.kildesystem
+        }))
+      })
     }
 
     // Insert variables

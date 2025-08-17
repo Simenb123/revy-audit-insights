@@ -49,17 +49,16 @@ export default function PayrollImporter({ clientId, clientName }: PayrollImporte
       const text = await file.text()
       const json = JSON.parse(text)
       
-      // Try to extract period from JSON structure
+      // Extract period from correct A07 JSON structure
       let extractedPeriod = periodKey
-      if (json.oppgave?.kalendermaaned) {
-        const maaned = json.oppgave.kalendermaaned
-        const aar = json.oppgave.kalenderaar || selectedFiscalYear
-        extractedPeriod = `${aar}-${String(maaned).padStart(2, '0')}`
-      } else if (json.oppgave?.fomKalenderMaaned && json.oppgave?.tomKalenderMaaned) {
-        const fom = json.oppgave.fomKalenderMaaned
-        const tom = json.oppgave.tomKalenderMaaned
-        const aar = json.oppgave.kalenderaar || selectedFiscalYear
-        extractedPeriod = `${aar}-${String(fom).padStart(2, '0')}..${String(tom).padStart(2, '0')}`
+      let fomPeriod = ''
+      let tomPeriod = ''
+      
+      // Use correct paths based on actual A07 structure
+      if (json.mottatt?.fomKalendermaaned && json.mottatt?.tomKalendermaaned) {
+        fomPeriod = json.mottatt.fomKalendermaaned // Format: "2024-01"
+        tomPeriod = json.mottatt.tomKalendermaaned   // Format: "2024-12"
+        extractedPeriod = `${fomPeriod}..${tomPeriod}`
       }
       
       await createImport.mutateAsync({
@@ -74,7 +73,7 @@ export default function PayrollImporter({ clientId, clientName }: PayrollImporte
       
       toast({
         title: "Import fullført",
-        description: "A07-lønnsdata har blitt importert og prosessert"
+        description: `A07-lønnsdata importert for periode ${fomPeriod} til ${tomPeriod}`
       })
     } catch (error: any) {
       console.error('Import error:', error)
@@ -263,18 +262,33 @@ export default function PayrollImporter({ clientId, clientName }: PayrollImporte
                 >
                   <div className="flex items-center gap-3">
                     <div>
-                      <p className="font-medium">{imp.period_key}</p>
+                      <p className="font-medium">
+                        {imp.fom_kalendermaaned && imp.tom_kalendermaaned 
+                          ? `${imp.fom_kalendermaaned} - ${imp.tom_kalendermaaned}`
+                          : imp.period_key
+                        }
+                      </p>
                       <p className="text-sm text-muted-foreground">
-                        {imp.file_name} • {formatDate(imp.created_at)}
+                        {imp.file_name} • Importert {formatDate(imp.created_at)}
                       </p>
                       {imp.navn && (
-                        <p className="text-xs text-muted-foreground">{imp.navn}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {imp.navn} ({imp.orgnr})
+                        </p>
+                      )}
+                      {imp.antall_personer_innrapportert && (
+                        <p className="text-xs text-muted-foreground">
+                          {imp.antall_personer_innrapportert} ansatte innrapportert
+                        </p>
                       )}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge variant="secondary">
-                      {imp.fom_kalendermaaned} - {imp.tom_kalendermaaned}
+                      {imp.avstemmingstidspunkt 
+                        ? `Avstemt ${formatDate(imp.avstemmingstidspunkt)}`
+                        : 'Importert'
+                      }
                     </Badge>
                     <Button
                       variant="destructive"

@@ -89,7 +89,10 @@ const Regnskapsdata = () => {
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="font-medium">
-                      {version.file_name || version.version || `Import ${index + 1}`}
+                      {version.fom_kalendermaaned && version.tom_kalendermaaned 
+                        ? `Periode: ${version.fom_kalendermaaned} - ${version.tom_kalendermaaned}`
+                        : version.file_name || version.version || `Import ${index + 1}`
+                      }
                     </span>
                     {index === 0 && (
                       <Badge variant="default" className="text-xs">Aktiv</Badge>
@@ -106,8 +109,14 @@ const Regnskapsdata = () => {
                     {version.account_count && (
                       <span>{version.account_count} konti</span>
                     )}
-                    {version.employee_count && (
-                      <span>{version.employee_count} ansatte</span>
+                    {(version.antall_personer_innrapportert || version.employee_count) && (
+                      <span>{version.antall_personer_innrapportert || version.employee_count} ansatte</span>
+                    )}
+                    {version.navn && (
+                      <span>{version.navn}</span>
+                    )}
+                    {version.orgnr && (
+                      <span>Org.nr: {version.orgnr}</span>
                     )}
                   </div>
                 </div>
