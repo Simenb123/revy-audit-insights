@@ -78,6 +78,10 @@ Deno.serve(async (req) => {
 
       const [year, month] = innsending.kalendermaaned.split('-').map(Number)
       
+      // Calculate total amount from mottattAvgiftOgTrekkTotalt
+      const mottatt = innsending.mottattAvgiftOgTrekkTotalt || {}
+      const totalAmount = (mottatt.sumForskuddstrekk || 0) + (mottatt.sumArbeidsgiveravgift || 0)
+      
       const { error: monthlyError } = await supabase
         .from('payroll_monthly_submissions')
         .insert({
@@ -88,9 +92,10 @@ Deno.serve(async (req) => {
           summary_data: {
             period: innsending.kalendermaaned,
             count: innsending.antallInntektsmottakere || 0,
-            total_amount: 0, // Will be calculated later
+            total_amount: totalAmount,
             status: innsending.status,
-            kildesystem: innsending.kildesystem
+            kildesystem: innsending.kildesystem,
+            mottatt_avgift_trekk: mottatt
           }
         })
 
@@ -164,15 +169,33 @@ Deno.serve(async (req) => {
     // Use existing innsendinger variable declared earlier
     
     if (oppsummerte) {
-      // Calculate totals from innsendinger
-      let totalInntektsmottakere = 0
+      // Calculate unique income recipients from virksomhet structure
+      const uniqueEmployees = new Set()
       let totalBruttolonn = 0
       let totalForskuddstrekk = 0
       let totalArbeidsgiveravgift = 0
       
-      // Sum up from monthly submissions
+      // Count unique employees and calculate total gross salary from virksomhet
+      const virksomheter = oppgave?.virksomhet || []
+      virksomheter.forEach(virksomhet => {
+        const inntektsmottakere = virksomhet.inntektsmottaker || []
+        inntektsmottakere.forEach(mottaker => {
+          if (mottaker.norskIdentifikator) {
+            uniqueEmployees.add(mottaker.norskIdentifikator)
+            
+            // Sum all income for this employee
+            const inntekter = mottaker.inntekt || []
+            inntekter.forEach(inntekt => {
+              if (inntekt.beloep && inntekt.beloep > 0) {
+                totalBruttolonn += parseFloat(inntekt.beloep)
+              }
+            })
+          }
+        })
+      })
+      
+      // Sum up totals from monthly submissions for taxes and contributions
       innsendinger.forEach(innsending => {
-        totalInntektsmottakere += innsending.antallInntektsmottakere || 0
         const mottatt = innsending.mottattAvgiftOgTrekkTotalt
         if (mottatt) {
           totalForskuddstrekk += mottatt.sumForskuddstrekk || 0
@@ -180,14 +203,7 @@ Deno.serve(async (req) => {
         }
       })
       
-      // Extract from inntekt array to calculate bruttolønn
-      if (oppsummerte.inntekt) {
-        oppsummerte.inntekt.forEach(inntekt => {
-          if (inntekt.beloep && inntekt.beloep > 0) {
-            totalBruttolonn += inntekt.beloep
-          }
-        })
-      }
+      const totalInntektsmottakere = uniqueEmployees.size
       
       variables.push(
         { name: 'antall.virksomheter', value: oppgave?.virksomhet?.length || 1 },
