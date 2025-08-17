@@ -15,6 +15,7 @@ import { formatDate } from '@/lib/utils';
 import { exportArrayToXlsx } from '@/utils/exportToXlsx';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { A07ControlStatement } from '@/components/AccountingData/A07ControlStatement';
 
 const Regnskapsdata = () => {
   const { clientId } = useParams<{ clientId: string }>();
@@ -320,6 +321,15 @@ const Regnskapsdata = () => {
                 isLoading={false}
                 uploadPath={`/clients/${clientId}/saft`}
                 emptyText="Ingen SAF-T filer lastet opp ennå"
+              />
+            </div>
+
+            {/* A07 Control Statement - Full width section */}
+            <div className="mt-6">
+              <A07ControlStatement
+                clientId={clientId || ''}
+                clientName={client.company_name || client.name}
+                fiscalYear={undefined} // Will use current fiscal year from context
               />
             </div>
           </div>

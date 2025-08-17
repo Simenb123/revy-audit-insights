@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      a07_account_mappings: {
+        Row: {
+          a07_performance_code: string
+          account_number: string
+          client_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          mapping_description: string | null
+          updated_at: string
+        }
+        Insert: {
+          a07_performance_code: string
+          account_number: string
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          mapping_description?: string | null
+          updated_at?: string
+        }
+        Update: {
+          a07_performance_code?: string
+          account_number?: string
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          mapping_description?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       account_categories: {
         Row: {
           color: string | null
