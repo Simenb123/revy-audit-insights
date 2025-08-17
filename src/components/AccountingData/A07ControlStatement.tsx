@@ -6,7 +6,8 @@ import { AlertTriangle, CheckCircle, FileDown, Settings } from 'lucide-react';
 import { formatCurrency } from '@/lib/formatters';
 import { useA07ControlStatement } from '@/hooks/useA07ControlStatement';
 import { exportArrayToXlsx } from '@/utils/exportToXlsx';
-import { A07AccountMappingDialog } from './A07AccountMappingDialog';
+import { useGlobalA07MappingRules, useApplyGlobalA07AutoMapping } from '@/hooks/useGlobalA07MappingRules';
+import { toast } from '@/hooks/use-toast';
 
 interface A07ControlStatementProps {
   clientId: string;
@@ -26,7 +27,8 @@ export function A07ControlStatement({
     selectedVersion, 
     fiscalYear
   );
-  const [showMappingDialog, setShowMappingDialog] = useState(false);
+  const { data: globalRules } = useGlobalA07MappingRules();
+  const applyAutoMapping = useApplyGlobalA07AutoMapping();
 
   const handleExportControlStatement = () => {
     const exportData = controlStatement.map(row => ({
@@ -44,6 +46,22 @@ export function A07ControlStatement({
       `A07_Kontrolloppstilling_${clientName}_${fiscalYear || 'alle_år'}`,
       exportData
     );
+  };
+
+  const handleApplyAutoMapping = async () => {
+    try {
+      const result = await applyAutoMapping.mutateAsync(clientId);
+      toast({
+        title: "Auto-mapping anvendt",
+        description: `${result.applied} nye A07-mappinger opprettet basert på globale regler`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Feil ved auto-mapping",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   };
 
   if (isLoading) {
@@ -79,10 +97,11 @@ export function A07ControlStatement({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setShowMappingDialog(true)}
+                onClick={handleApplyAutoMapping}
+                disabled={!globalRules || globalRules.length === 0 || applyAutoMapping.isPending}
               >
                 <Settings className="w-4 h-4 mr-2" />
-                Mappinger
+                {applyAutoMapping.isPending ? 'Anvender...' : 'Auto-mapping'}
               </Button>
               <Button
                 variant="outline"
@@ -98,7 +117,7 @@ export function A07ControlStatement({
         </CardHeader>
         <CardContent>
           {/* Summary */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
             <div className="p-3 bg-muted/50 rounded-lg">
               <div className="text-sm text-muted-foreground">Total Saldobalanse</div>
               <div className="font-semibold">{formatCurrency(summary.totalTrialBalance)}</div>
@@ -117,6 +136,12 @@ export function A07ControlStatement({
               <div className="text-sm text-muted-foreground">Umappede kontoer</div>
               <div className="font-semibold text-warning">
                 {summary.unmappedAccounts} av {summary.totalAccounts}
+              </div>
+            </div>
+            <div className="p-3 bg-muted/50 rounded-lg">
+              <div className="text-sm text-muted-foreground">Globale regler</div>
+              <div className="font-semibold text-primary">
+                {globalRules?.length || 0} aktive
               </div>
             </div>
           </div>
@@ -181,16 +206,17 @@ export function A07ControlStatement({
               <div className="text-sm mt-2">
                 Kontroller at både saldobalanse og A07-data er lastet inn.
               </div>
+              {(!globalRules || globalRules.length === 0) && (
+                <div className="text-sm mt-2 text-warning">
+                  Ingen globale A07-mappingregler funnet. Opprett regler i Standard kontoer admin.
+                </div>
+              )}
             </div>
           )}
         </CardContent>
       </Card>
 
-      <A07AccountMappingDialog
-        open={showMappingDialog}
-        onOpenChange={setShowMappingDialog}
-        clientId={clientId}
-      />
+      {/* Note: A07AccountMappingDialog removed in favor of global mapping rules */}
     </>
   );
 }

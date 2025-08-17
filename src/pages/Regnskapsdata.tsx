@@ -16,6 +16,7 @@ import { exportArrayToXlsx } from '@/utils/exportToXlsx';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { A07ControlStatement } from '@/components/AccountingData/A07ControlStatement';
+import { A07DataSection } from '@/components/AccountingData/A07DataSection';
 
 const Regnskapsdata = () => {
   const { clientId } = useParams<{ clientId: string }>();
@@ -324,7 +325,15 @@ const Regnskapsdata = () => {
               />
             </div>
 
-            {/* A07 Control Statement - Full width section */}
+            {/* A07 Data Section - Upload and management */}
+            <div className="mt-6">
+              <A07DataSection
+                clientId={clientId || ''}
+                clientName={client.company_name || client.name}
+              />
+            </div>
+
+            {/* A07 Control Statement - Analysis and comparison */}
             <div className="mt-6">
               <A07ControlStatement
                 clientId={clientId || ''}
