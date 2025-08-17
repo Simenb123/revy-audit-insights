@@ -54,6 +54,106 @@ Deno.serve(async (req) => {
       )
     }
 
+    const importId = importData.id
+
+    // Store the complete raw JSON data
+    const { data: rawDataRecord, error: rawDataError } = await supabase
+      .from('payroll_raw_data')
+      .insert({
+        payroll_import_id: importId,
+        raw_json: payroll_data,
+        file_size: JSON.stringify(payroll_data).length
+      })
+      .select()
+      .single()
+
+    if (rawDataError) {
+      console.error('Error inserting raw data:', rawDataError)
+    }
+
+    // Store detailed monthly submissions
+    const innsendinger = payroll_data.mottatt?.opplysningspliktig?.innsendinger || []
+    for (const innsending of innsendinger) {
+      if (!innsending.kalendermaaned) continue
+
+      const [year, month] = innsending.kalendermaaned.split('-').map(Number)
+      
+      const { error: monthlyError } = await supabase
+        .from('payroll_monthly_submissions')
+        .insert({
+          payroll_import_id: importId,
+          period_year: year,
+          period_month: month,
+          submission_data: innsending,
+          summary_data: {
+            period: innsending.kalendermaaned,
+            count: innsending.antallInntektsmottakere || 0,
+            total_amount: 0, // Will be calculated later
+            status: innsending.status,
+            kildesystem: innsending.kildesystem
+          }
+        })
+
+      if (monthlyError) {
+        console.error(`Error storing monthly data for ${innsending.kalendermaaned}:`, monthlyError)
+      }
+    }
+
+    // Store employee data from virksomhet structure
+    const virksomheter = payroll_data.mottatt?.oppgave?.virksomhet || []
+    for (const virksomhet of virksomheter) {
+      const inntektsmottakere = virksomhet.inntektsmottaker || []
+      
+      for (const mottaker of inntektsmottakere) {
+        if (!mottaker.norskIdentifikator) continue
+
+        // Insert employee record
+        const { data: employeeRecord, error: employeeError } = await supabase
+          .from('payroll_employees')
+          .insert({
+            payroll_import_id: importId,
+            employee_id: mottaker.norskIdentifikator,
+            employee_data: {
+              navn: mottaker.navn,
+              norskIdentifikator: mottaker.norskIdentifikator,
+              arbeidsforhold: mottaker.arbeidsforhold || [],
+              inntekt: mottaker.inntekt || [],
+              forskuddstrekk: mottaker.forskuddstrekk || []
+            }
+          })
+          .select()
+          .single()
+
+        if (employeeError) {
+          console.error('Error storing employee data:', employeeError)
+          continue
+        }
+
+        // Store income details for this employee
+        const inntekter = mottaker.inntekt || []
+        for (const inntekt of inntekter) {
+          if (!inntekt.periode || !inntekt.beloep) continue
+
+          const [year, month] = inntekt.periode.split('-').map(Number)
+          
+          const { error: incomeError } = await supabase
+            .from('payroll_income_details')
+            .insert({
+              payroll_employee_id: employeeRecord.id,
+              income_type: inntekt.beskrivelse || 'Ukjent',
+              amount: parseFloat(inntekt.beloep) || 0,
+              period_year: year,
+              period_month: month,
+              details: inntekt
+            })
+
+          if (incomeError) {
+            console.error('Error storing income details:', incomeError)
+          }
+        }
+      }
+    }
+
     // Process and store payroll variables using correct A07 structure
     const variables = []
     

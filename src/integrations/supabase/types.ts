@@ -7065,6 +7065,38 @@ export type Database = {
           },
         ]
       }
+      payroll_employees: {
+        Row: {
+          created_at: string
+          employee_data: Json
+          employee_id: string
+          id: string
+          payroll_import_id: string
+        }
+        Insert: {
+          created_at?: string
+          employee_data?: Json
+          employee_id: string
+          id?: string
+          payroll_import_id: string
+        }
+        Update: {
+          created_at?: string
+          employee_data?: Json
+          employee_id?: string
+          id?: string
+          payroll_import_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payroll_employees_payroll_import_id_fkey"
+            columns: ["payroll_import_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_imports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payroll_employer_contributions: {
         Row: {
           beregningskode: string | null
@@ -7267,6 +7299,47 @@ export type Database = {
           },
         ]
       }
+      payroll_income_details: {
+        Row: {
+          amount: number
+          created_at: string
+          details: Json
+          id: string
+          income_type: string
+          payroll_employee_id: string
+          period_month: number
+          period_year: number
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          details?: Json
+          id?: string
+          income_type: string
+          payroll_employee_id: string
+          period_month: number
+          period_year: number
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          details?: Json
+          id?: string
+          income_type?: string
+          payroll_employee_id?: string
+          period_month?: number
+          period_year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payroll_income_details_payroll_employee_id_fkey"
+            columns: ["payroll_employee_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payroll_leaves: {
         Row: {
           beskrivelse: string | null
@@ -7312,6 +7385,44 @@ export type Database = {
           },
         ]
       }
+      payroll_monthly_submissions: {
+        Row: {
+          created_at: string
+          id: string
+          payroll_import_id: string
+          period_month: number
+          period_year: number
+          submission_data: Json
+          summary_data: Json
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          payroll_import_id: string
+          period_month: number
+          period_year: number
+          submission_data?: Json
+          summary_data?: Json
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          payroll_import_id?: string
+          period_month?: number
+          period_year?: number
+          submission_data?: Json
+          summary_data?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payroll_monthly_submissions_payroll_import_id_fkey"
+            columns: ["payroll_import_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_imports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payroll_pensions: {
         Row: {
           created_at: string
@@ -7335,6 +7446,38 @@ export type Database = {
           {
             foreignKeyName: "payroll_pensions_import_id_fkey"
             columns: ["import_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_imports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payroll_raw_data: {
+        Row: {
+          created_at: string
+          file_size: number
+          id: string
+          payroll_import_id: string
+          raw_json: Json
+        }
+        Insert: {
+          created_at?: string
+          file_size?: number
+          id?: string
+          payroll_import_id: string
+          raw_json: Json
+        }
+        Update: {
+          created_at?: string
+          file_size?: number
+          id?: string
+          payroll_import_id?: string
+          raw_json?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payroll_raw_data_payroll_import_id_fkey"
+            columns: ["payroll_import_id"]
             isOneToOne: false
             referencedRelation: "payroll_imports"
             referencedColumns: ["id"]
