@@ -65,6 +65,9 @@ import Reports from "./pages/Reports";
 import KeyFigureManager from "./pages/KeyFigureManager";
 import Regnskapsdata from "./pages/Regnskapsdata";
 import PayrollUpload from "./pages/PayrollUpload";
+import PayrollOverview from "./pages/PayrollOverview";
+import PayrollA07 from "./pages/PayrollA07";
+import PayrollAnalysis from "./pages/PayrollAnalysis";
 const queryClient = new QueryClient();
 
 function App() {
@@ -94,7 +97,10 @@ function App() {
                   <Route path="clients/:clientId/trial-balance" element={<ProtectedRoute><TrialBalanceUpload /></ProtectedRoute>} />
                   <Route path="clients/:clientId/general-ledger" element={<ProtectedRoute><GeneralLedgerUpload /></ProtectedRoute>} />
                   <Route path="clients/:clientId/saft" element={<ProtectedRoute><SaftUpload /></ProtectedRoute>} />
-                  <Route path="clients/:clientId/payroll" element={<ProtectedRoute><PayrollUpload /></ProtectedRoute>} />
+                  <Route path="clients/:clientId/payroll" element={<ProtectedRoute><PayrollOverview /></ProtectedRoute>} />
+                  <Route path="clients/:clientId/payroll/a07" element={<ProtectedRoute><PayrollA07 /></ProtectedRoute>} />
+                  <Route path="clients/:clientId/payroll/analysis" element={<ProtectedRoute><PayrollAnalysis /></ProtectedRoute>} />
+                  <Route path="clients/:clientId/payroll/upload" element={<ProtectedRoute><PayrollUpload /></ProtectedRoute>} />
                   <Route path="clients/:clientId/analysis" element={<ProtectedRoute><AnalysisPage /></ProtectedRoute>} />
                   <Route path="clients/:clientId/regnskapsdata" element={<ProtectedRoute><Regnskapsdata /></ProtectedRoute>} />
                   <Route path="clients/:clientId/documents" element={<ProtectedRoute><ClientDocuments /></ProtectedRoute>} />

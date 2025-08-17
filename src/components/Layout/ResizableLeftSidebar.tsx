@@ -1,5 +1,5 @@
 
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   Sidebar as ShadcnSidebar,
   SidebarHeader,
@@ -11,7 +11,10 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
 } from '@/components/ui/sidebar'
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible'
 import { useSidebar } from '@/components/ui/sidebar/SidebarContext'
 import { Link, useLocation, useParams } from 'react-router-dom'
 import { 
@@ -28,7 +31,12 @@ import {
   UserCog,
   GraduationCap,
   Info,
-  Shield
+  Shield,
+  ChevronDown,
+  ChevronRight,
+  DollarSign,
+  TrendingUp,
+  Receipt
 } from 'lucide-react'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { useIsSuperAdmin } from '@/hooks/useIsSuperAdmin'
@@ -132,8 +140,33 @@ const ResizableLeftSidebar = () => {
   const { data: isSuperAdmin } = useIsSuperAdmin()
   const isCollapsed = state === 'collapsed'
 
+  // State for collapsible sections
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({})
+
+  // Load collapsed sections from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('sidebar-collapsed-sections')
+    if (saved) {
+      try {
+        setCollapsedSections(JSON.parse(saved))
+      } catch (error) {
+        console.error('Failed to parse saved sidebar state:', error)
+      }
+    }
+  }, [])
+
+  // Save collapsed sections to localStorage
+  const toggleSection = (sectionKey: string) => {
+    const newState = {
+      ...collapsedSections,
+      [sectionKey]: !collapsedSections[sectionKey]
+    }
+    setCollapsedSections(newState)
+    localStorage.setItem('sidebar-collapsed-sections', JSON.stringify(newState))
+  }
+
   // Dynamic client-specific items
-  const clientWorkItems = clientId ? [
+  const clientMainItems = clientId ? [
     {
       title: 'Oversikt',
       url: `/clients/${clientId}/dashboard`,
@@ -143,6 +176,11 @@ const ResizableLeftSidebar = () => {
       title: 'Klientinformasjon',
       url: `/clients/${clientId}/overview`,
       icon: Info,
+    },
+    {
+      title: 'Regnskapsdata',
+      url: `/clients/${clientId}/regnskapsdata`,
+      icon: Database,
     },
     {
       title: 'Analyse',
@@ -164,11 +202,46 @@ const ResizableLeftSidebar = () => {
       url: `/clients/${clientId}/documents`,
       icon: FileText,
     },
-    ...generalWorkItems.filter(item => item.title === 'Regnskap').map(item => ({
-      ...item,
-      url: `/clients/${clientId}/accounting`
-    }))
-  ] : generalWorkItems
+  ] : []
+
+  // Payroll sub-items
+  const payrollItems = clientId ? [
+    {
+      title: 'Lønn Oversikt',
+      url: `/clients/${clientId}/payroll`,
+      icon: DollarSign,
+    },
+    {
+      title: 'A07 Data',
+      url: `/clients/${clientId}/payroll/a07`,
+      icon: FileText,
+    },
+    {
+      title: 'Lønnsanalyse',
+      url: `/clients/${clientId}/payroll/analysis`,
+      icon: BarChart3,
+    },
+  ] : []
+
+  // Sales sub-items (placeholder for future)
+  const salesItems = clientId ? [
+    {
+      title: 'Salgsdata',
+      url: `/clients/${clientId}/sales`,
+      icon: TrendingUp,
+    },
+  ] : []
+
+  // Costs sub-items (placeholder for future)
+  const costItems = clientId ? [
+    {
+      title: 'Kostnadsanalyse',
+      url: `/clients/${clientId}/costs`,
+      icon: Receipt,
+    },
+  ] : []
+
+  const clientWorkItems = clientId ? clientMainItems : generalWorkItems
 
   const isActive = (url: string) => {
     if (url === '/') {
@@ -211,105 +284,297 @@ const ResizableLeftSidebar = () => {
       
       <SidebarContent>
         {/* Klientarbeid seksjon */}
-        <SidebarGroup>
-          {!isCollapsed && <SidebarGroupLabel>Klientarbeid</SidebarGroupLabel>}
-          <SidebarGroupContent>
-            <SidebarMenu className="space-y-1">
-              {clientWorkItems.map((item) => {
-                const isItemActive = isActive(item.url)
-                
-                return (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton 
-                      asChild 
-                      isActive={isItemActive}
-                      className={isCollapsed ? "justify-center p-2" : "justify-start pl-2 pr-2"}
-                      tooltip={isCollapsed ? item.title : undefined}
-                    >
-                      <Link to={item.url} className={isCollapsed ? "flex items-center justify-center w-full h-full" : "flex items-center gap-2 w-full"}>
-                        <item.icon className="h-4 w-4 flex-shrink-0" />
-                        {!isCollapsed && <span className="text-xs truncate">{item.title}</span>}
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )
-              })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        <Collapsible 
+          open={!collapsedSections['klientarbeid']} 
+          onOpenChange={() => toggleSection('klientarbeid')}
+        >
+          <SidebarGroup>
+            <CollapsibleTrigger asChild>
+              <SidebarGroupLabel className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground cursor-pointer flex items-center justify-between group">
+                {!isCollapsed && (
+                  <>
+                    <span>Klientarbeid</span>
+                    {collapsedSections['klientarbeid'] ? 
+                      <ChevronRight className="h-3 w-3 opacity-50 group-hover:opacity-100" /> : 
+                      <ChevronDown className="h-3 w-3 opacity-50 group-hover:opacity-100" />
+                    }
+                  </>
+                )}
+              </SidebarGroupLabel>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <SidebarGroupContent>
+                <SidebarMenu className="space-y-1">
+                  {clientWorkItems.map((item) => {
+                    const isItemActive = isActive(item.url)
+                    
+                    return (
+                      <SidebarMenuItem key={item.title}>
+                        <SidebarMenuButton 
+                          asChild 
+                          isActive={isItemActive}
+                          className={isCollapsed ? "justify-center p-2" : "justify-start pl-2 pr-2"}
+                          tooltip={isCollapsed ? item.title : undefined}
+                        >
+                          <Link to={item.url} className={isCollapsed ? "flex items-center justify-center w-full h-full" : "flex items-center gap-2 w-full"}>
+                            <item.icon className="h-4 w-4 flex-shrink-0" />
+                            {!isCollapsed && <span className="text-xs truncate">{item.title}</span>}
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    )
+                  })}
+
+                  {/* Lønn sub-section */}
+                  {clientId && payrollItems.length > 0 && (
+                    <SidebarMenuItem>
+                      <Collapsible 
+                        open={!collapsedSections['payroll']} 
+                        onOpenChange={() => toggleSection('payroll')}
+                      >
+                        <CollapsibleTrigger asChild>
+                          <SidebarMenuButton className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground cursor-pointer flex items-center justify-between group">
+                            <div className="flex items-center gap-2">
+                              <DollarSign className="h-4 w-4 flex-shrink-0" />
+                              {!isCollapsed && <span className="text-xs truncate">Lønn</span>}
+                            </div>
+                            {!isCollapsed && (
+                              collapsedSections['payroll'] ? 
+                                <ChevronRight className="h-3 w-3 opacity-50 group-hover:opacity-100" /> : 
+                                <ChevronDown className="h-3 w-3 opacity-50 group-hover:opacity-100" />
+                            )}
+                          </SidebarMenuButton>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <SidebarMenuSub>
+                            {payrollItems.map((item) => {
+                              const isItemActive = isActive(item.url)
+                              
+                              return (
+                                <SidebarMenuItem key={item.title}>
+                                  <SidebarMenuSubButton 
+                                    asChild 
+                                    isActive={isItemActive}
+                                  >
+                                    <Link to={item.url} className="flex items-center gap-2 w-full">
+                                      <item.icon className="h-3 w-3 flex-shrink-0" />
+                                      <span className="text-xs truncate">{item.title}</span>
+                                    </Link>
+                                  </SidebarMenuSubButton>
+                                </SidebarMenuItem>
+                              )
+                            })}
+                          </SidebarMenuSub>
+                        </CollapsibleContent>
+                      </Collapsible>
+                    </SidebarMenuItem>
+                  )}
+
+                  {/* Salg sub-section (placeholder) */}
+                  {clientId && salesItems.length > 0 && (
+                    <SidebarMenuItem>
+                      <Collapsible 
+                        open={!collapsedSections['sales']} 
+                        onOpenChange={() => toggleSection('sales')}
+                      >
+                        <CollapsibleTrigger asChild>
+                          <SidebarMenuButton className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground cursor-pointer flex items-center justify-between group">
+                            <div className="flex items-center gap-2">
+                              <TrendingUp className="h-4 w-4 flex-shrink-0" />
+                              {!isCollapsed && <span className="text-xs truncate">Salg</span>}
+                            </div>
+                            {!isCollapsed && (
+                              collapsedSections['sales'] ? 
+                                <ChevronRight className="h-3 w-3 opacity-50 group-hover:opacity-100" /> : 
+                                <ChevronDown className="h-3 w-3 opacity-50 group-hover:opacity-100" />
+                            )}
+                          </SidebarMenuButton>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <SidebarMenuSub>
+                            {salesItems.map((item) => {
+                              const isItemActive = isActive(item.url)
+                              
+                              return (
+                                <SidebarMenuItem key={item.title}>
+                                  <SidebarMenuSubButton 
+                                    asChild 
+                                    isActive={isItemActive}
+                                  >
+                                    <Link to={item.url} className="flex items-center gap-2 w-full">
+                                      <item.icon className="h-3 w-3 flex-shrink-0" />
+                                      <span className="text-xs truncate">{item.title}</span>
+                                    </Link>
+                                  </SidebarMenuSubButton>
+                                </SidebarMenuItem>
+                              )
+                            })}
+                          </SidebarMenuSub>
+                        </CollapsibleContent>
+                      </Collapsible>
+                    </SidebarMenuItem>
+                  )}
+
+                  {/* Kostnader sub-section (placeholder) */}
+                  {clientId && costItems.length > 0 && (
+                    <SidebarMenuItem>
+                      <Collapsible 
+                        open={!collapsedSections['costs']} 
+                        onOpenChange={() => toggleSection('costs')}
+                      >
+                        <CollapsibleTrigger asChild>
+                          <SidebarMenuButton className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground cursor-pointer flex items-center justify-between group">
+                            <div className="flex items-center gap-2">
+                              <Receipt className="h-4 w-4 flex-shrink-0" />
+                              {!isCollapsed && <span className="text-xs truncate">Kostnader</span>}
+                            </div>
+                            {!isCollapsed && (
+                              collapsedSections['costs'] ? 
+                                <ChevronRight className="h-3 w-3 opacity-50 group-hover:opacity-100" /> : 
+                                <ChevronDown className="h-3 w-3 opacity-50 group-hover:opacity-100" />
+                            )}
+                          </SidebarMenuButton>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <SidebarMenuSub>
+                            {costItems.map((item) => {
+                              const isItemActive = isActive(item.url)
+                              
+                              return (
+                                <SidebarMenuItem key={item.title}>
+                                  <SidebarMenuSubButton 
+                                    asChild 
+                                    isActive={isItemActive}
+                                  >
+                                    <Link to={item.url} className="flex items-center gap-2 w-full">
+                                      <item.icon className="h-3 w-3 flex-shrink-0" />
+                                      <span className="text-xs truncate">{item.title}</span>
+                                    </Link>
+                                  </SidebarMenuSubButton>
+                                </SidebarMenuItem>
+                              )
+                            })}
+                          </SidebarMenuSub>
+                        </CollapsibleContent>
+                      </Collapsible>
+                    </SidebarMenuItem>
+                  )}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </CollapsibleContent>
+          </SidebarGroup>
+        </Collapsible>
 
         {/* Administrasjon seksjon - kun hvis brukeren har tilgang til minst ett element */}
         {filteredAdminItems.length > 0 && (
-          <SidebarGroup>
-            {!isCollapsed && <SidebarGroupLabel>Administrasjon</SidebarGroupLabel>}
-            <SidebarGroupContent>
-              <SidebarMenu className="space-y-1">
-                {filteredAdminItems.map((item) => {
-                  const isItemActive = isActive(item.url)
-                  
-                  return (
-                    <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton 
-                        asChild 
-                        isActive={isItemActive}
-                        className={isCollapsed ? "justify-center p-2" : "justify-start pl-2 pr-2"}
-                        tooltip={isCollapsed ? item.title : undefined}
-                      >
-                        <Link to={item.url} className={isCollapsed ? "flex items-center justify-center w-full h-full" : "flex items-center gap-2 w-full"}>
-                          <item.icon className="h-4 w-4 flex-shrink-0" />
-                          {!isCollapsed && <span className="text-xs truncate">{item.title}</span>}
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  )
-                })}
-                {isSuperAdmin && (
-                  <SidebarMenuItem key="Superadmin">
-                    <SidebarMenuButton 
-                      asChild 
-                      isActive={isActive('/superadmin')}
-                      className={isCollapsed ? "justify-center p-2" : "justify-start pl-2 pr-2"}
-                      tooltip={isCollapsed ? 'Superadmin' : undefined}
-                    >
-                      <Link to="/superadmin" className={isCollapsed ? "flex items-center justify-center w-full h-full" : "flex items-center gap-2 w-full"}>
-                        <Shield className="h-4 w-4 flex-shrink-0" />
-                        {!isCollapsed && <span className="text-xs truncate">Superadmin</span>}
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+          <Collapsible 
+            open={!collapsedSections['administration']} 
+            onOpenChange={() => toggleSection('administration')}
+          >
+            <SidebarGroup>
+              <CollapsibleTrigger asChild>
+                <SidebarGroupLabel className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground cursor-pointer flex items-center justify-between group">
+                  {!isCollapsed && (
+                    <>
+                      <span>Administrasjon</span>
+                      {collapsedSections['administration'] ? 
+                        <ChevronRight className="h-3 w-3 opacity-50 group-hover:opacity-100" /> : 
+                        <ChevronDown className="h-3 w-3 opacity-50 group-hover:opacity-100" />
+                      }
+                    </>
+                  )}
+                </SidebarGroupLabel>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <SidebarGroupContent>
+                  <SidebarMenu className="space-y-1">
+                    {filteredAdminItems.map((item) => {
+                      const isItemActive = isActive(item.url)
+                      
+                      return (
+                        <SidebarMenuItem key={item.title}>
+                          <SidebarMenuButton 
+                            asChild 
+                            isActive={isItemActive}
+                            className={isCollapsed ? "justify-center p-2" : "justify-start pl-2 pr-2"}
+                            tooltip={isCollapsed ? item.title : undefined}
+                          >
+                            <Link to={item.url} className={isCollapsed ? "flex items-center justify-center w-full h-full" : "flex items-center gap-2 w-full"}>
+                              <item.icon className="h-4 w-4 flex-shrink-0" />
+                              {!isCollapsed && <span className="text-xs truncate">{item.title}</span>}
+                            </Link>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      )
+                    })}
+                    {isSuperAdmin && (
+                      <SidebarMenuItem key="Superadmin">
+                        <SidebarMenuButton 
+                          asChild 
+                          isActive={isActive('/superadmin')}
+                          className={isCollapsed ? "justify-center p-2" : "justify-start pl-2 pr-2"}
+                          tooltip={isCollapsed ? 'Superadmin' : undefined}
+                        >
+                          <Link to="/superadmin" className={isCollapsed ? "flex items-center justify-center w-full h-full" : "flex items-center gap-2 w-full"}>
+                            <Shield className="h-4 w-4 flex-shrink-0" />
+                            {!isCollapsed && <span className="text-xs truncate">Superadmin</span>}
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    )}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </SidebarGroup>
+          </Collapsible>
         )}
 
         {/* Ressurser seksjon */}
-        <SidebarGroup>
-          {!isCollapsed && <SidebarGroupLabel>Ressurser</SidebarGroupLabel>}
-          <SidebarGroupContent>
-            <SidebarMenu className="space-y-1">
-              {resourceItems.map((item) => {
-                const isItemActive = isActive(item.url)
-                
-                return (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton 
-                      asChild 
-                      isActive={isItemActive}
-                      className={isCollapsed ? "justify-center p-2" : "justify-start pl-2 pr-2"}
-                      tooltip={isCollapsed ? item.title : undefined}
-                    >
-                      <Link to={item.url} className={isCollapsed ? "flex items-center justify-center w-full h-full" : "flex items-center gap-2 w-full"}>
-                        <item.icon className="h-4 w-4 flex-shrink-0" />
-                        {!isCollapsed && <span className="text-xs truncate">{item.title}</span>}
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )
-              })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        <Collapsible 
+          open={!collapsedSections['resources']} 
+          onOpenChange={() => toggleSection('resources')}
+        >
+          <SidebarGroup>
+            <CollapsibleTrigger asChild>
+              <SidebarGroupLabel className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground cursor-pointer flex items-center justify-between group">
+                {!isCollapsed && (
+                  <>
+                    <span>Ressurser</span>
+                    {collapsedSections['resources'] ? 
+                      <ChevronRight className="h-3 w-3 opacity-50 group-hover:opacity-100" /> : 
+                      <ChevronDown className="h-3 w-3 opacity-50 group-hover:opacity-100" />
+                    }
+                  </>
+                )}
+              </SidebarGroupLabel>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <SidebarGroupContent>
+                <SidebarMenu className="space-y-1">
+                  {resourceItems.map((item) => {
+                    const isItemActive = isActive(item.url)
+                    
+                    return (
+                      <SidebarMenuItem key={item.title}>
+                        <SidebarMenuButton 
+                          asChild 
+                          isActive={isItemActive}
+                          className={isCollapsed ? "justify-center p-2" : "justify-start pl-2 pr-2"}
+                          tooltip={isCollapsed ? item.title : undefined}
+                        >
+                          <Link to={item.url} className={isCollapsed ? "flex items-center justify-center w-full h-full" : "flex items-center gap-2 w-full"}>
+                            <item.icon className="h-4 w-4 flex-shrink-0" />
+                            {!isCollapsed && <span className="text-xs truncate">{item.title}</span>}
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    )
+                  })}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </CollapsibleContent>
+          </SidebarGroup>
+        </Collapsible>
       </SidebarContent>
     </ShadcnSidebar>
   )
