@@ -4766,6 +4766,118 @@ export type Database = {
           },
         ]
       }
+      investment_holdings: {
+        Row: {
+          acquisition_date: string | null
+          average_cost_price: number | null
+          cost_basis: number | null
+          cost_price_currency: string | null
+          created_at: string
+          created_by: string | null
+          holding_type: string
+          id: string
+          is_active: boolean
+          notes: string | null
+          portfolio_id: string
+          quantity: number
+          security_id: string
+          updated_at: string
+        }
+        Insert: {
+          acquisition_date?: string | null
+          average_cost_price?: number | null
+          cost_basis?: number | null
+          cost_price_currency?: string | null
+          created_at?: string
+          created_by?: string | null
+          holding_type?: string
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          portfolio_id: string
+          quantity?: number
+          security_id: string
+          updated_at?: string
+        }
+        Update: {
+          acquisition_date?: string | null
+          average_cost_price?: number | null
+          cost_basis?: number | null
+          cost_price_currency?: string | null
+          created_at?: string
+          created_by?: string | null
+          holding_type?: string
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          portfolio_id?: string
+          quantity?: number
+          security_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "investment_holdings_portfolio_id_fkey"
+            columns: ["portfolio_id"]
+            isOneToOne: false
+            referencedRelation: "investment_portfolios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "investment_holdings_portfolio_id_fkey"
+            columns: ["portfolio_id"]
+            isOneToOne: false
+            referencedRelation: "portfolio_summaries"
+            referencedColumns: ["portfolio_id"]
+          },
+          {
+            foreignKeyName: "investment_holdings_security_id_fkey"
+            columns: ["security_id"]
+            isOneToOne: false
+            referencedRelation: "investment_securities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      investment_portfolios: {
+        Row: {
+          client_id: string
+          created_at: string
+          created_by: string | null
+          currency_code: string
+          description: string | null
+          id: string
+          is_active: boolean
+          portfolio_name: string
+          portfolio_type: string
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          currency_code?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          portfolio_name: string
+          portfolio_type?: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          currency_code?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          portfolio_name?: string
+          portfolio_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       investment_securities: {
         Row: {
           country_code: string | null
@@ -4819,6 +4931,7 @@ export type Database = {
           currency_code: string
           exchange_rate: number | null
           fees: number | null
+          holding_id: string | null
           id: string
           notes: string | null
           price_per_unit: number
@@ -4838,6 +4951,7 @@ export type Database = {
           currency_code?: string
           exchange_rate?: number | null
           fees?: number | null
+          holding_id?: string | null
           id?: string
           notes?: string | null
           price_per_unit: number
@@ -4857,6 +4971,7 @@ export type Database = {
           currency_code?: string
           exchange_rate?: number | null
           fees?: number | null
+          holding_id?: string | null
           id?: string
           notes?: string | null
           price_per_unit?: number
@@ -4870,6 +4985,20 @@ export type Database = {
           voucher_reference?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "investment_transactions_holding_id_fkey"
+            columns: ["holding_id"]
+            isOneToOne: false
+            referencedRelation: "current_portfolio_holdings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "investment_transactions_holding_id_fkey"
+            columns: ["holding_id"]
+            isOneToOne: false
+            referencedRelation: "investment_holdings"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "investment_transactions_security_id_fkey"
             columns: ["security_id"]
@@ -6531,6 +6660,60 @@ export type Database = {
           },
         ]
       }
+      portfolio_valuations: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          currency_code: string
+          id: string
+          is_year_end: boolean | null
+          portfolio_id: string
+          total_cost_basis: number | null
+          total_market_value: number
+          unrealized_gain_loss: number | null
+          valuation_date: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          currency_code?: string
+          id?: string
+          is_year_end?: boolean | null
+          portfolio_id: string
+          total_cost_basis?: number | null
+          total_market_value: number
+          unrealized_gain_loss?: number | null
+          valuation_date: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          currency_code?: string
+          id?: string
+          is_year_end?: boolean | null
+          portfolio_id?: string
+          total_cost_basis?: number | null
+          total_market_value?: number
+          unrealized_gain_loss?: number | null
+          valuation_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "portfolio_valuations_portfolio_id_fkey"
+            columns: ["portfolio_id"]
+            isOneToOne: false
+            referencedRelation: "investment_portfolios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "portfolio_valuations_portfolio_id_fkey"
+            columns: ["portfolio_id"]
+            isOneToOne: false
+            referencedRelation: "portfolio_summaries"
+            referencedColumns: ["portfolio_id"]
+          },
+        ]
+      }
       potential_clients: {
         Row: {
           auditor_name: string | null
@@ -8180,6 +8363,54 @@ export type Database = {
       }
     }
     Views: {
+      current_portfolio_holdings: {
+        Row: {
+          acquisition_date: string | null
+          average_cost_price: number | null
+          client_id: string | null
+          cost_basis: number | null
+          cost_price_currency: string | null
+          created_at: string | null
+          current_price: number | null
+          id: string | null
+          is_active: boolean | null
+          isin_code: string | null
+          market_value: number | null
+          portfolio_id: string | null
+          portfolio_name: string | null
+          price_date: string | null
+          quantity: number | null
+          return_percentage: number | null
+          security_currency: string | null
+          security_id: string | null
+          security_name: string | null
+          unrealized_gain_loss: number | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "investment_holdings_portfolio_id_fkey"
+            columns: ["portfolio_id"]
+            isOneToOne: false
+            referencedRelation: "investment_portfolios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "investment_holdings_portfolio_id_fkey"
+            columns: ["portfolio_id"]
+            isOneToOne: false
+            referencedRelation: "portfolio_summaries"
+            referencedColumns: ["portfolio_id"]
+          },
+          {
+            foreignKeyName: "investment_holdings_security_id_fkey"
+            columns: ["security_id"]
+            isOneToOne: false
+            referencedRelation: "investment_securities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       latest_exchange_rates: {
         Row: {
           exchange_rate: number | null
@@ -8209,6 +8440,23 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      portfolio_summaries: {
+        Row: {
+          client_id: string | null
+          created_at: string | null
+          currency_code: string | null
+          portfolio_id: string | null
+          portfolio_name: string | null
+          portfolio_type: string | null
+          total_cost_basis: number | null
+          total_holdings: number | null
+          total_market_value: number | null
+          total_return_percentage: number | null
+          total_unrealized_gain_loss: number | null
+          updated_at: string | null
+        }
+        Relationships: []
       }
       year_end_exchange_rates: {
         Row: {

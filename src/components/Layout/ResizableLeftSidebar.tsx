@@ -265,6 +265,11 @@ const ResizableLeftSidebar = () => {
       icon: ArrowRightLeft,
     },
     {
+      title: 'Porteføljer',
+      url: `/clients/${clientId}/investments/portfolios`,
+      icon: BarChart3,
+    },
+    {
       title: 'Transaksjoner',
       url: `/clients/${clientId}/investments/transactions`,
       icon: FileText,

@@ -45,7 +45,7 @@ type HoldingFormData = z.infer<typeof holdingSchema>;
 
 interface HoldingFormProps {
   portfolioId: string;
-  onSubmit: (data: HoldingFormData & { portfolio_id: string }) => Promise<void>;
+  onSubmit: (data: HoldingFormData & { portfolio_id: string }) => Promise<any>;
   children?: React.ReactNode;
 }
 
@@ -185,8 +185,8 @@ export function HoldingForm({ portfolioId, onSubmit, children }: HoldingFormProp
                       </FormControl>
                       <SelectContent>
                         {currencies.map((currency) => (
-                          <SelectItem key={currency.code} value={currency.code}>
-                            {currency.code}
+                          <SelectItem key={currency.currency_code} value={currency.currency_code}>
+                            {currency.currency_code}
                           </SelectItem>
                         ))}
                       </SelectContent>

@@ -41,7 +41,7 @@ type PortfolioFormData = z.infer<typeof portfolioSchema>;
 
 interface PortfolioFormProps {
   clientId: string;
-  onSubmit: (data: PortfolioFormData & { client_id: string }) => Promise<void>;
+  onSubmit: (data: PortfolioFormData & { client_id: string }) => Promise<any>;
   children?: React.ReactNode;
 }
 
@@ -152,8 +152,8 @@ export function PortfolioForm({ clientId, onSubmit, children }: PortfolioFormPro
                       </FormControl>
                       <SelectContent>
                         {currencies.map((currency) => (
-                          <SelectItem key={currency.code} value={currency.code}>
-                            {currency.code} - {currency.name}
+                          <SelectItem key={currency.currency_code} value={currency.currency_code}>
+                            {currency.currency_code} - {currency.currency_name}
                           </SelectItem>
                         ))}
                       </SelectContent>
