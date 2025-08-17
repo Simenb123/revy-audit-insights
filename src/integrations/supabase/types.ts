@@ -4489,6 +4489,45 @@ export type Database = {
           },
         ]
       }
+      global_a07_mapping_rules: {
+        Row: {
+          a07_performance_code: string
+          account_range_end: number
+          account_range_start: number
+          confidence_score: number | null
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean | null
+          rule_name: string
+          updated_at: string
+        }
+        Insert: {
+          a07_performance_code: string
+          account_range_end: number
+          account_range_start: number
+          confidence_score?: number | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          rule_name: string
+          updated_at?: string
+        }
+        Update: {
+          a07_performance_code?: string
+          account_range_end?: number
+          account_range_start?: number
+          confidence_score?: number | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          rule_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       isa_standards: {
         Row: {
           category: string | null

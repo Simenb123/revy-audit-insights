@@ -6,6 +6,7 @@ import FinancialStatementGenerator from '@/components/Accounting/FinancialStatem
 import AccountCategoriesManager from '@/components/Admin/AccountCategoriesManager';
 import MainGroupsManager from '@/components/Admin/MainGroupsManager';
 import FirmStandardAccountsManager from '@/components/Admin/FirmStandardAccountsManager';
+import { GlobalA07MappingRulesManager } from '@/components/StandardAccounts/GlobalA07MappingRulesManager';
 
 const StandardAccountsAdmin = () => {
   return (
@@ -17,6 +18,7 @@ const StandardAccountsAdmin = () => {
           <TabsTrigger value="categories">Kategorier</TabsTrigger>
           <TabsTrigger value="main-groups">Hovedgrupper</TabsTrigger>
           <TabsTrigger value="mapping-rules">Mappingregler</TabsTrigger>
+          <TabsTrigger value="a07-mapping-rules">A07 Mappingregler</TabsTrigger>
           <TabsTrigger value="preview">Forhåndsvisning</TabsTrigger>
         </TabsList>
         
@@ -38,6 +40,10 @@ const StandardAccountsAdmin = () => {
         
         <TabsContent value="mapping-rules">
           <AccountMappingRulesManager />
+        </TabsContent>
+        
+        <TabsContent value="a07-mapping-rules">
+          <GlobalA07MappingRulesManager />
         </TabsContent>
         
         <TabsContent value="preview">

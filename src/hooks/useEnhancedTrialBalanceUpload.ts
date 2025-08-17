@@ -128,6 +128,41 @@ export const useEnhancedTrialBalanceUpload = () => {
         }
       }
 
+      // Step 2b: Auto-mapping A07 using global rules
+      let a07MappingsApplied = 0;
+      
+      const { data: globalA07Rules } = await supabase
+        .from('global_a07_mapping_rules')
+        .select('*')
+        .eq('is_active', true);
+
+      if (globalA07Rules && globalA07Rules.length > 0) {
+        for (const account of accounts) {
+          const accountNumber = account.account_number?.toString();
+          if (!accountNumber) continue;
+
+          const accountNum = parseInt(accountNumber);
+          const matchingRule = globalA07Rules.find(rule => 
+            accountNum >= rule.account_range_start && 
+            accountNum <= rule.account_range_end
+          );
+
+          if (matchingRule) {
+            await supabase
+              .from('a07_account_mappings')
+              .upsert({
+                client_id: clientId,
+                account_number: accountNumber,
+                a07_performance_code: matchingRule.a07_performance_code,
+                mapping_description: `Auto-mappet: ${matchingRule.rule_name}`
+              }, {
+                onConflict: 'client_id,account_number'
+              });
+            a07MappingsApplied++;
+          }
+        }
+      }
+
       // Step 3: Insert trial balance data
       let trialBalanceInserted = 0;
       
@@ -206,6 +241,7 @@ export const useEnhancedTrialBalanceUpload = () => {
         trialBalanceInserted,
         chartOfAccountsCreated,
         autoMappingResults,
+        a07MappingsApplied,
         batchId: batch.id
       };
     },
@@ -214,6 +250,10 @@ export const useEnhancedTrialBalanceUpload = () => {
       
       if (result.autoMappingResults.mapped > 0) {
         message += `. ${result.autoMappingResults.mapped} kontoer ble automatisk mappet`;
+      }
+      
+      if (result.a07MappingsApplied > 0) {
+        message += `. ${result.a07MappingsApplied} A07 mappinger ble automatisk anvendt`;
       }
       
       toast.success(message);
