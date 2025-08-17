@@ -161,7 +161,7 @@ Deno.serve(async (req) => {
     const oppgave = payroll_data.mottatt?.oppgave
     const oppsummerte = oppgave?.oppsummerteVirksomheter
     const betalingsinfo = oppgave?.betalingsinformasjon
-    const innsendinger = payroll_data.mottatt?.opplysningspliktig?.innsendinger || []
+    // Use existing innsendinger variable declared earlier
     
     if (oppsummerte) {
       // Calculate totals from innsendinger
