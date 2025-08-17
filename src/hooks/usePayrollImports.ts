@@ -35,8 +35,10 @@ export interface PayrollSummary {
 }
 
 export function usePayrollImports(clientId?: string) {
+  const { selectedFiscalYear } = useFiscalYear()
+  
   return useQuery({
-    queryKey: ['payroll-imports', clientId],
+    queryKey: ['payroll-imports', clientId, selectedFiscalYear],
     queryFn: async () => {
       if (!clientId) return []
       
@@ -47,7 +49,15 @@ export function usePayrollImports(clientId?: string) {
         .order('created_at', { ascending: false })
       
       if (error) throw error
-      return data as PayrollImport[]
+      
+      // Filter by fiscal year if we have period_key
+      const filteredData = (data as PayrollImport[]).filter(item => {
+        if (!item.period_key) return true
+        // Check if period_key contains the fiscal year
+        return item.period_key.includes(selectedFiscalYear.toString())
+      })
+      
+      return filteredData
     },
     enabled: !!clientId
   })

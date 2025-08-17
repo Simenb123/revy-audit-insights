@@ -28,3 +28,5 @@ project_id = "fxelhfwaoizqyecikscu"
     verify_jwt = true
   [functions.group-messages]
     verify_jwt = true
+  [functions.import-payroll]
+    verify_jwt = true

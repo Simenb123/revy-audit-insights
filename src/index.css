@@ -51,8 +51,8 @@
     --sidebar-ring: 174 57% 80%;
 
     /* Sub-header surface */
-    --sub-header-bg: var(--revio-100);
-    --sub-header-foreground: var(--revio-900);
+    --sub-header-bg: 174 57% 88%;
+    --sub-header-foreground: 173 49% 15%;
 
     --revio-100: 174 57% 95%;
     --revio-500: 173 49% 39%;
@@ -63,8 +63,8 @@
 
   @media (prefers-color-scheme: dark) {
     :root {
-      --sub-header-bg: var(--revio-700);
-      --sub-header-foreground: var(--revio-100);
+      --sub-header-bg: 173 49% 25%;
+      --sub-header-foreground: 174 57% 95%;
     }
   }
 }
@@ -260,8 +260,8 @@
   [data-sub-header] {
     background: hsl(var(--sub-header-bg));
     color: hsl(var(--sub-header-foreground));
-    border-bottom: 1px solid hsl(var(--revio-500) / 0.18);
-    box-shadow: 0 1px 0 hsl(0 0% 100% / 0.65) inset;
+    border-bottom: 1px solid hsl(var(--revio-500) / 0.2);
+    box-shadow: 0 1px 3px hsl(0 0% 0% / 0.1);
   }
 
   [data-sub-header][data-variant="glass"] {

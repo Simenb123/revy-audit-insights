@@ -1,13 +1,17 @@
 import React, { useRef, useState } from 'react'
-import { Upload, FileText, BarChart3, Users, DollarSign, Calendar, Building2, Clock, AlertTriangle } from 'lucide-react'
+import { Upload, FileText, BarChart3, Users, DollarSign, Calendar, Building2, Clock, AlertTriangle, CalendarIcon } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Calendar as CalendarComponent } from '@/components/ui/calendar'
 import { useToast } from '@/hooks/use-toast'
 import { useFiscalYear } from '@/contexts/FiscalYearContext'
 import { usePayrollImports, usePayrollSummary, useCreatePayrollImport, useDeletePayrollImport } from '@/hooks/usePayrollImports'
+import { format } from 'date-fns'
+import { cn } from '@/lib/utils'
 
 interface PayrollImporterProps {
   clientId: string;
@@ -16,7 +20,9 @@ interface PayrollImporterProps {
 
 export default function PayrollImporter({ clientId, clientName }: PayrollImporterProps) {
   const fileRef = useRef<HTMLInputElement | null>(null)
-  const [periodKey, setPeriodKey] = useState(() => new Date().getFullYear().toString())
+  const { selectedFiscalYear } = useFiscalYear()
+  const [periodKey, setPeriodKey] = useState(() => selectedFiscalYear.toString())
+  const [selectedDate, setSelectedDate] = useState<Date>()
   const [selectedImportId, setSelectedImportId] = useState<string | null>(null)
   const [isUploading, setIsUploading] = useState(false)
   
@@ -43,12 +49,28 @@ export default function PayrollImporter({ clientId, clientName }: PayrollImporte
       const text = await file.text()
       const json = JSON.parse(text)
       
+      // Try to extract period from JSON structure
+      let extractedPeriod = periodKey
+      if (json.oppgave?.kalendermaaned) {
+        const maaned = json.oppgave.kalendermaaned
+        const aar = json.oppgave.kalenderaar || selectedFiscalYear
+        extractedPeriod = `${aar}-${String(maaned).padStart(2, '0')}`
+      } else if (json.oppgave?.fomKalenderMaaned && json.oppgave?.tomKalenderMaaned) {
+        const fom = json.oppgave.fomKalenderMaaned
+        const tom = json.oppgave.tomKalenderMaaned
+        const aar = json.oppgave.kalenderaar || selectedFiscalYear
+        extractedPeriod = `${aar}-${String(fom).padStart(2, '0')}..${String(tom).padStart(2, '0')}`
+      }
+      
       await createImport.mutateAsync({
         client_id: clientId,
-        period_key: periodKey,
+        period_key: extractedPeriod,
         file_name: file.name,
         payrollData: json
       })
+      
+      // Update the period key field with extracted period
+      setPeriodKey(extractedPeriod)
       
       toast({
         title: "Import fullført",
@@ -143,7 +165,7 @@ export default function PayrollImporter({ clientId, clientName }: PayrollImporte
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <Label htmlFor="period-key">Periode</Label>
               <Input
@@ -152,6 +174,39 @@ export default function PayrollImporter({ clientId, clientName }: PayrollImporte
                 onChange={(e) => setPeriodKey(e.target.value)}
                 placeholder="f.eks. 2024 eller 2024-01..12"
               />
+            </div>
+            <div>
+              <Label>Velg måned (alternativ)</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={"outline"}
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !selectedDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {selectedDate ? format(selectedDate, "PPP") : <span>Velg dato</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <CalendarComponent
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={(date) => {
+                      setSelectedDate(date)
+                      if (date) {
+                        const year = date.getFullYear()
+                        const month = String(date.getMonth() + 1).padStart(2, '0')
+                        setPeriodKey(`${year}-${month}`)
+                      }
+                    }}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
             <div className="flex items-end">
               <input
@@ -167,7 +222,7 @@ export default function PayrollImporter({ clientId, clientName }: PayrollImporte
                   }
                 }}
               />
-              <Button onClick={handleChoose} disabled={isUploading}>
+              <Button onClick={handleChoose} disabled={isUploading} className="w-full">
                 {isUploading ? 'Importerer...' : 'Velg JSON-fil'}
               </Button>
             </div>
