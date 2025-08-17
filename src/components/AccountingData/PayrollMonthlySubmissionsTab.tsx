@@ -40,8 +40,9 @@ export function PayrollMonthlySubmissionsTab({ submissions }: PayrollMonthlySubm
               <TableHead>Periode</TableHead>
               <TableHead>År</TableHead>
               <TableHead>Måned</TableHead>
-              <TableHead className="text-right">Antall</TableHead>
-              <TableHead className="text-right">Bruttolønn</TableHead>
+              <TableHead className="text-right">Antall ansatte</TableHead>
+              <TableHead className="text-right">Arbeidsgiveravgift</TableHead>
+              <TableHead className="text-right">Forskuddstrekk</TableHead>
               <TableHead>Detaljer</TableHead>
             </TableRow>
           </TableHeader>
@@ -54,22 +55,26 @@ export function PayrollMonthlySubmissionsTab({ submissions }: PayrollMonthlySubm
                 <TableCell>{submission.period_year}</TableCell>
                 <TableCell>{getMonthName(submission.period_month)}</TableCell>
                 <TableCell className="text-right">
-                  {submission.summary_data?.count || submission.submission_data?.antall || 0}
+                  {submission.summary_data?.count || submission.submission_data?.antallInntektsmottakere || 0}
                 </TableCell>
                 <TableCell className="text-right">
                   {formatCurrency(
-                    submission.summary_data?.total_amount || 
-                    submission.submission_data?.bruttolonn || 
+                    submission.summary_data?.arbeidsgiveravgift || 
+                    submission.submission_data?.mottattAvgiftOgTrekkTotalt?.sumArbeidsgiveravgift || 
                     0
+                  )}
+                </TableCell>
+                <TableCell className="text-right">
+                  {formatCurrency(
+                    submission.summary_data?.forskuddstrekk || 
+                    Math.abs(submission.submission_data?.mottattAvgiftOgTrekkTotalt?.sumForskuddstrekk || 0)
                   )}
                 </TableCell>
                 <TableCell>
                   <div className="text-xs text-muted-foreground">
-                    {submission.submission_data?.arbeidsgivere && (
-                      <div>Arbeidsgivere: {submission.submission_data.arbeidsgivere.length}</div>
-                    )}
-                    {submission.submission_data?.inntektsmottakere && (
-                      <div>Mottakere: {submission.submission_data.inntektsmottakere.length}</div>
+                    <div>Status: {submission.submission_data?.status}</div>
+                    {submission.submission_data?.kildesystem && (
+                      <div>System: {submission.submission_data.kildesystem}</div>
                     )}
                   </div>
                 </TableCell>
@@ -86,16 +91,24 @@ export function PayrollMonthlySubmissionsTab({ submissions }: PayrollMonthlySubm
           <p className="text-2xl font-bold">{submissions.length}</p>
         </Card>
         <Card className="p-4">
-          <h4 className="font-semibold mb-2">Total antall</h4>
+          <h4 className="font-semibold mb-2">Total ansatte</h4>
           <p className="text-2xl font-bold">
-            {submissions.reduce((sum, s) => sum + (s.summary_data?.count || s.submission_data?.antall || 0), 0)}
+            {submissions.reduce((sum, s) => sum + (s.summary_data?.count || s.submission_data?.antallInntektsmottakere || 0), 0)}
           </p>
         </Card>
         <Card className="p-4">
-          <h4 className="font-semibold mb-2">Total bruttolønn</h4>
+          <h4 className="font-semibold mb-2">Total arbeidsgiveravgift</h4>
           <p className="text-2xl font-bold">
             {formatCurrency(
-              submissions.reduce((sum, s) => sum + (s.summary_data?.total_amount || s.submission_data?.bruttolonn || 0), 0)
+              submissions.reduce((sum, s) => sum + (s.summary_data?.arbeidsgiveravgift || s.submission_data?.mottattAvgiftOgTrekkTotalt?.sumArbeidsgiveravgift || 0), 0)
+            )}
+          </p>
+        </Card>
+        <Card className="p-4">
+          <h4 className="font-semibold mb-2">Total forskuddstrekk</h4>
+          <p className="text-2xl font-bold">
+            {formatCurrency(
+              submissions.reduce((sum, s) => sum + (s.summary_data?.forskuddstrekk || Math.abs(s.submission_data?.mottattAvgiftOgTrekkTotalt?.sumForskuddstrekk || 0)), 0)
             )}
           </p>
         </Card>

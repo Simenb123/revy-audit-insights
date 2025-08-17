@@ -8,6 +8,7 @@ import { formatDate } from '@/lib/utils';
 import { formatCurrency } from '@/lib/formatters';
 import PayrollImporter from '@/components/PayrollImporter';
 import { A07DetailDialog } from './A07DetailDialog';
+import { supabase } from '@/integrations/supabase/client';
 
 interface A07DataSectionProps {
   clientId: string;
@@ -19,26 +20,72 @@ export function A07DataSection({ clientId, clientName }: A07DataSectionProps) {
   const [showUploader, setShowUploader] = useState(false);
   const [selectedImportId, setSelectedImportId] = useState<string | null>(null);
 
-  const handleExportA07Data = () => {
+  const handleExportA07Data = async () => {
     if (payrollImports.length === 0) return;
 
-    // Create export data with separate columns for each variable type
-    const exportData = payrollImports.map(imp => ({
-      'Import ID': imp.id,
-      'Periode': imp.period_key,
-      'Fra dato': imp.fom_kalendermaaned || '',
-      'Til dato': imp.tom_kalendermaaned || '',
-      'Filnavn': imp.file_name || '',
-      'Organisasjonsnummer': imp.orgnr || '',
-      'Virksomhetsnavn': imp.navn || '',
-      'Antall personer innrapportert': imp.antall_personer_innrapportert || 0,
-      'Antall personer unike': imp.antall_personer_unike || 0,
-      'Avstemmingstidspunkt': imp.avstemmingstidspunkt ? formatDate(imp.avstemmingstidspunkt) : '',
-      'Opprettet': formatDate(imp.created_at),
-    }));
+    // Get detailed monthly data for each import
+    const exportData = [];
+    
+    for (const imp of payrollImports) {
+      // Fetch monthly submissions for this import
+      const { data: monthlySubmissions } = await supabase
+        .from('payroll_monthly_submissions')
+        .select('*')
+        .eq('payroll_import_id', imp.id)
+        .order('period_year', { ascending: true })
+        .order('period_month', { ascending: true });
+
+      if (monthlySubmissions?.length) {
+        // Add a header row for this import
+        exportData.push({
+          'Måned': `=== ${imp.period_key} ===`,
+          'År': '',
+          'Antall ansatte': '',
+          'Arbeidsgiveravgift': '',
+          'Forskuddstrekk': '',
+          'Status': ''
+        });
+
+        // Add monthly data
+        monthlySubmissions.forEach((submission: any) => {
+          const monthName = new Date(submission.period_year, submission.period_month - 1).toLocaleDateString('nb-NO', { year: 'numeric', month: 'long' });
+          exportData.push({
+            'Måned': monthName,
+            'År': submission.period_year,
+            'Antall ansatte': submission.summary_data?.count || submission.submission_data?.antallInntektsmottakere || 0,
+            'Arbeidsgiveravgift': submission.summary_data?.arbeidsgiveravgift || submission.submission_data?.mottattAvgiftOgTrekkTotalt?.sumArbeidsgiveravgift || 0,
+            'Forskuddstrekk': submission.summary_data?.forskuddstrekk || Math.abs(submission.submission_data?.mottattAvgiftOgTrekkTotalt?.sumForskuddstrekk || 0),
+            'Status': submission.submission_data?.status || ''
+          });
+        });
+
+        // Add totals row for this import
+        const totalArbeidsgiveravgift = monthlySubmissions.reduce((sum: number, s: any) => sum + (s.summary_data?.arbeidsgiveravgift || s.submission_data?.mottattAvgiftOgTrekkTotalt?.sumArbeidsgiveravgift || 0), 0);
+        const totalForskuddstrekk = monthlySubmissions.reduce((sum: number, s: any) => sum + (s.summary_data?.forskuddstrekk || Math.abs(s.submission_data?.mottattAvgiftOgTrekkTotalt?.sumForskuddstrekk || 0)), 0);
+        
+        exportData.push({
+          'Måned': 'TOTALT',
+          'År': '',
+          'Antall ansatte': monthlySubmissions.reduce((sum: number, s: any) => sum + (s.summary_data?.count || s.submission_data?.antallInntektsmottakere || 0), 0),
+          'Arbeidsgiveravgift': totalArbeidsgiveravgift,
+          'Forskuddstrekk': totalForskuddstrekk,
+          'Status': ''
+        });
+
+        // Add spacing
+        exportData.push({
+          'Måned': '',
+          'År': '',
+          'Antall ansatte': '',
+          'Arbeidsgiveravgift': '',
+          'Forskuddstrekk': '',
+          'Status': ''
+        });
+      }
+    }
 
     exportArrayToXlsx(
-      `A07_Lønnsdata_${clientName}_${new Date().toISOString().split('T')[0]}`,
+      `A07_Månedlig_Oversikt_${clientName}_${new Date().toISOString().split('T')[0]}`,
       exportData
     );
   };

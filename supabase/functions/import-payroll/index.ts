@@ -78,9 +78,12 @@ Deno.serve(async (req) => {
 
       const [year, month] = innsending.kalendermaaned.split('-').map(Number)
       
-      // Calculate total amount from mottattAvgiftOgTrekkTotalt
+      // Extract monthly amounts from mottattAvgiftOgTrekkTotalt
       const mottatt = innsending.mottattAvgiftOgTrekkTotalt || {}
-      const totalAmount = (mottatt.sumForskuddstrekk || 0) + (mottatt.sumArbeidsgiveravgift || 0)
+      const sumArbeidsgiveravgift = mottatt.sumArbeidsgiveravgift || 0
+      const sumForskuddstrekk = Math.abs(mottatt.sumForskuddstrekk || 0) // Make positive for display
+      const sumFinansskatt = mottatt.sumFinansskattLoenn || 0
+      const totalAmount = sumArbeidsgiveravgift + sumForskuddstrekk + sumFinansskatt
       
       const { error: monthlyError } = await supabase
         .from('payroll_monthly_submissions')
@@ -93,6 +96,10 @@ Deno.serve(async (req) => {
             period: innsending.kalendermaaned,
             count: innsending.antallInntektsmottakere || 0,
             total_amount: totalAmount,
+            bruttolonn: 0, // Will be calculated from virksomhet data later
+            arbeidsgiveravgift: sumArbeidsgiveravgift,
+            forskuddstrekk: sumForskuddstrekk,
+            finansskatt: sumFinansskatt,
             status: innsending.status,
             kildesystem: innsending.kildesystem,
             mottatt_avgift_trekk: mottatt
