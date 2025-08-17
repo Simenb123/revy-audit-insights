@@ -1929,6 +1929,84 @@ export type Database = {
           },
         ]
       }
+      audit_working_papers: {
+        Row: {
+          actual_hours: number | null
+          attachments: Json | null
+          audit_area: string | null
+          client_id: string
+          conclusion: string | null
+          content: Json
+          created_at: string
+          cross_references: Json | null
+          estimated_hours: number | null
+          id: string
+          materiality_threshold: number | null
+          paper_reference: string
+          paper_status: string
+          paper_title: string
+          paper_type: string
+          period_year: number
+          preparation_date: string | null
+          prepared_by: string | null
+          review_date: string | null
+          reviewed_by: string | null
+          reviewer_notes: string | null
+          risk_level: string | null
+          updated_at: string
+        }
+        Insert: {
+          actual_hours?: number | null
+          attachments?: Json | null
+          audit_area?: string | null
+          client_id: string
+          conclusion?: string | null
+          content?: Json
+          created_at?: string
+          cross_references?: Json | null
+          estimated_hours?: number | null
+          id?: string
+          materiality_threshold?: number | null
+          paper_reference: string
+          paper_status?: string
+          paper_title: string
+          paper_type: string
+          period_year: number
+          preparation_date?: string | null
+          prepared_by?: string | null
+          review_date?: string | null
+          reviewed_by?: string | null
+          reviewer_notes?: string | null
+          risk_level?: string | null
+          updated_at?: string
+        }
+        Update: {
+          actual_hours?: number | null
+          attachments?: Json | null
+          audit_area?: string | null
+          client_id?: string
+          conclusion?: string | null
+          content?: Json
+          created_at?: string
+          cross_references?: Json | null
+          estimated_hours?: number | null
+          id?: string
+          materiality_threshold?: number | null
+          paper_reference?: string
+          paper_status?: string
+          paper_title?: string
+          paper_type?: string
+          period_year?: number
+          preparation_date?: string | null
+          prepared_by?: string | null
+          review_date?: string | null
+          reviewed_by?: string | null
+          reviewer_notes?: string | null
+          risk_level?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       bank_statements: {
         Row: {
           bank_account_number: string
@@ -4425,6 +4503,66 @@ export type Database = {
           },
         ]
       }
+      documentation_checklists: {
+        Row: {
+          assigned_to: string | null
+          audit_year: number
+          checklist_data: Json
+          checklist_name: string
+          checklist_type: string
+          client_id: string
+          completed_date: string | null
+          completed_items: number | null
+          completion_percentage: number | null
+          created_at: string
+          created_by: string | null
+          due_date: string | null
+          id: string
+          notes: string | null
+          status: string
+          total_items: number | null
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          audit_year: number
+          checklist_data?: Json
+          checklist_name: string
+          checklist_type: string
+          client_id: string
+          completed_date?: string | null
+          completed_items?: number | null
+          completion_percentage?: number | null
+          created_at?: string
+          created_by?: string | null
+          due_date?: string | null
+          id?: string
+          notes?: string | null
+          status?: string
+          total_items?: number | null
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          audit_year?: number
+          checklist_data?: Json
+          checklist_name?: string
+          checklist_type?: string
+          client_id?: string
+          completed_date?: string | null
+          completed_items?: number | null
+          completion_percentage?: number | null
+          created_at?: string
+          created_by?: string | null
+          due_date?: string | null
+          id?: string
+          notes?: string | null
+          status?: string
+          total_items?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       estimate_indicators: {
         Row: {
           audit_considerations: string | null
@@ -5460,6 +5598,89 @@ export type Database = {
             columns: ["version_id"]
             isOneToOne: false
             referencedRelation: "accounting_data_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      generated_reports: {
+        Row: {
+          client_id: string
+          created_at: string
+          error_message: string | null
+          export_format: string | null
+          file_path: string | null
+          file_size: number | null
+          generated_by: string | null
+          generation_date: string
+          id: string
+          is_final: boolean | null
+          metadata: Json | null
+          parameters: Json | null
+          report_data: Json
+          report_name: string
+          report_period_end: string
+          report_period_start: string
+          report_status: string
+          review_date: string | null
+          review_notes: string | null
+          reviewed_by: string | null
+          template_id: string
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          error_message?: string | null
+          export_format?: string | null
+          file_path?: string | null
+          file_size?: number | null
+          generated_by?: string | null
+          generation_date?: string
+          id?: string
+          is_final?: boolean | null
+          metadata?: Json | null
+          parameters?: Json | null
+          report_data?: Json
+          report_name: string
+          report_period_end: string
+          report_period_start: string
+          report_status?: string
+          review_date?: string | null
+          review_notes?: string | null
+          reviewed_by?: string | null
+          template_id: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          error_message?: string | null
+          export_format?: string | null
+          file_path?: string | null
+          file_size?: number | null
+          generated_by?: string | null
+          generation_date?: string
+          id?: string
+          is_final?: boolean | null
+          metadata?: Json | null
+          parameters?: Json | null
+          report_data?: Json
+          report_name?: string
+          report_period_end?: string
+          report_period_start?: string
+          report_status?: string
+          review_date?: string | null
+          review_notes?: string | null
+          reviewed_by?: string | null
+          template_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "generated_reports_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "report_templates"
             referencedColumns: ["id"]
           },
         ]
@@ -7933,6 +8154,56 @@ export type Database = {
           },
         ]
       }
+      report_approvals: {
+        Row: {
+          approval_date: string | null
+          approval_level: number
+          approval_status: string
+          approver_role: string
+          assigned_to: string | null
+          changes_requested: string | null
+          comments: string | null
+          created_at: string
+          generated_report_id: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          approval_date?: string | null
+          approval_level: number
+          approval_status?: string
+          approver_role: string
+          assigned_to?: string | null
+          changes_requested?: string | null
+          comments?: string | null
+          created_at?: string
+          generated_report_id: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          approval_date?: string | null
+          approval_level?: number
+          approval_status?: string
+          approver_role?: string
+          assigned_to?: string | null
+          changes_requested?: string | null
+          comments?: string | null
+          created_at?: string
+          generated_report_id?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_approvals_generated_report_id_fkey"
+            columns: ["generated_report_id"]
+            isOneToOne: false
+            referencedRelation: "generated_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       report_builder_settings: {
         Row: {
           client_key: string
@@ -8010,6 +8281,56 @@ export type Database = {
           },
         ]
       }
+      report_sections: {
+        Row: {
+          conditional_logic: Json | null
+          created_at: string
+          data_source: string | null
+          display_order: number
+          id: string
+          is_required: boolean | null
+          section_config: Json
+          section_name: string
+          section_type: string
+          template_id: string
+          updated_at: string
+        }
+        Insert: {
+          conditional_logic?: Json | null
+          created_at?: string
+          data_source?: string | null
+          display_order?: number
+          id?: string
+          is_required?: boolean | null
+          section_config?: Json
+          section_name: string
+          section_type: string
+          template_id: string
+          updated_at?: string
+        }
+        Update: {
+          conditional_logic?: Json | null
+          created_at?: string
+          data_source?: string | null
+          display_order?: number
+          id?: string
+          is_required?: boolean | null
+          section_config?: Json
+          section_name?: string
+          section_type?: string
+          template_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_sections_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "report_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       report_templates: {
         Row: {
           audit_firm_id: string | null
@@ -8026,6 +8347,7 @@ export type Database = {
           name: string
           scope: string
           sort_order: number | null
+          template_structure: Json | null
           title: string | null
           updated_at: string
           widgets: Json
@@ -8045,6 +8367,7 @@ export type Database = {
           name: string
           scope?: string
           sort_order?: number | null
+          template_structure?: Json | null
           title?: string | null
           updated_at?: string
           widgets?: Json
@@ -8064,6 +8387,7 @@ export type Database = {
           name?: string
           scope?: string
           sort_order?: number | null
+          template_structure?: Json | null
           title?: string | null
           updated_at?: string
           widgets?: Json
@@ -9668,6 +9992,16 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      generate_client_financial_report: {
+        Args: {
+          p_client_id: string
+          p_parameters?: Json
+          p_period_end: string
+          p_period_start: string
+          p_template_id: string
+        }
+        Returns: string
+      }
       generate_depreciation_schedule: {
         Args: { p_asset_id: string }
         Returns: number
@@ -9716,6 +10050,10 @@ export type Database = {
           new_this_week: number
           total_potential: number
         }[]
+      }
+      get_reports_summary: {
+        Args: { p_client_id: string }
+        Returns: Json
       }
       get_user_department: {
         Args: { user_uuid: string }
@@ -9820,6 +10158,10 @@ export type Database = {
           p_period_year: number
         }
         Returns: boolean
+      }
+      update_checklist_completion: {
+        Args: { p_checklist_id: string }
+        Returns: undefined
       }
       user_owns_client: {
         Args: { client_uuid: string }
