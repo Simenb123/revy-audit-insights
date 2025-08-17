@@ -74,6 +74,7 @@ import InvestmentTransactions from "./pages/InvestmentTransactions";
 import InvestmentPrices from "./pages/InvestmentPrices";
 import CurrencyManagement from "./pages/CurrencyManagement";
 import InvestmentPortfolios from "./pages/InvestmentPortfolios";
+import BookkeepingJournal from "./pages/BookkeepingJournal";
 const queryClient = new QueryClient();
 
 function App() {
@@ -113,6 +114,7 @@ function App() {
                    <Route path="clients/:clientId/investments/currencies" element={<ProtectedRoute><CurrencyManagement /></ProtectedRoute>} />
                    <Route path="clients/:clientId/investments/portfolios" element={<ProtectedRoute><InvestmentPortfolios /></ProtectedRoute>} />
                    <Route path="clients/:clientId/investments/transactions" element={<ProtectedRoute><InvestmentTransactions /></ProtectedRoute>} />
+                   <Route path="clients/:clientId/bookkeeping-journal" element={<ProtectedRoute><BookkeepingJournal /></ProtectedRoute>} />
                   <Route path="clients/:clientId/analysis" element={<ProtectedRoute><AnalysisPage /></ProtectedRoute>} />
                   <Route path="clients/:clientId/regnskapsdata" element={<ProtectedRoute><Regnskapsdata /></ProtectedRoute>} />
                   <Route path="clients/:clientId/documents" element={<ProtectedRoute><ClientDocuments /></ProtectedRoute>} />

@@ -474,6 +474,39 @@ export type Database = {
           },
         ]
       }
+      accounting_periods: {
+        Row: {
+          client_id: string
+          created_at: string
+          end_date: string
+          id: string
+          is_closed: boolean
+          period_name: string
+          start_date: string
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          end_date: string
+          id?: string
+          is_closed?: boolean
+          period_name: string
+          start_date: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          end_date?: string
+          id?: string
+          is_closed?: boolean
+          period_name?: string
+          start_date?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       action_ai_metadata: {
         Row: {
           action_template_id: string | null
@@ -774,6 +807,57 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      ai_suggested_postings: {
+        Row: {
+          applied_to_journal_entry_id: string | null
+          client_id: string
+          confidence_score: number | null
+          created_at: string
+          document_id: string
+          id: string
+          status: string
+          suggested_entries: Json
+          updated_at: string
+        }
+        Insert: {
+          applied_to_journal_entry_id?: string | null
+          client_id: string
+          confidence_score?: number | null
+          created_at?: string
+          document_id: string
+          id?: string
+          status?: string
+          suggested_entries: Json
+          updated_at?: string
+        }
+        Update: {
+          applied_to_journal_entry_id?: string | null
+          client_id?: string
+          confidence_score?: number | null
+          created_at?: string
+          document_id?: string
+          id?: string
+          status?: string
+          suggested_entries?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_ai_suggested_postings_document"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "client_documents_files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_ai_suggested_postings_journal_entry"
+            columns: ["applied_to_journal_entry_id"]
+            isOneToOne: false
+            referencedRelation: "journal_entries"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ai_usage_logs: {
         Row: {
@@ -5044,6 +5128,108 @@ export type Database = {
         }
         Relationships: []
       }
+      journal_entries: {
+        Row: {
+          client_id: string
+          created_at: string
+          created_by: string | null
+          description: string
+          id: string
+          posted_at: string | null
+          posted_by: string | null
+          reference_document_id: string | null
+          status: string
+          total_amount: number
+          updated_at: string
+          voucher_date: string
+          voucher_number: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          description: string
+          id?: string
+          posted_at?: string | null
+          posted_by?: string | null
+          reference_document_id?: string | null
+          status?: string
+          total_amount?: number
+          updated_at?: string
+          voucher_date: string
+          voucher_number: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          id?: string
+          posted_at?: string | null
+          posted_by?: string | null
+          reference_document_id?: string | null
+          status?: string
+          total_amount?: number
+          updated_at?: string
+          voucher_date?: string
+          voucher_number?: string
+        }
+        Relationships: []
+      }
+      journal_entry_lines: {
+        Row: {
+          account_id: string
+          created_at: string
+          credit_amount: number | null
+          debit_amount: number | null
+          description: string | null
+          id: string
+          journal_entry_id: string
+          line_number: number
+          vat_amount: number | null
+          vat_code: string | null
+        }
+        Insert: {
+          account_id: string
+          created_at?: string
+          credit_amount?: number | null
+          debit_amount?: number | null
+          description?: string | null
+          id?: string
+          journal_entry_id: string
+          line_number: number
+          vat_amount?: number | null
+          vat_code?: string | null
+        }
+        Update: {
+          account_id?: string
+          created_at?: string
+          credit_amount?: number | null
+          debit_amount?: number | null
+          description?: string | null
+          id?: string
+          journal_entry_id?: string
+          line_number?: number
+          vat_amount?: number | null
+          vat_code?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_journal_entry_lines_account"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "client_chart_of_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_journal_entry_lines_journal_entry"
+            columns: ["journal_entry_id"]
+            isOneToOne: false
+            referencedRelation: "journal_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       knowledge_article_tags: {
         Row: {
           article_id: string | null
@@ -8260,6 +8446,36 @@ export type Database = {
         }
         Relationships: []
       }
+      voucher_sequences: {
+        Row: {
+          client_id: string
+          created_at: string
+          id: string
+          last_voucher_number: number
+          month: number
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          id?: string
+          last_voucher_number?: number
+          month: number
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          id?: string
+          last_voucher_number?: number
+          month?: number
+          updated_at?: string
+          year?: number
+        }
+        Relationships: []
+      }
       widget_templates: {
         Row: {
           audit_firm_id: string | null
@@ -8628,6 +8844,10 @@ export type Database = {
       get_next_version_number: {
         Args: { p_client_id: string }
         Returns: number
+      }
+      get_next_voucher_number: {
+        Args: { p_client_id: string; p_month: number; p_year: number }
+        Returns: string
       }
       get_potential_clients_summary: {
         Args: { p_auditor_org_number: string }
