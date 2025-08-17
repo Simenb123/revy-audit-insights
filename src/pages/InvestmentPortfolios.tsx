@@ -126,7 +126,7 @@ export default function InvestmentPortfolios() {
                 <SelectValue placeholder="Velg klient" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Alle klienter</SelectItem>
+                <SelectItem value="all">Alle klienter</SelectItem>
                 {clients.map((client: any) => (
                   <SelectItem key={client.id} value={client.id}>
                     {client.name}

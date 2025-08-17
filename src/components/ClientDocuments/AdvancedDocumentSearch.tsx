@@ -240,7 +240,7 @@ const AdvancedDocumentSearch = ({ documents, onSearchResults, categories }: Adva
                       <SelectValue placeholder="Alle kategorier" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Alle kategorier</SelectItem>
+                      <SelectItem value="all">Alle kategorier</SelectItem>
                       {categories.map(category => (
                         <SelectItem key={category} value={category}>
                           {category}
@@ -258,7 +258,7 @@ const AdvancedDocumentSearch = ({ documents, onSearchResults, categories }: Adva
                       <SelectValue placeholder="Alle perioder" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Alle perioder</SelectItem>
+                      <SelectItem value="all">Alle perioder</SelectItem>
                       <SelectItem value="today">I dag</SelectItem>
                       <SelectItem value="week">Siste uke</SelectItem>
                       <SelectItem value="month">Siste måned</SelectItem>
@@ -275,7 +275,7 @@ const AdvancedDocumentSearch = ({ documents, onSearchResults, categories }: Adva
                       <SelectValue placeholder="Alle nivåer" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Alle nivåer</SelectItem>
+                      <SelectItem value="all">Alle nivåer</SelectItem>
                       <SelectItem value="high">Høy (80%+)</SelectItem>
                       <SelectItem value="medium">Medium (50-80%)</SelectItem>
                       <SelectItem value="low">Lav (&lt;50%)</SelectItem>
@@ -292,7 +292,7 @@ const AdvancedDocumentSearch = ({ documents, onSearchResults, categories }: Adva
                       <SelectValue placeholder="Alle statuser" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Alle statuser</SelectItem>
+                      <SelectItem value="all">Alle statuser</SelectItem>
                       <SelectItem value="completed">Fullført</SelectItem>
                       <SelectItem value="processing">Prosesserer</SelectItem>
                       <SelectItem value="failed">Feilet</SelectItem>

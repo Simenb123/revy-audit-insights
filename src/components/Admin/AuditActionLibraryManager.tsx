@@ -267,7 +267,7 @@ const AuditActionLibraryManager = () => {
                       <SelectValue placeholder="Velg område" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Alle områder</SelectItem>
+                      <SelectItem value="all">Alle områder</SelectItem>
                       {auditAreas.map((area) => (
                         <SelectItem key={area.id} value={area.id}>
                           {area.name}
@@ -329,7 +329,7 @@ const AuditActionLibraryManager = () => {
                       <SelectValue placeholder="Velg risikofaktor" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Alle risikofaktorer</SelectItem>
+                      <SelectItem value="all">Alle risikofaktorer</SelectItem>
                       {riskFactors.map((risk) => (
                         <SelectItem key={risk.id} value={risk.id}>
                           {risk.name}

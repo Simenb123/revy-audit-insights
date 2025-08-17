@@ -191,7 +191,7 @@ export function ConditionalFormatting({ config, onChange }: ConditionalFormattin
                     <SelectValue placeholder="Velg farge" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Standard</SelectItem>
+                    <SelectItem value="default">Standard</SelectItem>
                     <SelectItem value="hsl(var(--primary))">Primær</SelectItem>
                     <SelectItem value="hsl(var(--destructive))">Rød</SelectItem>
                     <SelectItem value="hsl(120, 100%, 40%)">Grønn</SelectItem>
@@ -210,7 +210,7 @@ export function ConditionalFormatting({ config, onChange }: ConditionalFormattin
                     <SelectValue placeholder="Velg farge" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Standard</SelectItem>
+                    <SelectItem value="default">Standard</SelectItem>
                     <SelectItem value="hsl(var(--primary) / 0.1)">Primær (lett)</SelectItem>
                     <SelectItem value="hsl(var(--destructive) / 0.1)">Rød (lett)</SelectItem>
                     <SelectItem value="hsl(120, 100%, 95%)">Grønn (lett)</SelectItem>
@@ -229,7 +229,7 @@ export function ConditionalFormatting({ config, onChange }: ConditionalFormattin
                   <SelectValue placeholder="Velg vekt" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Standard</SelectItem>
+                  <SelectItem value="default">Standard</SelectItem>
                   <SelectItem value="font-medium">Medium</SelectItem>
                   <SelectItem value="font-semibold">Halvfet</SelectItem>
                   <SelectItem value="font-bold">Fet</SelectItem>
