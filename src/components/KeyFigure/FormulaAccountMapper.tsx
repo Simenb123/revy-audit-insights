@@ -71,8 +71,8 @@ export function FormulaAccountMapper({
     
     // Handle string-based formula with [XX] syntax
     if (typeof formulaExpression === 'string') {
-      const accountMatches = formulaExpression.match(/\[([^\]]+)\]/g) || [];
-      accountMatches.forEach(match => {
+      const accountMatches: string[] = formulaExpression.match(/\[([^\]]+)\]/g) || [];
+      accountMatches.forEach((match: string) => {
         const account = match.slice(1, -1); // Remove brackets
         if (account.includes('-')) {
           const [start, end] = account.split('-');
