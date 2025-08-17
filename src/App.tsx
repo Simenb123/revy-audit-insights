@@ -63,6 +63,8 @@ import UploadHistory from "./pages/UploadHistory";
 import LegacyUploadHistoryRedirect from "./pages/LegacyUploadHistoryRedirect";
 import Reports from "./pages/Reports";
 import KeyFigureManager from "./pages/KeyFigureManager";
+import Regnskapsdata from "./pages/Regnskapsdata";
+import PayrollUpload from "./pages/PayrollUpload";
 const queryClient = new QueryClient();
 
 function App() {
@@ -92,7 +94,9 @@ function App() {
                   <Route path="clients/:clientId/trial-balance" element={<ProtectedRoute><TrialBalanceUpload /></ProtectedRoute>} />
                   <Route path="clients/:clientId/general-ledger" element={<ProtectedRoute><GeneralLedgerUpload /></ProtectedRoute>} />
                   <Route path="clients/:clientId/saft" element={<ProtectedRoute><SaftUpload /></ProtectedRoute>} />
+                  <Route path="clients/:clientId/payroll" element={<ProtectedRoute><PayrollUpload /></ProtectedRoute>} />
                   <Route path="clients/:clientId/analysis" element={<ProtectedRoute><AnalysisPage /></ProtectedRoute>} />
+                  <Route path="clients/:clientId/regnskapsdata" element={<ProtectedRoute><Regnskapsdata /></ProtectedRoute>} />
                   <Route path="clients/:clientId/documents" element={<ProtectedRoute><ClientDocuments /></ProtectedRoute>} />
                   <Route path="clients/:clientId/upload-history" element={<ProtectedRoute><UploadHistory /></ProtectedRoute>} />
                   

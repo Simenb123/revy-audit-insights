@@ -9,22 +9,27 @@ import { useToast } from '@/hooks/use-toast'
 import { useFiscalYear } from '@/contexts/FiscalYearContext'
 import { usePayrollImports, usePayrollSummary, useCreatePayrollImport, useDeletePayrollImport } from '@/hooks/usePayrollImports'
 
-export default function PayrollImporter() {
+interface PayrollImporterProps {
+  clientId: string;
+  clientName: string;
+}
+
+export default function PayrollImporter({ clientId, clientName }: PayrollImporterProps) {
   const fileRef = useRef<HTMLInputElement | null>(null)
   const [periodKey, setPeriodKey] = useState(() => new Date().getFullYear().toString())
   const [selectedImportId, setSelectedImportId] = useState<string | null>(null)
   const [isUploading, setIsUploading] = useState(false)
   
-  const { selectedClientId } = useFiscalYear()
+  // Use the passed clientId instead of selectedClientId
   const { toast } = useToast()
   
-  const { data: imports = [], isLoading } = usePayrollImports()
+  const { data: imports = [], isLoading } = usePayrollImports(clientId)
   const { data: summary } = usePayrollSummary(selectedImportId)
   const createImport = useCreatePayrollImport()
   const deleteImport = useDeletePayrollImport()
 
   const handleFileUpload = async (file: File) => {
-    if (!selectedClientId) {
+    if (!clientId) {
       toast({
         title: "Feil",
         description: "Du må velge en klient først",
@@ -39,6 +44,7 @@ export default function PayrollImporter() {
       const json = JSON.parse(text)
       
       await createImport.mutateAsync({
+        client_id: clientId,
         period_key: periodKey,
         file_name: file.name,
         payrollData: json
@@ -78,7 +84,7 @@ export default function PayrollImporter() {
 
   const handleDelete = async (importId: string) => {
     try {
-      await deleteImport.mutateAsync(importId)
+      await deleteImport.mutateAsync({ importId, clientId })
       if (selectedImportId === importId) {
         setSelectedImportId(null)
       }
@@ -107,7 +113,7 @@ export default function PayrollImporter() {
     return new Date(dateString).toLocaleDateString('nb-NO')
   }
 
-  if (!selectedClientId) {
+  if (!clientId) {
     return (
       <Card>
         <CardHeader>

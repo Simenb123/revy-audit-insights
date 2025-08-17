@@ -34,24 +34,22 @@ export interface PayrollSummary {
   afSlutt: number
 }
 
-export function usePayrollImports() {
-  const { selectedClientId } = useFiscalYear()
-  
+export function usePayrollImports(clientId?: string) {
   return useQuery({
-    queryKey: ['payroll-imports', selectedClientId],
+    queryKey: ['payroll-imports', clientId],
     queryFn: async () => {
-      if (!selectedClientId) return []
+      if (!clientId) return []
       
       const { data, error } = await supabase
         .from('payroll_imports')
         .select('*')
-        .eq('client_id', selectedClientId)
+        .eq('client_id', clientId)
         .order('created_at', { ascending: false })
       
       if (error) throw error
       return data as PayrollImport[]
     },
-    enabled: !!selectedClientId
+    enabled: !!clientId
   })
 }
 
@@ -96,20 +94,20 @@ export function usePayrollSummary(importId?: string) {
 
 export function useCreatePayrollImport() {
   const queryClient = useQueryClient()
-  const { selectedClientId } = useFiscalYear()
   
   return useMutation({
     mutationFn: async (data: {
+      client_id: string
       period_key: string
       file_name?: string
       payrollData: any
     }) => {
-      if (!selectedClientId) throw new Error('No client selected')
+      if (!data.client_id) throw new Error('No client ID provided')
       
       // Call the import edge function
       const { data: result, error } = await supabase.functions.invoke('import-payroll', {
         body: {
-          client_id: selectedClientId,
+          client_id: data.client_id,
           period_key: data.period_key,
           file_name: data.file_name,
           payroll_data: data.payrollData
@@ -119,27 +117,27 @@ export function useCreatePayrollImport() {
       if (error) throw error
       return result
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['payroll-imports', selectedClientId] })
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['payroll-imports', variables.client_id] })
     }
   })
 }
 
 export function useDeletePayrollImport() {
   const queryClient = useQueryClient()
-  const { selectedClientId } = useFiscalYear()
   
   return useMutation({
-    mutationFn: async (importId: string) => {
+    mutationFn: async ({ importId, clientId }: { importId: string; clientId: string }) => {
       const { error } = await supabase
         .from('payroll_imports')
         .delete()
         .eq('id', importId)
       
       if (error) throw error
+      return { importId, clientId }
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['payroll-imports', selectedClientId] })
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ['payroll-imports', result.clientId] })
     }
   })
 }
