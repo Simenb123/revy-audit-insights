@@ -12,6 +12,9 @@ import { Button } from '@/components/ui/button';
 import { FileText, Upload, Download, Settings, Calendar } from 'lucide-react';
 import StickyClientLayout from '@/components/Layout/StickyClientLayout';
 import { formatDate } from '@/lib/utils';
+import { exportArrayToXlsx } from '@/utils/exportToXlsx';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 
 const Regnskapsdata = () => {
   const { clientId } = useParams<{ clientId: string }>();
@@ -21,6 +24,75 @@ const Regnskapsdata = () => {
   const { data: glVersions, isLoading: glLoading } = useAccountingVersions(clientId || '');
   const { data: tbVersions, isLoading: tbLoading } = useTrialBalanceVersions(clientId || '');
   const { data: payrollImports, isLoading: payrollLoading } = usePayrollImports(clientId || '');
+
+  const handleExportPayrollData = async () => {
+    if (!clientId || !payrollImports?.length) {
+      toast({
+        variant: 'destructive',
+        title: 'Ingen data',
+        description: 'Ingen A07-data å eksportere'
+      });
+      return;
+    }
+
+    try {
+      // Fetch all payroll variables for all imports
+      const allVariables: any[] = [];
+      
+      for (const payrollImport of payrollImports) {
+        const { data: variables, error } = await supabase
+          .from('payroll_variables')
+          .select('*')
+          .eq('import_id', payrollImport.id);
+        
+        if (error) throw error;
+        
+        // Convert each variable to a flat row for Excel
+        variables?.forEach(variable => {
+          allVariables.push({
+            'Import ID': payrollImport.id,
+            'Filnavn': payrollImport.file_name || 'Ukjent',
+            'Periode': payrollImport.period_key || 'Ukjent',
+            'Fra måned': payrollImport.fom_kalendermaaned || '',
+            'Til måned': payrollImport.tom_kalendermaaned || '',
+            'Org.nr': payrollImport.orgnr || '',
+            'Virksomhetsnavn': payrollImport.navn || '',
+            'Antall personer': payrollImport.antall_personer_innrapportert || 0,
+            'Unike personer': payrollImport.antall_personer_unike || 0,
+            'Variabel navn': variable.name,
+            'Variabel verdi': typeof variable.value === 'object' ? JSON.stringify(variable.value) : variable.value,
+            'Variabel type': 'a07_data',
+            'Opprettet': formatDate(payrollImport.created_at),
+            'Oppdatert': formatDate(payrollImport.updated_at)
+          });
+        });
+      }
+
+      if (allVariables.length === 0) {
+        toast({
+          variant: 'destructive',
+          title: 'Ingen data',
+          description: 'Ingen detaljerte A07-data funnet'
+        });
+        return;
+      }
+
+      const fileName = `A07-data-${client.company_name || client.name}-${new Date().toISOString().split('T')[0]}`;
+      exportArrayToXlsx(fileName, allVariables);
+      
+      toast({
+        title: 'Eksportert',
+        description: `A07-data eksportert til ${fileName}.xlsx`
+      });
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Feil ved eksport',
+        description: 'Kunne ikke eksportere A07-data'
+      });
+    }
+  };
 
   useEffect(() => {
     if (client?.id) {
@@ -178,14 +250,68 @@ const Regnskapsdata = () => {
                 emptyText="Ingen hovedbok lastet opp ennå"
               />
               
-              <DocumentSection
-                title="A07 Lønnsdata"
-                icon={FileText}
-                versions={payrollImports || []}
-                isLoading={payrollLoading}
-                uploadPath={`/clients/${clientId}/payroll`}
-                emptyText="Ingen lønnsdata lastet opp ennå"
-              />
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-base font-medium flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    A07 Lønnsdata
+                  </CardTitle>
+                  {payrollImports && payrollImports.length > 0 && (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={handleExportPayrollData}
+                      className="gap-2"
+                    >
+                      <Download className="h-4 w-4" />
+                      Eksporter Excel
+                    </Button>
+                  )}
+                </CardHeader>
+                <CardContent>
+                  {payrollLoading ? (
+                    <div className="space-y-3">
+                      <Skeleton className="h-12 w-full" />
+                      <Skeleton className="h-12 w-full" />
+                    </div>
+                  ) : payrollImports && payrollImports.length > 0 ? (
+                    <div className="space-y-3">
+                      {payrollImports.map((item) => (
+                        <div key={item.id} className="flex items-center justify-between p-3 border border-border rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <FileText className="h-4 w-4 text-muted-foreground" />
+                            <div>
+                              <p className="font-medium">{item.file_name || 'A07 Import'}</p>
+                              <div className="text-sm text-muted-foreground space-y-1">
+                                <p>Periode: {item.fom_kalendermaaned || 'Ukjent'} - {item.tom_kalendermaaned || 'Ukjent'}</p>
+                                {item.navn && <p>Virksomhet: {item.navn}</p>}
+                                {item.antall_personer_innrapportert && (
+                                  <p>Antall ansatte: {item.antall_personer_innrapportert}</p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="secondary">A07</Badge>
+                            <span className="text-xs text-muted-foreground">
+                              {formatDate(item.created_at)}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>Ingen lønnsdata lastet opp ennå</p>
+                      <Button size="sm" variant="outline" className="mt-4" onClick={() => window.location.href = `/clients/${clientId}/payroll`}>
+                        <Upload className="h-4 w-4 mr-2" />
+                        Last opp første fil
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
               
               <DocumentSection
                 title="SAF-T Import"
