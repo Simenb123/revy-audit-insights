@@ -1,9 +1,6 @@
 import { AssetsList } from '@/components/assets/AssetsList';
-import { useAuth } from '@/hooks/useAuth';
 
 export default function AssetManagement() {
-  const { user } = useAuth();
-  
   // For demo purposes, using a placeholder client ID
   // In real implementation, this would come from route params or context
   const clientId = 'demo-client-id';

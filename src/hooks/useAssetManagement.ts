@@ -36,6 +36,13 @@ interface MaintenanceFormData {
   next_maintenance_date?: string;
 }
 
+interface AssetSummary {
+  total_assets: number;
+  total_cost: number;
+  total_book_value: number;
+  total_accumulated_depreciation: number;
+}
+
 export function useAssetManagement(clientId: string) {
   const queryClient = useQueryClient();
 
@@ -87,14 +94,14 @@ export function useAssetManagement(clientId: string) {
   const {
     data: assetSummary,
     isLoading: summaryLoading
-  } = useQuery({
+  } = useQuery<AssetSummary>({
     queryKey: ['assetSummary', clientId],
     queryFn: async () => {
       const { data, error } = await supabase
         .rpc('get_asset_summary', { p_client_id: clientId });
 
       if (error) throw error;
-      return data;
+      return data as unknown as AssetSummary;
     },
     enabled: !!clientId
   });
