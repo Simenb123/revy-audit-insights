@@ -99,7 +99,7 @@ export class AnalysisConfigurationService {
       },
       aiAnalysis: {
         enabled: true,
-        model: 'gpt-4.1-2025-04-14',
+        model: 'gpt-5-2025-08-07',
         maxTransactions: 1000,
         confidenceThreshold: 0.7,
         analysisTypes: ['anomaly_detection', 'pattern_analysis', 'risk_assessment'],
@@ -151,7 +151,7 @@ export class AnalysisConfigurationService {
       },
       aiAnalysis: {
         enabled: false,
-        model: 'gpt-4.1-mini-2025-04-14',
+        model: 'gpt-5-mini-2025-08-07',
         maxTransactions: 500,
         confidenceThreshold: 0.8,
         analysisTypes: ['anomaly_detection'],
@@ -212,7 +212,7 @@ export class AnalysisConfigurationService {
       },
       aiAnalysis: {
         enabled: true,
-        model: 'gpt-4.1-2025-04-14',
+        model: 'gpt-5-2025-08-07',
         maxTransactions: 2000,
         confidenceThreshold: 0.6,
         analysisTypes: ['anomaly_detection', 'pattern_analysis', 'risk_assessment', 'compliance_check'],
