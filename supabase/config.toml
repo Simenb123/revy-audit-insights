@@ -12,6 +12,8 @@ project_id = "fxelhfwaoizqyecikscu"
     verify_jwt = true
   [functions.document-ai-analyzer]
     verify_jwt = true
+  [functions.ai-transaction-analysis]
+    verify_jwt = true
   [functions.revy-ai-chat]
     verify_jwt = false
   [functions.syncKunngjoring]

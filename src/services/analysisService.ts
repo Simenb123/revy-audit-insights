@@ -164,21 +164,37 @@ export class AnalysisService {
    * Phase 2: AI-powered analysis using edge functions
    */
   async performAIAnalysis(request: AnalysisRequest): Promise<any> {
-    const { data, error } = await supabase.functions.invoke('ai-transaction-analysis', {
-      body: {
-        clientId: request.clientId,
-        versionId: request.dataVersionId,
-        analysisType: request.analysisType,
-        maxTransactions: 1000
+    console.log('Starting AI analysis for:', { clientId: request.clientId, versionId: request.dataVersionId });
+    request.progressCallback?.('ai_analysis', 10);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('ai-transaction-analysis', {
+        body: {
+          clientId: request.clientId,
+          versionId: request.dataVersionId,
+          analysisType: request.analysisType,
+          maxTransactions: 1000
+        }
+      });
+
+      if (error) {
+        console.error('AI analysis edge function error:', error);
+        throw new Error(`AI-analyse feilet: ${error.message}`);
       }
-    });
 
-    if (error) {
-      console.error('AI Analysis error:', error);
-      throw new Error(`AI Analysis failed: ${error.message}`);
+      if (!data) {
+        throw new Error('Ingen data mottatt fra AI-analyse');
+      }
+
+      console.log('✅ AI analysis completed successfully');
+      request.progressCallback?.('ai_analysis', 100);
+      
+      return data;
+    } catch (error) {
+      console.error('❌ AI analysis failed:', error);
+      request.progressCallback?.('ai_analysis', 0);
+      throw error;
     }
-
-    return data;
   }
 
   /**
