@@ -38,7 +38,10 @@ const TransactionAnalysis = () => {
 
   // Data hooks
   const { data: versions, isLoading: versionsLoading } = useAvailableVersions(clientId || '');
-  const { data: transactionCount, isLoading: countLoading } = useGeneralLedgerCount(clientId || '', selectedVersion);
+  const { data: transactionCount, isLoading: countLoading } = useGeneralLedgerCount(
+    clientId || '', 
+    selectedVersion || undefined // Only pass version if it's actually selected
+  );
 
   // Auto-select active version when versions load
   useEffect(() => {

@@ -74,7 +74,7 @@ export const useGeneralLedgerCount = (clientId: string, versionId?: string, filt
       console.log('📊 General ledger count:', count);
       return count || 0;
     },
-    enabled: !!clientId,
+    enabled: !!clientId && !!versionId, // Only run when both clientId and versionId are provided
     staleTime: 0, // Force fresh data to show latest count
     gcTime: 0, // No caching to ensure we see new data immediately
     refetchOnMount: true, // Always refetch when component mounts
