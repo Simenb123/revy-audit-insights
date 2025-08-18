@@ -161,9 +161,11 @@ Deno.serve(async (req) => {
     const oppsummerteInntekt = payroll_data.mottatt?.oppgave?.oppsummerteVirksomheter?.inntekt || []
     console.log(`Found ${oppsummerteInntekt.length} income entries in oppsummerteVirksomheter`)
     
-    // First, collect income by type for analysis
+    // First, collect income by type for analysis and group employees by unique ID
     const incomeByTypeMap = new Map()
+    const uniqueEmployees = new Map() // Map to store unique employees and their income entries
     
+    // Collect all income entries grouped by employee
     for (const virksomhet of allVirksomheter) {
       console.log(`Processing virksomhet with ${virksomhet.inntektsmottaker?.length || 0} inntektsmottakere`)
       const inntektsmottakere = virksomhet.inntektsmottaker || []
@@ -171,73 +173,26 @@ Deno.serve(async (req) => {
       for (const mottaker of inntektsmottakere) {
         if (!mottaker.norskIdentifikator) continue
 
-        // Insert employee record
-        const { data: employeeRecord, error: employeeError } = await supabase
-          .from('payroll_employees')
-          .insert({
-            payroll_import_id: importId,
-            employee_id: mottaker.norskIdentifikator,
+        const employeeId = mottaker.norskIdentifikator
+        if (!uniqueEmployees.has(employeeId)) {
+          uniqueEmployees.set(employeeId, {
             employee_data: {
               navn: mottaker.identifiserendeInformasjon?.navn || mottaker.navn,
               norskIdentifikator: mottaker.norskIdentifikator,
               arbeidsforhold: mottaker.arbeidsforhold || [],
-              inntekt: mottaker.inntekt || [],
+              inntekt: [],
               forskuddstrekk: mottaker.forskuddstrekk || []
-            }
+            },
+            income_entries: []
           })
-          .select()
-          .single()
-
-        if (employeeError) {
-          console.error('Error storing employee data:', employeeError)
-          continue
         }
 
-        // Process income details and build income analysis
+        const employee = uniqueEmployees.get(employeeId)
+        
+        // Add all income entries for this employee
         const inntekter = mottaker.inntekt || []
-        for (const inntekt of inntekter) {
-          if (!inntekt.beloep) continue
-
-          // Extract period from inntekt
-          const periodeStart = inntekt.startdatoOpptjeningsperiode
-          const periodYear = periodeStart ? new Date(periodeStart).getFullYear() : new Date().getFullYear()
-          const periodMonth = periodeStart ? new Date(periodeStart).getMonth() + 1 : 1
-          
-          // Store individual income detail
-          const { error: incomeError } = await supabase
-            .from('payroll_income_details')
-            .insert({
-              payroll_employee_id: employeeRecord.id,
-              income_type: inntekt.loennsinntekt?.beskrivelse || 'Ukjent',
-              amount: parseFloat(inntekt.beloep) || 0,
-              period_year: periodYear,
-              period_month: periodMonth,
-              details: inntekt
-            })
-
-          if (incomeError) {
-            console.error('Error storing income details:', incomeError)
-          }
-
-          // Aggregate for income analysis
-          const incomeType = inntekt.loennsinntekt?.beskrivelse || 'Ukjent'
-          const calendarMonth = `${periodYear}-${String(periodMonth).padStart(2, '0')}`
-          const key = `${incomeType}-${calendarMonth}`
-          
-          if (!incomeByTypeMap.has(key)) {
-            incomeByTypeMap.set(key, {
-              income_type: incomeType,
-              calendar_month: calendarMonth,
-              total_amount: 0,
-              benefit_type: inntekt.fordel,
-              triggers_aga: inntekt.utloeserArbeidsgiveravgift,
-              subject_to_tax_withholding: inntekt.inngaarIGrunnlagForTrekk
-            })
-          }
-          
-          const existing = incomeByTypeMap.get(key)
-          existing.total_amount += parseFloat(inntekt.beloep) || 0
-        }
+        employee.employee_data.inntekt.push(...inntekter)
+        employee.income_entries.push(...inntekter)
       }
     }
 
@@ -248,32 +203,53 @@ Deno.serve(async (req) => {
       for (const inntektEntry of oppsummerteInntekt) {
         if (!inntektEntry.beloep) continue
         
-        // Create synthetic employee record from income entry
-        const employeeId = inntektEntry.norskIdentifikator || `synthetic-${Date.now()}-${Math.random()}`
+        const employeeId = inntektEntry.norskIdentifikator || `unknown-${Date.now()}`
         
-        const { data: employeeRecord, error: employeeError } = await supabase
-          .from('payroll_employees')
-          .insert({
-            payroll_import_id: importId,
-            employee_id: employeeId,
+        if (!uniqueEmployees.has(employeeId)) {
+          uniqueEmployees.set(employeeId, {
             employee_data: {
               navn: inntektEntry.navn || 'Ukjent navn',
               norskIdentifikator: inntektEntry.norskIdentifikator,
-              inntekt: [inntektEntry],
+              inntekt: [],
               arbeidsforhold: inntektEntry.arbeidsforhold || [],
               forskuddstrekk: inntektEntry.forskuddstrekk || []
-            }
+            },
+            income_entries: []
           })
-          .select()
-          .single()
-
-        if (employeeError) {
-          console.error('Error storing synthetic employee data:', employeeError)
-          continue
         }
+        
+        const employee = uniqueEmployees.get(employeeId)
+        employee.employee_data.inntekt.push(inntektEntry)
+        employee.income_entries.push(inntektEntry)
+      }
+    }
+
+    console.log(`Found ${uniqueEmployees.size} unique employees`)
+
+    // Now create employee records for each unique employee
+    for (const [employeeId, employeeInfo] of uniqueEmployees) {
+      // Insert employee record
+      const { data: employeeRecord, error: employeeError } = await supabase
+        .from('payroll_employees')
+        .insert({
+          payroll_import_id: importId,
+          employee_id: employeeId,
+          employee_data: employeeInfo.employee_data
+        })
+        .select()
+        .single()
+
+      if (employeeError) {
+        console.error('Error storing employee data:', employeeError)
+        continue
+      }
+
+      // Process all income entries for this employee
+      for (const inntekt of employeeInfo.income_entries) {
+        if (!inntekt.beloep) continue
 
         // Extract period from inntekt
-        const periodeStart = inntektEntry.startdatoOpptjeningsperiode
+        const periodeStart = inntekt.startdatoOpptjeningsperiode
         const periodYear = periodeStart ? new Date(periodeStart).getFullYear() : new Date().getFullYear()
         const periodMonth = periodeStart ? new Date(periodeStart).getMonth() + 1 : 1
         
@@ -282,19 +258,19 @@ Deno.serve(async (req) => {
           .from('payroll_income_details')
           .insert({
             payroll_employee_id: employeeRecord.id,
-            income_type: inntektEntry.loennsinntekt?.beskrivelse || inntektEntry.beskrivelse || 'Ukjent',
-            amount: parseFloat(inntektEntry.beloep) || 0,
+            income_type: inntekt.loennsinntekt?.beskrivelse || inntekt.beskrivelse || 'Ukjent',
+            amount: parseFloat(inntekt.beloep) || 0,
             period_year: periodYear,
             period_month: periodMonth,
-            details: inntektEntry
+            details: inntekt
           })
 
         if (incomeError) {
-          console.error('Error storing income details from oppsummerte:', incomeError)
+          console.error('Error storing income details:', incomeError)
         }
 
         // Aggregate for income analysis
-        const incomeType = inntektEntry.loennsinntekt?.beskrivelse || inntektEntry.beskrivelse || 'Ukjent'
+        const incomeType = inntekt.loennsinntekt?.beskrivelse || inntekt.beskrivelse || 'Ukjent'
         const calendarMonth = `${periodYear}-${String(periodMonth).padStart(2, '0')}`
         const key = `${incomeType}-${calendarMonth}`
         
@@ -303,14 +279,14 @@ Deno.serve(async (req) => {
             income_type: incomeType,
             calendar_month: calendarMonth,
             total_amount: 0,
-            benefit_type: inntektEntry.fordel,
-            triggers_aga: inntektEntry.utloeserArbeidsgiveravgift,
-            subject_to_tax_withholding: inntektEntry.inngaarIGrunnlagForTrekk
+            benefit_type: inntekt.fordel,
+            triggers_aga: inntekt.utloeserArbeidsgiveravgift,
+            subject_to_tax_withholding: inntekt.inngaarIGrunnlagForTrekk
           })
         }
         
         const existing = incomeByTypeMap.get(key)
-        existing.total_amount += parseFloat(inntektEntry.beloep) || 0
+        existing.total_amount += parseFloat(inntekt.beloep) || 0
       }
     }
 
