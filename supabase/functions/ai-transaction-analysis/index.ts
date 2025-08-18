@@ -69,36 +69,37 @@ serve(async (req) => {
     console.log(`📊 Found ${transactions.length} transactions for AI analysis`);
 
     // Prepare data for OpenAI analysis (reduce payload size)
-    const analysisData = transactions.slice(0, 500).map(t => ({
+    const analysisData = transactions.slice(0, 100).map(t => ({
       date: t.transaction_date,
       amount: t.debit_amount || t.credit_amount || 0,
-      description: t.description?.substring(0, 100), // Truncate descriptions
+      description: t.description?.substring(0, 50), // Shorter descriptions
       account: t.client_chart_of_accounts?.account_number,
       voucher: t.voucher_number
     }));
 
-    // Create AI analysis prompt
-    const prompt = `
-Analyser følgende regnskapstransaksjoner og identifiser:
+    // Create AI analysis prompt (shorter and more focused)
+    const prompt = `Analyser følgende ${analysisData.length} regnskapstransaksjoner.
 
-1. Potensielle risikofaktorer og uregelmessigheter
-2. Økonomiske mønstre og trender
-3. Anbefalinger for revisjon
+Transaksjonsdata:
+${JSON.stringify(analysisData.slice(0, 20))}
 
-Transaksjonsdata (${analysisData.length} transaksjoner):
-${JSON.stringify(analysisData.slice(0, 50))} // Limit to first 50 for size
+Gi en kort analyse på norsk med:
+1. Sammendrag av funn (maks 200 ord)
+2. 3-5 identifiserte risikoområder
+3. 3-5 anbefalte revisjonshandlinger
+4. Konfidensnivå (1-10)
 
-Gi en strukturert analyse på norsk med:
-- Sammendrag av funn
-- Identifiserte risikoområder  
-- Anbefalte revisjonshandlinger
-- Konfidensnivå (1-10)
-
-Svar kun med gyldig JSON.`;
+Svar kun med gyldig JSON i dette formatet:
+{
+  "sammendrag": "...",
+  "risikoområder": ["...", "..."],
+  "anbefalinger": ["...", "..."],
+  "konfidensnivå": 8
+}`;
 
     console.log('🤖 Sending request to OpenAI...');
 
-    // Call OpenAI API with proper error handling
+    // Call OpenAI API with working model
     const openAIResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -106,7 +107,7 @@ Svar kun med gyldig JSON.`;
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-5-2025-08-07',
+        model: 'gpt-4o', // Use working model
         messages: [
           {
             role: 'system',
@@ -117,7 +118,8 @@ Svar kun med gyldig JSON.`;
             content: prompt
           }
         ],
-        max_completion_tokens: 4000,
+        max_tokens: 2000,
+        temperature: 0.3,
       }),
     });
 
@@ -138,6 +140,8 @@ Svar kun med gyldig JSON.`;
         throw new Error('No content in OpenAI response');
       }
 
+      console.log('Raw AI content:', aiContent);
+
       // Attempt to parse as JSON, with fallback handling
       try {
         analysisResult = JSON.parse(aiContent);
@@ -145,9 +149,9 @@ Svar kun med gyldig JSON.`;
         console.warn('Failed to parse OpenAI response as JSON, creating fallback:', parseError);
         // Create a structured fallback response
         analysisResult = {
-          sammendrag: aiContent.substring(0, 500),
-          risikoområder: ['Kunne ikke parse full AI-respons'],
-          anbefalinger: ['Gjennomgå AI-analyse manuelt'],
+          sammendrag: aiContent.substring(0, 300),
+          risikoområder: ['Kunne ikke parse full AI-respons', 'Manuell gjennomgang anbefales'],
+          anbefalinger: ['Gjennomgå AI-analyse manuelt', 'Kontroller dataformat'],
           konfidensnivå: 5,
           feilmelding: 'AI-respons kunne ikke parses som JSON'
         };
@@ -155,9 +159,9 @@ Svar kun med gyldig JSON.`;
     } catch (error) {
       console.error('Error processing OpenAI response:', error);
       analysisResult = {
-        sammendrag: 'AI-analyse feilet',
+        sammendrag: 'AI-analyse feilet på grunn av teknisk feil',
         risikoområder: ['Teknisk feil i AI-behandling'],
-        anbefalinger: ['Kontakt systemadministrator'],
+        anbefalinger: ['Kontakt systemadministrator', 'Prøv igjen senere'],
         konfidensnivå: 1,
         feilmelding: error.message
       };
@@ -172,7 +176,7 @@ Svar kun med gyldig JSON.`;
         clientId,
         versionId,
         analysisType,
-        model: 'gpt-5-2025-08-07'
+        model: 'gpt-4o'
       }
     };
 
@@ -188,9 +192,13 @@ Svar kun med gyldig JSON.`;
     return new Response(JSON.stringify({ 
       error: error.message,
       sammendrag: 'Analyse feilet på grunn av teknisk feil',
-      risikoområder: ['Systemfeil'],
-      anbefalinger: ['Prøv igjen senere eller kontakt support'],
-      konfidensnivå: 0
+      risikoområder: ['Systemfeil', 'API-kommunikasjonsfeil'],
+      anbefalinger: ['Prøv igjen senere', 'Kontakt support hvis problemet vedvarer'],
+      konfidensnivå: 0,
+      metadata: {
+        analysisDate: new Date().toISOString(),
+        error: true
+      }
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

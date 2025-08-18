@@ -16,7 +16,14 @@ export const AIAnalysisTestButton: React.FC<AIAnalysisTestButtonProps> = ({
   const { createSession } = useAIAnalysisSessions();
 
   const handleTestAnalysis = async () => {
+    if (!selectedVersion) {
+      toast.error('Velg en dataversjon først');
+      return;
+    }
+
     try {
+      toast.info('Starter AI-analyse...');
+      
       const session = await createSession.mutateAsync({
         clientId,
         dataVersionId: selectedVersion,
@@ -29,10 +36,10 @@ export const AIAnalysisTestButton: React.FC<AIAnalysisTestButtonProps> = ({
         }
       });
 
-      toast.success(`Test analyse startet med session ID: ${session.id}`);
+      toast.success(`AI-analyse startet! Session ID: ${session.id}`);
     } catch (error) {
       console.error('Error starting test analysis:', error);
-      toast.error('Kunne ikke starte test analyse');
+      toast.error(`Kunne ikke starte AI-analyse: ${error.message || 'Ukjent feil'}`);
     }
   };
 

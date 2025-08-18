@@ -1,6 +1,6 @@
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -8,382 +8,281 @@ const corsHeaders = {
 };
 
 interface AnalysisRequest {
-  sessionId: string;
   clientId: string;
-  versionId?: string;
-  analysisType: string;
-  maxTransactions?: number;
+  dataVersionId?: string;
+  sessionType: string;
+  analysisConfig: any;
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    console.log('🚀 AI Transaction Analysis V2 started');
-    
-    const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
-    const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-
-    if (!openAIApiKey) {
+    const openAIKey = Deno.env.get('OPENAI_API_KEY');
+    if (!openAIKey) {
       throw new Error('OpenAI API key not configured');
     }
 
-    if (!supabaseUrl || !supabaseServiceKey) {
-      throw new Error('Supabase configuration missing');
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        global: {
+          headers: { Authorization: req.headers.get('Authorization')! },
+        },
+      }
+    );
+
+    const { clientId, dataVersionId, sessionType, analysisConfig }: AnalysisRequest = await req.json();
+
+    console.log('🧠 Starting AI transaction analysis V2 for:', { clientId, dataVersionId, sessionType });
+
+    // Create analysis session
+    const { data: session, error: sessionError } = await supabaseClient
+      .from('ai_analysis_sessions')
+      .insert({
+        client_id: clientId,
+        data_version_id: dataVersionId,
+        session_type: sessionType,
+        status: 'running',
+        analysis_config: analysisConfig,
+        progress_percentage: 10
+      })
+      .select()
+      .single();
+
+    if (sessionError) {
+      console.error('Session creation error:', sessionError);
+      throw new Error(`Failed to create session: ${sessionError.message}`);
     }
 
-    // Initialize Supabase client with service role key
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    
-    const { sessionId, clientId, versionId, analysisType, maxTransactions }: AnalysisRequest = await req.json();
-    
-    console.log(`📊 Starting analysis for session: ${sessionId}, client: ${clientId}, version: ${versionId}`);
+    console.log('📝 Created analysis session:', session.id);
 
-    // Update session status to running
-    await updateSessionProgress(supabase, sessionId, {
-      status: 'running',
-      progress_percentage: 5,
-      current_step: 'Henter transaksjonsdata'
-    });
+    // Update progress
+    await supabaseClient
+      .from('ai_analysis_sessions')
+      .update({ progress_percentage: 30 })
+      .eq('id', session.id);
 
-    // Check cache first
-    const cacheKey = `${clientId}_${versionId || 'all'}_${analysisType}`;
-    console.log(`🔍 Checking cache for key: ${cacheKey}`);
-    
-    const { data: cachedResult } = await supabase
-      .from('ai_analysis_cache')
-      .select('*')
-      .eq('client_id', clientId)
-      .eq('data_version_id', versionId || '')
-      .eq('analysis_type', analysisType)
-      .gt('expires_at', new Date().toISOString())
-      .order('cached_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (cachedResult) {
-      console.log('💾 Found cached result, returning immediately');
-      await updateSessionProgress(supabase, sessionId, {
-        status: 'completed',
-        progress_percentage: 100,
-        current_step: 'Fullført (fra cache)',
-        result_data: cachedResult.result_data
-      });
-      
-      return new Response(JSON.stringify({ 
-        success: true, 
-        cached: true,
-        result: cachedResult.result_data 
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    // Build query for transactions
-    let query = supabase
+    // Fetch transaction data
+    const { data: transactions, error: transactionError } = await supabaseClient
       .from('general_ledger_transactions')
       .select(`
-        id,
         transaction_date,
-        description,
         debit_amount,
         credit_amount,
+        description,
         voucher_number,
-        reference,
-        client_chart_of_accounts!inner(
-          account_number,
-          account_name,
-          account_type
-        )
+        client_chart_of_accounts(account_number, account_name)
       `)
-      .eq('client_id', clientId);
-
-    if (versionId) {
-      query = query.eq('version_id', versionId);
-    }
-
-    // Remove arbitrary transaction limit - analyze all transactions
-    const { data: transactions, error: fetchError } = await query
+      .eq('client_id', clientId)
+      .eq('version_id', dataVersionId)
       .order('transaction_date', { ascending: false })
-      .limit(maxTransactions || 50000); // Increased from 1000 to 50000
+      .limit(500);
 
-    await updateSessionProgress(supabase, sessionId, {
-      progress_percentage: 15,
-      current_step: `Hentet ${transactions?.length || 0} transaksjoner`
-    });
-
-    if (fetchError) {
-      console.error('❌ Error fetching transactions:', fetchError);
-      throw new Error(`Database error: ${fetchError.message}`);
+    if (transactionError) {
+      console.error('Transaction fetch error:', transactionError);
+      await supabaseClient
+        .from('ai_analysis_sessions')
+        .update({ 
+          status: 'failed',
+          error_message: `Failed to fetch transactions: ${transactionError.message}`
+        })
+        .eq('id', session.id);
+      throw new Error(`Failed to fetch transactions: ${transactionError.message}`);
     }
+
+    console.log(`📊 Found ${transactions?.length || 0} transactions for AI analysis`);
+
+    // Update progress
+    await supabaseClient
+      .from('ai_analysis_sessions')
+      .update({ progress_percentage: 50 })
+      .eq('id', session.id);
 
     if (!transactions || transactions.length === 0) {
-      await updateSessionProgress(supabase, sessionId, {
-        status: 'completed',
-        progress_percentage: 100,
-        current_step: 'Ingen transaksjoner funnet',
-        result_data: {
-          summary: { message: 'Ingen transaksjoner funnet for analyse' },
-          insights: [],
-          recommendations: [],
-          risk_factors: [],
-          anomalies: []
-        }
-      });
-      
-      return new Response(JSON.stringify({ 
-        success: true, 
-        result: { summary: { message: 'Ingen transaksjoner funnet for analyse' } }
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      const errorMsg = 'No transaction data found for analysis';
+      await supabaseClient
+        .from('ai_analysis_sessions')
+        .update({ 
+          status: 'failed',
+          error_message: errorMsg
+        })
+        .eq('id', session.id);
+      throw new Error(errorMsg);
     }
 
-    console.log(`📈 Processing ${transactions.length} transactions`);
+    // Prepare data for analysis
+    const analysisData = transactions.slice(0, 50).map(t => ({
+      date: t.transaction_date,
+      amount: t.debit_amount || t.credit_amount || 0,
+      description: t.description?.substring(0, 50),
+      account: t.client_chart_of_accounts?.account_number
+    }));
 
-    await updateSessionProgress(supabase, sessionId, {
-      progress_percentage: 25,
-      current_step: 'Forbereder data for AI-analyse'
-    });
+    const prompt = `Analyser følgende ${analysisData.length} regnskapstransaksjoner.
 
-    // Prepare data for AI analysis in chunks if needed
-    const chunkSize = 5000;
-    const transactionChunks = [];
-    
-    for (let i = 0; i < transactions.length; i += chunkSize) {
-      const chunk = transactions.slice(i, i + chunkSize);
-      transactionChunks.push(chunk.map(t => ({
-        date: t.transaction_date,
-        account: `${t.client_chart_of_accounts?.account_number} - ${t.client_chart_of_accounts?.account_name}`,
-        account_type: t.client_chart_of_accounts?.account_type,
-        amount: t.debit_amount || t.credit_amount || 0,
-        debit: t.debit_amount || 0,
-        credit: t.credit_amount || 0,
-        description: (t.description || '').substring(0, 100),
-        voucher: t.voucher_number,
-        reference: t.reference
-      })));
-    }
+Transaksjonsdata (utvalg):
+${JSON.stringify(analysisData.slice(0, 10))}
 
-    console.log(`🧩 Split into ${transactionChunks.length} chunks for processing`);
+Gi en strukturert analyse på norsk:
 
-    await updateSessionProgress(supabase, sessionId, {
-      progress_percentage: 35,
-      current_step: 'Starter AI-analyse'
-    });
-
-    // Analyze each chunk and combine results
-    const allResults = [];
-    
-    for (let i = 0; i < transactionChunks.length; i++) {
-      const chunk = transactionChunks[i];
-      const progressStep = 35 + (50 * (i + 1) / transactionChunks.length);
-      
-      await updateSessionProgress(supabase, sessionId, {
-        progress_percentage: Math.round(progressStep),
-        current_step: `Analyserer batch ${i + 1}/${transactionChunks.length}`
-      });
-
-      const prompt = `Analyser disse regnskapstransaksjonene for revisjonsformål. Jeg trenger en grundig analyse av:
-
-1. RISIKOVURDERING: Identifiser potensielle risikoområder og uvanlige mønstre
-2. INNSIKT: Viktige observasjoner om forretningsdrift og transaksjoner  
-3. ANBEFALINGER: Konkrete anbefalinger for revisjon og kontroller
-4. AVVIK: Uvanlige transaksjoner som krever oppmerksomhet
-
-Transaksjonsdata (batch ${i + 1}/${transactionChunks.length}):
-${JSON.stringify(chunk, null, 2)}
-
-Gi svaret som strukturert JSON med følgende format:
 {
-  "insights": [{"category": "string", "observation": "string", "significance": "high/medium/low"}],
-  "recommendations": [{"area": "string", "recommendation": "string", "priority": "high/medium/low", "reasoning": "string"}],
-  "risk_factors": [{"risk": "string", "description": "string", "likelihood": "high/medium/low", "impact": "high/medium/low"}],
-  "anomalies": [{"transaction_date": "string", "description": "string", "amount": number, "reason": "string", "severity": "high/medium/low"}]
+  "sammendrag": "Kort sammendrag av analysen (maks 300 tegn)",
+  "risikoområder": ["område1", "område2", "område3"],
+  "anbefalinger": ["anbefaling1", "anbefaling2", "anbefaling3"],
+  "konfidensnivå": 8,
+  "statistikk": {
+    "totalTransaksjoner": ${transactions.length},
+    "totalBeløp": "beregnet total",
+    "periode": "fra - til"
+  }
 }`;
 
-      try {
-        const response = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${openAIApiKey}`,
-            'Content-Type': 'application/json',
+    // Update progress
+    await supabaseClient
+      .from('ai_analysis_sessions')
+      .update({ progress_percentage: 70 })
+      .eq('id', session.id);
+
+    console.log('🤖 Sending request to OpenAI...');
+
+    const openAIResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openAIKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        messages: [
+          {
+            role: 'system',
+            content: 'Du er en erfaren revisor. Analyser transaksjonsdataene og gi svar som gyldig JSON.'
           },
-          body: JSON.stringify({
-            model: 'gpt-5-2025-08-07',
-            messages: [
-              { 
-                role: 'system', 
-                content: 'Du er en erfaren revisor som analyserer regnskapstransaksjoner. Svar alltid med gyldig JSON og fokuser på praktiske revisjonsinsikter på norsk.' 
-              },
-              { role: 'user', content: prompt }
-            ],
-            max_completion_tokens: 4000,
-          }),
-        });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error(`❌ OpenAI API error for chunk ${i + 1}:`, response.status, errorText);
-          throw new Error(`OpenAI API error: ${response.status} ${errorText}`);
-        }
-
-        const data = await response.json();
-        const content = data.choices[0].message.content;
-        
-        try {
-          const parsedResult = JSON.parse(content);
-          allResults.push(parsedResult);
-        } catch (parseError) {
-          console.error(`❌ JSON parse error for chunk ${i + 1}:`, parseError);
-          // Add fallback result for this chunk
-          allResults.push({
-            insights: [{ category: "Parsing Error", observation: "Could not parse AI response", significance: "low" }],
-            recommendations: [],
-            risk_factors: [],
-            anomalies: []
-          });
-        }
-      } catch (error) {
-        console.error(`❌ Error processing chunk ${i + 1}:`, error);
-        // Add error result for this chunk
-        allResults.push({
-          insights: [{ category: "Processing Error", observation: error.message, significance: "low" }],
-          recommendations: [],
-          risk_factors: [],
-          anomalies: []
-        });
-      }
-    }
-
-    await updateSessionProgress(supabase, sessionId, {
-      progress_percentage: 90,
-      current_step: 'Kombinerer resultater'
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        max_tokens: 1500,
+        temperature: 0.3,
+      }),
     });
 
-    // Combine all results
-    const combinedResult = {
-      summary: {
-        total_transactions: transactions.length,
-        analysis_chunks: allResults.length,
-        analysis_date: new Date().toISOString(),
-        data_version: versionId || 'latest'
-      },
-      insights: allResults.flatMap(r => r.insights || []),
-      recommendations: allResults.flatMap(r => r.recommendations || []),
-      risk_factors: allResults.flatMap(r => r.risk_factors || []),
-      anomalies: allResults.flatMap(r => r.anomalies || [])
+    if (!openAIResponse.ok) {
+      const errorText = await openAIResponse.text();
+      console.error('OpenAI API error:', openAIResponse.status, errorText);
+      
+      await supabaseClient
+        .from('ai_analysis_sessions')
+        .update({ 
+          status: 'failed',
+          error_message: `OpenAI API error: ${openAIResponse.status}`
+        })
+        .eq('id', session.id);
+      
+      throw new Error(`OpenAI API error: ${openAIResponse.status} - ${errorText}`);
+    }
+
+    const openAIData = await openAIResponse.json();
+    console.log('✅ OpenAI response received');
+
+    // Update progress
+    await supabaseClient
+      .from('ai_analysis_sessions')
+      .update({ progress_percentage: 90 })
+      .eq('id', session.id);
+
+    let analysisResult;
+    try {
+      const aiContent = openAIData.choices?.[0]?.message?.content;
+      if (!aiContent) {
+        throw new Error('No content in OpenAI response');
+      }
+
+      try {
+        analysisResult = JSON.parse(aiContent);
+      } catch (parseError) {
+        console.warn('Failed to parse as JSON, creating fallback');
+        analysisResult = {
+          sammendrag: 'Analyse gjennomført, men respons kunne ikke parses korrekt',
+          risikoområder: ['Dataformat-problem', 'Manuell gjennomgang nødvendig'],
+          anbefalinger: ['Kontroller AI-respons', 'Gjennomgå transaksjoner manuelt'],
+          konfidensnivå: 4,
+          statistikk: {
+            totalTransaksjoner: transactions.length,
+            totalBeløp: 'Ikke beregnet',
+            periode: 'Se transaksjonsdata'
+          },
+          rawResponse: aiContent.substring(0, 500)
+        };
+      }
+    } catch (error) {
+      console.error('Error processing OpenAI response:', error);
+      analysisResult = {
+        sammendrag: 'AI-analyse feilet på grunn av teknisk feil',
+        risikoområder: ['Teknisk feil'],
+        anbefalinger: ['Prøv igjen senere'],
+        konfidensnivå: 1,
+        error: error.message
+      };
+    }
+
+    // Save results and complete session
+    const finalResult = {
+      ...analysisResult,
+      metadata: {
+        analysisDate: new Date().toISOString(),
+        transactionCount: transactions.length,
+        sessionId: session.id,
+        model: 'gpt-4o'
+      }
     };
 
-    // Cache the result
-    const configHash = `${analysisType}_${maxTransactions || 50000}`;
-    console.log('💾 Saving result to cache and session...');
-    
-    const { error: cacheError } = await supabase
-      .from('ai_analysis_cache')
-      .upsert({
-        client_id: clientId,
-        data_version_id: versionId || '',
-        analysis_type: analysisType,
-        config_hash: configHash,
-        result_data: combinedResult,
-        transaction_count: transactions.length,
-        analysis_duration_ms: Date.now() - Date.parse(new Date().toISOString()),
-        confidence_score: 0.85,
-        cached_at: new Date().toISOString(),
-        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
-        last_accessed: new Date().toISOString(),
-        access_count: 1
+    // Save result to analysis_results_v2
+    await supabaseClient
+      .from('analysis_results_v2')
+      .insert({
+        session_id: session.id,
+        analysis_type: sessionType,
+        result_data: finalResult,
+        confidence_score: analysisResult.konfidensnivå || 0
       });
 
-    if (cacheError) {
-      console.error('❌ Error saving to cache:', cacheError);
-    } else {
-      console.log('✅ Result saved to cache successfully');
-    }
+    // Complete session
+    await supabaseClient
+      .from('ai_analysis_sessions')
+      .update({ 
+        status: 'completed',
+        progress_percentage: 100,
+        result_data: finalResult,
+        completed_at: new Date().toISOString()
+      })
+      .eq('id', session.id);
 
-    // Final session update
-    await updateSessionProgress(supabase, sessionId, {
+    console.log('🎯 AI analysis V2 completed successfully');
+
+    return new Response(JSON.stringify({
+      sessionId: session.id,
       status: 'completed',
-      progress_percentage: 100,
-      current_step: 'AI-analyse fullført',
-      result_data: combinedResult
-    });
-
-    console.log('✅ AI analysis completed successfully');
-
-    return new Response(JSON.stringify({ 
-      success: true, 
-      result: combinedResult 
+      result: finalResult
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
-    console.error('❌ Error in AI analysis:', error);
+    console.error('❌ AI transaction analysis V2 failed:', error);
     
-    // Try to update session with error if we have sessionId
-    try {
-      const { sessionId } = await req.json();
-      if (sessionId) {
-        const supabase = createClient(
-          Deno.env.get('SUPABASE_URL')!,
-          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-        );
-        
-        await updateSessionProgress(supabase, sessionId, {
-          status: 'failed',
-          error_message: error.message,
-          current_step: 'Feil under analyse'
-        });
-      }
-    } catch (updateError) {
-      console.error('Error updating session with failure:', updateError);
-    }
-
     return new Response(JSON.stringify({ 
       error: error.message,
-      success: false 
+      status: 'failed',
+      timestamp: new Date().toISOString()
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 });
-
-async function updateSessionProgress(
-  supabase: any, 
-  sessionId: string, 
-  updates: {
-    status?: string;
-    progress_percentage?: number;
-    current_step?: string;
-    error_message?: string;
-    result_data?: any;
-  }
-) {
-  try {
-    const updateData: any = { ...updates };
-    
-    if (updates.status === 'completed') {
-      updateData.completed_at = new Date().toISOString();
-    }
-
-    const { error } = await supabase
-      .from('ai_analysis_sessions')
-      .update(updateData)
-      .eq('id', sessionId);
-
-    if (error) {
-      console.error('Error updating session progress:', error);
-    } else {
-      console.log(`📊 Session ${sessionId} updated:`, updates);
-    }
-  } catch (error) {
-    console.error('Error in updateSessionProgress:', error);
-  }
-}

@@ -69,13 +69,28 @@ const TransactionAnalysis = () => {
     toast.success('Dataversjon valgt for analyse');
   };
 
-  const handleStartAnalysis = () => {
+  const handleStartAnalysis = async () => {
     if (!selectedVersion) {
       toast.error('Velg en dataversjon først');
       return;
     }
+    
     setIsAnalysisStarted(true);
-    toast.success('Analyse startet');
+    toast.success('Analyse startet - se AI-analyse for fremgang');
+
+    // Optionally trigger AI analysis automatically
+    try {
+      // You can uncomment this to auto-start AI analysis
+      // const { createSession } = useAIAnalysisSessions();
+      // await createSession.mutateAsync({
+      //   clientId: clientId,
+      //   dataVersionId: selectedVersion,
+      //   sessionType: 'ai_transaction_analysis',
+      //   analysisConfig: { analysisType: 'comprehensive' }
+      // });
+    } catch (error) {
+      console.error('Error auto-starting AI analysis:', error);
+    }
   };
 
   const analysisModules = [
