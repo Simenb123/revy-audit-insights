@@ -69,10 +69,10 @@ const ClientDetailsForm = ({ form }: ClientDetailsFormProps) => {
         />
       </FormFieldWrapper>
 
-      <FormFieldWrapper form={form} name="engagement_type" label="Oppdragstype">
+      <FormFieldWrapper form={form} name="engagement_type" label="Oppdragstype" required>
         <Select
           onValueChange={(value) => form.setValue('engagement_type', value)}
-          value={form.watch('engagement_type') || undefined}
+          value={form.watch('engagement_type') || ''}
         >
           <SelectTrigger>
             <SelectValue placeholder="Velg oppdragstype" />
