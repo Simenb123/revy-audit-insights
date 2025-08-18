@@ -149,25 +149,49 @@ Gi en strukturert analyse på norsk:
 
     console.log('🤖 Sending request to OpenAI...');
 
-    const openAIResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+    // Use OpenAI Responses API with JSON schema for structured output
+    const openAIResponse = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${openAIKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-5-2025-08-07',
-        messages: [
+        model: 'gpt-5',
+        input: [
           {
             role: 'system',
-            content: 'Du er en erfaren revisor. Analyser transaksjonsdataene og gi svar som gyldig JSON.'
+            content: 'Du er en erfaren norsk revisor som analyserer regnskapstransaksjoner og gir strukturerte analyser.'
           },
           {
             role: 'user',
             content: prompt
           }
         ],
-        max_completion_tokens: 1500,
+        response_format: {
+          type: "json_schema",
+          json_schema: {
+            name: "transaction_analysis",
+            schema: {
+              type: "object",
+              properties: {
+                sammendrag: { type: "string", maxLength: 300 },
+                risikoområder: { type: "array", items: { type: "string" }, maxItems: 5 },
+                anbefalinger: { type: "array", items: { type: "string" }, maxItems: 5 },
+                konfidensnivå: { type: "integer", minimum: 1, maximum: 10 },
+                statistikk: {
+                  type: "object",
+                  properties: {
+                    totalTransaksjoner: { type: "integer" },
+                    totalBeløp: { type: "string" },
+                    periode: { type: "string" }
+                  }
+                }
+              },
+              required: ["sammendrag", "risikoområder", "anbefalinger", "konfidensnivå"]
+            }
+          }
+        }
       }),
     });
 
@@ -197,30 +221,38 @@ Gi en strukturert analyse på norsk:
 
     let analysisResult;
     try {
-      const aiContent = openAIData.choices?.[0]?.message?.content;
-      if (!aiContent) {
-        throw new Error('No content in OpenAI response');
+      // Handle Responses API output format
+      const aiOutput = openAIData.output;
+      if (!aiOutput) {
+        throw new Error('No output in OpenAI Responses API response');
       }
 
-      try {
-        analysisResult = JSON.parse(aiContent);
-      } catch (parseError) {
-        console.warn('Failed to parse as JSON, creating fallback');
-        analysisResult = {
-          sammendrag: 'Analyse gjennomført, men respons kunne ikke parses korrekt',
-          risikoområder: ['Dataformat-problem', 'Manuell gjennomgang nødvendig'],
-          anbefalinger: ['Kontroller AI-respons', 'Gjennomgå transaksjoner manuelt'],
-          konfidensnivå: 4,
-          statistikk: {
-            totalTransaksjoner: transactions.length,
-            totalBeløp: 'Ikke beregnet',
-            periode: 'Se transaksjonsdata'
-          },
-          rawResponse: aiContent.substring(0, 500)
-        };
+      // Since we use JSON schema, the output should already be structured
+      if (typeof aiOutput === 'object') {
+        analysisResult = aiOutput;
+      } else {
+        // Fallback: try to parse as JSON string
+        try {
+          analysisResult = JSON.parse(aiOutput);
+        } catch (parseError) {
+          console.warn('Failed to parse Responses API output, creating fallback');
+          analysisResult = {
+            sammendrag: 'Analyse gjennomført, men respons kunne ikke parses korrekt',
+            risikoområder: ['Dataformat-problem', 'Manuell gjennomgang nødvendig'],
+            anbefalinger: ['Kontroller AI-respons', 'Gjennomgå transaksjoner manuelt'],
+            konfidensnivå: 4,
+            statistikk: {
+              totalTransaksjoner: transactions.length,
+              totalBeløp: 'Ikke beregnet',
+              periode: 'Se transaksjonsdata'
+            },
+            rawResponse: String(aiOutput).substring(0, 500)
+          };
+        }
       }
     } catch (error) {
-      console.error('Error processing OpenAI response:', error);
+      console.error('Error processing OpenAI Responses API output:', error);
+      console.error('Full response:', JSON.stringify(openAIData, null, 2));
       analysisResult = {
         sammendrag: 'AI-analyse feilet på grunn av teknisk feil',
         risikoområder: ['Teknisk feil'],
@@ -237,7 +269,7 @@ Gi en strukturert analyse på norsk:
         analysisDate: new Date().toISOString(),
         transactionCount: transactions.length,
         sessionId: session.id,
-        model: 'gpt-5-2025-08-07'
+        model: 'gpt-5'
       }
     };
 

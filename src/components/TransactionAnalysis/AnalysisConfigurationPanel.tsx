@@ -45,7 +45,7 @@ export function AnalysisConfigurationPanel({
       },
       aiAnalysis: {
         enabled: false,
-        model: 'gpt-5-mini-2025-08-07',
+        model: 'gpt-5-mini',
         maxTransactions: 1000,
         confidenceThreshold: 0.7,
         analysisTypes: [],
@@ -455,9 +455,9 @@ export function AnalysisConfigurationPanel({
                         <SelectValue />
                       </SelectTrigger>
                        <SelectContent>
-                         <SelectItem value="gpt-5-2025-08-07">GPT-5 (Anbefalt)</SelectItem>
-                         <SelectItem value="gpt-5-mini-2025-08-07">GPT-5 Mini (Raskere)</SelectItem>
-                         <SelectItem value="gpt-5-nano-2025-08-07">GPT-5 Nano (Billigere)</SelectItem>
+                         <SelectItem value="gpt-5">GPT-5 (Anbefalt)</SelectItem>
+                         <SelectItem value="gpt-5-mini">GPT-5 Mini (Raskere)</SelectItem>
+                         <SelectItem value="gpt-5-nano">GPT-5 Nano (Billigere)</SelectItem>
                        </SelectContent>
                     </Select>
                   </div>
