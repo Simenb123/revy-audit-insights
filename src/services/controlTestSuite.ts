@@ -53,8 +53,13 @@ export class ControlTestSuite {
    * Utfører komplett kontrolltestsuite på transaksjoner
    */
   async runCompleteControlTests(clientId: string, versionId?: string): Promise<ControlTestResult[]> {
+    console.log('Starting control tests for:', { clientId, versionId });
+    
     const transactions = await this.getTransactionData(clientId, versionId);
+    console.log(`Found ${transactions.length} transactions for control testing`);
+    
     const auditAreas = await this.getAuditAreaMappings(clientId);
+    console.log(`Found ${auditAreas.length} audit area mappings`);
     
     const results: ControlTestResult[] = [];
     
@@ -83,6 +88,8 @@ export class ControlTestSuite {
    * Hent transaksjonsdata for testing
    */
   private async getTransactionData(clientId: string, versionId?: string) {
+    console.log('Fetching transaction data for control tests:', { clientId, versionId });
+    
     let query = supabase
       .from('general_ledger_transactions')
       .select(`
@@ -112,11 +119,28 @@ export class ControlTestSuite {
 
     if (versionId) {
       query = query.eq('version_id', versionId);
+    } else {
+      // If no version specified, get the active version
+      const { data: activeVersion } = await supabase
+        .from('accounting_data_versions')
+        .select('id')
+        .eq('client_id', clientId)
+        .eq('is_active', true)
+        .single();
+      
+      if (activeVersion) {
+        query = query.eq('version_id', activeVersion.id);
+      }
     }
 
     const { data, error } = await query.order('transaction_date', { ascending: true });
     
-    if (error) throw error;
+    if (error) {
+      console.error('Control test data query error:', error);
+      throw error;
+    }
+    
+    console.log(`Control tests found ${data?.length || 0} transactions`);
     return data || [];
   }
 

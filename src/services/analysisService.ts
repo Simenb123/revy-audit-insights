@@ -26,17 +26,35 @@ export class AnalysisService {
    * Phase 1: TypeScript-based basic analysis including controls and risk scoring
    */
   async performBasicTransactionAnalysis(request: AnalysisRequest): Promise<any> {
+    console.log('Starting basic analysis for:', { clientId: request.clientId, versionId: request.dataVersionId });
+    
     // Get transaction data for analysis
     const { data: transactions, error } = await supabase
       .from('general_ledger_transactions')
-      .select('transaction_date, debit_amount, credit_amount, balance_amount, description, client_chart_of_accounts(account_number)')
+      .select(`
+        transaction_date, 
+        debit_amount, 
+        credit_amount, 
+        balance_amount, 
+        description, 
+        client_chart_of_accounts(account_number)
+      `)
+      .eq('client_id', request.clientId)
       .eq('version_id', request.dataVersionId)
       .order('transaction_date', { ascending: true });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Transaction data query error:', error);
+      throw error;
+    }
+    
     if (!transactions || transactions.length === 0) {
+      console.warn('No transaction data found for:', { clientId: request.clientId, versionId: request.dataVersionId });
       throw new Error('No transaction data found');
     }
+    
+    console.log(`Found ${transactions.length} transactions for analysis`);
+    request.progressCallback?.('fetch_data', 100);
 
     // Basic TypeScript analysis
     const analysis = {
@@ -72,11 +90,12 @@ export class AnalysisService {
       request.progressCallback?.('Grunnleggende analyse fullført', 25);
       
       // Run control tests
+      request.progressCallback?.('control_tests', 10);
       const controlTests = await controlTestSuite.runCompleteControlTests(
         request.clientId, 
         request.dataVersionId
       );
-      request.progressCallback?.('Kontrolltester fullført', 50);
+      request.progressCallback?.('control_tests', 100);
       
       // Get transaction data for risk scoring
       const { data: transactions } = await supabase
