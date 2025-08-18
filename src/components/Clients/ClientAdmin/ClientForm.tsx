@@ -23,7 +23,7 @@ const clientSchema = z.object({
   org_number: z.string().regex(/^\d{9}$/, { message: 'Organisasjonsnummer må være 9 siffer' }),
   phase: z.enum(['overview', 'engagement', 'planning', 'risk_assessment', 'execution', 'completion', 'reporting']),
   progress: z.coerce.number().min(0).max(100),
-  engagement_type: z.enum(['revisjon', 'regnskap', 'annet']).optional().nullable(),
+  engagement_type: z.enum(['revisjon', 'regnskap', 'annet']).default('revisjon'),
   department: z.string().optional(),
   contact_person: z.string().optional(),
   chair: z.string().optional(),

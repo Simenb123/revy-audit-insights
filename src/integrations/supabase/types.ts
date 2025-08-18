@@ -2737,6 +2737,114 @@ export type Database = {
           },
         ]
       }
+      client_custom_field_values: {
+        Row: {
+          client_id: string
+          created_at: string
+          custom_field_id: string
+          field_value: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          custom_field_id: string
+          field_value?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          custom_field_id?: string
+          field_value?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_custom_field_values_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_custom_field_values_custom_field_id_fkey"
+            columns: ["custom_field_id"]
+            isOneToOne: false
+            referencedRelation: "client_custom_fields"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_custom_fields: {
+        Row: {
+          audit_firm_id: string | null
+          created_at: string
+          created_by: string | null
+          display_order: number | null
+          field_label: string
+          field_name: string
+          field_options: Json | null
+          field_type: string
+          help_text: string | null
+          id: string
+          is_active: boolean | null
+          is_required: boolean | null
+          updated_at: string
+          validation_rules: Json | null
+        }
+        Insert: {
+          audit_firm_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          display_order?: number | null
+          field_label: string
+          field_name: string
+          field_options?: Json | null
+          field_type?: string
+          help_text?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_required?: boolean | null
+          updated_at?: string
+          validation_rules?: Json | null
+        }
+        Update: {
+          audit_firm_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          display_order?: number | null
+          field_label?: string
+          field_name?: string
+          field_options?: Json | null
+          field_type?: string
+          help_text?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_required?: boolean | null
+          updated_at?: string
+          validation_rules?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_custom_fields_audit_firm_id_fkey"
+            columns: ["audit_firm_id"]
+            isOneToOne: false
+            referencedRelation: "audit_firms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_custom_fields_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_documents: {
         Row: {
           client_id: string
@@ -2848,6 +2956,57 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_filters: {
+        Row: {
+          audit_firm_id: string | null
+          created_at: string
+          created_by: string | null
+          filter_config: Json
+          filter_name: string
+          id: string
+          is_default: boolean | null
+          is_public: boolean | null
+          updated_at: string
+        }
+        Insert: {
+          audit_firm_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          filter_config?: Json
+          filter_name: string
+          id?: string
+          is_default?: boolean | null
+          is_public?: boolean | null
+          updated_at?: string
+        }
+        Update: {
+          audit_firm_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          filter_config?: Json
+          filter_name?: string
+          id?: string
+          is_default?: boolean | null
+          is_public?: boolean | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_filters_audit_firm_id_fkey"
+            columns: ["audit_firm_id"]
+            isOneToOne: false
+            referencedRelation: "audit_firms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_filters_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -3110,6 +3269,89 @@ export type Database = {
           },
         ]
       }
+      client_shareholders: {
+        Row: {
+          address_line1: string | null
+          address_line2: string | null
+          brreg_data: Json | null
+          city: string | null
+          client_id: string
+          country: string | null
+          created_at: string
+          email: string | null
+          id: string
+          is_active: boolean | null
+          last_brreg_sync_at: string | null
+          number_of_shares: number | null
+          ownership_percentage: number | null
+          phone: string | null
+          postal_code: string | null
+          registered_date: string | null
+          share_class: string | null
+          shareholder_name: string
+          shareholder_org_number: string | null
+          shareholder_type: string
+          updated_at: string
+          voting_rights_percentage: number | null
+        }
+        Insert: {
+          address_line1?: string | null
+          address_line2?: string | null
+          brreg_data?: Json | null
+          city?: string | null
+          client_id: string
+          country?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_brreg_sync_at?: string | null
+          number_of_shares?: number | null
+          ownership_percentage?: number | null
+          phone?: string | null
+          postal_code?: string | null
+          registered_date?: string | null
+          share_class?: string | null
+          shareholder_name: string
+          shareholder_org_number?: string | null
+          shareholder_type?: string
+          updated_at?: string
+          voting_rights_percentage?: number | null
+        }
+        Update: {
+          address_line1?: string | null
+          address_line2?: string | null
+          brreg_data?: Json | null
+          city?: string | null
+          client_id?: string
+          country?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_brreg_sync_at?: string | null
+          number_of_shares?: number | null
+          ownership_percentage?: number | null
+          phone?: string | null
+          postal_code?: string | null
+          registered_date?: string | null
+          share_class?: string | null
+          shareholder_name?: string
+          shareholder_org_number?: string | null
+          shareholder_type?: string
+          updated_at?: string
+          voting_rights_percentage?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_shareholders_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_teams: {
         Row: {
           client_id: string
@@ -3163,6 +3405,53 @@ export type Database = {
             columns: ["department_id"]
             isOneToOne: false
             referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_view_configurations: {
+        Row: {
+          column_order: Json
+          column_widths: Json | null
+          created_at: string
+          id: string
+          is_active: boolean | null
+          sort_config: Json | null
+          updated_at: string
+          user_id: string
+          view_name: string
+          visible_columns: Json
+        }
+        Insert: {
+          column_order?: Json
+          column_widths?: Json | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          sort_config?: Json | null
+          updated_at?: string
+          user_id: string
+          view_name?: string
+          visible_columns?: Json
+        }
+        Update: {
+          column_order?: Json
+          column_widths?: Json | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          sort_config?: Json | null
+          updated_at?: string
+          user_id?: string
+          view_name?: string
+          visible_columns?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_view_configurations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
