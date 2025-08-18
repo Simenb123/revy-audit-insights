@@ -197,30 +197,47 @@ Deno.serve(async (req) => {
     }
 
     // Process direct income entries from oppsummerteVirksomheter if available
-    if (oppsummerteInntekt.length > 0) {
+    // These are usually aggregated income summaries, not individual employee data
+    if (oppsummerteInntekt.length > 0 && uniqueEmployees.size === 0) {
       console.log(`Processing ${oppsummerteInntekt.length} direct income entries`)
       
-      for (const inntektEntry of oppsummerteInntekt) {
-        if (!inntektEntry.beloep) continue
+      // Since these are summary entries without employee identifiers,
+      // we need to find the actual employee data from elsewhere in the JSON
+      const actualEmployees = new Set()
+      
+      // Look for employee identifiers in the complete structure
+      const allVirksomheterData = payroll_data.mottatt?.opplysningspliktig?.virksomhet || []
+      allVirksomheterData.forEach(virk => {
+        const mottakere = virk.inntektsmottaker || []
+        mottakere.forEach(mottaker => {
+          if (mottaker.norskIdentifikator) {
+            actualEmployees.add(mottaker.norskIdentifikator)
+          }
+        })
+      })
+      
+      // If we still have no employees identified, create a single aggregate employee
+      if (actualEmployees.size === 0) {
+        const aggregateEmployeeId = 'aggregate-employee'
+        uniqueEmployees.set(aggregateEmployeeId, {
+          employee_data: {
+            navn: extractedData.navn || 'Aggregert ansatt',
+            norskIdentifikator: null,
+            inntekt: [],
+            arbeidsforhold: [],
+            forskuddstrekk: []
+          },
+          income_entries: []
+        })
         
-        const employeeId = inntektEntry.norskIdentifikator || `unknown-${Date.now()}`
-        
-        if (!uniqueEmployees.has(employeeId)) {
-          uniqueEmployees.set(employeeId, {
-            employee_data: {
-              navn: inntektEntry.navn || 'Ukjent navn',
-              norskIdentifikator: inntektEntry.norskIdentifikator,
-              inntekt: [],
-              arbeidsforhold: inntektEntry.arbeidsforhold || [],
-              forskuddstrekk: inntektEntry.forskuddstrekk || []
-            },
-            income_entries: []
-          })
+        // Add all income entries to this aggregate employee
+        for (const inntektEntry of oppsummerteInntekt) {
+          if (!inntektEntry.beloep) continue
+          
+          const employee = uniqueEmployees.get(aggregateEmployeeId)
+          employee.employee_data.inntekt.push(inntektEntry)
+          employee.income_entries.push(inntektEntry)
         }
-        
-        const employee = uniqueEmployees.get(employeeId)
-        employee.employee_data.inntekt.push(inntektEntry)
-        employee.income_entries.push(inntektEntry)
       }
     }
 
