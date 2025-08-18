@@ -364,9 +364,7 @@ export function ComprehensiveAnalysisDashboard({
             </TabsContent>
 
             <TabsContent value="ai">
-              {analysisResults?.aiAnalysis && (
-                <AIAnalysisResults results={analysisResults.aiAnalysis} />
-              )}
+              <AIAnalysisResults clientId={clientId} selectedVersion={dataVersionId} />
             </TabsContent>
 
             <TabsContent value="advanced">
