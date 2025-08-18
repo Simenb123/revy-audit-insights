@@ -660,6 +660,114 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_analysis_cache: {
+        Row: {
+          access_count: number | null
+          analysis_duration_ms: number | null
+          analysis_type: string
+          cached_at: string | null
+          client_id: string
+          confidence_score: number | null
+          config_hash: string
+          data_version_id: string
+          expires_at: string | null
+          id: string
+          last_accessed: string | null
+          metadata: Json | null
+          result_data: Json
+          transaction_count: number
+        }
+        Insert: {
+          access_count?: number | null
+          analysis_duration_ms?: number | null
+          analysis_type?: string
+          cached_at?: string | null
+          client_id: string
+          confidence_score?: number | null
+          config_hash: string
+          data_version_id: string
+          expires_at?: string | null
+          id?: string
+          last_accessed?: string | null
+          metadata?: Json | null
+          result_data: Json
+          transaction_count?: number
+        }
+        Update: {
+          access_count?: number | null
+          analysis_duration_ms?: number | null
+          analysis_type?: string
+          cached_at?: string | null
+          client_id?: string
+          confidence_score?: number | null
+          config_hash?: string
+          data_version_id?: string
+          expires_at?: string | null
+          id?: string
+          last_accessed?: string | null
+          metadata?: Json | null
+          result_data?: Json
+          transaction_count?: number
+        }
+        Relationships: []
+      }
+      ai_analysis_sessions: {
+        Row: {
+          analysis_config: Json | null
+          client_id: string
+          completed_at: string | null
+          created_by: string | null
+          current_step: string | null
+          data_version_id: string | null
+          error_message: string | null
+          id: string
+          metadata: Json | null
+          progress_percentage: number | null
+          result_data: Json | null
+          session_type: string
+          started_at: string | null
+          status: string
+          total_steps: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          analysis_config?: Json | null
+          client_id: string
+          completed_at?: string | null
+          created_by?: string | null
+          current_step?: string | null
+          data_version_id?: string | null
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          progress_percentage?: number | null
+          result_data?: Json | null
+          session_type?: string
+          started_at?: string | null
+          status?: string
+          total_steps?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          analysis_config?: Json | null
+          client_id?: string
+          completed_at?: string | null
+          created_by?: string | null
+          current_step?: string | null
+          data_version_id?: string | null
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          progress_percentage?: number | null
+          result_data?: Json | null
+          session_type?: string
+          started_at?: string | null
+          status?: string
+          total_steps?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       ai_cache: {
         Row: {
           client_id: string | null
@@ -10491,6 +10599,10 @@ export type Database = {
       claim_audit_firm_by_org: {
         Args: { p_firm_name?: string; p_org_number: string }
         Returns: string
+      }
+      cleanup_expired_ai_analysis_cache: {
+        Args: Record<PropertyKey, never>
+        Returns: number
       }
       cleanup_expired_cache: {
         Args: Record<PropertyKey, never>

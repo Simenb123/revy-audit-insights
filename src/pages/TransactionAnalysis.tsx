@@ -226,7 +226,7 @@ const TransactionAnalysis = () => {
                       <TransactionFlowAnalysis data={null} />
                     )}
                     {module.id === 'ai' && (
-                      <AIAnalysisResults results={null} />
+                      <AIAnalysisResults clientId={clientId} selectedVersion={selectedVersion} />
                     )}
                     {module.id === 'reports' && (
                       <ReportGeneratorPanel reportData={null} />
