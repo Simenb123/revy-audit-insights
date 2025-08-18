@@ -7,13 +7,17 @@ import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from '@/integrations/supabase/client';
-import { Brain, TrendingUp, AlertTriangle, CheckCircle, Clock, RefreshCw, Play, Pause, Loader2, Info, Target, BarChart3, FileText, Lightbulb, Shield, Download, Eye, ExternalLink } from 'lucide-react';
+import { Brain, TrendingUp, AlertTriangle, CheckCircle, Clock, RefreshCw, Play, Pause, Loader2, Info, Target, BarChart3, FileText, Lightbulb, Shield, Download, Eye, ExternalLink, Activity } from 'lucide-react';
 import { toast } from 'sonner';
 import { AnalysisProgressIndicator } from './AnalysisProgressIndicator';
 import { useAnalysisProgress } from '@/hooks/useAnalysisProgress';
 import { useAIAnalysisSessions, useAIAnalysisSessionsForClient, useAIAnalysisSession } from '@/hooks/useAIAnalysisSessions';
 import { DrilldownDialog } from './DrilldownDialog';
 import { ReportExportDialog } from './ReportExportDialog';
+import { AnalysisInsightsCard } from './AnalysisInsightsCard';
+import { AnalysisMetricsCard } from './AnalysisMetricsCard';
+import { QuickActionsPanel } from './QuickActionsPanel';
+import { AnalysisStatusIndicator } from './AnalysisStatusIndicator';
 
 interface AIAnalysisResultsProps {
   clientId: string;
@@ -227,46 +231,29 @@ export const AIAnalysisResults: React.FC<AIAnalysisResultsProps> = ({
     setExportDialog(true);
   };
 
-  // Loading state
-  if (isLoading) {
+  // Loading or status state
+  if (isLoading || activeSession) {
     return (
       <div className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Brain className="h-5 w-5 animate-pulse" />
-              AI-Analyse pågår...
-            </CardTitle>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleCancelAnalysis}
-                disabled={!activeSessionId}
-              >
-                <Pause className="h-4 w-4 mr-2" />
-                Avbryt analyse
-              </Button>
-              {activeSession && (
-                <Badge variant="outline">
-                  {activeSession.progress_percentage || 0}% fullført
-                </Badge>
-              )}
-            </div>
-          </CardHeader>
-          <CardContent>
-            {progress.isRunning && (
+        <AnalysisStatusIndicator
+          status={activeSession?.status || 'pending'}
+          progress={activeSession?.progress_percentage || 0}
+          currentStep={activeSession?.current_step}
+          error={activeSession?.error_message}
+          startedAt={activeSession?.started_at}
+          completedAt={activeSession?.completed_at}
+          onStart={startAnalysis}
+          onCancel={handleCancelAnalysis}
+          onRestart={handleRestartAnalysis}
+          isLoading={isLoading}
+        />
+        {progress.isRunning && (
+          <Card>
+            <CardContent className="p-4">
               <AnalysisProgressIndicator progress={progress} />
-            )}
-            {activeSession?.current_step && (
-              <div className="mt-4 p-3 bg-muted rounded-lg">
-                <p className="text-sm text-muted-foreground">
-                  Status: {activeSession.current_step}
-                </p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
       </div>
     );
   }
@@ -365,261 +352,202 @@ export const AIAnalysisResults: React.FC<AIAnalysisResultsProps> = ({
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Brain className="h-5 w-5" />
-            AI-Analyse Resultater
-          </CardTitle>
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              {results.summary && (
-                <div className="text-sm text-muted-foreground">
-                  {results.summary.total_transactions && (
-                    <span>{results.summary.total_transactions.toLocaleString()} transaksjoner analysert</span>
-                  )}
-                  {results.summary.analysis_date && (
-                    <span className="ml-4">
-                      {new Date(results.summary.analysis_date).toLocaleDateString('no-NO')}
-                    </span>
-                  )}
-                </div>
-              )}
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={handleExport}>
-                <Download className="h-4 w-4 mr-2" />
-                Eksporter rapport
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleRestartAnalysis}>
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Ny analyse
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="summary" className="w-full">
-            <TabsList className="grid w-full grid-cols-5">
-              <TabsTrigger value="summary">Sammendrag</TabsTrigger>
-              <TabsTrigger value="insights">
-                Innsikter ({insights.length})
-              </TabsTrigger>
-              <TabsTrigger value="recommendations">
-                Anbefalinger ({recommendations.length})
-              </TabsTrigger>
-              <TabsTrigger value="risks">
-                Risikoer ({riskFactors.length})
-              </TabsTrigger>
-              <TabsTrigger value="anomalies">
-                Avvik ({anomalies.length})
-              </TabsTrigger>
-            </TabsList>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-6">
+          <AnalysisStatusIndicator
+            status="completed"
+            startedAt={latestSession?.started_at}
+            completedAt={latestSession?.completed_at}
+            onStart={startAnalysis}
+            onCancel={handleCancelAnalysis}
+            onRestart={handleRestartAnalysis}
+          />
 
-            <TabsContent value="summary" className="mt-6">
-              <div className="space-y-4">
-                {results.summary?.message && (
-                  <div className="p-4 bg-muted rounded-lg">
-                    <h4 className="font-medium mb-2 flex items-center gap-2">
-                      <FileText className="h-4 w-4" />
-                      Analyse-sammendrag
-                    </h4>
-                    <p className="text-sm leading-relaxed">
-                      {results.summary.message}
-                    </p>
-                  </div>
-                )}
+          <AnalysisMetricsCard
+            summary={results.summary}
+            insights={insights}
+            recommendations={recommendations}
+            riskFactors={riskFactors}
+            anomalies={anomalies}
+          />
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="text-center p-3 bg-muted rounded-lg">
-                    <div className="text-2xl font-bold text-primary">{insights.length}</div>
-                    <div className="text-sm text-muted-foreground">Innsikter</div>
-                  </div>
-                  <div className="text-center p-3 bg-muted rounded-lg">
-                    <div className="text-2xl font-bold text-primary">{recommendations.length}</div>
-                    <div className="text-sm text-muted-foreground">Anbefalinger</div>
-                  </div>
-                  <div className="text-center p-3 bg-muted rounded-lg">
-                    <div className="text-2xl font-bold text-warning">{riskFactors.length}</div>
-                    <div className="text-sm text-muted-foreground">Risikoer</div>
-                  </div>
-                  <div className="text-center p-3 bg-muted rounded-lg">
-                    <div className="text-2xl font-bold text-destructive">{anomalies.length}</div>
-                    <div className="text-sm text-muted-foreground">Avvik</div>
-                  </div>
-                </div>
-              </div>
-            </TabsContent>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Brain className="h-5 w-5" />
+                Detaljerte resultater
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Tabs defaultValue="insights" className="w-full">
+                <TabsList className="grid w-full grid-cols-4">
+                  <TabsTrigger value="insights">
+                    Innsikter ({insights.length})
+                  </TabsTrigger>
+                  <TabsTrigger value="recommendations">
+                    Anbefalinger ({recommendations.length})
+                  </TabsTrigger>
+                  <TabsTrigger value="risks">
+                    Risikoer ({riskFactors.length})
+                  </TabsTrigger>
+                  <TabsTrigger value="anomalies">
+                    Avvik ({anomalies.length})
+                  </TabsTrigger>
+                </TabsList>
 
-            <TabsContent value="insights" className="mt-6">
-              <div className="space-y-4">
-                {insights.length > 0 ? (
-                  <>
-                    <h4 className="font-medium flex items-center gap-2">
-                      <Target className="h-4 w-4" />
-                      AI-Innsikter ({insights.length})
-                    </h4>
-                     <div className="space-y-3">
-                       {insights.map((insight, index) => (
-                         <div key={index} className="p-4 border rounded-lg hover:bg-muted/50 transition-colors">
-                           <div className="flex items-start justify-between mb-2">
-                             <div className="flex items-center gap-2">
-                               <Badge variant={getSeverityColor(insight.significance) as any}>
-                                 {getSeverityLabel(insight.significance)}
-                               </Badge>
-                               <span className="font-medium">{insight.category}</span>
-                             </div>
-                             <Button
-                               variant="ghost"
-                               size="sm"
-                               onClick={() => handleDrilldown('account', insight.category, `Innsikt: ${insight.category}`, insight.observation)}
-                             >
-                               <Eye className="h-4 w-4" />
-                             </Button>
-                           </div>
-                           <p className="text-sm text-muted-foreground">
-                             {insight.observation}
-                           </p>
-                         </div>
-                       ))}
-                     </div>
-                  </>
-                ) : (
-                  <Alert>
-                    <Info className="h-4 w-4" />
-                    <AlertDescription>
-                      Ingen spesifikke innsikter identifisert i denne analysen.
-                    </AlertDescription>
-                  </Alert>
-                )}
-              </div>
-            </TabsContent>
+                <TabsContent value="insights" className="mt-6">
+                  <AnalysisInsightsCard
+                    insights={insights}
+                    onDrilldown={handleDrilldown}
+                  />
+                </TabsContent>
 
-            <TabsContent value="recommendations" className="mt-6">
-              <div className="space-y-4">
-                {recommendations.length > 0 ? (
-                  <>
-                    <h4 className="font-medium flex items-center gap-2">
-                      <Lightbulb className="h-4 w-4" />
-                      AI-Anbefalinger ({recommendations.length})
-                    </h4>
-                     <div className="space-y-3">
-                       {recommendations.map((rec, index) => (
-                         <div key={index} className="p-4 border rounded-lg hover:bg-muted/50 transition-colors">
-                           <div className="flex items-start justify-between mb-2">
-                             <div className="flex items-center gap-2">
-                               <Badge variant={getPriorityColor(rec.priority) as any}>
-                                {getSeverityLabel(rec.priority)}
-                              </Badge>
-                              <span className="font-medium">{rec.area}</span>
-                            </div>
-                          </div>
-                          <p className="text-sm text-muted-foreground mb-2">
-                            {rec.recommendation}
-                          </p>
-                          {rec.reasoning && (
-                            <p className="text-xs text-muted-foreground bg-muted p-2 rounded">
-                              <strong>Begrunnelse:</strong> {rec.reasoning}
-                            </p>
-                          )}
-                        </div>
-                        ))}
-                      </div>
-                   </>
-                 ) : (
-                   <Alert>
-                     <Info className="h-4 w-4" />
-                     <AlertDescription>
-                       Ingen spesifikke anbefalinger generert fra denne analysen.
-                     </AlertDescription>
-                   </Alert>
-                 )}
-               </div>
-             </TabsContent>
-
-            <TabsContent value="risks" className="mt-6">
-              <div className="space-y-4">
-                {riskFactors.length > 0 ? (
-                  <>
-                    <h4 className="font-medium flex items-center gap-2">
-                      <Shield className="h-4 w-4" />
-                      Identifiserte risikoer ({riskFactors.length})
-                    </h4>
-                    <div className="space-y-3">
-                      {riskFactors.map((risk, index) => (
-                        <div key={index} className="p-4 border rounded-lg">
-                          <div className="flex items-start justify-between mb-2">
-                            <span className="font-medium">{risk.risk}</span>
-                            <div className="flex gap-2">
-                              <Badge variant={getSeverityColor(risk.likelihood) as any}>
-                                Sannsynlighet: {getSeverityLabel(risk.likelihood)}
-                              </Badge>
-                              <Badge variant={getSeverityColor(risk.impact) as any}>
-                                Påvirkning: {getSeverityLabel(risk.impact)}
-                              </Badge>
-                            </div>
-                          </div>
-                          <p className="text-sm text-muted-foreground">
-                            {risk.description}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                ) : (
-                  <Alert>
-                    <CheckCircle className="h-4 w-4 text-success" />
-                    <AlertDescription>
-                      Ingen kritiske risikoer identifisert - dette er positivt!
-                    </AlertDescription>
-                  </Alert>
-                )}
-              </div>
-            </TabsContent>
-
-            <TabsContent value="anomalies" className="mt-6">
-              <div className="space-y-4">
-                {anomalies.length > 0 ? (
-                  <>
-                    <h4 className="font-medium flex items-center gap-2">
-                      <AlertTriangle className="h-4 w-4 text-destructive" />
-                      Identifiserte avvik ({anomalies.length})
-                    </h4>
-                    <div className="space-y-3">
-                      {anomalies.map((anomaly, index) => (
-                        <div key={index} className="p-4 border-l-4 border-destructive bg-destructive/5 rounded">
-                          <div className="flex items-start justify-between mb-2">
-                            <div>
-                              <span className="font-medium">{anomaly.description}</span>
-                              <div className="text-sm text-muted-foreground">
-                                {new Date(anomaly.transaction_date).toLocaleDateString('no-NO')} • 
-                                {anomaly.amount.toLocaleString('no-NO', { style: 'currency', currency: 'NOK' })}
+                <TabsContent value="recommendations" className="mt-6">
+                  <div className="space-y-4">
+                    {recommendations.length > 0 ? (
+                      <>
+                        <h4 className="font-medium flex items-center gap-2">
+                          <Lightbulb className="h-4 w-4" />
+                          AI-Anbefalinger ({recommendations.length})
+                        </h4>
+                        <div className="space-y-3">
+                          {recommendations.map((rec, index) => (
+                            <div key={index} className="p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+                              <div className="flex items-start justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                  <Badge variant={getPriorityColor(rec.priority) as any}>
+                                    {getSeverityLabel(rec.priority)}
+                                  </Badge>
+                                  <span className="font-medium">{rec.area}</span>
+                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleDrilldown('account', rec.area, `Anbefaling: ${rec.area}`, rec.recommendation)}
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
                               </div>
+                              <p className="text-sm text-muted-foreground mb-2">
+                                {rec.recommendation}
+                              </p>
+                              {rec.reasoning && (
+                                <p className="text-xs text-muted-foreground bg-muted p-2 rounded">
+                                  <strong>Begrunnelse:</strong> {rec.reasoning}
+                                </p>
+                              )}
                             </div>
-                            <Badge variant={getSeverityColor(anomaly.severity) as any}>
-                              {getSeverityLabel(anomaly.severity)}
-                            </Badge>
-                          </div>
-                          <p className="text-sm text-muted-foreground">
-                            {anomaly.reason}
-                          </p>
+                          ))}
                         </div>
-                      ))}
-                    </div>
-                  </>
-                ) : (
-                  <Alert>
-                    <CheckCircle className="h-4 w-4 text-success" />
-                    <AlertDescription>
-                      Ingen avvik identifisert - dette er positivt!
-                    </AlertDescription>
-                  </Alert>
-                )}
-              </div>
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
+                      </>
+                    ) : (
+                      <Alert>
+                        <Info className="h-4 w-4" />
+                        <AlertDescription>
+                          Ingen spesifikke anbefalinger generert fra denne analysen.
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="risks" className="mt-6">
+                  <div className="space-y-4">
+                    {riskFactors.length > 0 ? (
+                      <>
+                        <h4 className="font-medium flex items-center gap-2">
+                          <Shield className="h-4 w-4" />
+                          Identifiserte risikoer ({riskFactors.length})
+                        </h4>
+                        <div className="space-y-3">
+                          {riskFactors.map((risk, index) => (
+                            <div key={index} className="p-4 border rounded-lg">
+                              <div className="flex items-start justify-between mb-2">
+                                <span className="font-medium">{risk.risk}</span>
+                                <div className="flex gap-2">
+                                  <Badge variant={getSeverityColor(risk.likelihood) as any}>
+                                    Sannsynlighet: {getSeverityLabel(risk.likelihood)}
+                                  </Badge>
+                                  <Badge variant={getSeverityColor(risk.impact) as any}>
+                                    Påvirkning: {getSeverityLabel(risk.impact)}
+                                  </Badge>
+                                </div>
+                              </div>
+                              <p className="text-sm text-muted-foreground">
+                                {risk.description}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    ) : (
+                      <Alert>
+                        <CheckCircle className="h-4 w-4 text-success" />
+                        <AlertDescription>
+                          Ingen kritiske risikoer identifisert - dette er positivt!
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="anomalies" className="mt-6">
+                  <div className="space-y-4">
+                    {anomalies.length > 0 ? (
+                      <>
+                        <h4 className="font-medium flex items-center gap-2">
+                          <AlertTriangle className="h-4 w-4 text-destructive" />
+                          Identifiserte avvik ({anomalies.length})
+                        </h4>
+                        <div className="space-y-3">
+                          {anomalies.map((anomaly, index) => (
+                            <div key={index} className="p-4 border-l-4 border-destructive bg-destructive/5 rounded">
+                              <div className="flex items-start justify-between mb-2">
+                                <div>
+                                  <span className="font-medium">{anomaly.description}</span>
+                                  <div className="text-sm text-muted-foreground">
+                                    {new Date(anomaly.transaction_date).toLocaleDateString('no-NO')} • 
+                                    {anomaly.amount.toLocaleString('no-NO', { style: 'currency', currency: 'NOK' })}
+                                  </div>
+                                </div>
+                                <Badge variant={getSeverityColor(anomaly.severity) as any}>
+                                  {getSeverityLabel(anomaly.severity)}
+                                </Badge>
+                              </div>
+                              <p className="text-sm text-muted-foreground">
+                                {anomaly.reason}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    ) : (
+                      <Alert>
+                        <CheckCircle className="h-4 w-4 text-success" />
+                        <AlertDescription>
+                          Ingen avvik identifisert - dette er positivt!
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="space-y-6">
+          <QuickActionsPanel
+            onExport={handleExport}
+            onRefresh={handleRestartAnalysis}
+            onDrilldown={handleDrilldown}
+            insights={insights}
+            recommendations={recommendations}
+            riskFactors={riskFactors}
+            anomalies={anomalies}
+          />
+        </div>
+      </div>
 
       <DrilldownDialog
         open={drilldownDialog.open}
