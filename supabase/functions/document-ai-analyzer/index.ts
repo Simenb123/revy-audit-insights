@@ -30,7 +30,7 @@ async function analyzeDocumentWithAI(text: string, fileName: string): Promise<st
   }
 
   const data = await callOpenAI('chat/completions', {
-    model: 'gpt-4o-mini',
+    model: 'gpt-5-2025-08-07',
     messages: [
       {
         role: 'system',
@@ -47,8 +47,7 @@ async function analyzeDocumentWithAI(text: string, fileName: string): Promise<st
         content: `Analyser dette dokumentet: "${fileName}"\n\nInnhold:\n${text.substring(0, 4000)}`
       }
     ],
-    max_tokens: 500,
-    temperature: 0.3
+    max_completion_tokens: 800,
   });
 
   return data.choices[0].message.content;

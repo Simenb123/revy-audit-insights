@@ -106,7 +106,7 @@ Svar kun med gyldig JSON.`;
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini', // Use valid OpenAI model
+        model: 'gpt-5-2025-08-07',
         messages: [
           {
             role: 'system',
@@ -117,8 +117,7 @@ Svar kun med gyldig JSON.`;
             content: prompt
           }
         ],
-        max_tokens: 2000, // Increased token limit
-        temperature: 0.3,
+        max_completion_tokens: 4000,
       }),
     });
 
@@ -173,7 +172,7 @@ Svar kun med gyldig JSON.`;
         clientId,
         versionId,
         analysisType,
-        model: 'gpt-4o-mini'
+        model: 'gpt-5-2025-08-07'
       }
     };
 

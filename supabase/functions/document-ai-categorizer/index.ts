@@ -56,7 +56,7 @@ Deno.serve(async (req: Request) => {
         const categoryNames = categories.map(c => c.category_name).join(', ');
         
         const data = await callOpenAI('chat/completions', {
-          model: 'gpt-4o-mini',
+          model: 'gpt-5-2025-08-07',
           messages: [
             {
               role: 'system',
@@ -75,8 +75,7 @@ Deno.serve(async (req: Request) => {
               content: `Filnavn: ${fileName}\n\nInnhold:\n${extractedText.substring(0, 2000)}`
             }
           ],
-          max_tokens: 100,
-          temperature: 0.1
+          max_completion_tokens: 150,
         });
 
         const response = JSON.parse(data.choices[0].message.content);

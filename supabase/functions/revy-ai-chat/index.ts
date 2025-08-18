@@ -125,13 +125,12 @@ VED PROBLEMER MED DOKUMENTLESING:
 Vær alltid konkret, faglig korrekt og konstruktiv i dine svar. Kombiner dokumentinnsikt med fagkunnskap for best mulig rådgivning.`;
 
     const data = await callOpenAI('chat/completions', {
-      model: 'gpt-4o-mini',
+      model: 'gpt-5-2025-08-07',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: message }
       ],
-      max_tokens: 1000,
-      temperature: 0.3
+      max_completion_tokens: 1500,
     });
 
     const response = data.choices[0].message.content;
