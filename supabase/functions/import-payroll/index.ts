@@ -71,7 +71,7 @@ Deno.serve(async (req) => {
       console.error('Error inserting raw data:', rawDataError)
     }
 
-    // Store detailed monthly submissions
+    // Store detailed monthly submissions and related data
     const innsendinger = payroll_data.mottatt?.opplysningspliktig?.innsendinger || []
     for (const innsending of innsendinger) {
       if (!innsending.kalendermaaned) continue
@@ -85,7 +85,8 @@ Deno.serve(async (req) => {
       const sumFinansskatt = mottatt.sumFinansskattLoenn || 0
       const totalAmount = sumArbeidsgiveravgift + sumForskuddstrekk + sumFinansskatt
       
-      const { error: monthlyError } = await supabase
+      // Insert monthly submission
+      const { data: monthlySubmission, error: monthlyError } = await supabase
         .from('payroll_monthly_submissions')
         .insert({
           payroll_import_id: importId,
@@ -105,14 +106,50 @@ Deno.serve(async (req) => {
             mottatt_avgift_trekk: mottatt
           }
         })
+        .select()
+        .single()
 
       if (monthlyError) {
         console.error(`Error storing monthly data for ${innsending.kalendermaaned}:`, monthlyError)
+        continue
+      }
+
+      // Store detailed submission information
+      await supabase.from('payroll_submission_details').insert({
+        payroll_import_id: importId,
+        monthly_submission_id: monthlySubmission?.id,
+        calendar_month: innsending.kalendermaaned,
+        altinn_reference: innsending.altinnReferanse,
+        submission_id: innsending.innsendingsId,
+        message_id: innsending.meldingsId,
+        status: innsending.status,
+        delivery_time: innsending.leveringstidspunkt,
+        altinn_timestamp: innsending.tidsstempelFraAltinn,
+        source_system: innsending.kildesystem
+      })
+
+      // Store payment information
+      const innbetalingInfo = innsending.innbetalingsinformasjon
+      if (innbetalingInfo) {
+        await supabase.from('payroll_payment_info').insert({
+          payroll_import_id: importId,
+          monthly_submission_id: monthlySubmission?.id,
+          calendar_month: innsending.kalendermaaned,
+          account_number: innbetalingInfo.kontonummer,
+          kid_arbeidsgiveravgift: innbetalingInfo.kidForArbeidsgiveravgift,
+          kid_forskuddstrekk: innbetalingInfo.kidForForskuddstrekk,
+          kid_finansskatt: innbetalingInfo.kidForFinansskattLoenn,
+          due_date: innbetalingInfo.forfallsdato
+        })
       }
     }
 
-    // Store employee data from virksomhet structure
-    const virksomheter = payroll_data.mottatt?.oppgave?.virksomhet || []
+    // Store employee data and income analysis from virksomhet structure
+    const virksomheter = payroll_data.mottatt?.opplysningspliktig?.virksomhet || []
+    
+    // First, collect income by type for analysis
+    const incomeByTypeMap = new Map()
+    
     for (const virksomhet of virksomheter) {
       const inntektsmottakere = virksomhet.inntektsmottaker || []
       
@@ -126,7 +163,7 @@ Deno.serve(async (req) => {
             payroll_import_id: importId,
             employee_id: mottaker.norskIdentifikator,
             employee_data: {
-              navn: mottaker.navn,
+              navn: mottaker.identifiserendeInformasjon?.navn || mottaker.navn,
               norskIdentifikator: mottaker.norskIdentifikator,
               arbeidsforhold: mottaker.arbeidsforhold || [],
               inntekt: mottaker.inntekt || [],
@@ -141,29 +178,61 @@ Deno.serve(async (req) => {
           continue
         }
 
-        // Store income details for this employee
+        // Process income details and build income analysis
         const inntekter = mottaker.inntekt || []
         for (const inntekt of inntekter) {
-          if (!inntekt.periode || !inntekt.beloep) continue
+          if (!inntekt.beloep) continue
 
-          const [year, month] = inntekt.periode.split('-').map(Number)
+          // Extract period from inntekt
+          const periodeStart = inntekt.startdatoOpptjeningsperiode
+          const periodYear = periodeStart ? new Date(periodeStart).getFullYear() : new Date().getFullYear()
+          const periodMonth = periodeStart ? new Date(periodeStart).getMonth() + 1 : 1
           
+          // Store individual income detail
           const { error: incomeError } = await supabase
             .from('payroll_income_details')
             .insert({
               payroll_employee_id: employeeRecord.id,
-              income_type: inntekt.beskrivelse || 'Ukjent',
+              income_type: inntekt.loennsinntekt?.beskrivelse || 'Ukjent',
               amount: parseFloat(inntekt.beloep) || 0,
-              period_year: year,
-              period_month: month,
+              period_year: periodYear,
+              period_month: periodMonth,
               details: inntekt
             })
 
           if (incomeError) {
             console.error('Error storing income details:', incomeError)
           }
+
+          // Aggregate for income analysis
+          const incomeType = inntekt.loennsinntekt?.beskrivelse || 'Ukjent'
+          const calendarMonth = `${periodYear}-${String(periodMonth).padStart(2, '0')}`
+          const key = `${incomeType}-${calendarMonth}`
+          
+          if (!incomeByTypeMap.has(key)) {
+            incomeByTypeMap.set(key, {
+              income_type: incomeType,
+              calendar_month: calendarMonth,
+              total_amount: 0,
+              benefit_type: inntekt.fordel,
+              triggers_aga: inntekt.utloeserArbeidsgiveravgift,
+              subject_to_tax_withholding: inntekt.inngaarIGrunnlagForTrekk
+            })
+          }
+          
+          const existing = incomeByTypeMap.get(key)
+          existing.total_amount += parseFloat(inntekt.beloep) || 0
         }
       }
+    }
+
+    // Store aggregated income by type
+    for (const incomeData of incomeByTypeMap.values()) {
+      await supabase.from('payroll_income_by_type').insert({
+        payroll_import_id: importId,
+        ...incomeData,
+        income_description: incomeData.income_type
+      })
     }
 
     // Process and store payroll variables using correct A07 structure

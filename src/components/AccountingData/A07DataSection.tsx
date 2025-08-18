@@ -22,72 +22,137 @@ export function A07DataSection({ clientId, clientName }: A07DataSectionProps) {
 
   const handleExportA07Data = async () => {
     if (payrollImports.length === 0) return;
-
-    // Get detailed monthly data for each import
-    const exportData = [];
     
-    for (const imp of payrollImports) {
-      // Fetch monthly submissions for this import
+    // Create multiple sheets for comprehensive export
+    const monthlyData = [];
+    const paymentData = [];
+    const incomeData = [];
+    const submissionData = [];
+    const employeeData = [];
+    
+    for (const importRecord of payrollImports) {
+      // Monthly submissions data
       const { data: monthlySubmissions } = await supabase
         .from('payroll_monthly_submissions')
         .select('*')
-        .eq('payroll_import_id', imp.id)
+        .eq('payroll_import_id', importRecord.id)
         .order('period_year', { ascending: true })
         .order('period_month', { ascending: true });
-
-      if (monthlySubmissions?.length) {
-        // Add a header row for this import
-        exportData.push({
-          'Måned': `=== ${imp.period_key} ===`,
-          'År': '',
-          'Antall ansatte': '',
-          'Arbeidsgiveravgift': '',
-          'Forskuddstrekk': '',
-          'Status': ''
-        });
-
-        // Add monthly data
-        monthlySubmissions.forEach((submission: any) => {
-          const monthName = new Date(submission.period_year, submission.period_month - 1).toLocaleDateString('nb-NO', { year: 'numeric', month: 'long' });
-          exportData.push({
-            'Måned': monthName,
+      
+      // Payment information
+      const { data: paymentInfo } = await supabase
+        .from('payroll_payment_info')
+        .select('*')
+        .eq('payroll_import_id', importRecord.id)
+        .order('calendar_month', { ascending: true });
+      
+      // Income by type
+      const { data: incomeByType } = await supabase
+        .from('payroll_income_by_type')
+        .select('*')
+        .eq('payroll_import_id', importRecord.id)
+        .order('calendar_month', { ascending: true });
+      
+      // Submission details
+      const { data: submissionDetails } = await supabase
+        .from('payroll_submission_details')
+        .select('*')
+        .eq('payroll_import_id', importRecord.id)
+        .order('calendar_month', { ascending: true });
+      
+      // Employee data
+      const { data: employees } = await supabase
+        .from('payroll_employees')
+        .select('*')
+        .eq('payroll_import_id', importRecord.id);
+      
+      // Process monthly submissions
+      if (monthlySubmissions) {
+        for (const submission of monthlySubmissions) {
+          const summaryData = (submission.summary_data as any) || {};
+          monthlyData.push({
+            'Import ID': importRecord.id,
+            'Periode': `${submission.period_year}-${String(submission.period_month).padStart(2, '0')}`,
             'År': submission.period_year,
-            'Antall ansatte': submission.summary_data?.count || submission.submission_data?.antallInntektsmottakere || 0,
-            'Arbeidsgiveravgift': submission.summary_data?.arbeidsgiveravgift || submission.submission_data?.mottattAvgiftOgTrekkTotalt?.sumArbeidsgiveravgift || 0,
-            'Forskuddstrekk': submission.summary_data?.forskuddstrekk || Math.abs(submission.submission_data?.mottattAvgiftOgTrekkTotalt?.sumForskuddstrekk || 0),
-            'Status': submission.submission_data?.status || ''
+            'Måned': submission.period_month,
+            'Antall ansatte': summaryData.count || 0,
+            'Arbeidsgiveravgift': summaryData.arbeidsgiveravgift || 0,
+            'Forskuddstrekk': summaryData.forskuddstrekk || 0,
+            'Finansskatt lønn': summaryData.finansskatt || 0,
+            'Opprettet': new Date(submission.created_at).toLocaleString('no-NO')
           });
-        });
-
-        // Add totals row for this import
-        const totalArbeidsgiveravgift = monthlySubmissions.reduce((sum: number, s: any) => sum + (s.summary_data?.arbeidsgiveravgift || s.submission_data?.mottattAvgiftOgTrekkTotalt?.sumArbeidsgiveravgift || 0), 0);
-        const totalForskuddstrekk = monthlySubmissions.reduce((sum: number, s: any) => sum + (s.summary_data?.forskuddstrekk || Math.abs(s.submission_data?.mottattAvgiftOgTrekkTotalt?.sumForskuddstrekk || 0)), 0);
-        
-        exportData.push({
-          'Måned': 'TOTALT',
-          'År': '',
-          'Antall ansatte': monthlySubmissions.reduce((sum: number, s: any) => sum + (s.summary_data?.count || s.submission_data?.antallInntektsmottakere || 0), 0),
-          'Arbeidsgiveravgift': totalArbeidsgiveravgift,
-          'Forskuddstrekk': totalForskuddstrekk,
-          'Status': ''
-        });
-
-        // Add spacing
-        exportData.push({
-          'Måned': '',
-          'År': '',
-          'Antall ansatte': '',
-          'Arbeidsgiveravgift': '',
-          'Forskuddstrekk': '',
-          'Status': ''
-        });
+        }
+      }
+      
+      // Process payment info
+      if (paymentInfo) {
+        for (const payment of paymentInfo) {
+          paymentData.push({
+            'Import ID': importRecord.id,
+            'Måned': payment.calendar_month,
+            'Kontonummer': payment.account_number || '',
+            'KID Arbeidsgiveravgift': payment.kid_arbeidsgiveravgift || '',
+            'KID Forskuddstrekk': payment.kid_forskuddstrekk || '',
+            'KID Finansskatt': payment.kid_finansskatt || '',
+            'Forfallsdato': payment.due_date || ''
+          });
+        }
+      }
+      
+      // Process income by type
+      if (incomeByType) {
+        for (const income of incomeByType) {
+          incomeData.push({
+            'Import ID': importRecord.id,
+            'Måned': income.calendar_month,
+            'Inntektstype': income.income_type,
+            'Beskrivelse': income.income_description,
+            'Beløp': income.total_amount,
+            'Ytelsestype': income.benefit_type,
+            'AGA-pliktig': income.triggers_aga ? 'Ja' : 'Nei',
+            'Trekkpliktig': income.subject_to_tax_withholding ? 'Ja' : 'Nei'
+          });
+        }
+      }
+      
+      // Process submission details
+      if (submissionDetails) {
+        for (const submission of submissionDetails) {
+          submissionData.push({
+            'Import ID': importRecord.id,
+            'Måned': submission.calendar_month,
+            'Altinn-referanse': submission.altinn_reference || '',
+            'Innsendingsstatus': submission.status || '',
+            'Kildesystem': submission.source_system || '',
+            'Leveringstidspunkt': submission.delivery_time || '',
+            'Meldings-ID': submission.message_id || ''
+          });
+        }
+      }
+      
+      // Process employees
+      if (employees) {
+        for (const employee of employees) {
+          const empData = (employee.employee_data as any) || {};
+          employeeData.push({
+            'Import ID': importRecord.id,
+            'Ansatt-ID': employee.employee_id,
+            'Navn': empData.navn || '',
+            'Fødselsnummer': empData.norskIdentifikator || '',
+            'Data': JSON.stringify(empData)
+          });
+        }
       }
     }
-
-    exportArrayToXlsx(
-      `A07_Månedlig_Oversikt_${clientName}_${new Date().toISOString().split('T')[0]}`,
-      exportData
-    );
+    
+    // Export to multi-sheet Excel
+    await exportMultiSheetA07Data(clientName, {
+      monthlyData,
+      paymentData,
+      incomeData,
+      submissionData,
+      employeeData
+    });
   };
 
   if (isLoading) {
@@ -224,9 +289,7 @@ export function A07DataSection({ clientId, clientName }: A07DataSectionProps) {
   );
 }
 
-function exportArrayToXlsx(filename: string, data: any[]) {
-  // Import the actual function
-  import('@/utils/exportToXlsx').then(({ exportArrayToXlsx }) => {
-    exportArrayToXlsx(filename, data);
-  });
+async function exportMultiSheetA07Data(clientName: string, data: any) {
+  const { exportMultiSheetA07Data } = await import('@/utils/exportToXlsx');
+  exportMultiSheetA07Data(clientName, data);
 }

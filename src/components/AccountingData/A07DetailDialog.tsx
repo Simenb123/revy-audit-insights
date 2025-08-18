@@ -20,6 +20,9 @@ import { formatCurrency } from '@/lib/formatters';
 import { PayrollMonthlySubmissionsTab } from './PayrollMonthlySubmissionsTab';
 import { PayrollEmployeesTab } from './PayrollEmployeesTab';
 import { PayrollRawDataTab } from './PayrollRawDataTab';
+import PayrollPaymentInfoTab from './PayrollPaymentInfoTab';
+import PayrollIncomeAnalysisTab from './PayrollIncomeAnalysisTab';
+import PayrollSubmissionDetailsTab from './PayrollSubmissionDetailsTab';
 
 interface A07DetailDialogProps {
   importId: string | null;
@@ -48,9 +51,12 @@ export function A07DetailDialog({ importId, open, onOpenChange }: A07DetailDialo
         </DialogHeader>
 
         <Tabs defaultValue="summary" className="w-full h-full flex flex-col">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="summary">Sammendrag</TabsTrigger>
             <TabsTrigger value="monthly">Månedlige data</TabsTrigger>
+            <TabsTrigger value="payment">Betalingsinfo</TabsTrigger>
+            <TabsTrigger value="income">Inntektsanalyse</TabsTrigger>
+            <TabsTrigger value="details">Innsendingsdetaljer</TabsTrigger>
             <TabsTrigger value="employees">Ansatte</TabsTrigger>
             <TabsTrigger value="raw">Rådata</TabsTrigger>
           </TabsList>
@@ -209,6 +215,18 @@ export function A07DetailDialog({ importId, open, onOpenChange }: A07DetailDialo
 
             <TabsContent value="monthly" className="p-4">
               <PayrollMonthlySubmissionsTab submissions={monthlySubmissions || []} />
+            </TabsContent>
+
+            <TabsContent value="payment" className="p-4">
+              <PayrollPaymentInfoTab importId={importId} />
+            </TabsContent>
+
+            <TabsContent value="income" className="p-4">
+              <PayrollIncomeAnalysisTab importId={importId} />
+            </TabsContent>
+
+            <TabsContent value="details" className="p-4">
+              <PayrollSubmissionDetailsTab importId={importId} />
             </TabsContent>
 
             <TabsContent value="employees" className="p-4">

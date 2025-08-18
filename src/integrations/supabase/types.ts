@@ -7299,6 +7299,45 @@ export type Database = {
           },
         ]
       }
+      payroll_income_by_type: {
+        Row: {
+          benefit_type: string | null
+          calendar_month: string
+          created_at: string
+          id: string
+          income_description: string | null
+          income_type: string
+          payroll_import_id: string
+          subject_to_tax_withholding: boolean
+          total_amount: number
+          triggers_aga: boolean
+        }
+        Insert: {
+          benefit_type?: string | null
+          calendar_month: string
+          created_at?: string
+          id?: string
+          income_description?: string | null
+          income_type: string
+          payroll_import_id: string
+          subject_to_tax_withholding?: boolean
+          total_amount?: number
+          triggers_aga?: boolean
+        }
+        Update: {
+          benefit_type?: string | null
+          calendar_month?: string
+          created_at?: string
+          id?: string
+          income_description?: string | null
+          income_type?: string
+          payroll_import_id?: string
+          subject_to_tax_withholding?: boolean
+          total_amount?: number
+          triggers_aga?: boolean
+        }
+        Relationships: []
+      }
       payroll_income_details: {
         Row: {
           amount: number
@@ -7423,6 +7462,45 @@ export type Database = {
           },
         ]
       }
+      payroll_payment_info: {
+        Row: {
+          account_number: string | null
+          calendar_month: string
+          created_at: string
+          due_date: string | null
+          id: string
+          kid_arbeidsgiveravgift: string | null
+          kid_finansskatt: string | null
+          kid_forskuddstrekk: string | null
+          monthly_submission_id: string | null
+          payroll_import_id: string
+        }
+        Insert: {
+          account_number?: string | null
+          calendar_month: string
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          kid_arbeidsgiveravgift?: string | null
+          kid_finansskatt?: string | null
+          kid_forskuddstrekk?: string | null
+          monthly_submission_id?: string | null
+          payroll_import_id: string
+        }
+        Update: {
+          account_number?: string | null
+          calendar_month?: string
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          kid_arbeidsgiveravgift?: string | null
+          kid_finansskatt?: string | null
+          kid_forskuddstrekk?: string | null
+          monthly_submission_id?: string | null
+          payroll_import_id?: string
+        }
+        Relationships: []
+      }
       payroll_pensions: {
         Row: {
           created_at: string
@@ -7528,6 +7606,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      payroll_submission_details: {
+        Row: {
+          altinn_reference: string | null
+          altinn_timestamp: string | null
+          calendar_month: string
+          created_at: string
+          delivery_time: string | null
+          id: string
+          message_id: string | null
+          monthly_submission_id: string | null
+          payroll_import_id: string
+          source_system: string | null
+          status: string | null
+          submission_id: string | null
+        }
+        Insert: {
+          altinn_reference?: string | null
+          altinn_timestamp?: string | null
+          calendar_month: string
+          created_at?: string
+          delivery_time?: string | null
+          id?: string
+          message_id?: string | null
+          monthly_submission_id?: string | null
+          payroll_import_id: string
+          source_system?: string | null
+          status?: string | null
+          submission_id?: string | null
+        }
+        Update: {
+          altinn_reference?: string | null
+          altinn_timestamp?: string | null
+          calendar_month?: string
+          created_at?: string
+          delivery_time?: string | null
+          id?: string
+          message_id?: string | null
+          monthly_submission_id?: string | null
+          payroll_import_id?: string
+          source_system?: string | null
+          status?: string | null
+          submission_id?: string | null
+        }
+        Relationships: []
       }
       payroll_submissions: {
         Row: {

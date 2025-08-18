@@ -34,6 +34,45 @@ export interface PayrollRawData {
   created_at: string;
 }
 
+export interface PayrollPaymentInfo {
+  id: string;
+  payroll_import_id: string;
+  calendar_month: string;
+  account_number: string;
+  kid_arbeidsgiveravgift: string;
+  kid_forskuddstrekk: string;
+  kid_finansskatt: string;
+  due_date: string;
+  created_at: string;
+}
+
+export interface PayrollIncomeByType {
+  id: string;
+  payroll_import_id: string;
+  calendar_month: string;
+  income_type: string;
+  income_description: string;
+  total_amount: number;
+  benefit_type: string;
+  triggers_aga: boolean;
+  subject_to_tax_withholding: boolean;
+  created_at: string;
+}
+
+export interface PayrollSubmissionDetails {
+  id: string;
+  payroll_import_id: string;
+  calendar_month: string;
+  altinn_reference: string;
+  submission_id: string;
+  message_id: string;
+  status: string;
+  delivery_time: string;
+  altinn_timestamp: string;
+  source_system: string;
+  created_at: string;
+}
+
 export const usePayrollMonthlySubmissions = (importId: string) => {
   return useQuery({
     queryKey: ['payroll-monthly-submissions', importId],
@@ -99,6 +138,58 @@ export const usePayrollRawData = (importId: string) => {
 
       if (error) throw error;
       return data as PayrollRawData;
+    },
+    enabled: !!importId,
+  });
+};
+
+export const usePayrollPaymentInfo = (importId: string) => {
+  return useQuery({
+    queryKey: ['payroll-payment-info', importId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('payroll_payment_info')
+        .select('*')
+        .eq('payroll_import_id', importId)
+        .order('calendar_month', { ascending: true });
+
+      if (error) throw error;
+      return data as PayrollPaymentInfo[];
+    },
+    enabled: !!importId,
+  });
+};
+
+export const usePayrollIncomeByType = (importId: string) => {
+  return useQuery({
+    queryKey: ['payroll-income-by-type', importId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('payroll_income_by_type')
+        .select('*')
+        .eq('payroll_import_id', importId)
+        .order('calendar_month', { ascending: true })
+        .order('income_type', { ascending: true });
+
+      if (error) throw error;
+      return data as PayrollIncomeByType[];
+    },
+    enabled: !!importId,
+  });
+};
+
+export const usePayrollSubmissionDetails = (importId: string) => {
+  return useQuery({
+    queryKey: ['payroll-submission-details', importId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('payroll_submission_details')
+        .select('*')
+        .eq('payroll_import_id', importId)
+        .order('calendar_month', { ascending: true });
+
+      if (error) throw error;
+      return data as PayrollSubmissionDetails[];
     },
     enabled: !!importId,
   });
