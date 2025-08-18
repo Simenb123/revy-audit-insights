@@ -35,7 +35,7 @@ const ClientsOverview = () => {
   
   // Fetch client data with extended functionality  
   const { data: clientData, isLoading, error, refetch } = useClientData();
-  const clients = clientData || [];
+  const clients = Array.isArray(clientData) ? clientData : [];
   
   // Handle BRREG API refresh
   const { handleRefreshBrregData, isRefreshing, hasApiError, refreshProgress } = useBrregRefresh({ clients });
