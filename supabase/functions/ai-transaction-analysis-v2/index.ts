@@ -66,21 +66,27 @@ serve(async (req) => {
       .update({ progress_percentage: 30 })
       .eq('id', session.id);
 
-    // Fetch transaction data
+    // Fetch comprehensive transaction data with accounts
     const { data: transactions, error: transactionError } = await supabaseClient
       .from('general_ledger_transactions')
       .select(`
+        id,
         transaction_date,
         debit_amount,
         credit_amount,
+        balance_amount,
         description,
         voucher_number,
-        client_chart_of_accounts(account_number, account_name)
+        client_chart_of_accounts!inner(
+          account_number,
+          account_name,
+          account_type
+        )
       `)
       .eq('client_id', clientId)
       .eq('version_id', dataVersionId)
       .order('transaction_date', { ascending: false })
-      .limit(500);
+      .limit(1000);
 
     if (transactionError) {
       console.error('Transaction fetch error:', transactionError);
@@ -114,32 +120,117 @@ serve(async (req) => {
       throw new Error(errorMsg);
     }
 
-    // Prepare data for analysis
-    const analysisData = transactions.slice(0, 50).map(t => ({
-      date: t.transaction_date,
-      amount: t.debit_amount || t.credit_amount || 0,
-      description: t.description?.substring(0, 50),
-      account: t.client_chart_of_accounts?.account_number
-    }));
+    // Perform comprehensive validation analysis
+    const voucherGroups = new Map<string, number>();
+    const voucherCounts = new Map<string, number>();
+    let overallBalance = 0;
+    const accountSummary = new Map<string, { debit: number; credit: number; count: number; type: string }>();
 
-    const prompt = `Analyser følgende ${analysisData.length} regnskapstransaksjoner.
+    transactions.forEach(transaction => {
+      const balance = transaction.balance_amount || 0;
+      const voucherNumber = transaction.voucher_number || 'NO_VOUCHER';
+      const accountInfo = transaction.client_chart_of_accounts;
+      
+      overallBalance += balance;
+      
+      // Voucher validation
+      const currentBalance = voucherGroups.get(voucherNumber) || 0;
+      const currentCount = voucherCounts.get(voucherNumber) || 0;
+      voucherGroups.set(voucherNumber, currentBalance + balance);
+      voucherCounts.set(voucherNumber, currentCount + 1);
 
-Transaksjonsdata (utvalg):
-${JSON.stringify(analysisData.slice(0, 10))}
+      // Account summary
+      if (accountInfo) {
+        const key = `${accountInfo.account_number}-${accountInfo.account_name}`;
+        const existing = accountSummary.get(key) || { debit: 0, credit: 0, count: 0, type: accountInfo.account_type || 'unknown' };
+        accountSummary.set(key, {
+          debit: existing.debit + (transaction.debit_amount || 0),
+          credit: existing.credit + (transaction.credit_amount || 0),
+          count: existing.count + 1,
+          type: accountInfo.account_type || 'unknown'
+        });
+      }
+    });
 
-Gi en strukturert analyse på norsk:
+    // Find validation issues
+    const vouchersWithImbalance = [];
+    voucherGroups.forEach((balance, voucherNumber) => {
+      if (Math.abs(balance) > 0.01) {
+        vouchersWithImbalance.push({
+          voucherNumber,
+          balance,
+          transactionCount: voucherCounts.get(voucherNumber) || 0
+        });
+      }
+    });
 
-{
-  "sammendrag": "Kort sammendrag av analysen (maks 300 tegn)",
-  "risikoområder": ["område1", "område2", "område3"],
-  "anbefalinger": ["anbefaling1", "anbefaling2", "anbefaling3"],
-  "konfidensnivå": 8,
-  "statistikk": {
-    "totalTransaksjoner": ${transactions.length},
-    "totalBeløp": "beregnet total",
-    "periode": "fra - til"
-  }
-}`;
+    // Prepare comprehensive analysis data
+    const dateRange = transactions.length > 0 ? {
+      start: transactions[transactions.length - 1]?.transaction_date,
+      end: transactions[0]?.transaction_date
+    } : null;
+
+    const totalDebit = transactions.reduce((sum, t) => sum + (t.debit_amount || 0), 0);
+    const totalCredit = transactions.reduce((sum, t) => sum + (t.credit_amount || 0), 0);
+    
+    const analysisData = {
+      transactionSample: transactions.slice(0, 100).map(t => ({
+        date: t.transaction_date,
+        debit: t.debit_amount,
+        credit: t.credit_amount,
+        balance: t.balance_amount,
+        description: t.description,
+        voucher: t.voucher_number,
+        account: `${t.client_chart_of_accounts?.account_number || 'N/A'} - ${t.client_chart_of_accounts?.account_name || 'Unknown'}`,
+        accountType: t.client_chart_of_accounts?.account_type
+      })),
+      validationIssues: {
+        vouchersWithImbalance,
+        totalValidationErrors: vouchersWithImbalance.length,
+        overallBalance: Math.round(overallBalance * 100) / 100
+      },
+      statistics: {
+        totalTransactions: transactions.length,
+        totalDebit,
+        totalCredit,
+        balanceDifference: totalDebit - totalCredit,
+        dateRange,
+        uniqueAccounts: accountSummary.size,
+        uniqueVouchers: voucherGroups.size
+      },
+      accountSummary: Array.from(accountSummary.entries()).map(([key, data]) => ({
+        account: key,
+        ...data
+      })).slice(0, 20)
+    };
+
+    const prompt = `You are a senior auditor conducting a comprehensive analysis of accounting transactions. 
+
+## Transaction Data Overview:
+- Total Transactions: ${transactions.length}
+- Period: ${dateRange?.start} to ${dateRange?.end}
+- Total Debit: ${totalDebit.toLocaleString('nb-NO', { minimumFractionDigits: 2 })} NOK
+- Total Credit: ${totalCredit.toLocaleString('nb-NO', { minimumFractionDigits: 2 })} NOK
+- Balance Difference: ${(totalDebit - totalCredit).toLocaleString('nb-NO', { minimumFractionDigits: 2 })} NOK
+
+## Validation Issues Found:
+- Vouchers with imbalances: ${vouchersWithImbalance.length}
+- Overall balance difference: ${overallBalance.toLocaleString('nb-NO', { minimumFractionDigits: 2 })} NOK
+
+## Sample Transactions (first 20):
+${JSON.stringify(analysisData.transactionSample.slice(0, 20), null, 2)}
+
+## Account Summary (top accounts by activity):
+${JSON.stringify(analysisData.accountSummary.slice(0, 10), null, 2)}
+
+## Specific Validation Issues:
+${vouchersWithImbalance.length > 0 ? JSON.stringify(vouchersWithImbalance.slice(0, 10), null, 2) : 'No major validation issues detected'}
+
+Please provide a professional audit analysis following the structured format. Focus on:
+1. Real accounting issues and risks based on the actual data
+2. Specific validation problems found (imbalanced vouchers, suspicious patterns)
+3. Professional audit recommendations 
+4. Risk assessment based on transaction patterns and validation results`;
 
     // Update progress
     await supabaseClient
@@ -149,7 +240,7 @@ Gi en strukturert analyse på norsk:
 
     console.log('🤖 Sending request to OpenAI...');
 
-    // Use OpenAI Responses API with JSON schema for structured output
+    // Use OpenAI Responses API with comprehensive JSON schema
     const openAIResponse = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
       headers: {
@@ -157,11 +248,11 @@ Gi en strukturert analyse på norsk:
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-5',
+        model: 'gpt-5-mini-2025-08-07',
         input: [
           {
             role: 'system',
-            content: 'Du er en erfaren norsk revisor som analyserer regnskapstransaksjoner og gir strukturerte analyser.'
+            content: 'You are a senior Norwegian auditor with expertise in financial statement analysis, internal controls, and risk assessment. Provide professional audit insights in English using standard audit terminology.'
           },
           {
             role: 'user',
@@ -171,24 +262,92 @@ Gi en strukturert analyse på norsk:
         response_format: {
           type: "json_schema",
           json_schema: {
-            name: "transaction_analysis",
+            name: "audit_analysis",
             schema: {
               type: "object",
               properties: {
-                sammendrag: { type: "string", maxLength: 300 },
-                risikoområder: { type: "array", items: { type: "string" }, maxItems: 5 },
-                anbefalinger: { type: "array", items: { type: "string" }, maxItems: 5 },
-                konfidensnivå: { type: "integer", minimum: 1, maximum: 10 },
-                statistikk: {
+                summary: {
                   type: "object",
                   properties: {
-                    totalTransaksjoner: { type: "integer" },
-                    totalBeløp: { type: "string" },
-                    periode: { type: "string" }
-                  }
-                }
+                    total_transactions: { type: "integer" },
+                    analysis_date: { type: "string" },
+                    message: { type: "string", maxLength: 500 },
+                    data_version: { type: "string" },
+                    key_findings: { type: "array", items: { type: "string" }, maxItems: 5 }
+                  },
+                  required: ["total_transactions", "analysis_date", "message"]
+                },
+                insights: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      category: { type: "string" },
+                      observation: { type: "string" },
+                      significance: { type: "string", enum: ["high", "medium", "low"] },
+                      details: { type: "string" }
+                    },
+                    required: ["category", "observation", "significance"]
+                  },
+                  maxItems: 8
+                },
+                recommendations: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      area: { type: "string" },
+                      recommendation: { type: "string" },
+                      priority: { type: "string", enum: ["high", "medium", "low"] },
+                      reasoning: { type: "string" }
+                    },
+                    required: ["area", "recommendation", "priority"]
+                  },
+                  maxItems: 6
+                },
+                risk_factors: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      risk: { type: "string" },
+                      description: { type: "string" },
+                      likelihood: { type: "string", enum: ["high", "medium", "low"] },
+                      impact: { type: "string", enum: ["high", "medium", "low"] },
+                      mitigation: { type: "string" }
+                    },
+                    required: ["risk", "description", "likelihood", "impact"]
+                  },
+                  maxItems: 5
+                },
+                anomalies: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      type: { type: "string" },
+                      description: { type: "string" },
+                      severity: { type: "string", enum: ["high", "medium", "low"] },
+                      count: { type: "integer" },
+                      examples: { type: "array", items: { type: "string" }, maxItems: 3 }
+                    },
+                    required: ["type", "description", "severity"]
+                  },
+                  maxItems: 5
+                },
+                validation_results: {
+                  type: "object",
+                  properties: {
+                    vouchers_with_imbalance: { type: "integer" },
+                    overall_balance_difference: { type: "number" },
+                    critical_issues: { type: "array", items: { type: "string" }, maxItems: 5 },
+                    compliance_status: { type: "string", enum: ["compliant", "issues_found", "major_concerns"] }
+                  },
+                  required: ["vouchers_with_imbalance", "overall_balance_difference", "compliance_status"]
+                },
+                confidence_score: { type: "integer", minimum: 1, maximum: 10 }
               },
-              required: ["sammendrag", "risikoområder", "anbefalinger", "konfidensnivå"]
+              required: ["summary", "insights", "recommendations", "risk_factors", "validation_results", "confidence_score"]
             }
           }
         }
@@ -237,27 +396,96 @@ Gi en strukturert analyse på norsk:
         } catch (parseError) {
           console.warn('Failed to parse Responses API output, creating fallback');
           analysisResult = {
-            sammendrag: 'Analyse gjennomført, men respons kunne ikke parses korrekt',
-            risikoområder: ['Dataformat-problem', 'Manuell gjennomgang nødvendig'],
-            anbefalinger: ['Kontroller AI-respons', 'Gjennomgå transaksjoner manuelt'],
-            konfidensnivå: 4,
-            statistikk: {
-              totalTransaksjoner: transactions.length,
-              totalBeløp: 'Ikke beregnet',
-              periode: 'Se transaksjonsdata'
+            summary: {
+              total_transactions: transactions.length,
+              analysis_date: new Date().toISOString(),
+              message: 'Analysis completed but response could not be parsed correctly',
+              key_findings: ['Data format issue', 'Manual review required']
             },
+            insights: [
+              {
+                category: 'Technical Issue',
+                observation: 'AI response parsing failed',
+                significance: 'medium',
+                details: 'The analysis was performed but the structured response could not be processed correctly'
+              }
+            ],
+            recommendations: [
+              {
+                area: 'System',
+                recommendation: 'Review AI response format and retry analysis',
+                priority: 'medium',
+                reasoning: 'Technical parsing error prevented proper result formatting'
+              }
+            ],
+            risk_factors: [
+              {
+                risk: 'Technical Analysis Error',
+                description: 'Analysis system encountered a parsing error',
+                likelihood: 'low',
+                impact: 'medium',
+                mitigation: 'Retry analysis or perform manual review'
+              }
+            ],
+            anomalies: [],
+            validation_results: {
+              vouchers_with_imbalance: vouchersWithImbalance.length,
+              overall_balance_difference: overallBalance,
+              critical_issues: vouchersWithImbalance.length > 0 ? ['Imbalanced vouchers detected'] : [],
+              compliance_status: vouchersWithImbalance.length > 0 ? 'issues_found' : 'compliant'
+            },
+            confidence_score: 4,
             rawResponse: String(aiOutput).substring(0, 500)
           };
         }
       }
+
+      // Ensure validation results are included even if AI didn't provide them
+      if (!analysisResult.validation_results) {
+        analysisResult.validation_results = {
+          vouchers_with_imbalance: vouchersWithImbalance.length,
+          overall_balance_difference: overallBalance,
+          critical_issues: vouchersWithImbalance.length > 0 ? 
+            [`${vouchersWithImbalance.length} vouchers with imbalances detected`] : [],
+          compliance_status: vouchersWithImbalance.length > 0 ? 'issues_found' : 'compliant'
+        };
+      }
+
     } catch (error) {
       console.error('Error processing OpenAI Responses API output:', error);
       console.error('Full response:', JSON.stringify(openAIData, null, 2));
       analysisResult = {
-        sammendrag: 'AI-analyse feilet på grunn av teknisk feil',
-        risikoområder: ['Teknisk feil'],
-        anbefalinger: ['Prøv igjen senere'],
-        konfidensnivå: 1,
+        summary: {
+          total_transactions: transactions.length,
+          analysis_date: new Date().toISOString(),
+          message: 'AI analysis failed due to technical error',
+          key_findings: ['Technical failure']
+        },
+        insights: [
+          {
+            category: 'System Error',
+            observation: 'Analysis system encountered an error',
+            significance: 'high',
+            details: error.message
+          }
+        ],
+        recommendations: [
+          {
+            area: 'System',
+            recommendation: 'Retry analysis later or contact support',
+            priority: 'high',
+            reasoning: 'Technical error prevented analysis completion'
+          }
+        ],
+        risk_factors: [],
+        anomalies: [],
+        validation_results: {
+          vouchers_with_imbalance: vouchersWithImbalance.length,
+          overall_balance_difference: overallBalance,
+          critical_issues: ['Analysis system error'],
+          compliance_status: 'major_concerns'
+        },
+        confidence_score: 1,
         error: error.message
       };
     }
@@ -269,7 +497,13 @@ Gi en strukturert analyse på norsk:
         analysisDate: new Date().toISOString(),
         transactionCount: transactions.length,
         sessionId: session.id,
-        model: 'gpt-5'
+        model: 'gpt-5-mini-2025-08-07',
+        dataVersionId,
+        validationData: {
+          vouchersWithImbalance: vouchersWithImbalance.length,
+          overallBalance,
+          accountSummaryCount: accountSummary.size
+        }
       }
     };
 
@@ -280,7 +514,7 @@ Gi en strukturert analyse på norsk:
         session_id: session.id,
         analysis_type: sessionType,
         result_data: finalResult,
-        confidence_score: analysisResult.konfidensnivå || 0
+        confidence_score: analysisResult.confidence_score || 0
       });
 
     // Complete session
