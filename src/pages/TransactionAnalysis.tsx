@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,8 @@ import {
   Brain,
   Database,
   Filter,
-  Download
+  Download,
+  Play
 } from 'lucide-react';
 
 import { ComprehensiveAnalysisDashboard } from '@/components/TransactionAnalysis/ComprehensiveAnalysisDashboard';
@@ -33,10 +34,20 @@ const TransactionAnalysis = () => {
   const { clientId } = useParams<{ clientId: string }>();
   const [selectedVersion, setSelectedVersion] = useState<string>('');
   const [activeTab, setActiveTab] = useState('overview');
+  const [isAnalysisStarted, setIsAnalysisStarted] = useState(false);
 
   // Data hooks
   const { data: versions, isLoading: versionsLoading } = useAvailableVersions(clientId || '');
   const { data: accountingData, isLoading: dataLoading } = useAccountingData(clientId || '');
+
+  // Auto-select active version when versions load
+  useEffect(() => {
+    if (versions && versions.length > 0 && !selectedVersion) {
+      // Find active version or use the latest version
+      const activeVersion = versions.find(v => v.is_active) || versions[versions.length - 1];
+      setSelectedVersion(activeVersion.value);
+    }
+  }, [versions, selectedVersion]);
 
   if (!clientId) {
     return (
@@ -54,7 +65,17 @@ const TransactionAnalysis = () => {
 
   const handleVersionChange = (versionId: string) => {
     setSelectedVersion(versionId);
+    setIsAnalysisStarted(false); // Reset analysis when version changes
     toast.success('Dataversjon valgt for analyse');
+  };
+
+  const handleStartAnalysis = () => {
+    if (!selectedVersion) {
+      toast.error('Velg en dataversjon først');
+      return;
+    }
+    setIsAnalysisStarted(true);
+    toast.success('Analyse startet');
   };
 
   const analysisModules = [
@@ -156,10 +177,27 @@ const TransactionAnalysis = () => {
                 </SelectContent>
               </Select>
             </div>
-            {selectedVersion && (
+            
+            <Button 
+              onClick={handleStartAnalysis}
+              disabled={!selectedVersion || versionsLoading}
+              className="gap-2"
+            >
+              <Play className="h-4 w-4" />
+              Analyser Data
+            </Button>
+            
+            {selectedVersion && !isAnalysisStarted && (
               <Badge variant="outline" className="gap-2">
-                <TrendingUp className="h-3 w-3" />
+                <Database className="h-3 w-3" />
                 Klar for analyse
+              </Badge>
+            )}
+            
+            {isAnalysisStarted && (
+              <Badge variant="default" className="gap-2">
+                <TrendingUp className="h-3 w-3" />
+                Analyse aktiv
               </Badge>
             )}
           </div>
@@ -208,7 +246,7 @@ const TransactionAnalysis = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                {selectedVersion ? (
+                {selectedVersion && isAnalysisStarted ? (
                   <div>
                     {module.id === 'overview' && (
                       <ComprehensiveAnalysisDashboard 
@@ -237,12 +275,20 @@ const TransactionAnalysis = () => {
                       />
                     )}
                   </div>
-                ) : (
+                ) : !selectedVersion ? (
                   <div className="text-center py-8">
                     <Database className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                     <h3 className="text-lg font-medium mb-2">Velg dataversjon</h3>
                     <p className="text-muted-foreground">
                       Du må velge en dataversjon før du kan starte analysen.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <Play className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-medium mb-2">Klar for analyse</h3>
+                    <p className="text-muted-foreground">
+                      Klikk "Analyser Data" for å starte analysen av {versions?.find(v => v.value === selectedVersion)?.label}.
                     </p>
                   </div>
                 )}
