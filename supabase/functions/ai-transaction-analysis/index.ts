@@ -107,7 +107,7 @@ Svar kun med gyldig JSON i dette formatet:
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o', // Use working model
+        model: 'gpt-5-2025-08-07',
         messages: [
           {
             role: 'system',
@@ -118,8 +118,7 @@ Svar kun med gyldig JSON i dette formatet:
             content: prompt
           }
         ],
-        max_tokens: 2000,
-        temperature: 0.3,
+        max_completion_tokens: 2000,
       }),
     });
 
@@ -176,7 +175,7 @@ Svar kun med gyldig JSON i dette formatet:
         clientId,
         versionId,
         analysisType,
-        model: 'gpt-4o'
+        model: 'gpt-5-2025-08-07'
       }
     };
 

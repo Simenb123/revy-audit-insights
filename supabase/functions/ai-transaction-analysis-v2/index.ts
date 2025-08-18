@@ -238,7 +238,7 @@ Gi en strukturert analyse på norsk:
         analysisDate: new Date().toISOString(),
         transactionCount: transactions.length,
         sessionId: session.id,
-        model: 'gpt-4o'
+        model: 'gpt-5-2025-08-07'
       }
     };
 
