@@ -7,11 +7,13 @@ import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from '@/integrations/supabase/client';
-import { Brain, TrendingUp, AlertTriangle, CheckCircle, Clock, RefreshCw, Play, Pause, Loader2, Info, Target, BarChart3, FileText, Lightbulb, Shield } from 'lucide-react';
+import { Brain, TrendingUp, AlertTriangle, CheckCircle, Clock, RefreshCw, Play, Pause, Loader2, Info, Target, BarChart3, FileText, Lightbulb, Shield, Download, Eye, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 import { AnalysisProgressIndicator } from './AnalysisProgressIndicator';
 import { useAnalysisProgress } from '@/hooks/useAnalysisProgress';
 import { useAIAnalysisSessions, useAIAnalysisSessionsForClient, useAIAnalysisSession } from '@/hooks/useAIAnalysisSessions';
+import { DrilldownDialog } from './DrilldownDialog';
+import { ReportExportDialog } from './ReportExportDialog';
 
 interface AIAnalysisResultsProps {
   clientId: string;
@@ -57,6 +59,14 @@ export const AIAnalysisResults: React.FC<AIAnalysisResultsProps> = ({
   selectedVersion 
 }) => {
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [drilldownDialog, setDrilldownDialog] = useState<{
+    open: boolean;
+    type: 'voucher' | 'account' | 'transaction';
+    identifier: string;
+    title: string;
+    description?: string;
+  }>({ open: false, type: 'voucher', identifier: '', title: '' });
+  const [exportDialog, setExportDialog] = useState(false);
   const { progress, initializeProgress, startStep, updateStepProgress, completeStep, failStep, reset } = useAnalysisProgress();
   
   // Hooks for AI analysis sessions
@@ -201,6 +211,20 @@ export const AIAnalysisResults: React.FC<AIAnalysisResultsProps> = ({
       default:
         return 'secondary';
     }
+  };
+
+  const handleDrilldown = (type: 'voucher' | 'account' | 'transaction', identifier: string, title: string, description?: string) => {
+    setDrilldownDialog({
+      open: true,
+      type,
+      identifier,
+      title,
+      description
+    });
+  };
+
+  const handleExport = () => {
+    setExportDialog(true);
   };
 
   // Loading state
@@ -363,6 +387,10 @@ export const AIAnalysisResults: React.FC<AIAnalysisResultsProps> = ({
               )}
             </div>
             <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={handleExport}>
+                <Download className="h-4 w-4 mr-2" />
+                Eksporter rapport
+              </Button>
               <Button variant="outline" size="sm" onClick={handleRestartAnalysis}>
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Ny analyse
@@ -431,23 +459,30 @@ export const AIAnalysisResults: React.FC<AIAnalysisResultsProps> = ({
                       <Target className="h-4 w-4" />
                       AI-Innsikter ({insights.length})
                     </h4>
-                    <div className="space-y-3">
-                      {insights.map((insight, index) => (
-                        <div key={index} className="p-4 border rounded-lg">
-                          <div className="flex items-start justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                              <Badge variant={getSeverityColor(insight.significance) as any}>
-                                {getSeverityLabel(insight.significance)}
-                              </Badge>
-                              <span className="font-medium">{insight.category}</span>
-                            </div>
-                          </div>
-                          <p className="text-sm text-muted-foreground">
-                            {insight.observation}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
+                     <div className="space-y-3">
+                       {insights.map((insight, index) => (
+                         <div key={index} className="p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+                           <div className="flex items-start justify-between mb-2">
+                             <div className="flex items-center gap-2">
+                               <Badge variant={getSeverityColor(insight.significance) as any}>
+                                 {getSeverityLabel(insight.significance)}
+                               </Badge>
+                               <span className="font-medium">{insight.category}</span>
+                             </div>
+                             <Button
+                               variant="ghost"
+                               size="sm"
+                               onClick={() => handleDrilldown('account', insight.category, `Innsikt: ${insight.category}`, insight.observation)}
+                             >
+                               <Eye className="h-4 w-4" />
+                             </Button>
+                           </div>
+                           <p className="text-sm text-muted-foreground">
+                             {insight.observation}
+                           </p>
+                         </div>
+                       ))}
+                     </div>
                   </>
                 ) : (
                   <Alert>
@@ -468,12 +503,12 @@ export const AIAnalysisResults: React.FC<AIAnalysisResultsProps> = ({
                       <Lightbulb className="h-4 w-4" />
                       AI-Anbefalinger ({recommendations.length})
                     </h4>
-                    <div className="space-y-3">
-                      {recommendations.map((rec, index) => (
-                        <div key={index} className="p-4 border rounded-lg">
-                          <div className="flex items-start justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                              <Badge variant={getPriorityColor(rec.priority) as any}>
+                     <div className="space-y-3">
+                       {recommendations.map((rec, index) => (
+                         <div key={index} className="p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+                           <div className="flex items-start justify-between mb-2">
+                             <div className="flex items-center gap-2">
+                               <Badge variant={getPriorityColor(rec.priority) as any}>
                                 {getSeverityLabel(rec.priority)}
                               </Badge>
                               <span className="font-medium">{rec.area}</span>
@@ -488,19 +523,19 @@ export const AIAnalysisResults: React.FC<AIAnalysisResultsProps> = ({
                             </p>
                           )}
                         </div>
-                      ))}
-                    </div>
-                  </>
-                ) : (
-                  <Alert>
-                    <Info className="h-4 w-4" />
-                    <AlertDescription>
-                      Ingen spesifikke anbefalinger generert fra denne analysen.
-                    </AlertDescription>
-                  </Alert>
-                )}
-              </div>
-            </TabsContent>
+                        ))}
+                      </div>
+                   </>
+                 ) : (
+                   <Alert>
+                     <Info className="h-4 w-4" />
+                     <AlertDescription>
+                       Ingen spesifikke anbefalinger generert fra denne analysen.
+                     </AlertDescription>
+                   </Alert>
+                 )}
+               </div>
+             </TabsContent>
 
             <TabsContent value="risks" className="mt-6">
               <div className="space-y-4">
@@ -585,6 +620,26 @@ export const AIAnalysisResults: React.FC<AIAnalysisResultsProps> = ({
           </Tabs>
         </CardContent>
       </Card>
+
+      <DrilldownDialog
+        open={drilldownDialog.open}
+        onOpenChange={(open) => setDrilldownDialog(prev => ({ ...prev, open }))}
+        type={drilldownDialog.type}
+        identifier={drilldownDialog.identifier}
+        clientId={clientId}
+        versionId={selectedVersion}
+        title={drilldownDialog.title}
+        description={drilldownDialog.description}
+      />
+
+      <ReportExportDialog
+        open={exportDialog}
+        onOpenChange={setExportDialog}
+        aiResults={results}
+        clientId={clientId}
+        clientName="Klient"
+        versionId={selectedVersion}
+      />
     </div>
   );
 };

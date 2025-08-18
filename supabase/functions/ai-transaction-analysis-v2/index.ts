@@ -281,7 +281,9 @@ Gi svaret som strukturert JSON med følgende format:
 
     // Cache the result
     const configHash = `${analysisType}_${maxTransactions || 50000}`;
-    await supabase
+    console.log('💾 Saving result to cache and session...');
+    
+    const { error: cacheError } = await supabase
       .from('ai_analysis_cache')
       .upsert({
         client_id: clientId,
@@ -297,6 +299,12 @@ Gi svaret som strukturert JSON med følgende format:
         last_accessed: new Date().toISOString(),
         access_count: 1
       });
+
+    if (cacheError) {
+      console.error('❌ Error saving to cache:', cacheError);
+    } else {
+      console.log('✅ Result saved to cache successfully');
+    }
 
     // Final session update
     await updateSessionProgress(supabase, sessionId, {
