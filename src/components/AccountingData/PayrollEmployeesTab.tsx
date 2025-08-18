@@ -106,7 +106,8 @@ export function PayrollEmployeesTab({ employees, importId }: PayrollEmployeesTab
 
       {/* Employee List */}
       <Card className="overflow-hidden">
-        <Table>
+        <div className="max-h-[600px] overflow-auto">
+          <Table>
           <TableHeader>
             <TableRow>
               <TableHead className="w-[50px]"></TableHead>
@@ -195,6 +196,7 @@ export function PayrollEmployeesTab({ employees, importId }: PayrollEmployeesTab
             ))}
           </TableBody>
         </Table>
+        </div>
       </Card>
     </div>
   );
