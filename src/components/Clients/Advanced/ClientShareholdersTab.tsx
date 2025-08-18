@@ -27,7 +27,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Edit, Trash2, Users, Building, Calendar, Sync } from 'lucide-react';
+import { Plus, Edit, Trash2, Users, Building, Calendar, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -272,7 +272,7 @@ const ClientShareholdersTab: React.FC<ClientShareholdersTabProps> = ({ clientId 
         <h3 className="text-lg font-semibold">Aksjonærliste</h3>
         <div className="flex gap-2">
           <Button variant="outline" size="sm">
-            <Sync className="mr-2 h-4 w-4" />
+            <RefreshCw className="mr-2 h-4 w-4" />
             Oppdater fra Brønnøysund
           </Button>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

@@ -1,12 +1,10 @@
-import type { AuditPhase } from './revio';
-
-// Enhanced Client interface with all fields from database
-export interface ExtendedClient {
+// Basic client types without circular dependencies
+export interface SimpleClient {
   id: string;
   name: string;
   company_name: string;
   org_number: string;
-  phase: AuditPhase;
+  phase: string;
   progress: number;
   engagement_type: 'revisjon' | 'regnskap' | 'annet';
   industry?: string;
@@ -26,8 +24,10 @@ export interface ExtendedClient {
   created_at: string;
   updated_at: string;
   user_id?: string;
-  
-  // Custom fields will be loaded separately
+}
+
+// Extended client with additional data
+export interface ExtendedClient extends SimpleClient {
   custom_fields?: ClientCustomFieldValue[];
   shareholders?: ClientShareholder[];
 }
@@ -38,7 +38,7 @@ export interface ClientCustomField {
   field_name: string;
   field_label: string;
   field_type: 'text' | 'number' | 'date' | 'select' | 'checkbox' | 'textarea';
-  field_options: string[]; // For select options
+  field_options: string[];
   is_required: boolean;
   display_order: number;
   is_active: boolean;
@@ -57,8 +57,6 @@ export interface ClientCustomFieldValue {
   field_value?: string;
   created_at: string;
   updated_at: string;
-  
-  // Populated from joins
   custom_field?: ClientCustomField;
 }
 
@@ -111,7 +109,7 @@ export interface ClientFilterConfig {
 }
 
 export interface ClientFilterField {
-  field: string; // field name
+  field: string;
   operator: 'equals' | 'contains' | 'starts_with' | 'ends_with' | 'gt' | 'gte' | 'lt' | 'lte' | 'in' | 'not_in' | 'is_null' | 'is_not_null';
   value: any;
   type: 'string' | 'number' | 'date' | 'boolean' | 'select';
@@ -134,7 +132,28 @@ export interface ClientViewConfiguration {
 }
 
 // Form and validation types
-export interface ClientFormData extends Omit<ExtendedClient, 'id' | 'created_at' | 'updated_at'> {
+export interface ClientFormData {
+  name: string;
+  company_name: string;
+  org_number: string;
+  phase: string;
+  progress: number;
+  engagement_type: 'revisjon' | 'regnskap' | 'annet';
+  industry?: string;
+  registration_date?: string;
+  department_id?: string;
+  client_group?: string;
+  contact_person?: string;
+  contact_email?: string;
+  contact_phone?: string;
+  chair?: string;
+  ceo?: string;
+  address_line1?: string;
+  address_line2?: string;
+  postal_code?: string;
+  city?: string;
+  country?: string;
+  user_id?: string;
   custom_field_values?: Record<string, string>;
 }
 
@@ -157,7 +176,7 @@ export interface ClientSearchParams {
 }
 
 export interface ClientSearchResult {
-  clients: ExtendedClient[];
+  clients: SimpleClient[];
   total_count: number;
   page: number;
   limit: number;
@@ -175,7 +194,7 @@ export interface ClientColumnConfig {
   visible: boolean;
   order: number;
   format?: (value: any) => string;
-  custom_field_id?: string; // For custom fields
+  custom_field_id?: string;
 }
 
 // Predefined column configurations
