@@ -85,8 +85,7 @@ serve(async (req) => {
       `)
       .eq('client_id', clientId)
       .eq('version_id', dataVersionId)
-      .order('transaction_date', { ascending: false })
-      .limit(1000);
+      .order('transaction_date', { ascending: false });
 
     if (transactionError) {
       console.error('Transaction fetch error:', transactionError);

@@ -26,7 +26,7 @@ import { ReportGeneratorPanel } from '@/components/TransactionAnalysis/ReportGen
 import { AnalysisConfigurationPanel } from '@/components/TransactionAnalysis/AnalysisConfigurationPanel';
 
 import { useAvailableVersions } from '@/hooks/useAvailableVersions';
-import { useAccountingData } from '@/hooks/useAccountingData';
+import { useGeneralLedgerCount } from '@/hooks/useGeneralLedgerCount';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 
@@ -38,7 +38,7 @@ const TransactionAnalysis = () => {
 
   // Data hooks
   const { data: versions, isLoading: versionsLoading } = useAvailableVersions(clientId || '');
-  const { data: accountingData, isLoading: dataLoading } = useAccountingData(clientId || '');
+  const { data: transactionCount, isLoading: countLoading } = useGeneralLedgerCount(clientId || '', selectedVersion);
 
   // Auto-select active version when versions load
   useEffect(() => {
@@ -158,7 +158,7 @@ const TransactionAnalysis = () => {
         <div className="flex items-center gap-3">
           <Badge variant="secondary" className="gap-2">
             <Database className="h-3 w-3" />
-            {accountingData?.generalLedgerTransactionsCount || 0} transaksjoner
+            {selectedVersion ? (transactionCount || 0) : 0} transaksjoner
           </Badge>
         </div>
       </div>

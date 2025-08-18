@@ -8,6 +8,7 @@ import { CheckCircle, AlertCircle, Upload, FileSpreadsheet, Database, ArrowRight
 import { useAccountingData } from '@/hooks/useAccountingData';
 import TrialBalanceUploader from './TrialBalanceUploader';
 import GeneralLedgerUploader from './GeneralLedgerUploader';
+import { VersionManagerCard } from '@/components/VersionManagement/VersionManagerCard';
 
 interface RegnskapsDataManagerProps {
   clientId: string;
@@ -219,6 +220,11 @@ const RegnskapsDataManager = ({ clientId, clientName }: RegnskapsDataManagerProp
           </Card>
         )}
       </div>
+
+      {/* Version Management */}
+      {accountingData?.hasGeneralLedger && (
+        <VersionManagerCard clientId={clientId} />
+      )}
 
       {/* Help Section */}
       <Card>
