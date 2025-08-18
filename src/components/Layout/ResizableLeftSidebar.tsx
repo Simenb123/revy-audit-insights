@@ -189,6 +189,11 @@ const ResizableLeftSidebar = () => {
       icon: BarChart3,
     },
     {
+      title: 'Transaksjonsanalyse',
+      url: `/clients/${clientId}/transaction-analysis`,
+      icon: Brain,
+    },
+    {
       title: 'Saldobalanse',
       url: `/clients/${clientId}/trial-balance`,
       icon: BarChart3,
