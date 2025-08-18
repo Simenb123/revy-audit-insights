@@ -34,7 +34,8 @@ export const useAIAnalysisSessions = () => {
 
   const createSession = useMutation({
     mutationFn: async (request: CreateAIAnalysisRequest) => {
-      const { data, error } = await supabase
+      // First create the session record
+      const { data: session, error: sessionError } = await supabase
         .from('ai_analysis_sessions')
         .insert({
           client_id: request.clientId,
@@ -42,14 +43,38 @@ export const useAIAnalysisSessions = () => {
           session_type: request.sessionType,
           analysis_config: request.analysisConfig,
           status: 'pending',
-          total_steps: 5, // AI analysis has 5 main steps
+          total_steps: 5,
           progress_percentage: 0
         })
         .select()
         .single();
 
-      if (error) throw error;
-      return data;
+      if (sessionError) throw sessionError;
+
+      // Then trigger the V2 analysis function
+      const { data: functionData, error: functionError } = await supabase.functions.invoke('ai-transaction-analysis-v2', {
+        body: {
+          sessionId: session.id,
+          clientId: request.clientId,
+          dataVersionId: request.dataVersionId,
+          analysisConfig: request.analysisConfig
+        }
+      });
+
+      if (functionError) {
+        // Update session to failed status
+        await supabase
+          .from('ai_analysis_sessions')
+          .update({ 
+            status: 'failed',
+            error_message: functionError.message,
+            completed_at: new Date().toISOString()
+          })
+          .eq('id', session.id);
+        throw functionError;
+      }
+
+      return session;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ai-analysis-sessions'] });

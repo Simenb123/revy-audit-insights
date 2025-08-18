@@ -18,6 +18,7 @@ import { AnalysisInsightsCard } from './AnalysisInsightsCard';
 import { AnalysisMetricsCard } from './AnalysisMetricsCard';
 import { QuickActionsPanel } from './QuickActionsPanel';
 import { AnalysisStatusIndicator } from './AnalysisStatusIndicator';
+import { AIAnalysisTestButton } from './AIAnalysisTestButton';
 
 interface AIAnalysisResultsProps {
   clientId: string;
@@ -147,19 +148,8 @@ export const AIAnalysisResults: React.FC<AIAnalysisResultsProps> = ({
 
       setActiveSessionId(session.id);
       
-      // Start the actual analysis
-      const response = await supabase.functions.invoke('ai-transaction-analysis-v2', {
-        body: {
-          sessionId: session.id,
-          clientId,
-          versionId: selectedVersion,
-          analysisType: 'transaction_analysis'
-        }
-      });
-
-      if (response.error) {
-        throw new Error(response.error.message);
-      }
+      // The V2 function is now called automatically in createSession
+      // No need for separate function call here
 
       toast.success('AI-analyse startet');
     } catch (error) {
@@ -310,6 +300,11 @@ export const AIAnalysisResults: React.FC<AIAnalysisResultsProps> = ({
               <Play className="h-4 w-4 mr-2" />
               Start AI-analyse
             </Button>
+            
+            <AIAnalysisTestButton 
+              clientId={clientId} 
+              selectedVersion={selectedVersion} 
+            />
             
             {sessions && sessions.length > 0 && (
               <Button variant="outline" onClick={() => refetchSessions()}>
