@@ -275,7 +275,7 @@ export function EnhancedDataTable<T extends Record<string, any>>({
     <Card className={className}>
       {renderHeader()}
       <CardContent className="p-0">
-        <DataTable<T>
+        <DataTable
           title={title}
           description={description}
           {...dataTableProps}
