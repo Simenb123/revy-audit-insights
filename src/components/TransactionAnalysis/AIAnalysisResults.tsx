@@ -1,68 +1,92 @@
-import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Brain, AlertTriangle, Lightbulb, TrendingUp, ChevronDown, Clock } from "lucide-react";
 
-export interface AIInsight {
-  type: 'anomaly' | 'pattern' | 'risk' | 'recommendation';
-  severity: 'low' | 'medium' | 'high' | 'critical';
-  title: string;
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Progress } from '@/components/ui/progress';
+import { 
+  Brain, 
+  TrendingUp, 
+  AlertTriangle, 
+  CheckCircle, 
+  Info,
+  Target,
+  BarChart3,
+  FileText,
+  Lightbulb,
+  Shield
+} from 'lucide-react';
+
+interface AIInsight {
+  category: string;
   description: string;
-  affectedTransactions: string[];
-  recommendedAction: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
   confidence: number;
+  details?: string;
+  recommendation?: string;
 }
 
-export interface AIAnalysisResult {
+interface AIAnalysisResult {
+  summary: string;
   insights: AIInsight[];
-  summary: {
-    totalTransactionsAnalyzed: number;
-    anomaliesFound: number;
-    overallRiskLevel: 'low' | 'medium' | 'high' | 'critical';
-    keyFindings: string[];
-  };
-  metadata: {
-    analysisType: string;
-    modelUsed: string;
-    processingTime: number;
-    timestamp: string;
-  };
+  riskScore: number;
+  confidence: number;
+  recommendations: string[];
+  patterns?: any[];
+  anomalies?: any[];
+  trends?: any[];
 }
 
 interface AIAnalysisResultsProps {
   results: AIAnalysisResult | null;
   isLoading?: boolean;
-  onRetry?: () => void;
+  error?: string | null;
 }
 
 export const AIAnalysisResults: React.FC<AIAnalysisResultsProps> = ({ 
   results, 
   isLoading, 
-  onRetry 
+  error 
 }) => {
+  console.log('AIAnalysisResults - Props:', { results, isLoading, error });
+
   if (isLoading) {
     return (
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Brain className="h-5 w-5 animate-pulse" />
-            AI-Transaksjonsanalyse
+            AI-Analyse pågår...
           </CardTitle>
-          <CardDescription>AI analyserer transaksjonsdata...</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="animate-pulse space-y-4">
-            <div className="h-4 bg-muted rounded w-3/4" />
-            <div className="h-4 bg-muted rounded w-1/2" />
-            <div className="space-y-3">
-              {[1, 2, 3].map(i => (
-                <div key={i} className="h-20 bg-muted rounded" />
-              ))}
-            </div>
+          <div className="space-y-4">
+            <Progress value={33} className="w-full" />
+            <p className="text-sm text-muted-foreground">
+              Analyserer transaksjonsdata med GPT-5...
+            </p>
           </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-destructive">
+            <AlertTriangle className="h-5 w-5" />
+            AI-Analyse feilet
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
         </CardContent>
       </Card>
     );
@@ -74,37 +98,20 @@ export const AIAnalysisResults: React.FC<AIAnalysisResultsProps> = ({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Brain className="h-5 w-5" />
-            AI-Transaksjonsanalyse
+            AI-Analyse
           </CardTitle>
         </CardHeader>
         <CardContent>
           <Alert>
-            <AlertDescription className="flex items-center justify-between">
-              <span>Ingen AI-analyse tilgjengelig. Kjør analyse først.</span>
-              {onRetry && (
-                <Button variant="outline" size="sm" onClick={onRetry}>
-                  Start AI-analyse
-                </Button>
-              )}
+            <Info className="h-4 w-4" />
+            <AlertDescription>
+              Ingen AI-analyse tilgjengelig. Kjør analyse først.
             </AlertDescription>
           </Alert>
         </CardContent>
       </Card>
     );
   }
-
-  const getSeverityIcon = (severity: string) => {
-    switch (severity) {
-      case 'critical':
-        return <AlertTriangle className="h-4 w-4 text-destructive" />;
-      case 'high':
-        return <AlertTriangle className="h-4 w-4 text-destructive" />;
-      case 'medium':
-        return <AlertTriangle className="h-4 w-4 text-warning" />;
-      default:
-        return <Lightbulb className="h-4 w-4 text-info" />;
-    }
-  };
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
@@ -119,207 +126,256 @@ export const AIAnalysisResults: React.FC<AIAnalysisResultsProps> = ({
     }
   };
 
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case 'anomaly':
-        return '🔍';
-      case 'pattern':
-        return '📊';
-      case 'risk':
-        return '⚠️';
-      case 'recommendation':
-        return '💡';
-      default:
-        return '🤖';
-    }
-  };
-
-  const getTypeLabel = (type: string) => {
+  const getSeverityLabel = (severity: string) => {
     const labels: Record<string, string> = {
-      'anomaly': 'Anomali',
-      'pattern': 'Mønster',
-      'risk': 'Risiko',
-      'recommendation': 'Anbefaling'
+      'critical': 'Kritisk',
+      'high': 'Høy',
+      'medium': 'Middels',
+      'low': 'Lav'
     };
-    return labels[type] || type;
+    return labels[severity] || severity;
   };
 
-  const getRiskLevelColor = (riskLevel: string) => {
-    switch (riskLevel) {
-      case 'critical':
-        return 'text-destructive';
-      case 'high':
-        return 'text-destructive';
-      case 'medium':
-        return 'text-warning';
-      default:
-        return 'text-success';
-    }
+  const getRiskScoreColor = (score: number) => {
+    if (score >= 80) return 'text-destructive';
+    if (score >= 60) return 'text-warning';
+    if (score >= 40) return 'text-warning';
+    return 'text-success';
   };
 
-  const highPriorityInsights = results.insights.filter(insight => 
-    insight.severity === 'critical' || insight.severity === 'high'
-  );
+  const getRiskScoreLabel = (score: number) => {
+    if (score >= 80) return 'Høy risiko';
+    if (score >= 60) return 'Middels-høy risiko';
+    if (score >= 40) return 'Middels risiko';
+    return 'Lav risiko';
+  };
+
+  // Safely access insights with fallback to empty array
+  const insights = results.insights || [];
+  const recommendations = results.recommendations || [];
+  const patterns = results.patterns || [];
+  const anomalies = results.anomalies || [];
+  const trends = results.trends || [];
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Brain className="h-5 w-5" />
-          AI-Transaksjonsanalyse
+          AI-Analyse Resultater
         </CardTitle>
-        <CardDescription className="flex items-center gap-4">
-          <span>
-            {results.summary.totalTransactionsAnalyzed.toLocaleString('no-NO')} transaksjoner analysert
-          </span>
-          <span className="flex items-center gap-1">
-            <Clock className="h-3 w-3" />
-            {results.metadata.processingTime}ms
-          </span>
-          <Badge variant="outline">{results.metadata.modelUsed}</Badge>
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Sammendrag */}
-        <div>
-          <h4 className="font-medium mb-3 flex items-center gap-2">
-            <TrendingUp className="h-4 w-4" />
-            Analyseoversikt
-          </h4>
-          <div className="grid grid-cols-3 gap-4 p-4 bg-muted rounded-lg">
-            <div className="text-center">
-              <div className="text-2xl font-bold">{results.insights.length}</div>
-              <div className="text-sm text-muted-foreground">Innsikter</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-warning">{results.summary.anomaliesFound}</div>
-              <div className="text-sm text-muted-foreground">Anomalier</div>
-            </div>
-            <div className="text-center">
-              <div className={`text-2xl font-bold ${getRiskLevelColor(results.summary.overallRiskLevel)}`}>
-                {results.summary.overallRiskLevel.toUpperCase()}
-              </div>
-              <div className="text-sm text-muted-foreground">Samlet risiko</div>
-            </div>
+        <div className="flex items-center gap-4 mt-2">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Risikoscore:</span>
+            <Badge variant="outline" className={getRiskScoreColor(results.riskScore || 0)}>
+              {results.riskScore || 0}/100
+            </Badge>
+            <span className="text-sm text-muted-foreground">
+              ({getRiskScoreLabel(results.riskScore || 0)})
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Konfidensgrad:</span>
+            <Badge variant="outline">
+              {results.confidence || 0}%
+            </Badge>
           </div>
         </div>
+      </CardHeader>
+      <CardContent>
+        <Tabs defaultValue="summary" className="w-full">
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="summary">Sammendrag</TabsTrigger>
+            <TabsTrigger value="insights">
+              Innsikter ({insights.length})
+            </TabsTrigger>
+            <TabsTrigger value="recommendations">
+              Anbefalinger ({recommendations.length})
+            </TabsTrigger>
+            <TabsTrigger value="patterns">
+              Mønstre ({patterns.length})
+            </TabsTrigger>
+            <TabsTrigger value="anomalies">
+              Avvik ({anomalies.length})
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Hovedfunn */}
-        {results.summary.keyFindings.length > 0 && (
-          <div>
-            <h4 className="font-medium mb-3">Hovedfunn</h4>
-            <div className="space-y-2">
-              {results.summary.keyFindings.map((finding, index) => (
-                <div key={index} className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                  <div className="flex items-start gap-2">
-                    <span className="text-blue-600 mt-0.5">•</span>
-                    <span className="text-sm text-blue-800">{finding}</span>
-                  </div>
+          <TabsContent value="summary" className="mt-6">
+            <div className="space-y-4">
+              <div className="p-4 bg-muted rounded-lg">
+                <h4 className="font-medium mb-2 flex items-center gap-2">
+                  <FileText className="h-4 w-4" />
+                  Analyse-sammendrag
+                </h4>
+                <p className="text-sm leading-relaxed">
+                  {results.summary || 'Ingen sammendrag tilgjengelig.'}
+                </p>
+              </div>
+
+              {/* Quick stats */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="text-center p-3 bg-muted rounded-lg">
+                  <div className="text-2xl font-bold text-primary">{insights.length}</div>
+                  <div className="text-sm text-muted-foreground">Innsikter</div>
                 </div>
-              ))}
+                <div className="text-center p-3 bg-muted rounded-lg">
+                  <div className="text-2xl font-bold text-primary">{recommendations.length}</div>
+                  <div className="text-sm text-muted-foreground">Anbefalinger</div>
+                </div>
+                <div className="text-center p-3 bg-muted rounded-lg">
+                  <div className="text-2xl font-bold text-primary">{patterns.length}</div>
+                  <div className="text-sm text-muted-foreground">Mønstre</div>
+                </div>
+                <div className="text-center p-3 bg-muted rounded-lg">
+                  <div className="text-2xl font-bold text-destructive">{anomalies.length}</div>
+                  <div className="text-sm text-muted-foreground">Avvik</div>
+                </div>
+              </div>
             </div>
-          </div>
-        )}
+          </TabsContent>
 
-        {/* Høyprioritet innsikter */}
-        {highPriorityInsights.length > 0 && (
-          <div>
-            <h4 className="font-medium mb-3 flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-destructive" />
-              Høyprioritet innsikter ({highPriorityInsights.length})
-            </h4>
-            <div className="space-y-2">
-              {highPriorityInsights.map((insight, index) => (
-                <Alert key={index} className="border-destructive/50 bg-destructive/5">
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertDescription>
-                    <div className="font-medium mb-1">{insight.title}</div>
-                    <div className="text-sm">{insight.description}</div>
-                    {insight.recommendedAction && (
-                      <div className="text-sm font-medium mt-2 text-destructive">
-                        Anbefaling: {insight.recommendedAction}
+          <TabsContent value="insights" className="mt-6">
+            <div className="space-y-4">
+              {insights.length > 0 ? (
+                <>
+                  <h4 className="font-medium flex items-center gap-2">
+                    <Target className="h-4 w-4" />
+                    AI-Innsikter ({insights.length})
+                  </h4>
+                  <div className="space-y-3">
+                    {insights.map((insight, index) => (
+                      <div key={index} className="p-4 border rounded-lg">
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <Badge variant={getSeverityColor(insight.severity) as any}>
+                              {getSeverityLabel(insight.severity)}
+                            </Badge>
+                            <span className="font-medium">{insight.category}</span>
+                          </div>
+                          <Badge variant="outline">
+                            {insight.confidence}% sikkerhet
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground mb-2">
+                          {insight.description}
+                        </p>
+                        {insight.details && (
+                          <p className="text-xs text-muted-foreground bg-muted p-2 rounded">
+                            <strong>Detaljer:</strong> {insight.details}
+                          </p>
+                        )}
+                        {insight.recommendation && (
+                          <p className="text-xs text-primary bg-primary/10 p-2 rounded mt-2">
+                            <strong>Anbefaling:</strong> {insight.recommendation}
+                          </p>
+                        )}
                       </div>
-                    )}
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <Alert>
+                  <Info className="h-4 w-4" />
+                  <AlertDescription>
+                    Ingen spesifikke innsikter identifisert i denne analysen.
                   </AlertDescription>
                 </Alert>
-              ))}
+              )}
             </div>
-          </div>
-        )}
+          </TabsContent>
 
-        {/* Alle innsikter */}
-        <div>
-          <h4 className="font-medium mb-3">Alle innsikter ({results.insights.length})</h4>
-          <div className="space-y-3">
-            {results.insights.map((insight, index) => (
-              <Collapsible key={index}>
-                <CollapsibleTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    className="w-full justify-between p-4 h-auto border rounded-lg hover:bg-muted/50"
-                  >
-                    <div className="flex items-center gap-3 text-left">
-                      <span className="text-lg">{getTypeIcon(insight.type)}</span>
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <Badge variant={getSeverityColor(insight.severity) as any}>
-                            {insight.severity.toUpperCase()}
-                          </Badge>
-                          <Badge variant="outline">
-                            {getTypeLabel(insight.type)}
-                          </Badge>
-                        </div>
-                        <div className="font-medium">{insight.title}</div>
-                        <div className="text-sm text-muted-foreground">
-                          Tillitsgrad: {(insight.confidence * 100).toFixed(0)}%
-                        </div>
+          <TabsContent value="recommendations" className="mt-6">
+            <div className="space-y-4">
+              {recommendations.length > 0 ? (
+                <>
+                  <h4 className="font-medium flex items-center gap-2">
+                    <Lightbulb className="h-4 w-4" />
+                    AI-Anbefalinger ({recommendations.length})
+                  </h4>
+                  <div className="space-y-2">
+                    {recommendations.map((rec, index) => (
+                      <div key={index} className="flex items-start gap-3 p-3 bg-muted rounded-lg">
+                        <CheckCircle className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                        <p className="text-sm">{rec}</p>
                       </div>
-                    </div>
-                    <ChevronDown className="h-4 w-4" />
-                  </Button>
-                </CollapsibleTrigger>
-                
-                <CollapsibleContent className="mt-2">
-                  <div className="p-4 bg-muted/30 rounded-lg ml-8 space-y-3">
-                    <div>
-                      <div className="font-medium text-sm mb-1">Beskrivelse:</div>
-                      <div className="text-sm text-muted-foreground">{insight.description}</div>
-                    </div>
-                    
-                    {insight.recommendedAction && (
-                      <div>
-                        <div className="font-medium text-sm mb-1">Anbefalt handling:</div>
-                        <div className="text-sm text-muted-foreground">{insight.recommendedAction}</div>
-                      </div>
-                    )}
-                    
-                    {insight.affectedTransactions.length > 0 && (
-                      <div>
-                        <div className="font-medium text-sm mb-1">
-                          Berørte transaksjoner ({insight.affectedTransactions.length}):
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {insight.affectedTransactions.slice(0, 5).join(', ')}
-                          {insight.affectedTransactions.length > 5 && '...'}
-                        </div>
-                      </div>
-                    )}
+                    ))}
                   </div>
-                </CollapsibleContent>
-              </Collapsible>
-            ))}
-          </div>
-        </div>
+                </>
+              ) : (
+                <Alert>
+                  <Info className="h-4 w-4" />
+                  <AlertDescription>
+                    Ingen spesifikke anbefalinger generert fra denne analysen.
+                  </AlertDescription>
+                </Alert>
+              )}
+            </div>
+          </TabsContent>
 
-        {results.insights.length === 0 && (
-          <Alert>
-            <Brain className="h-4 w-4" />
-            <AlertDescription>
-              AI-analysen fant ingen spesielle anomalier eller mønstre i transaksjonsdataene. 
-              Dette indikerer normale transaksjonsmønstre.
-            </AlertDescription>
-          </Alert>
-        )}
+          <TabsContent value="patterns" className="mt-6">
+            <div className="space-y-4">
+              {patterns.length > 0 ? (
+                <>
+                  <h4 className="font-medium flex items-center gap-2">
+                    <BarChart3 className="h-4 w-4" />
+                    Identifiserte mønstre ({patterns.length})
+                  </h4>
+                  <div className="space-y-3">
+                    {patterns.map((pattern, index) => (
+                      <div key={index} className="p-4 border rounded-lg">
+                        <div className="font-medium text-sm mb-2">
+                          Mønster #{index + 1}
+                        </div>
+                        <pre className="text-xs bg-muted p-2 rounded overflow-auto">
+                          {JSON.stringify(pattern, null, 2)}
+                        </pre>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <Alert>
+                  <Info className="h-4 w-4" />
+                  <AlertDescription>
+                    Ingen spesifikke mønstre identifisert i dataene.
+                  </AlertDescription>
+                </Alert>
+              )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="anomalies" className="mt-6">
+            <div className="space-y-4">
+              {anomalies.length > 0 ? (
+                <>
+                  <h4 className="font-medium flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4 text-destructive" />
+                    Identifiserte avvik ({anomalies.length})
+                  </h4>
+                  <div className="space-y-3">
+                    {anomalies.map((anomaly, index) => (
+                      <div key={index} className="p-4 border-l-4 border-destructive bg-destructive/5 rounded">
+                        <div className="font-medium text-sm mb-2 text-destructive">
+                          Avvik #{index + 1}
+                        </div>
+                        <pre className="text-xs bg-muted p-2 rounded overflow-auto">
+                          {JSON.stringify(anomaly, null, 2)}
+                        </pre>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <Alert>
+                  <CheckCircle className="h-4 w-4 text-success" />
+                  <AlertDescription>
+                    Ingen avvik identifisert - dette er positivt!
+                  </AlertDescription>
+                </Alert>
+              )}
+            </div>
+          </TabsContent>
+        </Tabs>
       </CardContent>
     </Card>
   );
