@@ -78,9 +78,9 @@ const ClientDetailsForm = ({ form }: ClientDetailsFormProps) => {
             <SelectValue placeholder="Velg oppdragstype" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="Revisjon">Revisjon</SelectItem>
-            <SelectItem value="Regnskap">Regnskap</SelectItem>
-            <SelectItem value="Annet">Annet</SelectItem>
+            <SelectItem value="revisjon">Revisjon</SelectItem>
+            <SelectItem value="regnskap">Regnskap</SelectItem>
+            <SelectItem value="annet">Annet</SelectItem>
           </SelectContent>
         </Select>
       </FormFieldWrapper>
