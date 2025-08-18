@@ -46,7 +46,7 @@ const ClientDetailsForm = ({ form }: ClientDetailsFormProps) => {
       <FormFieldWrapper form={form} name="phase" label="Revisjonsfase" required>
         <Select
           onValueChange={(value) => form.setValue('phase', value)}
-          defaultValue={form.getValues().phase}
+          value={form.watch('phase')}
         >
           <SelectTrigger>
             <SelectValue placeholder="Velg fase" />
@@ -72,7 +72,7 @@ const ClientDetailsForm = ({ form }: ClientDetailsFormProps) => {
       <FormFieldWrapper form={form} name="engagement_type" label="Oppdragstype" required>
         <Select
           onValueChange={(value) => form.setValue('engagement_type', value)}
-          value={form.watch('engagement_type') || ''}
+          value={form.watch('engagement_type')}
         >
           <SelectTrigger>
             <SelectValue placeholder="Velg oppdragstype" />

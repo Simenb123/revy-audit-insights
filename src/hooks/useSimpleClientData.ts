@@ -63,3 +63,6 @@ export const useSimpleClientList = (params: SimpleClientSearchParams = {}) => {
     staleTime: 2 * 60 * 1000, // 2 minutes
   });
 };
+
+export default useSimpleClientList;
+export { useSimpleClientList as useExtendedClientList };

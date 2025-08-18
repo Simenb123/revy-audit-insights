@@ -14,6 +14,13 @@ import { useClientData } from '@/components/Clients/ClientFetcher/useClientData'
 import { useClientFilters } from '@/components/Clients/ClientFilters/useClientFilters';
 import { useBrregRefresh } from '@/hooks/useBrregRefresh';
 import FlexibleGrid from '@/components/Layout/FlexibleGrid';
+import ClientFilters from '@/components/Clients/Advanced/ClientFilters';
+import ClientColumnsConfig from '@/components/Clients/Advanced/ClientColumnsConfig';
+
+import { ClientFilterField, ClientColumnConfig, DEFAULT_CLIENT_COLUMNS } from '@/types/client-extended';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { Settings, Filter } from 'lucide-react';
 
 const ClientsOverview = () => {
   const { setContext } = useRevyContext();
@@ -21,9 +28,14 @@ const ClientsOverview = () => {
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [showAddClientDialog, setShowAddClientDialog] = useState(false);
   const [showBulkImportDialog, setShowBulkImportDialog] = useState(false);
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [showColumnsConfig, setShowColumnsConfig] = useState(false);
+  const [activeFilters, setActiveFilters] = useState<ClientFilterField[]>([]);
+  const [columnConfig, setColumnConfig] = useState<ClientColumnConfig[]>(DEFAULT_CLIENT_COLUMNS);
   
-  // Fetch client data
-  const { data: clients = [], isLoading, error, refetch } = useClientData();
+  // Fetch client data with extended functionality  
+  const { data: clientData, isLoading, error, refetch } = useClientData();
+  const clients = clientData || [];
   
   // Handle BRREG API refresh
   const { handleRefreshBrregData, isRefreshing, hasApiError, refreshProgress } = useBrregRefresh({ clients });
@@ -81,9 +93,35 @@ const ClientsOverview = () => {
 
   return (
     <div className="space-y-[var(--content-gap)] w-full">
+      <div className="flex justify-between items-start">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Mine klienter</h1>
+          <p className="text-muted-foreground">Oversikt over klienter og revisjonsstatus</p>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+          >
+            <Filter size={16} />
+            Avanserte filtre
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setShowColumnsConfig(!showColumnsConfig)}
+          >
+            <Settings size={16} />
+            Kolonner
+          </Button>
+        </div>
+      </div>
+
       <ClientsHeader
-        title="Mine klienter"
-        subtitle="Oversikt over klienter og revisjonsstatus"
+        title=""
+        subtitle=""
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
         departmentFilter={departmentFilter}
@@ -101,6 +139,45 @@ const ClientsOverview = () => {
         onAddClient={() => setShowAddClientDialog(true)}
         onBulkImport={() => setShowBulkImportDialog(true)}
       />
+
+      {/* Advanced Filters */}
+      {showAdvancedFilters && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Avanserte filtre</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ClientFilters 
+              activeFilters={activeFilters}
+              onFiltersChange={setActiveFilters}
+              availableFields={[
+                { key: 'name', label: 'Navn', type: 'string' },
+                { key: 'org_number', label: 'Organisasjonsnummer', type: 'string' },
+                { key: 'phase', label: 'Fase', type: 'select', options: ['engagement', 'planning', 'execution', 'completion', 'reporting'] },
+                { key: 'engagement_type', label: 'Oppdragstype', type: 'select', options: ['revisjon', 'regnskap', 'annet'] },
+                { key: 'department', label: 'Avdeling', type: 'string' },
+                { key: 'municipality_name', label: 'Kommune', type: 'string' },
+                { key: 'nace_code', label: 'Bransjekode', type: 'string' }
+              ]}
+            />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Column Configuration */}
+      {showColumnsConfig && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Kolonnekonfigurasjon</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ClientColumnsConfig 
+              columns={columnConfig}
+              onColumnsChange={setColumnConfig}
+            />
+          </CardContent>
+        </Card>
+      )}
 
 
       {/* Stats Grid */}
