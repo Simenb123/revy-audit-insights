@@ -22,9 +22,44 @@ export function AnalysisConfigurationPanel({
   onConfigurationChange 
 }: AnalysisConfigurationPanelProps) {
   const [selectedConfigId, setSelectedConfigId] = useState<string>(currentConfig?.id || 'comprehensive');
-  const [activeConfig, setActiveConfig] = useState<AnalysisConfiguration>(
-    currentConfig || analysisConfigurationService.getConfiguration('comprehensive')!
-  );
+  const [activeConfig, setActiveConfig] = useState<AnalysisConfiguration>(() => {
+    const defaultConfig = analysisConfigurationService.getConfiguration('comprehensive');
+    return currentConfig || defaultConfig || {
+      id: 'comprehensive',
+      name: 'Standard analyse',
+      description: 'Standard analysekonfigurasjon',
+      controlTests: {
+        enabledTests: [],
+        balanceTolerancePercent: 0.01,
+        duplicateAmountThreshold: 0.01,
+        duplicateDateRangeDays: 30,
+        weekendPostingEnabled: true,
+        futureTransactionDays: 7,
+        maxAccountFlowValidations: 10000
+      },
+      riskScoring: {
+        enabledFactors: [],
+        thresholds: { lowRisk: 3, mediumRisk: 7, highRisk: 12 },
+        weights: { timing: 2.0, amount: 1.5, description: 1.0, frequency: 1.2, user: 1.8 },
+        minimumTransactionCount: 5
+      },
+      aiAnalysis: {
+        enabled: false,
+        model: 'gpt-4.1-mini-2025-04-14',
+        maxTransactions: 1000,
+        confidenceThreshold: 0.7,
+        analysisTypes: [],
+        customPrompts: {}
+      },
+      reporting: {
+        defaultTemplate: 'comprehensive',
+        includeSensitiveData: false,
+        autoGenerateOnComplete: true,
+        emailNotifications: false,
+        retentionDays: 365
+      }
+    };
+  });
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState('overview');
 
@@ -187,9 +222,9 @@ export function AnalysisConfigurationPanel({
           <h4 className="font-medium mb-2">{activeConfig.name}</h4>
           <p className="text-sm text-muted-foreground mb-3">{activeConfig.description}</p>
           <div className="text-xs space-y-1">
-            <div>Kontrolltester: {activeConfig.controlTests.enabledTests.length} aktivert</div>
-            <div>Risikofaktorer: {activeConfig.riskScoring.enabledFactors.length} aktivert</div>
-            <div>AI-analyse: {activeConfig.aiAnalysis.enabled ? 'Aktivert' : 'Deaktivert'}</div>
+            <div>Kontrolltester: {activeConfig.controlTests?.enabledTests?.length || 0} aktivert</div>
+            <div>Risikofaktorer: {activeConfig.riskScoring?.enabledFactors?.length || 0} aktivert</div>
+            <div>AI-analyse: {activeConfig.aiAnalysis?.enabled ? 'Aktivert' : 'Deaktivert'}</div>
           </div>
         </div>
 
@@ -209,31 +244,31 @@ export function AnalysisConfigurationPanel({
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base">Kontrolltester</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-2">
-                  <div className="flex flex-wrap gap-1">
-                    {activeConfig.controlTests.enabledTests.map((test) => (
-                      <Badge key={test} variant="secondary" className="text-xs">
-                        {test.replace(/_/g, ' ')}
-                      </Badge>
-                    ))}
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    Toleranse: {(activeConfig.controlTests.balanceTolerancePercent * 100).toFixed(2)}%
-                  </div>
-                </CardContent>
+                 <CardContent className="space-y-2">
+                   <div className="flex flex-wrap gap-1">
+                     {(activeConfig.controlTests?.enabledTests || []).map((test) => (
+                       <Badge key={test} variant="secondary" className="text-xs">
+                         {test.replace(/_/g, ' ')}
+                       </Badge>
+                     ))}
+                   </div>
+                   <div className="text-sm text-muted-foreground">
+                     Toleranse: {((activeConfig.controlTests?.balanceTolerancePercent || 0) * 100).toFixed(2)}%
+                   </div>
+                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base">Risikoskåring</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-2">
-                  <div className="text-sm">
-                    <div>Faktorer: {activeConfig.riskScoring.enabledFactors.length}</div>
-                    <div>Høy risiko: ≥{activeConfig.riskScoring.thresholds.highRisk} poeng</div>
-                    <div>Medium risiko: ≥{activeConfig.riskScoring.thresholds.mediumRisk} poeng</div>
-                  </div>
-                </CardContent>
+                 <CardContent className="space-y-2">
+                   <div className="text-sm">
+                     <div>Faktorer: {activeConfig.riskScoring?.enabledFactors?.length || 0}</div>
+                     <div>Høy risiko: ≥{activeConfig.riskScoring?.thresholds?.highRisk || 0} poeng</div>
+                     <div>Medium risiko: ≥{activeConfig.riskScoring?.thresholds?.mediumRisk || 0} poeng</div>
+                   </div>
+                 </CardContent>
               </Card>
 
               <Card>

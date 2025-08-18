@@ -11,7 +11,7 @@ export const useAvailableVersions = (clientId: string) => {
       
       const { data, error } = await supabase
         .from('accounting_data_versions')
-        .select('version_number, file_name, is_active')
+        .select('id, version_number, file_name, is_active')
         .eq('client_id', clientId)
         .order('version_number');
 
@@ -22,9 +22,9 @@ export const useAvailableVersions = (clientId: string) => {
         return [];
       }
 
-      // Return version objects with additional info
+      // Return version objects with actual UUID as value
       return data.map(version => ({
-        value: `v${version.version_number}`,
+        value: version.id, // Use actual UUID instead of version string
         label: `Versjon ${version.version_number} - ${version.file_name}`,
         version_number: version.version_number,
         file_name: version.file_name,
