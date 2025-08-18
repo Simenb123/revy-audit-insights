@@ -68,6 +68,22 @@ const ClientDetailsForm = ({ form }: ClientDetailsFormProps) => {
           max="100"
         />
       </FormFieldWrapper>
+
+      <FormFieldWrapper form={form} name="engagement_type" label="Oppdragstype">
+        <Select
+          onValueChange={(value) => form.setValue('engagement_type', value)}
+          defaultValue={form.getValues().engagement_type}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Velg oppdragstype" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="Revisjon">Revisjon</SelectItem>
+            <SelectItem value="Regnskap">Regnskap</SelectItem>
+            <SelectItem value="Annet">Annet</SelectItem>
+          </SelectContent>
+        </Select>
+      </FormFieldWrapper>
     </div>
   );
 };
