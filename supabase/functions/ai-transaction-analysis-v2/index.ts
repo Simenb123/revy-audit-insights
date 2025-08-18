@@ -156,7 +156,7 @@ Gi en strukturert analyse på norsk:
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
+        model: 'gpt-5-2025-08-07',
         messages: [
           {
             role: 'system',
@@ -167,8 +167,7 @@ Gi en strukturert analyse på norsk:
             content: prompt
           }
         ],
-        max_tokens: 1500,
-        temperature: 0.3,
+        max_completion_tokens: 1500,
       }),
     });
 

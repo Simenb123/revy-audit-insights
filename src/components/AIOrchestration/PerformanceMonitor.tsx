@@ -232,10 +232,10 @@ export const PerformanceMonitor: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <span>GPT-4o mini</span>
-                <Badge variant="success">Aktiv</Badge>
-              </div>
+               <div className="flex justify-between items-center">
+                 <span>GPT-5</span>
+                 <Badge variant="success">Aktiv</Badge>
+               </div>
               <div className="text-sm text-muted-foreground">
                 Tokens brukt i dag: 42,341 / 100,000
               </div>

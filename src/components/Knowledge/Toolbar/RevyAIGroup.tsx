@@ -97,7 +97,7 @@ Eksisterende tekst:\n\n${currentContent}`;
           model_config: {
             temperature: 0.2,
             max_tokens: 1200,
-            model: 'gpt-4o-mini'
+            model: 'gpt-5-2025-08-07'
           },
           context_types: selectedVariant.available_contexts
         } : undefined // Convert AIRevyVariant to AIVariant
