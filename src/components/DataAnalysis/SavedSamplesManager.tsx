@@ -12,18 +12,29 @@ import { useFiscalYear } from '@/contexts/FiscalYearContext';
 
 interface SavedSample {
   id: string;
-  plan_name: string;
-  sampling_method: string;
+  client_id: string;
+  fiscal_year: number;
+  test_type: string;
+  method: string;
   population_size: number;
   population_sum: number;
-  sample_size: number;
+  materiality?: number;
+  expected_misstatement?: number;
   confidence_level: number;
-  fiscal_year: number;
-  selected_standard_numbers: string[];
-  excluded_account_numbers: string[];
-  created_at: string;
-  created_by: string;
+  risk_level: string;
+  tolerable_deviation_rate?: number;
+  expected_deviation_rate?: number;
+  strata_bounds?: number[];
+  threshold_amount?: number;
+  recommended_sample_size: number;
+  actual_sample_size: number;
+  coverage_percentage: number;
+  plan_name?: string;
+  notes?: string;
   metadata: any;
+  created_by?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 interface SavedSamplesManagerProps {
@@ -72,7 +83,7 @@ const SavedSamplesManager: React.FC<SavedSamplesManagerProps> = ({
       await supabase
         .from('audit_sampling_items')
         .delete()
-        .eq('sampling_plan_id', sampleId);
+        .eq('plan_id', sampleId);
 
       toast({
         title: "Utvalg slettet",
@@ -114,20 +125,22 @@ const SavedSamplesManager: React.FC<SavedSamplesManagerProps> = ({
 
   const getMethodBadgeColor = (method: string) => {
     switch (method) {
-      case 'systematic_random': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'monetary_unit': return 'bg-green-100 text-green-800 border-green-200';
-      case 'stratified': return 'bg-purple-100 text-purple-800 border-purple-200';
-      case 'simple_random': return 'bg-orange-100 text-orange-800 border-orange-200';
+      case 'SRS': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'MUS': return 'bg-green-100 text-green-800 border-green-200';
+      case 'STRATIFIED': return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'SYSTEMATIC': return 'bg-orange-100 text-orange-800 border-orange-200';
+      case 'THRESHOLD': return 'bg-red-100 text-red-800 border-red-200';
       default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
   const getMethodDisplayName = (method: string) => {
     switch (method) {
-      case 'systematic_random': return 'SRS';
-      case 'monetary_unit': return 'MUS';
-      case 'stratified': return 'Stratifisert';
-      case 'simple_random': return 'Tilfeldig';
+      case 'SRS': return 'SRS';
+      case 'SYSTEMATIC': return 'Systematisk';
+      case 'MUS': return 'MUS';
+      case 'STRATIFIED': return 'Stratifisert';
+      case 'THRESHOLD': return 'Terskel';
       default: return method.toUpperCase();
     }
   };
@@ -204,16 +217,16 @@ const SavedSamplesManager: React.FC<SavedSamplesManagerProps> = ({
                       <h4 className="font-medium">{sample.plan_name}</h4>
                       <Badge 
                         variant="outline" 
-                        className={getMethodBadgeColor(sample.sampling_method)}
+                        className={getMethodBadgeColor(sample.method)}
                       >
-                        {getMethodDisplayName(sample.sampling_method)}
+                        {getMethodDisplayName(sample.method)}
                       </Badge>
                     </div>
                     
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm text-muted-foreground mb-3">
                       <div className="flex items-center gap-1">
                         <Target className="h-3 w-3" />
-                        <span>{sample.sample_size} elementer</span>
+                        <span>{sample.actual_sample_size} elementer</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <BarChart3 className="h-3 w-3" />
@@ -231,12 +244,12 @@ const SavedSamplesManager: React.FC<SavedSamplesManagerProps> = ({
 
                     <div className="flex items-center gap-4 text-xs text-muted-foreground">
                       <span>Populasjonssum: {formatCurrency(sample.population_sum)}</span>
-                      {sample.selected_standard_numbers?.length > 0 && (
-                        <span>Regnskapslinjer: {sample.selected_standard_numbers.join(', ')}</span>
+                      {sample.metadata?.selectedStandardNumbers?.length > 0 && (
+                        <span>Regnskapslinjer: {sample.metadata.selectedStandardNumbers.join(', ')}</span>
                       )}
-                      {sample.excluded_account_numbers?.length > 0 && (
+                      {sample.metadata?.excludedAccountNumbers?.length > 0 && (
                         <span className="text-red-600">
-                          {sample.excluded_account_numbers.length} ekskluderte kontoer
+                          {sample.metadata.excludedAccountNumbers.length} ekskluderte kontoer
                         </span>
                       )}
                     </div>

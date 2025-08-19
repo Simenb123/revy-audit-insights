@@ -12,6 +12,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   Play, 
@@ -184,6 +185,23 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = ({ c
       }));
     }
   }, [params.selectedStandardNumbers, trialBalanceData?.standardAccountBalances]);
+
+  // Query for saved samples to refresh the SavedSamplesManager
+  const { data: savedSamples, refetch: refetchSavedSamples } = useQuery({
+    queryKey: ['saved-audit-samples', clientId, params.fiscalYear],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('audit_sampling_plans')
+        .select('*')
+        .eq('client_id', clientId)
+        .eq('fiscal_year', params.fiscalYear)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!clientId
+  });
 
   // Get accounts for the exclusion manager
   const accountsForExclusion = useMemo(() => {

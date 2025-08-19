@@ -26,6 +26,9 @@ interface SamplingRequest {
   seed?: number;
   useHighRiskInclusion?: boolean;
   save?: boolean;
+  planName?: string;
+  selectedStandardNumbers?: string[];
+  excludedAccountNumbers?: string[];
 }
 
 interface Transaction {
@@ -126,6 +129,9 @@ serve(async (req) => {
     const sampleSum = sample.reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
     const coveragePercentage = (sampleSum / payload.populationSum) * 100;
 
+    // Generate automatic plan name if not provided
+    const planName = payload.planName || generateAutomaticPlanName(payload);
+
     // Create plan object
     const plan: SamplingPlan = {
       clientId: payload.clientId,
@@ -146,11 +152,14 @@ serve(async (req) => {
       actualSampleSize: sample.length,
       coveragePercentage: Math.round(coveragePercentage * 100) / 100,
       generatedAt: new Date().toISOString(),
+      notes: planName,
       metadata: {
         seed: payload.seed,
         useHighRiskInclusion: payload.useHighRiskInclusion,
         method_details: getMethodDetails(payload.method),
-        generation_timestamp: new Date().toISOString()
+        generation_timestamp: new Date().toISOString(),
+        selectedStandardNumbers: payload.selectedStandardNumbers,
+        excludedAccountNumbers: payload.excludedAccountNumbers
       }
     };
 
@@ -435,6 +444,29 @@ function getMethodDetails(method: string): any {
   return details[method] || { name: method, description: 'Ukjent metode' };
 }
 
+function generateAutomaticPlanName(payload: SamplingRequest): string {
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('nb-NO', { 
+    day: 'numeric', 
+    month: 'short' 
+  });
+  const timeStr = now.toLocaleTimeString('nb-NO', { 
+    hour: '2-digit', 
+    minute: '2-digit' 
+  });
+  
+  const methodNames = {
+    'SRS': 'SRS',
+    'SYSTEMATIC': 'Systematisk',
+    'MUS': 'MUS',
+    'STRATIFIED': 'Stratifisert',
+    'THRESHOLD': 'Terskel'
+  };
+  
+  const methodName = methodNames[payload.method] || payload.method;
+  return `${methodName} ${dateStr}, ${timeStr}`;
+}
+
 async function savePlanToDatabase(supabase: any, plan: SamplingPlan, sample: Transaction[]) {
   // Insert sampling plan
   const { data: planData, error: planError } = await supabase
@@ -457,6 +489,7 @@ async function savePlanToDatabase(supabase: any, plan: SamplingPlan, sample: Tra
       recommended_sample_size: plan.recommendedSampleSize,
       actual_sample_size: plan.actualSampleSize,
       coverage_percentage: plan.coveragePercentage,
+      plan_name: plan.notes,
       notes: plan.notes,
       metadata: plan.metadata
     })

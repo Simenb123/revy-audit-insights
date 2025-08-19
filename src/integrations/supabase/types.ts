@@ -2039,57 +2039,57 @@ export type Database = {
       }
       audit_sampling_items: {
         Row: {
-          account_id: string | null
           account_name: string
-          account_number: string
-          balance_amount: number
+          account_no: string
+          amount: number
           created_at: string
+          description: string | null
           id: string
-          interval_value: number | null
-          is_selected: boolean
-          item_type: string
+          is_high_risk: boolean | null
           metadata: Json | null
-          random_start: number | null
-          sample_order: number | null
-          sampling_plan_id: string
-          selection_reason: string | null
+          plan_id: string
+          risk_score: number | null
+          selection_method: string | null
+          stratum_id: number | null
+          transaction_date: string | null
+          transaction_id: string
         }
         Insert: {
-          account_id?: string | null
           account_name: string
-          account_number: string
-          balance_amount?: number
+          account_no: string
+          amount?: number
           created_at?: string
+          description?: string | null
           id?: string
-          interval_value?: number | null
-          is_selected?: boolean
-          item_type?: string
+          is_high_risk?: boolean | null
           metadata?: Json | null
-          random_start?: number | null
-          sample_order?: number | null
-          sampling_plan_id: string
-          selection_reason?: string | null
+          plan_id: string
+          risk_score?: number | null
+          selection_method?: string | null
+          stratum_id?: number | null
+          transaction_date?: string | null
+          transaction_id: string
         }
         Update: {
-          account_id?: string | null
           account_name?: string
-          account_number?: string
-          balance_amount?: number
+          account_no?: string
+          amount?: number
           created_at?: string
+          description?: string | null
           id?: string
-          interval_value?: number | null
-          is_selected?: boolean
-          item_type?: string
+          is_high_risk?: boolean | null
           metadata?: Json | null
-          random_start?: number | null
-          sample_order?: number | null
-          sampling_plan_id?: string
-          selection_reason?: string | null
+          plan_id?: string
+          risk_score?: number | null
+          selection_method?: string | null
+          stratum_id?: number | null
+          transaction_date?: string | null
+          transaction_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "audit_sampling_items_sampling_plan_id_fkey"
-            columns: ["sampling_plan_id"]
+            foreignKeyName: "audit_sampling_items_plan_id_fkey"
+            columns: ["plan_id"]
             isOneToOne: false
             referencedRelation: "audit_sampling_plans"
             referencedColumns: ["id"]
@@ -2098,67 +2098,82 @@ export type Database = {
       }
       audit_sampling_plans: {
         Row: {
+          actual_sample_size: number
           client_id: string
-          confidence_level: number | null
+          confidence_level: number
+          coverage_percentage: number
           created_at: string
           created_by: string | null
-          excluded_account_numbers: string[] | null
-          expected_error: number | null
+          expected_deviation_rate: number | null
+          expected_misstatement: number | null
           fiscal_year: number
           id: string
+          materiality: number | null
           metadata: Json | null
-          plan_name: string
+          method: string
+          notes: string | null
+          plan_name: string | null
           population_size: number
-          population_source: string
           population_sum: number
-          sample_size: number
-          sampling_method: string
-          selected_standard_numbers: string[] | null
-          tolerable_error: number | null
+          recommended_sample_size: number
+          risk_level: string
+          strata_bounds: number[] | null
+          test_type: string
+          threshold_amount: number | null
+          tolerable_deviation_rate: number | null
           updated_at: string
-          version_id: string | null
         }
         Insert: {
+          actual_sample_size?: number
           client_id: string
-          confidence_level?: number | null
+          confidence_level?: number
+          coverage_percentage?: number
           created_at?: string
           created_by?: string | null
-          excluded_account_numbers?: string[] | null
-          expected_error?: number | null
+          expected_deviation_rate?: number | null
+          expected_misstatement?: number | null
           fiscal_year: number
           id?: string
+          materiality?: number | null
           metadata?: Json | null
-          plan_name: string
+          method?: string
+          notes?: string | null
+          plan_name?: string | null
           population_size?: number
-          population_source?: string
           population_sum?: number
-          sample_size?: number
-          sampling_method?: string
-          selected_standard_numbers?: string[] | null
-          tolerable_error?: number | null
+          recommended_sample_size?: number
+          risk_level?: string
+          strata_bounds?: number[] | null
+          test_type?: string
+          threshold_amount?: number | null
+          tolerable_deviation_rate?: number | null
           updated_at?: string
-          version_id?: string | null
         }
         Update: {
+          actual_sample_size?: number
           client_id?: string
-          confidence_level?: number | null
+          confidence_level?: number
+          coverage_percentage?: number
           created_at?: string
           created_by?: string | null
-          excluded_account_numbers?: string[] | null
-          expected_error?: number | null
+          expected_deviation_rate?: number | null
+          expected_misstatement?: number | null
           fiscal_year?: number
           id?: string
+          materiality?: number | null
           metadata?: Json | null
-          plan_name?: string
+          method?: string
+          notes?: string | null
+          plan_name?: string | null
           population_size?: number
-          population_source?: string
           population_sum?: number
-          sample_size?: number
-          sampling_method?: string
-          selected_standard_numbers?: string[] | null
-          tolerable_error?: number | null
+          recommended_sample_size?: number
+          risk_level?: string
+          strata_bounds?: number[] | null
+          test_type?: string
+          threshold_amount?: number | null
+          tolerable_deviation_rate?: number | null
           updated_at?: string
-          version_id?: string | null
         }
         Relationships: []
       }
