@@ -13,6 +13,7 @@ import { DndContext, PointerSensor, useSensor, useSensors, DragEndEvent, closest
 import { SortableContext, useSortable, arrayMove, horizontalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import TableToolbar from './table-toolbar';
 export interface DataTableColumn<T = any> {
   key: string;
   header: string;
@@ -64,6 +65,11 @@ export interface DataTableProps<T = any> {
   onSort?: (sortBy: string, sortOrder: 'asc' | 'desc') => void;
   serverSortBy?: string;
   serverSortOrder?: 'asc' | 'desc';
+  // Internal toolbar features
+  enableInternalToolbar?: boolean;
+  enablePdfExport?: boolean;
+  onPdfExport?: (data: T[]) => void;
+  toolbarCustomActions?: React.ReactNode;
 }
 
 const DataTable = <T extends Record<string, any>>({
@@ -101,6 +107,10 @@ const DataTable = <T extends Record<string, any>>({
   onSort,
   serverSortBy,
   serverSortOrder = 'asc',
+  enableInternalToolbar = false,
+  enablePdfExport = false,
+  onPdfExport,
+  toolbarCustomActions,
 }: DataTableProps<T>) => {
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearch = useDebounce(searchTerm, 250);
@@ -603,12 +613,32 @@ const TableBlock = (
             />
           </div>
         )}
+        
+        {/* Internal Toolbar - appears when enableInternalToolbar is true */}
+        {enableInternalToolbar && (
+          <TableToolbar
+            enableColumnManager={enableColumnManager}
+            columns={safeCmState}
+            onColumnsChange={setCmState}
+            enableWidthReset={!!preferencesKey}
+            onWidthReset={resetColWidths}
+            enableExport={enableExport}
+            enablePdfExport={enablePdfExport}
+            onExcelExport={handleExport}
+            onPdfExport={data && onPdfExport ? () => onPdfExport(data) : undefined}
+            isExportDisabled={!data || data.length === 0}
+            viewsDropdown={preferencesKey ? <ViewsDropdown /> : undefined}
+            customActions={toolbarCustomActions}
+          />
+        )}
+        
         {/* Synchronized top horizontal scrollbar (visible when table has vertical scroll) */}
         {maxBodyHeight && (
           <div
             ref={topScrollRef}
-            className="overflow-x-auto h-3"
+            className="overflow-x-auto h-3 bg-muted/20"
             aria-hidden="true"
+            title="Horisontal scrollbar - scroll for å navigere tabellen sideveis"
           >
             <div style={{ width: topScrollWidth, height: 1 }} />
           </div>
@@ -670,7 +700,7 @@ const TableBlock = (
                               className={`${
                                 def.align === 'right' ? 'text-right' : def.align === 'center' ? 'text-center' : ''
                               } ${def.className || ''} ${
-                                effectiveColumns.pinnedLeftKey === def.key ? 'sticky left-0 z-10 bg-background' : ''
+                                effectiveColumns.pinnedLeftKey === def.key ? 'sticky left-0 z-10 bg-background shadow-sm border-r' : ''
                               }`}
                               style={getColStyle(def.key)}
                             >
@@ -819,6 +849,8 @@ const TableBlock = (
               </p>
             )}
           </div>
+        {/* Header controls are now moved inside the table when using internal toolbar */}
+        {!enableInternalToolbar && (
           <div className="flex items-center gap-2">
             {preferencesKey && <ViewsDropdown />}
             {enableColumnManager && (
@@ -830,13 +862,14 @@ const TableBlock = (
                 Tilbakestill bredder
               </Button>
             )}
-            {enableExport && (
+            {enableExport && !enableInternalToolbar && (
               <Button variant="outline" size="sm" onClick={handleExport} disabled={!data || data.length === 0}>
                 <Download className="h-4 w-4 mr-2" />
                 Eksporter
               </Button>
             )}
           </div>
+        )}
         </div>
       </CardHeader>
       <CardContent>
