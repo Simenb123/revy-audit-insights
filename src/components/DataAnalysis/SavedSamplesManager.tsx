@@ -7,7 +7,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Trash2, Eye, Calendar, User, Target, BarChart3, FileText, RefreshCw } from 'lucide-react';
+import { Trash2, Eye, Calendar, User, Target, BarChart3, FileText, RefreshCw, CheckCircle } from 'lucide-react';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
 
 interface SavedSample {
@@ -266,6 +266,15 @@ const SavedSamplesManager: React.FC<SavedSamplesManagerProps> = ({
                         Vis
                       </Button>
                     )}
+                    
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={() => onViewSample && onViewSample(sample)}
+                    >
+                      <CheckCircle className="h-3 w-3 mr-1" />
+                      Kontroller
+                    </Button>
                     
                     <AlertDialog>
                       <AlertDialogTrigger asChild>

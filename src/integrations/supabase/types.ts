@@ -2044,10 +2044,18 @@ export type Database = {
           amount: number
           created_at: string
           description: string | null
+          deviation_amount: number | null
+          deviation_notes: string | null
           id: string
           is_high_risk: boolean | null
+          is_reviewed: boolean | null
           metadata: Json | null
           plan_id: string
+          review_date: string | null
+          review_status:
+            | Database["public"]["Enums"]["review_status_type"]
+            | null
+          reviewer_id: string | null
           risk_score: number | null
           selection_method: string | null
           stratum_id: number | null
@@ -2060,10 +2068,18 @@ export type Database = {
           amount?: number
           created_at?: string
           description?: string | null
+          deviation_amount?: number | null
+          deviation_notes?: string | null
           id?: string
           is_high_risk?: boolean | null
+          is_reviewed?: boolean | null
           metadata?: Json | null
           plan_id: string
+          review_date?: string | null
+          review_status?:
+            | Database["public"]["Enums"]["review_status_type"]
+            | null
+          reviewer_id?: string | null
           risk_score?: number | null
           selection_method?: string | null
           stratum_id?: number | null
@@ -2076,10 +2092,18 @@ export type Database = {
           amount?: number
           created_at?: string
           description?: string | null
+          deviation_amount?: number | null
+          deviation_notes?: string | null
           id?: string
           is_high_risk?: boolean | null
+          is_reviewed?: boolean | null
           metadata?: Json | null
           plan_id?: string
+          review_date?: string | null
+          review_status?:
+            | Database["public"]["Enums"]["review_status_type"]
+            | null
+          reviewer_id?: string | null
           risk_score?: number | null
           selection_method?: string | null
           stratum_id?: number | null
@@ -11042,6 +11066,7 @@ export type Database = {
         | "ESTIMATES_PROFILE"
         | "MATERIALITY"
         | "RISK_MATRIX"
+      review_status_type: "pending" | "ok" | "deviation"
       risk_level: "low" | "medium" | "high"
       user_role_type: "admin" | "partner" | "manager" | "employee"
     }
@@ -11244,6 +11269,7 @@ export const Constants = {
         "MATERIALITY",
         "RISK_MATRIX",
       ],
+      review_status_type: ["pending", "ok", "deviation"],
       risk_level: ["low", "medium", "high"],
       user_role_type: ["admin", "partner", "manager", "employee"],
     },
