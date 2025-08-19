@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,10 +7,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, Play, Save, Info, TrendingUp, Users, FileSpreadsheet } from 'lucide-react';
+import { Loader2, Play, Save, Info, TrendingUp, Users, FileSpreadsheet, Database, Settings } from 'lucide-react';
 import { useCreateAuditLog } from '@/hooks/useCreateAuditLog';
+import { useFiscalYear } from '@/contexts/FiscalYearContext';
+import { usePopulationCalculator } from '@/hooks/usePopulationCalculator';
+import PopulationSelector from './PopulationSelector';
+import TrialBalanceExclusionManager from './TrialBalanceExclusionManager';
 
 interface AuditSamplingProps {
   clientId: string;
@@ -22,6 +27,9 @@ interface SamplingParams {
   method: 'SRS' | 'SYSTEMATIC' | 'MUS' | 'STRATIFIED' | 'THRESHOLD';
   populationSize: number;
   populationSum: number;
+  populationSource: 'manual' | 'accounting_lines';
+  selectedStandardNumbers: string[];
+  excludedAccountNumbers: string[];
   materiality?: number;
   expectedMisstatement?: number;
   confidenceLevel: number;
@@ -59,17 +67,22 @@ interface SamplingResult {
 const AuditSampling: React.FC<AuditSamplingProps> = ({ clientId }) => {
   const { toast } = useToast();
   const createAuditLog = useCreateAuditLog();
+  const { selectedFiscalYear } = useFiscalYear();
   
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [result, setResult] = useState<SamplingResult | null>(null);
+  const [workingMateriality, setWorkingMateriality] = useState<number | null>(null);
   
   const [params, setParams] = useState<SamplingParams>({
-    fiscalYear: new Date().getFullYear(),
+    fiscalYear: selectedFiscalYear || new Date().getFullYear(),
     testType: 'SUBSTANTIVE',
     method: 'MUS',
     populationSize: 1000,
     populationSum: 1000000,
+    populationSource: 'manual',
+    selectedStandardNumbers: [],
+    excludedAccountNumbers: [],
     materiality: 50000,
     expectedMisstatement: 5000,
     confidenceLevel: 95,
@@ -78,6 +91,69 @@ const AuditSampling: React.FC<AuditSamplingProps> = ({ clientId }) => {
     expectedDeviationRate: 1,
     useHighRiskInclusion: true
   });
+
+  // Hook for calculating population from accounting data
+  const { 
+    data: populationData, 
+    isLoading: isCalculatingPopulation,
+    error: populationError 
+  } = usePopulationCalculator(
+    clientId,
+    params.fiscalYear,
+    params.selectedStandardNumbers,
+    params.excludedAccountNumbers
+  );
+
+  // Fetch working materiality on component mount and when fiscal year changes
+  useEffect(() => {
+    const fetchMateriality = async () => {
+      if (!clientId || !params.fiscalYear) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('materiality_settings')
+          .select('working_materiality')
+          .eq('client_id', clientId)
+          .eq('fiscal_year', params.fiscalYear)
+          .maybeSingle();
+
+        if (error) {
+          console.warn('Could not fetch materiality settings:', error);
+          return;
+        }
+
+        if (data?.working_materiality) {
+          setWorkingMateriality(data.working_materiality);
+          setParams(prev => ({ 
+            ...prev, 
+            materiality: data.working_materiality 
+          }));
+        }
+      } catch (error) {
+        console.error('Error fetching materiality:', error);
+      }
+    };
+
+    fetchMateriality();
+  }, [clientId, params.fiscalYear]);
+
+  // Update fiscal year when context changes
+  useEffect(() => {
+    if (selectedFiscalYear && selectedFiscalYear !== params.fiscalYear) {
+      setParams(prev => ({ ...prev, fiscalYear: selectedFiscalYear }));
+    }
+  }, [selectedFiscalYear, params.fiscalYear]);
+
+  // Update population size and sum when population data changes
+  useEffect(() => {
+    if (params.populationSource === 'accounting_lines' && populationData) {
+      setParams(prev => ({
+        ...prev,
+        populationSize: populationData.size,
+        populationSum: populationData.sum
+      }));
+    }
+  }, [populationData, params.populationSource]);
 
   const handleParamChange = (key: keyof SamplingParams, value: any) => {
     setParams(prev => ({ ...prev, [key]: value }));
@@ -187,21 +263,86 @@ const AuditSampling: React.FC<AuditSamplingProps> = ({ clientId }) => {
       <div className="flex items-center gap-2">
         <FileSpreadsheet className="h-5 w-5 text-primary" />
         <h2 className="text-2xl font-bold">Revisjonsutvalg</h2>
+        {workingMateriality && (
+          <Badge variant="outline" className="ml-auto">
+            Arbeidsvesentlighet: {formatCurrency(workingMateriality)}
+          </Badge>
+        )}
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        {/* Parameters Form */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              Utvalgsparametere
-            </CardTitle>
-            <CardDescription>
-              Konfigurer parametere for generering av revisjonsutvalg
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+      <Tabs defaultValue="setup" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="setup">
+            <Database className="h-4 w-4 mr-2" />
+            Populasjon
+          </TabsTrigger>
+          <TabsTrigger value="parameters">
+            <Settings className="h-4 w-4 mr-2" />
+            Parametere
+          </TabsTrigger>
+          <TabsTrigger value="results">
+            <TrendingUp className="h-4 w-4 mr-2" />
+            Resultat
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="setup" className="space-y-6">
+          <div className="grid gap-6 md:grid-cols-2">
+            {/* Population Selector */}
+            <PopulationSelector
+              populationSource={params.populationSource}
+              onPopulationSourceChange={(source) => 
+                handleParamChange('populationSource', source)
+              }
+              manualSize={params.populationSize}
+              manualSum={params.populationSum}
+              onManualSizeChange={(size) => handleParamChange('populationSize', size)}
+              onManualSumChange={(sum) => handleParamChange('populationSum', sum)}
+              selectedStandardNumbers={params.selectedStandardNumbers}
+              onSelectedStandardNumbersChange={(numbers) => 
+                handleParamChange('selectedStandardNumbers', numbers)
+              }
+              calculatedSize={populationData?.size}
+              calculatedSum={populationData?.sum}
+              isCalculating={isCalculatingPopulation}
+            />
+
+            {/* Trial Balance Exclusion Manager */}
+            {params.populationSource === 'accounting_lines' && populationData?.accounts && (
+              <TrialBalanceExclusionManager
+                accounts={populationData.accounts}
+                excludedAccountNumbers={params.excludedAccountNumbers}
+                onExcludedAccountNumbersChange={(numbers) => 
+                  handleParamChange('excludedAccountNumbers', numbers)
+                }
+                isLoading={isCalculatingPopulation}
+              />
+            )}
+          </div>
+
+          {populationError && (
+            <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+              <div className="text-sm text-destructive">
+                Feil ved beregning av populasjon: {populationError.message}
+              </div>
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="parameters" className="space-y-6">
+          <div className="grid gap-6 md:grid-cols-2">
+            {/* Parameters Form */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  Utvalgsparametere
+                </CardTitle>
+                <CardDescription>
+                  Konfigurer parametere for generering av revisjonsutvalg
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="fiscalYear">Regnskapsår</Label>
@@ -210,7 +351,12 @@ const AuditSampling: React.FC<AuditSamplingProps> = ({ clientId }) => {
                   type="number"
                   value={params.fiscalYear}
                   onChange={(e) => handleParamChange('fiscalYear', parseInt(e.target.value))}
+                  disabled
+                  className="bg-muted"
                 />
+                <div className="text-xs text-muted-foreground mt-1">
+                  Settes automatisk fra valgt regnskapsår
+                </div>
               </div>
               <div>
                 <Label htmlFor="testType">Testtype</Label>
@@ -257,25 +403,26 @@ const AuditSampling: React.FC<AuditSamplingProps> = ({ clientId }) => {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="populationSize">Populasjon antall</Label>
-                <Input
-                  id="populationSize"
-                  type="number"
-                  value={params.populationSize}
-                  onChange={(e) => handleParamChange('populationSize', parseInt(e.target.value))}
-                />
+            <div className="p-3 bg-muted rounded-lg">
+              <div className="text-sm font-medium mb-2">Populasjon (fra {params.populationSource === 'manual' ? 'manuelle verdier' : 'regnskapsdata'})</div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <div className="text-xs text-muted-foreground">Antall</div>
+                  <div className="text-lg font-semibold">{params.populationSize}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">Beløp</div>
+                  <div className="text-lg font-semibold">{formatCurrency(params.populationSum)}</div>
+                </div>
               </div>
-              <div>
-                <Label htmlFor="populationSum">Populasjon beløp (NOK)</Label>
-                <Input
-                  id="populationSum"
-                  type="number"
-                  value={params.populationSum}
-                  onChange={(e) => handleParamChange('populationSum', parseFloat(e.target.value))}
-                />
-              </div>
+              {params.populationSource === 'accounting_lines' && params.selectedStandardNumbers.length > 0 && (
+                <div className="mt-2 text-xs text-muted-foreground">
+                  Basert på regnskapslinjer: {params.selectedStandardNumbers.join(', ')}
+                  {params.excludedAccountNumbers.length > 0 && 
+                    `, ekskludert ${params.excludedAccountNumbers.length} kontoer`
+                  }
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -313,7 +460,13 @@ const AuditSampling: React.FC<AuditSamplingProps> = ({ clientId }) => {
                     type="number"
                     value={params.materiality || ''}
                     onChange={(e) => handleParamChange('materiality', parseFloat(e.target.value))}
+                    className={workingMateriality ? "bg-muted" : ""}
                   />
+                  {workingMateriality && (
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Hentet fra klientens materialitetsinnstillinger
+                    </div>
+                  )}
                 </div>
                 <div>
                   <Label htmlFor="expectedMisstatement">Forventet feil (NOK)</Label>
@@ -410,11 +563,14 @@ const AuditSampling: React.FC<AuditSamplingProps> = ({ clientId }) => {
                 </Button>
               )}
             </div>
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
 
-        {/* Results */}
-        <Card>
+        <TabsContent value="results" className="space-y-6">
+          {/* Results */}
+          <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="h-4 w-4" />
@@ -491,7 +647,8 @@ const AuditSampling: React.FC<AuditSamplingProps> = ({ clientId }) => {
             )}
           </CardContent>
         </Card>
-      </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

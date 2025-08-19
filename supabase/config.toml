@@ -32,3 +32,5 @@ project_id = "fxelhfwaoizqyecikscu"
     verify_jwt = true
   [functions.import-payroll]
     verify_jwt = true
+  [functions.calculate-population-from-accounts]
+    verify_jwt = true
