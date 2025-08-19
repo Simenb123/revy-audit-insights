@@ -32,6 +32,9 @@ function longestPrefixMatch(konto: string, codes: string[]): string | null {
 // Utvidet matcher for 'konto' – dekker flere varianter/språk
 const KONTO_REGEX = /^(konto(?:nr|nummer)?\.?)$|konto\s*[-.]?\s*nr\.?|^account(?:\s*number)?$|^num(ber)?$/i;
 
+// ResBalRef matcher for NAKonto-kolonne  
+const RESBAL_REGEX = /^(resbalref)$|^res\s*bal\s*ref$|^na[-_\s]*konto(nr|nummer)?$|^næringsspesifikasjon$/i;
+
 function detectHeaderRow(sheet: XLSX.WorkSheet, maxScan = 10): number | null {
   const mat: any[][] = XLSX.utils.sheet_to_json(sheet, {
     header: 1,
@@ -42,7 +45,7 @@ function detectHeaderRow(sheet: XLSX.WorkSheet, maxScan = 10): number | null {
   const limit = Math.min(mat.length, maxScan);
   for (let i = 0; i < limit; i++) {
     const row = mat[i] || [];
-    if (row.some((c: any) => KONTO_REGEX.test(String(c)))) return i + 1; // 1-basert
+    if (row.some((c: any) => KONTO_REGEX.test(String(c)) || RESBAL_REGEX.test(String(c)))) return i + 1; // 1-basert
   }
   return null;
 }
@@ -53,6 +56,11 @@ function guessKontoHeader(headers: string[]): string | null {
   // fallback: første header som inneholder "konto"
   const idx2 = headers.findIndex((h) => String(h).toLowerCase().includes("konto"));
   return idx2 >= 0 ? headers[idx2] : null;
+}
+
+function guessResBalHeader(headers: string[]): string | null {
+  const idx = headers.findIndex((h) => RESBAL_REGEX.test(String(h)));
+  return idx >= 0 ? headers[idx] : null;
 }
 
 async function parseNaeringsExcel(file: File): Promise<Map<string, string>> {
@@ -325,30 +333,40 @@ export default function DataredigeringPage() {
       const sbWs = sbWb.Sheets[sbWb.SheetNames[0]];
       const { columns: sbColumns, rows: sbRows } = sheetToRows(sbWs, sbHeaderRow);
 
-      // 2) Finn kontokolonne med auto-deteksjon og fallback
+      // 2) Finn kolonner med auto-deteksjon og fallback
       let kontoCol = guessKontoHeader(sbColumns);
+      let resBalCol = guessResBalHeader(sbColumns);
 
       // Hvis ikke funnet: scan topp-10 rader for korrekt header-rad og prøv igjen
-      if (!kontoCol) {
+      if (!kontoCol && !resBalCol) {
         const autoRow = detectHeaderRow(sbWs);
         if (autoRow && autoRow !== sbHeaderRow) {
-          const { columns: autoColumns } = sheetToRows(sbWs, autoRow);
+          const { columns: autoColumns, rows: autoRowsNew } = sheetToRows(sbWs, autoRow);
           kontoCol = guessKontoHeader(autoColumns);
-          if (kontoCol) {
+          resBalCol = guessResBalHeader(autoColumns);
+          if (kontoCol || resBalCol) {
             // Oppdater til den automatisk detekterte header-raden
-            const { columns: sbColumnsNew, rows: sbRowsNew } = sheetToRows(sbWs, autoRow);
             sbColumns.length = 0;
-            sbColumns.push(...sbColumnsNew);
+            sbColumns.push(...autoColumns);
             sbRows.length = 0;
-            sbRows.push(...sbRowsNew);
+            sbRows.push(...autoRowsNew);
             setStatus(`Auto-detekterte header på rad ${autoRow} (i stedet for ${sbHeaderRow})`);
           }
         }
       }
 
-      if (!kontoCol) {
-        setErrors(prev => [...prev, `Kunne ikke finne kontokolonne i saldobalansen. Funnet kolonner: ${sbColumns.join(', ')}`]);
+      if (!kontoCol && !resBalCol) {
+        setErrors(prev => [...prev, `Kunne ikke finne verken konto- eller ResBalRef-kolonne i saldobalansen. Funnet kolonner: ${sbColumns.join(', ')}`]);
         return;
+      }
+
+      // Info om hvilken tilnærming som brukes
+      if (resBalCol && kontoCol) {
+        setStatus(prev => `${prev} - Bruker ResBalRef (${resBalCol}) som primær kilde, Konto (${kontoCol}) som fallback`);
+      } else if (resBalCol) {
+        setStatus(prev => `${prev} - Bruker ResBalRef (${resBalCol}) som NAKonto-kilde`);
+      } else {
+        setStatus(prev => `${prev} - Bruker prefiks-matching fra Konto (${kontoCol})`);
       }
 
       // 3) Hent NA-map (database eller Excel)
@@ -377,20 +395,53 @@ export default function DataredigeringPage() {
         return;
       }
 
-      // 4) Match lengste prefiks og sett NAkonto/NAnavn
-      const naCodes = Array.from(naMap.keys());
+      // 4) ResBalRef-first mapping med fallback til prefiks-matching
+      const naCodes = Array.from(naMap.keys()).sort((a, b) => normalizeCode(b).length - normalizeCode(a).length);
+      let resBalMatches = 0;
+      let prefixMatches = 0;
+      let noMatches = 0;
+
       const enrichedRows = sbRows.map(row => {
-        const kontoNr = row[kontoCol];
-        const matchedCode = longestPrefixMatch(kontoNr, naCodes);
+        let matchedCode: string | null = null;
+        let matchSource = "";
+
+        // Prioriter ResBalRef hvis kolonne finnes
+        if (resBalCol) {
+          const resBalValue = normalizeCode(row[resBalCol]);
+          if (resBalValue && naMap.has(resBalValue)) {
+            matchedCode = resBalValue;
+            matchSource = "ResBalRef";
+            resBalMatches++;
+          }
+        }
+
+        // Fallback til prefiks-matching fra Kontonr
+        if (!matchedCode && kontoCol) {
+          const kontoNr = row[kontoCol];
+          matchedCode = longestPrefixMatch(kontoNr, naCodes);
+          if (matchedCode) {
+            matchSource = "Prefiks";
+            prefixMatches++;
+          }
+        }
+
+        if (!matchedCode) {
+          noMatches++;
+        }
+
         return {
           ...row,
           NAkonto: matchedCode || "",
-          NAnavn: matchedCode ? (naMap.get(matchedCode) || "") : ""
+          NAnavn: matchedCode ? (naMap.get(matchedCode) || "") : "",
+          MatchKilde: matchSource || "Ingen"
         };
       });
 
-      // 5) Eksporter ny Excel
-      const newColumns = [...sbColumns, "NAkonto", "NAnavn"];
+      // 5) Lag rader uten match for kvalitetssikring
+      const unmatchedRows = enrichedRows.filter(row => !row.NAkonto);
+
+      // 6) Eksporter hovedfil
+      const newColumns = [...sbColumns, "NAkonto", "NAnavn", "MatchKilde"];
       const ws = jsonToSheetWithHeader(enrichedRows, newColumns);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Saldobalanse med NA");
@@ -398,7 +449,18 @@ export default function DataredigeringPage() {
       const filename = `${sbFile.name.replace(/\.[^.]+$/i, "")} - med Naeringsspesifikasjon.xlsx`;
       downloadBlob(new Blob([out], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }), filename);
 
-      setStatus(`Excel eksportert: ${enrichedRows.length} rader, ${naMap.size} NA-koder tilgjengelig`);
+      // 7) Eksporter "Uten NA" fil hvis det finnes umatchede rader
+      if (unmatchedRows.length > 0) {
+        const wsUnmatched = jsonToSheetWithHeader(unmatchedRows, newColumns);
+        const wbUnmatched = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wbUnmatched, wsUnmatched, "Uten NA-match");
+        const outUnmatched = XLSX.write(wbUnmatched, { bookType: "xlsx", type: "array" });
+        const filenameUnmatched = `${sbFile.name.replace(/\.[^.]+$/i, "")} - Uten NA.xlsx`;
+        downloadBlob(new Blob([outUnmatched], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }), filenameUnmatched);
+      }
+
+      const matchRate = ((enrichedRows.length - noMatches) / enrichedRows.length * 100).toFixed(1);
+      setStatus(`Excel eksportert: ${enrichedRows.length} rader. Match-rate: ${matchRate}% (ResBalRef: ${resBalMatches}, Prefiks: ${prefixMatches}, Ingen: ${noMatches})`);
     } catch (e: any) {
       setErrors(prev => [...prev, `Feil ved NA-mapping: ${e?.message || e}`]);
     }
@@ -451,6 +513,10 @@ export default function DataredigeringPage() {
       {/* NA-spesifikasjon kort */}
       <section className="mb-8 rounded-2xl border bg-card p-4 shadow-sm">
         <h2 className="text-lg font-medium mb-3">Saldobalanse → legg til Næringsspesifikasjon</h2>
+        <div className="mb-3 text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg">
+          <strong>Prioritering:</strong> Bruker ResBalRef-kolonne som hovedkilde for NAKonto når tilgjengelig. 
+          Faller tilbake til prefiks-matching av Kontonr hvis ResBalRef mangler eller er tom.
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div>
             <label className="block text-sm font-medium mb-2">Velg saldobalanse</label>
