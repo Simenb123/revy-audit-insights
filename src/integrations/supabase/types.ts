@@ -7552,6 +7552,39 @@ export type Database = {
           },
         ]
       }
+      naeringsspesifikasjon: {
+        Row: {
+          active: boolean
+          kode: string
+          na_regnskapslinjenavn: string | null
+          na_regnskapslinjenummer: string | null
+          navn: string
+          normalized_code: string | null
+          sort: number | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          kode: string
+          na_regnskapslinjenavn?: string | null
+          na_regnskapslinjenummer?: string | null
+          navn: string
+          normalized_code?: string | null
+          sort?: number | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          kode?: string
+          na_regnskapslinjenavn?: string | null
+          na_regnskapslinjenummer?: string | null
+          navn?: string
+          normalized_code?: string | null
+          sort?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       payroll_companies: {
         Row: {
           created_at: string

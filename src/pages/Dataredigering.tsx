@@ -3,8 +3,51 @@
 import React, { useCallback, useMemo, useRef, useState } from "react";
 import * as XLSX from "xlsx";
 import { validateXlsxFile } from '@/utils/secureXlsx';
+import { fetchNaeringsMapFromDB } from '@/services/naering';
 
 // ------------------------------ Utilities ------------------------------
+
+// NA-spesifikke hjelpefunksjoner
+function normalizeCode(s: any): string {
+  return String(s ?? "").trim().replace(/\s+/g, "").replace(/,/g, ".");
+}
+
+function stripNonDigitsDotDash(s: string): string {
+  return s.replace(/[^0-9.\-]/g, "");
+}
+
+function longestPrefixMatch(konto: string, codes: string[]): string | null {
+  const k = stripNonDigitsDotDash(normalizeCode(konto));
+  let best: string | null = null, bestLen = -1;
+  for (const code of codes) {
+    const c = stripNonDigitsDotDash(normalizeCode(code));
+    if (c && (k === c || k.startsWith(c)) && c.length > bestLen) { 
+      best = code; 
+      bestLen = c.length; 
+    }
+  }
+  return best;
+}
+
+function guessKontoHeader(headers: string[]): string | null {
+  const lc = headers.map(h => h.toLowerCase());
+  const idx = lc.findIndex(h => /^konto(?:nr)?$/.test(h) || h.includes("konto"));
+  return idx >= 0 ? headers[idx] : null;
+}
+
+async function parseNaeringsExcel(file: File): Promise<Map<string, string>> {
+  const ab = await file.arrayBuffer();
+  const wb = XLSX.read(ab, { type: "array" });
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  const mat: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: "" });
+  const m = new Map<string, string>();
+  for (const r of mat) {
+    const kode = String(r[0] ?? "").trim();
+    const navn = String(r[1] ?? "").trim();
+    if (kode && navn) m.set(kode, navn);
+  }
+  return m;
+}
 
 function sanitizeSheetName(name: string): string {
   // Excel sheet name limits: no :\\/?*[] and max 31 chars
@@ -91,6 +134,12 @@ export default function DataredigeringPage() {
   const [status, setStatus] = useState("");
   const [errors, setErrors] = useState<string[]>([]);
 
+  // NA-spesifikasjon state
+  const [sbFile, setSbFile] = useState<File | null>(null);
+  const [naSource, setNaSource] = useState<"db" | "excel">("db");
+  const [naFile, setNaFile] = useState<File | null>(null);
+  const [sbHeaderRow, setSbHeaderRow] = useState(4);
+
   // Tab 1: Filer → Tabell
   const [filesA, setFilesA] = useState<File[]>([]);
   const [columnsA, setColumnsA] = useState<string[]>([]);
@@ -112,6 +161,8 @@ export default function DataredigeringPage() {
   const fileInputA = useRef<HTMLInputElement>(null);
   const fileInputB = useRef<HTMLInputElement>(null);
   const fileInputC = useRef<HTMLInputElement>(null);
+  const fileInputSB = useRef<HTMLInputElement>(null);
+  const fileInputNA = useRef<HTMLInputElement>(null);
 
   // ------------- Handlers (Tab 1) -------------
   const handleFilesToTable = useCallback(async (incoming: FileList | File[]) => {
@@ -231,6 +282,83 @@ export default function DataredigeringPage() {
     }
   }, []);
 
+  // ------------- Handler for NA-mapping -------------
+  const handleMapNaerings = useCallback(async () => {
+    if (!sbFile) {
+      setErrors(prev => [...prev, "Mangler saldobalanse-fil"]);
+      return;
+    }
+
+    setStatus("Prosesserer saldobalanse og NA-koder...");
+
+    try {
+      // 1) Les saldobalanse
+      await validateXlsxFile(sbFile);
+      const sbAb = await toArrayBuffer(sbFile);
+      const sbWb = readWorkbook(sbAb);
+      const sbWs = sbWb.Sheets[sbWb.SheetNames[0]];
+      const { columns: sbColumns, rows: sbRows } = sheetToRows(sbWs, sbHeaderRow);
+
+      // 2) Finn kontokolonne
+      const kontoCol = guessKontoHeader(sbColumns);
+      if (!kontoCol) {
+        setErrors(prev => [...prev, "Kunne ikke finne kontokolonne i saldobalansen"]);
+        return;
+      }
+
+      // 3) Hent NA-map (database eller Excel)
+      let naMap: Map<string, string>;
+      try {
+        if (naSource === "db") {
+          naMap = await fetchNaeringsMapFromDB();
+          if (naMap.size === 0) {
+            setErrors(prev => [...prev, "Ingen NA-koder funnet i database. Prøv å velge Excel-fil isteden."]);
+            return;
+          }
+        } else {
+          if (!naFile) {
+            setErrors(prev => [...prev, "Mangler Naeringsspesifikasjon.xlsx fil"]);
+            return;
+          }
+          await validateXlsxFile(naFile);
+          naMap = await parseNaeringsExcel(naFile);
+          if (naMap.size === 0) {
+            setErrors(prev => [...prev, "Ingen NA-koder funnet i Excel-filen"]);
+            return;
+          }
+        }
+      } catch (e: any) {
+        setErrors(prev => [...prev, `Feil ved henting av NA-koder: ${e?.message || e}`]);
+        return;
+      }
+
+      // 4) Match lengste prefiks og sett NAkonto/NAnavn
+      const naCodes = Array.from(naMap.keys());
+      const enrichedRows = sbRows.map(row => {
+        const kontoNr = row[kontoCol];
+        const matchedCode = longestPrefixMatch(kontoNr, naCodes);
+        return {
+          ...row,
+          NAkonto: matchedCode || "",
+          NAnavn: matchedCode ? (naMap.get(matchedCode) || "") : ""
+        };
+      });
+
+      // 5) Eksporter ny Excel
+      const newColumns = [...sbColumns, "NAkonto", "NAnavn"];
+      const ws = jsonToSheetWithHeader(enrichedRows, newColumns);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Saldobalanse med NA");
+      const out = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+      const filename = `${sbFile.name.replace(/\.[^.]+$/i, "")} - med Naeringsspesifikasjon.xlsx`;
+      downloadBlob(new Blob([out], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }), filename);
+
+      setStatus(`Excel eksportert: ${enrichedRows.length} rader, ${naMap.size} NA-koder tilgjengelig`);
+    } catch (e: any) {
+      setErrors(prev => [...prev, `Feil ved NA-mapping: ${e?.message || e}`]);
+    }
+  }, [sbFile, naSource, naFile, sbHeaderRow]);
+
   // ------------- Handlers (Tab 4) -------------
   function splitTableIntoSheets() {
     if (!columnsA.length || !rowsA.length || !groupCol) return;
@@ -266,8 +394,90 @@ export default function DataredigeringPage() {
               <li key={i}>{e}</li>
             ))}
           </ul>
+          <button 
+            className="mt-2 text-xs underline" 
+            onClick={() => setErrors([])}
+          >
+            Fjern feilmeldinger
+          </button>
         </div>
       )}
+
+      {/* NA-spesifikasjon kort */}
+      <section className="mb-8 rounded-2xl border bg-card p-4 shadow-sm">
+        <h2 className="text-lg font-medium mb-3">Saldobalanse → legg til Næringsspesifikasjon</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div>
+            <label className="block text-sm font-medium mb-2">Velg saldobalanse</label>
+            <input 
+              ref={fileInputSB} 
+              className="hidden" 
+              type="file" 
+              accept=".xlsx,.xls" 
+              onChange={(e) => setSbFile(e.target.files?.[0] || null)} 
+            />
+            <button 
+              className="w-full rounded-xl bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+              onClick={() => fileInputSB.current?.click()}
+            >
+              {sbFile ? sbFile.name : "Velg saldobalanse (Alle utsigten...)"}
+            </button>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium mb-2">Kilde for NA-koder</label>
+            <select 
+              className="w-full rounded-xl border px-3 py-2 text-sm"
+              value={naSource}
+              onChange={(e) => setNaSource(e.target.value as "db" | "excel")}
+            >
+              <option value="db">Fra database</option>
+              <option value="excel">Fra Excel</option>
+            </select>
+          </div>
+        </div>
+
+        {naSource === "excel" && (
+          <div className="mb-4">
+            <label className="block text-sm font-medium mb-2">Velg Naeringsspesifikasjon.xlsx</label>
+            <input 
+              ref={fileInputNA} 
+              className="hidden" 
+              type="file" 
+              accept=".xlsx,.xls" 
+              onChange={(e) => setNaFile(e.target.files?.[0] || null)} 
+            />
+            <button 
+              className="rounded-xl bg-secondary px-3 py-2 text-sm font-medium text-secondary-foreground hover:bg-secondary/90"
+              onClick={() => fileInputNA.current?.click()}
+            >
+              {naFile ? naFile.name : "Velg Naeringsspesifikasjon.xlsx"}
+            </button>
+          </div>
+        )}
+
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <label className="text-sm flex items-center gap-2">
+              Header-rad 
+              <input 
+                className="w-16 border rounded px-2 py-1" 
+                type="number" 
+                min={1} 
+                value={sbHeaderRow} 
+                onChange={(e) => setSbHeaderRow(Number(e.target.value) || 1)} 
+              />
+            </label>
+          </div>
+          <button 
+            className="rounded-xl bg-accent px-4 py-2 text-sm font-medium text-accent-foreground hover:bg-accent/90 disabled:opacity-50"
+            disabled={!sbFile || (naSource === "excel" && !naFile)}
+            onClick={handleMapNaerings}
+          >
+            Lag ny Excel med NAkonto/NAnavn
+          </button>
+        </div>
+      </section>
 
       {/* Tab 1: Filer → Tabell */}
       <section className="mb-8 rounded-2xl border bg-card p-4 shadow-sm">
