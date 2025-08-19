@@ -1246,6 +1246,113 @@ export type Database = {
           },
         ]
       }
+      ap_transactions: {
+        Row: {
+          account_id: string | null
+          account_name: string | null
+          account_number: string | null
+          amount: number | null
+          amount_currency: number | null
+          cid: string | null
+          client_id: string
+          created_at: string | null
+          credit: number | null
+          currency: string | null
+          debit: number | null
+          document_no: string | null
+          due_date: string | null
+          exchange_rate: number | null
+          id: number
+          journal_id: string | null
+          posting_date: string | null
+          record_id: string | null
+          reference_no: string | null
+          supplier_id: string | null
+          supplier_name: string | null
+          transaction_id: string | null
+          upload_batch_id: string
+          user_id: string
+          value_date: string | null
+          vat_base: number | null
+          vat_code: string | null
+          vat_credit: number | null
+          vat_debit: number | null
+          vat_rate: number | null
+        }
+        Insert: {
+          account_id?: string | null
+          account_name?: string | null
+          account_number?: string | null
+          amount?: number | null
+          amount_currency?: number | null
+          cid?: string | null
+          client_id: string
+          created_at?: string | null
+          credit?: number | null
+          currency?: string | null
+          debit?: number | null
+          document_no?: string | null
+          due_date?: string | null
+          exchange_rate?: number | null
+          id?: number
+          journal_id?: string | null
+          posting_date?: string | null
+          record_id?: string | null
+          reference_no?: string | null
+          supplier_id?: string | null
+          supplier_name?: string | null
+          transaction_id?: string | null
+          upload_batch_id: string
+          user_id: string
+          value_date?: string | null
+          vat_base?: number | null
+          vat_code?: string | null
+          vat_credit?: number | null
+          vat_debit?: number | null
+          vat_rate?: number | null
+        }
+        Update: {
+          account_id?: string | null
+          account_name?: string | null
+          account_number?: string | null
+          amount?: number | null
+          amount_currency?: number | null
+          cid?: string | null
+          client_id?: string
+          created_at?: string | null
+          credit?: number | null
+          currency?: string | null
+          debit?: number | null
+          document_no?: string | null
+          due_date?: string | null
+          exchange_rate?: number | null
+          id?: number
+          journal_id?: string | null
+          posting_date?: string | null
+          record_id?: string | null
+          reference_no?: string | null
+          supplier_id?: string | null
+          supplier_name?: string | null
+          transaction_id?: string | null
+          upload_batch_id?: string
+          user_id?: string
+          value_date?: string | null
+          vat_base?: number | null
+          vat_code?: string | null
+          vat_credit?: number | null
+          vat_debit?: number | null
+          vat_rate?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ap_transactions_upload_batch_id_fkey"
+            columns: ["upload_batch_id"]
+            isOneToOne: false
+            referencedRelation: "upload_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       app_super_admins: {
         Row: {
           created_at: string
@@ -1263,6 +1370,113 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      ar_transactions: {
+        Row: {
+          account_id: string | null
+          account_name: string | null
+          account_number: string | null
+          amount: number | null
+          amount_currency: number | null
+          cid: string | null
+          client_id: string
+          created_at: string | null
+          credit: number | null
+          currency: string | null
+          customer_id: string | null
+          customer_name: string | null
+          debit: number | null
+          document_no: string | null
+          due_date: string | null
+          exchange_rate: number | null
+          id: number
+          journal_id: string | null
+          posting_date: string | null
+          record_id: string | null
+          reference_no: string | null
+          transaction_id: string | null
+          upload_batch_id: string
+          user_id: string
+          value_date: string | null
+          vat_base: number | null
+          vat_code: string | null
+          vat_credit: number | null
+          vat_debit: number | null
+          vat_rate: number | null
+        }
+        Insert: {
+          account_id?: string | null
+          account_name?: string | null
+          account_number?: string | null
+          amount?: number | null
+          amount_currency?: number | null
+          cid?: string | null
+          client_id: string
+          created_at?: string | null
+          credit?: number | null
+          currency?: string | null
+          customer_id?: string | null
+          customer_name?: string | null
+          debit?: number | null
+          document_no?: string | null
+          due_date?: string | null
+          exchange_rate?: number | null
+          id?: number
+          journal_id?: string | null
+          posting_date?: string | null
+          record_id?: string | null
+          reference_no?: string | null
+          transaction_id?: string | null
+          upload_batch_id: string
+          user_id: string
+          value_date?: string | null
+          vat_base?: number | null
+          vat_code?: string | null
+          vat_credit?: number | null
+          vat_debit?: number | null
+          vat_rate?: number | null
+        }
+        Update: {
+          account_id?: string | null
+          account_name?: string | null
+          account_number?: string | null
+          amount?: number | null
+          amount_currency?: number | null
+          cid?: string | null
+          client_id?: string
+          created_at?: string | null
+          credit?: number | null
+          currency?: string | null
+          customer_id?: string | null
+          customer_name?: string | null
+          debit?: number | null
+          document_no?: string | null
+          due_date?: string | null
+          exchange_rate?: number | null
+          id?: number
+          journal_id?: string | null
+          posting_date?: string | null
+          record_id?: string | null
+          reference_no?: string | null
+          transaction_id?: string | null
+          upload_batch_id?: string
+          user_id?: string
+          value_date?: string | null
+          vat_base?: number | null
+          vat_code?: string | null
+          vat_credit?: number | null
+          vat_debit?: number | null
+          vat_rate?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ar_transactions_upload_batch_id_fkey"
+            columns: ["upload_batch_id"]
+            isOneToOne: false
+            referencedRelation: "upload_batches"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       article_media: {
         Row: {
