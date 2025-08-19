@@ -174,6 +174,12 @@ export default function DataredigeringPage() {
   const [naFile, setNaFile] = useState<File | null>(null);
   const [sbHeaderRow, setSbHeaderRow] = useState(4);
 
+  // Mass import state
+  const [masseFiles, setMasseFiles] = useState<File[]>([]);
+  const [masseOutputFormat, setMasseOutputFormat] = useState<"merged" | "separate">("merged");
+  const [masseProcessing, setMasseProcessing] = useState(false);
+  const [masseProgress, setMasseProgress] = useState({ current: 0, total: 0 });
+
   // Tab 1: Filer → Tabell
   const [filesA, setFilesA] = useState<File[]>([]);
   const [columnsA, setColumnsA] = useState<string[]>([]);
@@ -197,6 +203,7 @@ export default function DataredigeringPage() {
   const fileInputC = useRef<HTMLInputElement>(null);
   const fileInputSB = useRef<HTMLInputElement>(null);
   const fileInputNA = useRef<HTMLInputElement>(null);
+  const fileInputMasse = useRef<HTMLInputElement>(null);
 
   // ------------- Handlers (Tab 1) -------------
   const handleFilesToTable = useCallback(async (incoming: FileList | File[]) => {
@@ -466,6 +473,196 @@ export default function DataredigeringPage() {
     }
   }, [sbFile, naSource, naFile, sbHeaderRow]);
 
+  // ------------- Mass Import Handler -------------
+  const handleMasseNaeringsMapping = useCallback(async () => {
+    if (!masseFiles.length) {
+      setErrors(prev => [...prev, "Ingen filer valgt for masseimport"]);
+      return;
+    }
+
+    setMasseProcessing(true);
+    setMasseProgress({ current: 0, total: masseFiles.length });
+    setStatus("Starter masseimport av saldobalanse-filer...");
+
+    try {
+      // Hent NA-map én gang (database eller Excel)
+      let naMap: Map<string, string>;
+      try {
+        if (naSource === "db") {
+          naMap = await fetchNaeringsMapFromDB();
+          if (naMap.size === 0) {
+            setErrors(prev => [...prev, "Ingen NA-koder funnet i database. Prøv å velge Excel-fil isteden."]);
+            return;
+          }
+        } else {
+          if (!naFile) {
+            setErrors(prev => [...prev, "Mangler Naeringsspesifikasjon.xlsx fil"]);
+            return;
+          }
+          await validateXlsxFile(naFile);
+          naMap = await parseNaeringsExcel(naFile);
+          if (naMap.size === 0) {
+            setErrors(prev => [...prev, "Ingen NA-koder funnet i Excel-filen"]);
+            return;
+          }
+        }
+      } catch (e: any) {
+        setErrors(prev => [...prev, `Feil ved henting av NA-koder: ${e?.message || e}`]);
+        return;
+      }
+
+      const naCodes = Array.from(naMap.keys()).sort((a, b) => normalizeCode(b).length - normalizeCode(a).length);
+      const allEnrichedRows: Record<string, any>[] = [];
+      const allUnmatchedRows: Record<string, any>[] = [];
+      const separateFiles: Array<{ filename: string; rows: Record<string, any>[]; columns: string[]; unmatchedRows: Record<string, any>[] }> = [];
+      let totalStats = { resBalMatches: 0, prefixMatches: 0, noMatches: 0, totalRows: 0 };
+
+      // Prosesser hver fil
+      for (let i = 0; i < masseFiles.length; i++) {
+        const file = masseFiles[i];
+        setMasseProgress({ current: i + 1, total: masseFiles.length });
+        setStatus(`Prosesserer fil ${i + 1}/${masseFiles.length}: ${file.name}`);
+
+        try {
+          await validateXlsxFile(file);
+          const sbAb = await toArrayBuffer(file);
+          const sbWb = readWorkbook(sbAb);
+          const sbWs = sbWb.Sheets[sbWb.SheetNames[0]];
+          let { columns: sbColumns, rows: sbRows } = sheetToRows(sbWs, sbHeaderRow);
+
+          // Auto-detekter kolonner for denne filen
+          let kontoCol = guessKontoHeader(sbColumns);
+          let resBalCol = guessResBalHeader(sbColumns);
+
+          if (!kontoCol && !resBalCol) {
+            const autoRow = detectHeaderRow(sbWs);
+            if (autoRow && autoRow !== sbHeaderRow) {
+              const { columns: autoColumns, rows: autoRowsNew } = sheetToRows(sbWs, autoRow);
+              kontoCol = guessKontoHeader(autoColumns);
+              resBalCol = guessResBalHeader(autoColumns);
+              if (kontoCol || resBalCol) {
+                sbColumns = autoColumns;
+                sbRows = autoRowsNew;
+              }
+            }
+          }
+
+          if (!kontoCol && !resBalCol) {
+            setErrors(prev => [...prev, `${file.name}: Kunne ikke finne verken konto- eller ResBalRef-kolonne`]);
+            continue;
+          }
+
+          // Mapping samme logikk som enkeltfil
+          let resBalMatches = 0, prefixMatches = 0, noMatches = 0;
+          const enrichedRows = sbRows.map(row => {
+            let matchedCode: string | null = null;
+            let matchSource = "";
+
+            if (resBalCol) {
+              const resBalValue = normalizeCode(row[resBalCol]);
+              if (resBalValue && naMap.has(resBalValue)) {
+                matchedCode = resBalValue;
+                matchSource = "ResBalRef";
+                resBalMatches++;
+              }
+            }
+
+            if (!matchedCode && kontoCol) {
+              const kontoNr = row[kontoCol];
+              matchedCode = longestPrefixMatch(kontoNr, naCodes);
+              if (matchedCode) {
+                matchSource = "Prefiks";
+                prefixMatches++;
+              }
+            }
+
+            if (!matchedCode) noMatches++;
+
+            const company = file.name.replace(/\.[^.]+$/i, "").replace(/^Saldobalanse\s*/i, "").trim();
+            return {
+              Selskap: company,
+              ...row,
+              NAkonto: matchedCode || "",
+              NAnavn: matchedCode ? (naMap.get(matchedCode) || "") : "",
+              MatchKilde: matchSource || "Ingen"
+            };
+          });
+
+          const unmatchedRows = enrichedRows.filter(row => !row.NAkonto);
+          const newColumns = ["Selskap", ...sbColumns, "NAkonto", "NAnavn", "MatchKilde"];
+
+          // Legg til i totaler
+          totalStats.resBalMatches += resBalMatches;
+          totalStats.prefixMatches += prefixMatches;
+          totalStats.noMatches += noMatches;
+          totalStats.totalRows += enrichedRows.length;
+
+          if (masseOutputFormat === "merged") {
+            allEnrichedRows.push(...enrichedRows);
+            allUnmatchedRows.push(...unmatchedRows);
+          } else {
+            separateFiles.push({
+              filename: `${file.name.replace(/\.[^.]+$/i, "")} - med Naeringsspesifikasjon.xlsx`,
+              rows: enrichedRows,
+              columns: newColumns,
+              unmatchedRows
+            });
+          }
+
+        } catch (e: any) {
+          setErrors(prev => [...prev, `${file.name}: ${e?.message || e}`]);
+        }
+      }
+
+      // Eksporter resultat
+      if (masseOutputFormat === "merged") {
+        // Én sammenslått fil
+        const mergedColumns = ["Selskap", ...Array.from(new Set(allEnrichedRows.flatMap(row => Object.keys(row))))];
+        const ws = jsonToSheetWithHeader(allEnrichedRows, mergedColumns);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Alle selskaper");
+        const out = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+        downloadBlob(new Blob([out], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }), "Masseimport - Alle selskaper med NA.xlsx");
+
+        // Sammenslått "Uten NA" fil
+        if (allUnmatchedRows.length > 0) {
+          const wsUnmatched = jsonToSheetWithHeader(allUnmatchedRows, mergedColumns);
+          const wbUnmatched = XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(wbUnmatched, wsUnmatched, "Uten NA-match");
+          const outUnmatched = XLSX.write(wbUnmatched, { bookType: "xlsx", type: "array" });
+          downloadBlob(new Blob([outUnmatched], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }), "Masseimport - Uten NA.xlsx");
+        }
+      } else {
+        // Separate filer
+        for (const fileData of separateFiles) {
+          const ws = jsonToSheetWithHeader(fileData.rows, fileData.columns);
+          const wb = XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(wb, ws, "Saldobalanse med NA");
+          const out = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+          downloadBlob(new Blob([out], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }), fileData.filename);
+
+          if (fileData.unmatchedRows.length > 0) {
+            const wsUnmatched = jsonToSheetWithHeader(fileData.unmatchedRows, fileData.columns);
+            const wbUnmatched = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wbUnmatched, wsUnmatched, "Uten NA-match");
+            const outUnmatched = XLSX.write(wbUnmatched, { bookType: "xlsx", type: "array" });
+            const filenameUnmatched = fileData.filename.replace(".xlsx", " - Uten NA.xlsx");
+            downloadBlob(new Blob([outUnmatched], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }), filenameUnmatched);
+          }
+        }
+      }
+
+      const matchRate = ((totalStats.totalRows - totalStats.noMatches) / totalStats.totalRows * 100).toFixed(1);
+      setStatus(`Masseimport fullført: ${masseFiles.length} filer, ${totalStats.totalRows} rader. Match-rate: ${matchRate}% (ResBalRef: ${totalStats.resBalMatches}, Prefiks: ${totalStats.prefixMatches}, Ingen: ${totalStats.noMatches})`);
+
+    } catch (e: any) {
+      setErrors(prev => [...prev, `Feil ved masseimport: ${e?.message || e}`]);
+    } finally {
+      setMasseProcessing(false);
+      setMasseProgress({ current: 0, total: 0 });
+    }
+  }, [masseFiles, naSource, naFile, sbHeaderRow, masseOutputFormat]);
+
   // ------------- Handlers (Tab 4) -------------
   function splitTableIntoSheets() {
     if (!columnsA.length || !rowsA.length || !groupCol) return;
@@ -586,6 +783,96 @@ export default function DataredigeringPage() {
             onClick={handleMapNaerings}
           >
             Lag ny Excel med NAkonto/NAnavn
+          </button>
+        </div>
+      </section>
+
+      {/* Mass Import NA-spesifikasjon kort */}
+      <section className="mb-8 rounded-2xl border bg-card p-4 shadow-sm">
+        <h2 className="text-lg font-medium mb-3">Masseimport: Saldobalanse → Næringsspesifikasjon</h2>
+        <div className="mb-3 text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg">
+          <strong>Batch-prosessering:</strong> Prosesser flere saldobalanse-filer samtidig med samme ResBalRef-first logikk. 
+          Velg om du vil ha én sammenslått fil eller separate filer per selskap.
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div>
+            <label className="block text-sm font-medium mb-2">Velg flere saldobalanse-filer</label>
+            <input 
+              ref={fileInputMasse} 
+              className="hidden" 
+              type="file" 
+              multiple
+              accept=".xlsx,.xls" 
+              onChange={(e) => setMasseFiles(Array.from(e.target.files || []))} 
+            />
+            <button 
+              className="w-full rounded-xl bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+              onClick={() => fileInputMasse.current?.click()}
+            >
+              {masseFiles.length ? `${masseFiles.length} filer valgt` : "Velg flere saldobalanse-filer"}
+            </button>
+            {masseFiles.length > 0 && (
+              <div className="mt-2 text-xs text-muted-foreground max-h-20 overflow-y-auto">
+                {masseFiles.map((f, i) => (
+                  <div key={i} className="truncate">{f.name}</div>
+                ))}
+              </div>
+            )}
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium mb-2">Output-format</label>
+            <select 
+              className="w-full rounded-xl border px-3 py-2 text-sm mb-2"
+              value={masseOutputFormat}
+              onChange={(e) => setMasseOutputFormat(e.target.value as "merged" | "separate")}
+            >
+              <option value="merged">Én sammenslått fil</option>
+              <option value="separate">Separate filer per selskap</option>
+            </select>
+            <div className="text-xs text-muted-foreground">
+              {masseOutputFormat === "merged" 
+                ? "Alle selskaper i én Excel-fil med Selskap-kolonne" 
+                : "Én Excel-fil per opprinnelig fil"}
+            </div>
+          </div>
+        </div>
+
+        <div className="mb-4 text-sm text-muted-foreground">
+          <strong>NA-kilde:</strong> Bruker samme innstilling som enkeltfil-prosessering ovenfor 
+          ({naSource === "db" ? "database" : naFile ? naFile.name : "mangler Excel-fil"})
+        </div>
+
+        {masseProcessing && (
+          <div className="mb-4 rounded-lg border bg-muted/30 p-3">
+            <div className="flex items-center justify-between text-sm mb-2">
+              <span>Prosesserer...</span>
+              <span>{masseProgress.current}/{masseProgress.total}</span>
+            </div>
+            <div className="w-full bg-muted rounded-full h-2">
+              <div 
+                className="bg-primary h-2 rounded-full transition-all duration-300" 
+                style={{ width: `${(masseProgress.current / Math.max(masseProgress.total, 1)) * 100}%` }}
+              />
+            </div>
+          </div>
+        )}
+
+        <div className="flex items-center justify-between">
+          <button 
+            className="text-sm text-muted-foreground underline"
+            onClick={() => setMasseFiles([])}
+            disabled={masseProcessing}
+          >
+            Tøm filliste
+          </button>
+          <button 
+            className="rounded-xl bg-accent px-4 py-2 text-sm font-medium text-accent-foreground hover:bg-accent/90 disabled:opacity-50"
+            disabled={!masseFiles.length || masseProcessing || (naSource === "excel" && !naFile)}
+            onClick={handleMasseNaeringsMapping}
+          >
+            {masseProcessing ? "Prosesserer..." : "Start masseimport"}
           </button>
         </div>
       </section>
