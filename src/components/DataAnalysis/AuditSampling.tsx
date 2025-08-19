@@ -259,7 +259,7 @@ const AuditSampling: React.FC<AuditSamplingProps> = ({ clientId }) => {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="populationSize">Populasjonsstørrelse</Label>
+                <Label htmlFor="populationSize">Populasjon antall</Label>
                 <Input
                   id="populationSize"
                   type="number"
@@ -268,7 +268,7 @@ const AuditSampling: React.FC<AuditSamplingProps> = ({ clientId }) => {
                 />
               </div>
               <div>
-                <Label htmlFor="populationSum">Populasjonssum (NOK)</Label>
+                <Label htmlFor="populationSum">Populasjon beløp (NOK)</Label>
                 <Input
                   id="populationSum"
                   type="number"
@@ -293,7 +293,7 @@ const AuditSampling: React.FC<AuditSamplingProps> = ({ clientId }) => {
                 </Select>
               </div>
               <div>
-                <Label htmlFor="seed">Tilfeldig frø (valgfri)</Label>
+                <Label htmlFor="seed">Tilfeldig (valgfri)</Label>
                 <Input
                   id="seed"
                   type="number"
@@ -307,7 +307,7 @@ const AuditSampling: React.FC<AuditSamplingProps> = ({ clientId }) => {
             {params.testType === 'SUBSTANTIVE' && (
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="materiality">Vesentlighet (NOK)</Label>
+                  <Label htmlFor="materiality">Arbeidsvesentlighet (NOK)</Label>
                   <Input
                     id="materiality"
                     type="number"
@@ -330,7 +330,7 @@ const AuditSampling: React.FC<AuditSamplingProps> = ({ clientId }) => {
             {params.testType === 'CONTROL' && (
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="tolerableDeviationRate">Tolerabel avviksrate (%)</Label>
+                  <Label htmlFor="tolerableDeviationRate">Tolerabel avvikshyppighet (%)</Label>
                   <Input
                     id="tolerableDeviationRate"
                     type="number"
@@ -340,7 +340,7 @@ const AuditSampling: React.FC<AuditSamplingProps> = ({ clientId }) => {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="expectedDeviationRate">Forventet avviksrate (%)</Label>
+                  <Label htmlFor="expectedDeviationRate">Forventet avviksshyppighet (%)</Label>
                   <Input
                     id="expectedDeviationRate"
                     type="number"
