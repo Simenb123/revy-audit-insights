@@ -29,10 +29,30 @@ function longestPrefixMatch(konto: string, codes: string[]): string | null {
   return best;
 }
 
+// Utvidet matcher for 'konto' – dekker flere varianter/språk
+const KONTO_REGEX = /^(konto(?:nr|nummer)?\.?)$|konto\s*[-.]?\s*nr\.?|^account(?:\s*number)?$|^num(ber)?$/i;
+
+function detectHeaderRow(sheet: XLSX.WorkSheet, maxScan = 10): number | null {
+  const mat: any[][] = XLSX.utils.sheet_to_json(sheet, {
+    header: 1,
+    raw: true,
+    defval: "",
+    blankrows: true,
+  });
+  const limit = Math.min(mat.length, maxScan);
+  for (let i = 0; i < limit; i++) {
+    const row = mat[i] || [];
+    if (row.some((c: any) => KONTO_REGEX.test(String(c)))) return i + 1; // 1-basert
+  }
+  return null;
+}
+
 function guessKontoHeader(headers: string[]): string | null {
-  const lc = headers.map(h => h.toLowerCase());
-  const idx = lc.findIndex(h => /^konto(?:nr)?$/.test(h) || h.includes("konto"));
-  return idx >= 0 ? headers[idx] : null;
+  const idx = headers.findIndex((h) => KONTO_REGEX.test(String(h)));
+  if (idx >= 0) return headers[idx];
+  // fallback: første header som inneholder "konto"
+  const idx2 = headers.findIndex((h) => String(h).toLowerCase().includes("konto"));
+  return idx2 >= 0 ? headers[idx2] : null;
 }
 
 async function parseNaeringsExcel(file: File): Promise<Map<string, string>> {
@@ -79,20 +99,26 @@ function sheetToRows(sheet: XLSX.WorkSheet, headerRow = 1): { columns: string[];
     header: 1,
     raw: true,
     defval: "",
-    blankrows: false,
+    // VIKTIG: ikke dropp tomme rader eller celler – dette bevarer riktig radnummer
+    blankrows: true,
   });
+
   const idx = Math.max(1, headerRow) - 1;
   const head = (mat[idx] || []).map((h: any, i: number) => {
     const v = (h ?? "").toString().trim();
     return v || `Kolonne_${i + 1}`;
   }) as string[];
-  const rows = mat.slice(idx + 1)
+
+  const rows = mat
+    .slice(idx + 1)
+    // behold bare rader som har minst én ikke-tom verdi
     .filter((r) => (r || []).some((c) => `${c}`.trim() !== ""))
     .map((r) => {
       const o: Record<string, any> = {};
       head.forEach((h, i) => (o[h] = r[i] ?? ""));
       return o;
     });
+
   return { columns: head, rows };
 }
 
@@ -299,10 +325,29 @@ export default function DataredigeringPage() {
       const sbWs = sbWb.Sheets[sbWb.SheetNames[0]];
       const { columns: sbColumns, rows: sbRows } = sheetToRows(sbWs, sbHeaderRow);
 
-      // 2) Finn kontokolonne
-      const kontoCol = guessKontoHeader(sbColumns);
+      // 2) Finn kontokolonne med auto-deteksjon og fallback
+      let kontoCol = guessKontoHeader(sbColumns);
+
+      // Hvis ikke funnet: scan topp-10 rader for korrekt header-rad og prøv igjen
       if (!kontoCol) {
-        setErrors(prev => [...prev, "Kunne ikke finne kontokolonne i saldobalansen"]);
+        const autoRow = detectHeaderRow(sbWs);
+        if (autoRow && autoRow !== sbHeaderRow) {
+          const { columns: autoColumns } = sheetToRows(sbWs, autoRow);
+          kontoCol = guessKontoHeader(autoColumns);
+          if (kontoCol) {
+            // Oppdater til den automatisk detekterte header-raden
+            const { columns: sbColumnsNew, rows: sbRowsNew } = sheetToRows(sbWs, autoRow);
+            sbColumns.length = 0;
+            sbColumns.push(...sbColumnsNew);
+            sbRows.length = 0;
+            sbRows.push(...sbRowsNew);
+            setStatus(`Auto-detekterte header på rad ${autoRow} (i stedet for ${sbHeaderRow})`);
+          }
+        }
+      }
+
+      if (!kontoCol) {
+        setErrors(prev => [...prev, `Kunne ikke finne kontokolonne i saldobalansen. Funnet kolonner: ${sbColumns.join(', ')}`]);
         return;
       }
 
