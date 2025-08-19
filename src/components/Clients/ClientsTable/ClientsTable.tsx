@@ -215,6 +215,8 @@ const ClientsTable = ({ clients, onRowSelect, selectedClientId }: ClientsTablePr
       data={clients}
       columns={columns}
       exportFileName="klienter"
+      enablePdfExport={true}
+      pdfTitle="Klientoversikt"
       preferencesKey="clients-table-columns"
       defaultColumnState={[
         { key: "client", visible: true, pinnedLeft: true },

@@ -90,13 +90,6 @@ const AnalysisPage = () => {
                 </TabsTrigger>
               </TabsList>
               
-              <div className="flex items-center justify-end mt-4 no-print">
-                <Button variant="outline" size="sm" onClick={() => window.print()}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Eksporter PDF
-                </Button>
-              </div>
-              
               <TabsContent value="data" className="mt-6">
                 <AccountingExplorer clientId={client.id} />
               </TabsContent>
