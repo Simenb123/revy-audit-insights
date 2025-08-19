@@ -283,7 +283,24 @@ export async function createZipFromParsed(parsed: SaftResult): Promise<Blob> {
   return zip.generateAsync({ type: 'blob' });
 }
 
-export async function persistParsed(clientId: string, parsed: SaftResult, fileName?: string): Promise<void> {
+export async function persistParsed(clientId: string, parsed: SaftResult, fileName?: string): Promise<{ arCount: number; apCount: number }> {
+  // Create upload batch for tracking this SAF-T import
+  const { data: uploadBatch, error: batchError } = await supabase
+    .from('upload_batches')
+    .insert({
+      client_id: clientId,
+      file_name: fileName || 'SAF-T import',
+      batch_type: 'saft',
+      status: 'processing',
+      total_records: parsed.transactions?.length || 0,
+      processed_records: 0
+    })
+    .select('id')
+    .single();
+
+  if (batchError) throw batchError;
+  const uploadBatchId = uploadBatch.id;
+
   // Upsert accounts into client_chart_of_accounts
   const accountRows = parsed.accounts.map(a => {
     const derivedType = convertToNorwegian(String((a as any).account_type ?? (a as any).type ?? ''));
@@ -402,6 +419,7 @@ export async function persistParsed(clientId: string, parsed: SaftResult, fileNa
         client_id: clientId,
         version_number: versionNumber,
         file_name: fileName || 'SAF-T import',
+        upload_batch_id: uploadBatchId,
         total_transactions: totalTransactions,
         total_debit_amount: totalDebitAmount,
         total_credit_amount: totalCreditAmount,
@@ -418,10 +436,10 @@ export async function persistParsed(clientId: string, parsed: SaftResult, fileNa
     versionId = version.id;
   }
 
-  // Insert GL with version_id
+  // Insert GL with version_id and upload_batch_id
   let insertedTransactions = 0;
   if (txRows.length) {
-    const rowsWithVersion = txRows.map(r => ({ ...r, version_id: versionId }));
+    const rowsWithVersion = txRows.map(r => ({ ...r, version_id: versionId, upload_batch_id: uploadBatchId }));
     const { data, error: txError } = await supabase
       .from('general_ledger_transactions')
       .insert(rowsWithVersion)
@@ -468,12 +486,49 @@ export async function persistParsed(clientId: string, parsed: SaftResult, fileNa
     if (tbError) throw tbError;
   }
 
+  // Derive AR/AP transactions from the imported general ledger
+  let arCount = 0;
+  let apCount = 0;
+  
+  if (insertedTransactions > 0) {
+    console.log(`Deriving AR/AP from ${insertedTransactions} transactions for upload_batch_id: ${uploadBatchId}`);
+    
+    try {
+      const { data: arApResult, error: arApError } = await supabase.functions.invoke('derive-ar-ap', {
+        body: { upload_batch_id: uploadBatchId }
+      });
+
+      if (arApError) {
+        console.error('Error deriving AR/AP:', arApError);
+        // Don't fail the entire import - log error and continue
+      } else if (arApResult) {
+        arCount = arApResult.ar || 0;
+        apCount = arApResult.ap || 0;
+        console.log(`Successfully derived ${arCount} AR and ${apCount} AP transactions`);
+      }
+    } catch (error) {
+      console.error('Error calling derive-ar-ap function:', error);
+      // Don't fail the entire import - log error and continue
+    }
+  }
+
+  // Update upload batch status
+  await supabase
+    .from('upload_batches')
+    .update({
+      status: 'completed',
+      processed_records: insertedTransactions
+    })
+    .eq('id', uploadBatchId);
+
   // Only set version as active after successful data insertion
   if (insertedTransactions > 0 && versionId) {
     await supabase.rpc('set_active_version', { p_version_id: versionId });
   } else {
     throw new Error('No transactions were inserted successfully');
   }
+
+  return { arCount, apCount };
 }
 
 export async function uploadZipToStorage(clientId: string, zip: Blob, fileName: string): Promise<string> {
