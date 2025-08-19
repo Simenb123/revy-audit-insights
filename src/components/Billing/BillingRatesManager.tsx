@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import StandardDataTable, { StandardDataTableColumn } from '@/components/ui/standard-data-table';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useEmployees } from "@/hooks/useEmployees";
@@ -40,11 +40,93 @@ const BillingRatesManager: React.FC = () => {
 
   const setRateMutation = useSetEmployeeRate();
 
+  const billingColumns: StandardDataTableColumn<any>[] = [
+    {
+      key: 'employee_name',
+      header: 'Medarbeider',
+      accessor: (employee) => `${employee.first_name ?? ""} ${employee.last_name ?? ""}`.trim() || employee.email || employee.id,
+      sortable: true,
+      searchable: true,
+      format: (value, employee) => (
+        <div className="flex flex-col">
+          <span className="font-medium">{value}</span>
+          <span className="text-xs text-muted-foreground capitalize">{employee.user_role ?? "employee"}</span>
+        </div>
+      )
+    },
+    {
+      key: 'current_rate',
+      header: 'Aktiv sats',
+      accessor: (employee) => effectiveRates[employee.id],
+      align: 'right',
+      format: (value) => formatNOK(value)
+    },
+    {
+      key: 'new_rate_input',
+      header: 'Ny sats',
+      accessor: () => '',
+      align: 'right',
+      format: (_, employee) => (
+        <Input
+          inputMode="decimal"
+          placeholder="f.eks. 2000"
+          className="w-28 ml-auto text-right"
+          value={newRateByUser[employee.id] ?? ""}
+          onChange={(ev) => {
+            const v = parseFloat(ev.target.value);
+            setNewRateByUser((prev) => ({ ...prev, [employee.id]: isNaN(v) ? 0 : v }));
+          }}
+          aria-label={`Ny timesats for ${employee.first_name ?? employee.email ?? employee.id}`}
+        />
+      )
+    },
+    {
+      key: 'valid_from',
+      header: 'Gyldig fra',
+      accessor: () => effectiveDate,
+      align: 'right',
+      format: () => (
+        <Input type="date" className="w-36 ml-auto text-right" value={effectiveDate} readOnly />
+      )
+    },
+    {
+      key: 'actions',
+      header: '',
+      accessor: () => '',
+      align: 'right',
+      format: (_, employee) => (
+        <Button
+          variant="default"
+          disabled={!firmId || !newRateByUser[employee.id] || newRateByUser[employee.id] <= 0 || setRateMutation.isPending}
+          onClick={() => {
+            if (!firmId) return;
+            const rate = Number(newRateByUser[employee.id] ?? 0);
+            if (!rate || rate <= 0) return;
+            setRateMutation.mutate({
+              firmId,
+              userId: employee.id,
+              hourlyRate: rate,
+              validFromISO: effectiveDate,
+            });
+          }}
+        >
+          Lagre
+        </Button>
+      )
+    }
+  ];
+
   return (
-    <Card>
-      <CardHeader className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-        <CardTitle>Timesatser (NOK)</CardTitle>
-        <div className="flex items-center gap-2">
+    <StandardDataTable
+      title="Timesatser (NOK)"
+      description="Administrer timesatser for medarbeidere"
+      data={employees}
+      columns={billingColumns}
+      tableName="billing-rates"
+      exportFileName="timesatser"
+      emptyMessage="Ingen ansatte funnet."
+      icon={
+        <div className="flex items-center gap-2 mb-4">
           <label className="text-sm text-muted-foreground">Vis aktiv sats pr. dato</label>
           <Input
             type="date"
@@ -53,78 +135,8 @@ const BillingRatesManager: React.FC = () => {
             className="w-[180px]"
           />
         </div>
-      </CardHeader>
-      <CardContent>
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Medarbeider</TableHead>
-                <TableHead className="text-right">Aktiv sats</TableHead>
-                <TableHead className="text-right">Ny sats</TableHead>
-                <TableHead className="text-right">Gyldig fra</TableHead>
-                <TableHead className="text-right"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {employees.map((e) => (
-                <TableRow key={e.id}>
-                  <TableCell>
-                    <div className="flex flex-col">
-                      <span className="font-medium">{`${e.first_name ?? ""} ${e.last_name ?? ""}`.trim() || e.email || e.id}</span>
-                      <span className="text-xs text-muted-foreground capitalize">{e.user_role ?? "employee"}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right">{formatNOK(effectiveRates[e.id])}</TableCell>
-                  <TableCell className="text-right">
-                    <Input
-                      inputMode="decimal"
-                      placeholder="f.eks. 2000"
-                      className="w-28 ml-auto text-right"
-                      value={newRateByUser[e.id] ?? ""}
-                      onChange={(ev) => {
-                        const v = parseFloat(ev.target.value);
-                        setNewRateByUser((prev) => ({ ...prev, [e.id]: isNaN(v) ? 0 : v }));
-                      }}
-                      aria-label={`Ny timesats for ${e.first_name ?? e.email ?? e.id}`}
-                    />
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Input type="date" className="w-36 ml-auto text-right" value={effectiveDate} readOnly />
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button
-                      variant="default"
-                      disabled={!firmId || !newRateByUser[e.id] || newRateByUser[e.id] <= 0 || setRateMutation.isPending}
-                      onClick={() => {
-                        if (!firmId) return;
-                        const rate = Number(newRateByUser[e.id] ?? 0);
-                        if (!rate || rate <= 0) return;
-                        setRateMutation.mutate({
-                          firmId,
-                          userId: e.id,
-                          hourlyRate: rate,
-                          validFromISO: effectiveDate,
-                        });
-                      }}
-                    >
-                      Lagre
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {employees.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground">
-                    Ingen ansatte funnet.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </CardContent>
-    </Card>
+      }
+    />
   );
 };
 

@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import StandardDataTable, { StandardDataTableColumn } from '@/components/ui/standard-data-table';
 import { RefreshCw, Search, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from '@/integrations/supabase/client';
@@ -141,6 +141,58 @@ const KnowledgeMonitor = () => {
     );
   };
 
+  const knowledgeColumns: StandardDataTableColumn<any>[] = [
+    {
+      key: 'title',
+      header: 'Tittel',
+      accessor: 'title',
+      sortable: true,
+      searchable: true,
+      format: (value) => <span className="font-medium">{value}</span>
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      accessor: 'status',
+      sortable: true,
+      format: (value) => getStatusBadge(value)
+    },
+    {
+      key: 'reference_code',
+      header: 'Referanse',
+      accessor: 'reference_code',
+      format: (value) => value ? <Badge variant="outline">{value}</Badge> : null
+    },
+    {
+      key: 'embedding',
+      header: 'Embeddings',
+      accessor: 'embedding',
+      align: 'center',
+      format: (value) => getEmbeddingStatus(value !== null)
+    },
+    {
+      key: 'view_count',
+      header: 'Visninger',
+      accessor: 'view_count',
+      align: 'right',
+      sortable: true,
+      format: (value) => value || 0
+    },
+    {
+      key: 'updated_at',
+      header: 'Oppdatert',
+      accessor: 'updated_at',
+      align: 'center',
+      sortable: true,
+      format: (value) => (
+        <div className="flex items-center gap-1">
+          <Clock className="h-3 w-3 text-muted-foreground" />
+          {new Date(value).toLocaleDateString('no-NO')}
+        </div>
+      )
+    }
+  ];
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-4 gap-4">
@@ -247,39 +299,16 @@ const KnowledgeMonitor = () => {
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Tittel</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Referanse</TableHead>
-                <TableHead>Embeddings</TableHead>
-                <TableHead>Visninger</TableHead>
-                <TableHead>Oppdatert</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {articles.map((article: any) => (
-                <TableRow key={article.id}>
-                  <TableCell className="font-medium">{article.title}</TableCell>
-                  <TableCell>{getStatusBadge(article.status)}</TableCell>
-                  <TableCell>
-                    {article.reference_code && (
-                      <Badge variant="outline">{article.reference_code}</Badge>
-                    )}
-                  </TableCell>
-                  <TableCell>{getEmbeddingStatus(article.embedding !== null)}</TableCell>
-                  <TableCell>{article.view_count || 0}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1">
-                      <Clock className="h-3 w-3 text-muted-foreground" />
-                      {new Date(article.updated_at).toLocaleDateString('no-NO')}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <StandardDataTable
+            title="Kunnskapsartikler"
+            description="Oversikt over alle artikler i kunnskapsbasen"
+            data={articles}
+            columns={knowledgeColumns}
+            isLoading={isLoading}
+            tableName="knowledge-monitor"
+            exportFileName="kunnskapsartikler"
+            wrapInCard={false}
+          />
         </CardContent>
       </Card>
     </div>

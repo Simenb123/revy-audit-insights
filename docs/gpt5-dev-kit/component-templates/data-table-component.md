@@ -6,22 +6,25 @@ Lag en React komponenti for en data-tabell som viser [beskrivelse av data].
 
 TEKNISKE KRAV:
 - React 18 + TypeScript
-- Bruk shadcn/ui Table komponenter
+- Bruk StandardDataTable komponent (IKKE primitive Table)
 - TanStack Query for data fetching
 - Supabase client for backend
 - Norsk UI tekst
 
-FEATURES:
+FEATURES (inkludert automatisk):
 - Søk og filtrering
 - Sortering på kolonner
-- Paginering (50 items per side)
+- Kolonnevalg og visningsinnstillinger
+- Export til Excel
 - Loading og error states
-- Responsive design (mobil og desktop)
+- Responsive design
+- Norske tegn støtte
 
 DESIGN:
-- Bruk semantiske farger fra design system (bg-card, text-foreground, etc.)
-- Ingen hardkodede farger (ikke bg-white, text-black etc.)
+- Bruk semantiske farger fra design system
 - Følg Revio design patterns
+- Automatisk høyrejustert for beløp/tall
+- Sticky headers som ikke overlapper tekst
 
 DATA STRUKTUR:
 [Beskriv datastruktur her]
@@ -64,68 +67,54 @@ export const use[DataType] = () => {
 };
 
 // components/[DataType]Table.tsx
-import React, { useState } from 'react';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React from 'react';
+import StandardDataTable, { StandardDataTableColumn } from '@/components/ui/standard-data-table';
 import { use[DataType] } from '../hooks/use[DataType]';
+import { [DataType] } from '../types';
 
 interface [DataType]TableProps {
   // Props interface
 }
 
 const [DataType]Table: React.FC<[DataType]TableProps> = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const { data, isLoading, error } = use[DataType]();
+  const { data = [], isLoading, error } = use[DataType]();
 
-  if (isLoading) return <div>Laster...</div>;
-  if (error) return <div>Feil ved lasting av data</div>;
-
-  const filteredData = data?.filter(item => 
-    item.name?.toLowerCase().includes(searchTerm.toLowerCase())
-  ) || [];
+  const columns: StandardDataTableColumn<[DataType]>[] = [
+    {
+      key: 'name',
+      header: 'Navn',
+      accessor: 'name',
+      sortable: true,
+      searchable: true
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      accessor: 'status',
+      sortable: true,
+      format: (value) => value || 'Ikke satt'
+    },
+    {
+      key: 'created_at',
+      header: 'Opprettet',
+      accessor: 'created_at',
+      sortable: true,
+      align: 'center',
+      format: (value) => new Date(value).toLocaleDateString('nb-NO')
+    }
+  ];
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>[Tabell Tittel]</CardTitle>
-        <Input
-          placeholder="Søk..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="max-w-sm"
-        />
-      </CardHeader>
-      <CardContent>
-        <div className="overflow-auto max-h-96">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Navn</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Opprettet</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredData.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell>{item.name}</TableCell>
-                  <TableCell>{item.status}</TableCell>
-                  <TableCell>{new Date(item.created_at).toLocaleDateString('nb-NO')}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      </CardContent>
-    </Card>
+    <StandardDataTable
+      title="[Tabell Tittel]"
+      description="[Beskrivelse av tabellen]"
+      data={data}
+      columns={columns}
+      isLoading={isLoading}
+      error={error}
+      tableName="[data-type]"
+      exportFileName="[data-type]-export"
+    />
   );
 };
 
