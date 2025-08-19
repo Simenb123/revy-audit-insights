@@ -608,7 +608,7 @@ const [reconcileOpen, setReconcileOpen] = useState(false);
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
             <Switch id="hide-zero" checked={hideZeroAccounts} onCheckedChange={setHideZeroAccounts} />
-            <Label htmlFor="hide-zero">Skjul 0 kontoer</Label>
+            <Label htmlFor="hide-zero">Skjul 0 saldo</Label>
           </div>
           <div className="flex items-center gap-2">
             <Switch id="show-decimals" checked={showDecimals} onCheckedChange={setShowDecimals} />
