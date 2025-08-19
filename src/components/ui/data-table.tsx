@@ -122,6 +122,7 @@ const DataTable = <T extends Record<string, any>>({
   const bodyScrollRef = useRef<HTMLDivElement | null>(null);
   const scrollRestoreRef = useRef<{ left: number; top: number } | null>(null);
   const [topScrollWidth, setTopScrollWidth] = useState(0);
+  const [showTopScrollbar, setShowTopScrollbar] = useState(false);
 
   useEffect(() => {
     const body = bodyScrollRef.current;
@@ -139,7 +140,10 @@ const DataTable = <T extends Record<string, any>>({
     top.addEventListener('scroll', syncFromTop, { passive: true });
 
     const measure = () => {
-      setTopScrollWidth(body.scrollWidth);
+      const scrollWidth = body.scrollWidth;
+      const clientWidth = body.clientWidth;
+      setTopScrollWidth(scrollWidth);
+      setShowTopScrollbar(scrollWidth > clientWidth);
     };
     measure();
 
@@ -153,7 +157,9 @@ const DataTable = <T extends Record<string, any>>({
       ro.disconnect();
       window.removeEventListener('resize', measure);
     };
-  }, []);
+  }, [data, columns]);
+
+  // Derive initial column state and effective columns after the scrollbar effect
   // Derive initial column state
   const initialCMState: CMState[] = useMemo(() => {
     const mapDefaults = new Map<string, { visible: boolean; pinnedLeft?: boolean }>();
@@ -614,33 +620,37 @@ const TableBlock = (
           </div>
         )}
         
-        {/* Internal Toolbar - appears when enableInternalToolbar is true */}
-        {enableInternalToolbar && (
-          <TableToolbar
-            enableColumnManager={enableColumnManager}
-            columns={safeCmState}
-            onColumnsChange={setCmState}
-            enableWidthReset={!!preferencesKey}
-            onWidthReset={resetColWidths}
-            enableExport={enableExport}
-            enablePdfExport={enablePdfExport}
-            onExcelExport={handleExport}
-            onPdfExport={data && onPdfExport ? () => onPdfExport(data) : undefined}
-            isExportDisabled={!data || data.length === 0}
-            viewsDropdown={preferencesKey ? <ViewsDropdown /> : undefined}
-            customActions={toolbarCustomActions}
-          />
+        {/* Top horizontal scrollbar - visible when content overflows */}
+        {showTopScrollbar && (
+          <div className="relative bg-muted/20 border-b border-border/50">
+            <div 
+              ref={topScrollRef}
+              className="overflow-x-auto scrollbar-thin scrollbar-thumb-primary/40 scrollbar-track-muted/20 hover:scrollbar-thumb-primary/60 transition-colors"
+              style={{ height: '18px' }}
+              title="Scroll horisontalt for å se flere kolonner"
+            >
+              <div style={{ width: topScrollWidth, height: '1px' }} />
+            </div>
+          </div>
         )}
-        
-        {/* Synchronized top horizontal scrollbar (visible when table has vertical scroll) */}
-        {maxBodyHeight && (
-          <div
-            ref={topScrollRef}
-            className="overflow-x-auto h-3 bg-muted/20"
-            aria-hidden="true"
-            title="Horisontal scrollbar - scroll for å navigere tabellen sideveis"
-          >
-            <div style={{ width: topScrollWidth, height: 1 }} />
+
+        {/* Internal Toolbar */}
+        {enableInternalToolbar && (
+          <div className="border-b bg-muted/20">
+            <TableToolbar
+              enableColumnManager={enableColumnManager}
+              columns={safeCmState}
+              onColumnsChange={setCmState}
+              enableWidthReset={preferencesKey ? true : false}
+              onWidthReset={resetColWidths}
+              enableExport={enableExport}
+              enablePdfExport={enablePdfExport}
+              onExcelExport={handleExport}
+              onPdfExport={onPdfExport ? () => onPdfExport(filteredAndSortedData) : undefined}
+              isExportDisabled={!data || data.length === 0}
+              viewsDropdown={preferencesKey ? <ViewsDropdown /> : undefined}
+              customActions={toolbarCustomActions}
+            />
           </div>
         )}
         <div

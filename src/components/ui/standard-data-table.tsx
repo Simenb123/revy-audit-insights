@@ -158,6 +158,9 @@ const StandardDataTable = <T extends Record<string, any>>({
     ...props,
     columns: enhancedColumns,
     preferencesKey: finalPreferencesKey,
+    // Force enable internal toolbar for all StandardDataTable instances
+    enableInternalToolbar: true,
+    enableColumnManager: props.enableColumnManager !== false,
     enablePdfExport: enablePdfExport,
     onPdfExport: enablePdfExport ? () => handlePdfExport(props.data || []) : undefined,
   };

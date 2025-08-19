@@ -5,13 +5,12 @@ import { useTrialBalanceWithMappings, TrialBalanceEntryWithMapping } from '@/hoo
 import { useStandardAccounts } from '@/hooks/useChartOfAccounts';
 import { useSaveTrialBalanceMapping } from '@/hooks/useTrialBalanceMappings';
 import { useAutoMapping } from '@/hooks/useAutoMapping';
-import DataTable, { DataTableColumn } from '@/components/ui/data-table';
+import StandardDataTable, { StandardDataTableColumn } from '@/components/ui/standard-data-table';
 import { TableRow, TableCell } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import MappingCombobox from './MappingCombobox';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import ColumnSelector, { ColumnConfig } from './ColumnSelector';
 import FilterPanel from './FilterPanel';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
 import { useToggleTrialBalanceLock } from '@/hooks/useTrialBalanceVersions';
@@ -40,8 +39,8 @@ const TrialBalanceTable = ({ clientId, selectedVersion, accountingYear }: TrialB
   const saveMapping = useSaveTrialBalanceMapping();
   const { generateAutoMappingSuggestions, applyAutoMapping, isApplying } = useAutoMapping(clientId);
   
-  // Column configuration state with dynamic labels
-  const [columnConfig, setColumnConfig] = useState<ColumnConfig[]>([]);
+  // Default column visibility for StandardDataTable
+  const [defaultColumnState, setDefaultColumnState] = useState<{ key: string; visible: boolean }[]>([]);
   const [editingMapping, setEditingMapping] = useState<string | null>(null);
   const [autoSuggestions, setAutoSuggestions] = useState<any[]>([]);
   const [hideZeroAccounts, setHideZeroAccounts] = useState<boolean>(true);
@@ -84,22 +83,21 @@ const [reconcileOpen, setReconcileOpen] = useState(false);
   const selectedAccountType = searchParams.get('account_type');
   const selectedAnalysisGroup = searchParams.get('analysis_group');
 
-  // Update column config when fiscal year changes
+  // Update default column state when fiscal year changes
   useEffect(() => {
-    const previousYear = actualAccountingYear - 1;
-    setColumnConfig([
-      { key: 'account_number', label: 'Kontonr', visible: true, required: true },
-      { key: 'account_name', label: 'Kontonavn', visible: true, required: true },
-      { key: 'previous_year_balance', label: `Forrige år (${previousYear})`, visible: false },
-      { key: 'opening_balance', label: `Saldo ${previousYear} (Inngående ${actualAccountingYear})`, visible: true },
-      { key: 'closing_balance', label: `Saldo ${actualAccountingYear} (Utgående ${actualAccountingYear})`, visible: true },
-      { key: 'debit_turnover', label: 'Debet', visible: false },
-      { key: 'credit_turnover', label: 'Kredit', visible: false },
-      { key: 'standard_number', label: 'Regnskapsnr', visible: false },
-      { key: 'standard_category', label: 'Kategori', visible: false },
-      { key: 'standard_account_type', label: 'Kontotype', visible: false },
-      { key: 'standard_analysis_group', label: 'Analysegruppe', visible: false },
-      { key: 'mapping', label: 'Regnskapslinje', visible: true },
+    setDefaultColumnState([
+      { key: 'account_number', visible: true },
+      { key: 'account_name', visible: true },
+      { key: 'previous_year_balance', visible: false },
+      { key: 'opening_balance', visible: true },
+      { key: 'closing_balance', visible: true },
+      { key: 'debit_turnover', visible: false },
+      { key: 'credit_turnover', visible: false },
+      { key: 'standard_number', visible: false },
+      { key: 'standard_category', visible: false },
+      { key: 'standard_account_type', visible: false },
+      { key: 'standard_analysis_group', visible: false },
+      { key: 'mapping', visible: true },
     ]);
   }, [actualAccountingYear]);
 
@@ -125,11 +123,7 @@ const [reconcileOpen, setReconcileOpen] = useState(false);
     });
   }, [clientId, actualAccountingYear, selectedVersion]);
 
-  const handleColumnChange = useCallback((key: string, visible: boolean) => {
-    setColumnConfig(prev => prev.map(col => 
-      col.key === key ? { ...col, visible } : col
-    ));
-  }, []);
+  // Remove handleColumnChange as it's now handled by StandardDataTable
 
   // Auto-generate mapping suggestions when data loads
   useEffect(() => {
@@ -211,15 +205,15 @@ const [reconcileOpen, setReconcileOpen] = useState(false);
         return false;
       }
 
-      // Hide zero accounts based on visible numeric columns
+      // Hide zero accounts based on numeric values - check all numeric columns
       if (hideZeroAccounts) {
-        const visibleKeys = new Set(columnConfig.filter(c => c.visible).map(c => c.key));
-        const values: number[] = [];
-        if (visibleKeys.has('previous_year_balance')) values.push(entry.previous_year_balance || 0);
-        if (visibleKeys.has('opening_balance')) values.push(entry.opening_balance || 0);
-        if (visibleKeys.has('closing_balance')) values.push(entry.closing_balance || 0);
-        if (visibleKeys.has('debit_turnover')) values.push(entry.debit_turnover || 0);
-        if (visibleKeys.has('credit_turnover')) values.push(entry.credit_turnover || 0);
+        const values: number[] = [
+          entry.previous_year_balance || 0,
+          entry.opening_balance || 0,
+          entry.closing_balance || 0,
+          entry.debit_turnover || 0,
+          entry.credit_turnover || 0
+        ];
         const hasAnyAmount = values.some(v => Math.abs(v) > 0.0049);
         if (!hasAnyAmount) return false;
       }
@@ -228,7 +222,7 @@ const [reconcileOpen, setReconcileOpen] = useState(false);
     });
 
     return filtered;
-  }, [trialBalanceData, actualAccountingYear, filteredAccountNumbers, selectedAccountingLine, selectedSummaryLine, selectedAccountType, selectedAnalysisGroup, hideZeroAccounts, columnConfig]);
+  }, [trialBalanceData, actualAccountingYear, filteredAccountNumbers, selectedAccountingLine, selectedSummaryLine, selectedAccountType, selectedAnalysisGroup, hideZeroAccounts]);
 
   // Natural sort by account number by default
   const sortedEntries = useMemo(() => {
@@ -352,9 +346,9 @@ const [reconcileOpen, setReconcileOpen] = useState(false);
     }
   }, [clientId, actualAccountingYear, selectedVersion, refetch]);
 
-  // Define columns based on configuration
-  const columns: DataTableColumn<TrialBalanceEntryWithMapping>[] = useMemo(() => {
-    const allColumns: DataTableColumn<TrialBalanceEntryWithMapping>[] = [
+  // Define columns for StandardDataTable
+  const columns: StandardDataTableColumn<TrialBalanceEntryWithMapping>[] = useMemo(() => {
+    const allColumns: StandardDataTableColumn<TrialBalanceEntryWithMapping>[] = [
       {
         key: 'account_number',
         header: 'Kontonr',
@@ -513,12 +507,8 @@ const [reconcileOpen, setReconcileOpen] = useState(false);
       },
     ];
 
-    // Filter columns based on visibility settings
-    return allColumns.filter(col => {
-      const config = columnConfig.find(c => c.key === col.key);
-      return config?.visible === true;
-    });
-  }, [columnConfig, formatNumber, actualAccountingYear, standardAccounts, handleMappingChange, getAutoSuggestion]);
+    return allColumns;
+  }, [formatNumber, actualAccountingYear, standardAccounts, handleMappingChange, getAutoSuggestion, isLocked, handleEditEntry, handleDeleteEntry]);
 
   // Calculate totals
   const totals = useMemo(() => {
@@ -542,32 +532,16 @@ const [reconcileOpen, setReconcileOpen] = useState(false);
     return inRange.reduce((sum, e) => sum + (e.opening_balance - (e.previous_year_balance || 0)), 0);
   }, [trialBalanceData, actualAccountingYear]);
 
-  // Create total row dynamically based on visible columns - show even when no data
+  // Create total row - simplified without columnConfig dependency
   const totalRow = (
     <TableRow className="font-bold border-t-2 bg-muted/50">
-      <TableCell colSpan={Math.max(1, columnConfig.filter(c => c.visible && !c.key.includes('balance') && !c.key.includes('turnover')).length)}>
-        Sum
-      </TableCell>
-      {columnConfig.find(c => c.key === 'previous_year_balance' && c.visible) && (
-        <TableCell className="text-right font-mono">{formatNumber(totals?.previous_year_balance || 0)}</TableCell>
-      )}
-      {columnConfig.find(c => c.key === 'opening_balance' && c.visible) && (
-        <TableCell className="text-right font-mono">{formatNumber(totals?.opening_balance || 0)}</TableCell>
-      )}
-      {columnConfig.find(c => c.key === 'closing_balance' && c.visible) && (
-        <TableCell className="text-right font-mono">{formatNumber(totals?.closing_balance || 0)}</TableCell>
-      )}
-      {columnConfig.find(c => c.key === 'debit_turnover' && c.visible) && (
-        <TableCell className="text-right font-mono">{formatNumber(totals?.debit_turnover || 0)}</TableCell>
-      )}
-      {columnConfig.find(c => c.key === 'credit_turnover' && c.visible) && (
-        <TableCell className="text-right font-mono">{formatNumber(totals?.credit_turnover || 0)}</TableCell>
-      )}
-      {columnConfig.find(c => ['standard_number', 'standard_category', 'standard_account_type', 'standard_analysis_group', 'mapping'].includes(c.key) && c.visible) && (
-        <TableCell colSpan={columnConfig.filter(c => ['standard_number', 'standard_category', 'standard_account_type', 'standard_analysis_group', 'mapping'].includes(c.key) && c.visible).length}>
-          -
-        </TableCell>
-      )}
+      <TableCell colSpan={2}>Sum</TableCell>
+      <TableCell className="text-right font-mono">{formatNumber(totals?.previous_year_balance || 0)}</TableCell>
+      <TableCell className="text-right font-mono">{formatNumber(totals?.opening_balance || 0)}</TableCell>
+      <TableCell className="text-right font-mono">{formatNumber(totals?.closing_balance || 0)}</TableCell>
+      <TableCell className="text-right font-mono">{formatNumber(totals?.debit_turnover || 0)}</TableCell>
+      <TableCell className="text-right font-mono">{formatNumber(totals?.credit_turnover || 0)}</TableCell>
+      <TableCell colSpan={5}>-</TableCell>
     </TableRow>
   );
 
@@ -660,10 +634,6 @@ const [reconcileOpen, setReconcileOpen] = useState(false);
               </>
             )}
           </Badge>
-          <ColumnSelector 
-            columns={columnConfig}
-            onColumnChange={handleColumnChange}
-          />
           {selectedVersion && (
             <Badge variant="outline" className="ml-1">Versjon: {selectedVersion}</Badge>
           )}
@@ -679,7 +649,7 @@ const [reconcileOpen, setReconcileOpen] = useState(false);
           </Button>
         </div>
       </div>
-      <DataTable
+      <StandardDataTable
         title="Saldobalanse"
         description={description}
         icon={<Layers className="h-5 w-5" />}
@@ -688,7 +658,6 @@ const [reconcileOpen, setReconcileOpen] = useState(false);
         isLoading={isLoading}
         error={error}
         searchPlaceholder="Søk i kontoer..."
-        enableExport={true}
         exportFileName={`saldobalanse_${actualAccountingYear}`}
         showTotals={true}
         totalRow={totalRow}
@@ -698,6 +667,9 @@ const [reconcileOpen, setReconcileOpen] = useState(false);
         rowHeight={48}
         overscan={12}
         onRowClick={handleRowClick}
+        preferencesKey="trial-balance-table"
+        defaultColumnState={defaultColumnState}
+        tableName="Saldobalanse"
       />
       <ReconciliationDialog
         clientId={clientId}

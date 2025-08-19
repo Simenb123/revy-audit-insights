@@ -1,8 +1,8 @@
 
-import {
-  Badge
-} from "@/components/ui/badge";
-import DataTable, { DataTableColumn } from "@/components/ui/data-table";
+import StandardDataTable, { StandardDataTableColumn } from '@/components/ui/standard-data-table';
+import { TableRow, TableCell } from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import EquityBadge from "./EquityBadge";
 import TestDataBadge from "./TestDataBadge";
 import { Client } from "@/types/revio";
@@ -47,7 +47,7 @@ const engagementTypeLabel = (t?: Client["engagement_type"]) => {
 const ClientsTable = ({ clients, onRowSelect, selectedClientId }: ClientsTableProps) => {
   const navigate = useNavigate();
 
-  const columns: DataTableColumn<Client>[] = [
+  const columns: StandardDataTableColumn<Client>[] = [
     {
       key: "client",
       header: "Klient",
@@ -210,12 +210,11 @@ const ClientsTable = ({ clients, onRowSelect, selectedClientId }: ClientsTablePr
   ];
 
   return (
-    <DataTable
+    <StandardDataTable
       title="Klienter"
       data={clients}
       columns={columns}
-      enableExport={false}
-      enableColumnManager
+      exportFileName="klienter"
       preferencesKey="clients-table-columns"
       defaultColumnState={[
         { key: "client", visible: true, pinnedLeft: true },
@@ -237,7 +236,7 @@ const ClientsTable = ({ clients, onRowSelect, selectedClientId }: ClientsTablePr
          { key: "budget_amount", visible: false },
          { key: "budget_hours", visible: false },
          { key: "actual_industry", visible: false },
-         { key: "is_active", visible: true }, // New default visibility
+         { key: "is_active", visible: true },
       ]}
       onRowClick={(row) => {
         onRowSelect?.(row);
@@ -249,6 +248,7 @@ const ClientsTable = ({ clients, onRowSelect, selectedClientId }: ClientsTablePr
       wrapInCard={false}
       showSearch={false}
       emptyMessage="Ingen klienter funnet"
+      tableName="Klienter"
     />
   );
 };

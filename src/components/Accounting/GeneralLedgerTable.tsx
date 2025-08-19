@@ -3,12 +3,11 @@ import { LineChart } from 'lucide-react';
 import { useTransactions } from '@/hooks/useTransactions';
 import { useActiveVersion } from '@/hooks/useAccountingVersions';
 import { getFieldDefinitions } from '@/utils/fieldDefinitions';
-import DataTable, { DataTableColumn } from '@/components/ui/data-table';
+import StandardDataTable, { StandardDataTableColumn } from '@/components/ui/standard-data-table';
 import { TableRow, TableCell } from '@/components/ui/table';
 import { format } from 'date-fns';
 import { useQuery } from '@tanstack/react-query';
 import { logger } from '@/utils/logger';
-import ColumnSelector, { ColumnConfig } from '@/components/Accounting/ColumnSelector';
 interface GeneralLedgerTableProps {
   clientId: string;
   versionId?: string;
@@ -65,25 +64,21 @@ const GeneralLedgerTable = ({ clientId, versionId, accountNumberFilter }: Genera
     }).format(amount);
   };
 
-  // Kolonnevalg (gjenbruk fra Saldobalanse)
-  const [columnConfig, setColumnConfig] = React.useState<ColumnConfig[]>([
-    { key: 'transaction_date', label: 'Dato', visible: true, required: true },
-    { key: 'account_number', label: 'Kontonr', visible: true, required: true },
-    { key: 'account_name', label: 'Kontonavn', visible: true, required: true },
-    { key: 'description', label: 'Beskrivelse', visible: true },
-    { key: 'voucher_number', label: 'Bilag', visible: true },
-    { key: 'debit_amount', label: 'Debet', visible: true },
-    { key: 'credit_amount', label: 'Kredit', visible: true },
-    { key: 'balance_amount', label: 'Beløp', visible: true },
-    { key: 'vat_code', label: 'MVA-kode', visible: false },
-    { key: 'vat_rate', label: 'MVA-sats', visible: false },
-    { key: 'vat_base', label: 'MVA-grunnlag', visible: false },
-    { key: 'vat_amount', label: 'MVA-beløp', visible: false },
-  ]);
-
-  const handleColumnChange = React.useCallback((key: string, visible: boolean) => {
-    setColumnConfig(prev => prev.map(c => (c.key === key ? { ...c, visible } : c)));
-  }, []);
+  // Default column visibility for StandardDataTable
+  const defaultColumnState = [
+    { key: 'transaction_date', visible: true },
+    { key: 'account_number', visible: true },
+    { key: 'account_name', visible: true },
+    { key: 'description', visible: true },
+    { key: 'voucher_number', visible: true },
+    { key: 'debit_amount', visible: true },
+    { key: 'credit_amount', visible: true },
+    { key: 'balance_amount', visible: true },
+    { key: 'vat_code', visible: false },
+    { key: 'vat_rate', visible: false },
+    { key: 'vat_base', visible: false },
+    { key: 'vat_amount', visible: false },
+  ];
 
   const handleSort = React.useCallback((newSortBy: string, newSortOrder: 'asc' | 'desc') => {
     setSortBy(newSortBy);
@@ -92,8 +87,8 @@ const GeneralLedgerTable = ({ clientId, versionId, accountNumberFilter }: Genera
   }, []);
 
   // Alle kolonner basert på felter
-  const allColumns: DataTableColumn<any>[] = useMemo(() => {
-    const debitCol: DataTableColumn<any> = {
+  const allColumns: StandardDataTableColumn<any>[] = useMemo(() => {
+    const debitCol: StandardDataTableColumn<any> = {
       key: 'debit_amount',
       header: 'Debet',
       accessor: 'debit_amount',
@@ -102,7 +97,7 @@ const GeneralLedgerTable = ({ clientId, versionId, accountNumberFilter }: Genera
       format: (value: number | null) => formatCurrency(value ?? 0),
     };
 
-    const creditCol: DataTableColumn<any> = {
+    const creditCol: StandardDataTableColumn<any> = {
       key: 'credit_amount',
       header: 'Kredit',
       accessor: 'credit_amount',
@@ -111,7 +106,7 @@ const GeneralLedgerTable = ({ clientId, versionId, accountNumberFilter }: Genera
       format: (value: number | null) => formatCurrency(value ?? 0),
     };
 
-    const amountCol: DataTableColumn<any> = {
+    const amountCol: StandardDataTableColumn<any> = {
       key: 'balance_amount',
       header: 'Beløp',
       accessor: 'balance_amount',
@@ -204,7 +199,7 @@ const GeneralLedgerTable = ({ clientId, versionId, accountNumberFilter }: Genera
     }
 
     // Map feltdefinisjoner til kolonner
-    const baseColumns: DataTableColumn<any>[] = [];
+    const baseColumns: StandardDataTableColumn<any>[] = [];
 
     const dateField = fieldDefinitions.find(f => f.field_key === 'transaction_date');
     const accountField = fieldDefinitions.find(f => f.field_key === 'account_number');
@@ -317,11 +312,8 @@ const GeneralLedgerTable = ({ clientId, versionId, accountNumberFilter }: Genera
     return baseColumns;
   }, [fieldDefinitions]);
 
-  // Filtrer etter valgt kolonnekonfig
-  const visibleColumns: DataTableColumn<any>[] = useMemo(() => {
-    const visibleKeys = new Set(columnConfig.filter(c => c.visible).map(c => c.key));
-    return (allColumns || []).filter(col => visibleKeys.has(col.key));
-  }, [allColumns, columnConfig]);
+  // All columns are now handled by StandardDataTable's internal column manager
+  const columns = allColumns;
 
   // Use server-calculated totals from the edge function
   const totals = useMemo(() => {
@@ -334,7 +326,7 @@ const GeneralLedgerTable = ({ clientId, versionId, accountNumberFilter }: Genera
 
   const totalRow = (
     <TableRow className="font-bold border-t-2 bg-muted/50">
-      <TableCell colSpan={Math.max(1, (visibleColumns?.length || 1) - 1)}>Sum</TableCell>
+      <TableCell colSpan={Math.max(1, (columns?.length || 1) - 1)}>Sum</TableCell>
       <TableCell className="text-right">
         <div className="flex flex-col items-end gap-0.5">
           <span>Debet: {formatCurrency(totals.debit)}</span>
@@ -354,40 +346,36 @@ const GeneralLedgerTable = ({ clientId, versionId, accountNumberFilter }: Genera
 
 
   return (
-    <>
-      <div className="mb-2 flex items-center justify-end gap-2">
-        <ColumnSelector columns={columnConfig} onColumnChange={handleColumnChange} />
-      </div>
-      <DataTable
-        title="Hovedbok"
-        description={description}
-        icon={<LineChart className="h-5 w-5" />}
-        data={transactions || []}
-        columns={visibleColumns}
-        isLoading={isLoading}
-        error={error}
-        searchPlaceholder="Søk i transaksjoner..."
-        enableExport={true}
-        exportFileName={`hovedbok_${new Date().getFullYear()}`}
-        enablePagination={true}
-        pageSize={pageSize}
-        totalCount={totalCount || 0}
-        currentPage={currentPage}
-        onPageChange={setCurrentPage}
-        showTotals={true}
-        totalRow={totalRow}
-        emptyMessage={
-          activeVersion 
-            ? `Ingen transaksjoner i aktiv versjon (${activeVersion.version_number}). Last opp data eller aktiver en annen versjon.`
-            : "Ingen aktiv versjon funnet. Last opp hovedbok eller aktiver en eksisterende versjon."
-        }
-        enableColumnManager={false}
-        enableServerSorting={true}
-        onSort={handleSort}
-        serverSortBy={sortBy}
-        serverSortOrder={sortOrder}
-      />
-    </>
+    <StandardDataTable
+      title="Hovedbok"
+      description={description}
+      icon={<LineChart className="h-5 w-5" />}
+      data={transactions || []}
+      columns={columns}
+      isLoading={isLoading}
+      error={error}
+      searchPlaceholder="Søk i transaksjoner..."
+      exportFileName={`hovedbok_${new Date().getFullYear()}`}
+      enablePagination={true}
+      pageSize={pageSize}
+      totalCount={totalCount || 0}
+      currentPage={currentPage}
+      onPageChange={setCurrentPage}
+      showTotals={true}
+      totalRow={totalRow}
+      emptyMessage={
+        activeVersion 
+          ? `Ingen transaksjoner i aktiv versjon (${activeVersion.version_number}). Last opp data eller aktiver en annen versjon.`
+          : "Ingen aktiv versjon funnet. Last opp hovedbok eller aktiver en eksisterende versjon."
+      }
+      enableServerSorting={true}
+      onSort={handleSort}
+      serverSortBy={sortBy}
+      serverSortOrder={sortOrder}
+      preferencesKey="general-ledger-table"
+      defaultColumnState={defaultColumnState}
+      tableName="Hovedbok"
+    />
   );
 };
 
