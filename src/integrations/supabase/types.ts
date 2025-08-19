@@ -11066,7 +11066,7 @@ export type Database = {
         | "ESTIMATES_PROFILE"
         | "MATERIALITY"
         | "RISK_MATRIX"
-      review_status_type: "pending" | "ok" | "deviation"
+      review_status_type: "pending" | "ok" | "deviation" | "follow_up"
       risk_level: "low" | "medium" | "high"
       user_role_type: "admin" | "partner" | "manager" | "employee"
     }
@@ -11269,7 +11269,7 @@ export const Constants = {
         "MATERIALITY",
         "RISK_MATRIX",
       ],
-      review_status_type: ["pending", "ok", "deviation"],
+      review_status_type: ["pending", "ok", "deviation", "follow_up"],
       risk_level: ["low", "medium", "high"],
       user_role_type: ["admin", "partner", "manager", "employee"],
     },

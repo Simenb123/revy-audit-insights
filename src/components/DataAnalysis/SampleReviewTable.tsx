@@ -2,16 +2,15 @@ import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import DataTable, { DataTableColumn } from '@/components/ui/data-table';
 import { useSampleReview, SampleItem } from '@/hooks/useSampleReview';
 import { format } from 'date-fns';
-import { CheckCircle, XCircle, Clock, AlertTriangle, Eye, ArrowLeft } from 'lucide-react';
-import ActionStatusBadge from '@/components/AuditActions/ActionStatusBadge';
+import { CheckCircle, AlertTriangle, Clock, Eye, ArrowLeft, MessageSquare } from 'lucide-react';
 import VoucherDrillDownDialog from './VoucherDrillDownDialog';
 
 interface SampleReviewTableProps {
@@ -26,10 +25,10 @@ const SampleReviewTable: React.FC<SampleReviewTableProps> = ({
   onBack,
 }) => {
   const { sampleItems, updateItemReview, reviewSummary, isLoading, isUpdating } = useSampleReview(planId);
-  const [editingItem, setEditingItem] = useState<SampleItem | null>(null);
-  const [editDeviationAmount, setEditDeviationAmount] = useState<string>('0');
-  const [editDeviationNotes, setEditDeviationNotes] = useState<string>('');
-  const [editStatus, setEditStatus] = useState<'pending' | 'ok' | 'deviation'>('ok');
+  const [commentingItem, setCommentingItem] = useState<SampleItem | null>(null);
+  const [commentText, setCommentText] = useState<string>('');
+  const [deviationAmount, setDeviationAmount] = useState<string>('0');
+  const [pendingStatus, setPendingStatus] = useState<'follow_up' | 'deviation' | null>(null);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('nb-NO', {
@@ -39,89 +38,82 @@ const SampleReviewTable: React.FC<SampleReviewTableProps> = ({
     }).format(amount);
   };
 
-  const getStatusIcon = (status: 'pending' | 'ok' | 'deviation') => {
+  const getStatusIcon = (status: 'pending' | 'ok' | 'deviation' | 'follow_up') => {
     switch (status) {
       case 'ok':
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
+        return <CheckCircle className="h-4 w-4 text-green-600" />;
       case 'deviation':
-        return <XCircle className="h-4 w-4 text-red-500" />;
+        return <AlertTriangle className="h-4 w-4 text-red-600" />;
+      case 'follow_up':
+        return <Clock className="h-4 w-4 text-yellow-600" />;
       default:
-        return <Clock className="h-4 w-4 text-gray-400" />;
+        return <Clock className="h-4 w-4 text-muted-foreground" />;
     }
   };
 
-  const getStatusBadgeVariant = (status: 'pending' | 'ok' | 'deviation') => {
+  const getStatusBadgeVariant = (status: 'pending' | 'ok' | 'deviation' | 'follow_up') => {
     switch (status) {
       case 'ok':
-        return 'default';
+        return 'success';
       case 'deviation':
         return 'destructive';
+      case 'follow_up':
+        return 'warning';
       default:
         return 'secondary';
     }
   };
 
-  const getStatusLabel = (status: 'pending' | 'ok' | 'deviation') => {
+  const getStatusLabel = (status: 'pending' | 'ok' | 'deviation' | 'follow_up') => {
     switch (status) {
       case 'ok':
-        return 'OK';
+        return 'Ingen avvik';
       case 'deviation':
         return 'Avvik';
+      case 'follow_up':
+        return 'Til oppfølging';
       default:
         return 'Venter';
     }
   };
 
-  const handleEdit = (item: SampleItem) => {
-    setEditingItem(item);
-    setEditDeviationAmount(item.deviation_amount?.toString() || '0');
-    setEditDeviationNotes(item.deviation_notes || '');
-    setEditStatus(item.review_status);
+  const handleStatusChange = (item: SampleItem, newStatus: 'ok' | 'deviation' | 'follow_up') => {
+    if (newStatus === 'ok') {
+      // No comment needed for OK status
+      updateItemReview(item.id, true, 0, '', newStatus);
+    } else {
+      // Open comment dialog for deviation or follow_up
+      setCommentingItem(item);
+      setPendingStatus(newStatus);
+      setCommentText(item.deviation_notes || '');
+      setDeviationAmount(item.deviation_amount?.toString() || '0');
+    }
   };
 
-  const handleSave = () => {
-    if (!editingItem) return;
+  const handleSaveComment = () => {
+    if (!commentingItem || !pendingStatus) return;
 
-    const deviationAmount = parseFloat(editDeviationAmount) || 0;
+    const amount = pendingStatus === 'deviation' ? parseFloat(deviationAmount) || 0 : 0;
     updateItemReview(
-      editingItem.id,
+      commentingItem.id,
       true,
-      deviationAmount,
-      editDeviationNotes,
-      editStatus
+      amount,
+      commentText,
+      pendingStatus
     );
-    setEditingItem(null);
-  };
-
-  const handleQuickReview = (item: SampleItem, status: 'ok' | 'deviation') => {
-    updateItemReview(item.id, true, 0, '', status);
+    setCommentingItem(null);
+    setPendingStatus(null);
+    setCommentText('');
+    setDeviationAmount('0');
   };
 
   const columns: DataTableColumn<SampleItem>[] = useMemo(() => [
-    {
-      key: 'reviewed',
-      header: 'Kontrollert',
-      accessor: 'is_reviewed',
-      align: 'center',
-      format: (value: boolean, row: SampleItem) => (
-        <Checkbox
-          checked={value}
-          onCheckedChange={(checked) => {
-            if (!checked) {
-              updateItemReview(row.id, false, 0, '', 'pending');
-            } else {
-              handleEdit(row);
-            }
-          }}
-        />
-      ),
-    },
     {
       key: 'status',
       header: 'Status',
       accessor: 'review_status',
       align: 'center',
-      format: (value: 'pending' | 'ok' | 'deviation', row: SampleItem) => (
+      format: (value: 'pending' | 'ok' | 'deviation' | 'follow_up', row: SampleItem) => (
         <div className="flex items-center gap-2">
           {getStatusIcon(value)}
           <Badge variant={getStatusBadgeVariant(value)}>
@@ -193,12 +185,61 @@ const SampleReviewTable: React.FC<SampleReviewTableProps> = ({
       ),
     },
     {
+      key: 'review_controls',
+      header: 'Kontroll',
+      accessor: () => '',
+      align: 'center',
+      format: (_, row: SampleItem) => (
+        <div className="flex items-center gap-3">
+          <RadioGroup 
+            value={row.review_status} 
+            onValueChange={(value) => handleStatusChange(row, value as 'ok' | 'deviation' | 'follow_up')}
+            className="flex flex-row gap-6"
+            disabled={isUpdating}
+          >
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="ok" id={`${row.id}-ok`} className="border-green-500 text-green-500" />
+              <Label htmlFor={`${row.id}-ok`} className="text-sm text-green-700 font-medium">
+                Ingen avvik
+              </Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="follow_up" id={`${row.id}-follow_up`} className="border-yellow-500 text-yellow-500" />
+              <Label htmlFor={`${row.id}-follow_up`} className="text-sm text-yellow-700 font-medium">
+                Til oppfølging
+              </Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="deviation" id={`${row.id}-deviation`} className="border-red-500 text-red-500" />
+              <Label htmlFor={`${row.id}-deviation`} className="text-sm text-red-700 font-medium">
+                Avvik
+              </Label>
+            </div>
+          </RadioGroup>
+          {(row.deviation_notes || row.deviation_amount > 0) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 p-0 text-blue-600"
+              onClick={() => {
+                setCommentingItem(row);
+                setCommentText(row.deviation_notes || '');
+                setDeviationAmount(row.deviation_amount?.toString() || '0');
+              }}
+            >
+              <MessageSquare className="h-3 w-3" />
+            </Button>
+          )}
+        </div>
+      ),
+    },
+    {
       key: 'deviation_amount',
       header: 'Avvik',
       accessor: 'deviation_amount',
       sortable: true,
       align: 'right',
-      format: (value: number, row: SampleItem) => {
+      format: (value: number) => {
         if (!value || value === 0) return '-';
         return (
           <span className="text-red-600 font-medium">
@@ -206,34 +247,6 @@ const SampleReviewTable: React.FC<SampleReviewTableProps> = ({
           </span>
         );
       },
-    },
-    {
-      key: 'actions',
-      header: 'Handlinger',
-      accessor: () => '',
-      align: 'center',
-      format: (_, row: SampleItem) => (
-        <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => handleQuickReview(row, 'ok')}
-            disabled={isUpdating}
-            className="text-green-600 hover:text-green-700 hover:bg-green-50"
-          >
-            <CheckCircle className="h-3 w-3" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => handleEdit(row)}
-            disabled={isUpdating}
-            className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
-          >
-            <AlertTriangle className="h-3 w-3" />
-          </Button>
-        </div>
-      ),
     },
   ], [isUpdating, updateItemReview]);
 
@@ -251,7 +264,7 @@ const SampleReviewTable: React.FC<SampleReviewTableProps> = ({
               <div>
                 <CardTitle>Kontroller utvalg: {planName}</CardTitle>
                 <CardDescription>
-                  Huk av elementer som er kontrollert og registrer eventuelle avvik
+                  Velg kontrollresultat for hvert element. Kommentarer kreves for oppfølging og avvik.
                 </CardDescription>
               </div>
             </div>
@@ -277,28 +290,32 @@ const SampleReviewTable: React.FC<SampleReviewTableProps> = ({
 
       {/* Progress summary */}
       {reviewSummary && (
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
           <Card className="p-4">
             <div className="text-2xl font-bold">{reviewSummary.totalItems}</div>
             <div className="text-sm text-muted-foreground">Totalt</div>
           </Card>
-          <Card className="p-4">
+          <Card className="p-4 bg-green-50">
             <div className="text-2xl font-bold text-green-600">{reviewSummary.okItems}</div>
-            <div className="text-sm text-muted-foreground">OK</div>
+            <div className="text-sm text-green-700">Ingen avvik</div>
           </Card>
-          <Card className="p-4">
+          <Card className="p-4 bg-yellow-50">
+            <div className="text-2xl font-bold text-yellow-600">{reviewSummary.followUpItems}</div>
+            <div className="text-sm text-yellow-700">Til oppfølging</div>
+          </Card>
+          <Card className="p-4 bg-red-50">
             <div className="text-2xl font-bold text-red-600">{reviewSummary.deviationItems}</div>
-            <div className="text-sm text-muted-foreground">Avvik</div>
+            <div className="text-sm text-red-700">Avvik</div>
           </Card>
           <Card className="p-4">
-            <div className="text-2xl font-bold text-gray-500">{reviewSummary.pendingItems}</div>
+            <div className="text-2xl font-bold text-muted-foreground">{reviewSummary.pendingItems}</div>
             <div className="text-sm text-muted-foreground">Gjenstår</div>
           </Card>
-          <Card className="p-4">
+          <Card className="p-4 bg-red-50">
             <div className="text-2xl font-bold text-red-600">
               {formatCurrency(reviewSummary.totalDeviationAmount)}
             </div>
-            <div className="text-sm text-muted-foreground">Sum avvik</div>
+            <div className="text-sm text-red-700">Sum avvik</div>
           </Card>
         </div>
       )}
@@ -317,61 +334,57 @@ const SampleReviewTable: React.FC<SampleReviewTableProps> = ({
         emptyMessage="Ingen elementer i utvalget"
       />
 
-      {/* Edit dialog */}
-      <Dialog open={!!editingItem} onOpenChange={(open) => !open && setEditingItem(null)}>
+      {/* Comment dialog */}
+      <Dialog open={!!commentingItem} onOpenChange={(open) => !open && setCommentingItem(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Kontroller element</DialogTitle>
+            <DialogTitle>
+              {pendingStatus === 'deviation' ? 'Registrer avvik' : 'Legg til kommentar'}
+            </DialogTitle>
             <DialogDescription>
-              Bilag: {editingItem?.voucher_number} - {editingItem?.description}
+              Bilag: {commentingItem?.voucher_number} - {commentingItem?.description}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium">Kontrollresultat</label>
-              <Select value={editStatus} onValueChange={(value: 'pending' | 'ok' | 'deviation') => setEditStatus(value)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ok">OK - Ingen avvik</SelectItem>
-                  <SelectItem value="deviation">Avvik funnet</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {editStatus === 'deviation' && (
-              <>
-                <div>
-                  <label className="text-sm font-medium">Avviksbeløp (NOK)</label>
-                  <Input
-                    type="number"
-                    value={editDeviationAmount}
-                    onChange={(e) => setEditDeviationAmount(e.target.value)}
-                    placeholder="0.00"
-                    step="0.01"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium">Beskrivelse av avvik</label>
-                  <Textarea
-                    value={editDeviationNotes}
-                    onChange={(e) => setEditDeviationNotes(e.target.value)}
-                    placeholder="Beskriv avviket..."
-                    rows={3}
-                  />
-                </div>
-              </>
+            {pendingStatus === 'deviation' && (
+              <div>
+                <Label className="text-sm font-medium">Avviksbeløp (NOK)</Label>
+                <Input
+                  type="number"
+                  value={deviationAmount}
+                  onChange={(e) => setDeviationAmount(e.target.value)}
+                  placeholder="0.00"
+                  step="0.01"
+                />
+              </div>
             )}
 
+            <div>
+              <Label className="text-sm font-medium">
+                {pendingStatus === 'deviation' ? 'Beskrivelse av avvik' : 'Kommentar'}
+              </Label>
+              <Textarea
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                placeholder={
+                  pendingStatus === 'deviation' 
+                    ? "Beskriv avviket..." 
+                    : "Legg til kommentar for oppfølging..."
+                }
+                rows={3}
+              />
+            </div>
+
             <div className="flex justify-end gap-2 pt-4">
-              <Button variant="outline" onClick={() => setEditingItem(null)}>
+              <Button variant="outline" onClick={() => {
+                setCommentingItem(null);
+                setPendingStatus(null);
+              }}>
                 Avbryt
               </Button>
-              <Button onClick={handleSave} disabled={isUpdating}>
-                Lagre kontroll
+              <Button onClick={handleSaveComment} disabled={isUpdating}>
+                Lagre
               </Button>
             </div>
           </div>

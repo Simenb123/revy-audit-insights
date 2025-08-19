@@ -17,7 +17,7 @@ export interface SampleItem {
   review_date?: string;
   deviation_amount: number;
   deviation_notes?: string;
-  review_status: 'pending' | 'ok' | 'deviation';
+  review_status: 'pending' | 'ok' | 'deviation' | 'follow_up';
   // These will come from metadata or joined data
   voucher_number?: string;
   risk_score?: number;
@@ -76,7 +76,7 @@ export const useSampleReview = (planId: string) => {
       isReviewed: boolean;
       deviationAmount?: number;
       deviationNotes?: string;
-      reviewStatus: 'pending' | 'ok' | 'deviation';
+      reviewStatus: 'pending' | 'ok' | 'deviation' | 'follow_up';
     }) => {
       const { error } = await supabase
         .from('audit_sampling_items')
@@ -113,7 +113,7 @@ export const useSampleReview = (planId: string) => {
     isReviewed: boolean,
     deviationAmount?: number,
     deviationNotes?: string,
-    reviewStatus: 'pending' | 'ok' | 'deviation' = 'ok'
+    reviewStatus: 'pending' | 'ok' | 'deviation' | 'follow_up' = 'ok'
   ) => {
     updateReviewMutation.mutate({
       itemId,
@@ -131,6 +131,7 @@ export const useSampleReview = (planId: string) => {
     pendingItems: sampleItems.filter(item => item.review_status === 'pending').length,
     okItems: sampleItems.filter(item => item.review_status === 'ok').length,
     deviationItems: sampleItems.filter(item => item.review_status === 'deviation').length,
+    followUpItems: sampleItems.filter(item => item.review_status === 'follow_up').length,
     totalDeviationAmount: sampleItems.reduce((sum, item) => sum + (item.deviation_amount || 0), 0),
     completionPercentage: sampleItems.length > 0 
       ? Math.round((sampleItems.filter(item => item.is_reviewed).length / sampleItems.length) * 100)
