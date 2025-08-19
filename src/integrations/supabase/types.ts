@@ -2037,6 +2037,131 @@ export type Database = {
           },
         ]
       }
+      audit_sampling_items: {
+        Row: {
+          account_id: string | null
+          account_name: string
+          account_number: string
+          balance_amount: number
+          created_at: string
+          id: string
+          interval_value: number | null
+          is_selected: boolean
+          item_type: string
+          metadata: Json | null
+          random_start: number | null
+          sample_order: number | null
+          sampling_plan_id: string
+          selection_reason: string | null
+        }
+        Insert: {
+          account_id?: string | null
+          account_name: string
+          account_number: string
+          balance_amount?: number
+          created_at?: string
+          id?: string
+          interval_value?: number | null
+          is_selected?: boolean
+          item_type?: string
+          metadata?: Json | null
+          random_start?: number | null
+          sample_order?: number | null
+          sampling_plan_id: string
+          selection_reason?: string | null
+        }
+        Update: {
+          account_id?: string | null
+          account_name?: string
+          account_number?: string
+          balance_amount?: number
+          created_at?: string
+          id?: string
+          interval_value?: number | null
+          is_selected?: boolean
+          item_type?: string
+          metadata?: Json | null
+          random_start?: number | null
+          sample_order?: number | null
+          sampling_plan_id?: string
+          selection_reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_sampling_items_sampling_plan_id_fkey"
+            columns: ["sampling_plan_id"]
+            isOneToOne: false
+            referencedRelation: "audit_sampling_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_sampling_plans: {
+        Row: {
+          client_id: string
+          confidence_level: number | null
+          created_at: string
+          created_by: string | null
+          excluded_account_numbers: string[] | null
+          expected_error: number | null
+          fiscal_year: number
+          id: string
+          metadata: Json | null
+          plan_name: string
+          population_size: number
+          population_source: string
+          population_sum: number
+          sample_size: number
+          sampling_method: string
+          selected_standard_numbers: string[] | null
+          tolerable_error: number | null
+          updated_at: string
+          version_id: string | null
+        }
+        Insert: {
+          client_id: string
+          confidence_level?: number | null
+          created_at?: string
+          created_by?: string | null
+          excluded_account_numbers?: string[] | null
+          expected_error?: number | null
+          fiscal_year: number
+          id?: string
+          metadata?: Json | null
+          plan_name: string
+          population_size?: number
+          population_source?: string
+          population_sum?: number
+          sample_size?: number
+          sampling_method?: string
+          selected_standard_numbers?: string[] | null
+          tolerable_error?: number | null
+          updated_at?: string
+          version_id?: string | null
+        }
+        Update: {
+          client_id?: string
+          confidence_level?: number | null
+          created_at?: string
+          created_by?: string | null
+          excluded_account_numbers?: string[] | null
+          expected_error?: number | null
+          fiscal_year?: number
+          id?: string
+          metadata?: Json | null
+          plan_name?: string
+          population_size?: number
+          population_source?: string
+          population_sum?: number
+          sample_size?: number
+          sampling_method?: string
+          selected_standard_numbers?: string[] | null
+          tolerable_error?: number | null
+          updated_at?: string
+          version_id?: string | null
+        }
+        Relationships: []
+      }
       audit_working_papers: {
         Row: {
           actual_hours: number | null

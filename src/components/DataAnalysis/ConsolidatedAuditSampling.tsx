@@ -10,6 +10,7 @@ import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { 
@@ -28,13 +29,16 @@ import {
   FileSpreadsheet,
   Info,
   Search,
-  Filter
+  Filter,
+  Archive,
+  History
 } from 'lucide-react';
 import { useCreateAuditLog } from '@/hooks/useCreateAuditLog';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
 import { usePopulationCalculator, PopulationAccount } from '@/hooks/usePopulationCalculator';
 import { useActiveTrialBalanceVersion } from '@/hooks/useTrialBalanceVersions';
 import { useTrialBalanceWithMappings } from '@/hooks/useTrialBalanceWithMappings';
+import SavedSamplesManager from './SavedSamplesManager';
 
 interface ConsolidatedAuditSamplingProps {
   clientId: string;
@@ -122,7 +126,7 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = ({ c
   const [params, setParams] = useState<SamplingParams>({
     fiscalYear: selectedFiscalYear || new Date().getFullYear(),
     testType: 'SUBSTANTIVE',
-    method: 'MUS',
+    method: 'SRS', // Changed default from MUS to SRS
     populationSize: 1000,
     populationSum: 1000000,
     selectedStandardNumbers: [],
@@ -150,10 +154,11 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = ({ c
   );
 
   // Auto-select trial balance accounts when standard accounts are selected
+  // Improved: Accounts are included by default, user excludes what they don't want
   useEffect(() => {
     if (params.selectedStandardNumbers.length > 0 && trialBalanceData?.standardAccountBalances) {
       // Find all trial balance accounts that belong to selected standard accounts
-      const accountsToAutoSelect: string[] = [];
+      const accountsToAutoInclude: string[] = [];
       
       params.selectedStandardNumbers.forEach(standardNumber => {
         const standardAccount = trialBalanceData.standardAccountBalances.find(
@@ -162,18 +167,19 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = ({ c
         
         if (standardAccount) {
           standardAccount.mapped_accounts.forEach(account => {
-            if (!accountsToAutoSelect.includes(account.account_number)) {
-              accountsToAutoSelect.push(account.account_number);
+            if (!accountsToAutoInclude.includes(account.account_number)) {
+              accountsToAutoInclude.push(account.account_number);
             }
           });
         }
       });
       
-      // Remove auto-selected accounts from excluded list (they should be included by default)
+      // IMPROVED: Remove auto-selected accounts from excluded list 
+      // This means all accounts are INCLUDED by default, user must actively exclude
       setParams(prev => ({
         ...prev,
         excludedAccountNumbers: prev.excludedAccountNumbers.filter(
-          accountNumber => !accountsToAutoSelect.includes(accountNumber)
+          accountNumber => !accountsToAutoInclude.includes(accountNumber)
         )
       }));
     }
@@ -311,12 +317,27 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = ({ c
   const generateSample = async () => {
     setIsLoading(true);
     try {
+      // Generate automatic name for the sample
+      const timestamp = new Date().toLocaleString('nb-NO', { 
+        month: 'short', 
+        day: '2-digit', 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      });
+      const methodName = params.method === 'SRS' ? 'SRS' : 
+                        params.method === 'MUS' ? 'MUS' : 
+                        params.method === 'SYSTEMATIC' ? 'Systematisk' : 
+                        params.method;
+      const autoName = `${methodName} ${timestamp}`;
+
       const payload = {
         clientId,
         ...params,
+        planName: autoName, // Add automatic naming
         strataBounds: params.strataBounds ? 
           params.strataBounds.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n)) : 
-          undefined
+          undefined,
+        save: true // IMPORTANT: Automatically save when generating
       };
 
       const { data, error } = await supabase.functions.invoke('audit-sampling', {
@@ -327,9 +348,24 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = ({ c
 
       setResult(data);
       
+      // Log the audit action
+      createAuditLog.mutate({
+        clientId,
+        actionType: 'analysis_performed',
+        areaName: 'sampling',
+        description: `Utvalg generert og lagret: ${autoName}`,
+        metadata: {
+          test_type: data.plan.testType,
+          method: data.plan.method,
+          sample_size: data.plan.actualSampleSize,
+          coverage_percentage: data.plan.coveragePercentage,
+          auto_saved: true
+        }
+      });
+      
       toast({
-        title: "Utvalg generert",
-        description: `${data.plan.actualSampleSize} transaksjoner valgt med ${data.plan.coveragePercentage.toFixed(1)}% dekning`
+        title: "Utvalg generert og lagret",
+        description: `${data.plan.actualSampleSize} transaksjoner valgt med ${data.plan.coveragePercentage.toFixed(1)}% dekning`,
       });
 
     } catch (error) {
@@ -433,6 +469,22 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = ({ c
           )}
         </div>
       </div>
+
+      {/* Main Content with Tabs */}
+      <Tabs defaultValue="generate" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="generate" className="flex items-center gap-2">
+            <Calculator className="h-4 w-4" />
+            Generer utvalg
+          </TabsTrigger>
+          <TabsTrigger value="saved" className="flex items-center gap-2">
+            <Archive className="h-4 w-4" />
+            Lagrede utvalg
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="generate" className="mt-6">
+          <div className="space-y-6">
 
       <div className="grid gap-6">
         {/* Population Section */}
@@ -968,8 +1020,15 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = ({ c
               </div>
             )}
           </CardContent>
-        </Card>
-      </div>
+          </Card>
+        </div>
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="saved" className="mt-6">
+          <SavedSamplesManager clientId={clientId} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
