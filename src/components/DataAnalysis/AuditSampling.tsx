@@ -219,8 +219,8 @@ const AuditSampling: React.FC<AuditSamplingProps> = ({ clientId }) => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="SUBSTANTIVE">Substanstest</SelectItem>
-                    <SelectItem value="CONTROL">Kontrolltest</SelectItem>
+                    <SelectItem value="SUBSTANTIVE">Substans(Detaljkontroll)</SelectItem>
+                    <SelectItem value="CONTROL">Test av kontroll</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
