@@ -78,50 +78,34 @@ const TableToolbar: React.FC<TableToolbarProps> = ({
         
         {customActions}
         
-        {/* Export dropdown or single button */}
+        {/* Export dropdown - always show dropdown with download icon only */}
         {hasExportOptions && (
-          <>
-            {hasOnlyExcel ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
               <Button 
                 variant="outline" 
                 size="sm" 
-                onClick={onExcelExport} 
                 disabled={isExportDisabled}
-                title="Eksporter til Excel"
+                title="Eksporter data"
               >
-                <FileSpreadsheet className="h-4 w-4 mr-2" />
-                Eksporter
+                <Download className="h-4 w-4" />
               </Button>
-            ) : (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    disabled={isExportDisabled}
-                    title="Eksporter data"
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    Eksporter
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
-                  {onExcelExport && (
-                    <DropdownMenuItem onClick={onExcelExport}>
-                      <FileSpreadsheet className="h-4 w-4 mr-2" />
-                      Eksporter til Excel
-                    </DropdownMenuItem>
-                  )}
-                  {onPdfExport && (
-                    <DropdownMenuItem onClick={onPdfExport}>
-                      <FileText className="h-4 w-4 mr-2" />
-                      Eksporter til PDF
-                    </DropdownMenuItem>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-          </>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              {onExcelExport && (
+                <DropdownMenuItem onClick={onExcelExport}>
+                  <FileSpreadsheet className="h-4 w-4 mr-2" />
+                  Excel
+                </DropdownMenuItem>
+              )}
+              {onPdfExport && (
+                <DropdownMenuItem onClick={onPdfExport}>
+                  <FileText className="h-4 w-4 mr-2" />
+                  PDF
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
       </div>
     </div>
