@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Slider } from '@/components/ui/slider';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import StandardDataTable, { StandardDataTableColumn } from '@/components/ui/standard-data-table';
 import { Switch } from '@/components/ui/switch';
 import { Check } from 'lucide-react';
 import { Account, Transaction, SamplingResult } from '@/types/revio';
@@ -121,6 +121,53 @@ const TransactionSampling = ({ selectedAccount, clientId, versionId }: Transacti
       transactions: updatedTransactions
     });
   };
+
+  const transactionColumns: StandardDataTableColumn<any>[] = [
+    {
+      key: 'date',
+      header: 'Dato',
+      accessor: 'date',
+      sortable: true,
+      align: 'center'
+    },
+    {
+      key: 'description',
+      header: 'Beskrivelse',
+      accessor: 'description',
+      sortable: true,
+      searchable: true
+    },
+    {
+      key: 'voucher',
+      header: 'Bilag',
+      accessor: 'voucher',
+      sortable: true,
+      searchable: true,
+      align: 'center'
+    },
+    {
+      key: 'amount',
+      header: 'Beløp',
+      accessor: 'amount',
+      sortable: true,
+      align: 'right',
+      format: (value) => formatCurrency(value)
+    },
+    {
+      key: 'tested',
+      header: 'Testet',
+      accessor: 'isTested',
+      align: 'center',
+      format: (value, transaction) => (
+        <div className="flex justify-center">
+          <Switch
+            checked={!!value}
+            onCheckedChange={() => markAsTested(transaction.id)}
+          />
+        </div>
+      )
+    }
+  ];
   
   return (
     <div className="mt-6">
@@ -277,48 +324,28 @@ const TransactionSampling = ({ selectedAccount, clientId, versionId }: Transacti
                   <div>
                     <div className="flex justify-between items-center mb-4">
                       <h3 className="text-lg font-medium">Transaksjoner for testing</h3>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="ml-2">
-                          {samplingMethod === 'random' ? 'Tilfeldig' : 
-                           samplingMethod === 'stratified' ? 'Stratifisert' : 'Monetær'} utvalg
-                        </Badge>
-                        <Badge variant="secondary">
-                          {samplingResult.transactions.filter(t => t.isTested).length}/{samplingResult.transactions.length} testet
-                        </Badge>
-                      </div>
                     </div>
                     
-                    <div className="border rounded-md">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Dato</TableHead>
-                            <TableHead>Beskrivelse</TableHead>
-                            <TableHead>Bilag</TableHead>
-                            <TableHead className="text-right">Beløp</TableHead>
-                            <TableHead className="text-center w-[100px]">Testet</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {samplingResult.transactions.map((transaction) => (
-                            <TableRow key={transaction.id}>
-                              <TableCell>{transaction.date}</TableCell>
-                              <TableCell>{transaction.description}</TableCell>
-                              <TableCell>{transaction.voucher}</TableCell>
-                              <TableCell className="text-right">{formatCurrency(transaction.amount)}</TableCell>
-                              <TableCell className="text-center">
-                                <div className="flex justify-center">
-                                  <Switch
-                                    checked={!!transaction.isTested}
-                                    onCheckedChange={() => markAsTested(transaction.id)}
-                                  />
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
+                    <StandardDataTable
+                      title="Transaksjoner for testing"
+                      description="Utvalgte transaksjoner basert på valgt metode"
+                      data={samplingResult.transactions}
+                      columns={transactionColumns}
+                      tableName="transaction-sampling"
+                      exportFileName="transaksjonsutvalg"
+                      wrapInCard={false}
+                      icon={
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="ml-2">
+                            {samplingMethod === 'random' ? 'Tilfeldig' : 
+                             samplingMethod === 'stratified' ? 'Stratifisert' : 'Monetær'} utvalg
+                          </Badge>
+                          <Badge variant="secondary">
+                            {samplingResult.transactions.filter(t => t.isTested).length}/{samplingResult.transactions.length} testet
+                          </Badge>
+                        </div>
+                      }
+                    />
                   </div>
                   
                   <div className="flex gap-4 pt-4">

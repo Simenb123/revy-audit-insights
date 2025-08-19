@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import StandardDataTable, { StandardDataTableColumn } from '@/components/ui/standard-data-table';
 import { Plus, Package, Edit, Trash2, TrendingDown } from 'lucide-react';
 import { useAssetManagement } from '@/hooks/useAssetManagement';
 import { AssetForm } from './AssetForm';
@@ -43,6 +43,89 @@ export function AssetsList({ clientId }: AssetsListProps) {
       default: return 'bg-blue-100 text-blue-800';
     }
   };
+
+  const assetColumns: StandardDataTableColumn<any>[] = [
+    {
+      key: 'asset_number',
+      header: 'Anleggsnummer',
+      accessor: 'asset_number',
+      sortable: true,
+      searchable: true,
+      format: (value) => <span className="font-medium">{value}</span>
+    },
+    {
+      key: 'asset_name',
+      header: 'Navn',
+      accessor: 'asset_name',
+      sortable: true,
+      searchable: true
+    },
+    {
+      key: 'category',
+      header: 'Kategori',
+      accessor: (asset) => asset.asset_categories?.name || 'Ukategorisert',
+      sortable: true,
+      searchable: true
+    },
+    {
+      key: 'purchase_price',
+      header: 'Anskaffelsespris',
+      accessor: 'purchase_price',
+      sortable: true,
+      align: 'right',
+      format: (value) => formatCurrency(value)
+    },
+    {
+      key: 'book_value',
+      header: 'Bokført verdi',
+      accessor: 'book_value',
+      sortable: true,
+      align: 'right',
+      format: (value) => formatCurrency(value)
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      accessor: 'status',
+      sortable: true,
+      format: (value) => (
+        <Badge className={getStatusColor(value)}>
+          {value === 'active' ? 'Aktiv' : value === 'disposed' ? 'Avhendet' : 'Verdifall'}
+        </Badge>
+      )
+    },
+    {
+      key: 'actions',
+      header: 'Handlinger',
+      accessor: () => '',
+      format: (_, asset) => (
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleEdit(asset)}
+          >
+            <Edit className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => generateDepreciation(asset.id)}
+          >
+            <TrendingDown className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => deleteAsset(asset.id)}
+            disabled={isDeleting}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      )
+    }
+  ];
 
   if (showForm) {
     return (
@@ -87,78 +170,22 @@ export function AssetsList({ clientId }: AssetsListProps) {
         </div>
       )}
 
-      <Card>
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <CardTitle className="flex items-center gap-2">
-              <Package className="h-5 w-5" />
-              Anleggsmidler
-            </CardTitle>
-            <Button onClick={() => setShowForm(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Nytt anleggsmiddel
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Anleggsnummer</TableHead>
-                <TableHead>Navn</TableHead>
-                <TableHead>Kategori</TableHead>
-                <TableHead>Anskaffelsespris</TableHead>
-                <TableHead>Bokført verdi</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Handlinger</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {assets?.map((asset) => (
-                <TableRow key={asset.id}>
-                  <TableCell className="font-medium">{asset.asset_number}</TableCell>
-                  <TableCell>{asset.asset_name}</TableCell>
-                  <TableCell>{asset.asset_categories?.name || 'Ukategorisert'}</TableCell>
-                  <TableCell>{formatCurrency(asset.purchase_price)}</TableCell>
-                  <TableCell>{formatCurrency(asset.book_value)}</TableCell>
-                  <TableCell>
-                    <Badge className={getStatusColor(asset.status)}>
-                      {asset.status === 'active' ? 'Aktiv' : 
-                       asset.status === 'disposed' ? 'Avhendet' : 'Verdifall'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleEdit(asset)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => generateDepreciation(asset.id)}
-                      >
-                        <TrendingDown className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => deleteAsset(asset.id)}
-                        disabled={isDeleting}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      <StandardDataTable
+        title="Anleggsmidler"
+        description="Oversikt over alle anleggsmidler"
+        data={assets || []}
+        columns={assetColumns}
+        isLoading={assetsLoading}
+        tableName="assets-list"
+        exportFileName="anleggsmidler"
+        icon={
+          <Button onClick={() => setShowForm(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Nytt anleggsmiddel
+          </Button>
+        }
+        wrapInCard={false}
+      />
     </div>
   );
 }

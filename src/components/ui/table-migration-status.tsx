@@ -8,7 +8,7 @@ interface TableMigrationStatusProps {
 }
 
 const TableMigrationStatus: React.FC<TableMigrationStatusProps> = ({ className }) => {
-  const tables = [
+const tables = [
     {
       name: 'KnowledgeMonitor',
       path: 'src/components/AIRevyAdmin/KnowledgeMonitor.tsx',
@@ -31,6 +31,27 @@ const TableMigrationStatus: React.FC<TableMigrationStatusProps> = ({ className }
       description: 'Visning av ansattdata fra A07'
     },
     {
+      name: 'PayrollMonthlySubmissionsTab',
+      path: 'src/components/AccountingData/PayrollMonthlySubmissionsTab.tsx',
+      status: 'completed',
+      features: ['Søk', 'Sortering', 'Export', 'Beløpsformatering'],
+      description: 'Månedlige lønnsrapporter'
+    },
+    {
+      name: 'AssetsList',
+      path: 'src/components/assets/AssetsList.tsx',
+      status: 'completed',
+      features: ['Actions', 'Status badges', 'Export', 'Loading states'],
+      description: 'Anleggsmidler oversikt'
+    },
+    {
+      name: 'TransactionSampling',
+      path: 'src/components/DataAnalysis/TransactionSampling.tsx',
+      status: 'completed',
+      features: ['Interactive switches', 'Custom formatting', 'Export'],
+      description: 'Transaksjonsutvalg tabell'
+    },
+    {
       name: 'AccountMappingTable',
       path: 'src/components/Accounting/AccountMappingTable.tsx',
       status: 'complex',
@@ -38,25 +59,11 @@ const TableMigrationStatus: React.FC<TableMigrationStatusProps> = ({ className }
       description: 'Kontomapping - trenger custom tilnærming'
     },
     {
-      name: 'PayrollMonthlySubmissionsTab',
-      path: 'src/components/AccountingData/PayrollMonthlySubmissionsTab.tsx',
-      status: 'pending',
-      features: ['Primitive Table'],
-      description: 'Månedlige lønnsrapporter'
-    },
-    {
       name: 'DrillDownTable',
       path: 'src/components/DataAnalysis/DrillDownTable.tsx',
-      status: 'pending', 
-      features: ['Primitive Table'],
-      description: 'Detaljeringsvisning'
-    },
-    {
-      name: 'TransactionSampling',
-      path: 'src/components/DataAnalysis/TransactionSampling.tsx',
-      status: 'pending',
-      features: ['Primitive Table'],
-      description: 'Transaksjonsutvalg'
+      status: 'complex', 
+      features: ['Multi-level navigation', 'Custom rendering'],
+      description: 'Drill-down analyse - kompleks navigasjon'
     }
   ];
 
@@ -141,7 +148,7 @@ const TableMigrationStatus: React.FC<TableMigrationStatusProps> = ({ className }
           <div className="grid grid-cols-2 gap-2 text-sm">
             <div className="flex items-center gap-2">
               <CheckCircle className="h-3 w-3 text-green-500" />
-              Velg kolonner på alle TabellTable
+              Velg kolonner på alle StandardDataTable
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle className="h-3 w-3 text-green-500" />
@@ -175,9 +182,20 @@ const TableMigrationStatus: React.FC<TableMigrationStatusProps> = ({ className }
         </div>
 
         <div className="pt-4 border-t">
+          <h4 className="font-semibold mb-2">Siste Migrering:</h4>
+          <ul className="text-sm space-y-1 text-muted-foreground">
+            <li>✅ PayrollMonthlySubmissionsTab - Komplett med beløpsformatering</li>
+            <li>✅ AssetsList - Med action buttons og status badges</li>
+            <li>✅ TransactionSampling - Interactive switches og custom formatting</li>
+            <li>🔧 DrillDownTable - Markert som kompleks (multi-level navigasjon)</li>
+          </ul>
+        </div>
+
+        <div className="pt-4 border-t">
           <h4 className="font-semibold mb-2">Neste Steg:</h4>
           <ul className="text-sm space-y-1 text-muted-foreground">
-            <li>• Migrer gjenværende primitive tabeller</li>
+            <li>• Alle enkle tabeller nå migrert til StandardDataTable</li>
+            <li>• AccountMappingTable og DrillDownTable krever custom løsninger</li>
             <li>• Test alle migrerte tabeller grundig</li>
             <li>• Implementer row expansion for komplekse tabeller</li>
             <li>• Legg til bulk actions støtte</li>
