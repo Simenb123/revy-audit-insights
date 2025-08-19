@@ -22,7 +22,7 @@ const GlobalSubHeader: React.FC<GlobalSubHeaderProps> = ({
       <div
         data-sub-header
         className={cn(
-          'sticky top-[var(--global-header-current-height)] z-40 bg-muted/50 border-b border-border text-foreground',
+          'sticky top-[var(--global-header-current-height)] z-40',
           className
         )}
       >
