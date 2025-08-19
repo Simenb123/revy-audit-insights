@@ -22,7 +22,7 @@ const GlobalSubHeader: React.FC<GlobalSubHeaderProps> = ({
       <div
         data-sub-header
         className={cn(
-          'sticky top-[var(--global-header-current-height)] z-40',
+          'sticky top-[var(--global-header-current-height)] z-40 bg-revio-500 text-white',
           className
         )}
       >
@@ -32,8 +32,8 @@ const GlobalSubHeader: React.FC<GlobalSubHeaderProps> = ({
           <AppBreadcrumb />
           {title && (
             <>
-              <div className="h-4 w-px bg-muted-foreground/30" />
-              <h1 className="text-lg font-semibold text-foreground">{title}</h1>
+              <div className="h-4 w-px bg-white/30" />
+              <h1 className="text-lg font-semibold text-white">{title}</h1>
             </>
           )}
         </div>
@@ -42,7 +42,7 @@ const GlobalSubHeader: React.FC<GlobalSubHeaderProps> = ({
           {actions}
           {moduleIndicator && (
             <>
-              <div className="h-4 w-px bg-muted-foreground/30" />
+              <div className="h-4 w-px bg-white/30" />
               {moduleIndicator}
             </>
           )}

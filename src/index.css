@@ -51,11 +51,11 @@
     --sidebar-ring: 174 57% 80%;
 
     /* Sub-header surface */
-    --sub-header-bg: 173 49% 39%;
+    --sub-header-bg: 173 57% 39%;
     --sub-header-foreground: 0 0% 100%;
 
-    --revio-100: 174 57% 95%;
-    --revio-500: 173 49% 39%;
+    --revio-100: 174 57% 88%;
+    --revio-500: 173 57% 39%;
     --revio-600: 173 49% 35%;
     --revio-700: 173 49% 30%;
     --revio-900: 173 49% 15%;
@@ -63,7 +63,7 @@
 
   @media (prefers-color-scheme: dark) {
     :root {
-      --sub-header-bg: 173 49% 30%;
+      --sub-header-bg: 173 57% 30%;
       --sub-header-foreground: 0 0% 100%;
     }
   }
