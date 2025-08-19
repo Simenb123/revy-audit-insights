@@ -116,6 +116,23 @@ serve(async (req) => {
       );
     }
 
+    // If no version specified, get the newest version automatically
+    let activeVersion = version;
+    if (!activeVersion) {
+      const { data: versionData } = await supabase
+        .from('trial_balances')
+        .select('version')
+        .eq('client_id', clientId)
+        .eq('period_year', fiscalYear)
+        .order('created_at', { ascending: false })
+        .limit(1);
+      
+      if (versionData && versionData.length > 0) {
+        activeVersion = versionData[0].version;
+        console.log(`Auto-selected version '${activeVersion}' for ${clientId} ${fiscalYear}`);
+      }
+    }
+
     // Build trial balance query
     let trialBalanceQuery = supabase
       .from('trial_balances')
@@ -133,8 +150,8 @@ serve(async (req) => {
       .eq('client_id', clientId)
       .eq('period_year', fiscalYear);
 
-    if (version) {
-      trialBalanceQuery = trialBalanceQuery.eq('version', version);
+    if (activeVersion) {
+      trialBalanceQuery = trialBalanceQuery.eq('version', activeVersion);
     }
 
     const { data: trialBalanceData, error: tbError } = await trialBalanceQuery;

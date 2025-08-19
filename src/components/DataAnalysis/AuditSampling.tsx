@@ -14,6 +14,7 @@ import { Loader2, Play, Save, Info, TrendingUp, Users, FileSpreadsheet, Database
 import { useCreateAuditLog } from '@/hooks/useCreateAuditLog';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
 import { usePopulationCalculator } from '@/hooks/usePopulationCalculator';
+import { useActiveTrialBalanceVersion } from '@/hooks/useTrialBalanceVersions';
 import PopulationSelector from './PopulationSelector';
 import TrialBalanceExclusionManager from './TrialBalanceExclusionManager';
 
@@ -69,6 +70,9 @@ const AuditSampling: React.FC<AuditSamplingProps> = ({ clientId }) => {
   const createAuditLog = useCreateAuditLog();
   const { selectedFiscalYear } = useFiscalYear();
   
+  // Get active trial balance version
+  const { data: activeTrialBalanceVersion } = useActiveTrialBalanceVersion(clientId);
+  
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [result, setResult] = useState<SamplingResult | null>(null);
@@ -101,7 +105,8 @@ const AuditSampling: React.FC<AuditSamplingProps> = ({ clientId }) => {
     clientId,
     params.fiscalYear,
     params.selectedStandardNumbers,
-    params.excludedAccountNumbers
+    params.excludedAccountNumbers,
+    activeTrialBalanceVersion?.version
   );
 
   // Fetch working materiality on component mount and when fiscal year changes
