@@ -6,9 +6,10 @@ import { useFiscalYear } from '@/contexts/FiscalYearContext';
 import StickyClientLayout from '@/components/Layout/StickyClientLayout';
 import ClientNavigation from '@/components/Clients/ClientDetails/ClientNavigation';
 import AccountingExplorer from '@/components/DataAnalysis/AccountingExplorer';
+import AuditSampling from '@/components/DataAnalysis/AuditSampling';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BarChart3, Database, Download, Brain } from 'lucide-react';
+import { BarChart3, Database, Download, Brain, Target } from 'lucide-react';
 import ReportBuilder from '@/components/ReportBuilder/ReportBuilder';
 import { Button } from '@/components/ui/button';
 import { RegnskapsDashboard } from '@/components/Accounting/RegnskapsDashboard';
@@ -71,7 +72,7 @@ const AnalysisPage = () => {
               </Button>
             </div>
             <Tabs defaultValue="data" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="data" className="flex items-center gap-2">
                   <Database className="h-4 w-4" />
                   Dataanalyse
@@ -79,6 +80,10 @@ const AnalysisPage = () => {
                 <TabsTrigger value="analysis" className="flex items-center gap-2">
                   <Brain className="h-4 w-4" />
                   Avansert analyse
+                </TabsTrigger>
+                <TabsTrigger value="sampling" className="flex items-center gap-2">
+                  <Target className="h-4 w-4" />
+                  Revisjonsutvalg
                 </TabsTrigger>
                 <TabsTrigger value="reports" className="flex items-center gap-2">
                   <BarChart3 className="h-4 w-4" />
@@ -92,6 +97,10 @@ const AnalysisPage = () => {
               
               <TabsContent value="analysis" className="mt-6">
                 <RegnskapsDashboard clientId={client.id} />
+              </TabsContent>
+              
+              <TabsContent value="sampling" className="mt-6">
+                <AuditSampling clientId={client.id} />
               </TabsContent>
               
               <TabsContent value="reports" className="mt-6">

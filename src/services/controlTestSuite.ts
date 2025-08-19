@@ -81,6 +81,12 @@ export class ControlTestSuite {
     // 6. Sekvenskontroll for bilagsnummer
     results.push(await this.testVoucherSequence(transactions));
     
+    // 7. Avrundingsterskel test
+    results.push(await this.roundingThresholdTest(transactions));
+    
+    // 8. Brukeranomali test
+    results.push(await this.userAnomalyTest(transactions));
+    
     return results;
   }
 
@@ -522,6 +528,85 @@ export class ControlTestSuite {
       details: sequenceIssues,
       description: 'Kontrollerer sekvens og unike bilagsnumre',
       severity: hasSerious ? 'error' : errorCount > 0 ? 'warning' : 'info'
+    };
+  }
+
+  /**
+   * Test 7: Avrundingsterskel test
+   */
+  private async roundingThresholdTest(transactions: any[]): Promise<ControlTestResult> {
+    const thresholds = [100, 500, 1000, 5000, 10000];
+    const roundingClusters: any[] = [];
+    
+    thresholds.forEach(threshold => {
+      const nearThreshold = transactions.filter(tx => {
+        const amount = Math.abs(tx.debit_amount || tx.credit_amount || 0);
+        return amount >= threshold - 50 && amount < threshold;
+      });
+      
+      if (nearThreshold.length > 5) {
+        roundingClusters.push({
+          threshold,
+          count: nearThreshold.length,
+          transactions: nearThreshold.slice(0, 5)
+        });
+      }
+    });
+
+    return {
+      testName: 'rounding_threshold',
+      passed: roundingClusters.length === 0,
+      errorCount: roundingClusters.length,
+      details: roundingClusters,
+      description: 'Sjekker for mistenkelige klynger av beløp nær avrundingsterskler',
+      severity: roundingClusters.length > 2 ? 'error' : 'warning'
+    };
+  }
+
+  /**
+   * Test 8: Brukeranomali test
+   */
+  private async userAnomalyTest(transactions: any[]): Promise<ControlTestResult> {
+    const userStats = new Map<string, { count: number; totalAmount: number }>();
+    
+    transactions.forEach(tx => {
+      const user = tx.created_by || 'unknown';
+      const amount = Math.abs(tx.debit_amount || tx.credit_amount || 0);
+      
+      if (!userStats.has(user)) {
+        userStats.set(user, { count: 0, totalAmount: 0 });
+      }
+      
+      const stats = userStats.get(user)!;
+      stats.count++;
+      stats.totalAmount += amount;
+    });
+
+    const anomalies: any[] = [];
+    const allCounts = Array.from(userStats.values()).map(s => s.count);
+    const avgCount = allCounts.reduce((a, b) => a + b, 0) / allCounts.length;
+    const stdDev = Math.sqrt(allCounts.reduce((sq, n) => sq + Math.pow(n - avgCount, 2), 0) / allCounts.length);
+    
+    userStats.forEach((stats, user) => {
+      const zScore = (stats.count - avgCount) / stdDev;
+      if (Math.abs(zScore) > 2) {
+        anomalies.push({
+          user,
+          transactionCount: stats.count,
+          totalAmount: stats.totalAmount,
+          zScore: Math.round(zScore * 100) / 100,
+          anomalyType: zScore > 2 ? 'high_volume' : 'low_volume'
+        });
+      }
+    });
+
+    return {
+      testName: 'user_anomaly',
+      passed: anomalies.length === 0,
+      errorCount: anomalies.length,
+      details: anomalies,
+      description: 'Identifiserer brukere med unormal transaksjonsaktivitet',
+      severity: anomalies.length > 3 ? 'error' : 'warning'
     };
   }
 }
