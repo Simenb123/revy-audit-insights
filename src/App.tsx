@@ -81,6 +81,7 @@ import BudgetManagement from "./pages/BudgetManagement";
 import ReportsManagement from "./pages/ReportsManagement";
 import TransactionAnalysis from "./pages/TransactionAnalysis";
 import { InvestmentSecuritiesRedirect, InvestmentPricesRedirect, InvestmentCurrenciesRedirect } from "./components/InvestmentRedirects";
+import DataredigeringPage from "./pages/Dataredigering";
 const queryClient = new QueryClient();
 
 function App() {
@@ -127,6 +128,7 @@ function App() {
                    <Route path="resources/currencies" element={<ProtectedRoute><CurrencyManagement /></ProtectedRoute>} />
                    <Route path="resources/securities/prices" element={<ProtectedRoute><InvestmentPrices /></ProtectedRoute>} />
                    <Route path="resources/securities/catalog" element={<ProtectedRoute><InvestmentSecurities /></ProtectedRoute>} />
+                   <Route path="resources/dataredigering" element={<ProtectedRoute><DataredigeringPage /></ProtectedRoute>} />
                    <Route path="clients/:clientId/bookkeeping-journal" element={<ProtectedRoute><BookkeepingJournal /></ProtectedRoute>} />
                    <Route path="clients/:clientId/bookkeeping-reports" element={<ProtectedRoute><BookkeepingReports /></ProtectedRoute>} />
                    <Route path="clients/:clientId/assets" element={<ProtectedRoute><AssetManagement /></ProtectedRoute>} />

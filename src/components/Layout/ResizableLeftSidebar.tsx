@@ -37,7 +37,8 @@ import {
   DollarSign,
   TrendingUp,
   Receipt,
-  ArrowRightLeft
+  ArrowRightLeft,
+  FileSpreadsheet
 } from 'lucide-react'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { useIsSuperAdmin } from '@/hooks/useIsSuperAdmin'
@@ -130,6 +131,11 @@ const resourceItems = [
     title: 'Kommunikasjon',
     url: '/communication',
     icon: MessageSquare,
+  },
+  {
+    title: 'Dataredigering',
+    url: '/resources/dataredigering',
+    icon: FileSpreadsheet,
   },
 ]
 
