@@ -275,6 +275,22 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = ({ c
     }
   };
 
+  const handleSelectAllFilteredAccounts = () => {
+    const allFilteredAccountNumbers = accountsForExclusion.map(acc => acc.account_number);
+    const newExcluded = [...new Set([...params.excludedAccountNumbers, ...allFilteredAccountNumbers])];
+    handleParamChange('excludedAccountNumbers', newExcluded);
+  };
+
+  const handleDeselectAllFilteredAccounts = () => {
+    const filteredAccountNumbers = accountsForExclusion.map(acc => acc.account_number);
+    const newExcluded = params.excludedAccountNumbers.filter(n => !filteredAccountNumbers.includes(n));
+    handleParamChange('excludedAccountNumbers', newExcluded);
+  };
+
+  const handleClearAllExclusions = () => {
+    handleParamChange('excludedAccountNumbers', []);
+  };
+
   const addQuickCombination = (numbers: string[]) => {
     const newSelection = [...new Set([...params.selectedStandardNumbers, ...numbers])];
     handleParamChange('selectedStandardNumbers', newSelection);
@@ -544,24 +560,34 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = ({ c
                 {/* Population Statistics */}
                 {isCalculatingPopulation ? (
                   <div className="p-3 bg-muted rounded-lg">
-                    <div className="text-sm">Beregner populasjon...</div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <Calculator className="h-4 w-4 animate-spin" />
+                      <span>Beregner populasjon...</span>
+                    </div>
                   </div>
                 ) : populationData && (
-                  <div className="p-3 bg-muted rounded-lg">
+                  <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg">
                     <div className="text-sm font-medium mb-2">Populasjonsstatistikk</div>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-3 gap-4">
                       <div>
                         <div className="text-xs text-muted-foreground">Inkluderte kontoer</div>
-                        <div className="text-lg font-semibold">{includedAccounts.length}</div>
+                        <div className="text-lg font-semibold text-primary">{includedAccounts.length}</div>
                       </div>
                       <div>
                         <div className="text-xs text-muted-foreground">Total beløp</div>
                         <div className="text-lg font-semibold">{formatCurrency(includedSum)}</div>
                       </div>
+                      <div>
+                        <div className="text-xs text-muted-foreground">Dekning</div>
+                        <div className="text-lg font-semibold">
+                          {totalSum > 0 ? ((includedSum / totalSum) * 100).toFixed(1) : 0}%
+                        </div>
+                      </div>
                     </div>
                     {params.excludedAccountNumbers.length > 0 && (
                       <div className="mt-2 text-xs text-muted-foreground">
-                        {params.excludedAccountNumbers.length} kontoer ekskludert ({formatCurrency(excludedSum)})
+                        <span className="text-destructive font-medium">{params.excludedAccountNumbers.length} kontoer ekskludert</span>
+                        <span className="ml-2">({formatCurrency(excludedSum)})</span>
                       </div>
                     )}
                   </div>
@@ -635,6 +661,21 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = ({ c
                     </Button>
                   </div>
 
+                  {/* Batch Actions */}
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={handleSelectAllFilteredAccounts}>
+                      Velg alle ({accountsForExclusion.length})
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={handleDeselectAllFilteredAccounts}>
+                      Fjern valgte
+                    </Button>
+                    {params.excludedAccountNumbers.length > 0 && (
+                      <Button variant="outline" size="sm" onClick={handleClearAllExclusions}>
+                        Nullstill alle
+                      </Button>
+                    )}
+                  </div>
+
                   {/* Accounts List */}
                   <div>
                     <div className="text-sm font-medium mb-2">
@@ -649,9 +690,10 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = ({ c
                           return (
                             <div
                               key={account.id}
-                              className={`flex items-center space-x-3 p-2 rounded-md hover:bg-muted/50 ${
-                                isExcluded ? 'bg-muted/30 opacity-60' : ''
+                              className={`flex items-center space-x-3 p-3 rounded-md transition-all duration-200 cursor-pointer hover:bg-muted/50 ${
+                                isExcluded ? 'bg-destructive/10 border border-destructive/20' : 'hover:border-border border border-transparent'
                               }`}
+                              onClick={() => handleAccountExclusionToggle(account.account_number)}
                             >
                               <Checkbox
                                 checked={isExcluded}
@@ -662,17 +704,17 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = ({ c
                                   <span className="font-mono text-sm font-medium">
                                     {account.account_number}
                                   </span>
-                                  <span className="text-sm truncate">
+                                  <span className={`text-sm truncate ${isExcluded ? 'text-muted-foreground line-through' : ''}`}>
                                     {account.account_name}
                                   </span>
                                 </div>
                               </div>
                               <div className="text-right">
-                                <div className="text-sm font-medium">
+                                <div className={`text-sm font-medium ${isExcluded ? 'text-muted-foreground' : ''}`}>
                                   {formatCurrency(Math.abs(account.closing_balance))}
                                 </div>
                                 {isExcluded && (
-                                  <Badge variant="secondary" className="text-xs">
+                                  <Badge variant="destructive" className="text-xs">
                                     Ekskludert
                                   </Badge>
                                 )}
@@ -851,6 +893,16 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = ({ c
                 </Button>
               )}
             </div>
+
+            {/* Help Text */}
+            {params.selectedStandardNumbers.length === 0 && (
+              <div className="p-3 bg-muted/50 border border-dashed border-muted-foreground/20 rounded-lg">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Info className="h-4 w-4" />
+                  <span>Velg minst én regnskapslinje for å generere utvalg</span>
+                </div>
+              </div>
+            )}
 
             {/* Results Display */}
             {result && (
