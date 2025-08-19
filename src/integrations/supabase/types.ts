@@ -10815,6 +10815,10 @@ export type Database = {
           voucher_number: string
         }[]
       }
+      fix_norwegian_encoding_safe: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       generate_balance_sheet: {
         Args: { p_as_of_date: string; p_client_id: string }
         Returns: Json

@@ -9,10 +9,11 @@ import AccountingExplorer from '@/components/DataAnalysis/AccountingExplorer';
 import AuditSampling from '@/components/DataAnalysis/AuditSampling';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BarChart3, Database, Download, Brain, Target } from 'lucide-react';
+import { BarChart3, Database, Download, Brain, Target, Settings } from 'lucide-react';
 import ReportBuilder from '@/components/ReportBuilder/ReportBuilder';
 import { Button } from '@/components/ui/button';
 import { RegnskapsDashboard } from '@/components/Accounting/RegnskapsDashboard';
+import { NorwegianCharFixer } from '@/components/Utils/NorwegianCharFixer';
 
 const AnalysisPage = () => {
   const { clientId } = useParams<{ clientId: string }>();
@@ -66,7 +67,7 @@ const AnalysisPage = () => {
         <div className="flex-1 overflow-auto">
           <div className="space-y-6 p-6">
             <Tabs defaultValue="data" className="w-full">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="grid w-full grid-cols-5">
                 <TabsTrigger value="data" className="flex items-center gap-2">
                   <Database className="h-4 w-4" />
                   Dataanalyse
@@ -82,6 +83,10 @@ const AnalysisPage = () => {
                 <TabsTrigger value="reports" className="flex items-center gap-2">
                   <BarChart3 className="h-4 w-4" />
                   Rapportbygger
+                </TabsTrigger>
+                <TabsTrigger value="utils" className="flex items-center gap-2">
+                  <Settings className="h-4 w-4" />
+                  Verktøy
                 </TabsTrigger>
               </TabsList>
               
@@ -106,6 +111,12 @@ const AnalysisPage = () => {
               
               <TabsContent value="reports" className="mt-6">
                 <ReportBuilder clientId={client.id} />
+              </TabsContent>
+              
+              <TabsContent value="utils" className="mt-6">
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                  <NorwegianCharFixer />
+                </div>
               </TabsContent>
             </Tabs>
           </div>

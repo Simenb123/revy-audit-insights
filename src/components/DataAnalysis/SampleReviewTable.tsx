@@ -12,6 +12,7 @@ import { useSampleReview, SampleItem } from '@/hooks/useSampleReview';
 import { format } from 'date-fns';
 import { CheckCircle, AlertTriangle, Clock, Eye, ArrowLeft, MessageSquare } from 'lucide-react';
 import VoucherDrillDownDialog from './VoucherDrillDownDialog';
+import { TextSanitizer } from '@/components/Utils/TextSanitizer';
 
 interface SampleReviewTableProps {
   planId: string;

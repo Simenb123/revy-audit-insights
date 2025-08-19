@@ -49,7 +49,19 @@ const loggingFetch = async (
   const start = Date.now()
   
   try {
-    const response = await fetch(input, init)
+    // Add UTF-8 encoding headers to ensure proper character handling
+    const headers = new Headers(init?.headers);
+    headers.set('Accept-Charset', 'UTF-8');
+    
+    // Set Content-Type with charset for requests with body
+    if (init?.body && !headers.has('Content-Type')) {
+      headers.set('Content-Type', 'application/json; charset=UTF-8');
+    }
+    
+    const response = await fetch(input, {
+      ...init,
+      headers,
+    })
     
     if (logLevel === 'debug') {
       const url = typeof input === 'string' ? input : input.toString()
