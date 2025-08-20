@@ -30,16 +30,13 @@ const StickyClientLayout: React.FC<StickyClientLayoutProps> = ({
       <GlobalSubHeader
         leftContent={
           <div className="flex items-center gap-2">
-            <h1 className="text-lg font-semibold text-white">{clientName}</h1>
+            <h1 className="text-sm font-medium text-white">{clientName}</h1>
             {orgNumber && (
               <span className="text-xs text-white/70 font-mono bg-white/10 px-2 py-1 rounded">
                 {formatOrgNumber(orgNumber)}
               </span>
             )}
           </div>
-        }
-        centerContent={
-          <h2 className="text-sm text-white/80">{pageTitle}</h2>
         }
         rightContent={
           <div className="flex items-center gap-3">

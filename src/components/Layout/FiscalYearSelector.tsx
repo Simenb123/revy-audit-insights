@@ -36,12 +36,12 @@ const FiscalYearSelector: React.FC<FiscalYearSelectorProps> = ({
           <SelectTrigger className="w-[120px] bg-white border-white/20 text-foreground hover:bg-white/90">
             <SelectValue />
           </SelectTrigger>
-          <SelectContent className="bg-popover border-border z-[60]">
+          <SelectContent className="bg-white/95 backdrop-blur-sm border-border z-[60]">
             {fiscalYearOptions.map((year) => (
               <SelectItem 
                 key={year} 
                 value={year.toString()}
-                className="text-popover-foreground hover:bg-accent hover:text-accent-foreground"
+                className="text-gray-800 hover:bg-accent hover:text-accent-foreground"
               >
                 {year}
               </SelectItem>
