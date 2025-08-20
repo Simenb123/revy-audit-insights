@@ -32,9 +32,9 @@
 
     /* Layout heights */
     --global-header-height: 60px;
-    --sub-header-height: 40px;
+    --sub-header-height: 30px;
     --client-header-height: 60px;
-    --client-sub-header-height: 40px;
+    --client-sub-header-height: 30px;
 
     /* Dynamic computed heights (fallbacks) */
     --global-header-current-height: var(--global-header-height);
