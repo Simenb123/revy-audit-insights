@@ -33,14 +33,15 @@ export function toCsvFiles(data: SaftResult): File[] {
 export async function toXlsxBlob(data: SaftResult): Promise<Blob> {
   const wb = XLSX.utils.book_new();
 
-  const headerCols = ['file_version','software','software_ver','created','start','end'];
+  const headerCols = ['file_version','software','software_ver','created','start','end','default_currency'];
   const headerRows = data.header ? [{
     file_version: data.header.file_version ?? '',
     software: data.header.software ?? '',
     software_ver: data.header.software_ver ?? '',
     created: data.header.created ?? '',
     start: data.header.start ?? '',
-    end: data.header.end ?? ''
+    end: data.header.end ?? '',
+    default_currency: data.header.default_currency ?? ''
   }] : [];
 
   const companyCols = ['company_name','org_number','country','city','postal','street','email','telephone','currency_code'];
@@ -56,24 +57,34 @@ export async function toXlsxBlob(data: SaftResult): Promise<Blob> {
     currency_code: data.company.currency_code ?? ''
   }] : [];
 
-  const bankCols = ['number','name','currency'];
+  const bankCols = ['bank_account_number','iban','bank_account_name','bic','sort_code','currency_code','gl_account_id'];
   const bankRows = (data.bank_accounts || []).map(b => ({
-    number: b.number ?? '',
-    name: b.name ?? '',
-    currency: b.currency ?? ''
+    bank_account_number: b.bank_account_number ?? b.number ?? '',
+    iban: b.iban ?? '',
+    bank_account_name: b.bank_account_name ?? b.name ?? '',
+    bic: b.bic ?? '',
+    sort_code: b.sort_code ?? '',
+    currency_code: b.currency_code ?? b.currency ?? '',
+    gl_account_id: b.gl_account_id ?? ''
   }));
 
-  const accountsCols = ['account_id','description','type','opening_balance','closing_balance','vat_code'];
+  const accountsCols = ['account_id','description','account_type','opening_debit_balance','opening_credit_balance','closing_debit_balance','closing_credit_balance','opening_balance','closing_balance','opening_balance_netto','closing_balance_netto','vat_code'];
   const accountsRows = (data.accounts || []).map(a => ({
     account_id: a.account_id,
     description: a.description ?? '',
-    type: a.type ?? '',
+    account_type: a.account_type ?? a.type ?? '',
+    opening_debit_balance: a.opening_debit_balance ?? '',
+    opening_credit_balance: a.opening_credit_balance ?? '',
+    closing_debit_balance: a.closing_debit_balance ?? '',
+    closing_credit_balance: a.closing_credit_balance ?? '',
     opening_balance: a.opening_balance ?? '',
     closing_balance: a.closing_balance ?? '',
+    opening_balance_netto: a.opening_balance_netto ?? '',
+    closing_balance_netto: a.closing_balance_netto ?? '',
     vat_code: a.vat_code ?? ''
   }));
 
-  const customersCols = ['id','name','vat','country','city','postal','street','balance_account'];
+  const customersCols = ['id','name','vat','country','city','postal','street','type','status','balance_account','balance_account_id','opening_debit_balance','opening_credit_balance','closing_debit_balance','closing_credit_balance','opening_balance_netto','closing_balance_netto'];
   const customersRows = (data.customers || []).map(c => ({
     id: c.id ?? '',
     name: c.name ?? '',
@@ -82,10 +93,19 @@ export async function toXlsxBlob(data: SaftResult): Promise<Blob> {
     city: c.city ?? '',
     postal: c.postal ?? '',
     street: c.street ?? '',
-    balance_account: c.balance_account ?? ''
+    type: c.type ?? '',
+    status: c.status ?? '',
+    balance_account: c.balance_account ?? '',
+    balance_account_id: c.balance_account_id ?? '',
+    opening_debit_balance: c.opening_debit_balance ?? '',
+    opening_credit_balance: c.opening_credit_balance ?? '',
+    closing_debit_balance: c.closing_debit_balance ?? '',
+    closing_credit_balance: c.closing_credit_balance ?? '',
+    opening_balance_netto: c.opening_balance_netto ?? '',
+    closing_balance_netto: c.closing_balance_netto ?? ''
   }));
 
-  const suppliersCols = ['id','name','vat','country','city','postal','street','balance_account'];
+  const suppliersCols = ['id','name','vat','country','city','postal','street','type','status','balance_account','balance_account_id','opening_debit_balance','opening_credit_balance','closing_debit_balance','closing_credit_balance','opening_balance_netto','closing_balance_netto'];
   const suppliersRows = (data.suppliers || []).map(s => ({
     id: s.id ?? '',
     name: s.name ?? '',
@@ -94,24 +114,41 @@ export async function toXlsxBlob(data: SaftResult): Promise<Blob> {
     city: s.city ?? '',
     postal: s.postal ?? '',
     street: s.street ?? '',
-    balance_account: s.balance_account ?? ''
+    type: s.type ?? '',
+    status: s.status ?? '',
+    balance_account: s.balance_account ?? '',
+    balance_account_id: s.balance_account_id ?? '',
+    opening_debit_balance: s.opening_debit_balance ?? '',
+    opening_credit_balance: s.opening_credit_balance ?? '',
+    closing_debit_balance: s.closing_debit_balance ?? '',
+    closing_credit_balance: s.closing_credit_balance ?? '',
+    opening_balance_netto: s.opening_balance_netto ?? '',
+    closing_balance_netto: s.closing_balance_netto ?? ''
   }));
 
-  const taxCols = ['tax_code','description','percentage','exemption_reason','declaration_period','valid_from','valid_to'];
+  const taxCols = ['tax_code','description','tax_percentage','standard_tax_code','exemption_reason','declaration_period','valid_from','valid_to','base_rate','country'];
   const taxRows = (data.tax_table || []).map(t => ({
     tax_code: t.tax_code ?? '',
     description: t.description ?? '',
-    percentage: t.percentage ?? '',
+    tax_percentage: t.tax_percentage ?? t.percentage ?? '',
+    standard_tax_code: t.standard_tax_code ?? '',
     exemption_reason: t.exemption_reason ?? '',
     declaration_period: t.declaration_period ?? '',
     valid_from: t.valid_from ?? '',
-    valid_to: t.valid_to ?? ''
+    valid_to: t.valid_to ?? '',
+    base_rate: t.base_rate ?? '',
+    country: t.country ?? ''
   }));
 
-  const analysisTypeCols = ['analysis_type','description'];
+  const analysisTypeCols = ['analysis_type','analysis_type_description','analysis_id','analysis_id_description','start_date','end_date','status'];
   const analysisTypeRows = (data.analysis_types || []).map(a => ({
     analysis_type: a.analysis_type ?? '',
-    description: a.description ?? ''
+    analysis_type_description: a.analysis_type_description ?? a.description ?? '',
+    analysis_id: a.analysis_id ?? '',
+    analysis_id_description: a.analysis_id_description ?? '',
+    start_date: a.start_date ?? '',
+    end_date: a.end_date ?? '',
+    status: a.status ?? ''
   }));
 
   // Compute period start/end per journal from raw transactions
@@ -144,9 +181,10 @@ export async function toXlsxBlob(data: SaftResult): Promise<Blob> {
   });
 
   const trxCols = [
-    'journal_id','record_id','voucher_no','posting_date',
-    'account_id','description','customer_id','supplier_id','document_no','reference_no','value_date','due_date','cid',
+    'journal_id','record_id','voucher_no','transaction_id','posting_date','transaction_date','system_entry_date','system_entry_time',
+    'account_id','description','customer_id','supplier_id','document_no','reference_no','value_date','due_date','cid','cross_reference',
     'currency','amount_currency','exchange_rate','debit','credit',
+    'voucher_type','voucher_description','source_id',
     'vat_code','vat_rate','vat_base','vat_debit','vat_credit','amount'
   ];
   const trxRows = (data.transactions || []).map(t => {
@@ -167,7 +205,11 @@ export async function toXlsxBlob(data: SaftResult): Promise<Blob> {
       journal_id: t.journal_id ?? '',
       record_id: t.record_id ?? '',
       voucher_no: t.voucher_no ?? '',
+      transaction_id: t.transaction_id ?? '',
       posting_date: t.posting_date ?? '',
+      transaction_date: t.transaction_date ?? '',
+      system_entry_date: t.system_entry_date ?? '',
+      system_entry_time: t.system_entry_time ?? '',
       account_id: t.account_id ?? '',
       description: t.description ?? '',
       customer_id: t.customer_id ?? '',
@@ -177,11 +219,15 @@ export async function toXlsxBlob(data: SaftResult): Promise<Blob> {
       value_date: t.value_date ?? '',
       due_date: t.due_date ?? '',
       cid: t.cid ?? '',
+      cross_reference: t.cross_reference ?? '',
       currency: t.currency ?? '',
       amount_currency: t.amount_currency,
       exchange_rate: t.exchange_rate,
       debit,
       credit,
+      voucher_type: t.voucher_type ?? '',
+      voucher_description: t.voucher_description ?? '',
+      source_id: t.source_id ?? '',
       vat_code: t.vat_code ?? '',
       vat_rate: t.vat_rate ?? '',
       vat_base: t.vat_base,
@@ -226,6 +272,14 @@ export async function toXlsxBlob(data: SaftResult): Promise<Blob> {
   const qualityCols = ['metric','value'];
   const qualityRows = [
     { metric: 'lines_total', value: trxRows.length },
+    { metric: 'lines_with_customer_id_pct', value: trxRows.length > 0 ? Math.round((arTrxRows.length / trxRows.length) * 100) : 0 },
+    { metric: 'lines_with_supplier_id_pct', value: trxRows.length > 0 ? Math.round((apTrxRows.length / trxRows.length) * 100) : 0 },
+    { metric: 'lines_with_document_fields_pct', value: trxRows.length > 0 ? Math.round((trxRows.filter(r => String(r.document_no || r.reference_no || '').trim() !== '').length / trxRows.length) * 100) : 0 },
+    { metric: 'lines_with_due_date_pct', value: trxRows.length > 0 ? Math.round((trxRows.filter(r => String(r.due_date || '').trim() !== '').length / trxRows.length) * 100) : 0 },
+    { metric: 'lines_with_vat_info_pct', value: trxRows.length > 0 ? Math.round(((data.transactions || []).filter(t => t.vat_info_source === 'line').length / trxRows.length) * 100) : 0 },
+    { metric: 'lines_with_currency_pct', value: trxRows.length > 0 ? Math.round((trxRows.filter(r => String(r.currency || '').trim() !== '').length / trxRows.length) * 100) : 0 },
+    { metric: 'analysis_with_debit_amt_pct', value: (data.analysis_lines || []).length > 0 ? Math.round(((data.analysis_lines || []).filter(a => (a.debit_amt ?? 0) !== 0).length / (data.analysis_lines || []).length) * 100) : 0 },
+    { metric: 'analysis_with_credit_amt_pct', value: (data.analysis_lines || []).length > 0 ? Math.round(((data.analysis_lines || []).filter(a => (a.credit_amt ?? 0) !== 0).length / (data.analysis_lines || []).length) * 100) : 0 },
     { metric: 'ar_lines_total', value: arTrxRows.length },
     { metric: 'ap_lines_total', value: apTrxRows.length },
     { metric: 'unique_customers_in_ar', value: new Set(arTrxRows.map(t => String(t.customer_id || ''))).size },
@@ -248,12 +302,13 @@ export async function toXlsxBlob(data: SaftResult): Promise<Blob> {
   if (customersRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(customersRows, { header: customersCols }), 'Customers');
   if (suppliersRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(suppliersRows, { header: suppliersCols }), 'Suppliers');
   if (taxRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(taxRows, { header: taxCols }), 'TaxTable');
-  if (analysisTypeRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(analysisTypeRows, { header: analysisTypeCols }), 'AnalysisTypes');
-  if (journalRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(journalRows, { header: journalCols }), 'Journal');
+  if (analysisTypeRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(analysisTypeRows, { header: analysisTypeCols }), 'AnalysisTypeTable');
+  if (journalRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(journalRows, { header: journalCols }), 'Journals');
   if (trxRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(trxRows, { header: trxCols }), 'Transactions');
+  if (analysisLineRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(analysisLineRows, { header: analysisLineCols }), 'TransactionLines');
   if (arTrxRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(arTrxRows, { header: trxCols }), 'AR_Transactions');
   if (apTrxRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(apTrxRows, { header: trxCols }), 'AP_Transactions');
-  if (analysisLineRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(analysisLineRows, { header: analysisLineCols }), 'AnalysisLines');
+  if (analysisLineRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(analysisLineRows, { header: analysisLineCols }), 'LineAnalysis');
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(qualityRows, { header: qualityCols }), 'Quality');
 
   const arrayBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });

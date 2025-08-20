@@ -4,9 +4,17 @@ import { XMLParser } from 'fast-xml-parser';
 export interface SaftAccount {
   account_id: string;
   description?: string;
+  account_type?: string;
   type?: string;
+  // Extended balance fields
+  opening_debit_balance?: number;
+  opening_credit_balance?: number;
+  closing_debit_balance?: number;
+  closing_credit_balance?: number;
   opening_balance?: number;
   closing_balance?: number;
+  opening_balance_netto?: number;
+  closing_balance_netto?: number;
   vat_code?: string;
 }
 
@@ -14,6 +22,7 @@ export interface SaftTransaction {
   journal_id?: string;
   record_id?: string;
   voucher_no?: string;
+  transaction_id?: string;
   account_id?: string;
   description?: string;
   customer_id?: string;
@@ -23,6 +32,7 @@ export interface SaftTransaction {
   value_date?: string;
   due_date?: string;
   cid?: string;
+  cross_reference?: string;
   currency?: string;
   amount_currency?: number;
   exchange_rate?: number;
@@ -34,6 +44,14 @@ export interface SaftTransaction {
   vat_debit?: number;
   vat_credit?: number;
   posting_date?: string;
+  // Extended date fields
+  transaction_date?: string;
+  system_entry_date?: string;
+  system_entry_time?: string;
+  // Extended voucher fields
+  voucher_type?: string;
+  voucher_description?: string;
+  source_id?: string;
   vat_info_source?: 'line' | 'fallback' | undefined;
 }
 
@@ -44,6 +62,7 @@ export interface HeaderInfo {
   created?: string;
   start?: string;
   end?: string;
+  default_currency?: string;
 }
 
 export interface CompanyInfo {
@@ -59,6 +78,14 @@ export interface CompanyInfo {
 }
 
 export interface BankAccountInfo {
+  bank_account_number?: string;
+  iban?: string; 
+  bank_account_name?: string;
+  bic?: string;
+  sort_code?: string;
+  currency_code?: string;
+  gl_account_id?: string;
+  // Legacy fields for compatibility
   number?: string;
   name?: string;
   currency?: string;
@@ -72,7 +99,17 @@ export interface CustomerInfo {
   city?: string;
   postal?: string;
   street?: string;
+  type?: string;
+  status?: string;
   balance_account?: string;
+  // BalanceAccountStructure fields
+  balance_account_id?: string;
+  opening_debit_balance?: number;
+  opening_credit_balance?: number;
+  closing_debit_balance?: number;
+  closing_credit_balance?: number;
+  opening_balance_netto?: number;
+  closing_balance_netto?: number;
 }
 
 export interface SupplierInfo {
@@ -83,21 +120,42 @@ export interface SupplierInfo {
   city?: string;
   postal?: string;
   street?: string;
+  type?: string;
+  status?: string;
   balance_account?: string;
+  // BalanceAccountStructure fields
+  balance_account_id?: string;
+  opening_debit_balance?: number;
+  opening_credit_balance?: number;
+  closing_debit_balance?: number;
+  closing_credit_balance?: number;
+  opening_balance_netto?: number;
+  closing_balance_netto?: number;
 }
 
 export interface TaxTableEntry {
   tax_code?: string;
   description?: string;
-  percentage?: number | string;
+  tax_percentage?: number | string;
+  percentage?: number | string; // Legacy field
+  standard_tax_code?: string;
   exemption_reason?: string;
   declaration_period?: string;
   valid_from?: string;
   valid_to?: string;
+  base_rate?: number;
+  country?: string;
 }
 
 export interface AnalysisTypeInfo {
   analysis_type?: string;
+  analysis_type_description?: string;
+  analysis_id?: string;
+  analysis_id_description?: string;
+  start_date?: string;
+  end_date?: string;
+  status?: string;
+  // Legacy field
   description?: string;
 }
 
@@ -117,6 +175,8 @@ export interface JournalInfo {
   journal_type?: string;
   batch_id?: string;
   system_id?: string;
+  period_start?: string;
+  period_end?: string;
 }
 
 export interface SaftResult {
@@ -215,6 +275,7 @@ export async function parseSaftFile(file: File | ArrayBuffer): Promise<SaftResul
         created: byLocal(headerNode, 'DateCreated') || byLocal(headerNode, 'CreatedDate') || byLocal(headerNode, 'FileCreatedDate') || byLocal(headerNode, 'CreationDate'),
         start: byLocal(headerNode, 'StartDate') || byLocal(headerNode, 'PeriodStart') || byLocal(headerNode, 'SelectionStartDate') || byLocal(headerNode, 'FromDate'),
         end: byLocal(headerNode, 'EndDate') || byLocal(headerNode, 'PeriodEnd') || byLocal(headerNode, 'SelectionEndDate') || byLocal(headerNode, 'ToDate'),
+        default_currency: byLocal(headerNode, 'DefaultCurrencyCode') || byLocal(headerNode, 'CurrencyCode'),
       }
     : null;
 
@@ -247,6 +308,15 @@ export async function parseSaftFile(file: File | ArrayBuffer): Promise<SaftResul
     byLocal(master, 'BankAccounts') || byLocal(master, 'BankAccount') || byLocal(master, 'Banks');
   const bank_accounts: BankAccountInfo[] = arr(byLocal(bankAccountsRaw, 'BankAccount') || bankAccountsRaw).map(
     (b: any) => ({
+      // Extended fields
+      bank_account_number: byLocal(b, 'BankAccountNumber') || byLocal(b, 'AccountNumber'),
+      iban: byLocal(b, 'IBAN'),
+      bank_account_name: byLocal(b, 'BankAccountName') || byLocal(b, 'AccountName') || byLocal(b, 'Name') || byLocal(b, 'Description'),
+      bic: byLocal(b, 'BIC') || byLocal(b, 'BankIdentifierCode') || byLocal(b, 'SwiftCode'),
+      sort_code: byLocal(b, 'SortCode') || byLocal(b, 'BankCode'),
+      currency_code: byLocal(b, 'CurrencyCode') || byLocal(b, 'Currency'),
+      gl_account_id: byLocal(b, 'GLAccountID') || byLocal(b, 'GeneralLedgerAccountID') || byLocal(b, 'AccountGLID'),
+      // Legacy fields for compatibility
       number: byLocal(b, 'IBAN') || byLocal(b, 'AccountNumber') || byLocal(b, 'BankAccountNumber'),
       name: byLocal(b, 'AccountName') || byLocal(b, 'Name') || byLocal(b, 'Description'),
       currency: byLocal(b, 'CurrencyCode') || byLocal(b, 'Currency'),
@@ -268,12 +338,29 @@ export async function parseSaftFile(file: File | ArrayBuffer): Promise<SaftResul
       ? (closingDebit || 0) - (closingCredit || 0)
       : parseAmountNode(byLocal(a, 'ClosingBalance'));
 
+    // Calculate netto balances
+    const opening_balance_netto = (openingDebit !== undefined && openingCredit !== undefined)
+      ? (openingDebit || 0) - (openingCredit || 0)
+      : opening_balance;
+
+    const closing_balance_netto = (closingDebit !== undefined && closingCredit !== undefined)
+      ? (closingDebit || 0) - (closingCredit || 0)
+      : closing_balance;
+
     return {
       account_id: byLocal(a, 'AccountID') || byLocal(a, 'AccountNumber') || byLocal(a, 'Number'),
       description: byLocal(a, 'AccountDescription') || byLocal(a, 'Description') || byLocal(a, 'Name'),
-      type: byLocal(a, 'AccountType') || byLocal(a, 'Type'),
+      account_type: byLocal(a, 'AccountType') || byLocal(a, 'Type'),
+      type: byLocal(a, 'AccountType') || byLocal(a, 'Type'), // Legacy field
+      // Extended balance fields
+      opening_debit_balance: openingDebit,
+      opening_credit_balance: openingCredit,
+      closing_debit_balance: closingDebit,
+      closing_credit_balance: closingCredit,
       opening_balance,
       closing_balance,
+      opening_balance_netto,
+      closing_balance_netto,
       vat_code: byLocal(a, 'VatCode') || byLocal(a, 'VATCode') || byLocal(a, 'TaxCode') || byLocal(a, 'StandardVatCode'),
     } as SaftAccount;
   });
@@ -286,6 +373,13 @@ export async function parseSaftFile(file: File | ArrayBuffer): Promise<SaftResul
   const customers: CustomerInfo[] = customersRaw.map((c: any) => {
     const addr = byLocal(c, 'Address') || byLocal(c, 'BillingAddress');
     const balStruct = byLocal(c, 'BalanceAccountStructure');
+    
+    // Parse BalanceAccountStructure amounts
+    const openingDebit = parseAmountNode(byLocal(balStruct, 'OpeningDebitBalance'));
+    const openingCredit = parseAmountNode(byLocal(balStruct, 'OpeningCreditBalance'));
+    const closingDebit = parseAmountNode(byLocal(balStruct, 'ClosingDebitBalance'));
+    const closingCredit = parseAmountNode(byLocal(balStruct, 'ClosingCreditBalance'));
+    
     return {
       id: byLocal(c, 'CustomerID') || byLocal(c, 'ID'),
       name: byLocal(c, 'CustomerName') || byLocal(c, 'Name'),
@@ -294,9 +388,19 @@ export async function parseSaftFile(file: File | ArrayBuffer): Promise<SaftResul
       city: byLocal(addr, 'City') || byLocal(addr, 'Town'),
       postal: byLocal(addr, 'PostalCode') || byLocal(addr, 'PostCode'),
       street: byLocal(addr, 'StreetName') || byLocal(addr, 'AddressLine1') || byLocal(addr, 'AddressDetail'),
+      type: byLocal(c, 'CustomerType') || byLocal(c, 'Type'),
+      status: byLocal(c, 'Status') || byLocal(c, 'CustomerStatus'),
       balance_account:
         byLocal(balStruct, 'BalanceAccount') ||
         byLocal(c, 'BalanceAccount') || byLocal(c, 'ReceivableAccount') || byLocal(c, 'GeneralLedgerAccountID'),
+      // BalanceAccountStructure fields
+      balance_account_id: byLocal(balStruct, 'BalanceAccountID') || byLocal(balStruct, 'BalanceAccount'),
+      opening_debit_balance: openingDebit,
+      opening_credit_balance: openingCredit,
+      closing_debit_balance: closingDebit,
+      closing_credit_balance: closingCredit,
+      opening_balance_netto: (openingDebit !== undefined && openingCredit !== undefined) ? (openingDebit || 0) - (openingCredit || 0) : undefined,
+      closing_balance_netto: (closingDebit !== undefined && closingCredit !== undefined) ? (closingDebit || 0) - (closingCredit || 0) : undefined,
     };
   });
 
@@ -308,6 +412,13 @@ export async function parseSaftFile(file: File | ArrayBuffer): Promise<SaftResul
   const suppliers: SupplierInfo[] = suppliersRaw.map((s: any) => {
     const addr = byLocal(s, 'Address') || byLocal(s, 'BillingAddress');
     const balStruct = byLocal(s, 'BalanceAccountStructure');
+    
+    // Parse BalanceAccountStructure amounts
+    const openingDebit = parseAmountNode(byLocal(balStruct, 'OpeningDebitBalance'));
+    const openingCredit = parseAmountNode(byLocal(balStruct, 'OpeningCreditBalance'));
+    const closingDebit = parseAmountNode(byLocal(balStruct, 'ClosingDebitBalance'));
+    const closingCredit = parseAmountNode(byLocal(balStruct, 'ClosingCreditBalance'));
+    
     return {
       id: byLocal(s, 'SupplierID') || byLocal(s, 'ID'),
       name: byLocal(s, 'SupplierName') || byLocal(s, 'Name'),
@@ -316,9 +427,19 @@ export async function parseSaftFile(file: File | ArrayBuffer): Promise<SaftResul
       city: byLocal(addr, 'City') || byLocal(addr, 'Town'),
       postal: byLocal(addr, 'PostalCode') || byLocal(addr, 'PostCode'),
       street: byLocal(addr, 'StreetName') || byLocal(addr, 'AddressLine1') || byLocal(addr, 'AddressDetail'),
+      type: byLocal(s, 'SupplierType') || byLocal(s, 'Type'),
+      status: byLocal(s, 'Status') || byLocal(s, 'SupplierStatus'),
       balance_account:
         byLocal(balStruct, 'BalanceAccount') ||
         byLocal(s, 'BalanceAccount') || byLocal(s, 'PayableAccount') || byLocal(s, 'GeneralLedgerAccountID'),
+      // BalanceAccountStructure fields
+      balance_account_id: byLocal(balStruct, 'BalanceAccountID') || byLocal(balStruct, 'BalanceAccount'),
+      opening_debit_balance: openingDebit,
+      opening_credit_balance: openingCredit,
+      closing_debit_balance: closingDebit,
+      closing_credit_balance: closingCredit,
+      opening_balance_netto: (openingDebit !== undefined && openingCredit !== undefined) ? (openingDebit || 0) - (openingCredit || 0) : undefined,
+      closing_balance_netto: (closingDebit !== undefined && closingCredit !== undefined) ? (closingDebit || 0) - (closingCredit || 0) : undefined,
     };
   });
 
@@ -331,11 +452,15 @@ export async function parseSaftFile(file: File | ArrayBuffer): Promise<SaftResul
   const tax_table: TaxTableEntry[] = taxEntries.map((t: any) => ({
     tax_code: byLocal(t, 'TaxCode') || byLocal(t, 'Code') || byLocal(t, 'VATCode') || byLocal(t, 'TaxCodeID'),
     description: byLocal(t, 'Description') || byLocal(t, 'TaxDescription') || byLocal(t, 'TaxCodeDescription'),
-    percentage: byLocal(t, 'TaxPercentage') || byLocal(t, 'TaxPercentageDecimal') || byLocal(t, 'Rate') || byLocal(t, 'TaxRate'),
+    tax_percentage: byLocal(t, 'TaxPercentage') || byLocal(t, 'TaxPercentageDecimal') || byLocal(t, 'Rate') || byLocal(t, 'TaxRate'),
+    percentage: byLocal(t, 'TaxPercentage') || byLocal(t, 'TaxPercentageDecimal') || byLocal(t, 'Rate') || byLocal(t, 'TaxRate'), // Legacy field
+    standard_tax_code: byLocal(t, 'StandardTaxCode') || byLocal(t, 'BaseCode'),
     exemption_reason: byLocal(t, 'TaxExemptionReason') || byLocal(t, 'ExemptionReason') || byLocal(t, 'Exemption'),
     declaration_period: byLocal(t, 'TaxDeclarationPeriod') || byLocal(t, 'DeclarationPeriod') || byLocal(t, 'ReportingPeriod'),
     valid_from: byLocal(t, 'ValidFrom') || byLocal(t, 'StartDate') || byLocal(t, 'EffectiveFrom'),
     valid_to: byLocal(t, 'ValidTo') || byLocal(t, 'EndDate') || byLocal(t, 'EffectiveTo'),
+    base_rate: parseDecimal(byLocal(t, 'BaseRate') || byLocal(t, 'BaseTaxRate')),
+    country: byLocal(t, 'Country') || byLocal(t, 'CountryCode'),
   }));
 
   // Analysis types
@@ -345,7 +470,13 @@ export async function parseSaftFile(file: File | ArrayBuffer): Promise<SaftResul
       .concat(arr(byLocal(master, 'AnalysisType')));
   const analysis_types: AnalysisTypeInfo[] = analysisTypesRaw.map((a: any) => ({
     analysis_type: byLocal(a, 'AnalysisType') || byLocal(a, 'Type'),
-    description: byLocal(a, 'Description'),
+    analysis_type_description: byLocal(a, 'AnalysisTypeDescription') || byLocal(a, 'TypeDescription'),
+    analysis_id: byLocal(a, 'AnalysisID') || byLocal(a, 'ID'),
+    analysis_id_description: byLocal(a, 'AnalysisIDDescription') || byLocal(a, 'IDDescription'),
+    start_date: byLocal(a, 'StartDate') || byLocal(a, 'ValidFrom'),
+    end_date: byLocal(a, 'EndDate') || byLocal(a, 'ValidTo'),
+    status: byLocal(a, 'Status') || byLocal(a, 'Active'),
+    description: byLocal(a, 'Description'), // Legacy field
   }));
 
   // Journals and transactions
@@ -367,12 +498,20 @@ export async function parseSaftFile(file: File | ArrayBuffer): Promise<SaftResul
     });
 
     arr(byLocal(j, 'Transaction')).forEach((t: any) => {
-      // Rules A, B, C
-      const voucherNo =
-        byLocal(t, 'TransactionID') || byLocal(t, 'VoucherNo') || byLocal(t, 'VoucherID') || journal_id;
+      // Enhanced rules A, B, C
+      const transactionId = byLocal(t, 'TransactionID');
+      const voucherNo = transactionId || byLocal(t, 'VoucherNo') || byLocal(t, 'VoucherID') || journal_id;
       const postingDate =
         byLocal(t, 'GLPostingDate') || byLocal(t, 'TransactionDate') || byLocal(t, 'SystemEntryDate');
       const docNoTxn = byLocal(t, 'SourceDocumentID') || byLocal(t, 'ReferenceNumber') || byLocal(t, 'DocumentNo');
+
+      // Extended transaction-level fields
+      const transactionDate = byLocal(t, 'TransactionDate');
+      const systemEntryDate = byLocal(t, 'SystemEntryDate');
+      const systemEntryTime = byLocal(t, 'SystemEntryTime');
+      const voucherType = byLocal(t, 'VoucherType') || byLocal(t, 'TransactionType');
+      const voucherDescription = byLocal(t, 'VoucherDescription') || byLocal(t, 'Description');
+      const sourceId = byLocal(t, 'SourceID') || byLocal(t, 'SystemID');
 
       const txnCurrencyCode = byLocal(t, 'CurrencyCode');
       const txnExchangeRate = parseDecimal(byLocal(t, 'ExchangeRate'));
@@ -421,6 +560,7 @@ export async function parseSaftFile(file: File | ArrayBuffer): Promise<SaftResul
           journal_id,
           record_id,
           voucher_no: String(voucherNo || ''),
+          transaction_id: transactionId,
           posting_date: postingDate,
           account_id: byLocal(l, 'AccountID'),
           description: byLocal(l, 'Description') || byLocal(l, 'Text') || byLocal(l, 'Name'),
@@ -431,11 +571,20 @@ export async function parseSaftFile(file: File | ArrayBuffer): Promise<SaftResul
           value_date: byLocal(l, 'ValueDate') || byLocal(t, 'ValueDate'),
           due_date: byLocal(l, 'DueDate') || byLocal(t, 'DueDate'),
           cid: byLocal(l, 'KID') || byLocal(l, 'CID') || byLocal(t, 'KID') || byLocal(t, 'CID'),
+          cross_reference: byLocal(l, 'CrossReference') || byLocal(t, 'CrossReference'),
           currency,
           amount_currency,
           exchange_rate,
           debit,
           credit,
+          // Extended date fields
+          transaction_date: transactionDate,
+          system_entry_date: systemEntryDate,
+          system_entry_time: systemEntryTime,
+          // Extended voucher fields
+          voucher_type: voucherType,
+          voucher_description: voucherDescription,
+          source_id: sourceId,
           vat_code: vat_code,
           vat_rate,
           vat_base,
