@@ -759,7 +759,7 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = ({ c
                           
                           return (
                             <div
-                              key={account.id}
+                              key={account.account_number}
                               className={`flex items-center space-x-3 p-3 rounded-md transition-all duration-200 cursor-pointer hover:bg-muted/50 ${
                                 isExcluded ? 'bg-destructive/10 border border-destructive/20' : 'hover:border-border border border-transparent'
                               }`}

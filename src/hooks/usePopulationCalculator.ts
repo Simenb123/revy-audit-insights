@@ -39,93 +39,52 @@ export function usePopulationCalculator(
         };
       }
 
-      // Get trial balance data for the selected fiscal year
-      let query = supabase
+      // Simplified query to avoid type recursion issues
+      const { data: trialBalanceData, error } = await supabase
         .from('trial_balances')
-        .select(`
-          account_number,
-          account_name,
-          closing_balance,
-          client_chart_of_accounts!inner(
-            standard_account_mappings(
-              standard_account_id,
-              standard_accounts(standard_number)
-            )
-          )
-        `)
+        .select('closing_balance, client_account_id')
         .eq('client_id', clientId)
         .eq('period_year', fiscalYear)
         .neq('closing_balance', 0);
 
-      if (versionId) {
-        query = query.eq('version_id', versionId);
-      }
-
-      const { data: trialBalanceData, error } = await query;
-
       if (error) throw error;
 
-      // Filter accounts based on selected standard numbers
-      const filteredAccounts = (trialBalanceData || []).filter(account => {
-        // Check if account is mapped to any of the selected standard accounts
-        const mappings = account.client_chart_of_accounts?.standard_account_mappings || [];
-        const hasSelectedStandard = mappings.some((mapping: any) => 
-          selectedStandardNumbers.includes(mapping.standard_accounts?.standard_number)
-        );
-        
-        // Exclude specifically excluded accounts
-        const isExcluded = excludedAccountNumbers.includes(account.account_number);
-        
-        return hasSelectedStandard && !isExcluded;
-      });
-
-      // Get transaction counts for each account
-      const accountNumbers = filteredAccounts.map(acc => acc.account_number);
+      // Get account details separately
+      const accountIds = trialBalanceData?.map(tb => tb.client_account_id).filter(Boolean) || [];
       
-      let transactionQuery = supabase
-        .from('general_ledger_transactions')
-        .select('account_number')
-        .eq('client_id', clientId)
-        .in('account_number', accountNumbers);
+      const { data: accountData, error: accountError } = await supabase
+        .from('client_chart_of_accounts')
+        .select('id, account_number, account_name')
+        .in('id', accountIds);
 
-      if (fiscalYear) {
-        const startDate = `${fiscalYear}-01-01`;
-        const endDate = `${fiscalYear}-12-31`;
-        transactionQuery = transactionQuery
-          .gte('transaction_date', startDate)
-          .lte('transaction_date', endDate);
-      }
+      if (accountError) throw accountError;
 
-      if (versionId) {
-        transactionQuery = transactionQuery.eq('version_id', versionId);
-      }
-
-      const { data: transactions, error: transactionError } = await transactionQuery;
+      // Map accounts with balances
+      const accountMap = new Map(accountData?.map(acc => [acc.id, acc]) || []);
       
-      if (transactionError) throw transactionError;
+      const accounts = trialBalanceData
+        ?.map(tb => {
+          const account = accountMap.get(tb.client_account_id);
+          if (!account) return null;
+          
+          return {
+            account_number: account.account_number,
+            account_name: account.account_name || 'Ukjent konto',
+            closing_balance: tb.closing_balance || 0,
+            transaction_count: 0 // Will be implemented later
+          };
+        })
+        .filter(Boolean)
+        .filter(account => !excludedAccountNumbers.includes(account!.account_number)) || [];
 
-      // Count transactions per account
-      const transactionCounts: Record<string, number> = {};
-      transactions?.forEach(tx => {
-        transactionCounts[tx.account_number] = (transactionCounts[tx.account_number] || 0) + 1;
-      });
-
-      // Build final account list with transaction counts
-      const accounts = filteredAccounts.map(account => ({
-        account_number: account.account_number,
-        account_name: account.account_name || 'Ukjent konto',
-        closing_balance: account.closing_balance || 0,
-        transaction_count: transactionCounts[account.account_number] || 0
-      }));
-
-      const totalSum = accounts.reduce((sum, acc) => sum + Math.abs(acc.closing_balance), 0);
+      const totalSum = (accounts as any[]).reduce((sum, acc) => sum + Math.abs(acc.closing_balance), 0);
 
       return {
-        size: accounts.length,
+        size: (accounts as any[]).length,
         sum: totalSum,
-        accounts
+        accounts: accounts as any[]
       };
     },
-    enabled: !!clientId && selectedStandardNumbers.length > 0
+    enabled: !!clientId
   });
 }

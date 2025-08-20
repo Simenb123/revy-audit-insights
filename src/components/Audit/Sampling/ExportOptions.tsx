@@ -17,7 +17,14 @@ import {
   Info
 } from 'lucide-react';
 import { SamplingResult, ExportFormat } from '@/services/sampling/types';
-import { exportSamplingResult } from '@/services/sampling/exportService';
+import { 
+  exportToCSV,
+  exportToJSON,
+  preparePDFData,
+  createDownloadBlob, 
+  downloadFile, 
+  generateExportFilename 
+} from '@/services/sampling/exportService';
 import { useToast } from '@/hooks/use-toast';
 
 interface ExportOptionsProps {
@@ -49,13 +56,27 @@ const ExportOptions: React.FC<ExportOptionsProps> = ({
 
     setIsExporting(true);
     try {
-      const format: ExportFormat = {
-        type: exportFormat,
+      const exportOptions = {
+        type: exportFormat as 'CSV' | 'JSON',
         includeMetadata,
         includeParameters
       };
 
-      const fileName = await exportSamplingResult(result, format);
+      // Create content based on format
+      const content = exportFormat === 'CSV' 
+        ? exportToCSV(result, result.plan as any, exportOptions)
+        : exportToJSON(result, result.plan as any, exportOptions);
+
+      // Create and download file
+      const mimeType = exportFormat === 'CSV' ? 'text/csv' : 'application/json';
+      const blob = createDownloadBlob(content, mimeType);
+      const fileName = generateExportFilename(
+        planName || `Utvalg_${new Date().toISOString().split('T')[0]}`,
+        exportFormat,
+        new Date()
+      );
+      
+      downloadFile(blob, fileName);
       
       toast({
         title: "Eksport fullført",
