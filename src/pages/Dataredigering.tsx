@@ -4,6 +4,7 @@ import React, { useCallback, useMemo, useRef, useState } from "react";
 import * as XLSX from "xlsx";
 import { validateXlsxFile } from '@/utils/secureXlsx';
 import { fetchNaeringsMapFromDB } from '@/services/naering';
+import { supabase } from '@/integrations/supabase/client';
 
 // ------------------------------ Utilities ------------------------------
 
@@ -408,7 +409,7 @@ export default function DataredigeringPage() {
       return;
     }
 
-    setStatus("Prosesserer saldobalanse og NA-koder...");
+    setStatus("Prosesserer saldobalanse med NA-koder og regnskapslinjer...");
 
     try {
       // 1) Les saldobalanse
@@ -425,6 +426,7 @@ export default function DataredigeringPage() {
       // 2) Finn kolonner med auto-deteksjon og fallback
       let kontoCol = guessKontoHeader(sbColumns);
       let resBalCol = guessResBalHeader(sbColumns);
+      let regnskapslinjeCol = sbColumns.find(col => /^regnskapslinje$/i.test(col));
 
       // Debug info om hvilke kolonner som ble funnet på valgt rad
       setStatus(prev => `${prev} - Rad ${sbHeaderRow} kolonner: [${sbColumns.join(', ')}]`);
@@ -456,6 +458,7 @@ export default function DataredigeringPage() {
             sbRows.push(...autoRowsNew);
             kontoCol = autoKontoCol;
             resBalCol = autoResbalCol;
+            regnskapslinjeCol = autoColumns.find(col => /^regnskapslinje$/i.test(col));
             setStatus(`BRUKER auto-detektert header på rad ${autoRow} (i stedet for ${sbHeaderRow})`);
           }
         }
@@ -475,6 +478,10 @@ export default function DataredigeringPage() {
         setStatus(prev => `${prev} - Bruker ResBalRef (${resBalCol}) som NAKonto-kilde`);
       } else {
         setStatus(prev => `${prev} - Bruker prefiks-matching fra Konto (${kontoCol})`);
+      }
+
+      if (regnskapslinjeCol) {
+        setStatus(prev => `${prev} - Funnet regnskapslinje-kolonne: ${regnskapslinjeCol}`);
       }
 
       // 3) Hent NA-map (database eller Excel)
@@ -503,11 +510,32 @@ export default function DataredigeringPage() {
         return;
       }
 
-      // 4) ResBalRef-first mapping med fallback til prefiks-matching
+      // 4) Hent standardkontoplan for regnskapslinje-mapping
+      let standardAccountsMap: Map<string, string> = new Map();
+      try {
+        const { data: standardAccounts } = await supabase
+          .from('standard_accounts')
+          .select('standard_number, standard_name')
+          .not('standard_number', 'is', null);
+        
+        if (standardAccounts) {
+          standardAccounts.forEach(acc => {
+            if (acc.standard_number) {
+              standardAccountsMap.set(String(acc.standard_number), acc.standard_name || '');
+            }
+          });
+          setStatus(prev => `${prev} - Hentet ${standardAccountsMap.size} standardkontoer`);
+        }
+      } catch (e: any) {
+        setErrors(prev => [...prev, `Feil ved henting av standardkontoplan: ${e?.message || e}`]);
+      }
+
+      // 5) ResBalRef-first mapping med fallback til prefiks-matching + regnskapslinje mapping
       const naCodes = Array.from(naMap.keys()).sort((a, b) => normalizeCode(b).length - normalizeCode(a).length);
       let resBalMatches = 0;
       let prefixMatches = 0;
       let noMatches = 0;
+      let regnskapslinjeMatches = 0;
 
       const enrichedRows = sbRows.map(row => {
         let matchedCode: string | null = null;
@@ -537,29 +565,59 @@ export default function DataredigeringPage() {
           noMatches++;
         }
 
+        // Regnskapslinje-mapping
+        let regnskapslinjeNavn = "";
+        if (regnskapslinjeCol && row[regnskapslinjeCol]) {
+          const regnskapslinjeValue = String(row[regnskapslinjeCol]).trim();
+          if (standardAccountsMap.has(regnskapslinjeValue)) {
+            regnskapslinjeNavn = standardAccountsMap.get(regnskapslinjeValue) || "";
+            regnskapslinjeMatches++;
+          }
+        }
+
         return {
-          ...row,
+          Selskap: row.Selskap || "",
+          Konto: row[kontoCol || ""] || "",
+          regnskapslinje: regnskapslinjeCol ? (row[regnskapslinjeCol] || "") : "",
+          RegnskapslinjeNavn: regnskapslinjeNavn,
           NAkonto: matchedCode || "",
           NAnavn: matchedCode ? (naMap.get(matchedCode) || "") : "",
-          MatchKilde: matchSource || "Ingen"
+          MatchKilde: matchSource || "Ingen",
+          // Inkluder resten av kolonnene
+          ...Object.keys(row).reduce((acc: Record<string, any>, key) => {
+            if (!['Selskap', kontoCol, regnskapslinjeCol].includes(key)) {
+              acc[key] = row[key];
+            }
+            return acc;
+          }, {} as Record<string, any>)
         };
       });
 
-      // 5) Lag rader uten match for kvalitetssikring
-      const unmatchedRows = enrichedRows.filter(row => !row.NAkonto);
+      // 6) Lag rader uten match for kvalitetssikring (kun hvis de har verdi)
+      const unmatchedRows = enrichedRows.filter(row => 
+        !row.NAkonto && 
+        Object.values(row).some(val => 
+          val && typeof val === 'number' && val !== 0
+        )
+      );
 
-      // 6) Eksporter hovedfil
-      const newColumns = [...sbColumns, "NAkonto", "NAnavn", "MatchKilde"];
-      const ws = jsonToSheetWithHeader(enrichedRows, newColumns);
+      // 7) Eksporter hovedfil med alle rader (fokus på meningsfull data)
+      const newColumns = ["Selskap", "Konto", "regnskapslinje", "RegnskapslinjeNavn", "NAkonto", "NAnavn", "MatchKilde"];
+      const otherColumns = sbColumns.filter(col => 
+        ![kontoCol, regnskapslinjeCol, "Selskap"].includes(col)
+      );
+      const allColumns = [...newColumns, ...otherColumns];
+
+      const ws = jsonToSheetWithHeader(enrichedRows, allColumns);
       const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Saldobalanse med NA");
+      XLSX.utils.book_append_sheet(wb, ws, "Saldobalanse komplett");
       const out = XLSX.write(wb, { bookType: "xlsx", type: "array" });
       const filename = `${sbFile.name.replace(/\.[^.]+$/i, "")} - med Naeringsspesifikasjon.xlsx`;
       downloadBlob(new Blob([out], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }), filename);
 
-      // 7) Eksporter "Uten NA" fil hvis det finnes umatchede rader
+      // 8) Eksporter "Uten NA" fil hvis det finnes umatchede rader med verdi
       if (unmatchedRows.length > 0) {
-        const wsUnmatched = jsonToSheetWithHeader(unmatchedRows, newColumns);
+        const wsUnmatched = jsonToSheetWithHeader(unmatchedRows, allColumns);
         const wbUnmatched = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wbUnmatched, wsUnmatched, "Uten NA-match");
         const outUnmatched = XLSX.write(wbUnmatched, { bookType: "xlsx", type: "array" });
@@ -568,7 +626,8 @@ export default function DataredigeringPage() {
       }
 
       const matchRate = ((enrichedRows.length - noMatches) / enrichedRows.length * 100).toFixed(1);
-      setStatus(`Excel eksportert: ${enrichedRows.length} rader. Match-rate: ${matchRate}% (ResBalRef: ${resBalMatches}, Prefiks: ${prefixMatches}, Ingen: ${noMatches})`);
+      const regnskapslinjeRate = (regnskapslinjeMatches / enrichedRows.length * 100).toFixed(1);
+      setStatus(`Excel eksportert: ${enrichedRows.length} rader. NA match-rate: ${matchRate}% (ResBalRef: ${resBalMatches}, Prefiks: ${prefixMatches}, Ingen: ${noMatches}). Regnskapslinje-matches: ${regnskapslinjeMatches} (${regnskapslinjeRate}%)`);
     } catch (e: any) {
       setErrors(prev => [...prev, `Feil ved NA-mapping: ${e?.message || e}`]);
     }
