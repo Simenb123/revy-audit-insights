@@ -28,7 +28,7 @@
   --right-sidebar-width: 360px;
   --right-sidebar-width-collapsed: 44px;
   /* Global header height */
-  --global-header-height: 72px;
+  --global-header-height: 80px;
 
   /* CSS Grid Layout Variables */
   --grid-left-sidebar: var(--sidebar-width);
