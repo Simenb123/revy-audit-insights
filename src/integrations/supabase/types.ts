@@ -1026,6 +1026,53 @@ export type Database = {
           },
         ]
       }
+      amelding_code_map: {
+        Row: {
+          a07: string
+          internal_code: string
+        }
+        Insert: {
+          a07: string
+          internal_code: string
+        }
+        Update: {
+          a07?: string
+          internal_code?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "amelding_code_map_a07_fkey"
+            columns: ["a07"]
+            isOneToOne: true
+            referencedRelation: "amelding_codes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      amelding_codes: {
+        Row: {
+          aliases: string[] | null
+          expected_fordel: string
+          id: string
+          inserted_at: string | null
+          label: string
+        }
+        Insert: {
+          aliases?: string[] | null
+          expected_fordel: string
+          id: string
+          inserted_at?: string | null
+          label: string
+        }
+        Update: {
+          aliases?: string[] | null
+          expected_fordel?: string
+          id?: string
+          inserted_at?: string | null
+          label?: string
+        }
+        Relationships: []
+      }
       analysis_results: {
         Row: {
           client_id: string
@@ -6564,6 +6611,27 @@ export type Database = {
           },
         ]
       }
+      internal_codes: {
+        Row: {
+          aga: boolean
+          id: string
+          inserted_at: string | null
+          label: string
+        }
+        Insert: {
+          aga?: boolean
+          id: string
+          inserted_at?: string | null
+          label: string
+        }
+        Update: {
+          aga?: boolean
+          id?: string
+          inserted_at?: string | null
+          label?: string
+        }
+        Relationships: []
+      }
       investment_holdings: {
         Row: {
           acquisition_date: string | null
@@ -7659,6 +7727,54 @@ export type Database = {
           is_system_group?: boolean | null
           name?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      mapping_rules: {
+        Row: {
+          account: string
+          client_id: string
+          code: string
+          id: string
+          inserted_at: string | null
+          keywords: string[] | null
+          month_hints: number[] | null
+          priority: number | null
+          regex: string | null
+          split: number | null
+          strategy: string
+          updated_at: string | null
+          weight: number | null
+        }
+        Insert: {
+          account: string
+          client_id: string
+          code: string
+          id?: string
+          inserted_at?: string | null
+          keywords?: string[] | null
+          month_hints?: number[] | null
+          priority?: number | null
+          regex?: string | null
+          split?: number | null
+          strategy?: string
+          updated_at?: string | null
+          weight?: number | null
+        }
+        Update: {
+          account?: string
+          client_id?: string
+          code?: string
+          id?: string
+          inserted_at?: string | null
+          keywords?: string[] | null
+          month_hints?: number[] | null
+          priority?: number | null
+          regex?: string | null
+          split?: number | null
+          strategy?: string
+          updated_at?: string | null
+          weight?: number | null
         }
         Relationships: []
       }

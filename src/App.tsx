@@ -67,6 +67,7 @@ import Regnskapsdata from "./pages/Regnskapsdata";
 import PayrollUpload from "./pages/PayrollUpload";
 import PayrollOverview from "./pages/PayrollOverview";
 import PayrollA07 from "./pages/PayrollA07";
+import PayrollReconciliation from "./pages/PayrollReconciliation";
 import PayrollAnalysis from "./pages/PayrollAnalysis";
 import InvestmentOverview from "./pages/InvestmentOverview";
 import InvestmentSecurities from "./pages/InvestmentSecurities";
@@ -115,6 +116,7 @@ function App() {
                   <Route path="clients/:clientId/payroll/a07" element={<ProtectedRoute><PayrollA07 /></ProtectedRoute>} />
                   <Route path="clients/:clientId/payroll/analysis" element={<ProtectedRoute><PayrollAnalysis /></ProtectedRoute>} />
                   <Route path="clients/:clientId/payroll/upload" element={<ProtectedRoute><PayrollUpload /></ProtectedRoute>} />
+                  <Route path="clients/:clientId/payroll/kontrolloppstilling" element={<ProtectedRoute><PayrollReconciliation /></ProtectedRoute>} />
                   <Route path="clients/:clientId/investments/overview" element={<ProtectedRoute><InvestmentOverview /></ProtectedRoute>} />
                    <Route path="clients/:clientId/investments/portfolios" element={<ProtectedRoute><InvestmentPortfolios /></ProtectedRoute>} />
                    <Route path="clients/:clientId/investments/transactions" element={<ProtectedRoute><InvestmentTransactions /></ProtectedRoute>} />
