@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import ClientSubHeader from './ClientSubHeader';
 import FiscalYearSelector from './FiscalYearSelector';
 import MaterialitySummary from './MaterialitySummary';
@@ -25,7 +25,7 @@ const StickyClientLayout: React.FC<StickyClientLayoutProps> = ({
 }) => {
   const { setSubHeader, clearSubHeader } = useSubHeader();
 
-  React.useEffect(() => {
+  useEffect(() => {
     setSubHeader(
       <GlobalSubHeader
         leftContent={
