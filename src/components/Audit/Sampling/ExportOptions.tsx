@@ -25,6 +25,7 @@ import {
   downloadFile, 
   generateExportFilename 
 } from '@/services/sampling/exportService';
+import { paramHash } from '@/services/sampling/paramHash';
 import { useToast } from '@/hooks/use-toast';
 
 interface ExportOptionsProps {

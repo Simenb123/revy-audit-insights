@@ -2370,6 +2370,7 @@ export type Database = {
           threshold_mode: string | null
           tolerable_deviation_rate: number | null
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           actual_sample_size?: number
@@ -2404,6 +2405,7 @@ export type Database = {
           threshold_mode?: string | null
           tolerable_deviation_rate?: number | null
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           actual_sample_size?: number
@@ -2438,6 +2440,7 @@ export type Database = {
           threshold_mode?: string | null
           tolerable_deviation_rate?: number | null
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }

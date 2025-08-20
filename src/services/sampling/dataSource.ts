@@ -80,6 +80,7 @@ export async function saveSamplingPlan(
     .from('audit_sampling_plans')
     .insert({
       client_id: clientId,
+      user_id: (await supabase.auth.getUser()).data.user?.id,
       fiscal_year: params.fiscalYear,
       test_type: result.plan.testType,
       method: result.plan.method,
