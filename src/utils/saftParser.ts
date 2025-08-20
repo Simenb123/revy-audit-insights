@@ -110,6 +110,9 @@ export interface CustomerInfo {
   closing_credit_balance?: number;
   opening_balance_netto?: number;
   closing_balance_netto?: number;
+  // Payment terms for due date calculation
+  payment_terms_days?: number;
+  payment_terms_months?: number;
 }
 
 export interface SupplierInfo {
@@ -131,6 +134,9 @@ export interface SupplierInfo {
   closing_credit_balance?: number;
   opening_balance_netto?: number;
   closing_balance_netto?: number;
+  // Payment terms for due date calculation
+  payment_terms_days?: number;
+  payment_terms_months?: number;
 }
 
 export interface TaxTableEntry {
@@ -373,12 +379,17 @@ export async function parseSaftFile(file: File | ArrayBuffer): Promise<SaftResul
   const customers: CustomerInfo[] = customersRaw.map((c: any) => {
     const addr = byLocal(c, 'Address') || byLocal(c, 'BillingAddress');
     const balStruct = byLocal(c, 'BalanceAccountStructure');
+    const paymentTerms = byLocal(c, 'PaymentTerms');
     
     // Parse BalanceAccountStructure amounts
     const openingDebit = parseAmountNode(byLocal(balStruct, 'OpeningDebitBalance'));
     const openingCredit = parseAmountNode(byLocal(balStruct, 'OpeningCreditBalance'));
     const closingDebit = parseAmountNode(byLocal(balStruct, 'ClosingDebitBalance'));
     const closingCredit = parseAmountNode(byLocal(balStruct, 'ClosingCreditBalance'));
+    
+    // Parse PaymentTerms
+    const paymentTermsDays = parseDecimal(byLocal(paymentTerms, 'Days') || byLocal(paymentTerms, 'PaymentTermsDays'));
+    const paymentTermsMonths = parseDecimal(byLocal(paymentTerms, 'Months') || byLocal(paymentTerms, 'PaymentTermsMonths'));
     
     return {
       id: byLocal(c, 'CustomerID') || byLocal(c, 'ID'),
@@ -401,6 +412,9 @@ export async function parseSaftFile(file: File | ArrayBuffer): Promise<SaftResul
       closing_credit_balance: closingCredit,
       opening_balance_netto: (openingDebit !== undefined && openingCredit !== undefined) ? (openingDebit || 0) - (openingCredit || 0) : undefined,
       closing_balance_netto: (closingDebit !== undefined && closingCredit !== undefined) ? (closingDebit || 0) - (closingCredit || 0) : undefined,
+      // Payment terms for due date calculation
+      payment_terms_days: paymentTermsDays,
+      payment_terms_months: paymentTermsMonths,
     };
   });
 
@@ -412,12 +426,17 @@ export async function parseSaftFile(file: File | ArrayBuffer): Promise<SaftResul
   const suppliers: SupplierInfo[] = suppliersRaw.map((s: any) => {
     const addr = byLocal(s, 'Address') || byLocal(s, 'BillingAddress');
     const balStruct = byLocal(s, 'BalanceAccountStructure');
+    const paymentTerms = byLocal(s, 'PaymentTerms');
     
     // Parse BalanceAccountStructure amounts
     const openingDebit = parseAmountNode(byLocal(balStruct, 'OpeningDebitBalance'));
     const openingCredit = parseAmountNode(byLocal(balStruct, 'OpeningCreditBalance'));
     const closingDebit = parseAmountNode(byLocal(balStruct, 'ClosingDebitBalance'));
     const closingCredit = parseAmountNode(byLocal(balStruct, 'ClosingCreditBalance'));
+    
+    // Parse PaymentTerms
+    const paymentTermsDays = parseDecimal(byLocal(paymentTerms, 'Days') || byLocal(paymentTerms, 'PaymentTermsDays'));
+    const paymentTermsMonths = parseDecimal(byLocal(paymentTerms, 'Months') || byLocal(paymentTerms, 'PaymentTermsMonths'));
     
     return {
       id: byLocal(s, 'SupplierID') || byLocal(s, 'ID'),
@@ -440,6 +459,9 @@ export async function parseSaftFile(file: File | ArrayBuffer): Promise<SaftResul
       closing_credit_balance: closingCredit,
       opening_balance_netto: (openingDebit !== undefined && openingCredit !== undefined) ? (openingDebit || 0) - (openingCredit || 0) : undefined,
       closing_balance_netto: (closingDebit !== undefined && closingCredit !== undefined) ? (closingDebit || 0) - (closingCredit || 0) : undefined,
+      // Payment terms for due date calculation
+      payment_terms_days: paymentTermsDays,
+      payment_terms_months: paymentTermsMonths,
     };
   });
 

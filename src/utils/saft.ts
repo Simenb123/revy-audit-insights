@@ -84,7 +84,8 @@ export async function toXlsxBlob(data: SaftResult): Promise<Blob> {
     vat_code: a.vat_code ?? ''
   }));
 
-  const customersCols = ['id','name','vat','country','city','postal','street','type','status','balance_account','balance_account_id','opening_debit_balance','opening_credit_balance','closing_debit_balance','closing_credit_balance','opening_balance_netto','closing_balance_netto'];
+  // Enhanced customer and supplier columns including PaymentTerms
+  const customersCols = ['id','name','vat','country','city','postal','street','type','status','balance_account','balance_account_id','opening_debit_balance','opening_credit_balance','closing_debit_balance','closing_credit_balance','opening_balance_netto','closing_balance_netto','payment_terms_days','payment_terms_months'];
   const customersRows = (data.customers || []).map(c => ({
     id: c.id ?? '',
     name: c.name ?? '',
@@ -102,10 +103,12 @@ export async function toXlsxBlob(data: SaftResult): Promise<Blob> {
     closing_debit_balance: c.closing_debit_balance ?? '',
     closing_credit_balance: c.closing_credit_balance ?? '',
     opening_balance_netto: c.opening_balance_netto ?? '',
-    closing_balance_netto: c.closing_balance_netto ?? ''
+    closing_balance_netto: c.closing_balance_netto ?? '',
+    payment_terms_days: c.payment_terms_days ?? '',
+    payment_terms_months: c.payment_terms_months ?? ''
   }));
 
-  const suppliersCols = ['id','name','vat','country','city','postal','street','type','status','balance_account','balance_account_id','opening_debit_balance','opening_credit_balance','closing_debit_balance','closing_credit_balance','opening_balance_netto','closing_balance_netto'];
+  const suppliersCols = ['id','name','vat','country','city','postal','street','type','status','balance_account','balance_account_id','opening_debit_balance','opening_credit_balance','closing_debit_balance','closing_credit_balance','opening_balance_netto','closing_balance_netto','payment_terms_days','payment_terms_months'];
   const suppliersRows = (data.suppliers || []).map(s => ({
     id: s.id ?? '',
     name: s.name ?? '',
@@ -123,7 +126,9 @@ export async function toXlsxBlob(data: SaftResult): Promise<Blob> {
     closing_debit_balance: s.closing_debit_balance ?? '',
     closing_credit_balance: s.closing_credit_balance ?? '',
     opening_balance_netto: s.opening_balance_netto ?? '',
-    closing_balance_netto: s.closing_balance_netto ?? ''
+    closing_balance_netto: s.closing_balance_netto ?? '',
+    payment_terms_days: s.payment_terms_days ?? '',
+    payment_terms_months: s.payment_terms_months ?? ''
   }));
 
   const taxCols = ['tax_code','description','tax_percentage','standard_tax_code','exemption_reason','declaration_period','valid_from','valid_to','base_rate','country'];
@@ -272,7 +277,51 @@ export async function toXlsxBlob(data: SaftResult): Promise<Blob> {
       };
     });
 
-  // Aging buckets calculation
+  // Calculate aging buckets with PaymentTerms fallback
+  const calculateDueDate = (transaction: any): string | undefined => {
+    // If due_date exists in transaction, use it
+    if (transaction.due_date && String(transaction.due_date).trim() !== '') {
+      return transaction.due_date;
+    }
+
+    // Fallback to PaymentTerms calculation
+    const valueDate = transaction.value_date;
+    if (!valueDate || String(valueDate).trim() === '') {
+      return undefined;
+    }
+
+    // Find customer or supplier payment terms
+    let paymentTermsDays: number | undefined;
+    let paymentTermsMonths: number | undefined;
+
+    if (transaction.customer_id) {
+      const customer = (data.customers || []).find(c => c.id === transaction.customer_id);
+      paymentTermsDays = customer?.payment_terms_days;
+      paymentTermsMonths = customer?.payment_terms_months;
+    } else if (transaction.supplier_id) {
+      const supplier = (data.suppliers || []).find(s => s.id === transaction.supplier_id);
+      paymentTermsDays = supplier?.payment_terms_days;
+      paymentTermsMonths = supplier?.payment_terms_months;
+    }
+
+    if (paymentTermsDays === undefined && paymentTermsMonths === undefined) {
+      return undefined;
+    }
+
+    try {
+      const baseDate = new Date(valueDate);
+      if (paymentTermsMonths !== undefined && paymentTermsMonths > 0) {
+        baseDate.setMonth(baseDate.getMonth() + paymentTermsMonths);
+      }
+      if (paymentTermsDays !== undefined && paymentTermsDays > 0) {
+        baseDate.setDate(baseDate.getDate() + paymentTermsDays);
+      }
+      return baseDate.toISOString().split('T')[0]; // Return YYYY-MM-DD format
+    } catch (e) {
+      return undefined;
+    }
+  };
+
   const calculateAgingBuckets = (transactions: any[], currentDate = new Date()) => {
     const buckets = {
       'current': { amount: 0, count: 0 },
@@ -280,20 +329,31 @@ export async function toXlsxBlob(data: SaftResult): Promise<Blob> {
       '31-60_days': { amount: 0, count: 0 },
       '61-90_days': { amount: 0, count: 0 },
       '90+_days': { amount: 0, count: 0 },
-      'no_due_date': { amount: 0, count: 0 }
+      'no_due_date': { amount: 0, count: 0 },
+      'calculated_from_payment_terms': { amount: 0, count: 0 }
     };
 
     transactions.forEach(t => {
       const amount = Number(t.amount) || 0;
-      if (!t.due_date || String(t.due_date).trim() === '') {
+      const originalDueDate = t.due_date && String(t.due_date).trim() !== '' ? t.due_date : undefined;
+      const calculatedDueDate = calculateDueDate(t);
+      const dueDate = calculatedDueDate;
+      
+      if (!dueDate) {
         buckets.no_due_date.amount += amount;
         buckets.no_due_date.count += 1;
         return;
       }
 
+      // Track if due date was calculated from payment terms
+      if (!originalDueDate && calculatedDueDate) {
+        buckets.calculated_from_payment_terms.amount += amount;
+        buckets.calculated_from_payment_terms.count += 1;
+      }
+
       try {
-        const dueDate = new Date(t.due_date);
-        const diffTime = currentDate.getTime() - dueDate.getTime();
+        const dueDateObj = new Date(dueDate);
+        const diffTime = currentDate.getTime() - dueDateObj.getTime();
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
         if (diffDays <= 0) {
@@ -380,6 +440,11 @@ export async function toXlsxBlob(data: SaftResult): Promise<Blob> {
     { metric: 'ap_61_90_days_amount', value: Math.round(apAgingBuckets['61-90_days'].amount * 100) / 100 },
     { metric: 'ap_90_plus_days_amount', value: Math.round(apAgingBuckets['90+_days'].amount * 100) / 100 },
     { metric: 'ap_no_due_date_amount', value: Math.round(apAgingBuckets.no_due_date.amount * 100) / 100 },
+    // PaymentTerms calculation metrics
+    { metric: 'ar_calculated_from_payment_terms_count', value: arAgingBuckets.calculated_from_payment_terms.count },
+    { metric: 'ap_calculated_from_payment_terms_count', value: apAgingBuckets.calculated_from_payment_terms.count },
+    { metric: 'customers_with_payment_terms', value: (data.customers || []).filter(c => c.payment_terms_days !== undefined || c.payment_terms_months !== undefined).length },
+    { metric: 'suppliers_with_payment_terms', value: (data.suppliers || []).filter(s => s.payment_terms_days !== undefined || s.payment_terms_months !== undefined).length },
   ];
 
   // Create aging summary sheets
