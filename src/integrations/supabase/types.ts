@@ -11250,6 +11250,13 @@ export type Database = {
         }
         Returns: boolean
       }
+      approve_user: {
+        Args: {
+          assign_role?: Database["public"]["Enums"]["user_role_type"]
+          user_id_to_approve: string
+        }
+        Returns: boolean
+      }
       calculate_account_distribution: {
         Args: { p_client_id: string; p_version_id: string }
         Returns: {
@@ -11412,6 +11419,17 @@ export type Database = {
         Args: { p_client_id: string; p_month: number; p_year: number }
         Returns: string
       }
+      get_pending_users: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          created_at: string
+          email: string
+          first_name: string
+          id: string
+          last_name: string
+          workplace_company_name: string
+        }[]
+      }
       get_potential_clients_summary: {
         Args: { p_auditor_org_number: string }
         Returns: {
@@ -11511,6 +11529,10 @@ export type Database = {
       }
       reject_firm_access_request: {
         Args: { p_request_id: string }
+        Returns: boolean
+      }
+      reject_user: {
+        Args: { rejection_reason?: string; user_id_to_reject: string }
         Returns: boolean
       }
       request_firm_access: {

@@ -238,6 +238,17 @@ const Auth = () => {
                 </>
               )}
 
+              {isSignUp && (
+                <Alert variant="outline" className="mt-4">
+                  <Info className="h-4 w-4" />
+                  <AlertTitle>Viktig informasjon</AlertTitle>
+                  <AlertDescription>
+                    Nye brukere må godkjennes av en administrator før de får tilgang til systemet. 
+                    Du vil motta en e-post når kontoen din er aktivert.
+                  </AlertDescription>
+                </Alert>
+              )}
+
               {!isSignUp && (
                 <Alert variant="outline" className="mt-4">
                   <Info className="h-4 w-4" />

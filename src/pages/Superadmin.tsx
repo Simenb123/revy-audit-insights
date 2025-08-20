@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useIsSuperAdmin } from '@/hooks/useIsSuperAdmin';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import PendingUsersManagement from '@/components/Admin/PendingUsersManagement';
 
 function useSuperAdmins(enabled: boolean) {
   return useQuery({
@@ -123,6 +124,11 @@ export default function Superadmin() {
             </CardContent>
           </Card>
         </section>
+      </main>
+
+      {/* New Pending Users Section */}
+      <main className="container mx-auto p-4">
+        <PendingUsersManagement />
       </main>
     </>
   );
