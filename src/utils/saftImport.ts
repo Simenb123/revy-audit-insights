@@ -284,11 +284,16 @@ export async function createZipFromParsed(parsed: SaftResult): Promise<Blob> {
 }
 
 export async function persistParsed(clientId: string, parsed: SaftResult, fileName?: string): Promise<{ arCount: number; apCount: number }> {
+  // Get current user
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('User not authenticated');
+
   // Create upload batch for tracking this SAF-T import
   const { data: uploadBatch, error: batchError } = await supabase
     .from('upload_batches')
     .insert({
       client_id: clientId,
+      user_id: user.id,
       file_name: fileName || 'SAF-T import',
       batch_type: 'saft',
       status: 'processing',
