@@ -31,9 +31,9 @@
     --font-family: 'Inter', 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Open Sans', 'Helvetica Neue', sans-serif;
 
     /* Layout heights */
-    --global-header-height: 100px;
+    --global-header-height: 90px;
     --sub-header-height: 38px;
-    --client-header-height: 60px;
+    --client-header-height: 90px;
     --client-sub-header-height: 38px;
 
     /* Dynamic computed heights (fallbacks) */
