@@ -20,7 +20,7 @@ const StickyClientLayout: React.FC<StickyClientLayoutProps> = ({
   clientName,
   orgNumber,
   pageTitle,
-  showBackButton = true,
+  showBackButton = false,
   children
 }) => {
   const { setSubHeader, clearSubHeader } = useSubHeader();
