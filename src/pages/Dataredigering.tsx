@@ -896,7 +896,7 @@ export default function DataredigeringPage() {
               className="w-full rounded-xl bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
               onClick={() => fileInputSB.current?.click()}
             >
-              {sbFile ? sbFile.name : "Velg saldobalanse (Alle utsigten...)"}
+              {sbFile ? sbFile.name : "Velg saldobalanse"}
             </button>
           </div>
           
